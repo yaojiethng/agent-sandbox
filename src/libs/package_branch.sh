@@ -19,21 +19,24 @@
 #                                the diff_export caller) for host consumers
 #
 # Usage (library):
-#   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
+#   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES] [BASELINE]
 #
 # Usage (direct):
-#   package_branch.sh --to=<dir> --bundle-summary=<text>
+#   package_branch.sh --to=<dir> --bundle-summary=<text> [--baseline=<sha>]
 #
 # Arguments (library mode):
 #   SANDBOX_DIR        --  path to the git repository
 #   OUTPUT_DIR         --  full destination directory path
 #   NO_RENAMES         --  if true, use git diff --no-renames
+#   BASELINE           --  optional explicit diff baseline (default: the
+#                          session branch point)
 #
 # Flags (direct mode):
 #   --to=<dir>        Base parent directory (required). Script creates
 #                     <to>/bundles/<ts>-<label>[-<ts>]/ subdirectory.
 #   --bundle-summary Short snake_case label for the output directory.
 #                     Default: "snapshot".
+#   --baseline=<sha>  Explicit diff baseline (default: the session branch point)
 #   --no-renames      Use git diff --no-renames (avoid rename operations)
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,6 +64,7 @@ Required:
 Options:
   --to=<dir>              Output directory (default: auto-resolved from sandbox)
   --bundle-summary=<txt>  Required snake_case label for the bundle directory
+  --baseline=<sha>        Explicit diff baseline (default: the session branch point)
   --no-renames            Use git diff --no-renames (avoid rename operations in diffs)
 EOF
 }
@@ -73,24 +77,27 @@ fi
 # -------------------------
 # package_commits
 #
-# Iterates commits since INIT_SHA (read from SESSION_STATE), produces
-# numbered .diff files with index lines stripped into OUTPUT_DIR/,
-# overwrites on each run.
+# Iterates commits since the baseline (explicit SINCE_SHA, else init_sha from
+# SESSION_STATE), produces numbered .diff files with index lines stripped into
+# OUTPUT_DIR/, overwrites on each run.
 # -------------------------
 package_commits() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
   local NO_RENAMES="${3:-false}"
+  local SINCE_SHA="${4:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_commits: SANDBOX_DIR and OUTPUT_DIR are required" >&2
     return 1
   fi
 
-  local INIT_SHA
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  local INIT_SHA="$SINCE_SHA"
   if [[ -z "$INIT_SHA" ]]; then
-    echo "package_commits: init_sha not found in SESSION_STATE" >&2
+    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  fi
+  if [[ -z "$INIT_SHA" ]]; then
+    echo "package_commits: init_sha not found in SESSION_STATE and no baseline given" >&2
     return 1
   fi
 
@@ -250,21 +257,35 @@ _package_preflight_check() {
 #   4. write_changed_files      --  changed-files/ with MANIFEST.txt
 #   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
 #
-# Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
+# Resolves the diff baseline (explicit BASELINE, else the session branch
+# point). Overwrites OUTPUT_DIR on each run.
 #
 # Args:
 #   SANDBOX_DIR        --  path to the git repository
 #   OUTPUT_DIR         --  full destination directory (parent of patches/, etc.)
 #   NO_RENAMES         --  if true, use git diff --no-renames
+#   BASELINE           --  optional explicit baseline SHA
 # -------------------------
-package_branch() {
-  local SANDBOX_DIR="${1:-}"
-  local OUTPUT_DIR="${2:-}"
-  local NO_RENAMES="${3:-false}"
+# -------------------------
+# package_branch_baseline
+#
+# Prints the diff baseline for an export. An explicit baseline wins. Otherwise
+# the baseline is the newest commit shared by the session baseline (init_sha)
+# and HEAD: equal to init_sha when no history was rewritten, and the branch
+# point after a rebase. The host retains that same commit, so the exported
+# diffs apply onto it.
+# -------------------------
+package_branch_baseline() {
+  local SANDBOX_DIR="$1"
+  local EXPLICIT="${2:-}"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
-    echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
-    return 1
+  if [[ -n "$EXPLICIT" ]]; then
+    if ! git_commit_exists "$SANDBOX_DIR" "$EXPLICIT"; then
+      echo "package_branch: baseline does not resolve to a commit: $EXPLICIT" >&2
+      return 1
+    fi
+    printf '%s' "$EXPLICIT"
+    return 0
   fi
 
   local INIT_SHA
@@ -273,6 +294,25 @@ package_branch() {
     echo "package_branch: init_sha not found in SESSION_STATE" >&2
     return 1
   fi
+
+  local MERGE_BASE
+  MERGE_BASE=$(git -C "$SANDBOX_DIR" merge-base "$INIT_SHA" HEAD 2>/dev/null) || MERGE_BASE=""
+  printf '%s' "${MERGE_BASE:-$INIT_SHA}"
+}
+
+package_branch() {
+  local SANDBOX_DIR="${1:-}"
+  local OUTPUT_DIR="${2:-}"
+  local NO_RENAMES="${3:-false}"
+  local BASELINE_ARG="${4:-}"
+
+  if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
+    echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
+    return 1
+  fi
+
+  local INIT_SHA
+  INIT_SHA=$(package_branch_baseline "$SANDBOX_DIR" "$BASELINE_ARG") || return 1
 
   # Validate SANDBOX_DIR exists and is a git repository
   if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
@@ -284,9 +324,16 @@ package_branch() {
   # degrade to empty or partial while this function still reports success, so the
   # caller stamps a SUCCESS bundle over the last good one. Refuse the state here:
   # the save decision routes its undeterminable case into this function, and the
-  # callers' failure paths keep the previous artefact and write FAIL.
+  # callers' failure paths keep the previous artefact and write FAIL. Two probes:
+  # `git status --porcelain` reads the index; `git fsck --no-dangling` reads
+  # every reachable object, so a truncated blob is refused before the per-commit
+  # diff degrades.
   if ! git -C "$SANDBOX_DIR" status --porcelain >/dev/null 2>&1; then
-    echo "package_branch: cannot read the repository state at $SANDBOX_DIR; refusing to export" >&2
+    echo "package_branch: cannot read the repository index at $SANDBOX_DIR; refusing to export" >&2
+    return 1
+  fi
+  if ! git -C "$SANDBOX_DIR" fsck --no-dangling >/dev/null 2>&1; then
+    echo "package_branch: cannot read the object store at $SANDBOX_DIR; refusing to export" >&2
     return 1
   fi
 
@@ -298,13 +345,13 @@ package_branch() {
   mkdir -p "$OUTPUT_DIR"
 
   # 1. Per-commit diffs
-  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$NO_RENAMES"
+  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$NO_RENAMES" "$INIT_SHA"
 
   # 2. Uncommitted changes vs HEAD
   write_uncommitted_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/uncommitted.diff"
 
-  # 3. All changes since INIT_SHA
-  write_all_changes_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/all-changes.diff"
+  # 3. All changes since the baseline
+  write_all_changes_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/all-changes.diff" "$INIT_SHA"
 
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
@@ -321,17 +368,19 @@ package_branch() {
   local bundle_name
   bundle_name=$(basename "$OUTPUT_DIR")
   echo "To draft this bundle on host, run:" >&2
-  echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
+  echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=${BUNDLE_SUMMARY:-$bundle_name} BRANCH_FROM=${INIT_SHA}" >&2
 }
 
 # If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   TO_ARG=""
   BUNDLE_SUMMARY_ARG=""
+  BASELINE_ARG=""
   NO_RENAMES_ARG=false
 
   parse_args usage \
     --bundle-summary=BUNDLE_SUMMARY_ARG \
+    --baseline=BASELINE_ARG \
     --to=TO_ARG \
     --no-renames:NO_RENAMES_ARG \
     -- "$@"
@@ -383,5 +432,5 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   fi
   mkdir -p "$OUTPUT_DIR"
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$NO_RENAMES_ARG"
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$NO_RENAMES_ARG" "$BASELINE_ARG"
 fi

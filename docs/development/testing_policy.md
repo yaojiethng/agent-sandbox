@@ -14,15 +14,17 @@ Every test must be independent and reproducible. Tests must not depend on:
 - User's home directory or working directory
 - Any path outside the test's temporary fixture directory
 
-**Rule:** All test fixtures must live under a temporary directory created with `mktemp -d` and cleaned up on exit.
+**Rule:** All test fixtures must live under a temporary directory. `test_setup` at file scope and `run_test` allocate a fresh per-test `FIXTURE_DIR`; extras come from `get_fixture_dir`; the allocator cleans up on exit. A test must never use a bare `mktemp -d`.
 
 ```bash
-# ✓ Correct: isolated fixture directory
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
+# ✓ Correct: isolated per-test fixture directory
+test_setup   # file scope; also sets FIXTURE_ROOT for shared scaffolding
 
-P="$FIXTURE_DIR/test_project"
-S="$FIXTURE_DIR/test_sandbox"
+test_example() {
+  local P="$FIXTURE_DIR/test_project"
+  local S="$FIXTURE_DIR/test_sandbox"   # FIXTURE_DIR is fresh for this test
+  ...
+}
 ```
 
 ### 2. Fixtures Must Be Cleaned Before Use
@@ -99,7 +101,7 @@ Helpers used by more than one test file live in `tests/libs/` and are sourced ex
 
 | File | Contains |
 |---|---|
-| `tests/libs/test_common.sh` | Pass/fail/skip counters and reporting: `pass()`, `fail()`, `skip()`, `run_test()`, `test_done()` |
+| `tests/libs/test_common.sh` | Per-test unit accounting and isolation: `pass()`, `fail()`, `run_test()`, `test_done()`, `get_fixture_dir()` |
 | `tests/libs/git_fixtures.sh` | Git repo setup helpers: `make_repo()`, `make_committed_repo()`, `make_sandbox_fixture()`, `get_init_sha()`, `write_session_state()`, `commit_change()` |
 | `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` -- unified session directory creator with optional patches and uncommitted.diff |
 
@@ -116,7 +118,7 @@ Do not add a new `tests/libs/` file without a clear category boundary. If a help
 Always source `test_common.sh` instead of defining `pass()`, `fail()`, and counter variables inline. It provides:
 
 - `pass()` / `fail()` -- identical formatting across all test files
-- `skip()` -- for tests that cannot run in the current environment
+- `skip()` -- marks the current test as temporarily absent when its subject is not ready (an unstubbed operation, a missing dependency); reported as a warning, resolved short-term so skips trend back to zero
 - `run_test()` -- test runner that continues on failure
 - `test_done()` -- summary reporter that exits with failure count. The count-as-exit-code is the documented exemption to the verdict-only rule in [`bash-coding-conventions.md`](bash-coding-conventions.md) 3.2: the count is the report, and every consumer reads only zero versus non-zero.
 
@@ -149,6 +151,11 @@ Tests live in one of three homes based on **who owns the seam under test** and *
 Knowledge tests and integration tests are **not** run by `make test`. The runner glob is `tests/test_*.sh` (non-recursive), so `tests/knowledge/` and `tests/integration/` are excluded.
 
 **Do not treat the knowledge test as a primitive for testing our own code.** If the seam is our maintained code, it is testable by definition -- write a unit test under `tests/` and run it in `make test`. A knowledge test is a *last resort for unmodifiable seams*, not a home for internal behaviour.
+
+### The file and the unit
+
+A test file is named for its subject, and holds that subject's units: `tests/test_A.sh` tests `A.sh`, and the file name is the lookup for where that subject is covered.
+Do not keep a roster of which file covers what: it goes stale as soon as a subject moves, and it is one more thing to keep true.
 
 ### Promotions over time
 
@@ -188,15 +195,15 @@ End-to-end sequence validators that exercise a complete operator workflow (e.g. 
 
 End-to-end or environment-gated tests that cannot run deterministically in the `make test` harness (container/daemon requirements, chunky multi-process flows, metrics/thresholds without a defined pass/fail). **Excluded from `make test`** so the unit suite stays deterministic.
 
-**Purpose:** Preserve valuable coverage of flows the unit harness cannot exercise, while keeping `make test` a fully-green, deterministic assertion of **failed 0, skipped 0**.
+**Purpose:** Preserve valuable coverage of flows the unit harness cannot exercise, while keeping `make test` a fully-green, deterministic assertion of **failed 0**.
 
 **Rule:** If an integration flow's seam becomes unit-testable (e.g. via a mock), promote it to `tests/test_*.sh`. Do not use `integration/` as a permanent home for code our own unit suite *could* cover.
 
 ### The `make test` invariant
 
-`make test` (the `tests/test_*.sh` suite) **must report `failed 0, skipped 0`**. Any test that cannot run deterministically (missing utility, container/daemon absent, optional file absent that yields a `skip`) must be made deterministic or moved to `tests/knowledge/` / `tests/integration/`. The runner (`scripts/run_tests.sh`) enforces this by treating `skip` as a failure.
+`make test` (the `tests/test_*.sh` suite) **must report `failed 0`**. A test that cannot run deterministically (missing utility, container/daemon absent, optional file absent) must be made deterministic or moved to `tests/knowledge/` / `tests/integration/`.
 
-A `skip()` in a `tests/test_*.sh` file is a **defect** under this policy -- it means the seam was moved out of the unit suite rather than made deterministic.
+A `skip()` in a `tests/test_*.sh` file is a **temporary** state -- the subject is not ready (an unstubbed operation, a dependency absent from the container) -- reported as a warning, not a failure. Skips are tolerated for wip / mid-sub-milestone work, and the cause is resolved so skips trend back to zero. The runner (`scripts/run_tests.sh`) counts skips and warns; a skip does not fail the run.
 
 A prerequisite is something the suite needs before a test runs: an executable stub, or a docker shim that must be present. A prerequisite failure is not a test failure. The runner checks the prerequisites before it runs the tests. It reports a missing prerequisite by name. A broken environment then reports one prerequisite error, not many unrelated test failures. This rule records a real failure: a stub lost its exec bit and failed 67 tests with exit 126 before the cause was found.
 
@@ -265,3 +272,9 @@ This applies to renames, interface changes, flag additions, and behavioural fixe
 ## See Also
 
 [`testing-conventions.md`](testing-conventions.md) -- fixture patterns, anti-patterns, templates, checklists, and debug steps.
+
+[`read-through-run.md`](../../workflow/coding-agent/prompts/read-through-run.md) -- the brief for a periodic whole-tree read-through pass: pair each production file with its covering tests, mutate the behaviour, and record the findings.
+
+[`churn-analysis-run.md`](../../workflow/coding-agent/prompts/churn-analysis-run.md) -- the brief for the churn-analysis pass: rank the tracked files by commit count with a pinned command and window, separate mechanical churn from functional churn, and cross-reference the read-through register.
+
+[`fanout-run.md`](../../workflow/coding-agent/prompts/fanout-run.md) -- the draft brief for fanning a large pass out to parallel subagents: a frozen snapshot per batch, one owner per file, a serialized test suite, and a scripted register integrity check.

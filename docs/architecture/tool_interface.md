@@ -50,10 +50,10 @@ Stops any running session for this project, builds missing images if needed, see
 
 ### `make resume SESSION_ID=<id>`
 
-Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped.
+Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped. Resume always continues the session in standard mode (agent TUI attached); it never starts a new session, never rebuilds missing images, and never resets the volume.
 
 - `SESSION_ID=<id>` -- resume that specific session silently (recommended).
-- `LIST=1` -- list resumable sessions as an enriched table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`), newest first (by raw `session-ts`), capped at 10 rows per page (same cap as the draft picker; a footer reports any remainder). The `PROVIDER` cell shows the bare provider name. `STARTED` and `LAST_USED` are relative times ("2 hours ago"; `LAST_USED` = time since the session was last stopped, read from its per-session `.compose/<session-id>.log`; `---` when running or never stopped). Staleness is shown exception-only as a warning label: `[SANDBOX_STALE]` when the session's recorded `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired -- the record's `*-image-digest` labels are identity, and the list path makes zero docker calls. Dry-run records are excluded from the listing (session_is_dry_run): their volume is destroyed at dry-run teardown, so they are not resumable; prune still reaches them. Accepts an optional `PROVIDER=<n>` filter.
+- `LIST=1` -- list resumable sessions as an enriched table (`SESSION | PROVIDER | BRANCH | AGE | WORK | STATE`), newest first (by raw `session-ts`), capped at 10 rows per page (same cap as the draft picker; a footer reports any remainder). The `PROVIDER` cell shows the bare provider name. `AGE` is the wall-clock age of the session's last lifecycle event (`started 3m ago`, `stopped 1D ago`), read from the per-session `.compose/<session-id>.log` activity log, the verb overridden by live docker state when they disagree, and `-` when the session has no events. `WORK` is a host-side checkpoint proxy: the newest checkpoint for the session under `.workspace/session-diffs` (`<N>c` commits, `+u` when `uncommitted.diff` is non-empty), `--` when the session never exported. `STATE` is the commit distance: how many commits the current project HEAD is ahead of the session's recorded `host-head-sha` (`1 commit ago`, `0 commits ago`, `not in tree` when the recorded sha is not a resolvable commit in the current project, `-` when the record has no host-head sha). Staleness is shown exception-only as a warning label: `[SANDBOX_STALE]` appended to the branch cell when the session's recorded `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired -- the record's `*-image-digest` labels are identity, and the list path makes zero docker calls. Dry-run records are excluded from the listing (session_is_dry_run): their volume is destroyed at dry-run teardown, so they are not resumable; prune still reaches them. Accepts an optional `PROVIDER=<n>` filter.
 - `INTERACTIVE=1` -- interactive picker over the session inventory + confirmation before resuming; the deliberately slow mode. Picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. Accepts an optional `PROVIDER=<n>` filter.
 - `PROVIDER=<n>` -- filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
 
@@ -77,7 +77,7 @@ The check set and the bearer/orchestration responsibility split are defined in [
 
 Builds images. Safe to run at any time; does not start or stop any containers.
 
-`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`. `TARGET` (singular) is also accepted as a legacy alias.
+`TARGETS` is optional. Accepts comma-separated values: one or more provider names, `sandbox`, or `all`. Default: `all`.
 
 | TARGETS value | Builds |
 |---|---|
@@ -128,7 +128,7 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-By default, resolves from the `session` channel (`session-diffs/session/`) using auto-resolve (newest bundle). `BUNDLE=<name>` pins to a named bundle (name-only -- absolute paths rejected).
+Resolves from the `session` channel (`session-diffs/session/`) by default. `BUNDLE=<name>` names the bundle to apply (name-only -- absolute paths rejected) and is required in non-interactive mode: with no bundle named, the command exits non-zero and points at `INTERACTIVE=1`. The router no longer auto-selects the newest bundle.
 
 **Channels:**
 
@@ -138,13 +138,20 @@ By default, resolves from the `session` channel (`session-diffs/session/`) using
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
 
-**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in only; non-interactive behaviour is unchanged.
+**Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in; a non-interactive run requires an explicit `BUNDLE=<name>`.
 
 ---
 
-### `make confirm [TARGET_BRANCH=<branch>]`
+### `make confirm [TARGET_BRANCH=<branch>] [NEW=1]`
 
-Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch.
+Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
+
+`NEW=1` (flag `--new`) creates `TARGET_BRANCH` at the draft tip instead. `TARGET_BRANCH` must name a branch that does not exist yet; the command exits non-zero otherwise. It deletes the draft, leaves the source branch untouched, and prints -- does not run -- the direction that moves the source branch onto the rebased series:
+
+```text
+git switch <source-branch>
+git reset --soft <TARGET_BRANCH>
+```
 
 ---
 
@@ -158,7 +165,7 @@ Discards the current `draft/` branch, returns to the source branch. Artefacts un
 
 Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-[-<LABEL>-]<SESSION_ID>/`.
 
-`BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
+`BASELINE=<sha>` diffs against an explicit SHA. Without it, the baseline is `git merge-base <init_sha> HEAD`: `init_sha` without a rebase, and the branch point after one -- the commit the host still holds, so the exported diffs apply onto it.
 
 ---
 

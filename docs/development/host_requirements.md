@@ -14,7 +14,7 @@ This document records the host tools and versions agent-sandbox requires, per pl
 
 | Tool | Minimum | Used by | What breaks if missing |
 |---|---|---|---|
-| bash | 4.0 | All scripts | `mapfile` and associative arrays (bash 4.0+) appear in `scripts/build.sh` and other files. macOS ships bash 3.2.57. |
+| bash | 4.4 | All scripts | Expanding empty arrays under `set -u` (a bash 4.4 fix) appears in `scripts/build.sh`; `mapfile` and associative arrays (bash 4.0+) appear across the tree. macOS ships bash 3.2.57. |
 | git | any | All host workflows | Everything fails: onboarding, commits, diffs. |
 | GNU coreutils | any | `realpath` (or `readlink -f`), `sha256sum`, GNU `date -d` | `scripts/onboard.sh`, `scripts/run_agent.sh`, `src/libs/session_env.sh`, `scripts/prune.sh`, `src/build/compose.sh` use these. BSD tools reject the GNU flags. |
 | GNU sed | any | `sed -i` without a backup argument | `scripts/onboard.sh`, `src/libs/session_inventory.sh` use the GNU form. BSD `sed -i` demands a backup suffix. |
@@ -63,11 +63,10 @@ date -d '1 day ago'       # prints a date
 
 ## Enforcement
 
-`scripts/install.sh` runs the requirement checks, prints the failing checks with their Homebrew hints, and exits non-zero. `make install` runs it before creating the CLI symlink. The checks run unconditionally for bash and git; the GNU-tool checks run only on Darwin, where the BSD/GNU difference exists.
+`scripts/install.sh` runs the requirement checks, prints the failing checks with per-host install hints, and exits non-zero. `make install` runs it before creating the CLI symlink. The checks run unconditionally for bash and git; the GNU-tool checks run only on Darwin, where the BSD/GNU difference exists.
 
 The gate deliberately fails closed. A silent partial setup fails later in the session with an unclear error; the gate names the missing tool at install time.
 
 ## Notes
 
 - The inside-the-container work always runs on Linux, regardless of the host. The requirement surface above is only the host-side prelude (`scripts/`, `src/libs/`).
-- A full rewrite of the host tooling in a cross-platform language (nushell) is indefinitely deferred. See `devlog/roadmap.md`, `#### Not in scope`.

@@ -11,7 +11,7 @@ Day-to-day command reference and troubleshooting for the Hermes provider. All co
 make build
 
 # Build Hermes provider image only
-make build TARGET=hermes
+make build TARGETS=hermes
 
 # Start agent (interactive)
 make start PROVIDER=hermes

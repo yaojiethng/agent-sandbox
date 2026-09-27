@@ -7,15 +7,18 @@
 # bootstrap (.env loading, git validation, name/branch derivation).
 #
 # Covers:
-#   session_env_common_init  --  .env parse rules (comments, blanks, CR/LF/TAB in
-#                             keys, space-trimmed values, whitespace-only-key and
-#                             invalid-identifier lines skipped), missing-.env
-#                             failure, non-git and commit-less project rejection,
-#                             HOST_UID/GID + ENV_FILE exports, and the
-#                             explicit-identity-beats-.env precedence pin (flag-wins)
+#   session_env_common_init  --  missing-.env failure, non-git and commit-less
+#                             project rejection, HOST_UID/GID + ENV_FILE exports,
+#                             the derived dirs_resolve paths, the SANDBOX_DIR
+#                             re-assert after .env load, and the
+#                             explicit-identity-beats-.env precedence pin
+#                             (flag-wins). The .env parse rules this loader calls
+#                             are pinned in tests/test_env.sh, with the parser.
 #   session_env_names        --  branch sanitisation, detached-HEAD fallback,
 #                             deterministic image/container naming, delivery
-#                             var defaults vs preserved overrides
+#                             var defaults vs preserved overrides, the
+#                             required-argument guards, PROVIDER_NAME and
+#                             SESSION_ID exports
 
 set -uo pipefail
 
@@ -34,6 +37,10 @@ make_sandbox() {
 # session_env_common_init  --  .env parsing
 # =============================================================================
 
+# Given: a sandbox dir with no .env, a committed project, and explicit name and dir args
+# When:  session_env_common_init runs
+# Then:  rc is non-zero and the message says ".env not found" and names the onboard command
+# Asserts: the missing-.env failure points at the remedy (the two hint lines are redundant: either alone satisfies the unit)
 test_env_missing_file_fails_with_onboard_hint() {
   local SBX="$FIXTURE_DIR/sbx_missing" PROJ="$FIXTURE_DIR/proj_ok"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
@@ -48,114 +55,14 @@ test_env_missing_file_fails_with_onboard_hint() {
   fi
 }
 
-test_env_comments_and_blanks_skipped() {
-  local SBX="$FIXTURE_DIR/sbx_cmt" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf '# a comment\n\n   \nFOO=bar\n\t# tab-comment\n' > "$SBX/.env"
-
-  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
-
-  if [[ "${FOO:-}" == "bar" && -z "${a:-}" ]]; then
-    pass ".env parser skips comments and blank lines"
-  else
-    fail "comment/blank parsing broken: FOO='${FOO:-}' a='${a:-}'"
-  fi
-}
-
-test_env_key_whitespace_stripped_value_trimmed() {
-  # KEY with trailing TAB + CRLF line ending; VALUE padded with spaces.
-  local SBX="$FIXTURE_DIR/sbx_ws" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'MYKEY\t\r=  padded value  \r\n' > "$SBX/.env"
-
-  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
-
-  if [[ "${MYKEY:-}" == "padded value" ]]; then
-    pass ".env parser strips key whitespace/CRLF and trims value padding"
-  else
-    fail "whitespace handling broken: MYKEY='[${MYKEY:-}]'"
-  fi
-}
-
-test_env_inline_comment_is_kept_as_value() {
-  # PINNED behavior: there is no inline-comment rule. `K=v # c` keeps the
-  # whole tail as the value (trimmed). Documented so nobody assumes otherwise.
-  local SBX="$FIXTURE_DIR/sbx_inline" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'K=val # not-a-comment\n' > "$SBX/.env"
-
-  session_env_common_init proj "$PROJ" "$SBX" >/dev/null 2>&1
-
-  if [[ "${K:-}" == "val # not-a-comment" ]]; then
-    pass ".env parser keeps inline text after value (no inline comments)  --  pinned"
-  else
-    fail "inline handling changed: K='[${K:-}]'  --  update this pin if intentional"
-  fi
-}
-
-test_env_whitespace_only_key_line_skipped() {
-  # REGRESSION: a line of the form ` = ` (whitespace before '=', empty value)
-  # reached `export "="` and aborted the caller under errexit with
-  # `export: '=': not a valid identifier`. The same failure hits lines with no
-  # '=' at all: pure-whitespace lines and CRLF blank lines (a bare CR) -- the
-  # latter is how a CRLF .env crashes on its first blank line. All must be
-  # skipped as blanks.
-  local SBX="$FIXTURE_DIR/sbx_eq" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf 'FOO=bar\n = \n  =baz\n  \n\t\r\nMYKEY=ok\r\n' > "$SBX/.env"
-
-  local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
-        && printf '%s|%s|%s|' "${FOO:-unset}" "${baz:-unset}" "${MYKEY:-unset}") || RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == "bar|unset|ok|" ]]; then
-    pass ".env parser skips whitespace-only-key lines without error"
-  else
-    fail "whitespace-only-key line broke parsing: rc=$RC out='$OUT'"
-  fi
-}
-
-test_env_indented_comment_skipped() {
-  # REGRESSION: a comment with leading whitespace passed the raw-key guard and
-  # hit `export` with a comment-derived name (not a valid identifier). It must
-  # scan as a comment once the key is trimmed.
-  local SBX="$FIXTURE_DIR/sbx_lc" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf '  # indented comment\nFOO=bar\n' > "$SBX/.env"
-
-  local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
-        && printf '%s|' "${FOO:-unset}") || RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == "bar|" ]]; then
-    pass ".env parser skips indented comment lines"
-  else
-    fail "indented comment broke parsing: rc=$RC out='$OUT'"
-  fi
-}
-
-test_env_invalid_identifier_key_skipped_with_warning() {
-  # A non-identifier key (digit prefix, dash, and so on) can never be exported.
-  # The parser must skip it with a warning instead of failing the call.
-  local SBX="$FIXTURE_DIR/sbx_inv" PROJ="$FIXTURE_DIR/proj_ok"
-  make_sandbox "$SBX"; make_committed_repo "$PROJ"
-  printf '1BAD=odd\nGOOD=1\n' > "$SBX/.env"
-
-  local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
-        && printf '%s|' "${GOOD:-unset}") || RC=$?
-
-  if [[ $RC -eq 0 && "$OUT" == *"invalid variable name"* && "$OUT" == *"1|" ]]; then
-    pass ".env parser skips non-identifier keys with a warning"
-  else
-    fail "non-identifier key not handled: rc=$RC out='$OUT'"
-  fi
-}
-
 # =============================================================================
 # session_env_common_init  --  validation + derived exports
 # =============================================================================
 
+# Given: a sandbox with a .env and a project dir that is not a git repository
+# When:  session_env_common_init runs
+# Then:  rc non-zero and the message says "not a git repository"
+# Asserts: the .git-is-a-directory guard (bite V4 proven)
 test_common_init_rejects_non_git_project() {
   local SBX="$FIXTURE_DIR/sbx_ng" PROJ="$FIXTURE_DIR/proj_nogit"
   make_sandbox "$SBX"; mkdir -p "$PROJ"
@@ -171,6 +78,10 @@ test_common_init_rejects_non_git_project() {
   fi
 }
 
+# Given: a .env and an initialised repo with no commit
+# When:  session_env_common_init runs
+# Then:  rc non-zero and the message says "has no commits"
+# Asserts: the rev-parse HEAD guard (bite V5 proven)
 test_common_init_rejects_commitless_repo() {
   local SBX="$FIXTURE_DIR/sbx_nc" PROJ="$FIXTURE_DIR/proj_nocommit"
   make_sandbox "$SBX"; make_repo "$PROJ"
@@ -186,6 +97,10 @@ test_common_init_rejects_commitless_repo() {
   fi
 }
 
+# Given: a .env with DELIVERABLE_MODE=all
+# When:  session_env_common_init runs with an explicit name
+# Then:  PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, ENV_FILE and HOST_UID/GID match the inputs and DELIVERABLE_MODE is loaded
+# Asserts: the phase 1 export contract (bite V15: a hardcoded HOST_UID fails it)
 test_common_init_exports_identity_and_paths() {
   local SBX="$FIXTURE_DIR/sbx_ok" PROJ="$FIXTURE_DIR/proj_exports"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
@@ -194,17 +109,24 @@ test_common_init_exports_identity_and_paths() {
   if session_env_common_init myproj "$PROJ" "$SBX" >/dev/null 2>&1; then
     if [[ "$PROJECT_NAME" == "myproj" && "$PROJECT_DIR" == "$PROJ" \
        && "$ENV_FILE" == "$SBX/.env" && -n "${HOST_UID:-}" && -n "${HOST_GID:-}" \
-       && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" ]]
+       && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" \
+       && "${CHANGES_DIR:-}" == "$SBX/.workspace/session-diffs" \
+       && "${INPUT_DIR:-}" == "$SBX/.workspace/input" \
+       && "${OUTPUT_DIR:-}" == "$SBX/.workspace/output" ]]
     then
-      pass "common_init exports PROJECT_*, ENV_FILE, HOST_UID/GID and .env vars"
+      pass "common_init exports PROJECT_*, ENV_FILE, HOST_UID/GID, .env vars and the dirs_resolve paths"
     else
-      fail "export contract incomplete: PN=$PROJECT_NAME PD=$PROJECT_DIR EF=$ENV_FILE UID=${HOST_UID:-unset} ENVV=${DELIVERABLE_MODE:-unset}"
+      fail "export contract incomplete: PN=$PROJECT_NAME PD=$PROJECT_DIR EF=$ENV_FILE UID=${HOST_UID:-unset} ENVV=${DELIVERABLE_MODE:-unset} CD=${CHANGES_DIR:-unset}"
     fi
   else
     fail "common_init failed on valid inputs"
   fi
 }
 
+# Given: a .env with PROJECT_NAME=envname and AGENT_SANDBOX_PROJECT_NAME=envvar
+# When:  session_env_common_init runs with the explicit name explicitName
+# Then:  PROJECT_NAME is explicitName
+# Asserts: flag-wins at the name level (bite V1 proven)
 test_env_project_name_explicit_arg_beats_env_and_envvar() {
   # PIN (S2 flip): the explicit name argument beats both a conflicting
   # PROJECT_NAME in .env and a conflicting AGENT_SANDBOX_PROJECT_NAME env var.
@@ -224,6 +146,10 @@ test_env_project_name_explicit_arg_beats_env_and_envvar() {
   fi
 }
 
+# Given: a .env whose PROJECT_DIR points at a second directory
+# When:  session_env_common_init runs with an explicit project dir
+# Then:  PROJECT_DIR is the explicit directory
+# Asserts: flag-wins at the project dir level (bite V2 proven)
 test_env_project_dir_explicit_arg_beats_env() {
   # PIN (S2 flip): the explicit directory argument beats a conflicting
   # PROJECT_DIR in .env, while git validation still reads the explicit repo arg.
@@ -243,6 +169,32 @@ test_env_project_dir_explicit_arg_beats_env() {
   fi
 }
 
+# Given: a .env whose SANDBOX_DIR points at a second directory
+# When:  session_env_common_init runs with an explicit sandbox dir
+# Then:  SANDBOX_DIR is the explicit directory
+# Asserts: flag-wins at the sandbox dir level, the post-.env re-assert.
+test_env_sandbox_dir_explicit_arg_beats_env() {
+  local SBX="$FIXTURE_DIR/sbx_sandbox_wins" PROJ="$FIXTURE_DIR/proj_sandbox_wins"
+  local ENVSBX="$FIXTURE_DIR/env_sandbox_loser"
+  make_sandbox "$SBX"; make_committed_repo "$PROJ"
+  mkdir -p "$ENVSBX"
+  printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$ENVSBX" > "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
+        && printf '%s|' "${SANDBOX_DIR:-unset}") || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == "$SBX|" ]]; then
+    pass "explicit sandbox dir argument beats a conflicting .env SANDBOX_DIR (flag-wins)"
+  else
+    fail "expected explicit sandbox dir to win, rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a .env that declares both identity keys
+# When:  session_env_common_init runs with both explicit arguments
+# Then:  both resolved values are the explicit ones
+# Asserts: no .env can shadow both explicit arguments in one call (bites V1 and V2 both fail it)
 test_env_identity_explicit_args_beat_env() {
   # PIN (S2 flip): a .env declaring BOTH identity keys cannot shadow BOTH
   # explicit arguments in one call.
@@ -262,6 +214,10 @@ test_env_identity_explicit_args_beat_env() {
   fi
 }
 
+# Given: a sandbox with a .env, called with empty name and dir
+# When:  session_env_common_init runs with only the sandbox dir
+# Then:  PROJECT_NAME and PROJECT_DIR come from .env
+# Asserts: the .env fallback level of the resolver
 test_env_resolves_identity_from_env_when_args_empty() {
   # SANDBOX given, no name/dir args: the resolver falls to .env for them.
   local SBX="$FIXTURE_DIR/sbx_env_fb" PROJ="$FIXTURE_DIR/proj_env_fb"
@@ -279,6 +235,10 @@ test_env_resolves_identity_from_env_when_args_empty() {
   fi
 }
 
+# Given: a .env plus AGENT_SANDBOX_PROJECT_NAME, called with empty name and dir
+# When:  session_env_common_init runs
+# Then:  PROJECT_NAME is the env-var value
+# Asserts: the AGENT_SANDBOX_* level beats .env
 test_env_ag_sandbox_envvar_beats_env() {
   # No explicit name; AGENT_SANDBOX_PROJECT_NAME beats the .env value.
   local SBX="$FIXTURE_DIR/sbx_envvar" PROJ="$FIXTURE_DIR/proj_envvar"
@@ -297,6 +257,10 @@ test_env_ag_sandbox_envvar_beats_env() {
   fi
 }
 
+# Given: ENV_REL is an absolute path to custom.env
+# When:  session_env_common_init runs with empty name and dir
+# Then:  identity resolves from that file and ENV_FILE is that absolute path
+# Asserts: env_resolve's absolute default_env_file contract, exercised through this loader
 test_env_resolves_with_absolute_env_pointer() {
   # An absolute --env pointer (the Makefile's $(CURDIR)/.env) is honored for
   # both identity resolution and the run's env load when name/dir are omitted.
@@ -319,6 +283,10 @@ test_env_resolves_with_absolute_env_pointer() {
   fi
 }
 
+# Given: ENV_REL is a bare file name and <sandbox>/custom.env exists
+# When:  session_env_common_init runs with empty name and dir
+# Then:  identity resolves and ENV_FILE is <sandbox>/custom.env
+# Asserts: the sandbox-relative env pointer contract
 test_env_resolves_with_relative_env_pointer() {
   # A relative --env name is sandbox-relative for both resolution and load.
   local SBX="$FIXTURE_DIR/sbx_rel" PROJ="$FIXTURE_DIR/proj_rel"
@@ -349,6 +317,10 @@ setup_named_project() {
   git -C "$NAMED_PROJ" checkout --quiet -b "feature/42-fix_bug"
 }
 
+# Given: a project on branch feature/42-fix_bug with PROJECT_DIR set
+# When:  session_env_names runs
+# Then:  SANITIZED_HOST_BRANCH is feature-42-fix_bug
+# Asserts: the sanitisation character class (bite V7 proven)
 test_names_sanitises_host_branch() {
   setup_named_project
   PROJECT_DIR="$NAMED_PROJ"
@@ -362,6 +334,10 @@ test_names_sanitises_host_branch() {
   fi
 }
 
+# Given: a project with a detached HEAD
+# When:  session_env_names runs
+# Then:  SANITIZED_HOST_BRANCH is the short SHA
+# Asserts: the detached-HEAD fallback (bite V6 proven)
 test_names_detached_head_falls_back_to_short_sha() {
   setup_named_project
   PROJECT_DIR="$NAMED_PROJ"
@@ -378,6 +354,10 @@ test_names_detached_head_falls_back_to_short_sha() {
   fi
 }
 
+# Given: mixed-case project and provider names plus a session id
+# When:  session_env_names runs
+# Then:  the container names embed the raw case, the image names embed the lowercased project, and PROVIDER_NAME/SESSION_ID are exported
+# Asserts: name derivation from the four inputs (bites V8 and V18 proven); the sandbox image name is asserted by substring only
 test_names_deterministic_container_and_image_names() {
   setup_named_project
   PROJECT_DIR="$NAMED_PROJ"
@@ -386,14 +366,41 @@ test_names_deterministic_container_and_image_names() {
 
   if [[ "${SANDBOX_CONTAINER_NAME:-}" == "sandbox-MyProj-20260821-120000-abcdef" \
      && "${AGENT_CONTAINER_NAME:-}" == "PI-MyProj-20260821-120000-abcdef" \
-     && "${SANDBOX_IMAGE_NAME:-}" == *myproj* && "${AGENT_IMAGE_NAME:-}" == "PI-agent-myproj" ]]
+     && "${SANDBOX_IMAGE_NAME:-}" == *myproj* && "${AGENT_IMAGE_NAME:-}" == "PI-agent-myproj" \
+     && "${PROVIDER_NAME:-}" == "PI" && "${SESSION_ID:-}" == "20260821-120000-abcdef" ]]
   then
-    pass "container/image names derive deterministically from inputs (project lowercased in images)"
+    pass "container/image names derive deterministically from inputs (project lowercased in images), PROVIDER_NAME/SESSION_ID exported"
   else
-    fail "name derivation wrong: SBX='${SANDBOX_CONTAINER_NAME:-}' AGT='${AGENT_CONTAINER_NAME:-}' IMG='${SANDBOX_IMAGE_NAME:-}' AIMG='${AGENT_IMAGE_NAME:-}'"
+    fail "name derivation wrong: SBX='${SANDBOX_CONTAINER_NAME:-}' AGT='${AGENT_CONTAINER_NAME:-}' IMG='${SANDBOX_IMAGE_NAME:-}' AIMG='${AGENT_IMAGE_NAME:-}' PROVIDER='${PROVIDER_NAME:-}' SID='${SESSION_ID:-}'"
   fi
 }
 
+# Given: one empty argument in each of the four positions in turn
+# When:  session_env_names runs
+# Then:  every call fails instead of deriving a degenerate name
+# Asserts: the four ${N:?} required-argument guards.
+test_names_requires_all_four_args() {
+  local proj="$FIXTURE_DIR/guard_proj"
+  mkdir -p "$proj"
+  PROJECT_DIR="$proj"
+
+  local r1 r2 r3 r4
+  ( session_env_names "" pi "$FIXTURE_DIR/sbx_g1" s1 ) >/dev/null 2>&1; r1=$?
+  ( session_env_names p "" "$FIXTURE_DIR/sbx_g1" s1 ) >/dev/null 2>&1; r2=$?
+  ( session_env_names p pi "" s1 ) >/dev/null 2>&1; r3=$?
+  ( session_env_names p pi "$FIXTURE_DIR/sbx_g1" "" ) >/dev/null 2>&1; r4=$?
+
+  if [[ $r1 -ne 0 && $r2 -ne 0 && $r3 -ne 0 && $r4 -ne 0 ]]; then
+    pass "session_env_names refuses an empty argument in every position"
+  else
+    fail "required-argument guards missing: rc=$r1/$r2/$r3/$r4"
+  fi
+}
+
+# Given: WORKTREE_DIR unset, then WORKTREE_DIR=/custom/wt, with SANDBOX_TYPE unset
+# When:  session_env_names runs twice
+# Then:  the default is <sandbox>/.worktree, the override wins, and SANDBOX_TYPE stays unset
+# Asserts: the default-with-override read of a global, and that delivery is not this function's business (bite V9 proven)
 test_names_worktree_var_defaults_and_overrides() {
   setup_named_project
   PROJECT_DIR="$NAMED_PROJ"
@@ -425,17 +432,12 @@ test_names_worktree_var_defaults_and_overrides() {
 # =============================================================================
 
 run_test test_env_missing_file_fails_with_onboard_hint
-run_test test_env_comments_and_blanks_skipped
-run_test test_env_key_whitespace_stripped_value_trimmed
-run_test test_env_inline_comment_is_kept_as_value
-run_test test_env_whitespace_only_key_line_skipped
-run_test test_env_indented_comment_skipped
-run_test test_env_invalid_identifier_key_skipped_with_warning
 run_test test_common_init_rejects_non_git_project
 run_test test_common_init_rejects_commitless_repo
 run_test test_common_init_exports_identity_and_paths
 run_test test_env_project_name_explicit_arg_beats_env_and_envvar
 run_test test_env_project_dir_explicit_arg_beats_env
+run_test test_env_sandbox_dir_explicit_arg_beats_env
 run_test test_env_identity_explicit_args_beat_env
 run_test test_env_resolves_identity_from_env_when_args_empty
 run_test test_env_ag_sandbox_envvar_beats_env
@@ -444,6 +446,7 @@ run_test test_env_resolves_with_relative_env_pointer
 run_test test_names_sanitises_host_branch
 run_test test_names_detached_head_falls_back_to_short_sha
 run_test test_names_deterministic_container_and_image_names
+run_test test_names_requires_all_four_args
 run_test test_names_worktree_var_defaults_and_overrides
 
 test_done test_session_env.sh

@@ -2,6 +2,18 @@
 # tests/test_resume.sh
 # Command-shape tests for scripts/resume_agent.sh  --  the split-out resume command
 # (F2 two-command design, design session `20260821-02`, impl `20260821-03`).
+#
+# Covers:
+#   --list / --interactive display  --  enriched rows, provider filter, staleness,
+#                                      page cap, commit-distance column, picker hints
+#   inventory filter                --  dry-run records are not resumable
+#   guard verdicts                  --  no-target and no-sandbox messages
+#   --interactive abort             --  picker quit and confirm decline stop before
+#                                      the resume banner
+#   record-to-identity recovery     --  provider from the agent image, session-ts label
+#   forwarded arguments             --  --env path and --flatten reach run_agent
+#   build-layer contract            --  preflight build_missing=false, and the three
+#                                      workspace directories resume creates
 
 set -uo pipefail
 
@@ -10,6 +22,10 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
+
+# interface_contract_version bakes the stub image's contract label, so resume's
+# preflight passes in the execution-path units below.
+source "$REPO_ROOT/src/libs/interface_contract.sh"
 
 RESUME="$REPO_ROOT/scripts/resume_agent.sh"
 
@@ -58,8 +74,59 @@ EOF
   echo "$dir/sandbox"
 }
 
+# Build a resumable fixture that reaches the run_agent exec: a registry record
+# with the delivery and FLATTEN literals, an env file, and a committed project.
+# build_exec_fixture DIR [SANDBOX_TYPE] [FLATTEN] [ENV_NAME]
+#   Args after DIR are optional positional slots; pass an explicit ENV_NAME to
+#   override the default .env.
+build_exec_fixture() {
+  local dir="$1" sandbox_type="${2:-copy}" flatten="${3:-false}" env_name="${4:-.env}"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  printf 'SANDBOX_DIR=%s\nPROJECT_DIR=%s\n' "$dir/sandbox" "$dir/project" > "$dir/sandbox/$env_name"
+  cat > "$dir/sandbox/.compose/abc123.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+  agent-sandbox.session-id: abc123
+services:
+  sandbox:
+    image: agent-sandbox-abc123
+    environment:
+      - SANDBOX_TYPE=$sandbox_type
+      - FLATTEN=$flatten
+  agent:
+    image: pi-agent-test-project
+EOF
+  echo "$dir/sandbox"
+}
+
+# resume_trace DIR TRACE ENV_NAME [EXTRA_ARGS...]
+#   Runs the real resume under bash -x with the docker stub on PATH. The exec
+#   and preflight calls appear in the trace as expanded argv, so the units below
+#   read what resume actually handed downstream. PROVIDER_NAME is unset so the
+#   record recovery is the only provider source.
+resume_trace() {
+  local dir="$1" trace="$2" env_name="$3"; shift 3
+  (
+    export PATH="$TEST_DIR/stubs:$PATH"
+    local contract_version
+    contract_version="$(interface_contract_version)"
+    export DOCKER_STUB_IMAGE_CONTRACT_VERSION="$contract_version"
+    unset PROVIDER_NAME SANDBOX_TYPE
+    bash -x "$RESUME" --name=test --project="$dir/project" \
+      --sandbox="$dir/sandbox" --env="$env_name" --session-id=abc123 "$@" </dev/null
+  ) > "$trace" 2>&1
+}
+
 # --list renders the enriched registry display (id | provider | ts | branch),
 # newest session first, and filters by PROVIDER (decisions I-2, I-3).
+# Given: a sandbox holding a pi record and a hermes record
+# When:  resume_agent.sh runs with --list
+# Then:  the enriched header and the abc123/pi row render, newest first
+# Asserts: the enriched registry display
 test_list_renders_enriched() {
   local sandbox
   sandbox="$(build_fixture "list")"
@@ -74,6 +141,10 @@ test_list_renders_enriched() {
 }
 
 # --list --provider=<n> filters the inventory to that provider (decision I-2).
+# Given: the same two records under --list
+# When:  --provider=pi and --provider=hermes each run
+# Then:  each listing carries only its own provider's row
+# Asserts: the provider filter on the inventory
 test_list_provider_filter() {
   local sandbox
   sandbox="$(build_fixture "filter")"
@@ -89,6 +160,10 @@ test_list_provider_filter() {
 }
 
 # --list --provider=<n> with no matching records -> clear error, non-zero.
+# Given: --list --provider=nope
+# When:  resume_agent.sh runs
+# Then:  it prints the no-match error and exits non-zero
+# Asserts: the empty-filter verdict
 test_list_provider_no_match() {
   local sandbox
   sandbox="$(build_fixture "nonnatch")"
@@ -102,6 +177,10 @@ test_list_provider_no_match() {
 }
 
 # Bare resume (no target flags) -> help hinting --list / --interactive, non-zero.
+# Given: no flags at all
+# When:  resume_agent.sh runs
+# Then:  it exits non-zero and prints usage naming --list and --interactive
+# Asserts: the bare-invocation help path (a later guard's usage also satisfies this - see the read-through finding)
 test_bare_resume_prints_help() {
   local out rc
   out="$(bash "$RESUME" 2>&1)"; rc=$?
@@ -115,6 +194,10 @@ test_bare_resume_prints_help() {
 }
 
 # Unknown flag -> help + non-zero (D2).
+# Given: an unknown flag
+# When:  resume_agent.sh runs
+# Then:  it exits non-zero and prints usage naming --list
+# Asserts: the unknown-flag path
 test_unknown_flag_prints_help() {
   local out rc
   out="$(bash "$RESUME" --bogus 2>&1)"; rc=$?
@@ -126,6 +209,10 @@ test_unknown_flag_prints_help() {
 }
 
 # --interactive presents the picker + confirm; 'n' at confirm aborts (I-1).
+# Given: a sandbox with one record, a picker choice, and 'n' at the confirm
+# When:  resume_agent.sh runs with --interactive
+# Then:  the picker renders, the confirm aborts, and the run exits non-zero
+# Asserts: the abort message (the non-zero rc also comes from the later preflight failure in this fixture - see the read-through finding)
 test_interactive_confirm_abort() {
   local sandbox
   sandbox="$(build_fixture "int_abort")"
@@ -142,6 +229,10 @@ test_interactive_confirm_abort() {
 }
 
 # --interactive with no records -> clear error, non-zero.
+# Given: a sandbox with no session records
+# When:  resume_agent.sh runs with --interactive
+# Then:  it prints "No resumable sessions found" and exits non-zero
+# Asserts: the empty-inventory verdict
 test_interactive_no_records() {
   local dir="$FIXTURE_DIR/int_none"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -159,6 +250,10 @@ EOF
 }
 
 # --provider alone (no --list / --interactive / --session-id) -> guidance, non-zero.
+# Given: --provider with no --list or --interactive
+# When:  resume_agent.sh runs
+# Then:  it explains that --provider is an inventory filter and exits non-zero
+# Asserts: the misuse guidance
 test_provider_alone_guidance() {
   local out rc
   out="$(bash "$RESUME" --provider=pi 2>&1)"; rc=$?
@@ -170,6 +265,10 @@ test_provider_alone_guidance() {
 }
 
 # --session-id with a missing record -> clear error, non-zero.
+# Given: --session-id=nope against a sandbox with no such record
+# When:  resume_agent.sh runs
+# Then:  it prints the no-session-record error and exits non-zero
+# Asserts: the missing-record verdict
 test_session_id_missing_record() {
   local dir="$FIXTURE_DIR/missing"
   mkdir -p "$dir/sandbox/.compose" "$dir/project/.git"
@@ -191,6 +290,10 @@ EOF
 # --list renders a sandbox-staleness WARNING label (registry-truth, D7): a
 # record whose host-head-sha matches the current HEAD shows no marker; a
 # differing one is flagged [SANDBOX_STALE].
+# Given: one record whose host-head-sha equals HEAD and one that differs
+# When:  --list runs
+# Then:  only the differing record carries the SANDBOX_STALE label
+# Asserts: the registry-truth staleness marker
 test_list_shows_sandbox_staleness() {
   local dir="$FIXTURE_DIR/staleness"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -255,6 +358,10 @@ EOF
 # The PROVIDER cell shows the bare provider name. The image-content signature
 # value was dropped from rows (operator-directed, 20260901-17) -- image
 # identity now travels in the record's digest labels, shown nowhere in rows.
+# Given: a record carrying an image-sig label
+# When:  --list runs
+# Then:  the PROVIDER cell shows the bare provider name
+# Asserts: the provider cell after the operator-directed removal of the sig value
 test_list_shows_provider_without_image_sig() {
   local dir="$FIXTURE_DIR/img_sig"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -273,6 +380,10 @@ test_list_shows_provider_without_image_sig() {
 
 # A record with no image-sig field (legacy/before-this-field) renders `pi`
 # with no parenthetical -- graceful, no `pi (` shell-noise.
+# Given: a legacy record with no image-sig field
+# When:  --list runs
+# Then:  the bare provider renders with no parenthetical and no shell noise
+# Asserts: graceful degradation on the missing field
 test_list_no_sig_when_field_empty() {
   local dir="$FIXTURE_DIR/img_nosig"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -300,6 +411,10 @@ EOF
 }
 
 # picker) and reports the remainder honestly.
+# Given: twelve session records
+# When:  --list runs
+# Then:  ten rows render with a "2 more session(s)" footer
+# Asserts: the page cap and the remainder report
 test_list_caps_at_page_size() {
   local dir="$FIXTURE_DIR/list_cap"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -321,6 +436,10 @@ test_list_caps_at_page_size() {
 }
 
 # The interactive picker paginates at the same page size (10): page nav via n/p.
+# Given: twelve session records
+# When:  the interactive picker pages forward with 'n'
+# Then:  it reports "page 2 of 2" and exits non-zero on the final quit
+# Asserts: picker pagination at the same page size as --list
 test_interactive_paginates_at_page_size() {
   local dir="$FIXTURE_DIR/img_page"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -342,6 +461,10 @@ test_interactive_paginates_at_page_size() {
 # HEAD is ahead of the session's recorded host-head sha ("N commits ago",
 # "0 commits ago"), and "not in tree" when the recorded sha is not resolvable
 # in the current project.
+# Given: records whose host-head sha is one commit behind HEAD, equal to HEAD, and unresolvable
+# When:  --list runs
+# Then:  the AGE column reads 1 commit ago, 0 commits ago, and not in tree
+# Asserts: the commit-distance column
 test_list_shows_branch_point_age() {
   local dir="$FIXTURE_DIR/branch_age"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -402,6 +525,10 @@ EOF
 
 # --interactive prints a hint naming the operator's current branch above the
 # picker, so the stale-session choice is made against a known reference.
+# Given: a checked-out branch, then a detached HEAD
+# When:  the picker runs
+# Then:  the hint names the branch, and on detached HEAD the short SHA plus (detached)
+# Asserts: the current-branch hint above the picker
 test_interactive_shows_current_branch_hint() {
   local dir="$FIXTURE_DIR/branch_hint"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -442,6 +569,10 @@ EOF
 
 # --interactive with a non-git project dir: the branch hint reads (absent)
 # rather than omitting the hint line (empty is never a valid return).
+# Given: a project dir that is not a git repository
+# When:  the picker runs
+# Then:  the hint reads (absent) rather than omitting the line
+# Asserts: the hint is never empty
 test_interactive_branch_hint_absent() {
   local dir="$FIXTURE_DIR/branch_absent"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -465,9 +596,118 @@ EOF
   fi
 }
 
+# resume --list with only --sandbox: the STATE column resolves PROJECT_DIR
+# from the sandbox .env (the make resume LIST=1 contract -- the dispatcher
+# resolves resume sandbox-only). A record at the current HEAD reads
+# "0 commits ago"; an unresolvable sha still reads "not in tree".
+# Given: a sandbox .env carrying PROJECT_DIR for a repository, records at HEAD and at a dead sha
+# When:  --list runs with only --sandbox
+# Then:  STATE reads 0 commits ago and not in tree like the explicit --project path
+# Asserts: .env-derived project identity drives the STATE column
+# Asserts: the sandbox-only contract (no identity flags needed to list)
+test_list_env_resolves_project_dir_when_sandbox_only() {
+  local dir="$FIXTURE_DIR/env_list"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  local head
+  head="$(git -C "$dir/project" rev-parse HEAD)"
+  cat > "$dir/sandbox/.env" <<EOF
+PROJECT_NAME=test
+PROJECT_DIR=$dir/project
+SANDBOX_DIR=$dir/sandbox
+EOF
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $head
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260930-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  write_minimal_record "$dir" "bbb" "pi-agent-test-project"
+  local out
+  out="$(bash "$RESUME" --sandbox="$dir/sandbox" --list 2>&1)"
+  if echo "$out" | grep -qE "aaa.*0 commits ago" \
+     && echo "$out" | grep -qE "bbb.*not in tree"; then
+    pass "resume --list: PROJECT_DIR from the sandbox .env drives STATE (0 commits ago / not in tree)"
+  else
+    fail "resume --list: expected .env-derived STATE cells, got: $out"
+  fi
+}
+
+# resume --interactive with only --sandbox: the current-branch hint and STATE
+# column read PROJECT_DIR from the sandbox .env (the make resume INTERACTIVE=1
+# contract). The hint names the .env project's checked-out branch rather than
+# degrading to "(absent)".
+# Given: a sandbox .env carrying PROJECT_DIR for a repo on feat/env-hint
+# When:  the interactive picker runs with only --sandbox
+# Then:  the title names feat/env-hint and the fresh record reads 0 commits ago
+# Asserts: .env-derived project identity drives the current-branch hint
+test_interactive_env_resolved_branch_hint() {
+  local dir="$FIXTURE_DIR/env_hint"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  git -C "$dir/project" checkout -q -b feat/env-hint >/dev/null 2>&1
+  local head
+  head="$(git -C "$dir/project" rev-parse HEAD)"
+  cat > "$dir/sandbox/.env" <<EOF
+PROJECT_NAME=test
+PROJECT_DIR=$dir/project
+SANDBOX_DIR=$dir/sandbox
+EOF
+  cat > "$dir/sandbox/.compose/aaa.yml" <<EOF
+x-session-labels:
+  agent-sandbox.host-head-sha: $head
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260930-120000
+services:
+  sandbox:
+    image: sandbox-test-project
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(printf 'q\n' | bash "$RESUME" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if echo "$out" | grep -qE "current branch: feat/env-hint" \
+     && echo "$out" | grep -qE "0 commits ago"; then
+    pass "resume --interactive: .env-derived PROJECT_DIR names the branch and the commit distance"
+  else
+    fail "resume --interactive: expected .env-derived branch hint, got: $out"
+  fi
+}
+
+# resume --list with only --sandbox and no .env still enumerates the registry:
+# PROJECT_DIR enrichment is optional and degrades the STATE column, never fails
+# the listing (the resume listing is a sandbox-only registry diagnostic).
+# Given: a sandbox dir with a record but no .env
+# When:  --list runs with only --sandbox
+# Then:  the record is listed and its STATE reads not in tree
+# Asserts: .env absence degrades rather than breaks the listing
+test_list_sandbox_only_without_env_degrades() {
+  local dir="$FIXTURE_DIR/env_absent"
+  mkdir -p "$dir/sandbox/.compose"
+  write_minimal_record "$dir" "aaa" "pi-agent-test-project"
+  local out
+  out="$(bash "$RESUME" --sandbox="$dir/sandbox" --list 2>&1)"
+  if echo "$out" | grep -qE "aaa" && echo "$out" | grep -qE "not in tree"; then
+    pass "resume --list: no .env degrades STATE to not in tree, listing still works"
+  else
+    fail "resume --list: expected degraded listing without .env, got: $out"
+  fi
+}
+
 # --interactive zero-pads the picker index to a fixed column width (01..10)
 # so the empty slot never shifts as the count crosses 10; 1-based numbering is
 # kept (0 is the injected-default slot, not a real index).
+# Given: twelve session records
+# When:  the picker renders its first page
+# Then:  the index is zero-padded to a fixed column width (01 to 10)
+# Asserts: the index width does not shift as the count crosses ten
 test_interactive_zero_pads_index() {
   local dir="$FIXTURE_DIR/index_pad"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -487,6 +727,10 @@ test_interactive_zero_pads_index() {
 # STATE cell is the LAST lifecycle event (start/stop) from the session log,
 # verb overridden by live docker state; stopped sessions show when they were
 # last active (operator-directed consolidation of STARTED/STATE/LAST_USED).
+# Given: a session log whose last event is a stop, then one whose last event is a start
+# When:  --list runs each time
+# Then:  the STATE cell shows the last event with its relative age
+# Asserts: the lifecycle cell reads the log, with the verb from the latest event
 test_list_state_cell_from_log() {
   local dir="$FIXTURE_DIR/state_cell"
   mkdir -p "$dir/sandbox/.compose" "$dir/project"
@@ -515,6 +759,271 @@ test_list_state_cell_from_log() {
   fi
 }
 
+# Resume recovers delivery from the record and warns when the operator's
+# ambient SANDBOX_TYPE differs  --  a stale habit must surface, not silently
+# change the resumed delivery.
+# Given: a record whose SANDBOX_TYPE is copy and an ambient SANDBOX_TYPE=mount
+# When:  resume_agent.sh resumes that record
+# Then:  it warns that the ambient value is ignored and names the record value
+# Asserts: the ambient-SANDBOX_TYPE warning on the resume path
+test_resume_warns_on_ambient_sandbox_type() {
+  local dir="$FIXTURE_DIR/ambient_type"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project/.git"
+  git -C "$dir/project" init -q >/dev/null 2>&1
+  git -C "$dir/project" -c user.email=t@t -c user.name=t commit --allow-empty -q -m init >/dev/null 2>&1
+  cat > "$dir/sandbox/.env" <<EOF
+SANDBOX_DIR=$dir/sandbox
+PROJECT_DIR=$dir/project
+EOF
+  cat > "$dir/sandbox/.compose/abc123.yml" <<'EOF'
+x-session-labels:
+  agent-sandbox.host-head-sha: deadbeef
+  agent-sandbox.host-branch: main
+  agent-sandbox.session-ts: 20260821-120000
+  agent-sandbox.session-id: abc123
+services:
+  sandbox:
+    image: sandbox-test-project
+    environment:
+      - SANDBOX_TYPE=copy
+  agent:
+    image: pi-agent-test-project
+EOF
+  local out
+  out="$(SANDBOX_TYPE=mount timeout 60 bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --session-id=abc123 2>&1)"
+  if echo "$out" | grep -q "ambient SANDBOX_TYPE=mount ignored" \
+     && echo "$out" | grep -q "delivery recovered from the record: copy"; then
+    pass "resume warns when an ambient SANDBOX_TYPE is ignored"
+  else
+    fail "resume ambient SANDBOX_TYPE warning missing: $out"
+  fi
+}
+
+# --list skips dry-run records: their volume is destroyed at teardown, so they
+# are not resumable (they stay visible to prune, which reclaims stale ones).
+# Given: one live record and one dry-run record
+# When:  --list runs
+# Then:  only the live record renders
+# Asserts: the consumer-side effect of session_is_dry_run.
+test_list_skips_dry_run_records() {
+  local dir="$FIXTURE_DIR/list_dryrun"
+  mkdir -p "$dir/sandbox/.compose" "$dir/project"
+  write_minimal_record "$dir" "live123" "pi-agent-test-project"
+  write_minimal_record "$dir" "dryrun-abc123" "pi-agent-test-project"
+
+  local out
+  out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list 2>&1)"
+  if [[ "$out" == *"live123"* && "$out" != *"dryrun-abc123"* ]]; then
+    pass "resume --list: dry-run records are not resumable and are skipped"
+  else
+    fail "resume --list: a dry-run record reached the listing: $out"
+  fi
+}
+
+# The no-target and no-sandbox guards name different remedies; the bare-path
+# unit cannot tell which one refused because both print the usage block.
+# Given: no target flag, then a target with no --sandbox
+# When:  resume runs each way
+# Then:  each guard prints its own message
+# Asserts: the no-target guard and the no-sandbox guard, separately.
+test_resume_guards_name_their_remedy() {
+  local out rc=0
+  out="$(bash "$RESUME" --name=test --project=/x --sandbox=/y 2>&1 </dev/null)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"no resume target given"* ]]; then
+    pass "resume: a missing target prints the no-target message"
+  else
+    fail "no-target guard wrong: rc=$rc out='$out'"
+  fi
+
+  rc=0
+  out="$(bash "$RESUME" --name=test --project=/x --session-id=abc123 2>&1 </dev/null)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"--sandbox is required"* ]]; then
+    pass "resume: a missing --sandbox prints the sandbox-required message"
+  else
+    fail "no-sandbox guard wrong: rc=$rc out='$out'"
+  fi
+}
+
+# An unresolvable --sandbox must fail at the canonicalisation guard. Tolerating
+# the failure empties SANDBOX_DIR and the run later misreports the input.
+# Given: a --sandbox path whose parent is a regular file
+# When:  resume runs
+# Then:  rc 1 with the canonicalisation error, not the sandbox-required message
+# Asserts: the canonicalisation guard's failure path.
+test_resume_unresolvable_sandbox_fails_at_canonicalisation() {
+  local file="$FIXTURE_DIR/not_a_dir"
+  : > "$file"
+
+  local out rc=0
+  out="$(bash "$RESUME" --sandbox="$file/sub" 2>&1 </dev/null)" || rc=$?
+  if [[ $rc -eq 1 && "$out" == *"cannot canonicalize SANDBOX_DIR"* && "$out" != *"--sandbox is required"* ]]; then
+    pass "resume: an unresolvable --sandbox fails at the canonicalisation guard"
+  else
+    fail "canonicalisation guard degraded: rc=$rc out='$out'"
+  fi
+}
+
+# A declined confirmation must abort at the gate, before the resume banner.
+# Given: one record and 'n' at the confirm
+# When:  resume runs with --interactive
+# Then:  it reports the abort and never reaches the resume banner
+# Asserts: the confirm gate (an inverted gate proceeds to "Resuming session").
+test_interactive_confirm_decline_aborts_before_resume() {
+  local dir="$FIXTURE_DIR/int_decline"
+  build_exec_fixture "$dir" copy false
+
+  local out
+  out="$(printf '1\nn\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)"
+  if [[ "$out" == *"Aborted."* && "$out" != *"Resuming session"* ]]; then
+    pass "resume --interactive: a declined confirm aborts before the resume banner"
+  else
+    fail "confirm decline reached the resume path: $out"
+  fi
+}
+
+# Quitting the picker must abort there, not fall through to a later guard.
+# Given: one record and 'q' at the picker
+# When:  resume runs with --interactive
+# Then:  it reports the abort and prints neither the resume banner nor a later guard's message
+# Asserts: the picker's abort path.
+test_interactive_picker_quit_aborts_before_later_guards() {
+  local dir="$FIXTURE_DIR/int_picker_quit"
+  build_exec_fixture "$dir" copy false
+
+  local out rc=0
+  out="$(printf 'q\n' | bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --interactive 2>&1)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"Aborted."* && "$out" != *"no resume target"* && "$out" != *"Resuming session"* ]]; then
+    pass "resume --interactive: quitting the picker aborts without falling through"
+  else
+    fail "picker quit fell through: rc=$rc out=$out"
+  fi
+}
+
+# The provider is recovered from the record's agent image line and handed to
+# session_env_names; resume never sets PROVIDER_NAME itself.
+# Given: a record whose agent image is pi-agent-test-project
+# When:  resume reaches its run_agent exec
+# Then:  the exec argv carries --provider=pi
+# Asserts: the record-to-identity provider recovery.
+test_resume_forwards_provider_recovered_from_record() {
+  local dir="$FIXTURE_DIR/exec_provider"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local line
+  line="$(grep -E '^\+ exec .*run_agent\.sh standard ' "$trace" | tail -1)"
+  if [[ "$line" == *"--provider=pi"* ]]; then
+    pass "resume: the exec argv carries --provider=pi recovered from the record"
+  else
+    fail "provider not recovered from the record: exec='$line'"
+  fi
+}
+
+# The --env file path is forwarded to run_agent, so a caller whose env file has
+# another name does not silently fall back to the default .env.
+# Given: a session whose env file is custom.env
+# When:  resume reaches its run_agent exec
+# Then:  the exec argv names that file
+# Asserts: the --env forwarding surface.
+test_resume_forwards_env_file_argument() {
+  local dir="$FIXTURE_DIR/exec_env"
+  build_exec_fixture "$dir" copy false "custom.env"
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" "custom.env" || true
+
+  local line
+  line="$(grep -E '^\+ exec .*run_agent\.sh standard ' "$trace" | tail -1)"
+  if [[ "$line" == *"--env=$dir/sandbox/custom.env"* ]]; then
+    pass "resume: the exec argv forwards the --env file path"
+  else
+    fail "env path not forwarded: exec='$line'"
+  fi
+}
+
+# A flatten record's flag is forwarded to run_agent, so a flattened session does
+# not resume as a full-history one.
+# Given: a record whose FLATTEN literal is true
+# When:  resume reaches its run_agent exec
+# Then:  the exec argv carries --flatten
+# Asserts: the flatten forwarding surface.
+test_resume_forwards_flatten_for_flatten_record() {
+  local dir="$FIXTURE_DIR/exec_flatten"
+  build_exec_fixture "$dir" copy true
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local line
+  line="$(grep -E '^\+ exec .*run_agent\.sh standard ' "$trace" | tail -1)"
+  if [[ "$line" == *"--flatten"* ]]; then
+    pass "resume: a flatten record's --flatten is forwarded to run_agent"
+  else
+    fail "flatten flag not forwarded: exec='$line'"
+  fi
+}
+
+# Resume never rebuilds missing images: the preflight call carries
+# build_missing=false.
+# Given: a resumable fixture
+# When:  resume reaches preflight
+# Then:  the preflight call's build_missing argument is false
+# Asserts: the resume build-layer contract.
+test_resume_preflight_does_not_build_missing_images() {
+  local dir="$FIXTURE_DIR/exec_build_missing"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local line
+  line="$(grep -E '^\+ preflight ' "$trace" | tail -1)"
+  if [[ "$line" == *" false" ]]; then
+    pass "resume: preflight is called with build_missing=false"
+  else
+    fail "preflight build_missing wrong: '$line'"
+  fi
+}
+
+# Resume creates the three workspace directories its downstream consumers read.
+# Given: a resumable fixture whose workspace directories do not exist yet
+# When:  resume runs
+# Then:  session-diffs, input, and output all exist
+# Asserts: the workspace directory creation.
+test_resume_creates_workspace_directories() {
+  local dir="$FIXTURE_DIR/exec_workspace"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local missing=""
+  [[ -d "$dir/sandbox/.workspace/session-diffs" ]] || missing+=" session-diffs"
+  [[ -d "$dir/sandbox/.workspace/input" ]] || missing+=" input"
+  [[ -d "$dir/sandbox/.workspace/output" ]] || missing+=" output"
+  if [[ -z "$missing" ]]; then
+    pass "resume creates the three workspace directories"
+  else
+    fail "workspace directories missing:$missing"
+  fi
+}
+
+# The timestamp recovered from the record survives into the regenerated record.
+# Given: a record whose session-ts label is 20260821-120000
+# When:  resume regenerates the compose record
+# Then:  the regenerated record keeps that session-ts label
+# Asserts: the regenerated record's session-ts label.
+test_resume_regenerated_record_keeps_session_ts() {
+  local dir="$FIXTURE_DIR/exec_session_ts"
+  build_exec_fixture "$dir" copy false
+  local trace="$dir/trace.txt"
+  resume_trace "$dir" "$trace" ".env" || true
+
+  local rec="$dir/sandbox/.compose/abc123.yml"
+  if grep -q 'agent-sandbox.session-ts: 20260821-120000' "$rec"; then
+    pass "resume regenerated record keeps the session-ts label"
+  else
+    fail "session-ts label lost in the regenerated record"
+  fi
+}
+
 run_test test_list_renders_enriched
 run_test test_list_provider_filter
 run_test test_list_provider_no_match
@@ -522,19 +1031,31 @@ run_test test_list_shows_provider_without_image_sig
 run_test test_list_no_sig_when_field_empty
 run_test test_list_state_cell_from_log
 run_test test_list_shows_branch_point_age
+run_test test_list_skips_dry_run_records
 run_test test_interactive_shows_current_branch_hint
 run_test test_interactive_branch_hint_absent
+run_test test_list_env_resolves_project_dir_when_sandbox_only
+run_test test_interactive_env_resolved_branch_hint
+run_test test_list_sandbox_only_without_env_degrades
 run_test test_interactive_zero_pads_index
 run_test test_bare_resume_prints_help
 run_test test_unknown_flag_prints_help
 run_test test_interactive_confirm_abort
+run_test test_interactive_confirm_decline_aborts_before_resume
+run_test test_interactive_picker_quit_aborts_before_later_guards
 run_test test_interactive_no_records
 run_test test_provider_alone_guidance
 run_test test_session_id_missing_record
+run_test test_resume_guards_name_their_remedy
+run_test test_resume_unresolvable_sandbox_fails_at_canonicalisation
+run_test test_resume_forwards_provider_recovered_from_record
+run_test test_resume_forwards_env_file_argument
+run_test test_resume_forwards_flatten_for_flatten_record
+run_test test_resume_preflight_does_not_build_missing_images
+run_test test_resume_creates_workspace_directories
+run_test test_resume_regenerated_record_keeps_session_ts
+run_test test_resume_warns_on_ambient_sandbox_type
 run_test test_list_shows_sandbox_staleness
 run_test test_list_caps_at_page_size
 run_test test_interactive_paginates_at_page_size
-
-echo ""
-echo "Test complete: $PASS passed, $FAIL failed."
-[[ $FAIL -eq 0 ]] && exit 0 || exit 1
+test_done test_resume

@@ -4,7 +4,7 @@
 #
 # Covers:
 #   parse_help_flag     --  detects --help and -h; passes through other args
-#   parse_base_flags    --  extracts --name and --sandbox from arg list
+#   sandbox_dir_canon   --  resolves a sandbox path spelling to its canonical form
 #   check_base_flags    --  validates required flags, rejects empty/slash paths
 
 set -uo pipefail
@@ -17,6 +17,10 @@ source "$REPO_ROOT/src/libs/common.sh"
 # parse_help_flag
 # ---------------------------------------------------------------------------
 
+# Given: the argument --help
+# When:  parse_help_flag runs
+# Then:  usage is called
+# Asserts: long help flag dispatch.
 test_help_flag_detected() {
   # parse_help_flag calls usage() and exit  --  mock those to avoid aborting
   usage() { echo "usage called"; }
@@ -29,6 +33,10 @@ test_help_flag_detected() {
   fi
 }
 
+# Given: the argument -h
+# When:  parse_help_flag runs
+# Then:  usage is called
+# Asserts: short help flag dispatch.
 test_help_flag_short() {
   usage() { echo "usage called"; }
   local OUTPUT
@@ -40,6 +48,10 @@ test_help_flag_short() {
   fi
 }
 
+# Given: ordinary flags, no --help/-h
+# When:  parse_help_flag runs
+# Then:  it produces no output
+# Asserts: no false help trigger (the returned rc is not asserted).
 test_help_flag_not_triggered() {
   # No --help or -h in args  --  should be a no-op
   usage() { echo "usage called"; }
@@ -48,34 +60,80 @@ test_help_flag_not_triggered() {
 }
 
 # ---------------------------------------------------------------------------
-# parse_base_flags
+# sandbox_dir_canon
 # ---------------------------------------------------------------------------
 
-test_parse_base_flags_sets_vars() {
-  PROJECT_NAME="" PROJECT_DIR="" SANDBOX_DIR=""
-  parse_base_flags --name=my-project --project=/tmp/myproj --sandbox=/tmp/mysandbox --unknown-flag
-
-  assert_eq "$PROJECT_NAME" "my-project" "parse_base_flags sets PROJECT_NAME from --name="
-  assert_eq "$PROJECT_DIR" "/tmp/myproj" "parse_base_flags sets PROJECT_DIR from --project="
-  assert_eq "$SANDBOX_DIR" "/tmp/mysandbox" "parse_base_flags sets SANDBOX_DIR from --sandbox="
+# Given: a sandbox path written with a leading ~
+# When:  sandbox_dir_canon runs
+# Then:  it prints the canonical path under HOME
+# Asserts: the tilde expands before readlink resolves the path.
+test_sandbox_dir_canon_expands_tilde() {
+  local home="$FIXTURE_DIR/tilde_home"
+  mkdir -p "$home/sub"
+  local out expected tilde
+  tilde='~'
+  out="$(HOME="$home" sandbox_dir_canon "$tilde/sub")"
+  expected="$(readlink -f "$home/sub")"
+  assert_eq "$out" "$expected" "sandbox_dir_canon expands a leading ~"
 }
 
-test_parse_base_flags_defaults_empty() {
-  PROJECT_NAME="x" PROJECT_DIR="y" SANDBOX_DIR="z"
-  parse_base_flags --other-flag
+# Given: an empty argument
+# When:  sandbox_dir_canon runs
+# Then:  rc is non-zero and the error names the empty value
+# Asserts: the empty-input guard.
+test_sandbox_dir_canon_rejects_empty() {
+  local OUT RC=0
+  OUT=$(sandbox_dir_canon "" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"SANDBOX_DIR is empty"* ]]; then
+    pass "sandbox_dir_canon rejects an empty path"
+  else
+    fail "empty guard broken: rc=$RC out='$OUT'"
+  fi
+}
 
-  assert_empty "$PROJECT_NAME" "parse_base_flags leaves PROJECT_NAME empty when --name= absent"
-  assert_empty "$PROJECT_DIR" "parse_base_flags leaves PROJECT_DIR empty when --project= absent"
-  assert_empty "$SANDBOX_DIR" "parse_base_flags leaves SANDBOX_DIR empty when --sandbox= absent"
+# Given: a path that does not exist
+# When:  sandbox_dir_canon runs
+# Then:  rc is non-zero and the error names the unresolvable path
+# Asserts: the readlink failure path.
+test_sandbox_dir_canon_rejects_unresolvable() {
+  local OUT RC=0
+  OUT=$(sandbox_dir_canon "$FIXTURE_DIR/no-such-parent/child" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"cannot canonicalize"* ]]; then
+    pass "sandbox_dir_canon reports an unresolvable path"
+  else
+    fail "unresolvable path not reported: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a real directory reached through a symlink and a relative spelling
+# When:  sandbox_dir_canon runs on each spelling
+# Then:  both print the same canonical path
+# Asserts: symlink and relative spellings converge on one canonical value.
+test_sandbox_dir_canon_converges_spellings() {
+  local base="$FIXTURE_DIR/canon_base" link="$FIXTURE_DIR/canon_link"
+  mkdir -p "$base/sub"
+  ln -sfn "$base" "$link"
+  local expected out_rel out_link
+  expected="$(readlink -f "$base/sub")"
+  out_link="$(sandbox_dir_canon "$link/sub")"
+  out_rel="$(cd "$base" && sandbox_dir_canon "./sub")"
+  if [[ "$out_link" == "$expected" && "$out_rel" == "$expected" ]]; then
+    pass "sandbox_dir_canon converges symlink and relative spellings"
+  else
+    fail "spelling convergence broken: link='$out_link' rel='$out_rel' expected='$expected'"
+  fi
 }
 
 # ---------------------------------------------------------------------------
 # check_base_flags
 # ---------------------------------------------------------------------------
 
+# Given: PROJECT_NAME and SANDBOX_DIR set
+# When:  check_base_flags runs
+# Then:  it passes
+# Asserts: the required pair passes.
 test_check_base_flags_valid() {
-  PROJECT_NAME="test" SANDBOX_DIR="/tmp/valid"
-  if check_base_flags 2>/dev/null; then
+  if ( PROJECT_NAME="test" SANDBOX_DIR="/tmp/valid" check_base_flags 2>/dev/null ); then
     pass "check_base_flags passes when both flags set"
   else
     fail "check_base_flags should pass with valid flags"
@@ -85,6 +143,10 @@ test_check_base_flags_valid() {
 # check_base_flags calls exit(1) on failure (it's designed for CLI scripts),
 # so these tests run in a subshell to avoid aborting the test runner.
 
+# Given: an empty PROJECT_NAME
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: --name is required.
 test_check_base_flags_missing_name() {
   if ( PROJECT_NAME="" SANDBOX_DIR="/tmp/valid" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should fail with missing --name"
@@ -93,6 +155,10 @@ test_check_base_flags_missing_name() {
   fi
 }
 
+# Given: an empty SANDBOX_DIR
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: --sandbox is required.
 test_check_base_flags_missing_sandbox() {
   if ( PROJECT_NAME="test" SANDBOX_DIR="" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should fail with missing --sandbox"
@@ -101,6 +167,10 @@ test_check_base_flags_missing_sandbox() {
   fi
 }
 
+# Given: SANDBOX_DIR=/
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: root is rejected as a sandbox.
 test_check_base_flags_rejects_root_sandbox() {
   if ( PROJECT_NAME="test" SANDBOX_DIR="/" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should reject SANDBOX_DIR=/"
@@ -109,6 +179,10 @@ test_check_base_flags_rejects_root_sandbox() {
   fi
 }
 
+# Given: an empty SANDBOX_DIR and a set PROJECT_NAME
+# When:  check_base_flags runs
+# Then:  it fails
+# Asserts: an empty sandbox is rejected.
 test_check_base_flags_rejects_empty_sandbox() {
   if ( PROJECT_NAME="test" SANDBOX_DIR="" check_base_flags 2>/dev/null ); then
     fail "check_base_flags should reject empty SANDBOX_DIR"
@@ -117,20 +191,10 @@ test_check_base_flags_rejects_empty_sandbox() {
   fi
 }
 
-# ---------------------------------------------------------------------------
-# Run all
-# ---------------------------------------------------------------------------
-
-run_test test_help_flag_detected
-run_test test_help_flag_short
-run_test test_help_flag_not_triggered
-run_test test_parse_base_flags_sets_vars
-run_test test_parse_base_flags_defaults_empty
-run_test test_check_base_flags_valid
-run_test test_check_base_flags_missing_name
-run_test test_check_base_flags_missing_sandbox
-run_test test_check_base_flags_rejects_root_sandbox
-run_test test_check_base_flags_rejects_empty_sandbox
+# Given: common.sh sourced with no override
+# When:  INTERACTIVE_MAX_ENTRIES is read
+# Then:  it is 10
+# Asserts: the single canonical picker cap.
 test_interactive_max_entries_default() {
   if [[ "${INTERACTIVE_MAX_ENTRIES:-}" == "10" ]]; then
     pass "common.sh: INTERACTIVE_MAX_ENTRIES defaults to 10"
@@ -139,61 +203,23 @@ test_interactive_max_entries_default() {
   fi
 }
 
-# -- assert_subshell_rc --
 
-_exit_zero() { exit 0; }
-_exit_three() { exit 3; }
+# ---------------------------------------------------------------------------
+# Run all
+# ---------------------------------------------------------------------------
 
-test_subshell_rc_matches_expected() {
-  assert_subshell_rc 0 _exit_zero "assert_subshell_rc passes on matching rc"
-}
-
-test_subshell_rc_mismatch_fails() {
-  # The probe's fail() emits a FAIL marker; run the probe in a subshell and
-  # capture its output so the marker never reaches the runner's grep.
-  local OUT
-  OUT=$(bash -c "
-    source '$REPO_ROOT/tests/libs/test_common.sh'
-    _exit_three() { exit 3; }
-    assert_subshell_rc 0 _exit_three probe
-    echo \"count=\$FAIL\"
-  ")
-  if [[ "$OUT" == *"count=1"* && "$OUT" == *"FAIL: probe (got rc 3)"* ]]; then
-    pass "assert_subshell_rc fails on rc mismatch (marker + counter)"
-  else
-    fail "assert_subshell_rc did not fail on rc mismatch"
-  fi
-}
-
-# -- source_function_from --
-
-test_source_function_from_extracts_and_defines() {
-  local FIXTURE="$FIXTURE_DIR/extract_src.sh"
-  printf 'unrelated() { :; }\nextracted_fn() { EXTRACTED_MARK=works; }\ntrailing() { :; }\n' > "$FIXTURE"
-  source_function_from "$FIXTURE" extracted_fn
-  extracted_fn
-  if [[ "${EXTRACTED_MARK:-}" == "works" ]]; then
-    pass "source_function_from defines an invocable function"
-  else
-    fail "source_function_from did not define an invocable function"
-  fi
-}
-
-test_source_function_from_fails_when_pattern_missing() {
-  local FIXTURE="$FIXTURE_DIR/extract_missing.sh"
-  printf 'other() { :; }\n' > "$FIXTURE"
-  if source_function_from "$FIXTURE" absent_fn 2>/dev/null; then
-    fail "source_function_from should fail when the function is not extractable"
-  else
-    pass "source_function_from fails with named error when pattern missing"
-  fi
-}
-
+run_test test_help_flag_detected
+run_test test_help_flag_short
+run_test test_help_flag_not_triggered
+run_test test_sandbox_dir_canon_expands_tilde
+run_test test_sandbox_dir_canon_rejects_empty
+run_test test_sandbox_dir_canon_rejects_unresolvable
+run_test test_sandbox_dir_canon_converges_spellings
+run_test test_check_base_flags_valid
+run_test test_check_base_flags_missing_name
+run_test test_check_base_flags_missing_sandbox
+run_test test_check_base_flags_rejects_root_sandbox
+run_test test_check_base_flags_rejects_empty_sandbox
 run_test test_interactive_max_entries_default
-run_test test_subshell_rc_matches_expected
-run_test test_subshell_rc_mismatch_fails
-run_test test_source_function_from_extracts_and_defines
-run_test test_source_function_from_fails_when_pattern_missing
 
 test_done
-

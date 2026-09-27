@@ -8,9 +8,21 @@
 #   draft_parse_folder_name        --  parse SESSION_TS and branch from folder name
 #   draft_guard_no_collision       --  abort if draft branch already exists
 #   draft_write_state              --  produce .draft-state content string
-#   draft_read_state_from_branch   --  read .draft-state from branch tip as shell vars
 #   draft_validate_branch          --  validate current branch is a draft; print state vars
 #   draft_resolve_commit_message   --  resolve commit message from diff or .msg file
+
+# =============================================================================
+# .draft-state field contract  --  the keys both readers accept
+# =============================================================================
+
+# Field names as written by draft_write_state. Both readers accept these keys
+# and skip every other, so a crafted .draft-state cannot assign to a variable
+# of the caller's choosing (CURRENT_BRANCH, PROJECT_DIR, PATH).
+_DRAFT_STATE_FIELDS="source_branch from_hash author session_ts host_branch diff_count exported_at drafted_at session_id"
+
+_draft_state_field_allowed() {
+  [[ " $_DRAFT_STATE_FIELDS " == *" $1 "* ]]
+}
 
 # =============================================================================
 # draft_parse_folder_name  --  parse session identity from folder name
@@ -78,40 +90,13 @@ EOF
 }
 
 # =============================================================================
-# draft_read_state_from_branch  --  read .draft-state from branch tip
-# =============================================================================
-
-# Read .draft-state from the tip of the given branch.
-# Prints shell variable assignments to stdout for eval by caller.
-draft_read_state_from_branch() {
-  local PROJECT_DIR="$1"
-  local BRANCH_NAME="$2"
-
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$BRANCH_NAME" 2>/dev/null; then
-    echo "Error: branch does not exist: $BRANCH_NAME" >&2
-    return 1
-  fi
-
-  local STATE_CONTENT
-  STATE_CONTENT=$(git -C "$PROJECT_DIR" show "${BRANCH_NAME}:.draft-state" 2>/dev/null) || {
-    echo "Error: .draft-state not found on branch: $BRANCH_NAME" >&2
-    return 1
-  }
-
-  while IFS=':' read -r KEY VALUE; do
-    [[ -z "$KEY" ]] && continue
-    KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
-    VALUE=$(echo "$VALUE" | sed 's/^ *//')
-    printf '%s="%s"\n' "$KEY" "$VALUE"
-  done <<< "$STATE_CONTENT"
-}
-
-# =============================================================================
 # draft_validate_branch  --  validate current branch is a proper draft branch
 # =============================================================================
 
 # Validate current branch is a proper draft branch.
 # On success: prints variable assignments (including CURRENT_BRANCH) and returns 0.
+# Only the keys in _DRAFT_STATE_FIELDS are parsed: a crafted key such as
+# CURRENT_BRANCH is skipped, so it cannot override the validated branch.
 # On failure: prints error to stderr and returns 1.
 draft_validate_branch() {
   local PROJECT_DIR="$1"
@@ -143,11 +128,11 @@ draft_validate_branch() {
   local host_branch="" diff_count="" exported_at="" drafted_at="" session_id=""
 
   while IFS=':' read -r KEY VALUE; do
-    [[ -z "$KEY" ]] && continue
     KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
+    _draft_state_field_allowed "$KEY" || continue
     VALUE=$(echo "$VALUE" | sed 's/^ *//')
     printf -v "$KEY" '%s' "$VALUE"
-    printf '%s="%s"\n' "$KEY" "$VALUE"
+    printf '%s=%q\n' "$KEY" "$VALUE"
   done <<< "$STATE_CONTENT"
 
   if [[ -z "$from_hash" ]]; then
@@ -164,12 +149,12 @@ draft_validate_branch() {
   if [[ -z "$DRAFT_STATE_COMMIT" ]]; then
     echo "Warning: .draft-state commit not found between ${from_hash:0:7}..${CURRENT_BRANCH}" >&2
     echo "  The commit may have been dropped during rebase. Skipping drop step." >&2
-    echo "DRAFT_STATE_COMMIT="
+    printf 'DRAFT_STATE_COMMIT=\n'
   else
-    echo "DRAFT_STATE_COMMIT=$DRAFT_STATE_COMMIT"
+    printf 'DRAFT_STATE_COMMIT=%q\n' "$DRAFT_STATE_COMMIT"
   fi
 
-  echo "CURRENT_BRANCH=$CURRENT_BRANCH"
+  printf 'CURRENT_BRANCH=%q\n' "$CURRENT_BRANCH"
 }
 
 # =============================================================================

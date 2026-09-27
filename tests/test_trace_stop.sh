@@ -65,7 +65,7 @@ invoke_stop() {
       --sandbox="$SANDBOX_DIR" \
       --project="$PROJECT_DIR" \
       "$@"
-  ) > /dev/null 2>&1 || true
+  ) > /dev/null 2>&1
 }
 
 invoke_prune() {
@@ -84,12 +84,17 @@ invoke_prune() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: a sandbox fixture and the docker stub, with no docker failure knob set
+# When:  stop.sh runs
+# Then:  rc is 0 and no docker compose command is issued
+# Asserts: the label-based stop is independent of the compose path
 test_stop_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_nc"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "compose"; then
     fail "stop: docker compose should not be invoked"
   else
@@ -97,12 +102,17 @@ test_stop_no_compose() {
   fi
 }
 
+# Given: the stub returning no container ids
+# When:  stop.sh runs
+# Then:  it probes with ps and removes nothing
+# Asserts: an empty capture stops after the probe, so the normalisation holds
 test_stop_no_containers_does_not_teardown() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_none"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   # Stub ps -aq returns nothing by default: no containers, no teardown.
   if trace_has "ps " && ! trace_has "rm "; then
     pass "stop: no containers -> ps only, no rm"
@@ -111,13 +121,18 @@ test_stop_no_containers_does_not_teardown() {
   fi
 }
 
+# Given: the stub reporting two container ids
+# When:  stop.sh runs
+# Then:  each container is stopped and removed
+# Asserts: found containers are stopped and removed
 test_stop_removes_containers() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_rm"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
   export DOCKER_STUB_PS_IDS="abc123def456 fedcba654321"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "stop abc123def456" && trace_has "rm abc123def456"; then
     pass "stop: containers stopped and removed"
   else
@@ -125,13 +140,18 @@ test_stop_removes_containers() {
   fi
 }
 
+# Given: the stub reporting two network ids
+# When:  stop.sh runs
+# Then:  the session networks are removed
+# Asserts: the network is addressed by the same labels as the containers
 test_stop_removes_networks() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_net"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
   export DOCKER_STUB_NETWORK_IDS="net1 net2"
-  invoke_stop "$FIXTURE_DIR"
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "network rm net1"; then
     pass "stop: session networks removed by label"
   else
@@ -139,6 +159,10 @@ test_stop_removes_networks() {
   fi
 }
 
+# Given: the stub failing the ps probe
+# When:  stop.sh runs
+# Then:  the script aborts non-zero instead of reading the failure as "no containers"
+# Asserts: the command-substitution capture keeps the probe's status under set -e
 test_stop_docker_failure_aborts() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_fail"
   mkdir -p "$FIXTURE_DIR"
@@ -165,6 +189,10 @@ test_stop_docker_failure_aborts() {
 # The `docker rm` "already in progress" race (run_agent EXIT-trap compose
 # down removing the same containers) must be tolerated -- stop completes with
 # rc 0 rather than aborting. `docker stop` stays fail-closed (tested above).
+# Given: the stub reporting one container and failing the removal
+# When:  stop.sh runs
+# Then:  rc is 0, because run_agent's EXIT trap may already be removing it
+# Asserts: the removal race is tolerated while the stop itself stays fail-closed
 test_stop_removal_race_is_tolerated() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_race"
   mkdir -p "$FIXTURE_DIR"
@@ -184,12 +212,17 @@ test_stop_removal_race_is_tolerated() {
   assert_eq_num "$rc" "0" "stop: docker rm 'already in progress' race is tolerated (rc 0)"
 }
 
+# Given: the same fixture and an empty stub
+# When:  stop.sh runs with --prune
+# Then:  rc is 0 and no compose command is issued
+# Asserts: the prune delegation keeps the label-based path
 test_stop_prune_no_compose() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_nc"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR" --prune
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" --prune || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   if trace_has "compose"; then
     fail "stop --prune: docker compose should not be invoked"
   else
@@ -197,12 +230,17 @@ test_stop_prune_no_compose() {
   fi
 }
 
+# Given: the same fixture
+# When:  stop.sh runs with --prune
+# Then:  the trace shows the registry-based prune being reached
+# Asserts: --prune delegates to prune.sh rather than reimplementing a sweep
 test_stop_prune_has_registrybased_prune() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_pr_sp"
   mkdir -p "$FIXTURE_DIR"
   setup_stop_fixture "$FIXTURE_DIR"
-  invoke_stop "$FIXTURE_DIR" --prune
-
+  local STOP_RC=0
+  invoke_stop "$FIXTURE_DIR" --prune || STOP_RC=$?
+  assert_rc 0 "$STOP_RC" "stop invocation succeeds"
   # stop --prune delegates to prune.sh (now registry-based  --  no docker system prune).
   if trace_has "system prune"; then
     fail "stop --prune: docker system prune should not be invoked (registry-based prune)"
@@ -211,6 +249,10 @@ test_stop_prune_has_registrybased_prune() {
   fi
 }
 
+# Given: an empty .compose registry and no stub resources
+# When:  prune.sh runs standalone
+# Then:  it prints "Nothing to prune" and no compose command is issued
+# Asserts: an empty registry is a clean no-op
 test_prune_standalone_nothing_to_prune() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_sa_nc"
   mkdir -p "$FIXTURE_DIR"
@@ -227,6 +269,10 @@ test_prune_standalone_nothing_to_prune() {
   fi
 }
 
+# Given: a stale record and a fresh record
+# When:  prune.sh runs standalone
+# Then:  the stale record is removed and the fresh record survives
+# Asserts: Rule 1 staleness selection through the real script
 test_prune_rule1_removes_stale_records() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r1_stale"
   mkdir -p "$FIXTURE_DIR"
@@ -246,6 +292,10 @@ test_prune_rule1_removes_stale_records() {
   fi
 }
 
+# Given: an orphan container whose session has no record
+# When:  prune.sh runs standalone
+# Then:  the trace shows the container removal
+# Asserts: Rule 2 container removal against the real label filters
 test_prune_rule2_removes_orphan_container() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_orphan"
   mkdir -p "$FIXTURE_DIR"
@@ -262,6 +312,10 @@ test_prune_rule2_removes_orphan_container() {
   fi
 }
 
+# Given: a stale record
+# When:  prune.sh runs standalone with --dry-run
+# Then:  the report names the record and the record stays on disk
+# Asserts: --dry-run reports without acting
 test_prune_dry_run_removes_nothing() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_dryrun"
   mkdir -p "$FIXTURE_DIR"
@@ -282,6 +336,10 @@ test_prune_dry_run_removes_nothing() {
 # The `make stop` surface prints the same hint pair as `make start` end:
 # resume + draft, with the draft hint naming the exact session export.
 # The hint fires only when --session-id is given (unchanged rule).
+# Given: a session id and found containers
+# When:  stop.sh runs with --session-id
+# Then:  the shutdown hints are printed for that session
+# Asserts: the session-scoped stop names its resume and draft follow-ups
 test_stop_shutdown_hints() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_hints"
   mkdir -p "$FIXTURE_DIR"
@@ -304,6 +362,10 @@ test_stop_shutdown_hints() {
   assert_contains "$output" "Draft this session's changes: make draft BUNDLE=20260730-120000-test01" "stop: shutdown output names the exact session export for make draft"
 }
 
+# Given: a session with no exported bundle
+# When:  stop.sh runs with --session-id
+# Then:  the draft hint is absent from the output
+# Asserts: the hint family suppresses the draft line when there is nothing to draft
 test_stop_draft_hint_suppressed_without_export() {
   local FIXTURE_DIR="$FIXTURE_DIR/stop_draft_none"
   mkdir -p "$FIXTURE_DIR"
@@ -330,6 +392,107 @@ test_stop_draft_hint_suppressed_without_export() {
 
 # ---------------------------------------------------------------------------
 
+# Given: a sandbox fixture and a stubbed container
+# When:  stop.sh runs
+# Then:  the ps filter carries this project's name and the canonical sandbox-dir
+# Asserts: the label set is the script's addressing contract
+# Note:  the sandbox-dir filter value is the canonical spelling baked at create time
+test_stop_ps_filter_carries_project_and_canonical_sandbox() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_filters"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  local canon
+  canon="$(readlink -f "$SANDBOX_DIR")"
+
+  invoke_stop "$FIXTURE_DIR" > /dev/null 2>&1
+
+  if grep -q "label=agent-sandbox.project-name=$PROJECT_NAME" "$DOCKER_TRACE_LOG" \
+     && grep -q "label=agent-sandbox.sandbox-dir=$canon" "$DOCKER_TRACE_LOG"; then
+    pass "stop: ps filter carries the project-name and canonical sandbox-dir labels"
+  else
+    fail "stop: label filter missing or misspelled; ps trace: $(grep 'ps ' "$DOCKER_TRACE_LOG" || true)"
+  fi
+}
+
+# Given: a sandbox fixture
+# When:  stop.sh runs with --session-id
+# Then:  the ps filter carries that session-id value
+# Asserts: --session-id narrows the label-addressing to one session
+test_stop_session_id_filter_is_forwarded() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_session_filter"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+
+  invoke_stop "$FIXTURE_DIR" --session-id=test01 > /dev/null 2>&1
+
+  if grep -q "label=agent-sandbox.session-id=test01" "$DOCKER_TRACE_LOG"; then
+    pass "stop: --session-id is forwarded as the session-id label filter"
+  else
+    fail "stop: session-id filter missing; ps trace: $(grep 'ps ' "$DOCKER_TRACE_LOG" || true)"
+  fi
+}
+
+# Given: a sandbox fixture
+# When:  stop.sh probes containers
+# Then:  the probe asks for all containers (-a), not only running ones
+# Asserts: the -a scope so a stopped leftover container is still found
+test_stop_ps_scope_is_all_containers() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_ps_scope"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+
+  invoke_stop "$FIXTURE_DIR" > /dev/null 2>&1
+
+  if grep -q "ps -aq " "$DOCKER_TRACE_LOG"; then
+    pass "stop: the container probe uses ps -aq (all containers)"
+  else
+    fail "stop: expected ps -aq; ps trace: $(grep 'ps ' "$DOCKER_TRACE_LOG" || true)"
+  fi
+}
+
+# Given: a sandbox fixture with no containers
+# When:  stop.sh runs with --prune but no --project
+# Then:  it refuses non-zero and names the missing staleness input
+# Asserts: the --prune guard requires --project
+test_stop_prune_requires_project() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_prune_noproj"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+
+  local OUT RC=0
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/stop.sh" \
+            --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --prune 2>&1) )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q -- "--prune requires --project"; then
+    pass "stop: --prune without --project refused"
+  else
+    fail "stop: expected the --prune --project guard (rc=$RC out='$OUT')"
+  fi
+}
+
+# Given: a --sandbox whose parent directory does not exist
+# When:  stop.sh runs
+# Then:  it fails non-zero and names the canonicalisation failure
+# Asserts: the canonicalisation guard is loud, so the filter cannot silently miss
+test_stop_canon_failure_is_loud() {
+  local FIXTURE_DIR="$FIXTURE_DIR/stop_canon_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_stop_fixture "$FIXTURE_DIR"
+
+  local OUT RC=0
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/stop.sh" \
+            --name="$PROJECT_NAME" --sandbox="$FIXTURE_DIR/no-such-parent/sandbox" 2>&1) )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q "cannot canonicalize SANDBOX_DIR"; then
+    pass "stop: an unresolvable --sandbox fails loudly (rc=$RC)"
+  else
+    fail "stop: expected a loud canonicalisation failure (rc=$RC out='$OUT')"
+  fi
+}
+
 run_test test_stop_no_compose
 run_test test_stop_no_containers_does_not_teardown
 run_test test_stop_removes_containers
@@ -344,8 +507,9 @@ run_test test_prune_rule2_removes_orphan_container
 run_test test_prune_dry_run_removes_nothing
 run_test test_stop_shutdown_hints
 run_test test_stop_draft_hint_suppressed_without_export
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
-
+run_test test_stop_ps_filter_carries_project_and_canonical_sandbox
+run_test test_stop_session_id_filter_is_forwarded
+run_test test_stop_ps_scope_is_all_containers
+run_test test_stop_prune_requires_project
+run_test test_stop_canon_failure_is_loud
+test_done test_trace_stop

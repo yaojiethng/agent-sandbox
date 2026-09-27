@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # tests/test_interface_contract.sh
 # Unit tests for src/libs/interface_contract.sh (interface-contract version,
-# ADR interface_contract_compatibility.md) and build.sh's authoritative
-# preflight check `_check_interface_contract`.
+# ADR interface_contract_compatibility.md). The build preflight that consumes
+# the version, `_check_interface_contract`, is covered in
+# tests/test_trace_build.sh with the script that defines it.
 #
 # Covers:
 #   interface_contract_version          --  positive integer constant
 #   image_contract_version              --  baked label read via docker (stubbed)
-#   _check_interface_contract           --  refuses drift and a missing label,
-#                                        silent when aligned (authoritative)
 
 set -uo pipefail
 
@@ -17,12 +16,15 @@ test_setup
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
 source "$REPO_ROOT/src/libs/interface_contract.sh"
-source "$REPO_ROOT/scripts/build.sh"
 
 # =============================================================================
 # interface_contract_version
 # =============================================================================
 
+# Given: the interface_contract_version function
+# When:  it is called
+# Then:  it returns a positive integer
+# Asserts: the contract version is a well-formed constant (the value itself is not pinned).
 test_interface_contract_version_is_positive_integer() {
   local v
   v="$(interface_contract_version)"
@@ -37,6 +39,10 @@ test_interface_contract_version_is_positive_integer() {
 # image_contract_version  (docker label read, stubbed)
 # =============================================================================
 
+# Given: a stubbed image carrying the contract-version label
+# When:  image_contract_version runs
+# Then:  the label value is returned
+# Asserts: the baked label is the image-side version.
 test_image_contract_version_reads_baked_label() {
   local got
   got="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="7" \
@@ -44,6 +50,10 @@ test_image_contract_version_reads_baked_label() {
   assert_eq "$got" "7" "image_contract_version reads the baked label via docker"
 }
 
+# Given: a per-image stub map (a:1 b:2)
+# When:  reading image b
+# Then:  2 is returned
+# Asserts: multiple images resolve independently.
 test_image_contract_version_per_image_map() {
   local got
   got="$(PATH="$STUB_DIR:$PATH" \
@@ -52,6 +62,10 @@ test_image_contract_version_per_image_map() {
   assert_eq "$got" "2" "image_contract_version honors the per-image map"
 }
 
+# Given: an image with no contract label
+# When:  image_contract_version runs
+# Then:  the result is empty
+# Asserts: a pre-label image is distinguishable from an aligned one.
 test_image_contract_version_empty_for_unlabeled_image() {
   local got
   got="$(PATH="$STUB_DIR:$PATH" \
@@ -59,38 +73,18 @@ test_image_contract_version_empty_for_unlabeled_image() {
   assert_empty "$got" "image_contract_version is empty when the label is absent"
 }
 
-# =============================================================================
-# _check_interface_contract  (authoritative)
-# =============================================================================
-
-test_check_interface_contract_silent_on_aligned() {
-  local current out rc=0
-  current="$(interface_contract_version)"
-  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="$current" \
-        _check_interface_contract "test-image" 2>&1)" || rc=$?
-  assert_eq "$rc" "0" "preflight: aligned contract version passes"
-  assert_empty "$out" "preflight: aligned contract version stays silent"
-}
-
-test_check_interface_contract_refuses_drift() {
-  local rc=0 out
-  out="$(PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_CONTRACT_VERSION="2" \
-        _check_interface_contract "test-image" 2>&1)" || rc=$?
-  assert_eq "$rc" "1" "preflight: drifted contract version refuses"
-  assert_contains "$out" "ERROR" "preflight: refusal is marked an error"
-  assert_contains "$out" "interface-contract version 2 differs from current source" \
-      "preflight: refusal names the drifted surface"
-}
-
-test_check_interface_contract_refuses_missing_label() {
-  local rc=0 out
-  out="$(PATH="$STUB_DIR:$PATH" \
-        _check_interface_contract "pre-label-image" 2>&1)" || rc=$?
-  assert_eq "$rc" "1" "preflight: missing label refuses"
-  assert_contains "$out" "has no interface-contract-version label" \
-      "preflight: missing-label refusal names the cause"
-  assert_contains "$out" "predates the interface contract" \
-      "preflight: missing-label refusal names the rebuild remedy"
+# Given: no image name argument
+# When:  image_contract_version runs in a subshell
+# Then:  it aborts non-zero naming the required argument
+# Asserts: the required-argument guard.
+test_image_contract_version_requires_image_name() {
+  local OUT RC=0
+  OUT=$( (image_contract_version) 2>&1 ) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"image_contract_version requires an image name"* ]]; then
+    pass "image_contract_version hard-fails without an image name"
+  else
+    fail "missing-argument guard broken: rc=$RC out='$OUT'"
+  fi
 }
 
 # =============================================================================
@@ -101,6 +95,5 @@ run_test test_interface_contract_version_is_positive_integer
 run_test test_image_contract_version_reads_baked_label
 run_test test_image_contract_version_per_image_map
 run_test test_image_contract_version_empty_for_unlabeled_image
-run_test test_check_interface_contract_silent_on_aligned
-run_test test_check_interface_contract_refuses_drift
-run_test test_check_interface_contract_refuses_missing_label
+run_test test_image_contract_version_requires_image_name
+test_done test_interface_contract

@@ -37,6 +37,10 @@ write_record() {
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: a record with container, status, and a layer key
+# When:  dry_run_record_value is called per key
+# Then:  each value returns, and an absent key returns empty
+# Asserts: the key=value reader.
 test_record_value_key() {
   local record="$FIXTURE_DIR/r1.record"
   write_record "$record" "img:tag" PASS PASS PASS PASS PASS PASS PASS
@@ -46,6 +50,10 @@ test_record_value_key() {
   assert_eq "$(dry_run_record_value "$record" "missing")" "" "absent key returns empty"
 }
 
+# Given: a matching identity, status PASS, and all six layers PASS
+# When:  dry_run_record_verify runs
+# Then:  it returns 0 and reports identity, status, and a per-layer PASS
+# Asserts: a healthy record verifies.
 test_verify_passes_on_healthy_record() {
   local record="$FIXTURE_DIR/r2.record"
   write_record "$record" "expected-img:tag" PASS PASS PASS PASS PASS PASS PASS
@@ -58,6 +66,10 @@ test_verify_passes_on_healthy_record() {
   assert_contains "$output" "layer.session_data = PASS" "per-layer PASS reported"
 }
 
+# Given: a container value unequal to the expected identity
+# When:  dry_run_record_verify runs
+# Then:  it returns non-zero and names the expected/got pair
+# Asserts: identity echo-back is checked.
 test_verify_fails_on_identity_mismatch() {
   local record="$FIXTURE_DIR/r3.record"
   write_record "$record" "expected-img:tag" PASS PASS PASS PASS PASS PASS PASS
@@ -68,6 +80,10 @@ test_verify_fails_on_identity_mismatch() {
   assert_contains "$output" "expected 'other-img:tag' got 'expected-img:tag'" "mismatch reported"
 }
 
+# Given: a record with a FAIL layer and status FAIL
+# When:  dry_run_record_verify runs
+# Then:  it returns non-zero and names the failed layer and the status
+# Asserts: a failing layer fails the gate.
 test_verify_fails_on_layer_fail() {
   local record="$FIXTURE_DIR/r4.record"
   # workspace mounts off -- L5 fails -> overall status FAIL
@@ -80,6 +96,10 @@ test_verify_fails_on_layer_fail() {
   assert_contains "$output" "overall status 'FAIL'" "status FAIL reported"
 }
 
+# Given: no record file
+# When:  dry_run_record_verify runs
+# Then:  it returns non-zero and reports "record missing"
+# Asserts: a missing record is a hard failure.
 test_verify_fails_on_missing_record() {
   local rc output
   output=$(dry_run_record_verify "sandbox(capability)" "img:tag" "$FIXTURE_DIR/nope.record" 2>&1)
@@ -88,15 +108,18 @@ test_verify_fails_on_missing_record() {
   assert_contains "$output" "record missing" "missing-record reported"
 }
 
-test_verify_passes_record_within_container() {
-  # Regression: identity echo-back equal, one layer FAIL but status PASS is
-  # inconsistent -- a correct record must not mix; here all PASS must pass.
+# Given: a record whose status is PASS but one layer reports FAIL
+# When:  dry_run_record_verify runs
+# Then:  it returns non-zero and names the failed layer
+# Asserts: a mixed record is rejected; the overall status alone is not trusted.
+test_verify_rejects_layer_fail_with_status_pass() {
   local record="$FIXTURE_DIR/r5.record"
-  write_record "$record" "img:tag" PASS PASS PASS PASS PASS PASS PASS
-  local rc
-  (dry_run_record_verify "sandbox(capability)" "img:tag" "$record" >/dev/null 2>&1)
+  write_record "$record" "img:tag" PASS PASS PASS PASS FAIL PASS PASS
+  local output rc
+  output=$(dry_run_record_verify "sandbox(capability)" "img:tag" "$record" 2>&1)
   rc=$?
-  assert_rc 0 "$rc" "clean record verifies cleanly"
+  assert_ne "$rc" "0" "mixed record (layer FAIL, status PASS) is rejected"
+  assert_contains "$output" "layer.container_network = FAIL" "mixed record names the failed layer"
 }
 
 # --- image-signature (option c) gate ---------------------------------------
@@ -121,6 +144,10 @@ run_digest_verify() {
   bash -c "source '$REPO_ROOT/src/build/image.sh'; source '$REPO_ROOT/src/libs/dry_run_record.sh'; dry_run_image_verify '$image' '$record' '$type'" 2>&1
 }
 
+# Given: a compose label digest equal to the image digest
+# When:  dry_run_image_verify runs
+# Then:  it returns 0 and reports the roundtrip match
+# Asserts: the digest roundtrip gate.
 test_digest_gate_passes_when_digests_match() {
   local rec="$FIXTURE_DIR/rt_pass.yml"
   printf 'labels:\n  agent-sandbox.sandbox-image-digest: sha256:aaa\n' > "$rec"
@@ -131,6 +158,10 @@ test_digest_gate_passes_when_digests_match() {
   assert_contains "$out" "matches the record (roundtrip)" "roundtrip pass reported"
 }
 
+# Given: a compose label digest differing from the image digest
+# When:  dry_run_image_verify runs
+# Then:  it returns non-zero and reports the digest changed
+# Asserts: a rebuild during the run fails the gate.
 test_digest_gate_fails_when_digest_diverges() {
   local rec="$FIXTURE_DIR/rt_fail.yml"
   printf 'labels:\n  agent-sandbox.agent-image-digest: sha256:old\n' > "$rec"
@@ -141,6 +172,10 @@ test_digest_gate_fails_when_digest_diverges() {
   assert_contains "$out" "digest changed since the record was written" "roundtrip failure reported"
 }
 
+# Given: a compose file with no digest label
+# When:  dry_run_image_verify runs
+# Then:  it returns non-zero and reports the missing label
+# Asserts: no unknown-fallback for a missing label.
 test_digest_gate_fails_on_missing_record_label() {
   local rec="$FIXTURE_DIR/rt_missing.yml"
   printf 'services:\n  sandbox:\n    image: img1\n' > "$rec"
@@ -151,6 +186,10 @@ test_digest_gate_fails_on_missing_record_label() {
   assert_contains "$out" "no sandbox-image-digest label" "missing label reported"
 }
 
+# Given: a stamped digest and an image the stub reports absent
+# When:  dry_run_image_verify runs
+# Then:  it returns non-zero, names the dangling image, and gives the rebuild remediation
+# Asserts: a pruned image fails the gate.
 test_digest_gate_fails_on_dangling_image() {
   local rec="$FIXTURE_DIR/rt_dangling.yml"
   printf 'labels:\n  agent-sandbox.sandbox-image-digest: sha256:pruned\n' > "$rec"
@@ -173,7 +212,7 @@ run_test test_verify_passes_on_healthy_record
 run_test test_verify_fails_on_identity_mismatch
 run_test test_verify_fails_on_layer_fail
 run_test test_verify_fails_on_missing_record
-run_test test_verify_passes_record_within_container
+run_test test_verify_rejects_layer_fail_with_status_pass
 run_test test_digest_gate_passes_when_digests_match
 run_test test_digest_gate_fails_when_digest_diverges
 run_test test_digest_gate_fails_on_missing_record_label

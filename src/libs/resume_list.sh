@@ -28,7 +28,7 @@ build_inventory() {
     stale="$(session_stale "$SANDBOX_DIR/.compose/$sid.yml" "$current_sha")"
     last_used="$(session_log_read "$sid" last_stopped)"
     host_sha="$(record_label "$SANDBOX_DIR/.compose/$sid.yml" host-head-sha)"
-    branch_age="$(project_branch_age "$host_sha")"
+    branch_age="$(project_commits_since "$host_sha")"
     RESUME_INVENTORY+=( "$sid|$provider|$ts|$branch|$stale|$last_used|$host_sha|$branch_age" )
   done < <(enumerate_records)
   # Newest first by session-ts.
@@ -143,8 +143,8 @@ _resume_state_map() {
              --format '{{.Label "agent-sandbox.session-id"}} {{.State}}' 2>/dev/null || true)
 }
 
-# _resume_state_cell SID CREATION_TS  --  the merged STATE cell: last event
-# (start/stop) from the activity log, verb overridden by live docker state.
+# _resume_state_cell SID  --  the merged STATE cell: last event (start/stop)
+# from the activity log, verb overridden by live docker state.
 _resume_state_cell() {
   local sid="$1"
   local started stopped docker_verb t
@@ -164,9 +164,19 @@ _resume_state_cell() {
 
   # Docker overrides the verb when it disagrees with the log (crash, docker
   # restart, manual stop). Time stays from the log when it matches the verb.
-  if [[ -n "$docker_verb" && "$docker_verb" != "$last_verb" ]]; then
-    echo "${docker_verb}"
-    return 0
+  # The vocabularies differ by tense: docker reports `running` where the log
+  # records `started`. A running container therefore counts as a match for a
+  # started log entry; only a real disagreement overrides the verb and drops
+  # the age.
+  if [[ -n "$docker_verb" ]]; then
+    local matches_last="false"
+    [[ "$docker_verb" == "$last_verb" || \
+       ( "$docker_verb" == "running" && "$last_verb" == "started" ) ]] \
+      && matches_last="true"
+    if [[ "$matches_last" == "false" ]]; then
+      echo "${docker_verb}"
+      return 0
+    fi
   fi
   t=$(relative_time_compact "$last_t")
   [[ "$t" == "---" ]] && { echo "$last_verb"; return 0; }
@@ -208,7 +218,7 @@ _resume_render_rows() {
     # convention as the draft bundle table.
     _state_val="$branch_age"
     work="${_WORK_MAP[$sid]:---}"
-    _wall_val=$(_resume_state_cell "$sid" "$ts")
+    _wall_val=$(_resume_state_cell "$sid")
     local row
     row=$(printf '%-7s %-9s %-14s %-14s %-6s %-13s' \
       "$sid" "$provider" "$_br" "$_wall_val" "$work" "$_state_val")

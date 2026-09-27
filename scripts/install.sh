@@ -5,6 +5,10 @@
 # installs the agent-sandbox CLI. Fails closed: it exits non-zero and prints
 # per-tool install hints when a requirement is missing.
 #
+# Uninstall removes only the harness symlink at the CLI path. Anything else
+# at that path - a real file or a foreign symlink - stays untouched, the
+# error names the path, and the command fails.
+#
 # The gate exists because the harness uses modern bash (mapfile, associative
 # arrays) and GNU userland (realpath, sha256sum, GNU date/sed).
 # macOS ships bash 3.2 and BSD tools; Homebrew provides both.
@@ -34,10 +38,15 @@ install_os() {
 # verify_installed) -- a new requirement must be added to all three.
 
 check_bash_version() {
-  if (( BASH_VERSINFO[0] < 4 )); then
-    echo "  - bash 4.0+ required (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})" >&2
-    echo "    The harness uses mapfile and associative arrays (bash 4.0+)." >&2
-    echo "    macOS: brew install bash; then run bash scripts/install.sh with /opt/homebrew/bin first in PATH." >&2
+  if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4) )); then
+    echo "  - bash 4.4+ required (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})" >&2
+    echo "    A 4.4 feature is required: expanding \"\${arr[@]}\" on an empty array" >&2
+    echo "    under set -u (present in build.sh)." >&2
+    if [[ "$(install_os)" == "Darwin" ]]; then
+      echo "    macOS: brew install bash; then run bash scripts/install.sh with /opt/homebrew/bin first in PATH." >&2
+    else
+      echo "    Install bash 4.4+ with your package manager." >&2
+    fi
     return 1
   fi
 }
@@ -45,7 +54,11 @@ check_bash_version() {
 check_git() {
   if ! command -v git >/dev/null 2>&1; then
     echo "  - git: missing" >&2
-    echo "    macOS: brew install git" >&2
+    if [[ "$(install_os)" == "Darwin" ]]; then
+      echo "    macOS: brew install git" >&2
+    else
+      echo "    Install git with your package manager." >&2
+    fi
     return 1
   fi
 }
@@ -107,11 +120,23 @@ do_install() {
   echo "Installed agent-sandbox to $dir/agent-sandbox (symlink -> $REPO_ROOT/scripts/agent-sandbox.sh)"
 }
 
+# do_uninstall  --  removes the harness symlink at the CLI path. Anything
+# else at that path stays untouched: the error names the path and the
+# command returns non-zero. An absent target is a silent success.
 do_uninstall() {
-  local dir
+  local dir path
   dir="$(install_dir)"
-  rm -f "$dir/agent-sandbox"
-  echo "Removed $dir/agent-sandbox"
+  path="$dir/agent-sandbox"
+  if [[ -e "$path" || -L "$path" ]]; then
+    local target
+    target="$(readlink "$path" 2>/dev/null || true)"
+    if [[ ! -L "$path" || "$target" != "$REPO_ROOT/scripts/agent-sandbox.sh" ]]; then
+      echo "Refusing to remove $path: not the harness symlink" >&2
+      return 1
+    fi
+    rm -f "$path"
+    echo "Removed $dir/agent-sandbox"
+  fi
 }
 
 # --- Entry ------------------------------------------------------------------
@@ -135,7 +160,11 @@ install_main() {
 
   if (( failures > 0 )); then
     echo "Install aborted: $failures requirement(s) missing." >&2
-    echo "See docs/development/host_requirements.md (macOS setup section)." >&2
+    if [[ "$(install_os)" == "Darwin" ]]; then
+      echo "See docs/development/host_requirements.md (macOS setup section)." >&2
+    else
+      echo "See docs/development/host_requirements.md." >&2
+    fi
     return 1
   fi
 

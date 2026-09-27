@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # scripts/check_markdown.sh
-# markdownlint-cli2 gate over all tracked Markdown files.
+# markdownlint-cli2 gate over all Markdown files in the working tree
+# (tracked and untracked), except node_modules.
 # BLOCKING: exits 1 on any finding or when the gate cannot run.
 #
 # Exit codes: 0 = no findings, 1 = findings OR the gate could not run. The
@@ -9,10 +10,13 @@
 #
 # Uses .markdownlint-cli2.mjs at the repo root. The config enables the
 # rule subset that matches docs/operations/documentation_policy.md plus
-# the custom doc-ascii rule (plain-ASCII prose). MD013 and MD060 are
+# the custom doc-ascii rule (plain-ASCII prose) and the doc-wrap rule
+# (one paragraph per physical line, both live). MD013 and MD060 are
 # disabled because they contradict written policy (see config header).
 
 set -uo pipefail
+
+SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -58,5 +62,5 @@ if (( STATUS != 0 || COUNT > 0 )); then
   exit 1
 fi
 echo "markdownlint: 0 finding(s)"
-echo "Clean"
+echo "Clean (${SECONDS}s)"
 exit 0

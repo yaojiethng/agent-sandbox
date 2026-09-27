@@ -1,7 +1,9 @@
 // markdownlint-cli2 configuration for the agent-sandbox repository.
 // Enables the subset of markdownlint rules that align with
-// docs/operations/documentation_policy.md, plus one custom rule
-// (doc-ascii) that enforces the plain-ASCII prose rule.
+// docs/operations/documentation_policy.md, plus two custom rules:
+// doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
+// physical line). doc-wrap is live; the legacyFiles exemption seam
+// in the rule stays available for any future carve-out.
 //
 // Deliberately DISABLED (they contradict written policy):
 //   MD013 line-length -- documentation_policy.md `### Line wrapping`
@@ -43,6 +45,10 @@ export default {
 
     // custom rule, enabled by name (default:false suppresses it otherwise)
     "doc-ascii": true,
+    // doc-wrap: live since the zero-findings confirmation (iteration
+    // 20260921-11). An object value { legacyFiles: [...] } exempts the
+    // named files, config-driven, never a per-file disable comment.
+    "doc-wrap": true,
   },
   customRules: ["./scripts/lint/doc-ascii.mjs"],
   globs: ["**/*.md"],

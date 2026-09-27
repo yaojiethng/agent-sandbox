@@ -34,10 +34,12 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ### M4 -- Metadata Seeding
 
-- [ ] Define `.workspace/metadata.json` format:
-  - `agent_id`, `task_id`, allowed files, instructions
+Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite study in `roadmap.md`): if a labelled task record is adopted, its shape carries `agent_id`, `task_id`, allowed files, and instructions.
+
 - [ ] Ensure agent reads metadata to guide task execution
 - [ ] Ensure agent respects allowed file constraints
+- [ ] Decide the regular mutation-run frequency (recorded from roadmap row 87, 2026-09-26: the M3.1 mutation tier is operator-triggered only until this row sets a cadence)
+- [ ] Process the 2026-09-26 mutation-run survivors (62 rows with verdict `survived` in `tests/mutations/runs/20260926-184023-mutation_run.jsonl`): triage each survivor - re-run under the fixed-bite discipline or retire the row - and write the outcome back to the catalog. Dumped here by operator direction at the M3.1 close (2026-09-27), because the survivor set is the mutation tier's first real output and the tier's cadence and processing policy belong to M4
 
 ---
 

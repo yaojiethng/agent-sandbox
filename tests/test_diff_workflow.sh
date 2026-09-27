@@ -3,7 +3,10 @@
 # Tests for libs/diff_workflow.sh
 #
 # Covers:
-#   apply_run  --  applies a diff file, optional branch checkout, force mode
+#   apply_run  --  applies a diff file, guards, branch checkout, force mode
+#   main       --  script entry point: flag forwarding, interactive branch
+#   apply_preview  --  per-file summary and its empty and binary arms
+#   _apply_patch_file  --  normal, whitespace-drift, recount retry, force, missing input
 #
 # apply_run now takes a file path directly (no internal resolution).
 set -uo pipefail
@@ -16,6 +19,10 @@ source "$TEST_DIR/libs/session_fixtures.sh"
 # =============================================================================
 # APPLY tests  --  4-arg contract
 # =============================================================================
+# Given: a committed repo and a diff file generated outside it
+# When:  apply_run applies with no branch and FORCE=false
+# Then:  the file named in the diff exists in the working tree
+# Asserts: the four-argument apply contract on a direct file path
 test_apply_applies_diff() {
   local P="$FIXTURE_DIR/apply_diff_p"
   make_committed_repo "$P"
@@ -33,6 +40,10 @@ test_apply_applies_diff() {
     fail "apply_run should create new.txt from diff"
   fi
 }
+# Given: a committed repo on its default branch, a diff file, and a branch name no branch has yet
+# When:  apply_run applies with APPLY_BRANCH set
+# Then:  HEAD is on the new branch
+# Asserts: the create-branch arm of the checkout
 test_apply_applies_diff_with_branch() {
   local P="$FIXTURE_DIR/apply_branch_p"
   make_committed_repo "$P"
@@ -48,6 +59,10 @@ test_apply_applies_diff_with_branch() {
   BRANCH=$(git -C "$P" rev-parse --abbrev-ref HEAD)
   assert_eq "$BRANCH" "feature-branch" "apply_run creates and checks out new branch"
 }
+# Given: a repo whose committed file is edited after the diff was taken, so the hunks conflict
+# When:  apply_run applies with FORCE=true
+# Then:  rc 0, with the conflict tolerated as .rej files
+# Asserts: the force contract is the rc, not the diff's line count
 test_apply_force_mode() {
   local P="$FIXTURE_DIR/apply_force_p"
   make_committed_repo "$P"
@@ -65,35 +80,63 @@ test_apply_force_mode() {
   echo "$COMMITTED_FILE content changed" > "$P/$COMMITTED_FILE"
   git -C "$P" diff > "$FIXTURE_DIR/reject.diff" 2>/dev/null || true
   git -C "$P" checkout -- "$COMMITTED_FILE"
-  apply_run "$P" "$FIXTURE_DIR/reject.diff" "" "true"
-  # Force mode should have applied the diff (may produce .rej files)
-  local APPLIED
-  APPLIED=$(grep -c "^diff --git" "$FIXTURE_DIR/reject.diff" 2>/dev/null || echo "0")
-  pass "apply_run force mode completes (diff had $APPLIED changed files)"
+  # Force mode should return 0 even though the hunks conflict (may produce
+  # .rej files); the rc is the contract, not the input diff's line count.
+  local OUT RC=0
+  OUT=$(apply_run "$P" "$FIXTURE_DIR/reject.diff" "" "true" 2>&1) || RC=$?
+  if [[ "$RC" == 0 ]]; then
+    pass "apply_run force mode completes (rc=0)"
+  else
+    fail "apply_run force mode failed rc=$RC: $OUT"
+  fi
 }
+# Given: a normal repo and a diff path no file occupies
+# When:  apply_run runs
+# Then:  it fails
+# Asserts: the diff-not-found guard's message
 test_apply_missing_diff_file() {
   local P="$FIXTURE_DIR/apply_missing_p"
   make_committed_repo "$P"
-  if apply_run "$P" "/nonexistent/diff.diff" "" "false" 2>/dev/null; then
-    fail "apply_run should fail with missing diff file"
+  local OUT RC=0
+  OUT=$(apply_run "$P" "/nonexistent/diff.diff" "" "false" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"diff file not found"* ]]; then
+    pass "apply_run refuses a diff path that does not exist"
   else
-    pass "apply_run fails with missing diff file"
+    fail "diff-not-found guard wrong: rc=$RC out='$OUT'"
   fi
 }
+# Given: a diff file and a project path that does not exist
+# When:  apply_run runs
+# Then:  it fails
+# Asserts: the project-directory validation refusal
 test_apply_missing_project_dir() {
-  if apply_run "/nonexistent" "$FIXTURE_DIR/test.diff" "" "false" 2>/dev/null; then
-    fail "apply_run should fail with missing project dir"
+  local DIFF="$FIXTURE_DIR/missing_proj.diff"
+  printf 'diff --git a/x b/x\n--- a/x\n+++ b/x\n@@ -0,0 +1 @@\n+new\n' > "$DIFF"
+  local OUT RC=0
+  OUT=$(apply_run "$FIXTURE_DIR/no_such_project" "$DIFF" "" "false" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"does not exist"* ]]; then
+    pass "apply_run refuses a project directory that does not exist"
   else
-    pass "apply_run fails with missing project dir"
+    fail "project validation wrong: rc=$RC out='$OUT'"
   fi
 }
+# Given: empty strings for all four arguments
+# When:  apply_run runs
+# Then:  it fails
+# Asserts: the required-argument guard's own message, distinct from the not-found guard
 test_apply_empty_args() {
-  if apply_run "" "" "" "" 2>/dev/null; then
-    fail "apply_run should fail with empty args"
+  local OUT RC=0
+  OUT=$(apply_run "" "" "" "" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"apply_run: PROJECT_DIR and DIFF_FILE are required"* ]]; then
+    pass "apply_run refuses empty required arguments with its own message"
   else
-    pass "apply_run fails with empty args"
+    fail "required-argument guard wrong: rc=$RC out='$OUT'"
   fi
 }
+# Given: a diff that applied successfully
+# When:  apply_run returns
+# Then:  the diff file still exists
+# Asserts: apply consumes nothing, so the operator keeps the artifact
 test_apply_diff_file_preserved() {
   local P="$FIXTURE_DIR/apply_preserve_p"
   make_committed_repo "$P"
@@ -113,6 +156,10 @@ test_apply_diff_file_preserved() {
 # Empty diffs carry no valid patches: per the decided empty-diff behavior,
 # apply_run skips them with a warning (rc=0) and leaves the target
 # repository untouched.
+# Given: a zero-byte diff and a committed repo
+# When:  apply_run runs
+# Then:  rc 0 with the skip warning, and neither the tree nor HEAD moves
+# Asserts: the decided empty-diff rule on the apply path
 test_apply_empty_diff_rejected_without_touching_repo() {
   local P="$FIXTURE_DIR/apply_empty_p"
   make_committed_repo "$P"
@@ -133,6 +180,11 @@ test_apply_empty_diff_rejected_without_touching_repo() {
     pass "apply_run rejects empty diff and leaves repo untouched"
   fi
 }
+# Given: a valid diff file passed directly
+# When:  apply_run runs
+# Then:  the change lands
+# Asserts: apply_run resolves nothing - no session or channel lookup
+# Asserts: the direct-path contract is what the interactive branch and --diff both rely on
 test_apply_no_resolution_logic() {
   # Verify that apply_run does NOT look up sessions or channels internally.
   # Pass a valid diff file directly and confirm it applies.
@@ -150,6 +202,10 @@ test_apply_no_resolution_logic() {
     fail "apply_run should apply from direct file path"
   fi
 }
+# Given: --project and --sandbox but no --diff
+# When:  the script's main runs
+# Then:  it exits non-zero and names --diff as required
+# Asserts: the one requirement the entry point owns, since the dispatcher forwards --diff through
 test_apply_requires_diff_flag() {
   # Verify the apply entry point (main) refuses to run without --diff.
   local P="$FIXTURE_DIR/apply_req_diff_p"
@@ -166,6 +222,10 @@ test_apply_requires_diff_flag() {
 # =============================================================================
 # _apply_patch_file tests
 # =============================================================================
+# Given: a valid patch for the project
+# When:  _apply_patch_file runs in normal mode
+# Then:  rc 0 and the change is in the working tree
+# Asserts: the normal apply path.
 test_apply_patch_file_normal() {
   local P="$FIXTURE_DIR/apf_normal_p"
   make_committed_repo "$P"
@@ -174,13 +234,47 @@ test_apply_patch_file_normal() {
   git -C "$P" diff --cached > "$FIXTURE_DIR/apf_normal.diff" 2>/dev/null || true
   git -C "$P" reset --quiet HEAD -- new.txt
   rm -f "$P/new.txt"
-  _apply_patch_file "$P" "$FIXTURE_DIR/apf_normal.diff" false false
+  _apply_patch_file "$P" "$FIXTURE_DIR/apf_normal.diff" false
   if [[ -f "$P/new.txt" ]]; then
     pass "_apply_patch_file normal mode applies diff"
   else
     fail "_apply_patch_file normal mode should create new.txt"
   fi
 }
+# Given: a patch whose context line carries one internal space, and a target whose context carries two
+# When:  _apply_patch_file runs in normal mode
+# Then:  rc 0 and the changed line lands, the drifted context intact
+# Asserts: the --ignore-whitespace policy that lets a patch cross a whitespace drift.
+test_apply_patch_file_tolerates_context_whitespace_drift() {
+  local SRC="$FIXTURE_DIR/apf_ws_src"
+  local TGT="$FIXTURE_DIR/apf_ws_tgt"
+  make_committed_repo "$SRC"
+  make_committed_repo "$TGT"
+
+  printf 'alpha\nbeta line\ngamma\n' > "$SRC/file.txt"
+  git -C "$SRC" add file.txt
+  git -C "$SRC" commit -m "context" --quiet
+  printf 'alpha\nbeta line\ngamma2\n' > "$SRC/file.txt"
+  git -C "$SRC" diff > "$FIXTURE_DIR/apf_ws.diff"
+  git -C "$SRC" checkout -- file.txt
+
+  printf 'alpha\nbeta  line\ngamma\n' > "$TGT/file.txt"
+  git -C "$TGT" add file.txt
+  git -C "$TGT" commit -m "context" --quiet
+
+  local OUT RC=0
+  OUT=$(_apply_patch_file "$TGT" "$FIXTURE_DIR/apf_ws.diff" false 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -eq 0 && "$(cat "$TGT/file.txt")" == "alpha"$'\n'"beta  line"$'\n'"gamma2" ]]; then
+    pass "_apply_patch_file tolerates a whitespace-drifted context line"
+  else
+    fail "whitespace-drift apply broken: rc=$RC out='$OUT' file='$(cat "$TGT/file.txt" 2>/dev/null)'"
+  fi
+}
+# Given: a valid patch
+# When:  _apply_patch_file runs with FORCE=true
+# Then:  rc 0 with --reject semantics
+# Asserts: force mode never returns 1.
 test_apply_patch_file_force() {
   local P="$FIXTURE_DIR/apf_force_p"
   make_committed_repo "$P"
@@ -195,14 +289,23 @@ test_apply_patch_file_force() {
   echo "$COMMITTED_FILE content changed" > "$P/$COMMITTED_FILE"
   git -C "$P" diff > "$FIXTURE_DIR/apf_force.diff" 2>/dev/null || true
   git -C "$P" checkout -- "$COMMITTED_FILE"
-  _apply_patch_file "$P" "$FIXTURE_DIR/apf_force.diff" true false
+  local OUT RC=0
+  OUT=$(_apply_patch_file "$P" "$FIXTURE_DIR/apf_force.diff" true 2>&1) || RC=$?
   # Force mode should succeed (returns 0) even if conflicts produce .rej
-  pass "_apply_patch_file force mode completes (may produce .rej files)"
+  if [[ "$RC" == 0 ]]; then
+    pass "_apply_patch_file force mode completes (rc=0)"
+  else
+    fail "_apply_patch_file force mode failed rc=$RC: $OUT"
+  fi
 }
+# Given: a patch path that does not exist
+# When:  _apply_patch_file runs
+# Then:  rc 1
+# Asserts: the missing-input guard.
 test_apply_patch_file_missing_diff() {
   local P="$FIXTURE_DIR/apf_missing_p"
   make_committed_repo "$P"
-  _apply_patch_file "$P" "/nonexistent.diff" false false && {
+  _apply_patch_file "$P" "/nonexistent.diff" false && {
     fail "_apply_patch_file should fail with missing diff"
     return
   }
@@ -211,6 +314,10 @@ test_apply_patch_file_missing_diff() {
 # =============================================================================
 # apply_and_commit tests
 # =============================================================================
+# Given: a hash message and a patch to apply
+# When:  apply_and_commit runs
+# Then:  the change is committed with the message
+# Asserts: the apply-then-commit contract, which leaves nothing unstaged.
 test_apply_and_commit_applies_and_commits() {
   local P="$FIXTURE_DIR/aac_commit_p"
   make_committed_repo "$P"
@@ -234,6 +341,10 @@ test_apply_and_commit_applies_and_commits() {
     fail "apply_and_commit should create commit.txt"
   fi
 }
+# Given: empty arguments
+# When:  apply_and_commit runs
+# Then:  rc 1 with a diagnostic
+# Asserts: the all-empty guard (partial-argument guards are unpinned, finding 13).
 test_apply_and_commit_missing_args() {
   if apply_and_commit "" "" "" "" false false 2>/dev/null; then
     fail "apply_and_commit should fail with empty args"
@@ -241,6 +352,10 @@ test_apply_and_commit_missing_args() {
     pass "apply_and_commit fails with empty args"
   fi
 }
+# Given: a patch that conflicts with the project's state
+# When:  apply_and_commit runs with FORCE=true
+# Then:  the conflicts are tolerated and the commit lands
+# Asserts: force propagation through apply_and_commit.
 test_apply_and_commit_force_mode() {
   local P="$FIXTURE_DIR/aac_force_p"
   make_committed_repo "$P"
@@ -290,13 +405,17 @@ diff --git a/recount.txt b/recount.txt
 EOF
 }
 
+# Given: a patch whose hunk counts are wrong but whose context matches
+# When:  _apply_patch_file runs in normal mode
+# Then:  the --recount retry applies it
+# Asserts: the relaxed-context retry that makes apply permissive by default.
 test_apply_patch_file_recount_retry_succeeds() {
   local P="$FIXTURE_DIR/apf_recount_p"
   make_committed_repo "$P"
   make_recount_diff "$P" "$FIXTURE_DIR/apf_recount.diff"
 
   local OUT RC=0
-  OUT=$(_apply_patch_file "$P" "$FIXTURE_DIR/apf_recount.diff" false false 2>&1 </dev/null) || RC=$?
+  OUT=$(_apply_patch_file "$P" "$FIXTURE_DIR/apf_recount.diff" false 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -eq 0 && "$(cat "$P/recount.txt")" == *"inserted-without-recount"* \
      && "$OUT" == *"retrying with --recount"* ]]
@@ -307,6 +426,10 @@ test_apply_patch_file_recount_retry_succeeds() {
   fi
 }
 
+# Given: a patch that applies under neither attempt
+# When:  _apply_patch_file runs
+# Then:  rc 1 with the diff path, the target branch, and the FORCE hint
+# Asserts: the failure diagnostic.
 test_apply_patch_file_unfixable_diff_fails_with_hints() {
   # Diff references a file that does not exist in the repo  --  recount cannot
   # save it. Must fail rc=1 with the FORCE hint block.
@@ -322,7 +445,7 @@ diff --git a/ghost.txt b/ghost.txt
 EOF
 
   local OUT RC=0
-  OUT=$(_apply_patch_file "$P" "$FIXTURE_DIR/apf_hints.diff" false false 2>&1 </dev/null) || RC=$?
+  OUT=$(_apply_patch_file "$P" "$FIXTURE_DIR/apf_hints.diff" false 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -eq 1 && "$OUT" == *"Use FORCE=true"* ]]; then
     pass "_apply_patch_file: unfixable diff fails with actionable hints"
@@ -331,6 +454,10 @@ EOF
   fi
 }
 
+# Given: a diff file path that does not exist
+# When:  apply_and_commit runs
+# Then:  rc 1 with an explicit error, without touching the project
+# Asserts: the pre-apply existence check.
 test_apply_and_commit_missing_diff_file_fails_cleanly() {
   local P="$FIXTURE_DIR/aac_nodiff_p"
   make_committed_repo "$P"
@@ -342,6 +469,176 @@ test_apply_and_commit_missing_diff_file_fails_cleanly() {
     pass "apply_and_commit: missing diff file -> explicit error, rc=1"
   else
     fail "missing-diff guard broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a repository and a branch that already exists
+# When:  apply_run applies with that branch
+# Then:  it checks the branch out instead of creating it
+# Asserts: the existing-branch arm of the checkout
+test_apply_checks_out_existing_branch() {
+  local P="$FIXTURE_DIR/apply_existing_p"
+  make_committed_repo "$P"
+  echo "new content" > "$P/new.txt"
+  git -C "$P" add new.txt
+  git -C "$P" diff --cached > "$FIXTURE_DIR/existing.diff" 2>/dev/null || true
+  git -C "$P" reset --quiet HEAD -- new.txt
+  rm -f "$P/new.txt"
+  git -C "$P" checkout -b "existing-branch" --quiet
+  git -C "$P" checkout main --quiet
+
+  local OUT RC=0
+  OUT=$(apply_run "$P" "$FIXTURE_DIR/existing.diff" "existing-branch" "false" 2>&1) || RC=$?
+  local BRANCH
+  BRANCH=$(git -C "$P" rev-parse --abbrev-ref HEAD)
+  if [[ $RC -eq 0 && "$BRANCH" == "existing-branch" \
+     && "$OUT" == *"Checking out existing branch: existing-branch"* ]]; then
+    pass "apply_run checks out an existing branch instead of recreating it"
+  else
+    fail "existing-branch checkout wrong: rc=$RC branch='$BRANCH' out='$OUT'"
+  fi
+}
+
+# Given: a dirty repository and a named new branch
+# When:  apply.sh runs with --branch and --force
+# Then:  the branch is created and the force tolerance warning is printed
+# Asserts: main's forwarding of --branch and --force into apply_run
+test_apply_script_forwards_branch_and_force() {
+  local P="$FIXTURE_DIR/apply_fwd_p"
+  make_committed_repo "$P"
+  cat > "$FIXTURE_DIR/apply_fwd.diff" <<'EOF'
+diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-baseline
++changed
+EOF
+  echo "stray" > "$P/stray.txt"
+
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+    --project="$P" --sandbox="$FIXTURE_DIR/apply_fwd_sb" \
+    --diff="$FIXTURE_DIR/apply_fwd.diff" --branch="feat-x" --force 2>&1) || RC=$?
+
+  local BRANCH
+  BRANCH=$(git -C "$P" rev-parse --abbrev-ref HEAD 2>/dev/null || echo none)
+  if [[ $RC -eq 0 && "$BRANCH" == "feat-x" \
+     && "$OUT" == *"Creating and checking out new branch: feat-x"* \
+     && "$OUT" == *"tolerates a dirty working tree"* ]]; then
+    pass "apply.sh forwards --branch and --force into apply_run"
+  else
+    fail "flag forwarding wrong: rc=$RC branch='$BRANCH' out='$OUT'"
+  fi
+}
+
+# Given: a repository, a diff, and a confirmation of yes
+# When:  apply.sh runs with --interactive
+# Then:  it previews, applies, and names the equivalent explicit command
+# Asserts: the interactive confirm-then-apply path and its stated equivalence
+test_apply_script_interactive_confirms_and_applies() {
+  local P="$FIXTURE_DIR/apply_int_p"
+  make_committed_repo "$P"
+  cat > "$FIXTURE_DIR/apply_int.diff" <<'EOF'
+diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-baseline
++changed
+EOF
+
+  local OUT RC=0
+  OUT=$(printf 'y\n' | bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+    --project="$P" --sandbox="$FIXTURE_DIR/apply_int_sb" \
+    --diff="$FIXTURE_DIR/apply_int.diff" --interactive 2>&1) || RC=$?
+
+  if [[ $RC -eq 0 && -f "$P/file.txt" && "$(cat "$P/file.txt")" == "changed" \
+     && "$OUT" == *"Preview of"* \
+     && "$OUT" == *"Total files: 1"* \
+     && "$OUT" == *"Running: make apply DIFF=$FIXTURE_DIR/apply_int.diff"* ]]; then
+    pass "interactive apply previews, confirms, applies, and names the explicit command"
+  else
+    fail "interactive apply broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: an interactive apply and a confirmation of no
+# When:  apply.sh runs with --interactive
+# Then:  it aborts without applying and exits non-zero
+# Asserts: the abort verdict and that no apply runs after an abort
+test_apply_script_interactive_abort_does_not_apply() {
+  local P="$FIXTURE_DIR/apply_int_abort_p"
+  make_committed_repo "$P"
+  cat > "$FIXTURE_DIR/apply_int_abort.diff" <<'EOF'
+diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
+@@ -1 +1 @@
+-baseline
++changed
+EOF
+
+  local OUT RC=0
+  OUT=$(printf 'n\n' | bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+    --project="$P" --sandbox="$FIXTURE_DIR/apply_int_abort_sb" \
+    --diff="$FIXTURE_DIR/apply_int_abort.diff" --interactive 2>&1) || RC=$?
+
+  local CONTENT
+  CONTENT=$(cat "$P/file.txt")
+  if [[ $RC -ne 0 && "$CONTENT" == "baseline" && "$OUT" == *"Aborted."* ]]; then
+    pass "interactive apply abort leaves the tree untouched and exits non-zero"
+  else
+    fail "interactive abort wrong: rc=$RC content='$CONTENT' out='$OUT'"
+  fi
+}
+
+# Given: an interactive apply whose patch cannot apply
+# When:  apply.sh runs with --interactive answered yes
+# Then:  the script exits with the apply failure status
+# Asserts: the interactive path's exit status tracks the apply
+test_apply_script_interactive_reports_apply_failure() {
+  local P="$FIXTURE_DIR/apply_int_fail_p"
+  make_committed_repo "$P"
+  cat > "$FIXTURE_DIR/apply_int_fail.diff" <<'EOF'
+diff --git a/ghost.txt b/ghost.txt
+--- a/ghost.txt
++++ b/ghost.txt
+@@ -1,1 +1,2 @@
+-nothing here
++something
+EOF
+
+  local OUT RC=0
+  OUT=$(printf 'y\n' | bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+    --project="$P" --sandbox="$FIXTURE_DIR/apply_int_fail_sb" \
+    --diff="$FIXTURE_DIR/apply_int_fail.diff" --interactive 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"git apply failed"* ]]; then
+    pass "interactive apply propagates a failed apply as a non-zero exit"
+  else
+    fail "interactive failure status wrong: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: an empty diff applied through the script entry point
+# When:  the script runs under its own errexit
+# Then:  the full report prints and the script exits zero
+# Asserts: the count expression tolerates grep's zero-match exit under errexit
+test_apply_script_empty_diff_reports_count_under_errexit() {
+  local P="$FIXTURE_DIR/apply_count_errexit_p"
+  make_committed_repo "$P"
+  : > "$FIXTURE_DIR/apply_count_empty.diff"
+
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
+    --project="$P" --sandbox="$FIXTURE_DIR/apply_count_errexit_sb" \
+    --diff="$FIXTURE_DIR/apply_count_empty.diff" 2>&1) || RC=$?
+
+  if [[ $RC -eq 0 && "$OUT" == *"Done. Files changed: 0"* ]]; then
+    pass "the count report survives grep's zero-match status under the script's errexit"
+  else
+    fail "empty-diff report broken under errexit: rc=$RC out='$OUT'"
   fi
 }
 # =============================================================================
@@ -356,6 +653,7 @@ run_test test_apply_empty_diff_rejected_without_touching_repo
 run_test test_apply_no_resolution_logic
 run_test test_apply_requires_diff_flag
 run_test test_apply_patch_file_normal
+run_test test_apply_patch_file_tolerates_context_whitespace_drift
 run_test test_apply_patch_file_force
 run_test test_apply_patch_file_missing_diff
 run_test test_apply_and_commit_applies_and_commits
@@ -364,6 +662,10 @@ run_test test_apply_and_commit_missing_args
 # PREVIEW tests  --  apply_preview summary contract
 # =============================================================================
 # Multi-file diff: one line per file in diff order + Total line.
+# Given: a two-file diff on disk
+# When:  apply_preview runs
+# Then:  one line per file in diff order, then the total
+# Asserts: the preview's output contract, which the interactive branch prints to stderr
 test_apply_preview_lists_files_and_total() {
   cat > "$FIXTURE_DIR/preview.diff" <<'EOF'
 diff --git a/alpha.txt b/alpha.txt
@@ -390,6 +692,10 @@ EOF
   fi
 }
 # Empty diff: exactly the no-changes message, exit 0, no Total line.
+# Given: a zero-byte diff
+# When:  apply_preview runs
+# Then:  exactly the no-changes message, rc 0, and no Total line
+# Asserts: the empty arm of the preview
 test_apply_preview_empty_diff_reports_no_changes() {
   : > "$FIXTURE_DIR/preview_empty.diff"
   local out rc
@@ -401,6 +707,10 @@ test_apply_preview_empty_diff_reports_no_changes() {
   fi
 }
 # Binary diffs have a header like any other; they must be counted.
+# Given: a diff whose only header is a binary patch
+# When:  apply_preview runs
+# Then:  one line plus Total files: 1
+# Asserts: binary diffs are counted by their header like any other
 test_apply_preview_counts_binary_diffs() {
   printf 'diff --git a/img.png b/img.png\nindex 111..222 100644\nGIT binary patch\n' > "$FIXTURE_DIR/preview_bin.diff"
   local out
@@ -415,6 +725,12 @@ run_test test_apply_and_commit_force_mode
 run_test test_apply_patch_file_recount_retry_succeeds
 run_test test_apply_patch_file_unfixable_diff_fails_with_hints
 run_test test_apply_and_commit_missing_diff_file_fails_cleanly
+run_test test_apply_checks_out_existing_branch
+run_test test_apply_script_forwards_branch_and_force
+run_test test_apply_script_interactive_confirms_and_applies
+run_test test_apply_script_interactive_abort_does_not_apply
+run_test test_apply_script_interactive_reports_apply_failure
+run_test test_apply_script_empty_diff_reports_count_under_errexit
 run_test test_apply_preview_lists_files_and_total
 run_test test_apply_preview_empty_diff_reports_no_changes
 run_test test_apply_preview_counts_binary_diffs

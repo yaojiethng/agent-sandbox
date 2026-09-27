@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 15
 # -------------------------
 # Host-side start_agent.sh behavioral tests  --  start policy flags
 # Pins cite: docs/concepts/sandbox_identity.md (labels, naming);
@@ -69,6 +70,10 @@ EOF
 
 # Default policy (no --refresh/--rebuild) starts from existing images;
 # building is an explicit opt-in.
+# Given: a fixture sandbox with a committed project and the stub images already labelled
+# When:  start runs with no build flag
+# Then:  the session starts and no image build is issued
+# Asserts: the default start policy reuses existing images
 test_default_policy_starts_without_building() {
   local dir="$FIXTURE_DIR/start_default_nobuild"
   run_start_session "$dir" standard \
@@ -84,6 +89,10 @@ test_default_policy_starts_without_building() {
 }
 
 # --rebuild forces a full rebuild: the agent image build carries --no-cache.
+# Given: the same fixture
+# When:  start runs with --rebuild
+# Then:  the agent image build carries --no-cache
+# Asserts: --rebuild is the full rebuild
 test_rebuild_flag_builds_agent_with_no_cache() {
   local dir="$FIXTURE_DIR/start_rebuild_flag"
   run_start_session "$dir" standard \
@@ -100,6 +109,10 @@ test_rebuild_flag_builds_agent_with_no_cache() {
 
 # --refresh rebuilds while preserving the layer cache: builds happen,
 # none of them with --no-cache.
+# Given: the same fixture
+# When:  start runs with --refresh
+# Then:  the sandbox and agent images are built without --no-cache
+# Asserts: --refresh rebuilds the images and keeps the cache
 test_refresh_flag_builds_without_no_cache() {
   local dir="$FIXTURE_DIR/start_refresh_flag"
   run_start_session "$dir" standard \
@@ -120,6 +133,10 @@ test_refresh_flag_builds_without_no_cache() {
 # The generated compose file is the container runtime's input: every {{VAR}}
 # placeholder must be substituted and both containers must be named from
 # project + provider + session.
+# Given: a started session
+# When:  the persisted compose file is read
+# Then:  no placeholder remains and both containers carry their session names
+# Asserts: the rendered-compose contract
 test_rendered_compose_fully_substituted_and_names_both_containers() {
   local dir="$FIXTURE_DIR/start_render_compose"
   run_start_session "$dir" standard \
@@ -143,6 +160,10 @@ test_rendered_compose_fully_substituted_and_names_both_containers() {
 
 # Session labels are how prune/resume find a session's resources later, so the
 # generated compose must stamp concrete session identity onto the labels block.
+# Given: a started session
+# When:  the rendered compose labels are read
+# Then:  the project name, session id, and branch are concrete values
+# Asserts: identity is baked into the labels, not left as a template
 test_rendered_compose_labels_carry_concrete_session_identity() {
   local dir="$FIXTURE_DIR/start_render_labels"
   run_start_session "$dir" standard \
@@ -161,6 +182,10 @@ test_rendered_compose_labels_carry_concrete_session_identity() {
 
 # Dry-run is the operator's e2e of current source, so with no flags it always
 # rebuilds before running (cache-preserving refresh build, no --no-cache).
+# Given: the fixture
+# When:  dry-run runs without --fast
+# Then:  the images are built
+# Asserts: dry-run always exercises current source
 test_dry_run_default_builds_current_source() {
   local dir="$FIXTURE_DIR/dryrun_default_builds"
   run_start_session "$dir" dry-run \
@@ -176,6 +201,10 @@ test_dry_run_default_builds_current_source() {
 }
 
 # --fast is the looser invocation: skip the build, run whatever images exist.
+# Given: the fixture
+# When:  dry-run runs with --fast
+# Then:  no build is issued
+# Asserts: --fast skips the image build
 test_dry_run_fast_skips_build() {
   local dir="$FIXTURE_DIR/dryrun_fast_skip"
   run_start_session "$dir" dry-run --fast \
@@ -192,6 +221,10 @@ test_dry_run_fast_skips_build() {
 
 # --refresh is redundant with dry-run's always-rebuild default and rejected;
 # --rebuild (the --no-cache stronger form) and --fast (skip build) stay valid.
+# Given: the fixture
+# When:  dry-run runs with --refresh
+# Then:  it exits non-zero and names the redundant flag
+# Asserts: a redundant flag is refused rather than silently ignored
 test_dry_run_rejects_refresh_flag() {
   local out rc
   out=$(bash "$REPO_ROOT/scripts/start_agent.sh" dry-run --refresh \
@@ -204,6 +237,10 @@ test_dry_run_rejects_refresh_flag() {
 }
 
 # --fast is dry-run only: standard start must reject it, not silently ignore it.
+# Given: the fixture
+# When:  standard start runs with --fast
+# Then:  it exits non-zero
+# Asserts: --fast is dry-run only
 test_standard_start_rejects_fast_flag() {
   local out rc
   out=$(bash "$REPO_ROOT/scripts/start_agent.sh" standard --fast \
@@ -216,6 +253,10 @@ test_standard_start_rejects_fast_flag() {
 }
 
 # --fast and --rebuild are opposite policies and cannot combine.
+# Given: the fixture
+# When:  dry-run runs with --fast --rebuild
+# Then:  it exits non-zero
+# Asserts: opposite build policies cannot be combined
 test_dry_run_fast_rejects_rebuild_combination() {
   local out rc
   out=$(bash "$REPO_ROOT/scripts/start_agent.sh" dry-run --fast --rebuild \
@@ -229,6 +270,10 @@ test_dry_run_fast_rejects_rebuild_combination() {
 
 # Dry-run labeling: the session id is prefixed with dryrun-, and the prefix
 # flows into the container names and the registry record filename.
+# Given: a dry-run session
+# When:  the registry record and the container names are read
+# Then:  each carries the dryrun- prefix
+# Asserts: dry-run self-identification through every derived name
 test_dry_run_session_identity_is_dryrun_prefixed() {
   local dir="$FIXTURE_DIR/dryrun_prefix"
   run_start_session "$dir" dry-run \
@@ -247,6 +292,10 @@ test_dry_run_session_identity_is_dryrun_prefixed() {
 
 # Removed flags stay removed: --rebuild-base must be rejected as unknown,
 # not silently accepted or half-recognized.
+# Given: the removed flag --rebuild-base
+# When:  start runs with it
+# Then:  it exits non-zero as an unknown flag
+# Asserts: a removed flag fails loudly rather than being ignored
 test_removed_rebuild_base_flag_is_rejected() {
   local out rc
   out=$(bash "$REPO_ROOT/scripts/start_agent.sh" standard \
@@ -260,6 +309,10 @@ test_removed_rebuild_base_flag_is_rejected() {
 
 # Functional check: start_agent.sh --help prints the full usage (all modes, all
 # required flags, provider required with no default) and exits 0.
+# Given: --help as the only argument
+# When:  start_agent.sh runs
+# Then:  the full usage is printed and the exit status is 0
+# Asserts: --help is a success path at the leaf
 test_help_flag_prints_full_usage() {
   local output rc
   output=$(bash "$REPO_ROOT/scripts/start_agent.sh" --help 2>&1) && rc=$? || rc=$?
@@ -274,6 +327,10 @@ test_help_flag_prints_full_usage() {
   fi
 }
 
+# Given: -h as the only argument
+# When:  start_agent.sh runs
+# Then:  the usage is printed and the exit status is 0
+# Asserts: the short help form reaches the same path
 test_help_short_flag_prints_usage() {
   local output rc
   output=$(bash "$REPO_ROOT/scripts/start_agent.sh" -h 2>&1) && rc=$? || rc=$?
@@ -287,6 +344,10 @@ test_help_short_flag_prints_usage() {
 
 # --provider has no default: omitting it must fail fast with a clear
 # diagnostic instead of a cryptic image-naming error downstream.
+# Given: no --provider
+# When:  start runs
+# Then:  it exits non-zero and the diagnostic names --provider and the remedies
+# Asserts: the provider is required and the failure is actionable
 test_missing_provider_fails_fast_with_clear_error() {
   local out rc
   out=$(bash "$REPO_ROOT/scripts/start_agent.sh" standard \
@@ -298,6 +359,77 @@ test_missing_provider_fails_fast_with_clear_error() {
   fi
 }
 
+# When --sandbox is absent, start derives <dirname project>/<basename project>-sandbox.
+# The convention is load-bearing for direct invocation (the CLI always passes
+# --sandbox explicitly), so the derived directory is the only one the run can use.
+# Given: a project at <dir>/project and the conventional sandbox at <dir>/project-sandbox
+# When:  start runs without --sandbox
+# Then:  the session starts from the derived sandbox and persists its compose record there
+# Asserts: the -sandbox suffix derivation
+test_derived_sandbox_dir_uses_sandbox_suffix() {
+  local dir="$FIXTURE_DIR/derive_sandbox"
+  local sbx="$dir/project-sandbox"
+  mkdir -p "$sbx/.workspace/session-diffs" "$sbx/.workspace/input" "$sbx/.workspace/output"
+  cat > "$sbx/.env" <<EOF
+SANDBOX_DIR=$sbx
+PROJECT_DIR=$dir/project
+EOF
+  make_committed_repo "$dir/project"
+
+  local trace="$dir/docker-trace.log"
+  : > "$trace"
+  local out rc=0
+  out="$(cd "$dir" && PATH="$REPO_ROOT/tests/stubs:$PATH" \
+    DOCKER_TRACE_LOG="$trace" \
+    DOCKER_STUB_IMAGE_CONTRACT_VERSION="$(interface_contract_version)" \
+    bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+      --name=stest --project="$dir/project" --provider=pi 2>&1)" || rc=$?
+
+  if [[ "$rc" -eq 0 ]] && ls "$sbx/.compose"/*.yml >/dev/null 2>&1; then
+    pass "start without --sandbox: derived <project>-sandbox is the session sandbox"
+  else
+    fail "start without --sandbox: expected the derived sandbox to be used, rc=$rc out=$(head -2 <<<"$out")"
+  fi
+}
+
+# Given: --sandbox naming a path whose parent does not exist, and a valid project
+# When:  start runs
+# Then:  it exits 1 at the canonicalisation and never reaches the identity resolver
+# Asserts: the canonicalisation failure is fatal at its own layer
+test_unresolvable_sandbox_reports_canonicalisation() {
+  local dir="$FIXTURE_DIR/unresolvable_sandbox"
+  mkdir -p "$dir/project"
+  local out rc=0
+  out="$(bash "$REPO_ROOT/scripts/start_agent.sh" standard \
+    --name=ctest --project="$dir/project" \
+    --sandbox="$dir/no-such-parent-xyz/sandbox" --provider=pi 2>&1)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"cannot canonicalize SANDBOX_DIR"* \
+     && "$out" != *"SANDBOX_DIR is not set"* ]]; then
+    pass "unresolvable --sandbox: refused at the canonicalisation, not the resolver"
+  else
+    fail "unresolvable --sandbox: expected the canonicalisation refusal, rc=$rc out=$out"
+  fi
+}
+
+# --interactive is standard-mode only; the deferral names the roadmap item for
+# serve/dry-run support.
+# Given: dry-run --interactive
+# When:  start runs
+# Then:  it exits non-zero with the standard-mode-only message
+# Asserts: the wizard's standard-mode restriction
+test_wizard_rejects_non_standard_mode() {
+  local dir="$FIXTURE_DIR/wizard_mode_gate"
+  mkdir -p "$dir/project" "$dir/sandbox"
+  local out rc=0
+  out="$(bash "$REPO_ROOT/scripts/start_agent.sh" dry-run --interactive \
+    --name=wtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)" || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"only available for standard mode"* ]]; then
+    pass "dry-run --interactive: refused with the standard-mode restriction"
+  else
+    fail "dry-run --interactive: expected the mode restriction, rc=$rc out=$out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # WSL path validation
 # ---------------------------------------------------------------------------
@@ -306,6 +438,10 @@ test_missing_provider_fails_fast_with_clear_error() {
 # (rule 3.1), so it can be sourced and called in-process.
 source "$REPO_ROOT/scripts/start_agent.sh"
 
+# Given: a Linux absolute path
+# When:  validate_wsl_path is called
+# Then:  it returns 0 and prints nothing
+# Asserts: the accept path of the WSL guard
 test_wsl_path_accepts_linux_paths() {
   local out rc
   out=$(validate_wsl_path "PROJECT_DIR" "/mnt/c/Users/proj" 2>&1); rc=$?
@@ -316,6 +452,10 @@ test_wsl_path_accepts_linux_paths() {
   fi
 }
 
+# Given: a Windows drive path with a backslash
+# When:  validate_wsl_path is called
+# Then:  it returns non-zero with the path and the wslpath conversion hint
+# Asserts: the WSL path guard fires, in the shell spelling the unit supplies
 test_wsl_path_rejects_windows_drive_paths() {
   local out rc
   out=$(validate_wsl_path "PROJECT_DIR" 'C:\Users\proj' 2>&1); rc=$?
@@ -326,11 +466,29 @@ test_wsl_path_rejects_windows_drive_paths() {
   fi
 }
 
+# Given: a Windows drive path with a forward slash (the spelling wslpath emits)
+# When:  validate_wsl_path is called
+# Then:  it returns non-zero with the path and the wslpath conversion hint
+# Asserts: the WSL guard rejects the forward-slash spelling too
+test_wsl_path_rejects_forward_slash_windows_path() {
+  local out rc
+  out=$(validate_wsl_path "PROJECT_DIR" 'C:/Users/proj' 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"must be a WSL/Linux path"* && "$out" == *"wslpath"* ]]; then
+    pass "validate_wsl_path rejects forward-slash Windows path with conversion hint"
+  else
+    fail "validate_wsl_path C:/... : rc=$rc out=$out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Interactive config wizard tests (F2 design D11)
 # ---------------------------------------------------------------------------
 
 # Help surface: --interactive is described as the config wizard.
+# Given: start --help
+# When:  the usage text is read
+# Then:  --interactive is documented as the config wizard
+# Asserts: the wizard is discoverable from the help surface
 test_wizard_help_describes_interactive() {
   local out
   out="$(bash "$REPO_ROOT/scripts/start_agent.sh" --help 2>&1)"
@@ -344,6 +502,10 @@ test_wizard_help_describes_interactive() {
 # --interactive with no --provider: provider picker shown, build policy picker,
 # then confirm. Abort on 'n' -> non-zero and no session record created (the
 # clean-abort gate  --  no partial start).
+# Given: --interactive with no provider supplied
+# When:  the picker is answered and the confirmation is declined
+# Then:  the run exits non-zero and no session record is created
+# Asserts: an abort happens before any session state
 test_wizard_picker_abort() {
   local dir="$FIXTURE_DIR/wizard_pick_abort"
   mkdir -p "$dir/project" "$dir/sandbox"
@@ -364,6 +526,10 @@ test_wizard_picker_abort() {
 # --interactive with --provider supplied: no provider re-prompt (D1  --  supplied
 # args override the wizard's suggestions); the confirm shows the supplied
 # provider; abort on 'n'.
+# Given: --interactive --provider=pi
+# When:  the wizard screens are read
+# Then:  the confirmation shows the provider and never re-prompts for it, and declining aborts
+# Asserts: supplied arguments override the wizard's suggestions
 test_wizard_provider_supplied_no_reprompt() {
   local dir="$FIXTURE_DIR/wizard_provider_arg"
   mkdir -p "$dir/project" "$dir/sandbox"
@@ -385,6 +551,10 @@ test_wizard_provider_supplied_no_reprompt() {
 # session under the docker stub  --  run completes, the .compose record is
 # written, and compose up is issued. Proves the wizard integrates with the
 # existing non-interactive start pipeline.
+# Given: --interactive with no provider
+# When:  the picker and the confirmation are both accepted
+# Then:  the session reaches compose up and a registry record exists
+# Asserts: the wizard's accept path runs the normal start
 test_wizard_accept_runs_to_completion() {
   local dir="$FIXTURE_DIR/wizard_accept"
   mkdir -p "$dir/sandbox/.workspace/session-diffs" \
@@ -418,6 +588,10 @@ EOF
 # at WORKTREE_DIR (default $SANDBOX_DIR/.worktree) -- full history by default
 # (copied .git, HEAD = project HEAD, recorded agent-sandbox.flatten=false) +
 # copied tracked content; a second start attaches without re-materializing.
+# Given: --delivery=mount and no existing worktree
+# When:  start runs
+# Then:  the worktree exists at WORKTREE_DIR with the tracked content and the materialization message is printed
+# Asserts: mount delivery materializes the host worktree
 test_mount_start_materializes_worktree() {
   local dir="$FIXTURE_DIR/mount_first_start"
   run_start_session "$dir" standard --delivery=mount \
@@ -456,6 +630,10 @@ test_mount_start_materializes_worktree() {
   fi
 }
 
+# Given: a materialized mount worktree
+# When:  a second start runs
+# Then:  the worktree is reused and no re-materialization message appears
+# Asserts: attach semantics for an existing worktree
 test_mount_second_start_attaches() {
   local dir="$FIXTURE_DIR/mount_attach_start"
   run_start_session "$dir" standard --delivery=mount \
@@ -483,6 +661,10 @@ test_mount_second_start_attaches() {
 # The attach (reuse) path refuses a delivery-history-mode mismatch: a worktree
 # created full must not be served to a flatten request (and vice versa). The
 # refusal is the fail-closed claim at start_agent.sh -- it must have coverage.
+# Given: a worktree recorded as full history
+# When:  a flatten start runs against it
+# Then:  it exits non-zero and refuses the mismatch
+# Asserts: a worktree keeps its first delivery-history mode
 test_mount_reuse_refuses_mode_mismatch() {
   local dir="$FIXTURE_DIR/mount_mismatch"
   run_start_session "$dir" standard --delivery=mount \
@@ -502,6 +684,10 @@ test_mount_reuse_refuses_mode_mismatch() {
 # A legacy worktree (materialized before the flatten contract) has no
 # agent-sandbox.flatten key; its mode is unknown, so reuse must refuse rather
 # than mislabel it (it is a flatten-style baseline).
+# Given: a worktree with no recorded history mode
+# When:  start runs
+# Then:  it exits non-zero rather than assuming a mode
+# Asserts: an unknown legacy mode is refused, not inferred
 test_mount_reuse_refuses_unknown_legacy_worktree() {
   local dir="$FIXTURE_DIR/mount_legacy"
   mkdir -p "$dir/sandbox/.workspace/session-diffs" "$dir/sandbox/.workspace/input" \
@@ -528,6 +714,10 @@ EOF
 
 # A corrupt recorded mode (not true/false) is refused in the clear -- the
 # harness does not attempt to interpret an unknown value as full or flatten.
+# Given: a worktree recording an invalid history mode
+# When:  start runs
+# Then:  it exits non-zero and names the recorded value
+# Asserts: only the boolean literals are accepted
 test_mount_reuse_refuses_corrupt_recorded_mode() {
   local dir="$FIXTURE_DIR/mount_corrupt_mode"
   mkdir -p "$dir/sandbox/.workspace/session-diffs" "$dir/sandbox/.workspace/input" \
@@ -553,11 +743,15 @@ EOF
   fi
 }
 
-# Unborn-HEAD host repo: refused for both modes. The session-env gate
-# rejects an empty repository before delivery dispatch (this test exercises
-# that gate in the stub flow); the materialization guard is defense-in-depth
-# for direct invocation, firing for both full and flatten.
-test_mount_full_refuses_unborn_head() {
+# Unborn-HEAD host repo: the session-env gate rejects an empty repository
+# before delivery dispatch, so the mount materialization guard is
+# defense-in-depth for direct invocation and is unreachable on this path. The
+# unit names and asserts the gate that actually refuses.
+# Given: a project repository with no commits
+# When:  a mount start runs
+# Then:  it exits non-zero with the session-env gate's message naming the repository
+# Asserts: the session-env unborn-HEAD gate (the guard that refuses first)
+test_mount_unborn_head_refused_by_session_env_gate() {
   local dir="$FIXTURE_DIR/mount_unborn"
   mkdir -p "$dir/project" "$dir/sandbox/.workspace/session-diffs" \
            "$dir/sandbox/.workspace/input" "$dir/sandbox/.workspace/output"
@@ -571,14 +765,18 @@ EOF
     bash "$REPO_ROOT/scripts/start_agent.sh" standard --delivery=mount \
     --name=mtest --project="$dir/project" --sandbox="$dir/sandbox" --provider=pi 2>&1)"
   START_RC=$?
-  if [[ "$START_RC" -ne 0 ]] && grep -q "has no commits" <<<"$START_OUT"; then
-    pass "mount full: unborn-HEAD project refused"
+  if [[ "$START_RC" -ne 0 ]] && grep -q "git repository has no commits" <<<"$START_OUT"; then
+    pass "mount full: unborn-HEAD project refused by the session-env gate"
   else
     fail "mount full: expected refusal rc!=0 naming no commits, rc=$START_RC"
   fi
 }
 
 # Flatten mount: fresh single baseline (no host history), key recorded true.
+# Given: --delivery=mount --flatten
+# When:  start runs
+# Then:  the worktree carries a single baseline commit and records the flatten key as true
+# Asserts: flatten delivery history
 test_mount_flatten_single_baseline() {
   local dir="$FIXTURE_DIR/mount_flatten"
   run_start_session "$dir" standard --delivery=mount --flatten \
@@ -616,8 +814,12 @@ run_test test_removed_rebuild_base_flag_is_rejected
 run_test test_help_flag_prints_full_usage
 run_test test_help_short_flag_prints_usage
 run_test test_missing_provider_fails_fast_with_clear_error
+run_test test_derived_sandbox_dir_uses_sandbox_suffix
+run_test test_unresolvable_sandbox_reports_canonicalisation
+run_test test_wizard_rejects_non_standard_mode
 run_test test_wsl_path_accepts_linux_paths
 run_test test_wsl_path_rejects_windows_drive_paths
+run_test test_wsl_path_rejects_forward_slash_windows_path
 run_test test_wizard_help_describes_interactive
 run_test test_wizard_picker_abort
 run_test test_wizard_provider_supplied_no_reprompt
@@ -627,7 +829,7 @@ run_test test_mount_second_start_attaches
 run_test test_mount_reuse_refuses_mode_mismatch
 run_test test_mount_reuse_refuses_unknown_legacy_worktree
 run_test test_mount_reuse_refuses_corrupt_recorded_mode
-run_test test_mount_full_refuses_unborn_head
+run_test test_mount_unborn_head_refused_by_session_env_gate
 run_test test_mount_flatten_single_baseline
 
 test_done

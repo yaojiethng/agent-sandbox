@@ -78,7 +78,7 @@ make build
 Builds the capability layer image and all provider images. To build a single provider:
 
 ```sh
-make build TARGET=<provider>
+make build TARGETS=<provider>
 ```
 
 ---
@@ -110,7 +110,7 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 The sandbox directory persists across `make start` / `make stop` cycles via a named Docker volume. All git state, uncommitted changes, and session artifacts are preserved.
 
 - **New session:** `make start` always starts a NEW session with a fresh volume. `make start INTERACTIVE=1` opens the config wizard: pick a provider + build policy, confirm, then start (provider and .env values otherwise come from the Makefile/`.env`).
-- **Resume a session:** `make resume SESSION_ID=<id>` resumes that session's git state and volume. `make resume LIST=1` lists resumable sessions in an enriched table (`SESSION_ID | PROVIDER | STARTED | BRANCH | LAST_USED`, relative times, newest first, capped at 10 rows), flagging staleness as the `[SANDBOX_STALE]` warning label (worktree identity); `make resume INTERACTIVE=1` picks + confirms (same marker); `PROVIDER=<n>` filters either by provider.
+- **Resume a session:** `make resume SESSION_ID=<id>` resumes that session's git state and volume. `make resume LIST=1` lists resumable sessions in an enriched table (`SESSION | PROVIDER | BRANCH | AGE | WORK | STATE`; `AGE` = the last lifecycle event's age, `WORK` = the checkpoint proxy under `.workspace/session-diffs`, `STATE` = how many commits the current HEAD is ahead of the recorded host-head sha; newest first, capped at 10 rows), flagging staleness as the `[SANDBOX_STALE]` warning label (worktree identity); `make resume INTERACTIVE=1` picks + confirms (same marker); `PROVIDER=<n>` filters either by provider.
 - **Rebuild and fresh start:** `make start REFRESH=1` or `REBUILD=1` rebuilds images before starting a new session with a fresh volume.
 - **Stop without destroying:** `make stop` preserves the volume and prints the hint pair (`make resume SESSION_ID=<id>`, `make draft BUNDLE=<name>`).
 - **Prune stale/orphaned sessions:** `make prune` removes stale `.compose` records and now-orphaned resources (containers/volumes whose session has no record). Always a complete pass; `STALE=sandbox`/`PROVIDER`/`AGE_DAYS` narrow the stale-record selection, `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.

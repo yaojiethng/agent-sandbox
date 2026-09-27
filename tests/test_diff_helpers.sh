@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 12
 # Tests for libs/diff.sh: write_uncommitted_diff, write_all_changes_diff, write_changed_files
+#   write_uncommitted_diff  --  write, empty, untracked inclusion, staging restore, strip, round-trip
+#   write_all_changes_diff  --  explicit and state baselines, both change classes, guards
+#   write_changed_files     --  copies, untracked, deleted, manifest, structure, dedup, guard
 #
 # Sources libs/diff.sh directly for function access.
 
@@ -14,6 +18,10 @@ source "$REPO_ROOT/src/libs/diff.sh"
 # write_uncommitted_diff
 # ===================================================================
 
+# Given: a tracked file modified relative to HEAD
+# When:  write_uncommitted_diff runs
+# Then:  a non-empty diff file
+# Asserts: the basic uncommitted write.
 test_uncommitted_writes_diff() {
   local DIR="$FIXTURE_DIR/uw_diff"
   local OUT="$FIXTURE_DIR/uw_diff_out"
@@ -31,6 +39,42 @@ test_uncommitted_writes_diff() {
   fi
 }
 
+# Given: a git repository whose index is corrupt (git diff cannot run)
+# When:  write_uncommitted_diff runs
+# Then:  it returns non-zero, prints a refusal, and leaves no diff file
+# Asserts: a broken repository fails closed instead of writing an empty diff
+#          that reads as "no changes"
+test_uncommitted_refuses_broken_repo() {
+  local DIR="$FIXTURE_DIR/uw_broken"
+  local OUT="$FIXTURE_DIR/uw_broken_out"
+  mkdir -p "$OUT"
+  make_sandbox_fixture "$DIR"
+  printf 'garbage' > "$DIR/.git/index"
+
+  local RC=0 ERR=""
+  ERR=$(write_uncommitted_diff "$DIR" "$OUT/uncommitted.diff" 2>&1) || RC=$?
+
+  if [[ $RC -ne 0 ]]; then
+    pass "write_uncommitted_diff fails closed on a broken repository"
+  else
+    fail "write_uncommitted_diff should refuse a broken repository (rc=0)"
+  fi
+  if [[ "$ERR" == *"git diff failed"* ]]; then
+    pass "the refusal names the failing check"
+  else
+    fail "the refusal should name the failing check: '$ERR'"
+  fi
+  if [[ ! -e "$OUT/uncommitted.diff" ]]; then
+    pass "no partial diff file is left behind on refusal"
+  else
+    fail "a partial diff file should not remain after refusal"
+  fi
+}
+
+# Given: a clean tree at HEAD
+# When:  write_uncommitted_diff runs
+# Then:  an empty file, not a missing one
+# Asserts: the empty-diff contract callers test with diff_is_empty.
 test_uncommitted_empty_on_clean() {
   local DIR="$FIXTURE_DIR/uw_clean"
   local OUT="$FIXTURE_DIR/uw_clean_out"
@@ -46,6 +90,10 @@ test_uncommitted_empty_on_clean() {
   fi
 }
 
+# Given: an untracked file
+# When:  write_uncommitted_diff runs
+# Then:  the untracked file appears in the diff
+# Asserts: the temporary intent-to-add staging.
 test_uncommitted_includes_untracked() {
   local DIR="$FIXTURE_DIR/uw_untracked"
   local OUT="$FIXTURE_DIR/uw_untracked_out"
@@ -63,6 +111,34 @@ test_uncommitted_includes_untracked() {
   fi
 }
 
+# Given: an untracked file in a sandbox with a committed baseline
+# When:  write_uncommitted_diff runs
+# Then:  the file keeps its bytes and the index carries no staged entry
+# Asserts: the intent-to-add staging is undone, so the sandbox worktree survives the call.
+test_uncommitted_restores_untracked_worktree() {
+  local DIR="$FIXTURE_DIR/uw_restore"
+  local OUT="$FIXTURE_DIR/uw_restore_out"
+  mkdir -p "$OUT"
+  make_sandbox_fixture "$DIR"
+
+  printf 'untracked payload\n' > "$DIR/untracked.txt"
+
+  write_uncommitted_diff "$DIR" "$OUT/uncommitted.diff"
+
+  local CONTENT STAGED
+  CONTENT=$(cat "$DIR/untracked.txt" 2>/dev/null)
+  STAGED=$(git -C "$DIR" diff --cached --name-only)
+  if [[ "$CONTENT" == "untracked payload" && -z "$STAGED" ]]; then
+    pass "write_uncommitted_diff restores the untracked file and leaves the index clean"
+  else
+    fail "write_uncommitted_diff damaged the sandbox: content='$CONTENT' staged='$STAGED'"
+  fi
+}
+
+# Given: a text change
+# When:  write_uncommitted_diff runs
+# Then:  no `index` line remains
+# Asserts: the cosmetic strip that lets the patch apply across differing histories.
 test_uncommitted_strips_index_lines() {
   local DIR="$FIXTURE_DIR/uw_index"
   local OUT="$FIXTURE_DIR/uw_index_out"
@@ -80,6 +156,10 @@ test_uncommitted_strips_index_lines() {
   fi
 }
 
+# Given: no arguments
+# When:  write_uncommitted_diff runs
+# Then:  rc 1 with a diagnostic
+# Asserts: the argument guard.
 test_uncommitted_missing_args() {
   if write_uncommitted_diff "" "" 2>/dev/null; then
     fail "write_uncommitted_diff should fail with missing args"
@@ -88,6 +168,10 @@ test_uncommitted_missing_args() {
   fi
 }
 
+# Given: a removed line carrying trailing whitespace
+# When:  write_uncommitted_diff runs
+# Then:  the patch carries those bytes
+# Asserts: the strip touches index lines only, not content.
 test_uncommitted_preserves_content_whitespace() {
   # Regression: the export pipeline must not content-mutate the patch. The
   # removed `sed -e '/^[+]/ s/[[:space:]]*$//' -e '/^[-]/ s/[[:space:]]*$//'`
@@ -115,6 +199,10 @@ test_uncommitted_preserves_content_whitespace() {
   fi
 }
 
+# Given: whitespace-funny and CRLF content, uncommitted
+# When:  write_uncommitted_diff runs and the patch is applied to a clean baseline
+# Then:  the target reproduces the source bytes exactly
+# Asserts: the verbatim round-trip the export path depends on.
 test_uncommitted_roundtrip_verbatim() {
   # The verbatim patch must apply to a clean baseline and reproduce the source
   # bytes exactly (including trailing-space blank/added lines and a CRLF line).
@@ -156,6 +244,10 @@ test_uncommitted_roundtrip_verbatim() {
   fi
 }
 
+# Given: eight funny-whitespace and CRLF classes, one per round
+# When:  the verbatim pipeline runs end to end for each
+# Then:  each round-trips byte-exactly
+# Asserts: the matrix behind the verbatim claim.
 test_roundtrip_whitespace_matrix() {
   # The verbatim exporter must round-trip every "funny-line" class byte-exactly
   # through the real pipeline: trailing-space add/remove, space-only lines,
@@ -215,6 +307,10 @@ test_roundtrip_whitespace_matrix() {
 # write_all_changes_diff
 # ===================================================================
 
+# Given: committed and uncommitted change since the baseline
+# When:  write_all_changes_diff runs with an explicit SHA
+# Then:  a non-empty diff file
+# Asserts: the explicit-baseline write.
 test_all_changes_writes_diff() {
   local DIR="$FIXTURE_DIR/ac_diff"
   local OUT="$FIXTURE_DIR/ac_diff_out"
@@ -236,6 +332,10 @@ test_all_changes_writes_diff() {
   fi
 }
 
+# Given: a committed file and an uncommitted file since the baseline
+# When:  write_all_changes_diff runs
+# Then:  both appear
+# Asserts: `git diff <baseline>` rather than range syntax, so both classes are included.
 test_all_changes_includes_both_committed_and_uncommitted() {
   local DIR="$FIXTURE_DIR/ac_both"
   local OUT="$FIXTURE_DIR/ac_both_out"
@@ -259,6 +359,10 @@ test_all_changes_includes_both_committed_and_uncommitted() {
   fi
 }
 
+# Given: a clean tree at the baseline
+# When:  write_all_changes_diff runs
+# Then:  an empty file
+# Asserts: the empty-diff contract for the all-changes form.
 test_all_changes_empty_on_clean() {
   local DIR="$FIXTURE_DIR/ac_clean"
   local OUT="$FIXTURE_DIR/ac_clean_out"
@@ -274,6 +378,10 @@ test_all_changes_empty_on_clean() {
   fi
 }
 
+# Given: no arguments
+# When:  write_all_changes_diff runs
+# Then:  rc 1 with a diagnostic
+# Asserts: the argument guard.
 test_all_changes_missing_args() {
   if write_all_changes_diff "" "" 2>/dev/null; then
     fail "write_all_changes_diff should fail with missing args"
@@ -282,6 +390,10 @@ test_all_changes_missing_args() {
   fi
 }
 
+# Given: no SESSION_STATE record and no explicit baseline
+# When:  write_all_changes_diff runs
+# Then:  rc 1 rather than an empty write
+# Asserts: a missing baseline is an error, not a silent empty diff.
 test_all_changes_missing_session_state() {
   local DIR="$FIXTURE_DIR/ac_nostate"
   local OUT="$FIXTURE_DIR/ac_nostate_out"
@@ -299,6 +411,10 @@ test_all_changes_missing_session_state() {
 # write_changed_files
 # ===================================================================
 
+# Given: a modified tracked file since the baseline
+# When:  write_changed_files runs
+# Then:  the copy carries the same content, at the same relative path
+# Asserts: the working-tree copy.
 test_changed_files_copies_modified() {
   local DIR="$FIXTURE_DIR/cf_modified"
   local OUT="$FIXTURE_DIR/cf_modified_out"
@@ -316,6 +432,10 @@ test_changed_files_copies_modified() {
   fi
 }
 
+# Given: an untracked file
+# When:  write_changed_files runs
+# Then:  it is copied
+# Asserts: untracked files are part of the bundle.
 test_changed_files_copies_untracked() {
   local DIR="$FIXTURE_DIR/cf_untracked"
   local OUT="$FIXTURE_DIR/cf_untracked_out"
@@ -334,6 +454,10 @@ test_changed_files_copies_untracked() {
   fi
 }
 
+# Given: a change that is only a deletion
+# When:  write_changed_files runs
+# Then:  no file is copied and no directory is left behind
+# Asserts: deleted paths have no working-tree copy; the manifest is not inspected (finding 59).
 test_changed_files_skips_deleted() {
   local DIR="$FIXTURE_DIR/cf_deleted"
   local OUT="$FIXTURE_DIR/cf_deleted_out"
@@ -358,6 +482,10 @@ test_changed_files_skips_deleted() {
   fi
 }
 
+# Given: one changed file
+# When:  write_changed_files runs
+# Then:  MANIFEST.txt lists it
+# Asserts: the manifest exists and names the file.
 test_changed_files_writes_manifest() {
   local DIR="$FIXTURE_DIR/cf_manifest"
   local OUT="$FIXTURE_DIR/cf_manifest_out"
@@ -375,6 +503,10 @@ test_changed_files_writes_manifest() {
   fi
 }
 
+# Given: a change in a subdirectory
+# When:  write_changed_files runs
+# Then:  the copy keeps its directory structure
+# Asserts: relative-path preservation.
 test_changed_files_preserves_directory_structure() {
   local DIR="$FIXTURE_DIR/cf_subdir"
   local OUT="$FIXTURE_DIR/cf_subdir_out"
@@ -394,6 +526,10 @@ test_changed_files_preserves_directory_structure() {
   fi
 }
 
+# Given: a path that is both modified and untracked-listed
+# When:  write_changed_files runs
+# Then:  the manifest names it once
+# Asserts: `sort -u` deduplication of the two sources.
 test_changed_files_deduplicates() {
   local DIR="$FIXTURE_DIR/cf_dedup"
   local OUT="$FIXTURE_DIR/cf_dedup_out"
@@ -412,6 +548,36 @@ test_changed_files_deduplicates() {
   assert_eq_num "$COUNT" "1" "write_changed_files deduplicates file appearing in both diff and untracked"
 }
 
+# Given: a deletion and an untracked addition since the baseline
+# When:  write_changed_files runs
+# Then:  the copy tree holds only the addition and the manifest names both paths
+# Asserts: the manifest is the changed-path list, deletions included, not the copied set.
+test_changed_files_manifest_includes_deletions() {
+  local DIR="$FIXTURE_DIR/cf_manifest_del"
+  local OUT="$FIXTURE_DIR/cf_manifest_del_out"
+  mkdir -p "$OUT"
+  local SHA
+  SHA=$(make_sandbox_fixture "$DIR")
+
+  echo "new file" > "$DIR/new.txt"
+  rm "$DIR/file.txt"
+
+  write_changed_files "$DIR" "$SHA" "$OUT"
+
+  local MANIFEST="$OUT/changed-files/MANIFEST.txt"
+  if [[ -f "$OUT/changed-files/new.txt" && ! -e "$OUT/changed-files/file.txt" ]] \
+     && grep -qx 'file.txt' "$MANIFEST" 2>/dev/null \
+     && grep -qx 'new.txt' "$MANIFEST" 2>/dev/null; then
+    pass "write_changed_files names the deleted path and the copied path in MANIFEST.txt"
+  else
+    fail "write_changed_files manifest/copy split wrong: manifest='$(cat "$MANIFEST" 2>/dev/null)'"
+  fi
+}
+
+# Given: no arguments
+# When:  write_changed_files runs
+# Then:  rc 1 with a diagnostic
+# Asserts: the argument guard.
 test_changed_files_missing_args() {
   if write_changed_files "" "" "" 2>/dev/null; then
     fail "write_changed_files should fail with missing args"
@@ -424,6 +590,10 @@ test_changed_files_missing_args() {
 # strip_index_lines
 # ===================================================================
 
+# Given: a text diff with index lines
+# When:  strip_index_lines runs
+# Then:  the index lines are gone and the hunk headers remain
+# Asserts: the text half of the filter.
 test_strip_index_removes_text_index() {
   local INPUT=$'diff --git a/file.txt b/file.txt\nindex abc123..def456 100644\n--- a/file.txt\n+++ b/file.txt\n@@ -1 +1 @@\n-old\n+new'
   local OUTPUT
@@ -443,6 +613,10 @@ test_strip_index_removes_text_index() {
   fi
 }
 
+# Given: a binary diff with an index line and a GIT binary patch header
+# When:  strip_index_lines runs
+# Then:  the index line and the header survive
+# Asserts: the binary half of the filter, without which git apply rejects the patch.
 test_strip_index_preserves_binary_index() {
   local INPUT='diff --git a/data.bin b/data.bin
 index 0eee44a..802480f 100644
@@ -468,6 +642,10 @@ HcmV?d00001'
   fi
 }
 
+# Given: a diff holding text and binary changes
+# When:  strip_index_lines runs
+# Then:  exactly one index line remains, the binary one, and the text headers remain
+# Asserts: the per-hunk decision in one pass.
 test_strip_index_handles_mixed_diff() {
   # Create a diff with both text and binary changes
   local INPUT='diff --git a/file.txt b/file.txt
@@ -498,6 +676,10 @@ acmezW@9+OnG'
   fi
 }
 
+# Given: a diff with no index lines
+# When:  strip_index_lines runs
+# Then:  the input passes through unchanged
+# Asserts: the filter is a no-op on already-stripped patches.
 test_strip_index_passthrough_no_index() {
   local INPUT='diff --git a/file.txt b/file.txt
 --- a/file.txt
@@ -519,8 +701,10 @@ test_strip_index_passthrough_no_index() {
 # Run
 # =============================================================================
 run_test test_uncommitted_writes_diff
+run_test test_uncommitted_refuses_broken_repo
 run_test test_uncommitted_empty_on_clean
 run_test test_uncommitted_includes_untracked
+run_test test_uncommitted_restores_untracked_worktree
 run_test test_uncommitted_strips_index_lines
 run_test test_uncommitted_missing_args
 run_test test_uncommitted_preserves_content_whitespace
@@ -537,6 +721,7 @@ run_test test_changed_files_skips_deleted
 run_test test_changed_files_writes_manifest
 run_test test_changed_files_preserves_directory_structure
 run_test test_changed_files_deduplicates
+run_test test_changed_files_manifest_includes_deletions
 run_test test_changed_files_missing_args
 run_test test_strip_index_removes_text_index
 run_test test_strip_index_preserves_binary_index

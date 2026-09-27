@@ -32,9 +32,11 @@ _source_preflight() {
   (
     export AGENT_HOME="$ah"
     export PROVIDER_NAME="pi"
-    # Fixture-written preflight copy; not statically followable.
+    # Fixture-written preflight copy; not statically followable. A failed
+    # source must propagate so a "no-op" observation is never a failed load
+    # wearing green.
     # shellcheck disable=SC1090
-    source "$PREFLIGHT" 2>&1 || true
+    source "$PREFLIGHT" 2>&1
   )
 }
 
@@ -43,7 +45,7 @@ _source_preflight() {
 # ---------------------------------------------------------------------------
 
 test_merge_adds_harness_keys() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -65,11 +67,10 @@ test_merge_adds_harness_keys() {
     fail "skills path incorrect"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_merge_preserves_existing_keys() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -90,11 +91,10 @@ test_merge_preserves_existing_keys() {
     fail "merge lost user skills path"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_merge_deduplicates_paths() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
@@ -108,11 +108,10 @@ test_merge_deduplicates_paths() {
   count=$(grep -c '/opt/workflow/agent/skills' "$settings" || true)
   assert_eq_num "$count" "1" "merge deduplicates existing paths"
 
-  rm -rf "$tmpdir"
 }
 
 test_warn_on_missing_settings() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   # Deliberately NOT creating settings.json
@@ -126,11 +125,10 @@ test_warn_on_missing_settings() {
     fail "no warning for missing settings.json"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_warn_on_missing_agents_md() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   # Deliberately NOT creating AGENTS.md
@@ -146,12 +144,11 @@ test_warn_on_missing_agents_md() {
     fail "no warning for missing AGENTS.md"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_merge_does_not_fail_on_missing_agents_md() {
   # Even without AGENTS.md, the merge should still succeed
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{"defaultModel":"test"}' > "$ah/agent/settings.json"
@@ -165,7 +162,6 @@ test_merge_does_not_fail_on_missing_agents_md() {
     fail "merge failed when AGENTS.md was missing"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 # ---------------------------------------------------------------------------
@@ -173,7 +169,7 @@ test_merge_does_not_fail_on_missing_agents_md() {
 # ---------------------------------------------------------------------------
 
 test_freshness_reset_zeroes_checked_at() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{"openrouter":{"models":[1],"checkedAt":1700000000000,"lastModified":1789000000000,"etag":"w/abc"},"opencode-go":{"checkedAt":1700000001000}}' > "$ah/agent/models-store.json"
@@ -189,11 +185,10 @@ test_freshness_reset_zeroes_checked_at() {
     fail "freshness reset did not zero checkedAt"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_freshness_reset_preserves_etag_and_last_modified() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{"openrouter":{"models":[1],"checkedAt":1700000000000,"lastModified":1789000000000,"etag":"w/abc"}}' > "$ah/agent/models-store.json"
@@ -209,16 +204,19 @@ test_freshness_reset_preserves_etag_and_last_modified() {
     fail "freshness reset dropped revalidation metadata"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_freshness_reset_noop_when_store_missing() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
-  local output
-  output=$(_source_preflight "$ah")
+  local output rc=0
+  output=$(_source_preflight "$ah") || rc=$?
+  if [[ "$rc" -ne 0 ]]; then
+    fail "preflight failed to source: $PREFLIGHT"
+    return
+  fi
 
   if echo "$output" | grep -q "models-store"; then
     fail "unexpected models-store message when store is absent"
@@ -226,11 +224,10 @@ test_freshness_reset_noop_when_store_missing() {
     pass "freshness reset is a no-op when the store is absent"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_freshness_reset_warns_on_invalid_json() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
   echo '{broken' > "$ah/agent/models-store.json"
@@ -244,7 +241,6 @@ test_freshness_reset_warns_on_invalid_json() {
     fail "no warning for invalid models-store.json"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 # ---------------------------------------------------------------------------
@@ -252,7 +248,7 @@ test_freshness_reset_warns_on_invalid_json() {
 # ---------------------------------------------------------------------------
 
 test_bind_mounts_ok_when_all_present() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/prompts" "$ah/agent/sessions" "$ah/agent/skills"
 
@@ -265,11 +261,10 @@ test_bind_mounts_ok_when_all_present() {
     fail "unexpected warning for present bind mounts"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_bind_mount_warns_on_missing_prompts() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/sessions" "$ah/agent/skills"
   # No prompts/
@@ -283,11 +278,10 @@ test_bind_mount_warns_on_missing_prompts() {
     fail "no warning for missing prompts/"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_bind_mount_warns_on_missing_sessions() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/prompts" "$ah/agent/skills"
   # No sessions/
@@ -301,11 +295,10 @@ test_bind_mount_warns_on_missing_sessions() {
     fail "no warning for missing sessions/"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_bind_mount_warns_on_not_writable() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent/prompts" "$ah/agent/sessions" "$ah/agent/skills"
   chmod 000 "$ah/agent/skills"
@@ -320,11 +313,10 @@ test_bind_mount_warns_on_not_writable() {
   fi
 
   chmod 755 "$ah/agent/skills" 2>/dev/null || true
-  rm -rf "$tmpdir"
 }
 
 test_bind_mount_messages_on_all_missing() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local ah="$tmpdir/ah"
   # No bind-mounted dirs at all
 
@@ -345,7 +337,6 @@ test_bind_mount_messages_on_all_missing() {
     fail "no summary message about bind mounts"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 # ---------------------------------------------------------------------------

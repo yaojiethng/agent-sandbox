@@ -17,7 +17,7 @@ enough patterns emerge.
 | Reference | Path | Where defined |
 |---|---|---|
 | Config dir (Pi convention) | `$AGENT_HOME/agent/` | `providers/pi/preflight.sh` |
-| Template (baked into image) | `/opt/workflow/agent/config/agent/` | Build context (`containers.sh`) + Dockerfile COPY |
+| Template (baked into image) | `/opt/workflow/agent/config/agent/` | Build context (repository root) + Dockerfile COPY |
 | Bind mounts (host -> container) | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `providers/pi/docker-compose.pi.yml` |
 
 Pi-specific volumes live in the Pi compose overlay (`docker-compose.pi.yml`),

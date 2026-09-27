@@ -35,7 +35,7 @@ set -euo pipefail
 # REPO_ROOT assumes this script lives at scripts/
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# Shared flag-parsing helpers (parse_help_flag, parse_base_flags, check_base_flags).
+# Shared flag-parsing helpers (parse_help_flag, check_base_flags).
 # common.sh does not touch script-dir variables  --  this script's own value above stands.
 source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
@@ -93,10 +93,13 @@ EOF
 validate_wsl_path() {
   local PATH_VAR="$1"
   local PATH_VAL="$2"
-  if [[ "$PATH_VAL" =~ ^[A-Za-z]:\\ ]]; then
-    echo "Error: $PATH_VAR must be a WSL/Linux path, not a Windows path."
-    echo "  Got:      $PATH_VAL"
-    echo "  Convert:  wslpath '$PATH_VAL'"
+  # Reject either spelling of a Windows drive path: `C:\...` and `C:/...`
+  # (the forward-slash form is what wslpath emits and what an editor copy
+  # can produce).
+  if [[ "$PATH_VAL" =~ ^[A-Za-z]:[/\\] ]]; then
+    echo "Error: $PATH_VAR must be a WSL/Linux path, not a Windows path." >&2
+    echo "  Got:      $PATH_VAL" >&2
+    echo "  Convert:  wslpath '$PATH_VAL'" >&2
     return 1
   fi
 }
@@ -212,8 +215,11 @@ main() {
   # Handle --help/-h before any mode or flag validation, so both
   #   start_agent.sh --help
   #   start_agent.sh standard --help
-  # print the full usage and exit cleanly. Reuses the canonical parse_help_flag.
-  parse_help_flag "$@"
+  # print the full usage and exit cleanly. Reuses the canonical parse_help_flag,
+  # which returns 0 when help was requested; the caller owns the exit.
+  if parse_help_flag "$@"; then
+    exit 0
+  fi
 
   MODE="${1:-}"
   shift || true
@@ -230,6 +236,10 @@ main() {
   PROJECT_NAME=""
   PROJECT_DIR=""
   SANDBOX_DIR_OVERRIDE=""
+  # ENV_REL is the --env parse target; its default .env is read by
+  # env_resolve_identity in the sourced session_env.sh, which ShellCheck
+  # cannot trace across `source`.
+  # shellcheck disable=SC2034
   ENV_REL=".env"
   PROVIDER_NAME=""
   REFRESH=false
@@ -403,7 +413,7 @@ main() {
       # invocation; the harness session-env gate already rejected an empty
       # repository before delivery dispatch. The seed path fires the same
       # guard (matching invariant, both deliveries).
-      if ! git -C "$PROJECT_DIR" rev-parse --verify HEAD >/dev/null 2>&1; then
+      if ! git_head_resolvable "$PROJECT_DIR"; then
         echo "Error: repository at $PROJECT_DIR has no commits. Make an initial commit before starting a session." >&2
         exit 1
       fi

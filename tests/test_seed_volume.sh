@@ -24,14 +24,42 @@ LIBS_DIR="$REPO_ROOT/src/libs"
 
 # run_seeder SRC DEST [FLATTEN]
 # Runs the seeder as a subprocess against fixture dirs. Optional FLATTEN is
-# "true" to run the flattened-history branch.
+# "true" to run the flattened-history branch. SEEDER_PATH, when set, prepends
+# a shim directory to the seeder's PATH. SEED_OUT holds the seeder's combined
+# stdout and stderr for message assertions.
+SEED_OUT=""
 run_seeder() {
   local src="$1" dest="$2"
-  local flatten="${3:-false}"
-  SEED_SRC="$src" SEED_DEST="$dest" SEED_LIB_DIR="$LIBS_DIR" \
+  local flatten="${3:-false}" rc=0 out
+  out=$(SEED_SRC="$src" SEED_DEST="$dest" SEED_LIB_DIR="$LIBS_DIR" \
   SEED_FLATTEN="$flatten" \
   SESSION_ID="testses" SESSION_TS="20260904-000000" HOST_HEAD_SHA="$(git -C "$src" rev-parse HEAD)" \
-    bash "$SEED_SCRIPT" > /dev/null 2>&1
+  PATH="${SEEDER_PATH:-$PATH}" \
+    bash "$SEED_SCRIPT" 2>&1)
+  rc=$?
+  SEED_OUT="$out"
+  return $rc
+}
+
+# make_seeder_git_shim DIR
+# Writes DIR/git, a wrapper that delegates to the real git except when
+# SHIM_NOOP_GC or SHIM_NOOP_STASH_CLEAR is set, when it no-ops the matching
+# invocation. Makes the seeder's own post-step re-checks fail.
+make_seeder_git_shim() {
+  local dir="$1"
+  mkdir -p "$dir"
+  cat > "$dir/git" <<EOF
+#!/usr/bin/env bash
+real_git="$(command -v git)"
+if [[ -n "\${SHIM_NOOP_GC:-}" && "\$*" == *"gc --prune=now"* ]]; then
+  exit 0
+fi
+if [[ -n "\${SHIM_NOOP_STASH_CLEAR:-}" && "\$*" == *"stash clear"* ]]; then
+  exit 0
+fi
+exec "\$real_git" "\$@"
+EOF
+  chmod +x "$dir/git"
 }
 
 # make_rich_project DIR
@@ -82,6 +110,10 @@ make_rich_project() {
 # Guard tests (fail closed)
 # -------------------------
 
+# Given: a repo whose index carries a gitlink entry (160000)
+# When:  the seeder runs
+# Then:  it exits non-zero and names the seed's own submodule guard
+# Asserts: the submodule guard fires before the delivery primitives
 test_seeder_rejects_submodule() {
   local proj="$FIXTURE_DIR/sub_project"
   make_committed_repo "$proj"
@@ -95,8 +127,13 @@ test_seeder_rejects_submodule() {
   else
     pass "seeder: submodule repo rejected"
   fi
+  assert_contains "$SEED_OUT" "Not supported by the seed" "seeder: submodule guard message"
 }
 
+# Given: a repo with no commits (unborn HEAD)
+# When:  the seeder runs
+# Then:  it exits non-zero and names the seed's own unborn-HEAD guard
+# Asserts: the unborn-HEAD guard, stated as the delivery-layer form of the session-env gate
 test_seeder_rejects_unborn_head() {
   local proj="$FIXTURE_DIR/unborn_project"
   make_repo "$proj"
@@ -107,8 +144,15 @@ test_seeder_rejects_unborn_head() {
   else
     pass "seeder: unborn HEAD rejected"
   fi
+  assert_contains "$SEED_OUT" "has no commits" "seeder: unborn-HEAD guard message"
 }
 
+# Given: a linked worktree whose .git is a gitfile pointing at the host git dir
+# When:  the seeder runs
+# Then:  it exits non-zero naming the missing repository directory
+# Asserts: the seed fails closed on a gitfile .git. The dedicated linked-worktree
+#          guard is unreachable behind the preceding `[[ -d .git ]]` test, so the
+#          no-repo message is the one that fires; the guard is reported as redundant
 test_seeder_rejects_linked_worktree() {
   local proj="$FIXTURE_DIR/wt_project"
   make_committed_repo "$proj"
@@ -120,8 +164,13 @@ test_seeder_rejects_linked_worktree() {
   else
     pass "seeder: linked worktree rejected"
   fi
+  assert_contains "$SEED_OUT" "no git repository at" "seeder: linked worktree fails closed"
 }
 
+# Given: a repo whose index tracks .agent-sandbox-seed/ staged state
+# When:  the seeder runs
+# Then:  it exits non-zero and names the tracked-sentinel guard
+# Asserts: the tracked-sentinel guard refuses harness staging state as project content
 test_seeder_rejects_tracked_sentinel() {
   local proj="$FIXTURE_DIR/sentinel_project"
   make_committed_repo "$proj"
@@ -136,6 +185,46 @@ test_seeder_rejects_tracked_sentinel() {
   else
     pass "seeder: tracked sentinel rejected"
   fi
+  assert_contains "$SEED_OUT" "tracks .agent-sandbox-seed/" "seeder: tracked-sentinel guard message"
+}
+
+# Given: a source path that is not a git repository
+# When:  the seeder runs
+# Then:  it exits non-zero and names the missing repository
+# Asserts: the no-repo guard
+test_seeder_rejects_missing_source() {
+  local proj="$FIXTURE_DIR/not_a_repo"
+  mkdir -p "$proj"
+  local dest="$FIXTURE_DIR/norepo_dest"
+  mkdir -p "$dest"
+  if run_seeder "$proj" "$dest"; then
+    fail "seeder: missing repository rejected"
+  else
+    pass "seeder: missing repository rejected"
+  fi
+  assert_contains "$SEED_OUT" "no git repository at" "seeder: no-repo guard message"
+}
+
+# Given: a repo whose tree path casing differs from the filesystem
+# When:  the seeder runs
+# Then:  it still succeeds and the case-mismatch warning surfaces in its output
+# Asserts: the case-collision preflight is wired into the seeder
+test_seeder_warns_on_case_mismatch() {
+  local proj="$FIXTURE_DIR/cm_project"
+  make_committed_repo "$proj"
+  echo payload > "$proj/CaseName.txt"
+  git -C "$proj" add CaseName.txt
+  git -C "$proj" commit -q -m "add CaseName.txt"
+  mv "$proj/CaseName.txt" "$proj/casename.txt"
+  local dest="$FIXTURE_DIR/cm_dest"
+  mkdir -p "$dest"
+  if run_seeder "$proj" "$dest"; then
+    pass "seeder: case-mismatch repo seeds"
+  else
+    fail "seeder: case-mismatch repo should seed"
+  fi
+  assert_contains "$SEED_OUT" "[snapshot] WARNING: case mismatch detected" \
+    "seeder: case-collision warning surfaces"
 }
 
 # -------------------------
@@ -144,6 +233,10 @@ test_seeder_rejects_tracked_sentinel() {
 
 # Flattened seed: no host history or staging state crosses; the volume is a
 # fresh single baseline commit.
+# Given: the rich fixture
+# When:  the seeder runs flattened
+# Then:  the volume has exactly one commit, a clean worktree, and init_sha equal to that root commit
+# Asserts: the flatten contract -- no host history, no staging state, one fresh baseline
 test_seeder_flat_single_baseline() {
   local proj="$FIXTURE_DIR/flat_project"
   local dest="$FIXTURE_DIR/flat_dest"
@@ -179,6 +272,12 @@ test_seeder_flat_single_baseline() {
 # equal the source enumeration (B1 -- coverage verification, not just a clean
 # worktree). Drive verify_baseline directly (sourced) against a seeded dest
 # whose source has since lost a file: the set comparison must fail.
+# Given: a flattened seed whose source loses a tracked file afterwards
+# When:  verify_baseline runs directly on the pair
+# Then:  it returns non-zero
+# Asserts: coverage is measured as a set comparison, so a dropped path fails even though the
+#          worktree is clean. The main call site is pinned by
+#          test_seeder_baseline_self_check_aborts_on_divergence
 test_seeder_flat_verification_detects_dropped_file() {
   local proj="$FIXTURE_DIR/flat_drop_project"
   local dest="$FIXTURE_DIR/flat_drop_dest"
@@ -203,6 +302,10 @@ test_seeder_flat_verification_detects_dropped_file() {
   fi
 }
 
+# Given: a rich fixture (staged edit, staged new file, unstaged edit, unstaged deletion, untracked content, negation patterns, ignored file, symlink, exec bit, unicode name)
+# When:  the seeder runs full mode
+# Then:  the volume is porcelain-identical to the source, the ignore rules hold, the symlink and exec bit survive, and SESSION_STATE carries init_sha equal to HEAD
+# Asserts: the full-seed parity contract end to end
 test_seeder_parity_preserves_everything() {
   local proj="$FIXTURE_DIR/rich_project"
   local dest="$FIXTURE_DIR/rich_dest"
@@ -278,6 +381,11 @@ test_seeder_parity_preserves_everything() {
 # Self-check: induced divergence is detected
 # -------------------------
 
+# Given: a seeded volume tampered with after the seed
+# When:  verify_parity runs directly on the pair
+# Then:  it returns non-zero
+# Asserts: the parity comparison detects divergence. The main call site is pinned by
+#          test_seeder_full_self_check_aborts_on_divergence
 test_seeder_parity_fail_detected() {
   local proj="$FIXTURE_DIR/corrupt_project"
   local dest="$FIXTURE_DIR/corrupt_dest"
@@ -295,10 +403,103 @@ test_seeder_parity_fail_detected() {
   fi
 }
 
+# Given: a destination pre-seeded with an extra untracked file
+# When:  the seeder runs full mode
+# Then:  it exits non-zero and names the failed seed verification
+# Asserts: main calls verify_parity on the full-seed result
+test_seeder_full_self_check_aborts_on_divergence() {
+  local proj="$FIXTURE_DIR/sc_full_project"
+  local dest="$FIXTURE_DIR/sc_full_dest"
+  make_committed_repo "$proj"
+  mkdir -p "$dest"
+  echo stray > "$dest/stray.txt"
+  if run_seeder "$proj" "$dest"; then
+    fail "full self-check: seeder should abort on a diverged destination"
+  else
+    pass "full self-check: seeder aborts on a diverged destination"
+  fi
+  assert_contains "$SEED_OUT" "the volume was not seeded correctly" \
+    "full self-check: verification failure is named"
+}
+
+# Given: a destination pre-seeded with an extra file
+# When:  the seeder runs flattened
+# Then:  it exits non-zero and names the failed baseline verification
+# Asserts: main calls verify_baseline on the flatten-seed result
+test_seeder_baseline_self_check_aborts_on_divergence() {
+  local proj="$FIXTURE_DIR/sc_flat_project"
+  local dest="$FIXTURE_DIR/sc_flat_dest"
+  make_committed_repo "$proj"
+  mkdir -p "$dest"
+  echo stray > "$dest/stray.txt"
+  if run_seeder "$proj" "$dest" true; then
+    fail "flatten self-check: seeder should abort on a diverged destination"
+  else
+    pass "flatten self-check: seeder aborts on a diverged destination"
+  fi
+  assert_contains "$SEED_OUT" "the volume was not seeded correctly" \
+    "flatten self-check: verification failure is named"
+}
+
+# Given: a repo with a dangling object and a git shim that no-ops gc --prune=now
+# When:  the seeder runs
+# Then:  it exits non-zero and names the surviving unreachable objects
+# Asserts: the post-prune unreachable tripwire
+test_seeder_post_prune_tripwire() {
+  local proj="$FIXTURE_DIR/trip_prune_project"
+  local dest="$FIXTURE_DIR/trip_prune_dest"
+  make_committed_repo "$proj"
+  printf 'dangling payload' | git -C "$proj" hash-object -w --stdin > /dev/null
+  mkdir -p "$dest"
+  make_seeder_git_shim "$FIXTURE_DIR/trip_prune_shim"
+  export SEEDER_PATH="$FIXTURE_DIR/trip_prune_shim:$PATH"
+  export SHIM_NOOP_GC=1
+  local rc=0
+  run_seeder "$proj" "$dest" || rc=$?
+  unset SHIM_NOOP_GC SEEDER_PATH
+  if [[ $rc -ne 0 ]]; then
+    pass "post-prune tripwire: seeder aborts when unreachable objects survive"
+  else
+    fail "post-prune tripwire: seeder succeeded with unreachable objects present"
+  fi
+  assert_contains "$SEED_OUT" "still carries unreachable objects after the prune" \
+    "post-prune tripwire: unreachable-object message"
+}
+
+# Given: a repo with a host stash and a git shim that no-ops stash clear
+# When:  the seeder runs
+# Then:  it exits non-zero and names the surviving stash entries
+# Asserts: the post-clear stash tripwire
+test_seeder_post_clear_stash_tripwire() {
+  local proj="$FIXTURE_DIR/trip_stash_project"
+  local dest="$FIXTURE_DIR/trip_stash_dest"
+  make_committed_repo "$proj"
+  echo wip > "$proj/file.txt"
+  git -C "$proj" stash push -q -m "host wip"
+  mkdir -p "$dest"
+  make_seeder_git_shim "$FIXTURE_DIR/trip_stash_shim"
+  export SEEDER_PATH="$FIXTURE_DIR/trip_stash_shim:$PATH"
+  export SHIM_NOOP_STASH_CLEAR=1
+  local rc=0
+  run_seeder "$proj" "$dest" || rc=$?
+  unset SHIM_NOOP_STASH_CLEAR SEEDER_PATH
+  if [[ $rc -ne 0 ]]; then
+    pass "post-clear stash tripwire: seeder aborts when stash entries survive"
+  else
+    fail "post-clear stash tripwire: seeder succeeded with stash entries present"
+  fi
+  assert_contains "$SEED_OUT" "the volume still carries stash entries after the stash clear" \
+    "post-clear stash tripwire: stash message"
+}
+
 # -------------------------
 # Empty enumeration: tracked file deleted, nothing untracked
 # -------------------------
 
+# Given: a repo whose only tracked file is deleted from the worktree
+# When:  the seeder runs
+# Then:  it succeeds and the volume shows the deletion
+# Asserts: an empty enumeration is a no-op for the transport, not a failure
 test_seeder_empty_enumeration() {
   local proj="$FIXTURE_DIR/empty_project"
   local dest="$FIXTURE_DIR/empty_dest"
@@ -321,6 +522,10 @@ test_seeder_empty_enumeration() {
 # Stash clear: host stash entries must not cross into the volume (ADR
 # sandbox_delivery_model.md, 2026-09-11 entry), and the host stack must be
 # untouched by the seeder.
+# Given: a repo carrying two host stash entries
+# When:  the seeder runs
+# Then:  the volume carries no stash entries and the host stack still holds both
+# Asserts: host session state does not cross into the volume, and the host is untouched
 test_seeder_clears_host_stash() {
   local proj="$FIXTURE_DIR/stashed_project"
   local dest="$FIXTURE_DIR/stashed_dest"
@@ -350,6 +555,10 @@ test_seeder_clears_host_stash() {
 # Object-store prune: stash objects, a dangling blob, and reflog-anchored
 # history must not survive into the volume (study
 # 20260911-study-seed_object_store_cleanliness.md); the host repo is untouched.
+# Given: a repo with a stash and a dangling blob written to its object store
+# When:  the seeder runs
+# Then:  the volume carries no unreachable objects and the blob is absent, while the host keeps both
+# Asserts: the object-store prune removes host archaeology without touching the host
 test_seeder_prunes_unreachable_objects() {
   local proj="$FIXTURE_DIR/dirty_objects_project"
   local dest="$FIXTURE_DIR/dirty_objects_dest"
@@ -385,6 +594,33 @@ test_seeder_prunes_unreachable_objects() {
   fi
 }
 
+# Given: a flattened seed whose volume worktree is dirtied afterwards
+# When:  verify_baseline runs directly on the pair
+# Then:  it returns non-zero and names the unclean worktree
+# Asserts: the worktree-clean assertion, distinct from the file-set comparison.
+test_seeder_flat_verification_detects_dirty_worktree() {
+  local proj="$FIXTURE_DIR/flat_dirty_project"
+  local dest="$FIXTURE_DIR/flat_dirty_dest"
+  make_rich_project "$proj"
+  mkdir -p "$dest"
+  if ! run_seeder "$proj" "$dest" true; then
+    fail "flatten dirty: rich project flattens successfully"; return 0
+  fi
+  pass "flatten dirty: rich project flattens successfully"
+
+  echo "residue" > "$dest/untracked_residue.txt"
+  source "$REPO_ROOT/src/capability/snapshot.sh"
+  # shellcheck disable=SC1090
+  SEED_LIB_DIR="$LIBS_DIR" SEED_VOLUME_NO_MAIN=1 source "$SEED_SCRIPT"
+  local OUT RC=0
+  OUT=$(verify_baseline "$proj" "$dest" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"the volume worktree is not clean"* ]]; then
+    pass "flatten dirty: verify_baseline fails on an unclean volume worktree"
+  else
+    fail "flatten dirty: expected unclean-worktree refusal, rc=$RC out='$OUT'"
+  fi
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -393,13 +629,20 @@ run_test test_seeder_rejects_submodule
 run_test test_seeder_rejects_unborn_head
 run_test test_seeder_rejects_linked_worktree
 run_test test_seeder_rejects_tracked_sentinel
+run_test test_seeder_rejects_missing_source
+run_test test_seeder_warns_on_case_mismatch
 run_test test_seeder_parity_preserves_everything
 run_test test_seeder_parity_fail_detected
+run_test test_seeder_full_self_check_aborts_on_divergence
+run_test test_seeder_baseline_self_check_aborts_on_divergence
+run_test test_seeder_post_prune_tripwire
+run_test test_seeder_post_clear_stash_tripwire
 run_test test_seeder_empty_enumeration
 run_test test_seeder_clears_host_stash
 run_test test_seeder_prunes_unreachable_objects
 run_test test_seeder_flat_single_baseline
 run_test test_seeder_flat_verification_detects_dropped_file
+run_test test_seeder_flat_verification_detects_dirty_worktree
 
 test_done
 

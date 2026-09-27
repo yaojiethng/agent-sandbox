@@ -61,13 +61,6 @@ scoped: M3 T1 -- evidence-validation (verification) discipline
 legacy: none
 mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) Treat reviewer remedies as hypotheses; verify each with a repro before applying (a proposed `cmd | mapfile` was worse than the bug). (2) After a negative-test mutation, check syntax (`bash -n`) and that it fails for the intended reason, not a side effect. (3) A filtered summary that gates a conclusion must be validated against unfiltered output (`diff -rq` bare). (4) An in-place suite-claim correction carries a certified rerun recorded beside it.
 
-### [A] 2026-09-21  --  Record write-back gate (T1)
-
-state: probation
-scoped: M3 T1 -- record write-back gate
-legacy: none
-mitigation: a claimed record must be verified to have landed. When announcing a write-back (findings row, decision, task), grep the row key / content in the same turn. Keep findings rows as candidate records consolidated at review/publish, not one row per observation; run throwaway verification in `/tmp`, never in the repo tree; a feedback follow-up note is an observation, not a task assignment (the roadmap is the sole task list).
-
 ### [A] 2026-09-21  --  Close-milestone and iteration record discipline (T1)
 
 state: open
@@ -91,10 +84,10 @@ mitigation: one failure family across the `edit` tool, resolved from the T2 meas
 
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
 
-state: probation
+state: mitigated
 scoped: M3.1 -- doc-format lint rules
 legacy: none
-mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure).
+mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure). The add-a-lint-rule clause landed: the `doc-wrap` rule is live in `.markdownlint-cli2.mjs`.
 
 ### [A] 2026-09-21  --  Install and staleness family (T4)
 
@@ -118,9 +111,9 @@ Bash friction entries migrated from `devlog/discussions/20260809-story-active-ba
 
 ### [A] 2026-08-09  --  Circular sourcing between `diff_export.sh` and `package_branch.sh`
 
-state: open
+state: mitigated
 scoped: M3 T7 -- skill-maintenance backlog triage (pending circular-sourcing ADR)
-mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators.
+mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators. Both libs source it on disk.
 
 `diff_export.sh` sources `package_branch.sh`. When `package_branch.sh` needed `_write_export_status`, it could not source `diff_export.sh` back without a cycle. The discovery was trial-and-error; no static analysis tool caught the cycle.
 
@@ -128,14 +121,33 @@ Scope: architecture decision recorded in ADR (not yet written). Cross-reference:
 
 ### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
 
-state: open
+state: mitigated
 scoped: M3.1 -- ShellCheck gate (directive-parse warning)
 legacy: none
-mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent").
+mitigation: word the line so `shellcheck` is not the first token after `#` (for example "the shellcheck tool absent"). The shell gate now flags a prose directive rather than dropping it silently.
 
 ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
 
 Scope: ShellCheck directive parsing. Cross-reference: `docs/development/bash-coding-conventions.md` states the suppression policy (targeted `# shellcheck disable=` with a rationale) but does not warn that a bare leading `shellcheck` word is parsed at all.
+
+### [A] 2026-09-25  --  `false` is a non-empty string inside `[[ ]]`, so a `&& false` mutation is not a mutation
+
+state: open
+scoped: none
+legacy: none
+mitigation: to disable a guard while testing, replace its condition line with `if false; then`, and confirm the mutant file differs from its backup before running the suite, and that the line that changed is the site the verdict depends on. `[[ "$x" && false ]]` evaluates true, because the right-hand operand is a string test on a non-empty literal; `[[ -z "$x" && -n /dev/null ]]` is true for the same reason. Both forms report a false survivor. When a mutation uses perl to substitute a literal that contains a shell variable, `\Q...\E` does not stop interpolation: pass the literal through the environment (`OLD=... perl -0777 -pi -e 's/\Q$ENV{OLD}\E/.../'`) and keep the backup comparison in probes as well as in bite scripts.
+
+A mutation is evidence only if it changes behaviour. Two forms that look like disablements do not: `&& false` and `-n /dev/null` inside `[[ ]]`, where the right-hand operand is a string test on a non-empty literal and therefore true. Both were used in the read-through's bite sweeps - a delivery guard, two resume guards, and a provider-recovery check - and each reported a survivor that was in fact an unchanged guard. The check that catches the whole family is cheap: verify the mutant differs from the backup before running the suite, and prefer a form with no operand at all.
+
+A second form of the same failure surfaced in the apply.sh pass, in a probe script rather than a bite script: `s/\QFILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || true)\E/` matched nothing, because perl interpolates `$DIFF_FILE` inside `\Q...\E`; the shell variable was unset in the perl process, so the pattern became a no-match and the probe reported the mutant's output as if the mutant had applied. Twenty of the first sweep's twenty-two bites no-op'd the same way for the same reason (the other two aborted with perl syntax errors on the interpolated quotes). The probe script had no backup comparison because the bite script already had one, which is why the check belongs in both.
+
+A third form belongs to the same entry, from the interactive.sh pass. `\Q...\E` also stops `\n` from being a newline: `OLD='---\n### '` passed through the environment matches the literal characters backslash and n, not a line break, so a two-line replacement against a markdown file no-op'd with no error. The environment idiom removes the interpolation hazard but not the escape hazard. When the literal spans lines, put a real newline in the variable (`OLD=$'---\n### '`) or use the `edit` tool, whose `oldText` carries the newline directly.
+
+A fourth false positive comes from outside the mutant. The Makefile-template pass's `start` `INTERACTIVE_FLAG` bite (M11) exited non-zero on its first run and a bite script that reads only the exit status recorded PROVEN; two re-runs gave 722/722 with the liveness gate reporting zero findings. The abort came from the liveness gate, which the read-through's row 135 records as observed once and unreproduced. A PROVEN verdict therefore needs the failing file's name and a re-run before it is trusted, not the exit status alone.
+
+A fifth false positive, from the first rectification slice. The mutant differed from its backup and the mutation was real, but it landed at the wrong site. `scripts/workflows/confirm.sh` carries `git -C "$PROJECT_DIR" rebase --abort 2>/dev/null || true` twice, at six-space indentation in the drop-step failure path and four-space indentation in the conflict path. A line-based matcher given the six-space form hit the drop-step guard, while the verdict belonged to the conflict path; the suite stayed green and the bite reported a survivor that the intended mutation would have caught. The indentation was invisible in a grep listing, which is what made the error easy. Confirm the site, not only the difference: print the mutant's diff and read which line changed, and give a repeated line enough of its context to be unambiguous. A survivor is evidence about the code path you actually mutated.
+
+Scope: bash conditional-expression semantics. Cross-reference: `docs/development/bash-coding-conventions.md`; the vacuity family is [A] 2026-09-22 "A condition on an always-true helper is a vacuous assertion", whose subject is an assertion rather than a mutation.
 
 ---
 
@@ -143,23 +155,38 @@ Skill-trap coverage gaps (bash entries marked "no trap" or partially covered): c
 
 ---
 
+### [A] 2026-09-25  --  A guard that errexit already provides cannot be pinned by a unit
+
+state: open
+scoped: M3.1 T1 -- the read-through brief's disposition rule for a surviving bite
+legacy: none
+mitigation: when a bite survives, classify the row by running the deletion and comparing the outcome for the code's callers, never by argument. If no input changes output or exit status, the row is a code row: delete the line, write no unit. Do not add a gate for the idiom, because whether `cmd || exit 1` decides anything depends on the call context: errexit is suspended for the whole body of a function invoked in a condition.
+
+Three instances, filed as coverage gaps (`action_kind: test`), each with a different mechanism. `scripts/workflows/apply.sh` ends `apply_run` with `exit $?`: unreachable when the preceding command failed, because errexit exits first, and a no-op when it succeeded. `scripts/resume_agent.sh` guards the picker call with `chosen="$(picker)" || exit 1`: the arm does run (`bash -c 'set -e; x="$(false)" || { echo ARM; exit 1; }; echo after'` prints ARM and exits 1), and the line is redundant only because errexit produces the same exit status without it. `scripts/workflows/draft.sh`'s `main` sets `CHANNEL_ARG="${CHANNEL_ARG:-session}"` and no reader uses the value, because `resolve_source_for_draft` applies the same default.
+
+No unit can fail on any of the three, so the mutation survives by construction. The brief's earlier text, "a surviving mutation is a coverage finding", would have pushed the next agent to write a source-text assertion, which the suite's anti-patterns forbid because it pins the text and not the behaviour.
+
+Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
+
+Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
+
 ## Gotchas  --  operator-raised entries
 
 Entries raised by the operator (tagged `[O]`), migrated from the former `devlog/GOTCHAS.md` (deleted in the unification).
 
 ### [O] 2026-08-09  --  Set handover Status Closed before the final commit (close = the commit)
 
-state: mitigated
-scoped: none
-legacy: none
-mitigation: the final commit must include the Closed handover. Set Status to `Closed`, then run `git add -A && git commit`. Do not commit then re-amend to add the Closed marker. Marked mitigated 2026-08-19 (P1): the durable policy fix landed in session `20260809-05` (P2)  --  `iteration_policy.md` Step 8 now reads "The close is the commit"  --  and practice held across the intervening sessions. Monitored through the next few closes; delete when confirmed durable.
+state: open
+scoped: M3 -- iteration close one-commit rule (`docs/operations/git_policy.md` transient-commits; `docs/operations/iteration_policy.md` close-produces-one-commit)
+legacy: the original fix landed 2026-08-19 and held across the intervening sessions; the defect resurfaced 2026-09-24 as `docs: close` commits whose only change was the handover Status flip and roadmap write-back (recorded in handover `20260924-02`); it resurfaced again 2026-09-26 as a register-closing iteration shipped as a pile -- 13 commits (8 typed `fix:`/`docs:`/`chore:` and 4 `wip:`) across one logical iteration with no open handover, so the operator asked for a retrospective squash
+mitigation: a commit whose only change is the handover Status flip or the roadmap write-back is a defect, not a delivery commit. The close edit belongs in the iteration's single delivery commit: set `Status: Closed` and apply the write-back, then commit or amend once. Within the iteration, commit the work when useful, with `wip:` prefix only -- a mid-iteration `fix:`/`docs:`/`feat:`/`chore:` commit is a false delivery surface that reads as closed and later folds away. Do not let `wip:` checkpoints pile up to the close gate: squash each into the evolving delivery commit after a discrete task group, or amend an existing `wip:`. An iteration has an open handover from Step 1; a pile of commits at HEAD with no open handover is a missing-record signal, not progress. The 2026-09-24 governance fix prescribes the close in the transient-commits rule (git_policy) and close-produces-one-commit (iteration_policy); the 2026-09-26 fix adds the discipline-mid-iteration rule to git_policy, iteration_policy, AGENTS.md, and the `commit-discipline-checkpoint` runbook. Screen each subsequent close for a pile of typed intermediates or an un-squashed `wip:` chain; drop the entry when several closes in a row show none.
 
 ### [O] 2026-08-12  --  Library functions must `return`, not `exit`
 
-state: open
+state: mitigated
 scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
-mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1.
+mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1. Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
 
 ### [O] 2026-09-18  --  Mechanical-edit one-liners must carry a match-count guard and a timeout
 
@@ -167,6 +194,24 @@ state: open
 scoped: M3 T2 -- tool timeout / run-budget on the bash tool, tests, and lint
 legacy: none
 mitigation: a perl one-liner intended to count matches in a test file was written with the `/g` modifier against a full-file slurp; it matched nothing, but the loop structure ran forever, emitting a line count that grew into the hundreds of millions before the run was aborted and the log killed. The deeper fix: a mechanical transform that prints only a summary at the end is invisible while it spins. Always (1) bound the tool with `timeout`, (2) have the transform emit a match/replacement count to stderr BEFORE any output, and (3) diff against the input to verify the change before committing. A long-running transform with no stderr progress is the signal to inspect the loop, not to wait. The standing order to run every script through `timeout` is withdrawn: a blanket timeout on a simple script maxes out the wait every run. Move to a test harness with per-test timeouts.
+
+### [O] 2026-09-22  --  Design documents record the final design, not the questionnaire
+
+state: open
+scoped: M3 T1 -- Workflow + Policy Organization (design-document policy amendment; not scheduled, roadmap row under T1)
+legacy: ties to [A] 2026-09-04 "Record-layer documents drafted as reasoning traces" and [A] 2026-08-18 "Multi-question turns during a grill-me design walk" -- the same records-state-not-session-history rule, applied to design-session capture
+mitigation: a grill-me or design walk must not be captured as an open-questions-and-replies transcript in the design document. Write the answers back into the design body; include a short "designs considered and rejected" section with each rejected option and why; put the completed final design at the forefront. A questionnaire log reads as a record of effort, not a record of reasoning, and adds length without an understanding benefit. Amend the design-document / documentation-policy conventions to prohibit the pattern at the root.
+
+### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
+
+state: open
+scoped: M3 T1 -- Workflow + Policy Organization (iteration and handover policy; roadmap row under T1)
+legacy: recurring form of [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline"; that rule covered scope and acceptance criteria but not the commit decomposition of a multi-lane autonomous iteration.
+mitigation: for an autonomous iteration, the scope proposal carries a work-unit table naming each unit, its commit type, its file ownership, and its own handover, and the operator confirms that table at Gate 1 before any file is written. One commit per unit. A batch of four fix lanes is four commits, not one. Draw the boundaries by concern, not by file class or commit type: one concern that touches a data file, a dockerfile and a policy clause is one unit, and several concerns that happen to share one commit type are several units.
+
+The read-through close was released as "follow through everything autonomously", and the agent then landed three workflow briefs, a 661-line lesson plan, the register repair, and 87 fix rows across four lanes as a single commit with one handover. Each sampled change reviewed fine; the aggregate was unreviewable as a unit of work. The operator expected six commits - one per workstream and one per fix lane, each with its own handover - which is the decomposition the scope proposal should have offered and awaited release on. The gate asked what would be delivered and named the lanes, but it never bound the lanes to commits, so autonomy collapsed them.
+
+A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
 
 ## Agent experience  --  session 20260809-04
 
@@ -179,7 +224,7 @@ mitigation: negative-test mutation was reverted with `git restore scripts/stop.s
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the
 mutation check itself passed: the test failed as expected; only the revert was wrong).
 The generalized form surfaced the same session: a `git stash` + `git checkout
-tests/test_trace_start.sh` (a) normalized the stub"s working-tree exec mode to the index
+tests/test_trace_start.sh`, since merged into `tests/test_run_agent.sh`, (a) normalized the stub"s working-tree exec mode to the index
 mode  --  16 tests failed with "Permission denied"  --  and (b) reverted the test file"s
 uncommitted session edits. Root cause of the mode churn was a host/container
 `core.fileMode` mismatch (host `false` vs container `true`), not a repo defect; resolved
@@ -240,17 +285,6 @@ mitigation: 2026-09-04 -- both `discovery_tar_*` probes were deleted with the le
 
 The tar feasibility probes landed in `tests/knowledge/` as `discovery_tar_*.sh`, a prefix the testing policy does not list. Their content (external-tool behaviour) is the knowledge category, so the defect is the name, not the placement. Cleanup: rename to `knowledge_tar_*.sh`. Cross-reference: the same change introduced the rename-without-grep pattern -- a `run_test` registration was renamed by `sed` and briefly went missing before the suite caught it.
 
-### [A] 2026-09-02  --  Campaign prompt scope contradicted its own success criteria
-
-state: probation
-scoped: M3 T1 -- prompt-scope discipline
-legacy: none
-mitigation: none
-
-The test-quality-campaign prompt said "tests only - never change production source", but success criterion #3 (the prerequisite gate) can only be met by changing scripts/run_tests.sh, which is not a tests/ file. At run time the subagent touched the runner to satisfy the criterion and reported "no production source was touched" - inaccurate. The ambiguity: "tests only" was read as the tests/ directory, while the testing_policy prerequisite rule mandates a runner behaviour that lives outside it. Fix: name the test runner as in-scope in the campaign prompt, or make criterion #3 flag-only.
-
-Same session, same prompt: the deliverable contract was iterated three times in chat (commit, then branch-and-merge, then uncommitted proposal) because the first draft pinned "commit one delivery commit" while the operator's model was "subagent proposes, main agent commits at iteration close". Pin the deliverable ("leave uncommitted, never commit") before writing a subagent prompt.
-
 ## Agent experience  --  session 20260904-01 (seed transport redesign)
 
 ### [A] 2026-09-04  --  Record-layer documents drafted as reasoning traces needed a full rewrite
@@ -272,3 +306,51 @@ mitigation: postponed to the M3 `perf` workstream, which owns the instrument for
 The thermo-nuclear review pass over this iteration ran two models per round across ten rounds in two tranches. Each round is a fresh `pi -p` context, so no round inherits the previous round's reasoning, and the log stays empty until the run flushes: neither the main agent nor the operator can see whether a round is progressing, stalled on the provider, or merely slow. There is no per-run accounting of wall-clock, tokens, throughput, latency, tool-call time, or agent turns, so the cost of a review tranche cannot be compared against its yield. The concrete cost of that blindness: a round that reports nothing new still consumes a full model pass, and the operator cannot tell from the outside whether a silent log means "thinking hard" or "network died".
 
 Scope: harness-wide measurement gap, not a bash or skill trap. Cross-reference: the consolidated `edit`-tool failure entry in the `## Consolidated (M3 cleanup 2026-09-21)` section routes to the same M3 `perf`/T2 task, which instruments failed tool calls by cause.
+
+## Agent experience  --  session 20260922 (test-harness isolation, M3.1 U1-U7)
+
+### [A] 2026-09-22  --  A condition on an always-true helper is a vacuous assertion; a masked rc hides real defects
+
+state: open
+scoped: M3.1 -- final per-assertion sweep (U7)
+legacy: ties to [A] 2026-09-20 "A subagent review pass is expensive and unmeasured" -- the fresh-subagent sweep is the yield side of that entry; resurfaced 2026-09-25 in a second form, a mutation that leaves its guard always true (see the `[[ ]]` entry in Bash)
+mitigation: `if trace_grep "..." > /dev/null` always took the pass branch because `trace_grep` ends in `|| true`; the traced operation was never gated. Any conditional on a helper that always returns 0 is a vacuous assertion -- use the `grep -q` variant. The sweep found six such assertions and one silent-green (an empty failed `docker compose config` satisfied its own grep). The reverse face: a masked invocation rc hid a real production defect (`scripts/prune.sh` committed without its exec bit, so `stop --prune` returned 126); the same masks that U4 documented as load-bearing also conceal genuine failures, so assert the rc of any success-expected command.
+
+---
+
+## Agent experience  --  session 20260924 (test-suite read-through, phase 4)
+
+### [A] 2026-09-25  --  The probe shell persists its exports between tool calls, so a probe can test the wrong environment
+
+state: open
+scoped: none
+legacy: none
+mitigation: `unset` every variable a probe assumes absent, and pass the environment the probe depends on explicitly instead of relying on the caller's state. When a mutant's result looks identical to the pristine run, check for ambient values before concluding equivalence.
+
+The bash tool keeps one shell across calls, so an `export` from an earlier fixture survived into a later probe: `PROVIDER_NAME=pi` from a run_agent fixture made a resume mutant - which passes `$PROVIDER_NAME` where the recovered value belongs - behave exactly like the pristine run, and the mutant looked equivalent. Its real behaviour is an abort under `set -u` at the point where the provider is consumed. The same risk applies to any probe that reads a variable it did not set, and the general form is worth keeping: an identical result is evidence of equivalence only if the environment was controlled.
+
+Scope: agent harness (the persistent tool shell). Cross-reference: [A] 2026-09-22 "Test subshells run `set +e`..." documents shell state leaking from a sourced script into its caller; this entry is the same family one level up, between tool invocations.
+
+### [A] 2026-09-25  --  A finding re-found by a later file pass was recorded as a second row instead of checked against the log
+
+state: open
+scoped: none
+legacy: none
+mitigation: before numbering a new finding row, grep the findings table for the finding itself, not for the class it belongs to. When the defect is already recorded, add the new pass's evidence to that row and name the new row as the same finding; do not give it a second disposition. The read-through's own Format section carries the rule.
+
+The phase-4 `confirm.sh` pass probed `eval` on a `.draft-state` field, demonstrated the execution, and filed it as row 242. The phase-2 `draft_state.sh` pass had already recorded the same defect as row 38, with both call sites and an end-to-end chain probe, and row 22's KV-family entry already named `.draft-state` as the family's colon-delimited member with eval'd readers. The duplicate was invisible to the per-file workflow because each pass greps the subject file, not the accumulated log, and the finding arrived from a different direction: a chain from the exporter in phase 2, a direct record in phase 4. A class-level grep would not have caught it either, since the class (persisted record formats) has 17 rows. The operator caught it by asking whether the `.draft-state` entry was consolidated with the KV entry.
+
+A second, purely mechanical form recurred during the `guards.sh` integration. Rows 275 to 283 were appended with an `edit` anchor copied from the previous round, `list \`--interactive\` on the two lines |`, which is row 266's tail rather than the tail of the row just added. The anchor still matched, so the new block landed after row 266 and duplicated row 274. The sorting check showed one extra row (`GAP 275` onward, 284 slots for 283 numbers), which is how it was caught. Anchor on the row you just inserted, not on the one you used last time, and run the contiguity check after every append. The report's Format section already states the rule.
+
+Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.
+
+### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
+
+state: mitigated
+scoped: M3.1 - Backpressure
+legacy: none
+mitigation: declare the budget in the file's first ten lines (`# TEST_DEADLINE: <seconds>`) instead of raising `TEST_TIMEOUT` for every file. The runner reads the declaration and names it when the file expires. The runner reads `TEST_DEADLINE`, and three test files declare one.
+
+One 5s default is a single budget for test files whose honest runtimes differ by more than an order of magnitude. A harness file that spawns 20+ probe invocations (`tests/test_dry_run_probe.sh`, 3.4 to 5.4s) or runs the real umbrella gate repeatedly (`tests/test_lint_umbrella.sh`, 4.0 to 5.8s) sits on the deadline, so the 8-way parallel suite run expires it at random as the container loads up. The failure mode is worse than a red test: the file prints no `UNIT:` report, so the aggregate silently drops every unit in the file. `tests/test_dry_run_probe.sh` expired once during a mutation run and the suite read 764 units against a 783-unit baseline, with one timeout and no other sign - which also made the mutation's verdict unreadable, since a timeout is not a proof of anything. Two files now declare 10s (`tests/test_lint_umbrella.sh`, `tests/test_runner_selftest.sh`) and the third is added with this entry. Three more files measured above 5s standalone on a loaded container (`test_start_agent.sh`, `test_runner_selftest.sh`, `test_dry_run_probe.sh`), so the declaration is a pattern, not a one-off.
+
+Scope: `scripts/run_tests.sh` and every test file whose honest runtime is near the default. Cross-reference: [`docs/development/test_harness_mechanism.md`](../docs/development/test_harness_mechanism.md) (The gates, The selftest); the mutation-suite roadmap row, which reads the aggregate to judge a survivor.

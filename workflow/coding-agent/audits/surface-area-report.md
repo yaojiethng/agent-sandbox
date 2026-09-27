@@ -11,7 +11,7 @@ The envisioned future state: a targeted workflow file for each current use case,
 | [`gm.md`](../gm.md) | Kickoff: check-in -- survey the project state, present a work inventory, wait for direction | Current, canonical (rewritten 2026-09-11) | Keep |
 | `prompts/new-iteration.md` | Kickoff: open an iteration with a known directive -- scope and acceptance gates | Current, canonical | Keep; candidate for workflow bundling per the M3 workflows-folder task |
 | `prompts/agent-sandbox.md` | Meta: redirect harness questions to `/opt/sandbox/docs/` | Current | Keep |
-| `prompts/wrapup.md` | Close: minor-loop Steps 7b-9 -- verify, reconcile, mark, seed | Current, canonical | Keep |
+| `prompts/` (wrapup removed) | Close: superseded by `iteration_policy.md` Steps 7-9 and the transient-commits rule in `git_policy.md` | Removed 2026-09-24 | -- |
 | `prompts/package-branch.md` | Export: package committed history as diffs for review (`/package-branch`) | Current, tool-backed | Keep |
 | `prompts/defer.md` | In-iteration: park an adjacent issue into the handover's Deferred items | Current, canonical | Keep |
 | `prompts/propagation-check.md` | In-iteration: verify a cross-file change reached every consumer | Current | Keep; AGENTS.md carries the checklist discipline, this file is the audit invocation |
@@ -47,6 +47,8 @@ The operator-invoked entry points, per use: when to use each, what it produces, 
 |---|---|---|---|
 | [`prompts/gm.md`](../prompts/gm.md) (`/gm`) | A check-in: no task chosen yet. Survey the state, present a work inventory, recommend a direction, wait. | Survey findings and an inventory in chat. No files written. | Chat only; the next step is a new iteration with a handover. |
 | [`prompts/new-iteration.md`](../../../src/reasoning/agent/prompts/new-iteration.md) | A directive is known: open an iteration properly. Gates on scope confirmation and acceptance before close. | One handover in `devlog/handovers/`, scoped work, one delivery commit. | Handover file + commit. |
+| [`prompts/auto.md`](../prompts/auto.md) (`/auto`) | A released plan names its units: run them one at a time through fresh subagents, verifying each return before the next dispatch. | One commit and one handover per unit, with the verification evidence in chat. | Repository records and commits; the subagent's report stays in chat. |
+| [`prompts/review-loop-run.md`](../prompts/review-loop-run.md) (`/review-loop-run`) | A committed range needs a verdict: a fresh reviewer per round, ACCEPT or BLOCK, one fix round per block, capped at three. | A verdict per round, the fix commits, and a final report with the open blockers. | Chat and the iteration's handover; the fix commits ride the branch. |
 | `audits/*.skill.md`, `audits/test-quality-campaign.md` | A specific review target: code, bash, handover, roadmap, docs, tests. | Findings or a fix proposal, per the audit's contract. Some audits fix (campaign); most are read-only. | Report in chat or the output mount; accepted findings become iteration work. |
 
 ## Deployment boundary

@@ -32,7 +32,7 @@ setup_prune_fixture() {
   export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
   :> "$DOCKER_TRACE_LOG"
   unset DOCKER_STUB_PS_IDS DOCKER_STUB_NETWORK_IDS DOCKER_STUB_SESSION_ID_LABEL DOCKER_STUB_VOLUME_NAMES
-  unset DOCKER_STUB_SESSION_ID_LABELS
+  unset DOCKER_STUB_SESSION_ID_LABELS DOCKER_STUB_LABELS
 }
 current_sha() { git -C "$PROJECT_DIR" rev-parse HEAD; }
 
@@ -73,6 +73,10 @@ record_exists() { [[ -f "$SANDBOX_DIR/.compose/$1.yml" ]]; }
 # Tests
 # ---------------------------------------------------------------------------
 
+# Given: two stale records, one `pi` and one `hermes`, both older than the cutoff
+# When:  prune runs with --provider=pi
+# Then:  only the pi record is removed and the hermes record survives
+# Asserts: --provider narrows Rule 1 selection
 test_rule1_provider_filter() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_provider"
   mkdir -p "$FIXTURE_DIR"
@@ -91,6 +95,10 @@ test_rule1_provider_filter() {
   [[ -n "$sha" ]] # keep shellcheck happy about unused
 }
 
+# Given: one stale record whose session-ts is today
+# When:  prune runs with the default 3-day cutoff
+# Then:  the record survives
+# Asserts: the age cutoff protects a recently-staled record
 test_rule1_age_filter_skips_recent() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_age"
   mkdir -p "$FIXTURE_DIR"
@@ -108,6 +116,10 @@ test_rule1_age_filter_skips_recent() {
   fi
 }
 
+# Given: one stale record whose session-ts is today
+# When:  prune runs with --age-days=0
+# Then:  the record is removed
+# Asserts: --age-days sets the staleness cutoff
 test_rule1_age_days_broadens() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_agedays"
   mkdir -p "$FIXTURE_DIR"
@@ -124,6 +136,10 @@ test_rule1_age_days_broadens() {
   fi
 }
 
+# Given: one record whose host-head-sha equals the current project HEAD
+# When:  prune runs
+# Then:  the record survives
+# Asserts: Rule 1 selects by sandbox staleness, not by age alone
 test_fresh_record_kept() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_fresh"
   mkdir -p "$FIXTURE_DIR"
@@ -140,6 +156,10 @@ test_fresh_record_kept() {
   fi
 }
 
+# Given: one stale record
+# When:  prune runs with --dry-run
+# Then:  the plan names Rule 1, the run is labelled a dry run, and the record stays on disk
+# Asserts: --dry-run reports and does not act
 test_dry_run_shows_rule1_rule2() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_dry"
   mkdir -p "$FIXTURE_DIR"
@@ -157,6 +177,10 @@ test_dry_run_shows_rule1_rule2() {
   fi
 }
 
+# Given: one stale record and an answer of `n` on stdin
+# When:  prune runs with --interactive
+# Then:  the record survives
+# Asserts: a declined confirmation stops the prune
 test_interactive_abort_keeps_records() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_int_abort"
   mkdir -p "$FIXTURE_DIR"
@@ -173,6 +197,10 @@ test_interactive_abort_keeps_records() {
   fi
 }
 
+# Given: one stale record and an answer of `n` on stdin
+# When:  prune runs with --interactive --provider=pi
+# Then:  the equivalent non-interactive command is printed and carries --provider=pi
+# Asserts: the confirmation gate discloses the command it would perform
 test_interactive_prints_command() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_int_cmd"
   mkdir -p "$FIXTURE_DIR"
@@ -192,6 +220,10 @@ test_interactive_prints_command() {
   fi
 }
 
+# Given: one stale record and a live container owned by that session
+# When:  prune runs
+# Then:  the record and the container are both removed
+# Asserts: Rule 1 then a fresh Rule 2 scan removes the newly orphaned resource
 test_complete_pass_removes_stale_session_resources() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_complete"
   mkdir -p "$FIXTURE_DIR"
@@ -211,6 +243,10 @@ test_complete_pass_removes_stale_session_resources() {
   fi
 }
 
+# Given: an orphan network and an orphan volume whose session has no record
+# When:  prune runs
+# Then:  both are removed
+# Asserts: the Rule 2 kind dispatcher reaches the network and volume branches
 test_rule2_removes_network_and_volume_orphans() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_sysnet"
   mkdir -p "$FIXTURE_DIR"
@@ -236,6 +272,10 @@ test_rule2_removes_network_and_volume_orphans() {
 # create time regardless of the `--sandbox` spelling. Here we invoke with a
 # non-canonical trailing-slash spelling and assert the `ps -aq` filter carries
 # the canonical (readlink-resolved) path.
+# Given: --sandbox spelled with a redundant `/.` suffix
+# When:  prune runs
+# Then:  the `docker ps -aq` label filter carries the canonical path
+# Asserts: Rule 2 canonicalises the spelling the label was baked with
 test_rule2_canonicalizes_sandbox_dir_spelling() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_canon"
   mkdir -p "$FIXTURE_DIR"
@@ -262,6 +302,10 @@ test_rule2_canonicalizes_sandbox_dir_spelling() {
   fi
 }
 
+# Given: two stale records (copy and mount), one fresh keeper, and a container owned by one stale session
+# When:  prune runs
+# Then:  both stale records go, the fresh record and its resource stay, and the stale session's container goes
+# Asserts: the partition invariant -- every session ends fully pruned or fully kept
 test_complete_pass_end_to_end() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr_e2e"
   mkdir -p "$FIXTURE_DIR"
@@ -291,6 +335,10 @@ test_complete_pass_end_to_end() {
   fi
 }
 
+# Given: --stale=fresh
+# When:  prune runs
+# Then:  it fails and names the unknown kind
+# Asserts: the --stale validation rejects a retired kind
 test_unknown_args_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_badarg"
   mkdir -p "$FIXTURE_DIR"
@@ -306,6 +354,10 @@ test_unknown_args_rejected() {
   fi
 }
 
+# Given: no --project
+# When:  prune runs
+# Then:  it fails and names --project
+# Asserts: --project is required for the staleness comparison
 test_missing_project_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_noproj"
   mkdir -p "$FIXTURE_DIR"
@@ -322,13 +374,218 @@ test_missing_project_rejected() {
   fi
 }
 
-# ---------------------------------------------------------------------------
+# Given: two stubbed containers, one carrying this project's labels and one carrying another project's
+# When:  prune runs its container query
+# Then:  only this project's container is stopped and removed
+# Asserts: the container query's label filters select rather than decorate: the stub resolves
+#          DOCKER_STUB_LABELS and returns only the matching ids.
+test_rule2_filter_selects_only_this_projects_containers() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_select"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  # One stale record, so the pass reaches the Rule 2 scan at all.
+  write_record "s_gone" "pi" "aaaa1111aaaa" "20260801-000000"
+  local canon
+  canon="$(readlink -f "$SANDBOX_DIR")"
+  export DOCKER_STUB_PS_IDS="c_mine c_foreign"
+  export DOCKER_STUB_LABELS="c_mine:agent-sandbox.project-name=$PROJECT_NAME,agent-sandbox.sandbox-dir=$canon c_foreign:agent-sandbox.project-name=another-project,agent-sandbox.sandbox-dir=/elsewhere"
+  export DOCKER_STUB_SESSION_ID_LABEL="orphan_sess"
+
+  invoke_prune > /dev/null 2>&1
+
+  if grep -q "rm c_mine" "$DOCKER_TRACE_LOG" && ! grep -q "c_foreign" "$DOCKER_TRACE_LOG"; then
+    pass "Rule 2 label filters select this project's containers only"
+  else
+    fail "Rule 2 container query reached a foreign container: $(grep c_foreign "$DOCKER_TRACE_LOG" | head -2)"
+  fi
+}
+
+
+# Given: a stale record dated today and a `date` that cannot derive the cutoff
+# When:  prune runs
+# Then:  prune refuses (non-zero) and the record is kept
+# Asserts: an underivable age cutoff fails closed instead of pruning everything
+test_rule1_empty_cutoff_refuses_instead_of_pruning_all() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_empty_cutoff"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  local today; today="$(date +%Y%m%d)"
+  write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
+
+  # Force the cutoff derivation to fail while leaving every other `date` call
+  # working: the stub fails only the `${AGE_DAYS} days ago` form.
+  local BINDIR="$FIXTURE_DIR/bin_fail_date"
+  mkdir -p "$BINDIR"
+  cat > "$BINDIR/date" <<EOF
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "-d" && "\${2:-}" == *"days ago"* ]]; then
+  exit 1
+fi
+exec "$(command -v date)" "\$@"
+EOF
+  chmod +x "$BINDIR/date"
+
+  local RC=0
+  ( export PATH="$BINDIR:$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/prune.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" \
+  ) > /dev/null 2>&1 || RC=$?
+
+  if [[ $RC -ne 0 ]] && record_exists "s_recent"; then
+    pass "Rule 1 empty cutoff: a failed age derivation refuses and keeps the record"
+  else
+    fail "Rule 1 empty cutoff: expected a fail-closed refusal that keeps the record (rc=$RC)"
+  fi
+}
+
+# Given: a stale record with no readable session-ts
+# When:  prune runs
+# Then:  the record is kept, not pruned
+# Asserts: an unreadable timestamp keeps the record instead of treating it as oldest
+test_rule1_unreadable_ts_keeps_record() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_unreadable_ts"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  local today; today="$(date +%Y%m%d)"
+  local recent="$(( today - 1 ))"
+  write_record "s_no_ts" "pi" "aaaa1111aaaa" "$recent-000000"
+  # Unreadable: no session-ts label on the record's compose file.
+  sed -i 's/agent-sandbox.session-ts: [0-9-]*$//' "$FIXTURE_DIR/.compose/s_no_ts.yml"
+
+  ( export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/prune.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" \
+  ) > /dev/null 2>&1
+
+  if record_exists "s_no_ts"; then
+    pass "Rule 1 unreadable ts: a record that cannot vouch for its age is kept"
+  else
+    fail "Rule 1 unreadable ts: expected the unreadable-timestamp record kept, not pruned"
+  fi
+}
+
+# Given: a stale record dated today and a non-numeric --age-days value
+# When:  prune runs with --age-days=abc
+# Then:  the run aborts non-zero naming the integer requirement, and the record survives
+# Asserts: --age-days is validated before it can widen the deletion
+test_rule1_age_days_non_numeric_rejected() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_badage"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  local today; today="$(date +%Y%m%d)"
+  write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
+
+  local OUT RC
+  OUT="$(invoke_prune --age-days=abc 2>&1)"; RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q -- "--age-days must be a non-negative integer" \
+     && record_exists "s_recent"; then
+    pass "Rule 1 --age-days: non-numeric value rejected and the record kept (rc=$RC)"
+  else
+    fail "Rule 1 --age-days: expected --age-days=abc rejected with the record kept (rc=$RC)"
+  fi
+}
+
+# Given: a stale record whose session owns container c1, run with --dry-run
+# When:  prune builds the preview
+# Then:  the plan names the Rule-2 orphan of the Rule-1-selected session, and the record stays
+# Asserts: the plan the operator confirms is the predictive preview, not Rule 1 alone
+test_dry_run_preview_names_rule2_orphans_of_removed_records() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr1_dry_orphan"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  export DOCKER_STUB_SESSION_ID_LABEL="s_stale"
+  write_record "s_stale" "pi" "aaaa1111aaaa" "20260801-000000"
+
+  local OUT
+  OUT="$(invoke_prune --dry-run)"
+
+  if echo "$OUT" | grep -q "Rule 2" && echo "$OUT" | grep -q "c1" && record_exists "s_stale"; then
+    pass "dry-run preview: names the Rule-2 orphan of a Rule-1-selected session, record kept"
+  else
+    fail "dry-run preview: expected the plan to name container c1 as a Rule-2 orphan"
+  fi
+}
+
+# Given: a container with the project and sandbox labels but no session-id label
+# When:  prune runs
+# Then:  the unnameable resource is kept
+# Asserts: _sid_is_orphaned's empty-session-id guard protects a resource whose session cannot be named
+test_rule2_unnameable_resource_kept() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_unnameable"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c_nolabel"
+  # No DOCKER_STUB_SESSION_ID_LABEL: the resource reports an empty session id.
+
+  invoke_prune > /dev/null 2>&1
+
+  if ! grep -q "rm c_nolabel" "$DOCKER_TRACE_LOG"; then
+    pass "Rule 2: a resource with no session-id label is not treated as an orphan"
+  else
+    fail "Rule 2: expected a resource with no session-id label to be kept"
+  fi
+}
+
+# Given: a --sandbox whose parent directory does not exist, so it cannot be canonicalised
+# When:  prune runs
+# Then:  it fails non-zero and names the canonicalisation failure
+# Asserts: the canonicalisation failure is loud, not a silent degrade to an empty filter
+test_sandbox_canon_failure_is_loud() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_canon_fail"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+
+  local OUT RC
+  OUT="$( (export PATH="$STUB_DIR:$PATH"; bash "$REPO_ROOT/scripts/prune.sh" \
+            --name="$PROJECT_NAME" --project="$PROJECT_DIR" \
+            --sandbox="$FIXTURE_DIR/no-such-parent/sandbox" 2>&1) )"; RC=$?
+
+  if [[ "$RC" -ne 0 ]] && echo "$OUT" | grep -q "cannot canonicalize SANDBOX_DIR"; then
+    pass "prune: an unresolvable --sandbox fails loudly (rc=$RC)"
+  else
+    fail "prune: expected a loud canonicalisation failure (rc=$RC, out=$OUT)"
+  fi
+}
+
+# Given: a stale record whose orphaned container c1 is found by the Rule-2 scan
+# When:  prune runs
+# Then:  the container is stopped before it is removed
+# Asserts: the stop-before-rm order that makes the removal succeed
+test_rule2_stops_container_before_removing() {
+  local FIXTURE_DIR="$FIXTURE_DIR/pr_r2_order"
+  mkdir -p "$FIXTURE_DIR"
+  setup_prune_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_PS_IDS="c1"
+  export DOCKER_STUB_SESSION_ID_LABEL="s_stale"
+  write_record "s_stale" "pi" "aaaa1111aaaa" "20260801-000000"
+
+  invoke_prune > /dev/null 2>&1
+
+  local stop_line rm_line
+  stop_line="$(grep -n "stop c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
+  rm_line="$(grep -n "rm c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
+  if [[ -n "$stop_line" && -n "$rm_line" && "$stop_line" -lt "$rm_line" ]]; then
+    pass "Rule 2: the container is stopped before it is removed"
+  else
+    fail "Rule 2: expected stop c1 before rm c1 (stop=$stop_line rm=$rm_line)"
+  fi
+}
+
 # Run
 # ---------------------------------------------------------------------------
 
 run_test test_rule1_provider_filter
 run_test test_rule1_age_filter_skips_recent
 run_test test_rule1_age_days_broadens
+run_test test_rule1_empty_cutoff_refuses_instead_of_pruning_all
+run_test test_rule1_unreadable_ts_keeps_record
+run_test test_rule1_age_days_non_numeric_rejected
+run_test test_dry_run_preview_names_rule2_orphans_of_removed_records
+run_test test_rule2_unnameable_resource_kept
+run_test test_sandbox_canon_failure_is_loud
+run_test test_rule2_stops_container_before_removing
 run_test test_fresh_record_kept
 run_test test_dry_run_shows_rule1_rule2
 run_test test_interactive_abort_keeps_records
@@ -337,73 +594,9 @@ run_test test_complete_pass_removes_stale_session_resources
 run_test test_complete_pass_end_to_end
 run_test test_rule2_removes_network_and_volume_orphans
 run_test test_rule2_canonicalizes_sandbox_dir_spelling
+run_test test_rule2_filter_selects_only_this_projects_containers
 run_test test_unknown_args_rejected
 run_test test_missing_project_rejected
 
-# ---------------------------------------------------------------------------
-# env_field unit tests
-#
-# env_field  --  shared record-env parser in src/libs/session_inventory.sh
-# (used by prune.sh for plan disclosure and resume_agent.sh for delivery
-# recovery). Sourced from the lib directly.
-# ---------------------------------------------------------------------------
-source "$REPO_ROOT/src/libs/session_inventory.sh"
+test_done test_prune
 
-test_env_field_reads_value_from_environment_block() {
-  local f="$FIXTURE_DIR/envfield_record"
-  printf '  environment:\n    - SANDBOX_TYPE=mount\n    - PROVIDER=pi\n' > "$f"
-  local out
-  out=$(env_field "$f" "SANDBOX_TYPE")
-  assert_eq "$out" "mount" "env_field reads value from environment block"
-}
-
-test_env_field_no_substring_matches() {
-  local f="$FIXTURE_DIR/envfield_substr"
-  printf '    - NODE_PATH=/x\n    - PATH=/bin\n' > "$f"
-  local out
-  out=$(env_field "$f" "PATH")
-  assert_eq "$out" "/bin" "env_field does not substring-match NODE_PATH when asked for PATH"
-}
-
-test_env_field_first_match_wins() {
-  local f="$FIXTURE_DIR/envfield_first"
-  printf '    - A=1\n    - A=2\n' > "$f"
-  local out
-  out=$(env_field "$f" "A")
-  assert_eq "$out" "1" "env_field returns first match only"
-}
-
-test_env_field_missing_key_is_empty_and_clean() {
-  local f="$FIXTURE_DIR/envfield_missing"
-  printf '    - OTHER=x\n' > "$f"
-  local out rc
-  out=$(env_field "$f" "ABSENT"); rc=$?
-  if [[ $rc -eq 0 && -z "$out" ]]; then
-    pass "env_field missing key -> empty output, exit 0"
-  else
-    fail "env_field ABSENT: rc=$rc out='$out'"
-  fi
-}
-
-test_env_field_tolerates_dash_spacing_variants() {
-  local f="$FIXTURE_DIR/envfield_spacing"
-  printf -- '- A=plain\n  -   B=spaced\n' > "$f"
-  local a b
-  a=$(env_field "$f" "A")
-  b=$(env_field "$f" "B")
-  if [[ "$a" == "plain" && "$b" == "spaced" ]]; then
-    pass "env_field tolerates dash/spacing variants"
-  else
-    fail "env_field spacing variants: A='$a' B='$b'"
-  fi
-}
-
-run_test test_env_field_reads_value_from_environment_block
-run_test test_env_field_no_substring_matches
-run_test test_env_field_first_match_wins
-run_test test_env_field_missing_key_is_empty_and_clean
-run_test test_env_field_tolerates_dash_spacing_variants
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]

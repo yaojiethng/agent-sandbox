@@ -1,6 +1,6 @@
 # Harness Iterative Improvement Loop
 
-**Current:** 2026-09-25
+**Current:** 2026-09-21
 
 ## Requirements
 
@@ -12,7 +12,7 @@
 | R4 | The operator sees the pattern and scopes elevation | the frequency signal surfaces at scoping time, not in a per-session read |
 | R5 | One record hosts all entries | class is an entry tag, not a file boundary |
 
-## 2026-09-25 -- Unified record
+## 2026-09-21 -- Unified record
 
 **Decision:** collapse the two records (`AGENT_FEEDBACK.md` and `GOTCHAS.md`) into a single record file. `GOTCHAS.md` is deleted; its entries merge into `AGENT_FEEDBACK.md` under an operator-raised section. The entry tag carries the class: `[A]` for an entry raised by the agent, `[O]` for an entry raised by the operator. The former `[G]`/`[H]` tags are dropped. The single file hosts all feedback and gotchas entries; descriptive section labels keep the M3 consolidated groups.
 
@@ -24,7 +24,7 @@
 
 ## 2026-09-21 -- Cataloguing and frequency reader model
 
-**Reason superseded by 2026-09-25:** the cataloguing/frequency reader model stands; this entry's file boundary (two records) is superseded by the unified-record decision, which keeps the same reader model under one file.
+**Reason superseded by 2026-09-21:** the cataloguing/frequency reader model stands; this entry's file boundary (two records) is superseded by the unified-record decision, which keeps the same reader model under one file.
 
 **Decision:** this session changed the processing procedure of the improvement loop. The changes, each contrasted against the previous design:
 

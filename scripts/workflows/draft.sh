@@ -142,7 +142,7 @@ draft_create_and_init_branch() {
 # draft_apply_patches  --  apply and commit diffs sequentially
 # =============================================================================
 
-# draft_apply_patches PROJECT_DIR DIFF_LIST_FILE AUTHOR [FORCE]
+# draft_apply_patches PROJECT_DIR AUTHOR [FORCE]
 #
 # Reads diff file paths from stdin (one per line), applies each via
 # apply_and_commit with the resolved commit message.
@@ -260,7 +260,7 @@ _ingest_export_metadata() {
   local _base="$_branch_from"
   [[ -n "$_base" ]] || _base="HEAD"
 
-  if ! git -C "$_project_dir" rev-parse --verify "$_base" >/dev/null 2>&1; then
+  if ! git_commit_exists "$_project_dir" "$_base"; then
     echo "Error: BASE_COMMIT '$_base' does not resolve to a valid commit" >&2
     echo "  Set --branch-from to a valid ref" >&2
     return 1
@@ -334,8 +334,7 @@ draft_run() {
   _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM_ARG" "$PROJECT_DIR" \
     BASE_COMMIT EXPORT_TIME _dummy_init || return 1
 
-  local SOURCE_BRANCH; SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  local SOURCE_BRANCH; SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
   local IDENTITY="${SESSION_ID:-$SESSION_TS}"
@@ -363,21 +362,20 @@ Usage: agent-sandbox draft --project=<path> --sandbox=<path> [options]
 
 Creates a draft branch and applies session patches.
 
-or, from a sandbox Makefile: make draft [FROM=<channel>] [BUNDLE=<name>]
+or, from a sandbox Makefile: make draft [FROM=<channel>] BUNDLE=<name> [BRANCH_FROM=<commit>]
 
 Required:
   --project=<path>    Path to the git repository
   --sandbox=<path>    Path to the sandbox directory
 
 Options:
-  --bundle=<name>         Named bundle to apply (default: newest)
+  --bundle=<name>         Named bundle to apply (required; --interactive picks from a list)
   --channel=<name>        Resolution channel: session, autosave, bundles (default: session)
-  --branch-from=<commit>  Base commit for the draft branch (default: HEAD)
+  --branch-from=<commit>  Base commit for the draft branch; always name it, especially after a rebase (default: HEAD)
   --diffs=<start>..<end>  Range of patches to apply
   --branch-summary=<slug> Override branch name suffix
   --force                 Apply with --reject; .rej files for conflicts
   --permissive            No-op: permissive apply is the default (kept for compatibility)
-  --strict                Disable --recount retry on apply failure
   --interactive           Interactive picker mode
 EOF
 }
@@ -438,7 +436,7 @@ _run_draft_workflow() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
   local FORCE="$7"
-  local PATCH_LIST="${9:-}"
+  local PATCH_LIST="${8:-}"
 
   local PATCHES_DIR="$SOURCE_DIR/patches"
   if [[ -z "$PATCH_LIST" ]]; then
@@ -473,8 +471,7 @@ _run_draft_workflow() {
   # Capture the branch current before draft_run checks out the draft branch, so
   # a failed apply can return the operator to it (and never leave them on draft/*).
   local SOURCE_BRANCH
-  SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
-  [[ "$SOURCE_BRANCH" != "HEAD" ]] || SOURCE_BRANCH=$(git -C "$PROJECT_DIR" rev-parse --short HEAD)
+  SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
 
   # Resolve author once for both branch creation and apply+commit
   local AUTHOR
@@ -524,9 +521,26 @@ _run_draft_workflow() {
 #   Resolves the session export source for a draft and sets SOURCE_DIR and
 #   BUNDLE_NAME in the caller's scope (deliberately not local -- main()'s
 #   three paths consume them). Returns 1 when resolution fails.
+#
+#   A non-interactive draft must name its bundle. Auto-picking the newest was
+#   the source of a stale-session draft, so an empty BUNDLE is an error here
+#   rather than a silent fallback; the picker (INTERACTIVE=1) is the guided
+#   path. The interactive paths always pass a resolved name, so only the
+#   non-interactive path reaches the guard.
 _resolve_draft_source() {
+  local SANDBOX_DIR="$1"
+  local CHANNEL="$2"
+  local BUNDLE="$3"
+
+  if [[ -z "$BUNDLE" ]]; then
+    echo "Error: no bundle named for a non-interactive draft." >&2
+    echo "  Name one:  make draft BUNDLE=<name>" >&2
+    echo "  Pick one:  make draft INTERACTIVE=1" >&2
+    return 1
+  fi
+
   local result
-  result=$(resolve_source_for_draft "$1" "$2" "$3") || return 1
+  result=$(resolve_source_for_draft "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE") || return 1
   SOURCE_DIR=$(echo "$result" | cut -f1)
   BUNDLE_NAME=$(echo "$result" | cut -f2)
 }
@@ -598,7 +612,8 @@ main() {
       echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
       _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
         "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE" "$PATCH_LIST"
-      exit $?
+      # Terminal: the interactive arms below would run a second draft.
+      exit
     fi
 
     # Step 1: pick channel
@@ -610,12 +625,13 @@ main() {
     echo "Running: make draft FROM=${CHANNEL_ARG} BUNDLE=${BUNDLE_NAME}"
     _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
       "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
-    exit $?
+    # Terminal: the non-interactive path below would run a second draft.
+    exit
   fi
 
-  # Non-interactive path
-  local CHANNEL="${CHANNEL_ARG:-session}"
-  _resolve_draft_source "$SANDBOX_DIR" "$CHANNEL" "$BUNDLE_ARG" || exit 1
+  # Non-interactive path. resolve_source_for_draft applies the channel default
+  # ("session") to an empty value, so main does not repeat it.
+  _resolve_draft_source "$SANDBOX_DIR" "${CHANNEL_ARG:-}" "$BUNDLE_ARG" || exit 1
   _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
     "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" "$FORCE"
 }

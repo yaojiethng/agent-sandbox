@@ -1,6 +1,16 @@
 # Diff Packaging
 
-**Current:** 2026-09-19
+**Current:** 2026-09-24
+
+## 2026-09-24 -- The export baseline is the branch point; a rewritten target applies by soft reset
+
+**Decision:** `package_branch` resolves its diff baseline to `git merge-base init_sha HEAD`, so the baseline equals `init_sha` when no history was rewritten and the branch point after a rebase; `--baseline=<sha>` overrides it. The diff pipeline's lower boundary is therefore the newest commit the host and the container share, not `init_sha` literally. On the host a rewritten target history cannot fast-forward, so `make confirm TARGET_BRANCH=<branch> NEW=1` creates `<branch>` (which must not exist) at the draft tip, leaves the source branch untouched, and prints the operator-run `git reset --soft` direction that moves the source branch onto the series. `TARGET_BRANCH` without `NEW` remains fast-forward / conflict-free-rebase only.
+
+**Rationale:** A rebase orphans `init_sha`, so diffs against it no longer match the host checkout. The merge-base recovers the shared commit without editing `SESSION_STATE` or naming the baseline by hand. The fast-forward path correctly refuses a target that is not an ancestor; the new-branch mode gives the operator a non-destructive way to obtain the rewritten series, and the printed reset keeps the branch-pointer move explicit rather than automated.
+
+**Rejected alternatives:** *Edit `SESSION_STATE.init_sha` to the branch point* -- an ad-hoc mutation of session identity with no recorded process, and it touches the seed record the harness treats as immutable. *Auto-detect the target with `git merge-base main HEAD`* -- assumes the branch is based on `main`, which the harness does not guarantee. *Have `confirm` reset or replace the target automatically* -- the operator owns moving a long-lived branch; the tool prints the direction and leaves the decision.
+
+**Edge cases / drivers:** A recorded `init_sha` whose object was garbage-collected makes `merge-base` fail; the resolver falls back to `init_sha`. The host may advance during a session, in which case `--baseline` names the newer shared commit.
 
 ## 2026-09-19 -- The autosave checkpoint is swapped in, never wiped first
 
@@ -33,6 +43,8 @@ A helper, `session_save_needed SANDBOX_DIR BASELINE`, makes the decision: 0 (sav
 **Reason superseded by 2026-09-19:** The status set is now three-valued (0 save, 1 skip, 2 undeterminable) and `save_decision` owns the dispatch; see the entry above.
 
 **Rationale:** The baseline folds two rules into one comparison, so there is a single code path. Level 1 (baseline = `init_sha`) skips a session that never changed. Level 2 (baseline = last save's HEAD) skips re-saving an unchanged state after the first save -- once HEAD has passed `init_sha`, comparing against `init_sha` alone would keep re-creating empty bundles every cycle. The baseline is always the last-saved HEAD, never a moving marker the harness must keep in sync: it is read from the previous save's own `.export-status`, so the save path stays self-describing. `init_sha` remains the immutable fixed lower boundary for the diff pipeline (`package_branch` diffs `init_sha..HEAD`); the save decision reuses it as the first-save baseline rather than introducing a new tracker file.
+
+**Reason superseded by 2026-09-24:** the diff pipeline's lower boundary is now the branch point (`git merge-base init_sha HEAD`), so `package_branch` diffs from the newest commit the host and the container share, not `init_sha` literally.
 
 The dirty-first precedence is the contract: any uncommitted change forces a save regardless of HEAD. So an in-progress edit is never dropped -- the guard never drops a change, it only avoids writing byte-identical empty bundles. `git status --porcelain` captures modified, staged, and untracked files alike.
 
