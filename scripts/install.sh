@@ -64,9 +64,9 @@ check_git() {
 }
 
 check_gnu_readlink() {
-  if ! realpath / >/dev/null 2>&1 && ! readlink -f / >/dev/null 2>&1; then
-    echo "  - GNU coreutils: realpath or readlink -f missing" >&2
-    echo "    Used by scripts/onboard.sh and scripts/run_agent.sh to resolve paths." >&2
+  if ! readlink -f / >/dev/null 2>&1; then
+    echo "  - GNU coreutils: readlink -f missing" >&2
+    echo "    Used by scripts/agent-sandbox.sh and src/libs/common.sh to resolve paths." >&2
     echo "    macOS: brew install coreutils" >&2
     return 1
   fi
@@ -95,6 +95,24 @@ check_gnu_sed() {
     echo "  - GNU sed missing" >&2
     echo "    Used by scripts/onboard.sh (sed -i without backup arg)." >&2
     echo "    macOS: brew install gnu-sed" >&2
+    return 1
+  fi
+}
+
+check_gnu_find() {
+  if ! find / -maxdepth 0 -printf '%f' >/dev/null 2>&1; then
+    echo "  - GNU findutils: find -printf missing" >&2
+    echo "    Used by scripts/workflows/interactive.sh for session timestamps and ordering." >&2
+    echo "    macOS: brew install findutils" >&2
+    return 1
+  fi
+}
+
+check_rsync() {
+  if ! rsync --version >/dev/null 2>&1; then
+    echo "  - rsync missing" >&2
+    echo "    Used by scripts/onboard.sh to seed a sandbox with permissions preserved." >&2
+    echo "    macOS: brew install rsync" >&2
     return 1
   fi
 }
@@ -156,6 +174,8 @@ install_main() {
     check_sha256sum || failures=$((failures + 1))
     check_gnu_date || failures=$((failures + 1))
     check_gnu_sed || failures=$((failures + 1))
+    check_gnu_find || failures=$((failures + 1))
+    check_rsync || failures=$((failures + 1))
   fi
 
   if (( failures > 0 )); then

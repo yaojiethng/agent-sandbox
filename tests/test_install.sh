@@ -26,11 +26,13 @@ source "$REPO_ROOT/scripts/install.sh"
 # Fake GNU tools detect the failed probes; symlinked real git/grep keep the
 # probes themselves working. The empty shim makes every probe fail.
 mkdir -p "$FIXTURE_ROOT/gnu_shim" "$FIXTURE_ROOT/empty_shim"
-printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/realpath"
+printf '#!/bin/sh\nif [ "$1" = "-f" ] && [ "$2" = "/" ]; then exit 0; fi\nexit 1\n' > "$FIXTURE_ROOT/gnu_shim/readlink"
 printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/sha256sum"
 printf '#!/bin/sh\nprintf "2026-09-17\\n"\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/date"
+printf '#!/bin/sh\nif [ "$1" = "/" ] && [ "$2" = "-maxdepth" ] && [ "$3" = "0" ] && [ "$4" = "-printf" ]; then exit 0; fi\nexit 1\n' > "$FIXTURE_ROOT/gnu_shim/find"
 printf '#!/bin/sh\necho "sed (GNU sed) 4.8.1"\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/sed"
-chmod +x "$FIXTURE_ROOT/gnu_shim"/{realpath,sha256sum,date,sed}
+printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/gnu_shim/rsync"
+chmod +x "$FIXTURE_ROOT/gnu_shim"/{readlink,sha256sum,date,find,sed,rsync}
 ln -s "$(command -v git)" "$FIXTURE_ROOT/gnu_shim/git"
 ln -s "$(command -v grep)" "$FIXTURE_ROOT/gnu_shim/grep"
 
@@ -39,12 +41,17 @@ ln -s "$(command -v grep)" "$FIXTURE_ROOT/gnu_shim/grep"
 # pins which requirement was detected. PATH carries the shim dirs only  --  a
 # host tool leaked in by the system PATH would mask the failure.
 mkdir -p "$FIXTURE_ROOT/iso_readlink" "$FIXTURE_ROOT/iso_date" \
-         "$FIXTURE_ROOT/iso_sed" "$FIXTURE_ROOT/gnu_shim_nosha"
-printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_readlink/realpath"
+         "$FIXTURE_ROOT/iso_sed" "$FIXTURE_ROOT/iso_find" \
+         "$FIXTURE_ROOT/iso_rsync" "$FIXTURE_ROOT/gnu_shim_nosha"
+printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_readlink/readlink"
 printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_date/date"
 printf '#!/bin/sh\necho "sed: illegal option -- -"\nexit 1\n' > "$FIXTURE_ROOT/iso_sed/sed"
-chmod +x "$FIXTURE_ROOT/iso_readlink/realpath" "$FIXTURE_ROOT/iso_date/date" "$FIXTURE_ROOT/iso_sed/sed"
-for t in realpath date sed git grep; do
+printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_find/find"
+printf '#!/bin/sh\nexit 1\n' > "$FIXTURE_ROOT/iso_rsync/rsync"
+chmod +x "$FIXTURE_ROOT/iso_readlink/readlink" "$FIXTURE_ROOT/iso_date/date" \
+         "$FIXTURE_ROOT/iso_sed/sed" "$FIXTURE_ROOT/iso_find/find" \
+         "$FIXTURE_ROOT/iso_rsync/rsync"
+for t in readlink date find sed rsync git grep; do
   ln -s "$FIXTURE_ROOT/gnu_shim/$t" "$FIXTURE_ROOT/gnu_shim_nosha/$t"
 done
 
@@ -192,9 +199,9 @@ test_install_detects_missing_git_on_linux() {
   fi
 }
 
-# Given: INSTALL_OS=Darwin and a shim where only realpath/readlink fails
+# Given: INSTALL_OS=Darwin and a shim where only readlink -f fails
 # When:  install_main runs
-# Then:  rc is non-zero and the output names the realpath/readlink requirement
+# Then:  rc is non-zero and the output names the readlink -f requirement
 # Asserts: the readlink probe is detected in isolation
 test_install_detects_missing_readlink_on_darwin() {
   local OUT RC=0
@@ -202,8 +209,8 @@ test_install_detects_missing_readlink_on_darwin() {
         INSTALL_DIR="$FIXTURE_DIR/bin_darwin_readlink" \
         install_main 2>&1 </dev/null) || RC=$?
 
-  if [[ $RC -ne 0 && "$OUT" == *"realpath or readlink -f missing"* ]]; then
-    pass "Darwin install aborts when only realpath/readlink is missing"
+  if [[ $RC -ne 0 && "$OUT" == *"readlink -f missing"* ]]; then
+    pass "Darwin install aborts when only readlink -f is missing"
   else
     fail "readlink probe not isolated: rc=$RC out='$OUT'"
   fi
@@ -257,6 +264,40 @@ test_install_detects_missing_gnu_sed_on_darwin() {
     pass "Darwin install aborts when only GNU sed is missing"
   else
     fail "GNU sed probe not isolated: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: INSTALL_OS=Darwin and a shim where only find -printf fails
+# When:  install_main runs
+# Then:  rc is non-zero and the output names the GNU find requirement
+# Asserts: the GNU find probe is detected in isolation
+test_install_detects_missing_gnu_find_on_darwin() {
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/iso_find:$FIXTURE_ROOT/gnu_shim" \
+        INSTALL_DIR="$FIXTURE_DIR/bin_darwin_find" \
+        install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"find -printf missing"* ]]; then
+    pass "Darwin install aborts when only GNU find is missing"
+  else
+    fail "GNU find probe not isolated: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: INSTALL_OS=Darwin and a shim where only rsync is absent
+# When:  install_main runs
+# Then:  rc is non-zero and the output names the rsync requirement
+# Asserts: the rsync probe is detected in isolation
+test_install_detects_missing_rsync_on_darwin() {
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/iso_rsync:$FIXTURE_ROOT/gnu_shim" \
+        INSTALL_DIR="$FIXTURE_DIR/bin_darwin_rsync" \
+        install_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"rsync missing"* ]]; then
+    pass "Darwin install aborts when only rsync is missing"
+  else
+    fail "rsync probe not isolated: rc=$RC out='$OUT'"
   fi
 }
 
@@ -352,6 +393,8 @@ run_test test_install_detects_missing_readlink_on_darwin
 run_test test_install_detects_missing_sha256sum_on_darwin
 run_test test_install_detects_missing_gnu_date_on_darwin
 run_test test_install_detects_missing_gnu_sed_on_darwin
+run_test test_install_detects_missing_gnu_find_on_darwin
+run_test test_install_detects_missing_rsync_on_darwin
 run_test test_install_passes_on_darwin_with_gnu_shim
 run_test test_install_detects_missing_git_on_linux
 run_test test_install_dir_reads_repo_env

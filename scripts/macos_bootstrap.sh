@@ -24,7 +24,7 @@ set -uo pipefail
 # Requirement source of truth: docs/development/host_requirements.md. The same
 # list is enforced for Linux by scripts/install.sh (check_* probes) -- a new
 # requirement must be added to all three.
-REQUIRED_PACKAGES=(bash coreutils gnu-sed git)
+REQUIRED_PACKAGES=(bash coreutils findutils gnu-sed rsync git)
 
 bootstrap_os() {
   echo "${INSTALL_OS:-$(uname -s)}"
@@ -54,7 +54,7 @@ require_homebrew() {
 gnubin_paths() {
   local prefix
   prefix="$(homebrew_prefix)"
-  echo "$prefix/opt/coreutils/libexec/gnubin:$prefix/opt/gnu-sed/libexec/gnubin"
+  echo "$prefix/opt/coreutils/libexec/gnubin:$prefix/opt/findutils/libexec/gnubin:$prefix/opt/gnu-sed/libexec/gnubin"
 }
 
 install_packages() {
@@ -100,9 +100,11 @@ verify_installed() {
   echo "  ok: brew bash $bashver"
 
   local missing=0 bin
-  for bin in "$prefix/opt/coreutils/libexec/gnubin/realpath" \
+  for bin in "$prefix/opt/coreutils/libexec/gnubin/readlink" \
              "$prefix/opt/coreutils/libexec/gnubin/sha256sum" \
-             "$prefix/opt/gnu-sed/libexec/gnubin/sed"; do
+             "$prefix/opt/findutils/libexec/gnubin/find" \
+             "$prefix/opt/gnu-sed/libexec/gnubin/sed" \
+             "$prefix/bin/rsync"; do
     if [[ ! -x "$bin" ]]; then
       echo "  missing: $bin" >&2
       missing=1
