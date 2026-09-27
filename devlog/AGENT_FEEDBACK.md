@@ -344,7 +344,7 @@ A second, purely mechanical form recurred during the `guards.sh` integration. Ro
 
 Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.
 
-The same class recurred on 2026-09-27 inside a dispatched subagent's output, one level up from the findings log. A unit that replaced two tolerant-mode tests with strict-mode coverage defined a test function whose name already existed in the file and registered it a second time. Bash's last-definition-wins made the first body disappear without an error, the registration liveness gate passed because it checks both directions of the registration contract and not for a name used twice, and the suite's unit count came out one higher than the units actually added. The count is what a reviewer compares against a baseline, so an inflated count is not a cosmetic defect: it is an unverifiable number. The durable fix is a duplicate check in `scripts/check_test_liveness.sh`; the mitigation until it lands is to account for the arithmetic of the count growth after every dispatched return rather than reading the count as a fact.
+The same class recurred on 2026-09-27 inside a dispatched subagent's output, one level up from the findings log. A unit that replaced two tolerant-mode tests with strict-mode coverage defined a test function whose name already existed in the file and registered it a second time. Bash's last-definition-wins made the first body disappear without an error, the registration liveness gate passed because it checks both directions of the registration contract and not for a name used twice, and the suite's unit count came out one higher than the units actually added. The count is what a reviewer compares against a baseline, so an inflated count is not a cosmetic defect: it is an unverifiable number. The durable fix is a duplicate check in `scripts/check_test_liveness.sh`, filed as a T1 roadmap row (the duplicate test name check in the registration gate); the mitigation until it lands is to account for the arithmetic of the count growth after every dispatched return rather than reading the count as a fact.
 
 ### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
 
@@ -362,7 +362,7 @@ Scope: `scripts/run_tests.sh` and every test file whose honest runtime is near t
 ### [A] 2026-09-27  --  A subagent brief's file list must be closed under the test surface
 
 state: open
-scoped: M3 T1 -- the parallel-auto workflow draft
+scoped: M3 T1 -- the brief-construction roadmap row (derive a unit's owned-file set from the tree)
 legacy: none
 mitigation: before writing a brief, compute each changed file's test closure by searching the test tree for its basename, and put the result in the brief. State the track's whole owned-file set in the brief rather than a per-unit list, and tell the subagent that its working directory is the worktree, so the harness boundary rule maps onto it instead of contradicting it.
 

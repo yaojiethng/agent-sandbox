@@ -158,9 +158,10 @@ The consolidation merge was not performed: the branches are the deliverable of t
 
 | Follow-up | What it needs |
 |---|---|
-| A duplicate definition and registration check in `scripts/check_test_liveness.sh` | a rule in the gate plus a negative test; this is the durable fix for F5 and the recurrence recorded in `AGENT_FEEDBACK.md` |
-| A `verified-defective` row in the `auto.md` stop table | amend the table and the repair paragraph to route a rejected return to a repair brief on the same track |
-| A brief-construction helper that computes a unit's test-surface closure | a script that, given a changed file, names the test files that reference it; F3 makes this the difference between a green and a red suite |
-| Consolidation of `exp/track-a` and `exp/track-b` into the main branch | a later iteration; the cross-track merge is already verified clean, and the merge itself is the `/merge` feedback case |
+| A duplicate definition and registration check in `scripts/check_test_liveness.sh` | **Filed** as a roadmap row in T1, the duplicate test name check in the registration gate (2026-09-27); a rule in the gate plus a negative test |
+| A `verified-defective` row in the `auto.md` stop table | **Landed** in `auto.md` (2026-09-27): the table routes a rejected verification back to its own unit as a repair brief, and the invariants carry the rule |
+| A brief-construction helper that computes a unit's test-surface closure | **Filed** as a roadmap row in T1, brief construction: derive a unit's owned-file set from the tree (2026-09-27); F3 makes this the difference between a green and a red suite |
+| Consolidation of `exp/track-a` and `exp/track-b` into the main branch | a later iteration; the cross-track merge is already verified clean, and the merge itself is the `/merge` feedback case. Both branches are exported as bundles, because a branch that is neither merged nor exported dies with the container |
 | A model comparison across tracks | hold the workflow constant and vary the model, which this trial deliberately did not do |
 | A per-host concurrency measurement | run three or four tracks on a smaller host and record where the per-file deadline starts to bite |
+| Whether a subagent can propose a work-unit split | no subagent was asked to propose one in this trial, so the trial is silent on it; recorded as open on the roadmap's scope-to-unit row |
