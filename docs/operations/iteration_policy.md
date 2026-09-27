@@ -98,7 +98,7 @@ The information gathering pass (step 4) reads in order: the roadmap task, design
 | **Gate 2** | always | Acceptance criteria confirmed | Before releasing: present the acceptance criteria table to the operator -- every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed scope. A criterion that would fail on a correct implementation is a specification bug -- resolve it now, not at pre-close. No implementation until operator releases. | Operator confirmed criteria are satisfiable. Explicit release received. |
 | **6 -- Implementation** | confirmed | Gate 2 released | Produce code against the confirmed scope; tests alongside per [`testing_policy.md`](../development/testing_policy.md). On design divergence: correct the architecture doc before continuing. Record all other adjacent issues in Findings; defer by default. Per [During the iteration](#during-the-iteration). | All tasks complete. Tests pass. Architecture docs reflect system as built. |
 | **7 -- Pre-close verification** | confirmed | Implementation complete | Present pre-close summary in a four-column AC status table. Mark each criterion as accepted or pushed. Run verifiable checks and show output. Propose compaction entries for fully-completed task groups. For multi-file changes under a shared rule, include a propagation replay table. Packaging does not release this gate. Wait for explicit release. Per [Step 7 Details](#step-7----pre-close-verification). | Operator confirmed against AC and compaction text. |
-| **Gate 3** | always | Pre-close verified | The AC status table must be visible -- every criterion shown, every status populated. No close until operator releases. | Explicit release received. |
+| **Gate 3** | always | Pre-close verified | The AC status table and the commit message must be visible -- every criterion shown, every status populated, the commit body within the body budget. No close until operator releases. | Explicit release received. |
 | **8-9 -- Close and seed** | always | Gate 3 released | Apply approved roadmap write-back -- compaction summaries for completed task groups, destinations for generated tasks. Run roadmap maintenance per [`roadmap_policy.md`](roadmap_policy.md#roadmap-maintenance). Run scope reconciliation, carry-forward resolution gate, and the findings review/publish step. Mark each AC accepted or pushed. Update Hot files. Seed What's Next. Per [Steps 8-9 Details](#steps-8-9----close-and-seed). | Roadmap updated. Handover closed. No doc divergences without explicit deferral. No un-triaged findings. What's Next actionable. |
 
 ---
@@ -210,11 +210,13 @@ Every row must have a status. A row with status `deferred` or `not started` must
 
 **When a propagation replay is not required**, the pre-close summary covers: what was built, tests produced, AC status per criterion, and recommended manual checks.
 
+4. **Commit message** -- present the delivery commit's message alongside the summary: subject, body, and footer. The operator reads the body against the body budget in [`git_policy.md`](git_policy.md) before release.
+
 The operator releases this gate with an explicit forward signal (e.g. "proceed", "close the iteration"). A message that reviews output without a clear forward signal does not satisfy the exit condition. Packaging changes (e.g. `/package-branch`) does not release this gate -- iteration-end actions do not begin until the operator explicitly confirms after testing.
 
 ### Gate 3
 
-The AC status table must be visible -- every criterion shown, every status populated. No close until operator releases.
+The AC status table and the commit message must be visible -- every criterion shown, every status populated, the commit body within the git policy's body budget. No close until operator releases.
 
 Exit condition: Explicit release received.
 
