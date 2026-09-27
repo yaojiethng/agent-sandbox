@@ -299,9 +299,9 @@ mitigation: First drafts of the seed-transport ADR and concept doc mirrored the 
 ### [A] 2026-09-20  --  A subagent review pass is expensive and unmeasured
 
 state: open
-scoped: M3 -- `perf` workstream (`devlog/roadmap_future.md`, "Perf -- Subagent and Tool Observability")
+scoped: M3 T2 -- the subagent run telemetry and subagent liveness rows
 legacy: none
-mitigation: postponed to the M3 `perf` workstream, which owns the instrument for both halves (liveness and per-run metrics). Verbosity guidance until then: seed each round with the prior round's blockers and state the scope narrowly, because a fresh reviewer re-derives context that a measured, resumable run would not need to.
+mitigation: postponed to the M3 T2 telemetry rows, which own the instrument for both halves (liveness and per-run metrics). Verbosity guidance until then: seed each round with the prior round's blockers and state the scope narrowly, because a fresh reviewer re-derives context that a measured, resumable run would not need to. Two cheap measures worked in the 2026-09-27 parallel-track trial and are the interim mitigation: wrap the dispatch in a shell that echoes the exit code and the elapsed seconds, and poll the worktree for liveness rather than the log.
 
 The thermo-nuclear review pass over this iteration ran two models per round across ten rounds in two tranches. Each round is a fresh `pi -p` context, so no round inherits the previous round's reasoning, and the log stays empty until the run flushes: neither the main agent nor the operator can see whether a round is progressing, stalled on the provider, or merely slow. There is no per-run accounting of wall-clock, tokens, throughput, latency, tool-call time, or agent turns, so the cost of a review tranche cannot be compared against its yield. The concrete cost of that blindness: a round that reports nothing new still consumes a full model pass, and the operator cannot tell from the outside whether a silent log means "thinking hard" or "network died".
 
@@ -344,6 +344,8 @@ A second, purely mechanical form recurred during the `guards.sh` integration. Ro
 
 Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.
 
+The same class recurred on 2026-09-27 inside a dispatched subagent's output, one level up from the findings log. A unit that replaced two tolerant-mode tests with strict-mode coverage defined a test function whose name already existed in the file and registered it a second time. Bash's last-definition-wins made the first body disappear without an error, the registration liveness gate passed because it checks both directions of the registration contract and not for a name used twice, and the suite's unit count came out one higher than the units actually added. The count is what a reviewer compares against a baseline, so an inflated count is not a cosmetic defect: it is an unverifiable number. The durable fix is a duplicate check in `scripts/check_test_liveness.sh`; the mitigation until it lands is to account for the arithmetic of the count growth after every dispatched return rather than reading the count as a fact.
+
 ### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
 
 state: mitigated
@@ -354,3 +356,18 @@ mitigation: declare the budget in the file's first ten lines (`# TEST_DEADLINE: 
 One 5s default is a single budget for test files whose honest runtimes differ by more than an order of magnitude. A harness file that spawns 20+ probe invocations (`tests/test_dry_run_probe.sh`, 3.4 to 5.4s) or runs the real umbrella gate repeatedly (`tests/test_lint_umbrella.sh`, 4.0 to 5.8s) sits on the deadline, so the 8-way parallel suite run expires it at random as the container loads up. The failure mode is worse than a red test: the file prints no `UNIT:` report, so the aggregate silently drops every unit in the file. `tests/test_dry_run_probe.sh` expired once during a mutation run and the suite read 764 units against a 783-unit baseline, with one timeout and no other sign - which also made the mutation's verdict unreadable, since a timeout is not a proof of anything. Two files now declare 10s (`tests/test_lint_umbrella.sh`, `tests/test_runner_selftest.sh`) and the third is added with this entry. Three more files measured above 5s standalone on a loaded container (`test_start_agent.sh`, `test_runner_selftest.sh`, `test_dry_run_probe.sh`), so the declaration is a pattern, not a one-off.
 
 Scope: `scripts/run_tests.sh` and every test file whose honest runtime is near the default. Cross-reference: [`docs/development/test_harness_mechanism.md`](../docs/development/test_harness_mechanism.md) (The gates, The selftest); the mutation-suite roadmap row, which reads the aggregate to judge a survivor.
+
+## Agent experience  --  session 20260927-04 (parallel tracks experiment)
+
+### [A] 2026-09-27  --  A subagent brief's file list must be closed under the test surface
+
+state: open
+scoped: M3 T1 -- the parallel-auto workflow draft
+legacy: none
+mitigation: before writing a brief, compute each changed file's test closure by searching the test tree for its basename, and put the result in the brief. State the track's whole owned-file set in the brief rather than a per-unit list, and tell the subagent that its working directory is the worktree, so the harness boundary rule maps onto it instead of contradicting it.
+
+The first dispatch of the parallel-track trial produced a unit that changed `scripts/macos_bootstrap.sh` and did not own `tests/test_macos_bootstrap.sh`, because the brief named the script and not its test. The subagent verified the two test files the brief named, quoted its counts, reported `done`, and was wrong: the primary's own full-suite run in that worktree read two failures. A subagent cannot see a defect in a file its brief kept it out of, and the ownership rule that produced the clean report is the same rule that hid the defect. The closure is not a naming convention: `scripts/X.sh` maps to `tests/test_X.sh` for most files and misses `src/libs/cli.sh`, which is covered by `tests/test_cli_lib.sh`, so the closure has to be computed by searching the test tree for the basename rather than by pattern.
+
+Two sub-cases from the same trial. A per-unit file list invents a boundary that does not exist: a repair subagent found a defect in a file its own track already owned, declined to fix it because that unit's list omitted the file, and reported it instead - the right call under the brief it was given, and a wasted dispatch under a track-level one. And a subagent working in a worktree outside the canonical sandbox directory needs the brief to remap the boundary rule explicitly, because the provider-layer instruction not to modify files outside the sandbox is a contradiction until the brief says which directory is the project root.
+
+Scope: brief construction for every dispatched subagent, not only the parallel case. Cross-reference: the trial's design record [`20260927-design-draft-parallel_auto_experiment.md`](discussions/20260927-design-draft-parallel_auto_experiment.md), findings F3 and F4; the unit and brief contract in [`auto.md`](../workflow/coding-agent/prompts/auto.md).
