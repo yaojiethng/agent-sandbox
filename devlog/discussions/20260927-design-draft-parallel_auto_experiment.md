@@ -114,7 +114,7 @@ Two tracks on sixteen cores showed no deadline pressure, but the evidence is two
 
 The model was held constant deliberately, so nothing here compares models or prices them against yield.
 
-The consolidation merge was not performed: the branches are the deliverable of this trial, and merging them is a separate iteration whose result is the test case for the `/merge` workflow.
+Every unit in this run was defined by the primary and handed to a subagent finished, so the run says nothing about whether a subagent could have proposed the split. That is the trial's missing arm, filed as a roadmap row.
 
 ## Findings
 
@@ -161,7 +161,7 @@ The consolidation merge was not performed: the branches are the deliverable of t
 | A duplicate definition and registration check in `scripts/check_test_liveness.sh` | **Filed** as a roadmap row in T1, the duplicate test name check in the registration gate (2026-09-27); a rule in the gate plus a negative test |
 | A `verified-defective` row in the `auto.md` stop table | **Landed** in `auto.md` (2026-09-27): the table routes a rejected verification back to its own unit as a repair brief, and the invariants carry the rule |
 | A brief-construction helper that computes a unit's test-surface closure | **Filed** as a roadmap row in T1, brief construction: derive a unit's owned-file set from the tree (2026-09-27); F3 makes this the difference between a green and a red suite |
-| Consolidation of `exp/track-a` and `exp/track-b` into the main branch | a later iteration; the cross-track merge is already verified clean, and the merge itself is the `/merge` feedback case. Both branches are exported as bundles, because a branch that is neither merged nor exported dies with the container |
+| Consolidation of `exp/track-a` and `exp/track-b` into the main branch | **Landed (2026-09-27)** as three units on the session branch: CLI strictness, host requirements, policy text. The four track commits were consumed rather than replayed, and the track's last commit was split across the two units it repaired. All eleven files are byte-identical to the track tips; the suite reads 1001 units, 0 failed, against a 998 baseline |
 | A model comparison across tracks | hold the workflow constant and vary the model, which this trial deliberately did not do |
 | A per-host concurrency measurement | run three or four tracks on a smaller host and record where the per-file deadline starts to bite |
 | Whether a subagent can propose a work-unit split | no subagent was asked to propose one in this trial, so the trial is silent on it; recorded as open on the roadmap's scope-to-unit row |
