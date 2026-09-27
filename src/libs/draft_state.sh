@@ -8,7 +8,6 @@
 #   draft_parse_folder_name        --  parse SESSION_TS and branch from folder name
 #   draft_guard_no_collision       --  abort if draft branch already exists
 #   draft_write_state              --  produce .draft-state content string
-#   draft_read_state_from_branch   --  read .draft-state from branch tip as shell vars
 #   draft_validate_branch          --  validate current branch is a draft; print state vars
 #   draft_resolve_commit_message   --  resolve commit message from diff or .msg file
 
@@ -88,36 +87,6 @@ exported-at: ${EXPORTED_AT}
 drafted-at: ${DRAFTED_AT}
 EOF
   [[ -n "$SESSION_ID" ]] && echo "session_id: ${SESSION_ID}"
-}
-
-# =============================================================================
-# draft_read_state_from_branch  --  read .draft-state from branch tip
-# =============================================================================
-
-# Read .draft-state from the tip of the given branch.
-# Prints shell-escaped variable assignments to stdout for eval by caller.
-# Emits only the fields in _DRAFT_STATE_FIELDS; other keys are skipped.
-draft_read_state_from_branch() {
-  local PROJECT_DIR="$1"
-  local BRANCH_NAME="$2"
-
-  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$BRANCH_NAME" 2>/dev/null; then
-    echo "Error: branch does not exist: $BRANCH_NAME" >&2
-    return 1
-  fi
-
-  local STATE_CONTENT
-  STATE_CONTENT=$(git -C "$PROJECT_DIR" show "${BRANCH_NAME}:.draft-state" 2>/dev/null) || {
-    echo "Error: .draft-state not found on branch: $BRANCH_NAME" >&2
-    return 1
-  }
-
-  while IFS=':' read -r KEY VALUE; do
-    KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
-    _draft_state_field_allowed "$KEY" || continue
-    VALUE=$(echo "$VALUE" | sed 's/^ *//')
-    printf '%s=%q\n' "$KEY" "$VALUE"
-  done <<< "$STATE_CONTENT"
 }
 
 # =============================================================================

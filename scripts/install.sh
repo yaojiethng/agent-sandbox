@@ -38,13 +38,14 @@ install_os() {
 # verify_installed) -- a new requirement must be added to all three.
 
 check_bash_version() {
-  if (( BASH_VERSINFO[0] < 4 )); then
-    echo "  - bash 4.0+ required (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})" >&2
-    echo "    The harness uses mapfile and associative arrays (bash 4.0+)." >&2
+  if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4) )); then
+    echo "  - bash 4.4+ required (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})" >&2
+    echo "    A 4.4 feature is required: expanding \"\${arr[@]}\" on an empty array" >&2
+    echo "    under set -u (present in build.sh)." >&2
     if [[ "$(install_os)" == "Darwin" ]]; then
       echo "    macOS: brew install bash; then run bash scripts/install.sh with /opt/homebrew/bin first in PATH." >&2
     else
-      echo "    Install bash 4.0+ with your package manager." >&2
+      echo "    Install bash 4.4+ with your package manager." >&2
     fi
     return 1
   fi

@@ -14,7 +14,7 @@ This document records the host tools and versions agent-sandbox requires, per pl
 
 | Tool | Minimum | Used by | What breaks if missing |
 |---|---|---|---|
-| bash | 4.0 | All scripts | `mapfile` and associative arrays (bash 4.0+) appear in `scripts/build.sh` and other files. macOS ships bash 3.2.57. |
+| bash | 4.4 | All scripts | Expanding empty arrays under `set -u` (a bash 4.4 fix) appears in `scripts/build.sh`; `mapfile` and associative arrays (bash 4.0+) appear across the tree. macOS ships bash 3.2.57. |
 | git | any | All host workflows | Everything fails: onboarding, commits, diffs. |
 | GNU coreutils | any | `realpath` (or `readlink -f`), `sha256sum`, GNU `date -d` | `scripts/onboard.sh`, `scripts/run_agent.sh`, `src/libs/session_env.sh`, `scripts/prune.sh`, `src/build/compose.sh` use these. BSD tools reject the GNU flags. |
 | GNU sed | any | `sed -i` without a backup argument | `scripts/onboard.sh`, `src/libs/session_inventory.sh` use the GNU form. BSD `sed -i` demands a backup suffix. |

@@ -327,7 +327,7 @@ main() {
     PRUNE_CMD+=" --name=$PROJECT_NAME --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR"
     [[ -n "$PROVIDER_FILTER" ]] && PRUNE_CMD+=" --provider=$PROVIDER_FILTER"
     [[ -n "$STALE_KIND" ]] && PRUNE_CMD+=" --stale=$STALE_KIND"
-    [[ -n "$AGE_DAYS" ]] && PRUNE_CMD+=" --age-days=$AGE_DAYS"
+    PRUNE_CMD+=" --age-days=$AGE_DAYS"
     echo "Equivalent non-interactive command:"
     echo "  $PRUNE_CMD"
     echo ""

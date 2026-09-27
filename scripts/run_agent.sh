@@ -122,7 +122,7 @@ parse_args usage \
   -- "$@"
 [ $? -eq 2 ] && exit 0
 case "$DELIVERY" in
-  copy|mount|"") ;;
+  copy|mount) ;;
   *)
     echo "Error: invalid --delivery: $DELIVERY (expected 'copy' or 'mount')" >&2
     exit 1

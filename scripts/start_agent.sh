@@ -93,10 +93,13 @@ EOF
 validate_wsl_path() {
   local PATH_VAR="$1"
   local PATH_VAL="$2"
-  if [[ "$PATH_VAL" =~ ^[A-Za-z]:\\ ]]; then
-    echo "Error: $PATH_VAR must be a WSL/Linux path, not a Windows path."
-    echo "  Got:      $PATH_VAL"
-    echo "  Convert:  wslpath '$PATH_VAL'"
+  # Reject either spelling of a Windows drive path: `C:\...` and `C:/...`
+  # (the forward-slash form is what wslpath emits and what an editor copy
+  # can produce).
+  if [[ "$PATH_VAL" =~ ^[A-Za-z]:[/\\] ]]; then
+    echo "Error: $PATH_VAR must be a WSL/Linux path, not a Windows path." >&2
+    echo "  Got:      $PATH_VAL" >&2
+    echo "  Convert:  wslpath '$PATH_VAL'" >&2
     return 1
   fi
 }

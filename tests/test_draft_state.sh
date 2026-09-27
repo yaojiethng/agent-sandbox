@@ -8,7 +8,6 @@
 #   draft_parse_folder_name         --  4 parsing sub-cases (no session-id, with session-id, edge, legit hex suffix)
 #   draft_guard_no_collision        --  collision detection
 #   draft_write_state               --  all eight fields and the optional session_id
-#   draft_read_state_from_branch    --  key-value parsing, hyphen-to-underscore normalisation
 #   draft_validate_branch           --  branch shape, missing .draft-state, field invariants, state-commit lookup
 
 set -uo pipefail
@@ -197,118 +196,6 @@ test_write_state_with_session_id() {
     pass "draft_write_state includes session_id when given"
   else
     fail "draft_write_state should include session_id when provided"
-  fi
-}
-
-# =============================================================================
-# draft_read_state_from_branch
-# =============================================================================
-
-# Given: a draft branch whose tip commit carries .draft-state
-# When:  draft_read_state_from_branch runs and the output is eval'd
-# Then:  it returns 0 and source_branch is materialised
-# Asserts: the branch-scoped read and the eval contract (the emitted quoting is shell-escaped).
-test_read_state_success() {
-  local DIR="$FIXTURE_DIR/read_ok"
-  make_committed_repo "$DIR"
-  git -C "$DIR" checkout -b "draft/my-branch" --quiet
-
-  # Commit a minimal .draft-state
-  cat > "$DIR/.draft-state" <<'EOF'
-source_branch: main
-from_hash: abc123
-author: Agent
-session_ts: 20260420-120000
-host_branch: feat-x
-diff_count: 3
-exported-at: 20260420-120000
-drafted-at: 20260420-130000
-EOF
-  git -C "$DIR" add .draft-state
-  git -C "$DIR" commit -m ".draft-state" --quiet
-
-  local OUTPUT
-  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/my-branch") || {
-    fail "draft_read_state_from_branch should succeed"
-    return
-  }
-  pass "draft_read_state_from_branch succeeds on valid branch"
-
-  # Check key fields materialized as shell variable assignments
-  eval "$OUTPUT" 2>/dev/null || true
-  if [[ "${source_branch:-}" == "main" ]]; then
-    pass "draft_read_state_from_branch yields correct source_branch (via eval)"
-  else
-    fail "draft_read_state_from_branch: expected source_branch=main after eval, got '${source_branch:-}'"
-  fi
-}
-
-# Given: a committed .draft-state whose hyphenated keys carry values
-# When:  draft_read_state_from_branch emits assignments and the caller eval's them
-# Then:  the hyphenated keys materialise as underscore variable names
-# Asserts: the reader's key normalisation, without which the hyphen keys are skipped.
-test_read_state_normalises_hyphenated_keys() {
-  local DIR="$FIXTURE_DIR/read_hyphen"
-  make_committed_repo "$DIR"
-  git -C "$DIR" checkout -b "draft/hyphen" --quiet
-
-  cat > "$DIR/.draft-state" <<'EOF'
-source_branch: main
-from_hash: abc123
-author: Agent
-session_ts: 20260420-120000
-host_branch: feat-x
-diff_count: 3
-exported-at: 20260420-120100
-drafted-at: 20260420-130000
-EOF
-  git -C "$DIR" add .draft-state
-  git -C "$DIR" commit -m ".draft-state" --quiet
-
-  local OUTPUT
-  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/hyphen") || {
-    fail "draft_read_state_from_branch should succeed"
-    return
-  }
-  eval "$OUTPUT" 2>/dev/null || true
-
-  assert_eq "${exported_at:-}" "20260420-120100" "draft_read_state_from_branch normalises exported-at to exported_at"
-
-  assert_eq "${drafted_at:-}" "20260420-130000" "draft_read_state_from_branch normalises drafted-at to drafted_at"
-}
-
-# Given: a repo with no such branch
-# When:  draft_read_state_from_branch runs
-# Then:  it returns non-zero
-# Asserts: failure at rc level only - the 'branch does not exist' diagnostic is not asserted, and the guard is result-redundant.
-test_read_state_branch_nonexistent() {
-  local DIR="$FIXTURE_DIR/read_missing_branch"
-  make_committed_repo "$DIR"
-
-  if draft_read_state_from_branch "$DIR" "draft/nonexistent" 2>/dev/null; then
-    fail "draft_read_state_from_branch should fail for nonexistent branch"
-  else
-    pass "draft_read_state_from_branch fails for nonexistent branch"
-  fi
-}
-
-# Given: a draft branch whose commits hold no .draft-state
-# When:  draft_read_state_from_branch runs
-# Then:  it returns non-zero
-# Asserts: the missing-record path.
-test_read_state_missing_dot_draft_state() {
-  local DIR="$FIXTURE_DIR/read_missing_state"
-  make_committed_repo "$DIR"
-  git -C "$DIR" checkout -b "draft/no-state" --quiet
-  # Create an empty commit  --  no .draft-state
-  echo "dummy" > "$DIR/dummy.txt"
-  git -C "$DIR" add dummy.txt
-  git -C "$DIR" commit -m "no draft state" --quiet
-
-  if draft_read_state_from_branch "$DIR" "draft/no-state" 2>/dev/null; then
-    fail "draft_read_state_from_branch should fail when .draft-state missing"
-  else
-    pass "draft_read_state_from_branch fails when .draft-state missing"
   fi
 }
 
@@ -566,33 +453,6 @@ test_validate_escapes_field_values() {
   fi
 }
 
-# Given: a .draft-state whose field values carry a command substitution and a backtick
-# When:  draft_read_state_from_branch emits assignments and the caller evals them
-# Then:  neither payload runs and each value survives as literal text
-# Asserts: field values are escaped at the eval boundary.
-test_read_state_escapes_field_values() {
-  local DIR="$FIXTURE_DIR/read_injection"
-  local MARKER_SUBST="$DIR/pwned_subst"
-  local MARKER_BT="$DIR/pwned_backtick"
-  make_poisoned_state "$DIR" "draft/read-injection" "$MARKER_SUBST" "$MARKER_BT"
-
-  local OUTPUT
-  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/read-injection") || true
-  eval "$OUTPUT" 2>/dev/null || true
-
-  if [[ -e "$MARKER_SUBST" || -e "$MARKER_BT" ]]; then
-    fail "draft_read_state_from_branch output executed a field payload on eval"
-  else
-    pass "draft_read_state_from_branch escapes field values so eval cannot execute them"
-  fi
-
-  if [[ "${author:-}" == "\$(touch $MARKER_SUBST)" ]]; then
-    pass "draft_read_state_from_branch preserves a literal field value through eval"
-  else
-    fail "draft_read_state_from_branch changed the field value: '${author:-}'"
-  fi
-}
-
 # =============================================================================
 # field allowlist
 # =============================================================================
@@ -643,24 +503,6 @@ test_validate_skips_unknown_keys() {
   fi
 }
 
-# Given: the same .draft-state
-# When:  draft_read_state_from_branch emits assignments
-# Then:  the contract fields appear and the crafted keys do not
-# Asserts: the same allowlist on the second reader.
-test_read_state_skips_unknown_keys() {
-  local DIR="$FIXTURE_DIR/read_unknown_key"
-  make_unknown_key_state "$DIR" "draft/unknown-key"
-
-  local OUTPUT
-  OUTPUT=$(draft_read_state_from_branch "$DIR" "draft/unknown-key") || true
-
-  if [[ "$OUTPUT" == *"author=test@fixture"* && "$OUTPUT" != *"ghost"* && "$OUTPUT" != *"PATH="* ]]; then
-    pass "draft_read_state_from_branch emits contract fields only"
-  else
-    fail "draft_read_state_from_branch output wrong: $OUTPUT"
-  fi
-}
-
 # Given: a .draft-state written by draft_write_state with every field populated
 # When:  both readers emit assignments
 # Then:  every written field appears
@@ -676,8 +518,7 @@ test_readers_emit_every_written_field() {
   git -C "$DIR" add .draft-state
   git -C "$DIR" commit -m ".draft-state" --quiet
 
-  local READ_OUT VAL_OUT MISSING="" FIELD WRITTEN
-  READ_OUT=$(draft_read_state_from_branch "$DIR" "draft/all-fields") || true
+  local VAL_OUT MISSING="" FIELD WRITTEN
   VAL_OUT=$(draft_validate_branch "$DIR" 2>/dev/null) || true
   # The expected list comes from the writer's own output, not from a literal
   # list in this test: a field added to the writer and missed by the allowlist
@@ -686,7 +527,6 @@ test_readers_emit_every_written_field() {
   local EXPECTED_COUNT
   EXPECTED_COUNT=$(printf '%s\n' $WRITTEN | grep -c .)
   for FIELD in $WRITTEN; do
-    [[ "$READ_OUT" == *"$FIELD="* ]] || MISSING+=" read:$FIELD"
     [[ "$VAL_OUT" == *"$FIELD="* ]] || MISSING+=" validate:$FIELD"
   done
   if [[ -z "$MISSING" && "$EXPECTED_COUNT" -eq 9 ]]; then
@@ -709,10 +549,6 @@ run_test test_guard_no_collision_detects_branch
 run_test test_write_state_basic
 run_test test_write_state_emits_all_fields
 run_test test_write_state_with_session_id
-run_test test_read_state_success
-run_test test_read_state_normalises_hyphenated_keys
-run_test test_read_state_branch_nonexistent
-run_test test_read_state_missing_dot_draft_state
 run_test test_validate_not_on_draft_branch
 run_test test_validate_missing_dot_draft_state
 run_test test_validate_success
@@ -720,9 +556,7 @@ run_test test_validate_reports_oldest_state_commit
 run_test test_validate_missing_from_hash
 run_test test_validate_dropped_state_commit_warns_and_continues
 run_test test_validate_escapes_field_values
-run_test test_read_state_escapes_field_values
 run_test test_validate_skips_unknown_keys
-run_test test_read_state_skips_unknown_keys
 run_test test_readers_emit_every_written_field
 
 test_done

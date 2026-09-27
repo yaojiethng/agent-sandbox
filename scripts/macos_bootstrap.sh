@@ -91,8 +91,10 @@ verify_installed() {
     return 1
   fi
   bashver_major="${bashver%%.*}"
-  if (( bashver_major < 4 )); then
-    echo "  brew bash is too old: version $bashver (need 4.0+)" >&2
+  # Compare against 4.4: bashver is "major.minor.patch".
+  bashver_minor="$(printf '%s' "$bashver" | cut -d. -f2)"
+  if (( bashver_major < 4 || (bashver_major == 4 && 10#${bashver_minor:-0} < 4) )); then
+    echo "  brew bash is too old: version $bashver (need 4.4+)" >&2
     return 1
   fi
   echo "  ok: brew bash $bashver"

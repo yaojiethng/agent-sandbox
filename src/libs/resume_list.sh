@@ -164,9 +164,19 @@ _resume_state_cell() {
 
   # Docker overrides the verb when it disagrees with the log (crash, docker
   # restart, manual stop). Time stays from the log when it matches the verb.
-  if [[ -n "$docker_verb" && "$docker_verb" != "$last_verb" ]]; then
-    echo "${docker_verb}"
-    return 0
+  # The vocabularies differ by tense: docker reports `running` where the log
+  # records `started`. A running container therefore counts as a match for a
+  # started log entry; only a real disagreement overrides the verb and drops
+  # the age.
+  if [[ -n "$docker_verb" ]]; then
+    local matches_last="false"
+    [[ "$docker_verb" == "$last_verb" || \
+       ( "$docker_verb" == "running" && "$last_verb" == "started" ) ]] \
+      && matches_last="true"
+    if [[ "$matches_last" == "false" ]]; then
+      echo "${docker_verb}"
+      return 0
+    fi
   fi
   t=$(relative_time_compact "$last_t")
   [[ "$t" == "---" ]] && { echo "$last_verb"; return 0; }

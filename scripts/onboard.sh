@@ -92,6 +92,16 @@ resolve_and_validate() {
   local VAR="$1" FLAG="$2" VAL="$3" REQUIRE_EXIST="${4:-false}"
   local RESOLVED
 
+  # Reject a Windows path on the RAW value, before realpath resolves it:
+  # realpath turns `C:\Users\you\sandbox` into an absolute Linux path, which
+  # the later Windows-format test could never see.
+  if [[ "$VAL" =~ ^[A-Za-z]:[/\\] ]]; then
+    echo "Error: $FLAG must be a WSL/Linux path, not a Windows path." >&2
+    echo "  Got:      $VAL" >&2
+    echo "  Convert:  wslpath '$VAL'" >&2
+    exit 1
+  fi
+
   RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
   if [[ -n "$RESOLVED" ]]; then
     VAL="$RESOLVED"
@@ -100,12 +110,6 @@ resolve_and_validate() {
     exit 1
   fi
 
-  if [[ "$VAL" =~ ^[A-Za-z]:[/\\] ]]; then
-    echo "Error: $FLAG must be a WSL/Linux path, not a Windows path." >&2
-    echo "  Got:      $VAL" >&2
-    echo "  Convert:  wslpath '$VAL'" >&2
-    exit 1
-  fi
   if [[ "$VAL" != /* ]]; then
     echo "Error: $FLAG must be an absolute or resolvable path." >&2
     echo "  Got: $VAL" >&2

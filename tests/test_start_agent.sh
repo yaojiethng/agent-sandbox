@@ -466,6 +466,20 @@ test_wsl_path_rejects_windows_drive_paths() {
   fi
 }
 
+# Given: a Windows drive path with a forward slash (the spelling wslpath emits)
+# When:  validate_wsl_path is called
+# Then:  it returns non-zero with the path and the wslpath conversion hint
+# Asserts: the WSL guard rejects the forward-slash spelling too
+test_wsl_path_rejects_forward_slash_windows_path() {
+  local out rc
+  out=$(validate_wsl_path "PROJECT_DIR" 'C:/Users/proj' 2>&1); rc=$?
+  if [[ $rc -ne 0 && "$out" == *"must be a WSL/Linux path"* && "$out" == *"wslpath"* ]]; then
+    pass "validate_wsl_path rejects forward-slash Windows path with conversion hint"
+  else
+    fail "validate_wsl_path C:/... : rc=$rc out=$out"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Interactive config wizard tests (F2 design D11)
 # ---------------------------------------------------------------------------
@@ -805,6 +819,7 @@ run_test test_unresolvable_sandbox_reports_canonicalisation
 run_test test_wizard_rejects_non_standard_mode
 run_test test_wsl_path_accepts_linux_paths
 run_test test_wsl_path_rejects_windows_drive_paths
+run_test test_wsl_path_rejects_forward_slash_windows_path
 run_test test_wizard_help_describes_interactive
 run_test test_wizard_picker_abort
 run_test test_wizard_provider_supplied_no_reprompt

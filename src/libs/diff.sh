@@ -68,8 +68,10 @@ _diff_restore_untracked() {
 }
 
 # _write_git_diff SANDBOX_DIR BASE OUTPUT_FILE
-#   Writes `git diff BASE` to OUTPUT_FILE with index lines stripped and a
-#   guaranteed trailing newline. Writes an empty file when there are no
+#   Writes `git diff BASE` to OUTPUT_FILE with index lines stripped. The
+#   output is byte-verbatim from git: git terminates the diff with a single
+#   newline and strip_index_lines preserves it, so no terminating-newline
+#   post-processing is needed. Writes an empty file when there are no
 #   changes vs BASE. Single source of truth for the verbatim-diff contract
 #   shared by write_uncommitted_diff and write_all_changes_diff.
 #   Fails closed: if git could not run (a broken repo), the function prints an
@@ -80,7 +82,6 @@ _write_git_diff() {
   local git_pipe_rc
   git -C "$dir" diff "$base" \
     | strip_index_lines \
-    | sed -e '$a\\' \
       > "$out"
   git_pipe_rc=${PIPESTATUS[0]}
   if [[ $git_pipe_rc -ne 0 ]]; then
@@ -282,9 +283,12 @@ write_all_changes_diff() {
 # write_changed_files
 #
 # Copies all changed files since SINCE_SHA into OUTPUT_DIR/changed-files/,
-# preserving directory structure relative to repo root. Produces MANIFEST.txt
-# listing every copied file. Deleted files are skipped. Untracked files are
-# included.
+# preserving directory structure relative to repo root. MANIFEST.txt lists
+# every changed path INCLUDING deleted files the copy loop skips: the
+# consumer is the packaging agent, which reconciles its Changed-files table
+# (whose Nature column includes "deleted") against this manifest, so a
+# copies-only manifest could not serve it. Deleted files are named but not
+# copied. Untracked files are included.
 # -------------------------
 write_changed_files() {
   local SANDBOX_DIR="$1"

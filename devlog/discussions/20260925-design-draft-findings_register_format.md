@@ -46,14 +46,15 @@ The register keeps its prose and gains a companion data file, `20260924-design-a
 | `action_text` | string | the action as the triage table states it |
 | `action_kind` | string | `code`, `test`, `docs`, `comment`, or `none` |
 | `files` | array of strings | the files the finding names |
-| `status` | string | `open`, `resolved`, `accepted`, `blocked`, `needs-decision`, or `stale` |
+| `status` | string | `open`, `resolved`, `accepted`, `blocked`, `needs-decision`, `stale`, or `assigned` |
+| `assigned_to` | integer | the roadmap row id the finding defers to, present only when `status` is `assigned` |
 | `refs` | array of integers | other rows the finding names as the same defect |
 
 The split is by kind of content, not by audience: the data holds what a query needs, and the prose holds the reasoning. A label appears in exactly one place, so the two records cannot disagree about it.
 
 The file's name is the report's name with a different extension: `20260924-design-active-test_suite_readthrough.md` pairs with `20260924-design-active-test_suite_readthrough.jsonl`. A register's data file is therefore found from its report, never by scanning a directory for data files.
 
-The `status` field is how a finding is checked off, and it holds one of six values. `open` means no action taken yet. `resolved` means the fix landed and its unit passes. `accepted` means the disposition is to leave the behaviour as it is, with the reason on the row. `blocked` means the row could not be worked where it landed, usually because its file belongs to another owner. `needs-decision` means a design choice comes first. `stale` means the finding no longer matches the tree. The field is a plain string, and its values are fixed; a new value is a change to this table, not a free choice at write time.
+The `status` field is how a finding is checked off, and it holds one of seven values. `open` means no action taken yet. `resolved` means the fix landed and its unit passes. `accepted` means the disposition is to leave the behaviour as it is, with the reason on the row. `blocked` means the row could not be worked where it landed, usually because its file belongs to another owner. `needs-decision` means a design choice comes first. `stale` means the finding no longer matches the tree. `assigned` means the row is not closed, but a concrete roadmap row owns it; the `assigned_to` field names that roadmap row, and the row transitions to `resolved`, `accepted` or `blocked` when the roadmap row is worked. The field is a plain string, and its values are fixed; a new value is a change to this table, not a free choice at write time.
 
 Counts are read from the data file and never asserted in prose. A stated count is a claim with no owner; a computed count cannot drift from the thing it counts.
 

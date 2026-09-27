@@ -255,6 +255,24 @@ test_state_cell_lets_docker_override_the_log_verb() {
   fi
 }
 
+# Given: a started event, and docker reporting that same container running
+# When:  _resume_state_cell runs
+# Then:  the log verb stays with its age (docker `running` matches log `started`)
+# Asserts: the live-container common case keeps the age (row 80).
+test_state_cell_keeps_age_when_docker_says_running() {
+  local sbx="$FIXTURE_DIR/cell_running"
+  mkdir -p "$sbx/.compose"
+  SANDBOX_DIR="$sbx" session_log_set "sess-a" last_started "20260820-100000"
+  _STATE_MAP=( [sess-a]="running" )
+  local cell
+  cell="$(SANDBOX_DIR="$sbx" _resume_state_cell "sess-a")"
+  if [[ "$cell" == started* && "$cell" != "started" ]]; then
+    pass "_resume_state_cell keeps the started-age when docker reports running"
+  else
+    fail "running-match: cell='$cell' (expected 'started <age>')"
+  fi
+}
+
 # Given: only a started event, with docker silent
 # When:  _resume_state_cell runs
 # Then:  the cell is the log verb with its relative age
@@ -384,6 +402,7 @@ run_test test_state_map_reads_running_and_stopped
 run_test test_state_map_is_empty_without_docker_output
 run_test test_state_cell_without_events_is_a_dash
 run_test test_state_cell_lets_docker_override_the_log_verb
+run_test test_state_cell_keeps_age_when_docker_says_running
 run_test test_state_cell_reports_the_log_event_with_its_age
 run_test test_render_rows_list_mode_pages_and_marks_stale
 run_test test_render_rows_interactive_fills_the_picker

@@ -94,6 +94,7 @@ Proposed, not settled. The recommendation is option B in area 1, option C in are
 5. The bundle's operator-facing guarantees are stated and pinned in the same work: what a bundle always contains, what an empty artifact means, and what an export's SUCCESS verdict covers.
 6. The ADR home is a new `docs/adr/diff_workflow_state_contract.md`, settled when the operator decides; `docs/adr/diff_packaging.md` keeps the artifact internals. The boundary with the sibling notes is: implementation shape in the unification note, flags and declaration in the resolver note, the dispatcher contract in the CLI-to-workflow note, and state and guarantees here.
 7. Durable-doc updates when it settles: `tool_interface.md` gains a guarantees line per command, `sandbox_lifecycle.md`'s join phase gains the state contract, and `system_overview.md`'s Core Invariants gains the branch pointer.
+8. The draft/confirm savepoint is the atomicity boundary of the draft operation. Savepoint creation is a single fail-closed asserted step: the tag exists and points at the resolved base whenever a draft is in flight. A rollback asserts HEAD equals the savepoint (`rev-parse draft-savepoint` equals HEAD) before it declares success. Git offers no transaction over tag-create, branch-create, apply and reset, so "atomic" means fail-safe ordering with asserted checkpoints, never a transaction.
 
 ## Consequences
 

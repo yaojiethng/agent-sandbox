@@ -436,7 +436,7 @@ _run_draft_workflow() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
   local FORCE="$7"
-  local PATCH_LIST="${9:-}"
+  local PATCH_LIST="${8:-}"
 
   local PATCHES_DIR="$SOURCE_DIR/patches"
   if [[ -z "$PATCH_LIST" ]]; then
