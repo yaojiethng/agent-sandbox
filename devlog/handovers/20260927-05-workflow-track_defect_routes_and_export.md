@@ -3,7 +3,7 @@
 **Date:** 2026-09-27
 **Milestone:** M3 - Autonomous Task Execution, Manual Review Workflow
 **Type:** Workflow
-**Status:** Active
+**Status:** Closed
 
 ## Objective
 
@@ -31,15 +31,15 @@ The duplicate-registration check in `scripts/check_test_liveness.sh` was propose
 
 | # | Criterion | Verifiable by | Status |
 |---|---|---|---|
-| AC1 | `auto.md`'s Step 4 route table has a row for a return the primary's verification rejects, and the repair paragraph points at it | read the table and the paragraph | pending |
-| AC2 | `auto.md`'s invariants carry the rule that a rejected return goes back to its own unit rather than into the primary's tree | read the invariants | pending |
-| AC3 | `parallel-auto.md` carries the export step: the rule that a track's commits are reachable only from the container repository, the `package_branch` worktree refusal, and a recipe that works | read the step; the recipe is the one used in the previous iteration | pending |
-| AC4 | `devlog/roadmap.md` carries a row for the duplicate test name check and a row for the owned-file-set derivation, each naming its evidence | `grep -n` the two subjects in the roadmap | pending |
-| AC5 | The existing scope-to-unit row names the `parallel-auto` draft and records that the unit-split question is open | read the row | pending |
-| AC6 | Paired negative check: no record still describes either follow-up as an unfiled item. `grep -rn` the two subjects across `devlog/` names only the roadmap rows, the design record and the feedback entries | the grep | pending |
-| AC7 | The design record's follow-up table reflects the disposition of its items | read the table | pending |
-| AC8 | Lint gate clean, 0 findings | `bash scripts/lint.sh` | pending |
-| AC9 | Handover committed with the delivery commits, Status Closed | `git log` | pending |
+| AC1 | `auto.md`'s Step 4 route table has a row for a return the primary's verification rejects, and the repair paragraph points at it | read the table and the paragraph | Agent [x] accepted |
+| AC2 | `auto.md`'s invariants carry the rule that a rejected return goes back to its own unit rather than into the primary's tree | read the invariants | Agent [x] accepted |
+| AC3 | `parallel-auto.md` carries the export step: the rule that a track's commits are reachable only from the container repository, the `package_branch` worktree refusal, and a recipe that works | read the step; the recipe is the one used in the previous iteration | Agent [x] accepted |
+| AC4 | `devlog/roadmap.md` carries a row for the duplicate test name check and a row for the owned-file-set derivation, each naming its evidence | `grep -n` the two subjects in the roadmap | Agent [x] accepted: both in T1 |
+| AC5 | The existing scope-to-unit row names the `parallel-auto` draft and records that the unit-split question is open | read the row | Agent [x] accepted |
+| AC6 | Paired negative check: no record still describes either follow-up as an unfiled item. `grep -rn` the two subjects across `devlog/` names only the roadmap rows, the design record and the feedback entries | the grep | Agent [x] accepted: no "roadmap row pending" remains |
+| AC7 | The design record's follow-up table reflects the disposition of its items | read the table | Agent [x] accepted: two filed, one landed, two annotated |
+| AC8 | Lint gate clean, 0 findings | `bash scripts/lint.sh` | Agent [x] accepted: 698 files, 0 findings |
+| AC9 | Handover committed with the delivery commits, Status Closed | `git log` | Agent [x] accepted: `workflow` 74d1543, `plan` a763684 |
 
 ## Hot files
 
@@ -65,12 +65,18 @@ The duplicate-registration check in `scripts/check_test_liveness.sh` was propose
 
 | Finding | Type | Impact | Triage |
 |---|---|---|---|
-| None yet | | | |
+| `package_branch` refuses a linked worktree, because its validity check requires a real `.git` directory | tooling | a parallel run cannot export a track with the sanctioned tool as-is; the workaround is a clone, which the new export step now carries | recorded in `parallel-auto.md` Step 2 |
+| The registration gate's own subject (duplicate names) is now a roadmap row rather than an implementation | scope | operator direction; the gate keeps passing duplicates until that row is worked | recorded in the roadmap and in the handover decisions |
 
 ## Completed
 
 | File | Change |
 |---|---|
+| `workflow/coding-agent/prompts/auto.md` | the Step 4 route table gains the rejected-verification row; the repair paragraph points at it; the invariants carry the rule |
+| `workflow/coding-agent/prompts/parallel-auto.md` | Step 2 gains the export rule, the `package_branch` refusal and the clone recipe; failure mode (i) and a ninth invariant |
+| `devlog/roadmap.md` | two new T1 rows; the scope-to-unit row amended with the draft and the open unit-split question |
+| `devlog/AGENT_FEEDBACK.md` | two `scoped:` fields point at the new rows |
+| `devlog/discussions/20260927-design-draft-parallel_auto_experiment.md` | the follow-up table records each item's disposition |
 | `devlog/handovers/20260927-05-workflow-track_defect_routes_and_export.md` | this handover |
 
 ## Deferred items
