@@ -65,8 +65,8 @@ mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) 
 
 state: open
 scoped: M3 T1 -- close-milestone automation
-legacy: none
-mitigation: the milestone close is where record integrity fails. A green committed iteration without an open handover is a record defect, not a fast close; content below the unit-of-work threshold amends an open/same-session handover rather than opening a new one (hollow iterations); roadmap open-item status must be marked `[x]` in the same iteration its resolving handover closes; keep the close surfaces short and rely on the roadmap as the sole task list; close-out propagation greps sweep the full tests tree.
+legacy: 2026-09-27 -- one policy decision landed as ten commits, one per released section, though the one-commit rule was explicit in `iteration_policy.md` and the provider `AGENTS.md`. The governance cadence in the project `AGENTS.md` was read as setting the commit count; it governs the proposal. The unit the gap lacked -- one roadmap task, one vertical slice -- is defined in `iteration_policy.md` Step 2 (handover `20260927-08`).
+mitigation: the milestone close is where record integrity fails. A green committed iteration without an open handover is a record defect, not a fast close; content below the unit-of-work threshold amends an open/same-session handover rather than opening a new one (hollow iterations); roadmap open-item status must be marked `[x]` in the same iteration its resolving handover closes; keep the close surfaces short and rely on the roadmap as the sole task list; close-out propagation greps sweep the full tests tree. A section-by-section review of one task is still one unit: the cadence governs the proposal, and a unit's diff carries a writable subject.
 
 ### [A] 2026-09-21  --  Process improvement: gate-release and scope-first discipline (T1)
 
@@ -81,6 +81,10 @@ state: open
 scoped: M3 T2 -- edit-tool failure metrics + feedback resolution
 legacy: none
 mitigation: one failure family across the `edit` tool, resolved from the T2 measurement. Multi-edit atomicity (one failed entry rolls back the whole call); exact-match `oldText` (invisible whitespace / trailing chars break the match); overlapping/nested entries rejected; `oldText` must be unique. Sub-cases: a regex `sed -i` with a missing file operand silently writes nothing; the "did the write land?" reflex catches un-applied edits; table-row append must keep the anchor row (overwrite-instead-of-append is a distinct failure mode). Count and classify failures by cause via the T2 metric.
+legacy: 2026-09-27 -- the anchor-row mode recurred while inserting a roadmap row: the `newText` replaced the
+anchor line instead of prefixing it, and the row's text was lost until it was restored from `HEAD` and verified
+byte-identical. Read `newText` as the full replacement region before writing, and re-run `git diff --numstat` to
+confirm an append shows one insertion and zero deletions. Second instance the same day: the marker-ordering row still carried the neighbouring trial row's body after the restore passed byte-identical, and the close read-back caught it. Run the numstat reflex after every row edit, not only after the recovery.
 
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
 

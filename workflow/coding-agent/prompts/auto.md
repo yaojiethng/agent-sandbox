@@ -29,14 +29,14 @@ Build the plan from the roadmap task list, or from the list the operator names. 
 
 **The well-specifiedness test.** A row enters the plan only when a scope confirmation would raise no open question: the design or spec is clear, the acceptance criteria are clear, and nothing is left to decide. Write the answer sheet for each candidate row - the type, what is in scope, what is deferred, the acceptance criteria with their checks, and the unit split - then read it back. Any line that would be a question parks the row. The parked rows and their questions are presented with the plan. A row that needs a decision is design work, not run work.
 
-**The unit rule.** A unit is one commit and one handover. It fails the rule if any of these fail:
+**The unit rule.** A unit is one roadmap task, scoped as a vertical slice, and it lands as one commit and one handover. The binding rule is in [`docs/operations/iteration_policy.md`](../../../docs/operations/iteration_policy.md). It fails the rule if any of these fail:
 
-- **One commit.** The smallest change that lands as one commit with one handover. If the commit subject cannot be written from the diff, it is more than one unit.
+- **One commit.** The slice lands as one commit with one handover. If the commit subject cannot be written from the slice's diff, the boundary is wrong in one of two directions: re-scope the slice, or merge two units. A per-section or per-file commit inside one task is not a split -- it is one unit broken across commits.
 - **One context.** The source, the tests and the evidence fit one subagent context with room to spare. A unit that needs two contexts splits. A unit that needs no fresh context is not worth dispatching.
 - **One verification.** Its acceptance criteria are checkable without another unit landing first.
 - **Disjoint files.** No two units own one file, checked across the whole run.
 
-Split vertically, never by layer: a unit is one feature end to end, across the files it touches, and a feature too large for one context splits into sub-features that are each a working increment. Work phrased horizontally ("harden every gate") is a sequence of vertical slices or a design task, not a unit.
+Split vertically, never by layer: a unit is one feature end to end, across the files it touches, and a feature too large for one context splits into sub-features that are each a working increment. Work phrased horizontally ("harden every gate") is a sequence of vertical slices or a design task, not a unit. A slice crosses file kinds and directories -- a policy file, a template and a record that serve one outcome are one slice, and the disjoint-files test binds two units, not one unit's sites.
 
 **Present the plan and wait for the release.** The plan carries, per unit: the subject, the commit type, the owned files, the handover, and the acceptance criteria. Present it with the parked rows, and dispatch nothing before the operator releases it. After the release the run is unattended: the split changes only by stopping and reporting, because a different split is a different plan.
 

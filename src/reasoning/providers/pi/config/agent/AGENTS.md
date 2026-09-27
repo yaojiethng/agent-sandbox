@@ -42,14 +42,6 @@ Prefer the `edit` tool for in-place text changes. The `edit` tool reports a miss
 
 Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
 
-### Handover rules
-
-- Type must match dominant activity at close. Rename if it diverged.
-- Implementation needs its own handover. A design handover does not cover impl commits.
-- Every iteration updates the roadmap checkboxes for completed tasks.
-
-Each iteration is independent. The prior iteration's git history is not available (container is ephemeral). The iteration starts from the project's committed HEAD.
-
 Tools you have access to:
 
 - `/package-branch`  --  export committed changes as numbered diffs, uncommitted diff, and changed files

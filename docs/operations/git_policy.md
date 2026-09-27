@@ -179,6 +179,7 @@ Intermediates are `wip:` or amends, never delivery-typed. A mid-iteration `fix:`
 Use `wip:` when:
 
 - The current task is a far-reaching refactor or audit-type change and you need checkpoints.
+- An exchange is open, so its result is provisional. Write it to the record first, per the write-back rule in [`iteration_policy.md`](iteration_policy.md), and commit the record as `wip:`.
 - The operator directs a wip commit.
 - You propose a wip commit and the operator accepts.
 

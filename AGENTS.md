@@ -133,6 +133,13 @@ Agent output is complete and ready for review when it follows the format rules b
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
+**Work unit and iteration scoping.** One iteration is one roadmap task, scoped as one vertical slice and landed as one commit with one handover. Propose no split by default. When one slice cannot deliver the task's outcome, name the handling method you propose:
+
+- **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at Gate 1.
+- **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
+
+See [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) for the criteria and the close mechanics.
+
 **Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
 **Audit findings** -- Identify the document or code, state the rule violated, propose the correction.
@@ -151,11 +158,11 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The minor loop -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the handover format and lifecycle in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md). Its gates require explicit operator release: scope confirmation before any file output, and pre-close release before the close commit. The pre-close summary includes the Roadmap write-back row defined at [Step 7](docs/operations/iteration_policy.md#step-7--pre-close-verification). The roadmap is the sole task list; its update procedure lives in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md). Commit and delivery rules are in [`docs/operations/git_policy.md`](docs/operations/git_policy.md).
+The minor loop -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), the Roadmap as the sole task list in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), the commit and delivery rules in [`docs/operations/git_policy.md`](docs/operations/git_policy.md), and the Markdown lint gate in [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary includes the Roadmap write-back row defined at [Step 7](docs/operations/iteration_policy.md#step-7--pre-close-verification).
 
-Run the Markdown lint gate documented in [`documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate) before the pre-close gate; the repository holds zero findings.
+The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- triggers Step 1 (Open handover) before any further output.
 
-The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- triggers Step 1 (Open handover) before any further output. Open the handover file and pass the Step 2 scope gate before implementation. A green test suite and correctly typed commits do not close an iteration by themselves: the close commit must carry the handover with Status Closed. An iteration that lands commits with no open handover is a missing record, not a fast close, unless the operator explicitly requires a chore commit to land with no handover. The iteration is one delivery commit: intermediate commits are `wip:` checkpoints or corrections, never delivery-typed (eg. `fix:`/`docs:`/`feat:`/`chore:`), and a pile of commits at HEAD with no open handover is a missing-record signal to squash now, not progress.
+**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
 
 ## Iteration Start
 
