@@ -187,11 +187,17 @@ The operator appends the block contents verbatim to `changelog.md`.
 
 ## Corrections to Closed Roadmap and Changelog Entries
 
-Closed roadmap entries and changelog entries are edited only at the operator's direction. Every edit carries the corresponding correction tag.
+A closed roadmap entry or changelog entry does not change. It keeps its text, gains the marker below, and gains the successor entry that carries the correction. The changelog is the roadmap's archived half and is corrected the same way.
 
-An entry is corrected in-place by appending a `[SUPERSEDED in MX.X]` or `[REMOVED in MX.X]` tag to the affected sentence or claim. The tag names the milestone that superseded or removed the content. The original text is preserved -- the tag marks it as stale without deleting it.
+**Markers.**
 
-- `[SUPERSEDED in M2.3]` -- the claim is still valid but has been superseded by a later implementation
-- `[REMOVED in M2.4]` -- the claim is no longer accurate and has been removed from the active system description
+- `[SUPERSEDED in MX.X]` -- the row is closed and a later milestone carries the correction. The row stays.
+- `[REMOVED in MX.X]` -- the row is closed and the content it claimed is gone from the active system description. The row stays.
 
-Do not rewrite the entry. The tag is sufficient notice that the reader must consult the referenced milestone.
+**The anchor** names the milestone that carries the correction, open or closed. A correction landing inside the current milestone is marked `[SUPERSEDED in M3]`. Work belonging to no milestone is marked with its iteration: `[SUPERSEDED in 20260927-06]`.
+
+**The successor entry** is written where the roadmap puts new work, under the current sub-milestone, in the row form the milestone requires. Do not rewrite the marked row, and do not delete it.
+
+**A correction may reopen the record.** The record ends closed, with the metadata it carried before. A correction that cannot be finished leaves the record as it was.
+
+The shared principle, the direction, the propagation rule and the agent's checks are in [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections). The decisions behind this section are in [`closed_record_corrections.md`](../adr/closed_record_corrections.md).

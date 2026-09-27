@@ -253,16 +253,27 @@ Rules:
 
 ### Post-close document corrections
 
-**Principle.** A closed document is edited only at the operator's direction, and every edit carries the corresponding correction tag. Correct the text in place: rewrite the affected paragraph, mark the change with a `[CORRECTION -- YYYY-MM-DD: <...>]` tag block at the end of the corrected section, ordered newest first. The document stays a readable record and the correction is visible at the point of change. The agent never deletes documents -- deletion is an operator action. The decision-log rationale differs by document type (a handover is a decision record, a concept doc a factual reference), but the procedure is the same.
+**Principle.** A closed record's content does not change. It gains the marker its type carries, and a record that tracks state also gains a successor entry. The mechanic follows what the record is for: a record that states what is true is corrected in place, and a record that tracks open and closed tasks is corrected by addition.
 
-**Correction forms by document type:**
+**Direction.** A closed record is corrected at the operator's direction. The agent may notice a correction and propose it in one line, and may not apply one unasked. The agent never deletes a record; deletion is an operator action. Applying a correction is bounded by two stops and one smell:
 
-| Document type | See |
-|---|---|
-| Handover | [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) -- Corrections to Closed Handovers |
-| Changelog | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) -- Corrections to Closed Roadmap and Changelog Entries |
-| Roadmap entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) -- Corrections to Closed Roadmap and Changelog Entries |
-| Study | [`study_policy.md`](study_policy.md#corrections-to-closed-investigations) -- Corrections to Closed Investigations |
+- **Stop -- the correction changes the unit's scope or carries new work.** New work belongs in a new iteration.
+- **Stop -- an edit to a closed record would carry no marker.** An untraceable edit is a rewrite, not a correction.
+- **Smell -- folding the correction needs an interactive rebase with several conflict edits.** Report the smell and stop; the operator rules on it. Past that size the instrument is a port, not a correction: see [`rebase.md`](../../workflow/coding-agent/prompts/rebase.md).
+
+**Propagation.** A correction inherits the record set of the unit it corrects. A unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its marker. A correction that leaves a closed record contradicting its successor is incomplete.
+
+**Archival is not amendment.** Moving a closed milestone's entries from the roadmap to the changelog is a length boundary, not a correction, and carries no marker. The changelog is the roadmap's archived half; the two share a format, a mechanic and a vocabulary.
+
+**Forms by document type:**
+
+| Document type | Nature | Form | See |
+|---|---|---|---|
+| Handover | states what the iteration did | rewrite the paragraph, or reopen the record and close it again; either way a `[CORRECTION -- YYYY-MM-DD: <...>]` tag at the end of the corrected section | [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) |
+| Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
+| Changelog entry | tracks closed tasks, archived | as a roadmap entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
+| Study or investigation | states what was found | rewrite, tag | [`study_policy.md`](study_policy.md#corrections-to-closed-investigations) |
+| ADR, concept, architecture, policy | states what the system does | rewrite, tag | this section |
 
 ### Missing documents
 

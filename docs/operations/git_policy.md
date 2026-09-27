@@ -202,13 +202,18 @@ Each kind resolves to the single delivery commit; the delivery commit is the sol
 
 ## Amending
 
-Amending folds changes into their parent commit rather than creating follow-up commits. Valid use cases:
+Amending folds a change into the commit it corrects, so the history reads as if the work had been done correctly the first time. Prefer the fold over a follow-up commit: a stack of one-line fixups on the same logical unit is the history's least readable form, and what the fold discards from the history the handover keeps.
 
-- **Squashing wip commits** -- wip checkpoints accumulated during an iteration are squashed into the delivery commit at iteration end.
-- **Correcting a prior commit** -- when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made *in this iteration*. The amendment bundles the fix with the commit where the work was done. A correction that targets a non-HEAD commit in the same iteration folds into it via interactive rebase.
-- **Early iteration end** -- when the agent committed the delivery commit but the operator identifies a gap before the next iteration starts. The amendment is applied to the delivery commit rather than creating a separate correction commit.
+**Principles.**
 
-**Boundary:** Amend only within the current iteration's commit chain. Do not amend commits from prior iterations -- those are part of the permanent reviewed record. If a prior iteration's commit needs fixing, file a new issue or create a new iteration.
+- A change belongs to the commit of the work it corrects. Fold it there rather than stacking it after.
+- The unit of work, not the commit, is the unit of amendment. A change that alters a unit's task description, its code and its records is one amendment across all three.
+- Amend while the history is cheap to rewrite: on the same branch, and ideally within the same chat session. Beyond that the operator rules on it.
+- Report and stop when folding needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port: see [`rebase.md`](../../workflow/coding-agent/prompts/rebase.md).
+- Never rewrite a commit that has left this container, and never rewrite published history.
+- Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
+
+What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md).
 
 ---
 

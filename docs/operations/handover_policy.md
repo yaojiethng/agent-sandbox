@@ -181,13 +181,19 @@ When a section has nothing to record, write the canonical marker and nothing els
 
 ## Corrections to Closed Handovers
 
-A closed handover is edited only at the operator's direction, and every edit carries the corresponding correction tag. The operator signals direction any way it is said: "amend the handover", "re-open the handover", "edit it", "fix the typo", or by naming the change. None of these signals changes the Status field; the correction procedure runs without re-opening the record.
+A closed handover is edited only at the operator's direction, and every edit carries the corresponding correction tag. A correction ends where the record started. The Status field, the original date and the metadata are unchanged in the corrected record; a reopen and re-close cycle is a mechanism, not a change. The operator signals direction any way it is said: "amend the handover", "re-open the handover", "edit it", "fix the typo", or by naming the change.
 
 A handover is a decision log, not a factual reference. It is never corrected autonomously. Only the operator directs an edit.
 
 ### When to apply
 
-Apply a correction only when the operator directs it. Reasons include a factual error in the record (an incorrect status, a wrong filename, a misrecorded decision) and folding a later fix into a close commit (a squash, a fixup, or an amend). Do not use a correction to add new information, change scope, or extend the record. New work belongs in a new handover.
+Apply a correction at the operator's direction. The shared principle, the propagation rule and the agent's two stops and one smell are in [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections); this section states what qualifies here. Three forms qualify:
+
+- A **misrecording**: an incorrect status, a wrong filename, a misrecorded decision, or a count or state that disagrees with the tree.
+- A **folded fix**: a later squash, fixup or amend folded into the close, and the record amendments that ride with it.
+- An **omission**, and only where the handover's own account of what the iteration turned in is wrong for want of it: the iteration delivered something and left the record silent about a defect in it.
+
+An omission is not a place to record work the iteration never did, and it is not a place to state a limit the iteration drew only afterwards. Both are new work, and a new handover carries them.
 
 ### Procedure
 
@@ -205,7 +211,7 @@ Apply a correction only when the operator directs it. Reasons include a factual 
 Keep the blank line before the closing fence. Without it, the tag paragraph parses as a setext heading and the Markdown lint gate reports `MD022` (see [`documentation_policy.md`](documentation_policy.md#markdown-lint-gate)).
 
 1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
-2. Do not alter the Status, timestamps, or any other metadata field.
+2. Do not alter the Status, timestamps, or any other metadata field in the corrected record.
 3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
 
 - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
@@ -215,11 +221,13 @@ Keep the blank line before the closing fence. Without it, the tag paragraph pars
 
    The correction tag must document where the finding was routed (e.g. `Finding routed to roadmap.md -- autosave reliability.`).
 
-1. Propose the amended handover to the operator. Do not self-commit.
+1. When the agent spotted the correction, propose the amended text and apply it on the operator's release. When the operator named the change directly, apply it. A correction is never applied unasked.
 
 ### What this is not
 
-A correction is not a substitute for a new handover. If the iteration requires new work, create a new handover first. The correction procedure applies only to the operator-directed edit, not to work that was omitted or deferred.
+A correction is not a substitute for a new handover. Work the iteration did not do is new work, and a new handover carries it.
+
+A correction may reopen the record. Reopening to adjust the work and closing again is a correction path. The record ends Closed, with the same date and metadata it carried before, and with a `[CORRECTION]` tag naming the change, its date, and where any finding it surfaced was routed. A correction that cannot be finished returns the record to Closed as it was.
 
 ---
 

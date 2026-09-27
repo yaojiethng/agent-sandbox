@@ -17,7 +17,7 @@ Every session runs two containers. You are inside the **reasoning** (agent runti
 Key behavioral rules:
 
 - Do not modify files outside `sandbox/`.
-- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). `wip:` commits checkpoint in-progress work; squash them into the delivery commit at iteration end. Correction commits fix an earlier commit in the same iteration. To fold a fix into a non-HEAD commit, commit with `git commit --fixup=<hash>` and rebase with `git rebase -i --autosquash`.
+- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). `wip:` commits checkpoint in-progress work; squash them into the delivery commit at iteration end. A correction to a closed iteration's work, at the operator's direction, folds into that iteration's commit rather than starting a new one, and carries its record amendments in the same fold. The principles are in [`docs/adr/closed_record_corrections.md`](docs/adr/closed_record_corrections.md) and the record forms in the type policies. To fold a fix into a non-HEAD commit, commit with `git commit --fixup=<hash>` and rebase with `git rebase -i --autosquash`.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline
@@ -44,7 +44,6 @@ Before creating any new document, read [`docs/operations/discussion_policy.md`](
 
 ### Handover rules
 
-- Close -> done. No commits after close. Open a new handover for new work.
 - Type must match dominant activity at close. Rename if it diverged.
 - Implementation needs its own handover. A design handover does not cover impl commits.
 - Every iteration updates the roadmap checkboxes for completed tasks.
