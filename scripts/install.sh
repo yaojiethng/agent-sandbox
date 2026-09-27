@@ -5,6 +5,10 @@
 # installs the agent-sandbox CLI. Fails closed: it exits non-zero and prints
 # per-tool install hints when a requirement is missing.
 #
+# Uninstall removes only the harness symlink at the CLI path. Anything else
+# at that path - a real file or a foreign symlink - stays untouched, the
+# error names the path, and the command fails.
+#
 # The gate exists because the harness uses modern bash (mapfile, associative
 # arrays) and GNU userland (realpath, sha256sum, GNU date/sed).
 # macOS ships bash 3.2 and BSD tools; Homebrew provides both.
@@ -115,11 +119,23 @@ do_install() {
   echo "Installed agent-sandbox to $dir/agent-sandbox (symlink -> $REPO_ROOT/scripts/agent-sandbox.sh)"
 }
 
+# do_uninstall  --  removes the harness symlink at the CLI path. Anything
+# else at that path stays untouched: the error names the path and the
+# command returns non-zero. An absent target is a silent success.
 do_uninstall() {
-  local dir
+  local dir path
   dir="$(install_dir)"
-  rm -f "$dir/agent-sandbox"
-  echo "Removed $dir/agent-sandbox"
+  path="$dir/agent-sandbox"
+  if [[ -e "$path" || -L "$path" ]]; then
+    local target
+    target="$(readlink "$path" 2>/dev/null || true)"
+    if [[ ! -L "$path" || "$target" != "$REPO_ROOT/scripts/agent-sandbox.sh" ]]; then
+      echo "Refusing to remove $path: not the harness symlink" >&2
+      return 1
+    fi
+    rm -f "$path"
+    echo "Removed $dir/agent-sandbox"
+  fi
 }
 
 # --- Entry ------------------------------------------------------------------

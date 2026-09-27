@@ -6,6 +6,8 @@
 # Covers:
 #   Linux default pass      --  checks pass, symlink created
 #   uninstall               --  symlink removed
+#   uninstall refusal       --  a real file at the CLI path stays untouched
+#   uninstall absent        --  an absent target is a silent success
 #   Darwin missing tools    --  BSD-style PATH detected, brew hints printed,
 #                               install aborts
 #   Darwin probe isolation  --  one unit per GNU probe, only that probe failing
@@ -78,6 +80,65 @@ test_install_uninstall_removes_symlink() {
   else
     fail "uninstall broken: rc=$RC out='$OUT'"
   fi
+}
+
+# Given: a real file occupies the CLI path under a fixture INSTALL_DIR
+# When:  uninstall runs, sourced and as a standalone subprocess
+# Then:  rc is non-zero, the file is untouched, and the error names the path
+# Asserts: uninstall refuses to remove anything but the harness symlink
+test_install_uninstall_refuses_real_file() {
+  local DIR="$FIXTURE_DIR/bin_refuse"
+  mkdir -p "$DIR"
+  printf 'precious data\n' > "$DIR/agent-sandbox"
+  local BEFORE
+  BEFORE="$(cat "$DIR/agent-sandbox")"
+
+  local OUT RC=0
+  OUT=$(INSTALL_DIR="$DIR" install_main --uninstall 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -eq 0 ]]; then
+    fail "uninstall accepted a real file at the CLI path (sourced)"
+  fi
+  if [[ ! -f "$DIR/agent-sandbox" ]] || [[ "$(cat "$DIR/agent-sandbox")" != "$BEFORE" ]]; then
+    fail "uninstall removed or altered the real file (sourced)"
+  fi
+  if [[ "$OUT" != *"$DIR/agent-sandbox"* ]]; then
+    fail "uninstall error does not name the path (sourced): rc=$RC out='$OUT'"
+  fi
+  pass "uninstall refuses a real file at the CLI path (sourced)"
+
+  OUT=$(INSTALL_DIR="$DIR" bash "$REPO_ROOT/scripts/install.sh" --uninstall 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -eq 0 ]]; then
+    fail "uninstall accepted a real file at the CLI path (standalone)"
+  fi
+  if [[ ! -f "$DIR/agent-sandbox" ]] || [[ "$(cat "$DIR/agent-sandbox")" != "$BEFORE" ]]; then
+    fail "uninstall removed or altered the real file (standalone)"
+  fi
+  if [[ "$OUT" != *"$DIR/agent-sandbox"* ]]; then
+    fail "uninstall error does not name the path (standalone): rc=$RC out='$OUT'"
+  fi
+  pass "uninstall refuses a real file at the CLI path (standalone)"
+}
+
+# Given: no entry at the CLI path under a fixture INSTALL_DIR
+# When:  uninstall runs as a standalone subprocess
+# Then:  rc is 0 and nothing is printed
+# Asserts: an absent target is a silent success
+test_install_uninstall_absent_target_succeeds() {
+  local DIR="$FIXTURE_DIR/bin_absent"
+  mkdir -p "$DIR"
+
+  local OUT RC=0
+  OUT=$(INSTALL_DIR="$DIR" bash "$REPO_ROOT/scripts/install.sh" --uninstall 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 ]]; then
+    fail "uninstall on an absent target failed: rc=$RC out='$OUT'"
+  fi
+  if [[ -n "$OUT" ]]; then
+    fail "uninstall on an absent target printed output: '$OUT'"
+  fi
+  pass "uninstall on an absent target is a silent success"
 }
 
 # Given: INSTALL_OS=Darwin and an empty PATH shim, so every GNU probe fails
@@ -284,6 +345,8 @@ test_install_standalone_entry_point_uninstalls() {
 
 run_test test_install_passes_on_linux_default
 run_test test_install_uninstall_removes_symlink
+run_test test_install_uninstall_refuses_real_file
+run_test test_install_uninstall_absent_target_succeeds
 run_test test_install_detects_missing_gnu_tools_on_darwin
 run_test test_install_detects_missing_readlink_on_darwin
 run_test test_install_detects_missing_sha256sum_on_darwin
