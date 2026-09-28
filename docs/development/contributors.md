@@ -77,4 +77,3 @@ Before making any documentation or roadmap change, read the relevant policy:
 | [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) | Operational SOPs |
 | [`docs/operations/iteration_policy.md`](iteration_policy.md) | Iteration workflow and milestone planning |
 | [`docs/operations/roadmap_policy.md`](roadmap_policy.md) | Roadmap policy |
-| [`docs/concepts/autonomous_task.md`](../concepts/autonomous_task.md) | Autonomous task lifecycle (M3) |

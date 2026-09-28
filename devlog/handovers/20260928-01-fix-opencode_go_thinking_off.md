@@ -7,7 +7,7 @@
 
 ## Objective
 
-Make thinking "off" produce no visible thinking on opencode-go deepseek-family models, and stop space-bunny-free from silently accepting an off it cannot honor.
+Make thinking "off" produce no visible thinking on the opencode-go deepseek-family models (`deepseek-v4-flash`, `deepseek-v4-pro`, `deepseek-v4.1-flash`), and stop `space-bunny-free` from silently accepting an off it cannot honor. `space-bunny-free` is an opencode-go model but is not deepseek-family; the three deepseek models and space-bunny are handled separately. [CORRECTION -- 2026-09-28] The original Objective read "opencode-go deepseek-family models, and stop space-bunny-free"; it did not state that space-bunny-free is not deepseek-family. The model is an opencode-go model served through the same gateway but belongs to a different family.
 
 ## Scope
 

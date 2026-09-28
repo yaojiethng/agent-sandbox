@@ -108,7 +108,7 @@ Scan for language that sounds precise but commits to nothing:
 
 For the documents under review, verify:
 
-- Component names are consistent across documents (if `execution_model.md` calls it `.agent-input/` and `agent_workflow.md` calls it `.bootstrap/`, one of them is stale)
+- Component names are consistent across documents (if `execution_model.md` calls it `.workspace/input/` and `agent_workflow.md` calls it `.bootstrap/`, one of them is stale)
 - Layer assignments are consistent  --  a component described as Layer 1 in one document is not described as Layer 0 infrastructure in another
 - The milestone that last touched each document matches the content  --  a document that describes a feature implemented in M1.5 but was last updated at M1.2 is a finding
 - Cross-references resolve  --  linked documents exist and cover the content the link implies
