@@ -76,18 +76,14 @@ The loops are sequential at the major level -- a major milestone must be planned
 
 ## Major Loop -- Milestone Planning
 
-Triggered after a major milestone closes. Performed once per major milestone before any iteration begins. This is a planning and investigation cadence, not a coding one. The output is a scoped sub-milestone ready for iteration -- see [`milestone_policy.md`](milestone_policy.md) for readiness criteria.
+The major loop opens a milestone and plans it before iteration begins. It is a planning and investigation cadence, not a coding one. The output is a scoped sub-milestone ready for iteration -- its readiness criteria are in [`milestone_policy.md`](milestone_policy.md).
 
-| Step | Entry condition | Action | Exit condition | Governing document |
-|---|---|---|---|---|
-| **1 -- Close prior milestone** | Prior milestone complete and no current milestone open. Skip to Gate 2 if a milestone is already open. | Write changelog entry and extract the completed milestone from `roadmap.md`. | Prior milestone removed from roadmap. Changelog entry written. | [`roadmap_policy.md`](roadmap_policy.md#top-level-milestone-close) -- Top-level milestone close |
-| **Gate 1 -- Select next milestone** | Prior milestone closed. Skip to Gate 2 if a milestone is already open. | Present available next milestones from `roadmap_future.md`. Wait for operator to select which to promote. | Operator selects next milestone. Explicit release required. | -- |
-| **2 -- Orient to next milestone** | Operator has selected next milestone. | Promote selected milestone from `roadmap_future.md` into `roadmap.md`. Read it. Present sub-milestones ready to progress (no unresolved dependencies) and which have open planning work. | Orientation presented. | `roadmap.md` |
-| **Gate 2 -- Select sub-milestone** | Orientation presented. | Wait for operator to select which sub-milestone to plan first. This gate also fires when roadmap maintenance completes a sub-milestone -- enter here directly, skipping Gate 1 and Step 2. | Operator selects sub-milestone. Explicit release required. | -- |
-| **3 -- Open or revise stories** | Operator has directed specific areas, OR open stories or unresolved questions exist under the chosen sub-milestone. Skip if neither applies. | For each directed or open area, produce a new story or revise an existing one in `devlog/discussions/`. | All directed and existing open areas have a current story document. | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
-| **4 -- Investigate or design** | Unresolved stories exist under the chosen sub-milestone. | For each unresolved story: if direction is clear, produce a design document directly. If unclear, open discussion documents as warranted. | Every unresolved story has a corresponding discussion document. | [`discussion_policy.md`](discussion_policy.md) |
-| **5 -- Resolve stories** | A story has a completed investigation or agreed approach. | Operator reviews each story and provides explicit sign-off with direction. Each story is either graduated to the roadmap or given an explicit status (deferred, abandoned, superseded) with a recorded reason. | All stories under the sub-milestone are resolved or carry an explicit status with recorded reason. Graduated stories are written as roadmap entries. | [`discussion_policy.md`](discussion_policy.md) -- Stories |
-| **Gate 3 -- Release sub-milestone for execution** | All stories resolved or carrying an explicit status. | Wait for operator to confirm the sub-milestone is ready to proceed. | Operator confirms sub-milestone has a complete roadmap entry. Explicit release required. | [`milestone_policy.md`](milestone_policy.md#closing-the-major-loop) |
+The major loop runs from the workflow prompts:
+
+- [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens the next major milestone.
+- [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes the milestone and refines its designs.
+
+The major loop is sequential at the top: a major milestone must be open before iterating on its sub-milestones. The minor loop then repeats for each sub-milestone within the milestone.
 
 ---
 

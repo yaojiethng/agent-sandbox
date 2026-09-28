@@ -93,6 +93,13 @@ scoped: M3.1 -- doc-format lint rules
 legacy: none
 mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure). The add-a-lint-rule clause landed: the `doc-wrap` rule is live in `.markdownlint-cli2.mjs`.
 
+### [A] 2026-09-28  --  Handover-table stray-pipe and write-tool trailing-newline class (U3)
+
+state: open
+scoped: recurring record defect, recurrences 4-5 in handover `20260928-08`; seed recurrences in U1, U2
+legacy: the prior U2 handover (`20260928-07`) flagged this class for monitoring in U3; the guard (lint-check every handover table before pre-close) held and caught each recurrence, but the class recurred three times in a single WIP cycle
+mitigation: the `write` tool drops the trailing newline on a full-file write (failing MD047), and handover table rows acquire stray pipe-cells or a Findings-style fourth column on an edit (failing MD056). Both are caught by lint before pre-close. The write-tool trailing-newline is a tool behaviour, not authoring: append a newline after every full-file `write`. The stray-pipe class is authoring under edit-time pressure: verify every handover table's column count before pre-close. The class persists -- consider a mechanical guard beyond the lint gate.
+
 ### [A] 2026-09-21  --  Install and staleness family (T4)
 
 state: open

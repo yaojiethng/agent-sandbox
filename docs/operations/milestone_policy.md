@@ -2,7 +2,7 @@
 
 Governs the major loop: the planning process that runs after a major milestone closes and before iteration execution on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to proceed" means for a milestone.
 
-This document is read during the major loop. For iteration execution, see [`iteration_policy.md`](iteration_policy.md).
+This document is read during the major loop. The major-loop procedure runs from the workflow prompts: [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens the milestone, [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes it. For iteration execution, see [`iteration_policy.md`](iteration_policy.md).
 
 ---
 
