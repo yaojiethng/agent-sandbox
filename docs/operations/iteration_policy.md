@@ -26,6 +26,16 @@ Read this document at the start of any iteration. Read the relevant child docume
 | | **Gate 3** | wait for operator release before iteration end |
 | | 8-9. Close and seed | [Steps 8-9 Details](#steps-8-9----close-and-seed) |
 
+## Loop workflow prompts
+
+The loops run as invocable workflow prompts under `workflow/coding-agent/prompts/`. The procedure lives in the prompts; this policy holds the rules the prompts must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram.
+
+- `/iter` -- the base interactive minor loop: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
+- `/auto` and `/parallel-auto` -- declared expansions of `/iter`: [`auto.md`](../../workflow/coding-agent/prompts/auto.md), [`parallel-auto.md`](../../workflow/coding-agent/prompts/parallel-auto.md).
+- `/milestone-start` -- opens the major loop: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
+- `/milestone-close` -- closes the major and sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md) and [`milestone-close-run.md`](../../workflow/coding-agent/prompts/milestone-close-run.md).
+- `/plan` -- major-loop planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
+
 ---
 
 ## Principles

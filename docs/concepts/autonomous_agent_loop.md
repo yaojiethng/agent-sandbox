@@ -1,48 +1,19 @@
 # Autonomous Agent Loop
 
-This is a stub file. It is meant to detail the conceptual design for supporting multiple types of agents, and using an autonomous agent runtime, encapsulated within a single container, to complete a single task.
+This document is the conceptual overview of the coding agent's loops: what each loop is, how it dispatches to prompts and skills, and its responsibilities. It is the explanatory home for the loop workflows the [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) ADR indexes and separates. It takes over the non-policy content of the policy docs.
 
-# Agents
+This is a shell in U1 of M3.2.1. Its full content builds across the migration units U2-U4 and the per-prompt quality passes.
 
-An agent is an autonomous system capable of analyzing code, generating modifications, and executing tasks toward a defined goal.
+## The loops
 
-Agents in this system are responsible for performing coding-related work such as implementing features, fixing bugs, or improving documentation.
+The harness targets four loop kinds, with two declared expansions of `/iter`. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy table and the state diagram.
 
-Agents typically perform the following loop:
+- `/iter` -- the base interactive minor loop.
+- `/auto` and `/parallel-auto` -- declared expansions of `/iter` for autonomous runs.
+- `/milestone-start` -- opens the major loop.
+- `/milestone-close` -- closes the major and sub-milestone.
+- `/plan` -- major-loop planning.
 
-1. Observe the current repository state.
-2. Plan a sequence of actions.
-3. Generate code or configuration changes.
-4. Execute tests or validation steps.
-5. Iterate until the task is complete.
+## Responsibilities
 
-Agents may operate in a hierarchical structure where a parent agent delegates subtasks to child agents.
-
-This model allows complex work to be decomposed while maintaining clear boundaries and limited execution depth.
-
-Related documents:
-
-- architecture/agent_runtime.md
-
-# Orchestration
-
-Orchestration describes how agents coordinate work across tasks.
-
-In this system, orchestration is responsible for:
-
-- assigning tasks to agents
-- managing parent/child relationships
-- controlling execution depth
-- sequencing tasks toward milestones
-
-The orchestration layer does not directly modify code.
-Instead, it coordinates agent execution and manages task flow.
-
-Typical orchestration responsibilities include:
-
-- milestone tracking
-- task decomposition
-- agent lifecycle management
-- validation checkpoints
-
-The orchestration model is designed to keep agent behavior predictable while allowing complex coding tasks to be broken down into smaller steps.
+A loop owns its steps and state transitions; policy owns the invariants those transitions must not break; a gate is a stop-and-wait check that output conforms to the expected state. Details are in the ADR and in the loop prompts under `workflow/coding-agent/prompts/`.

@@ -237,7 +237,7 @@ Skills and prompt templates that encode this policy. When this document is revis
 
 | Skill / Prompt | Purpose |
 |---|---|
-| [`agent/prompts/new-iteration.md`](../../src/reasoning/agent/prompts/new-iteration.md) | Iteration start -- handover creation, roadmap maintenance check, scope/AC gates |
+| [`agent/prompts/iter.md`](../../workflow/coding-agent/prompts/iter.md) | Iteration start -- handover creation, roadmap maintenance check, scope/AC gates |
 | [`audits/roadmap-audit.skill.md`](../../workflow/coding-agent/audits/roadmap-audit.skill.md) | Roadmap format compliance, compaction audits |
 | [`audits/handover-audit.skill.md`](../../workflow/coding-agent/audits/handover-audit.skill.md) | Handover format compliance -- validates content rules defined here |
 
