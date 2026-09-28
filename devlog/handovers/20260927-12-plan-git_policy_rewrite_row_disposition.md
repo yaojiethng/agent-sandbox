@@ -38,7 +38,7 @@ Land the residue of the T1 git-policy-rewrite row: the explicit body budget the 
 
 | Finding | Type | Impact/resolution |
 |---|---|---|
-| TBD at close | | |
+| None. | | |
 
 ## Decisions
 

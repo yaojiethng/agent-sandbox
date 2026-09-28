@@ -26,20 +26,42 @@
       "modelOverrides": {
         "deepseek-v4-flash": {
           "thinkingLevelMap": {
+            "off": "none",
             "minimal": "minimal",
             "low": "low",
             "medium": "medium",
             "high": "high",
             "max": "max"
+          },
+          "compat": {
+            "thinkingFormat": "openai"
           }
         },
         "deepseek-v4-pro": {
           "thinkingLevelMap": {
+            "off": "none",
             "minimal": "minimal",
             "low": "low",
             "medium": "medium",
             "high": "high",
             "max": "max"
+          },
+          "compat": {
+            "thinkingFormat": "openai"
+          }
+        },
+        "deepseek-v4.1-flash": {
+          "thinkingLevelMap": {
+            "off": "none"
+          },
+          "compat": {
+            "thinkingFormat": "openai"
+          }
+        },
+        "space-bunny-free": {
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null
           }
         }
       }
@@ -65,6 +87,6 @@
           }
         }
       }
-    },
+    }
   }
 }

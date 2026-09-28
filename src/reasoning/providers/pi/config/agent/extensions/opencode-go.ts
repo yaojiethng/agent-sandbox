@@ -10,9 +10,17 @@
  * The overlay does NOT set `compat.supportsReasoningEffort: false`. That flag
  * suppresses `reasoning_effort` for every level and breaks thinking-level
  * selection on deepseek-family models. The compat below inherits pi's
- * auto-detection (`true` for opencode.ai) by omitting the field, so "off"
- * sends `thinking: {"type":"disabled"}` and low/medium/high/max send a
- * `reasoning_effort`.
+ * auto-detection (`true` for opencode.ai) by omitting the field, so
+ * low/medium/high/max send a `reasoning_effort`.
+ *
+ * Turning thinking "off" on deepseek-family opencode-go models is wired
+ * through `models.json` overrides, not here. The baked "deepseek" thinking
+ * format sends `thinking: {"type":"disabled"}` at off, a signal the opencode
+ * gateway ignores; the overrides move those models onto the generic format and
+ * map off to `reasoning_effort: "none"`, the signal the gateway honors. Models
+ * whose provider does not advertise an off effort (for example space-bunny-free)
+ * are marked `off: null` so pi treats off as unsupported instead of sending no
+ * disable signal at all.
  */
 
 import type { ExtensionAPI, ProviderConfig, ProviderModelConfig } from "@earendil-works/pi-coding-agent";
@@ -71,14 +79,37 @@ function normalizeInput(modalities: readonly string[] | undefined): ("text" | "i
 	return filtered.length > 0 ? filtered : ["text"];
 }
 
-/** Map a models.dev effort list onto pi thinking levels. */
-function thinkingLevelMapFromEffort(levels: readonly string[]): Record<string, string> {
-	const map: Record<string, string> = {};
+/**
+ * Map a models.dev effort list onto pi thinking levels.
+ *
+ * A level absent from the provider's list is unsupported, not a hole pi can
+ * infer: pi treats a missing key as "supported" and only an explicit null as
+ * unsupported. Unadvertised levels must therefore be spelled out as null, or
+ * "off" silently runs with no disable signal on models whose provider offers
+ * no off effort.
+ */
+function thinkingLevelMapFromEffort(levels: readonly string[]): Record<string, string | null> {
+	const map: Record<string, string | null> = {
+		off: null,
+		minimal: null,
+		low: null,
+		medium: null,
+		high: null,
+		xhigh: null,
+		max: null,
+	};
 	for (const level of levels) {
 		// The endpoint names "off" as "none" for some models (for example gpt-6-luna).
 		map[level === "none" ? "off" : level] = level;
 	}
-	return Object.keys(map).length > 0 ? map : { low: "low", high: "high", max: "max" };
+	if (levels.length === 0) {
+		// Fallback for models.dev entries without effort values: keep a usable
+		// low/high/max subset rather than an all-null (no-level) map.
+		map.low = "low";
+		map.high = "high";
+		map.max = "max";
+	}
+	return map;
 }
 
 /**
