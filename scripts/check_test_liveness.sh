@@ -4,11 +4,15 @@
 #
 #   1. Registration liveness  --  every `test_*()` function defined in a test
 #      file has a `run_test` registration in the same file; every `run_test`
-#      target resolves to a function defined in that file; and no `run_test`
-#      appears after `test_done` (a registration there is dead code). A
-#      defined-but-unregistered test never executes (silent rot); a
-#      registration without a definition fails at runtime with an unrelated
-#      error; a registration after test_done never runs.
+#      target resolves to a function defined in that file; no `run_test`
+#      appears after `test_done` (a registration there is dead code); and no
+#      test name is defined or registered twice (a duplicated definition is
+#      last-definition-wins, a duplicated registration runs the test twice
+#      and inflates the unit count). A defined-but-unregistered test never
+#      executes (silent rot); a registration without a definition fails at
+#      runtime with an unrelated error; a registration after test_done never
+#      runs. The duplicate pass runs on the raw lists before the membership
+#      checks collapse them with `sort -u`, so a doubled name cannot hide.
 #   2. Prerequisite liveness  --  the docker stub exists, is executable, and
 #      answers a smoke invocation; stub libs referenced by test files exist.
 #
@@ -36,6 +40,21 @@ for F in "$TESTS_DIR"/test_*.sh; do
   [[ -e "$F" ]] || continue
   NAME="${F#$REPO_ROOT/}"
   COUNT=$((COUNT + 1))
+
+  # Duplicate names: a name defined twice is last-definition-wins, so the
+  # first body silently disappears; a name registered twice runs and counts
+  # the same test twice, inflating the unit count a reviewer compares against
+  # a baseline. The `sort -u` below collapses both before the membership
+  # checks, so the duplication is invisible against them; this pass runs on
+  # the raw lists first.
+  while IFS= read -r fn; do
+    echo "DUPLICATE-DEFINITION: $NAME: test_$fn() defined more than once -- last-definition-wins keeps only the last body" >&2
+    FINDINGS=$((FINDINGS + 1))
+  done < <(grep -oE '^test_[A-Za-z0-9_]+\(\)' "$F" | sed 's/()$//; s/^test_//' | sort | uniq -d)
+  while IFS= read -r fn; do
+    echo "DUPLICATE-REGISTRATION: $NAME: run_test test_$fn registered more than once -- the suite runs and counts the test twice" >&2
+    FINDINGS=$((FINDINGS + 1))
+  done < <(grep -oE '^\s*run_test\s+test_[A-Za-z0-9_]+' "$F" | awk '{print $2}' | sed 's/^test_//' | sort | uniq -d)
 
   # Defined test functions: `test_something() {` at line start.
   mapfile -t DEFINED < <(grep -oE '^test_[A-Za-z0-9_]+\(\)' "$F" | sed 's/()$//; s/^test_//' | sort -u)

@@ -190,4 +190,34 @@ run_test test_diagnostic_and_summary_streams
 run_test test_liveness_gate_failure_does_not_skip_suite
 run_test test_liveness_gate_membership_is_stable
 
+# ---------------------------------------------------------------
+# Case 9: a test name defined or registered twice is reported by the
+# registration gate. Bash last-definition-wins keeps the first body
+# silently, and a double registration runs the same test twice, so the
+# unit count a reviewer compares against a baseline is inflated.
+# ---------------------------------------------------------------
+test_liveness_gate_reports_duplicate_names() {
+  local dir="$FIXTURE_DIR/dup_dir"
+  mkdir -p "$dir"
+  local f="$dir/test_dup.sh"
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'test_twice() { :; }'
+    echo 'test_twice() { :; }'
+    echo 'run_test test_twice'
+    echo 'run_test test_twice'
+    echo 'test_ok() { :; }'
+    echo 'run_test test_ok'
+  } > "$f"
+  local out rc
+  out=$(bash "$REPO_ROOT/scripts/check_test_liveness.sh" "$dir" 2>&1)
+  rc=$?
+  assert_ne "0" "$rc" "liveness gate: a duplicated definition and registration fail the gate"
+  assert_contains "$out" "DUPLICATE-DEFINITION" "liveness gate: duplicate definition reported"
+  assert_contains "$out" "test_twice" "liveness gate: duplicate definition names the test"
+  assert_contains "$out" "DUPLICATE-REGISTRATION" "liveness gate: duplicate registration reported"
+}
+
+run_test test_liveness_gate_reports_duplicate_names
+
 test_done "test_runner_contract"
