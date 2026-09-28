@@ -33,7 +33,7 @@ The loops run as invocable workflow prompts under `workflow/coding-agent/prompts
 - `/iter` -- the base interactive minor loop: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
 - `/auto` and `/parallel-auto` -- declared expansions of `/iter`: [`auto.md`](../../workflow/coding-agent/prompts/auto.md), [`parallel-auto.md`](../../workflow/coding-agent/prompts/parallel-auto.md).
 - `/milestone-start` -- opens the major loop: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
-- `/milestone-close` -- closes the major and sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md) and [`milestone-close-run.md`](../../workflow/coding-agent/prompts/milestone-close-run.md).
+- `/milestone-close` -- closes the major and sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md).
 - `/plan` -- major-loop planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
 
 ---
@@ -228,46 +228,27 @@ Exit condition: Explicit release received.
 
 ### Sub-milestone close
 
-A sub-milestone follows the sequence `active -> pre-close -> close`.
+A sub-milestone follows the sequence `active -> pre-close -> close`. The close procedure runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md), which carries the review gate, compaction, changelog, record updates, escalation, and the close commit.
 
 - A sub-milestone is `active` while substantive work is in progress.
 - A sub-milestone is `pre-close` when its implementation is complete. In pre-close, the agent completes compaction, changelog drafting, escalation clearance, and the review gate.
 - A sub-milestone is `close` when its close checklist completes. At close, no new decisions are made. Substantive work does not occur after close.
 
-**Pre-close review gate.** At sub-milestone cleanup, the agent surfaces to the operator:
-
-- Open entries in `devlog/AGENT_FEEDBACK.md` (including operator-raised `[O]` entries) and any pending sweeps.
-- Entries under `probation`, for a `dismiss` / `maintain` / `escalate` decision.
-
-For an entry under `probation`, the operator decides:
-
-- **dismiss** -- the fix held. Delete the entry.
-- **maintain** -- the fix is not stress-tested. Extend probation.
-- **escalate** -- the problem resurfaced. Re-scope with awareness of the prior fix; optionally retire the prior fix.
-
-Escalation of far-reaching correctness work defers the sub-milestone close until the escalated work is complete. Low-urgency escalation is filed as a named task at the top of the next sub-milestone. There is no dedicated `close-blocked` state; a deferred close keeps the sub-milestone `active` until pre-close passes.
+**Probation decisions are operator-owned.** For an entry under `probation` in `devlog/AGENT_FEEDBACK.md`, the operator decides dismiss / maintain / escalate. The agent does not decide a probation entry. Escalation of far-reaching correctness work defers the sub-milestone close until the escalated work is complete. Low-urgency escalation is filed as a named task at the top of the next sub-milestone. There is no dedicated `close-blocked` state; a deferred close keeps the sub-milestone `active` until pre-close passes.
 
 ---
 
 ### Steps 8-9 -- Close and seed
 
-After Gate 3 is released, these steps are mechanical -- the operator has already reviewed and approved the compaction text and AC status.
+After Gate 3 is released, the close is mechanical -- the operator has already reviewed and approved the compaction text and AC status. The per-iteration close runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md); the milestone-record close runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md). Both stop for operator release at the close gate.
 
-**Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it; the write-back and the Closed edit are made before the single commit. The commit message matches the iteration type per [`docs/operations/git_policy.md`](git_policy.md). For the folding procedure, see the transient-commits rule in `git_policy.md`. The single-commit discipline runs through the whole iteration, not only at close: intermediate commits are `wip:` checkpoints or corrections, never delivery-typed, so a mid-iteration `fix:`/`docs:`/`feat:`/`chore:` commit is a false delivery surface; and by the time the close gate fires, the accumulated `wip:` checkpoints should already fold so that the close is one amend, not a retrospective pile-squash.
+**Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it. The commit message matches the iteration type per [`docs/operations/git_policy.md`](git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`; the M2.7 and M3.1 closes both typed `plan`.
 
-- **Apply approved roadmap write-back** -- per [`roadmap_policy.md`](roadmap_policy.md#iteration-end-steps-8-9). The operator-reviewed write-back rows from Step 7 are applied mechanically: compaction summaries replace completed groups' checklists; generated tasks land as named roadmap entries or carry their recorded destination.
-- **Run roadmap maintenance** -- compaction cascading, summary table update, and top-level milestone close (if applicable). See [Roadmap maintenance](roadmap_policy.md#roadmap-maintenance).
-- The Completed table must be accurate. One row per file changed. If no files changed, write the canonical marker.
-- Mark each acceptance criterion as accepted or pushed to next iteration. Both must be visible under the Acceptance criteria header.
-- Update the Hot files section: mark completed files or remove them; add any files that entered scope during the iteration.
+**Scope reconciliation -- run before writing anything else.** Compare the confirmed scope from Step 2 against the Completed table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items -- if something was attempted but not finished, it is deferred; if it was never started, it is deferred; if it was descoped mid-iteration, it is deferred with the reason. The Deferred items section is not complete until this check passes.
 
-**Scope reconciliation -- do this before writing anything else in Steps 8-9.** Compare the confirmed scope from Step 2 against the Completed table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items -- if something was attempted but not finished, it is deferred; if it was never started, it is deferred; if it was descoped mid-iteration, it is deferred with the reason. The Deferred items section is not complete until this check passes.
+**Carry-forward resolution gate -- run after scope reconciliation, before seeding What's Next.** Compare every item in the Carried forward section against the Completed table and the Deferred items section. Every carried-forward item must have a resolution: it was completed (in Completed table), it is re-deferred (in Deferred items table with reason), or it is escalated to the roadmap (a named entry in `roadmap.md`). Any carried-forward item that is absent from all three is a dropped item -- find it, triage it, and write it to one of the three destinations. The Deferred items section is not complete until this gate passes.
 
-**Carry-forward resolution gate -- do this after scope reconciliation but before seeding What's Next.** Compare every item in the Carried forward section against the Completed table and the Deferred items section. Every carried-forward item must have a resolution: it was completed (in Completed table), it is re-deferred (in Deferred items table with reason), or it is escalated to the roadmap (a named entry in `roadmap.md`). Any carried-forward item that is absent from all three is a dropped item -- find it, triage it, and write it to one of the three destinations. The Deferred items section is not complete until this gate passes.
-
-**Carry-forward escalation:** per [`roadmap_policy.md`](roadmap_policy.md#carry-forward-escalation) -- if a deferred item cannot be picked up in the immediately following iteration, escalate it to a named task entry under the current sub-milestone.
-
-**Findings review/publish step -- do this after the carry-forward resolution gate.** It performs the triage responsibilities and routes each entry to its destination. For each entry in Findings, route it: to the Decisions table, to Deferred items, to What's Next (via Carried forward), to `roadmap.md` (via a named task entry), or to the feedback record [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry: the agent (`[A]`) or the operator (`[O]`). **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. An entry cannot remain in Findings unless it has been explicitly marked as triaged with its destination noted. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding What's Next:** this gate must pass before What's Next is written.
+**Findings review/publish -- run after the carry-forward resolution gate.** Route each Findings entry to its destination: the Decisions table, Deferred items, What's Next (via Carried forward), `roadmap.md` (via a named task entry), or the feedback record [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry: the agent (`[A]`) or the operator (`[O]`). **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding What's Next:** this gate must pass before What's Next is written.
 
 **Scope amendment:** if any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
 

@@ -29,7 +29,7 @@ The harness targets four loop kinds, with two declared expansions of `/iter`.
 | `/auto` | declared expansion of `/iter` (autonomous run) | `workflow/coding-agent/prompts/auto.md` |
 | `/parallel-auto` | declared expansion of `/iter` (fan-out autonomous run) | `workflow/coding-agent/prompts/parallel-auto.md` |
 | `/milestone-start` | loop kind, major-loop open | `workflow/coding-agent/prompts/milestone-start.md` |
-| `/milestone-close` | loop kind, major and sub-milestone close | `workflow/coding-agent/prompts/milestone-close.md`, refreshed from `milestone-close-run.md` |
+| `/milestone-close` | loop kind, major and sub-milestone close | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | loop kind, major-loop planning | `workflow/coding-agent/prompts/plan.md` |
 
 ## State diagram

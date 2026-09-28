@@ -76,6 +76,8 @@ When a story's open questions are resolved, graduate it to a roadmap entry per [
 
 ## Closing the Major Loop
 
+Read the state-transition rules here; the loop prompts drive the transitions: [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens a milestone, [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes it, and [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md) records its close.
+
 The major loop closes when:
 
 - M2.1 (or the first active sub-milestone) has a complete, confirmed roadmap entry

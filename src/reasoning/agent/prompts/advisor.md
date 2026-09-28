@@ -13,7 +13,7 @@ The advisor reviews one concrete artifact. You are the leader with decision auth
 
 Run a fresh subagent with its own context. It does not inherit this session's conversation, loaded files, or tool state, so pass the whole assignment in the argument.
 
-State the model and thinking level in the brief, because the subagent cannot see the invocation flags. Use the review-advisor pair already working in this repo (`glm-5.3-flash` at `high` thinking for language-shaped reviews). Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
+State the model and thinking level in the brief, because the subagent cannot see the invocation flags. Use the review-advisor pair already working in this repo: `glm-5.3-flash` at `high` thinking for documentation and language-shaped reviews, `deepseek-v4-flash` for code. For a documentation review, prefer `opencode-go`, `glm-5.3-flash` at `high` thinking. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
 
 ```bash
 timeout 1800 pi --provider opencode-go --model glm-5.3-flash --thinking high -p "$(cat /tmp/advisor-brief.md)" > /tmp/advisor.log 2>&1
@@ -49,6 +49,8 @@ Apply the accepted fixes. If the advisor's reasoning changes the shape of the wo
 ## Work to consensus
 
 Re-invoke the advisor on the revised artifact. The follow-up brief lists which earlier findings were addressed and asks for the remaining objections, carrying forward the same review concerns and deliverable format as the first brief. Keep the loop going until the advisor reports a clean bill of health.
+
+Re-run sparingly. A re-run earns its cost when the fix touched multiple coupled files or changed the design; it adds little when it only re-confirms a single mechanical correction. Prefer one thorough pass, fix, and re-run only when the change was structural or cross-file--do not re-run to confirm a one-line correction.
 
 A clean bill is a positive statement; it can be a statement that is not a finding, but it must be present ("no remaining defects", "consensus reached") rather than the absence of a reply. Do not treat the artifact as done until that statement lands.
 

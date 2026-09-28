@@ -100,6 +100,13 @@ scoped: recurring record defect, recurrences 4-5 in handover `20260928-08`; seed
 legacy: the prior U2 handover (`20260928-07`) flagged this class for monitoring in U3; the guard (lint-check every handover table before pre-close) held and caught each recurrence, but the class recurred three times in a single WIP cycle
 mitigation: the `write` tool drops the trailing newline on a full-file write (failing MD047), and handover table rows acquire stray pipe-cells or a Findings-style fourth column on an edit (failing MD056). Both are caught by lint before pre-close. The write-tool trailing-newline is a tool behaviour, not authoring: append a newline after every full-file `write`. The stray-pipe class is authoring under edit-time pressure: verify every handover table's column count before pre-close. The class persists -- consider a mechanical guard beyond the lint gate.
 
+### [A] 2026-09-28  --  Advisor re-run has low marginal value after a clean consensus (U4)
+
+state: open
+scoped: M3.2.1 -- advisor-usage criteria
+legacy: none
+mitigation: a second advisor run that only re-confirms a single mechanical correction adds little over the first run's defect list. In U4 the first run (deepseek-v4-flash) found one real defect (commit-type guidance); the second run merely re-verified the fix and returned a clean bill. The high-value re-run is when a fix touched multiple coupled files or changed the design -- then a fresh reviewer on the changed state earns its cost. Re-run sparingly: prefer one thorough advisor pass, fix, and only re-run when the change was structural or cross-file. Do not re-run to confirm a one-line correction against an authoritative table.
+
 ### [A] 2026-09-21  --  Install and staleness family (T4)
 
 state: open
