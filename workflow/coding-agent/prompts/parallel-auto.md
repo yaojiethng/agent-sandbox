@@ -1,5 +1,5 @@
 ---
-description: Draft: run two or more work tracks concurrently, each in its own git worktree on its own branch, with a fresh subagent per track, the primary holding verification, records and the merge.
+description: Draft - run two or more work tracks concurrently, each in its own git worktree on its own branch, with a fresh subagent per track, the primary holding verification, records and the merge.
 argument-hint: "[track list - a roadmap task set, a row list, or a named track plan - optional]"
 ---
 

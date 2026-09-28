@@ -1,5 +1,5 @@
 ---
-description: Close a milestone or sub-milestone: compaction, changelog entry, summary-table and frontmatter write-back, review-gate reconciliation, and the close commit.
+description: Close a milestone or sub-milestone - compaction, changelog entry, summary-table and frontmatter write-back, review-gate reconciliation, and the close commit.
 argument-hint: "[milestone name - for example M3.1 - Backpressure]"
 ---
 

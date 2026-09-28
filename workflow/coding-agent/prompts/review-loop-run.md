@@ -1,5 +1,5 @@
 ---
-description: Draft: run a bounded review loop over a committed diff range - a fresh reviewer per round, ACCEPT or BLOCK, one fix round per block, capped at three rounds.
+description: Draft - run a bounded review loop over a committed diff range - a fresh reviewer per round, ACCEPT or BLOCK, one fix round per block, capped at three rounds.
 argument-hint: "[diff range] [reviewer - a skill or a brief]"
 ---
 

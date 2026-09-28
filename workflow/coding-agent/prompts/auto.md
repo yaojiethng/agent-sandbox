@@ -1,5 +1,5 @@
 ---
-description: Draft: run an operator-released unit plan by delegating one unit at a time to a fresh subagent, verifying every return against the tree before the next dispatch, and landing one commit per unit.
+description: Draft - run an operator-released unit plan by delegating one unit at a time to a fresh subagent, verifying every return against the tree before the next dispatch, and landing one commit per unit.
 argument-hint: "[plan reference - a roadmap task, a row list, or the unit table - optional]"
 ---
 
