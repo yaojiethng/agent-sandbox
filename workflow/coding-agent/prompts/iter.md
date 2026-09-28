@@ -82,6 +82,8 @@ Present:
 - What is explicitly deferred and why
 - Any questions that must be resolved before work can begin
 
+Everything you present is a proposal: the operator reviews, approves, and commits (the project [`AGENTS.md`](../../AGENTS.md) Output Format owns this rule).
+
 If scope cannot be confidently derived, ask the operator one question at a time. Do not guess. Do not produce any file, code, or structural output until the operator confirms scope and sends an explicit release.
 
 Stop here and wait for an explicit release before continuing.
@@ -126,6 +128,8 @@ Exit condition: Operator confirmed the criteria are satisfiable. Explicit releas
 ---
 
 ## Step 6  --  Implementation and the write-back discipline
+
+The communication rules below operationalise the canonical rules in [`iteration_policy.md`](docs/operations/iteration_policy.md) During the iteration: this prompt is the runbook that walks through them; the policy is their owner.
 
 Produce changes against the confirmed scope. Write tests alongside per [`testing_policy.md`](docs/development/testing_policy.md). On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 

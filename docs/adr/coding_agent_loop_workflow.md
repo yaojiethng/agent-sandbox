@@ -17,6 +17,8 @@
 
 - The responsibilities separation does not move any invariant into a prompt: policy stays the owner of state rules, and a prompt is checked against its policy.
 - A policy change that states a new invariant is not a workflow change; the loop prompts keep their steps and the new invariant becomes the check.
+- A rule has one owner, which can be the policy or the prompt. The two do not conflict: the policy states the rule as an invariant; the prompt states it as a series of procedural checks that operationalise it. A rule whose variant differs by workflow (for example how a loop treats open questions) is owned by the workflow that applies it, not by a single policy. A rule that is general to all loops or to the collaboration protocol is owned by its policy or by the project `AGENTS.md`, and each loop prompt that depends on it echoes it as a runbook step.
+- The runbook is not a second owner. A prompt's procedural restatement of a rule is the runbook around the rule, not an independent authority claim. Echo a rule by linking its owner and stating the applying check.
 - The `-run` family of prompts (`churn-analysis-run`, `read-through-run`, `review-loop-run`, `review-pass-run`) is not in the loop taxonomy. It is one-shot operation work scoped to M3.2.2.
 
 ## The loop taxonomy

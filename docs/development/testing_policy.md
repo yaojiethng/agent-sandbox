@@ -2,6 +2,8 @@
 
 This document defines the testing standards, patterns, and anti-patterns for the agent-sandbox test suite. It is designed to ensure test reliability, isolation, and maintainability.
 
+**When to write tests:** any function with meaningful branching, error handling, or external dependencies gets tests. Tests are produced alongside implementation, not deferred.
+
 ---
 
 ## Core Principles
