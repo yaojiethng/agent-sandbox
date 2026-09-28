@@ -1,5 +1,5 @@
 ---
-description: "Draft - the sequential dispatch shape: run an operator-released unit plan one unit at a time, continuing until no unit that needs no operator input remains, verifying every return against the tree before the next dispatch, and landing one commit per unit."
+description: Draft - the sequential dispatch shape - run an operator-released unit plan one unit at a time, continuing until no unit that needs no operator input remains, verifying every return against the tree before the next dispatch, and landing one commit per unit."
 argument-hint: "[plan reference - a roadmap task, a row list, or the unit table - optional]"
 ---
 
