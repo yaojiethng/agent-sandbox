@@ -1,6 +1,6 @@
 # Closed Record Corrections
 
-**Current:** 2026-09-27
+**Current:** 2026-09-28
 
 ## Requirements
 
@@ -12,6 +12,20 @@
 | R4 | Propagation | a correction inherits the record set of the unit it corrects |
 | R5 | Operator direction | the agent proposes a correction; it applies one only at the operator's direction |
 | R6 | The fold | corrected content rides the unit's own commit, folded, so the history reads as if it had always been that way |
+
+## 2026-09-28 -- The fold target is the unit whose scope the fix fits
+
+**Decision:** A fix that lands after its unit's delivery folds into the unit whose target scope it fits. In scope of the current unit, the fix is that unit's regular work: it rides the unit's commit, and its handover carries it as a regular entry. Out of scope, the fix folds into the latest relevant commit (the prior unit), and the prior unit's handover gains the record. The realization point selects the mechanics, never the target. In flight, an out-of-scope fix is stashed apart from the unit's working set, landed as a patch on the relevant commit, and squashed in by rebase. After delivery, it folds via `git commit --fixup=<hash>` plus `git rebase -i --autosquash`, which rewrites the target and re-applies the later commits on top. A closed record's change carries its type's marker per R2.
+
+**Rationale:** R4 and R6 presupposed one target unit. When a fix could attach to either of two units, the rule had no selector, and the 2026-09-27 entry recorded the case as unsolved. The selector is scope: a unit's scope is fixed when the iteration starts, so "does the fix fit the current unit's scope" is a yes-or-no question, not a judgement. Keying the target to the corrected content would fold into an arbitrary past commit; keying it to the realization point alone would pollute a unit's regular work with out-of-scope changes.
+
+**Rejected alternatives:**
+
+- *Key the target to the corrected content* -- execution failure. The fold target becomes arbitrary past history; the latest-relevant-commit rule keeps the rebase short and the record reachable.
+- *Always fold into the realization point's current unit* -- intent failure. B's scope statement then stops matching B's content.
+- *A later iteration owns the spanning correction across both units' records, or one correction per unit* (the T1 row's former options) -- intent failure. Both presuppose the correction is an object; there is one fix, one target, chosen by scope.
+
+**Edge cases / drivers:** Realized during the unit and in scope: regular work, no correction machinery. Realized in flight and out of scope: patch is stashed apart and squashed into the relevant commit. Realized after delivery and out of scope: fixup and autosquash, later commits re-applied; the amended handover carries the R2 marker. The 2026-09-27 edge case "a correction crossing a unit boundary has no owner under R4" is resolved by this entry.
 
 ## 2026-09-27 -- A closed record is corrected by marker and successor, not by edit
 
@@ -34,4 +48,4 @@ Two mechanics follow from what a record is. A record that states a claim is corr
 - *A milestone-anchored marker only* -- intent failure. A correction landing inside an open milestone had no form, and that is the common case: three records were corrected mid-milestone in the session that produced this decision.
 - *Dropping the rule from the provider `AGENTS.md` without landing the lifecycle statement first* -- execution failure, avoided by ordering. `AGENTS.md` is the only place the bar is stated coarsely and the file that seeds the host, so removing it alone would have left no statement of it anywhere.
 
-**Edge cases / drivers:** A correction inside an open milestone has no closed boundary to point at, so the anchor names the current milestone and the iteration is the fallback for work belonging to no milestone. A correction that cannot be finished returns the record to the state it carried before, because a reopen cycle abandoned mid-way is the one way this rule could leave a record inconsistent. A large adjustment, such as reopening a closed milestone to list rows closed on scope they did not cover, goes through the reopen path. A fold that needs an interactive rebase with several conflict edits is reported as a smell and stops, because past that size the instrument is a port rather than a correction. A correction that turns out to need its own handover is a new iteration, not a large correction. A correction crossing a unit boundary has no owner under R4, because the rule inherits one unit's record set and a spanning correction has none; this case is unsolved. Ordering for two markers on one row is specified for handovers and not yet for roadmap rows.
+**Edge cases / drivers:** A correction inside an open milestone has no closed boundary to point at, so the anchor names the current milestone and the iteration is the fallback for work belonging to no milestone. A correction that cannot be finished returns the record to the state it carried before, because a reopen cycle abandoned mid-way is the one way this rule could leave a record inconsistent. A large adjustment, such as reopening a closed milestone to list rows closed on scope they did not cover, goes through the reopen path. A fold that needs an interactive rebase with several conflict edits is reported as a smell and stops, because past that size the instrument is a port rather than a correction. A correction that turns out to need its own handover is a new iteration, not a large correction. A correction crossing a unit boundary has no owner under R4, because the rule inherits one unit's record set and a spanning correction has none. [CORRECTION -- 2026-09-28] resolved by the unit-whose-scope entry above: the fold target is decided by scope, not by content. Ordering for two markers on one row is specified for handovers and not yet for roadmap rows.
