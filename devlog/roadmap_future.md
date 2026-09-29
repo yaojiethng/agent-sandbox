@@ -69,6 +69,8 @@ Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite s
 - [ ] Update `execution_model.md` to reflect dispatch model before implementation begins
 - [ ] Implement dispatch mechanism in harness
 
+**Deferred capability home (2026-09-29):** the `pi-subagents` orchestration capabilities not needed by the task-queue primitive (background/detached execution, retained resume/steering, acceptance gates, watchdog, mission schedules, TUI fleet, external-CLI runners, recursion guard) are evaluated here against a future delegation use case, not grafted onto the operator-bottleneck task-queue. The task-queue comparison (roadmap row 160) verdict deferred them to M4; the one borrow, patch-capture-before-removal, is served by the existing `/package-branch` machinery.
+
 ---
 
 ### M4.4 -- Constraint Enforcement
