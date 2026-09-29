@@ -14,7 +14,7 @@ Roadmap row 87 asked whether the project adopts a mutation suite. The read-throu
 |---|---|
 | Adopt a mutation tier, run on demand only, layered on the unit suite, never a hook | operator |
 | Execution is nonstandard: `MUTATION=1` on the suite runner appends the tier after the standard run | operator |
-| Reach is operator-triggered only; the regular frequency is decided in M4 | operator |
+| Reach is operator-triggered only; the regular frequency is decided in M4.1 | operator |
 | Survivors collect into a dated jsonl findings register, resolved later (collect-then-process); a run never terminates on a survivor | operator |
 | The sweep status is valid only in its source session; the session is the disposal unit | operator |
 | A run is script-replayable; no agent in the loop | operator |

@@ -32,18 +32,24 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ## Multi-Agent Coordination
 
-### M4 -- Metadata Seeding
+### M4 -- Multi-Agent Coordination
+
+Umbrella for the multi-agent milestones: coordinated dispatch of multiple task briefs across agents, the per-agent branch surface, and the metadata that feeds both. Metadata seeding is the parent milestone's first occupant, carried as `M4.1`.
+
+---
+
+### M4.1 -- Metadata Seeding
 
 Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite study in `roadmap.md`): if a labelled task record is adopted, its shape carries `agent_id`, `task_id`, allowed files, and instructions.
 
 - [ ] Ensure agent reads metadata to guide task execution
 - [ ] Ensure agent respects allowed file constraints
 - [ ] Decide the regular mutation-run frequency (recorded from roadmap row 87, 2026-09-26: the M3.1 mutation tier is operator-triggered only until this row sets a cadence)
-- [ ] Process the 2026-09-26 mutation-run survivors (62 rows with verdict `survived` in `tests/mutations/runs/20260926-184023-mutation_run.jsonl`): triage each survivor - re-run under the fixed-bite discipline or retire the row - and write the outcome back to the catalog. Dumped here by operator direction at the M3.1 close (2026-09-27), because the survivor set is the mutation tier's first real output and the tier's cadence and processing policy belong to M4
+- [ ] Process the 2026-09-26 mutation-run survivors (62 rows with verdict `survived` in `tests/mutations/runs/20260926-184023-mutation_run.jsonl`): triage each survivor - re-run under the fixed-bite discipline or retire the row - and write the outcome back to the catalog. Dumped here by operator direction at the M3.1 close (2026-09-27), because the survivor set is the mutation tier's first real output and the tier's cadence and processing policy belong to M4.1
 
 ---
 
-### M5 -- Agent-Assigned Branch Management
+### M4.2 -- Agent-Assigned Branch Management
 
 **Objective:** Each agent gets its own branch from a shared baseline. Branches serve as both the agent's working surface and the snapshot of its work for review and merge.
 
@@ -55,9 +61,7 @@ Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite s
 
 ---
 
-## Multi-Agent Orchestration
-
-### M6.1 -- Task Dispatch
+### M4.3 -- Task Dispatch
 
 **Objective:** Extend the execution model to support coordinated dispatch of multiple task briefs across agents. Design precedes implementation -- `execution_model.md` must be updated before any code changes.
 
@@ -67,23 +71,42 @@ Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite s
 
 ---
 
-### M6.2 -- Constraint Enforcement
+### M4.4 -- Constraint Enforcement
 
 **Objective:** Enforce SOP constraints on agent dispatch and output. Partial enforcement may exist earlier from features built in prior milestones; this milestone brings it to a complete and auditable state.
 
 - [ ] Implement automated SOP enforcement scripts covering agent lifecycle, output handling, and secrets
-- [ ] Enforce allowed file and task constraints at dispatch time (builds on M4 metadata)
+- [ ] Enforce allowed file and task constraints at dispatch time (builds on M4.1 metadata)
 - [ ] Validate agent outputs against constraints before branch merge
 
 ---
 
-### M6.3 -- Review & CI/CD Integration
+### M4.5 -- Review & CI/CD Integration
 
 **Objective:** Automate review of agent-produced changes and integrate with CI/CD pipelines.
 
 - [ ] Configure PR / CI/CD checks on agent branches
 - [ ] Automated validation of branch contents before merge
 - [ ] Full structured audit trail per agent run, task, and commit
+
+---
+
+### M4.6 -- Background Auto (parallel-auto)
+
+Multiple well-specified `auto` tasks run once, in the background, with the operator releasing the plan once up front and not gating each unit. Each task is one `auto` run; `parallel-auto` is the extension that runs several at once, unattended, and collects the results for later merge. The work-unit and merge responsibilities from the existing `parallel-auto.md` (own worktree and branch per track, primary holds verification and merge) carry over.
+
+**Source:** the active T1 `parallel-auto` row, relocated here under the M4 umbrella.
+
+- [ ] Build the `parallel-auto` prompt as background auto
+- [ ] Mark the existing `parallel-auto.md` draft as a stub
+
+---
+
+### M4.7 -- task-queue
+
+Parallel fan-out over disjoint file sets with the operator as the synchronous bottleneck. The main agent gathers a batch of tasks that touch disjoint file sets and runs each in its own worktree and branch, then re-orients the operator and asks for feedback or decisions as each worker lands. The operator's review and decision rate, not the agent's turn time, sets the wall clock. This is the extracted `fanout` use case (1), split into its own prompt; `fanout` keeps the design-option-exploration case (2).
+
+- [ ] Build the `task-queue` prompt, reusing the `parallel-auto` worktree-and-branch machinery
 
 ---
 
