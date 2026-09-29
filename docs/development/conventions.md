@@ -7,6 +7,7 @@ Index of coding and interface conventions for the agent-sandbox project. Each ca
 | Interface (CLI, TUI, API) | [`interface-conventions.md`](interface-conventions.md) | CLI flags, output discipline, TUI surface, API contracts pointer, contextual-knowledge-light naming |
 | Bash coding | [`bash-coding-conventions.md`](bash-coding-conventions.md) | Language rules, traps as positive rules, dependency management |
 | Testing | [`testing-conventions.md`](testing-conventions.md) | Fixture patterns, anti-patterns, templates, checklists, debug steps |
+| Prompt and skill authoring | [`prompt-authoring-conventions.md`](prompt-authoring-conventions.md) | Workflow-document structure, runbook vs advisor, subject scoping, document-type identification |
 
 Policy documents govern process, not code shape. Conventions govern code shape within their category.
 

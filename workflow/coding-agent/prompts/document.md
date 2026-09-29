@@ -19,7 +19,7 @@ The docs-session runbook covers:
 - **Advisor use.** State when to dispatch the review advisor on the documentation.
 - **Standard compliance.** Compliance with `documentation-pass.md`, `conventions.md`, and the writing standards (ASD-STE100, one term one meaning, active voice). Each produced document is checked against these.
 - **Grill-me alignment.** Use grill-me to align on rewrite requirements ahead of the rewrite, not just for planning. A rewrite that changes the meaning of an existing document is a negotiation, not a mechanical edit.
-- **Workflow-document identification.** How to tell a document is a workflow document (a prompt or skill) as opposed to a reference or policy document. Workflow documents follow the presentation rules for workflow documents in this repository.
+- **Workflow-document identification.** How to tell a document is a workflow document (a prompt or skill) as opposed to a reference or policy document. Workflow documents follow the presentation rules in the authoring-guidelines convention ([`prompt-authoring-conventions.md`](../../../docs/development/prompt-authoring-conventions.md)).
 - **Acceptance-criteria machinery.** How the AC machinery applies when the session type has no standard AC: a docs session defines ACs as read/lint-observable deltas rather than runtime-verified deltas.
 
 ## Non-goals

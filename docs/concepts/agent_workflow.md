@@ -88,13 +88,13 @@ Policy documents live in `docs/operations/`, `docs/architecture/`, `docs/concept
 
 ### Skill files
 
-Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it.
+Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it. The authoring bar for skill files is in [`prompt-authoring-conventions.md`](../development/prompt-authoring-conventions.md).
 
 A constraint that exists only in a skill file is not authoritative. If an operator bypasses the skill, the constraint disappears. If the policy document changes, an inlined copy may become stale -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
 ### Prompt templates
 
-Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files.
+Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files. The authoring bar for prompt templates is in [`prompt-authoring-conventions.md`](../development/prompt-authoring-conventions.md).
 
 Prompt templates do not contain authoritative rules.
 
