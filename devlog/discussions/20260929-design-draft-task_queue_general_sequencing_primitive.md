@@ -1,7 +1,9 @@
 # Design: task-queue as a General Sequencing Primitive
 
-**Status:** active
+**Status:** superseded
 **Date:** 2026-09-29
+
+[SUPERSEDED] Consolidated with the fan-out comparison contract into the single record [`20260929-design-settled-task_queue_primitive.md`](20260929-design-settled-task_queue_primitive.md). This file remains for reference.
 **Milestone:** M3.2.1 - Loops as Workflows
 **Type:** design
 

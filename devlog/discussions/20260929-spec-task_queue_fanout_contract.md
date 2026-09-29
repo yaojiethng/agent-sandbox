@@ -1,7 +1,9 @@
 # Spec: task-queue Fan-Out Comparison Contract
 
-**Status:** active
+**Status:** superseded
 **Date:** 2026-09-29
+
+[SUPERSEDED] Consolidated with the design draft into the single record [`20260929-design-settled-task_queue_primitive.md`](20260929-design-settled-task_queue_primitive.md). This file remains for reference.
 **Milestone:** M3.2.1 - Loops as Workflows
 **Type:** spec (shared comparison contract, single source of truth)
 
