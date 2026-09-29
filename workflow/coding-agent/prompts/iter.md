@@ -22,7 +22,7 @@ No other files are needed at this stage.
 
 Run before creating the handover.
 
-Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, run roadmap maintenance after creating this handover but before presenting the scope proposal (Step 2). Record the maintenance execution in this handover's Completed table. Present the maintained roadmap state as part of the scope proposal.
+Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, run roadmap maintenance after creating this handover but before presenting the scope proposal at the scope gate. Record the maintenance execution in this handover's Completed table. Present the maintained roadmap state as part of the scope proposal.
 
 ---
 
@@ -48,8 +48,8 @@ If the directive slot is empty:
 If the directive slot is non-empty:
 
 - Identify the type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
-- **Step 1  --  Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this iteration diverges  --  go to Diverges below.
-- **Step 2  --  Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this iteration supersedes or adjusts prior work.
+- **Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this iteration diverges  --  see the Diverges from prior work case below.
+- **Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this iteration supersedes or adjusts prior work.
   - **Continues or adjusts prior work:** The directive takes priority over What's Next's framing but does not change the type or supersede the work in progress.
   - **Diverges from prior work:** This iteration supersedes the prior implementation thread. Record a Context handover line in What's Next so the implementation thread can be resumed. See `docs/operations/handover_policy.md` Types section.
 
@@ -60,7 +60,7 @@ If the directive slot is non-empty:
 Before creating the handover:
 
 ```text
-Range-read: docs/operations/iteration_policy.md [Step 1  --  Open handover and Step 1 Details](iteration_policy.md#step-1-open-handover).
+Range-read: docs/operations/iteration_policy.md [Step 1  --  Open handover, under Minor Loop -- Step Details](iteration_policy.md#step-1----open-handover).
 ```
 
 Create the handover per those rules. Set Status to `Active`.
@@ -128,8 +128,6 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 ---
 
----
-
 ## Step 6  --  Implementation and the write-back discipline
 
 The communication rules below operationalise the canonical rules in [`iteration_policy.md`](docs/operations/iteration_policy.md) During the iteration: this prompt is the runbook that walks through them; the policy is their owner.
@@ -165,7 +163,7 @@ Every row must carry a status. A deferred or not-started row must appear in the 
 
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in [`git_policy.md`](docs/operations/git_policy.md).
 
-The operator releases this gate with an explicit forward signal. A message that reviews output without a clear forward signal does not satisfy the exit condition.
+The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 
 ---
 

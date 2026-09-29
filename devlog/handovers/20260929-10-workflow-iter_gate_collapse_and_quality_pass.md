@@ -3,7 +3,7 @@
 **Date:** 2026-09-29
 **Milestone:** M3.2.1 - Loops as Workflows
 **Type:** Workflow
-**Status:** Active
+**Status:** Closed
 
 ## Objective
 
@@ -15,7 +15,7 @@ Reform the `/iter` prompt's gating and raise it to the per-prompt quality bar (r
 
 **Gate names (glm review, 2026-09-29):** the operator requested a glm review of the provisional names "task scope gate" and "acceptance gate". glm-5.3-flash recommended `scope gate` (already established at `iteration_policy.md:104`, one-term-one-meaning, delete-test) and `release gate` (avoids the reserved "acceptance criteria" collision, matches roadmap row 83's recorded decision and the existing `release` verb). Operator approved both (2026-09-29).
 
-**Iteration B (next, same roadmap row): quality pass.** Audit the minor-loop logic in `iteration_policy.md` and the mentions of it in both `AGENTS.md` files and the `/iter` prompt; collapse with the over-pausing (pedantic) finding as the explicit quality target. Do not release the acceptance gate automatically; wait for operator review.
+**Iteration B (this iteration, same roadmap row): quality pass.** Audit the minor-loop logic in `iteration_policy.md` and the mentions of it in both `AGENTS.md` files and the `/iter` prompt; collapse with the over-pausing (pedantic) finding as the explicit quality target. Do not release the acceptance gate automatically; wait for operator review.
 
 ## Decisions
 
@@ -51,7 +51,11 @@ Reform the `/iter` prompt's gating and raise it to the per-prompt quality bar (r
 | `workflow/coding-agent/audits/surface-area-report.md` | scope and acceptance gates -> scope gate and release gate |
 | `devlog/roadmap.md` | row 83 gate-collapse landing noted |
 
-**glm review round (glm-5.3-flash, high, 2026-09-29):** the first review found six defects (dangling Step-5 reference, Step-4-to-6 numbering gap, Step 7 counting as a third gate, Step 3 exit reintroducing a confirmation pause, stale eval invariant I4, stale scope/AC plural in handover_policy and surface-area-report). All six fixed in a second pass; the re-review verdict is CONVERGED (log `/tmp/gate-collapse.refix.log`).
+**Iteration B (quality pass).** Files: `workflow/coding-agent/prompts/iter.md` (Directive step-number collision, dangling Diverges ref, anchor, pre-close/release signal), `docs/operations/iteration_policy.md` (Step-7 gate language, release-signal), `docs/operations/documentation_policy.md` (one-indexable-axis rule), `docs/operations/roadmap_policy.md`, `docs/operations/handover_policy.md`, `AGENTS.md` (anchor corrections).
+
+**glm review round A (glm-5.3-flash, high, 2026-09-29):** the first review found six defects (dangling Step-5 reference, Step-4-to-6 numbering gap, Step 7 counting as a third gate, Step 3 exit reintroducing a confirmation pause, stale eval invariant I4, stale scope/AC plural in handover_policy and surface-area-report). All six fixed in a second pass; the re-review verdict is CONVERGED (log `/tmp/gate-collapse.refix.log`).
+
+**glm review round B (quality pass, glm-5.3-flash, high, 2026-09-29):** the quality-pass review confirmed the two-gate model and the step numbering are coherent across `iteration_policy.md`, `/iter`, and the project `AGENTS.md` (the provider-layer `AGENTS.md` has no minor-loop mention to reconcile), and confirmed **no pedantic pause remains** -- unconditional stops exist only at the scope gate and the Step 7 pre-close summary feeding the release gate; all other operator asks are sanctioned conditionals (unknown directive type, no topic overlap, unclear scope). It found 7 in-scope defects plus 1 adjacent: Directive-section step-number collision (the same ambiguity class as the conversational-numbering `[O]` finding), dangling "Diverges below" reference, mislabeled roadmap-maintenance "(Step 2)", iter.md and AGENTS.md/roadmap_policy dangling 2-hyphen anchors, residual Step-7 "release the gate" language after the two-gate collapse, an ambiguous pre-close/release signal, and handover_policy dangling Step-1/Steps-8-9 anchors. All fixed; the re-review verdict is CONVERGED (log `/tmp/quality-pass.refix.log`). **The over-pausing finding is not confirmed resolved:** the glm review found no remaining pedantic pause in `/iter`, but at the operator's direction (2026-09-29) the AGENT_FEEDBACK `[O]` entry stays under `probation` because the fix has not been stress-tested by a live interactive run.
 
 ## Findings
 

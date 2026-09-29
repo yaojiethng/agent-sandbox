@@ -125,6 +125,8 @@ Prose is one paragraph per physical line, however long the line. Never break ins
 
 A number is valid only in the conversation or document where it appears. Use a numbered list when order matters or readers refer to items by number; otherwise use bullets. Outside the defining place, use the item's descriptive name or a link. A persistent record (a roadmap task, a handover entry, a code comment) does not take a number from a transient list; rename the item descriptively. When many references point to one item, move it to a heading.
 
+**One indexable axis per presentation.** When the operator may refer to items by index, present exactly one numbering or lettering scheme in an exchange, so an index reply is unambiguous. Do not place two numbered or lettered sets side by side (for example a review's numbered findings beside the agent's lettered option choices) and let the operator index one of them; the reply then maps to the wrong axis and the agent must guess. If several sets must appear together, name each axis explicitly so a reply is self-mapping (`finding 1`, `option A`).
+
 ### No bridge documents
 
 A bridge document exists only to connect two documents that could reference each other directly. Bridge documents are prohibited -- collapse them into the more relevant destination document.

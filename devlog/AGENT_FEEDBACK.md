@@ -248,10 +248,11 @@ A second form recurred one turn after the first fix. The agent applied the rule 
 
 ### [O] 2026-09-29  --  `/iter` pauses for confirmation at nearly every step, not only at the gates
 
-state: open
+state: probation
 scoped: M3.2.1 -- `/iter` gate collapse and per-prompt quality pass (roadmap row 83)
 legacy: none
 mitigation: the operator previously expected to respond to the agent only at Gate 1, Gate 2, and Gate 3. After the loop-to-workflow move, `/iter` stops for confirmation at nearly every step, and each pause reads as a gate, so the operator approves step after step instead of only at the three decision points. The gate-collapse and quality pass (roadmap row 83) must restore gates as the only confirmation points and cut the per-step pauses that add no operator decision. The quality bar is: a step is a gate only when the operator must decide something; a step that only reports progress or awaits an acknowledge signal should not pause the loop. Recorded in handover `20260929-08`.
+probation_note: the gate collapse (handover `20260929-10`) folded confirmation into two gates (scope gate, release gate) and a glm quality-pass review found no remaining pedantic pause in `/iter` -- unconditional stops stand only at the scope gate and the Step 7 pre-close summary that feeds the release gate. The entry stays under probation at the operator's direction (2026-09-29): the fix has not been stress-tested by a live interactive run, so it is not confirmed resolved. The operator decides dismiss / maintain / escalate on a later review surface, not at this close.
 
 ### [O] 2026-09-29  --  Conversational numbering must be unambiguous
 

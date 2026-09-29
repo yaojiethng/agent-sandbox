@@ -67,11 +67,11 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 
 A handover has three states:
 
-**Open** -- created at iteration start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1-open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
+**Open** -- created at iteration start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1----open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
 
 **Active** -- updated throughout the iteration as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** -- finalised at iteration end (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
+**Closed** -- finalised at iteration end (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-8-9----close-and-seed)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
 
 ---
 
@@ -212,7 +212,7 @@ Keep the blank line before the closing fence. Without it, the tag paragraph pars
 
 1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
 2. Do not alter the Status, timestamps, or any other metadata field in the corrected record.
-3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
+3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-8-9----close-and-seed)):
 
 - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
 - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
