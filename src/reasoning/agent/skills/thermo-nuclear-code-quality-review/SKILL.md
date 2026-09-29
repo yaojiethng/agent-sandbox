@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
-Suggested model runs (provider: opencode-go): `deepseek-v4-flash` at `xhigh` thinking and `glm-5.3-flash` at `high` thinking. Run one, or both when blocker consensus matters; two independent models converge fast on the same blocker class. State the model and thinking level in the invitation so the report carries attribution.
+Use the `_REVIEWER` role recommendation from the project-level `AGENTS.md` for the model and thinking level; take the first listed model. Recommend one reviewer instance by default. Run two or more only when the user asks for multiple reviewer agents or when consensus across independent models matters. State the model and thinking level in the invitation so the report carries attribution.
 
 Above all, this skill should push the reviewer to be **ambitious** about code structure. Do not merely identify local cleanup opportunities. Actively search for "code judo" moves: restructurings that preserve behavior while making the implementation dramatically simpler, smaller, more direct, and more elegant.
 

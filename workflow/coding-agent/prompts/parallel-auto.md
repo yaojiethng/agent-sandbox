@@ -33,7 +33,7 @@ Not this template:
 
 **One baseline commit.** Every track branches from the same commit. Branches cut from different baselines merge against a moving target and the conflict set becomes unreproducible.
 
-**The model is chosen from the provider's own model list.** The overlay provider registers its own list, separate from the base provider's, and a model identifier from the wrong list fails the whole dispatch in seconds. Read the list for the provider in the command, not from memory or from another provider's output.
+**The model is chosen from the provider's own model list.** The overlay provider registers its own list, separate from the base provider's, and a model identifier from the wrong list fails the whole dispatch in seconds. Read the list for the provider in the command, not from memory or from another provider's output. Take the model and thinking level for a worker track from the `_IMPLEMENTER` role recommendation in the project-level `AGENTS.md`.
 
 ## Step 1 - Build the track plan
 

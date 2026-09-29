@@ -63,12 +63,12 @@ STOP <unit> <done|partial|stuck|needs-decision> <one line>
 
 The tail is what the primary collects; the prose above it is a claim to check. The `STOP` line is mandatory. A subagent that cannot finish inside its budget returns a coherent partial rather than being killed, because a killed run cannot report at all.
 
-The brief also states its budget, its model and its thinking level: the subagent cannot see its own invocation flags, and the report needs the attribution.
+The brief also states its budget, its model and its thinking level: the subagent cannot see its own invocation flags, and the report needs the attribution. Read the model and thinking level from the `_IMPLEMENTER` role recommendation in the project-level `AGENTS.md`.
 
 ## Step 3 - Dispatch, blocking
 
 ```bash
-timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh \
+timeout 1800 pi --provider <provider> --model <model> --thinking <level> \
   -p "$(cat /tmp/auto/<unit>.brief)" > /tmp/auto/<unit>.log 2>&1
 echo "pi rc=$?"
 ```

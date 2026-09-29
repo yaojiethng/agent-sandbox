@@ -13,10 +13,10 @@ The advisor reviews one concrete artifact. You are the leader with decision auth
 
 Run a fresh subagent with its own context. It does not inherit this session's conversation, loaded files, or tool state, so pass the whole assignment in the argument.
 
-State the model and thinking level in the brief, because the subagent cannot see the invocation flags. Use the review-advisor pair already working in this repo: `glm-5.3-flash` at `high` thinking for documentation and language-shaped reviews, `deepseek-v4-flash` for code. For a documentation review, prefer `opencode-go`, `glm-5.3-flash` at `high` thinking. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
+State the model and thinking level in the brief, because the subagent cannot see the invocation flags. Read the `_ADVISOR` role recommendation from the project-level `AGENTS.md`, following its routing clause for the review shape. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
 
 ```bash
-timeout 1800 pi --provider opencode-go --model glm-5.3-flash --thinking high -p "$(cat /tmp/advisor-brief.md)" > /tmp/advisor.log 2>&1
+timeout 1800 pi --provider <provider> --model <model> --thinking <level> -p "$(cat /tmp/advisor-brief.md)" > /tmp/advisor.log 2>&1
 ```
 
 If the run fails or the log is empty, fix the invocation and rerun before triaging.

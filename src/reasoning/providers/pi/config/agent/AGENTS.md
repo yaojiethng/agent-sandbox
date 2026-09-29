@@ -77,10 +77,10 @@ The subagent runs in the same container/workspace as the primary agent, with the
 
 ## Running Review Subagents
 
-State the model and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Suggested pair under the opencode-go provider: `deepseek-v4-flash` at `xhigh` thinking and `glm-5.3-flash` at `high` thinking.
+State the model and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Read the model recommendation by role tag from the project-level `AGENTS.md` (for example `_REVIEWER`). If the tag is absent, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`); a project-level `.pi/settings.json` override takes precedence if present.
 
-Capture a subagent run to a log file, never through a pipe. A pipe loses the unflushed output when a run is interrupted; the log file and the session transcript survive. Run with a generous timeout (`timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh -p "$(cat brief)" > /tmp/review.log 2>&1`).
+Capture a subagent run to a log file, never through a pipe. A pipe loses the unflushed output when a run is interrupted; the log file and the session transcript survive. Run with a generous timeout (`timeout 1800 pi --provider <provider> --model <model> --thinking <level> -p "$(cat brief)" > /tmp/review.log 2>&1`), substituting the role-resolved values.
 
 Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
 
-Every run starts with benign model-resolution warnings (`Warning: No models match pattern ...`). They are noise, not a stall signal; do not abort on them.
+A `Warning: No models match pattern` message means pi did not keep the requested model and fell back to the startup default; it is not benign noise. Check the model line in the session header or run log to confirm the effective model before trusting the run.

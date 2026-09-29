@@ -99,6 +99,22 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ---
 
+## Model Recommendations
+
+A prompt or skill dispatches subagents for a role. This table is the single source for which model and thinking level to use for each role. Read a recommendation by role tag. When one model is required but several are listed, use the first in listed order; a routing clause on a row takes precedence. When a prompt is not tied to a role tag, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`).
+
+| Role tag | Recommendation, in order |
+|---|---|
+| `_IMPLEMENTER` | space-bunny-free at high; deepseek-v4-flash at medium |
+| `_REVIEWER` | space-bunny-free at xhigh; deepseek-v4-flash at medium |
+| `_ADVISOR` | glm-5.3-flash at high for documentation and language reviews; deepseek-v4-flash at xhigh for code reviews |
+
+If a prompt names a role tag that this table does not list, resolve the startup default as above. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
+
+A startup default resolved from a project-level `.pi/settings.json` override takes precedence over `~/.pi/agent/settings.json`. Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
+
+---
+
 ## Read Discipline
 
 Before opening any file in full, establish what you need from it first.
@@ -120,8 +136,6 @@ grep -n "^##" filename.md
 Then read only the sections you need.
 
 A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.
-
-In interfaces without filesystem access (e.g. Claude Chat), run grep across uploaded files at `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/` and apply the same discipline to deciding which sections to request from the operator.
 
 ---
 

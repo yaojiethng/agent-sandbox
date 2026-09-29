@@ -24,12 +24,12 @@ Use this loop for any review whose outcome is a verdict rather than a proposal: 
 ## The invitation
 
 ```bash
-timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh \
+timeout 1800 pi --provider <provider> --model <model> --thinking <level> \
   -p "$(cat /tmp/review/<round>.brief)" > /tmp/review/<round>.log 2>&1
 echo "pi rc=$?"
 ```
 
-The invitation states: the exact range, the reviewer's bar, the required verdict, the round number, the blocker history from earlier rounds, and the model and thinking level (the reviewer cannot see its own invocation flags). Run one reviewer, or two when blocker consensus matters: `deepseek-v4-flash` at `xhigh` and `glm-5.3-flash` at `high` converge fast on the same blocker class.
+The invitation states: the exact range, the reviewer's bar, the required verdict, the round number, the blocker history from earlier rounds, and the model and thinking level (the reviewer cannot see its own invocation flags). Read the model and thinking level from the `_REVIEWER` role recommendation in the project-level `AGENTS.md`; use the first listed when one reviewer is needed.
 
 Read the report from the log: `tail -30 <log>`. A review with no explicit verdict did not happen.
 

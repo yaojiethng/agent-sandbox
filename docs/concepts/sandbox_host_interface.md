@@ -211,7 +211,7 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 
 **Mixing `make apply` and `make draft` within a single session:** Resolved. Under the current model the two paths are structurally separate: `make apply` applies an exact diff file (`--diff=<path>`, no channel resolution) and lands changes uncommitted in the working tree; `make draft` resolves from the `session` channel (`session-diffs/session/`) or `bundles` channel (`output/bundles/`) and applies committed diffs to a branch. The artefact locations do not overlap and there is no shared application mechanism. No undefined behaviour remains.
 
-**Mixed session types across sessions:** Closed as explicitly out of scope. A project using both Claude Chat sessions (`package-branch` / `make apply`) and OpenCode sessions (`package-branch` / `make draft`) against the same repo involves intentionally different workflows targeting different artefact channels. The harness makes no claim to coordinate across session types, and doing so is not intended behaviour. If cross-session-type coordination becomes a real use case, it warrants a story at that time.
+**Mixed session types across sessions:** Closed as explicitly out of scope. A project using both the `make apply` channel and the `make draft` channel against the same repo involves intentionally different workflows targeting different artefact channels. The harness makes no claim to coordinate across session types, and doing so is not intended behaviour. If cross-session-type coordination becomes a real use case, it warrants a story at that time.
 
 ---
 
