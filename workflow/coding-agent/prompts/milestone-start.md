@@ -1,5 +1,5 @@
 ---
-description: Open or reshape a major milestone or sub-milestone. Factors the roadmap's loose task pool into a named milestone shape: audits the pool, proposes milestones (possibly several), titles them with the operator, assigns and re-files tasks, promotes one as next active, and updates the records. Handles a finish at any nesting level, since milestone numbering is fractal.
+description: Open or reshape a major milestone or sub-milestone. Factors the roadmap's loose task pool into a named milestone shape - audits the pool, proposes milestones (possibly several), titles them with the operator, assigns and re-files tasks, promotes one as next active, and updates the records. Handles a finish at any nesting level, since milestone numbering is fractal.
 argument-hint: "[direction or intent - optional]"
 ---
 

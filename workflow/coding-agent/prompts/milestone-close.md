@@ -1,5 +1,5 @@
 ---
-description: Close a milestone or sub-milestone. A single general fractal protocol: verify completeness, run the review gate, compact the task list, write the changelog entry, update the records, escalate deferred work, and land the close commit. The same prompt closes a sub-milestone and a full milestone.
+description: Close a milestone or sub-milestone. A single general fractal protocol - verify completeness, run the review gate, compact the task list, write the changelog entry, update the records, escalate deferred work, and land the close commit. The same prompt closes a sub-milestone and a full milestone.
 argument-hint: "[milestone name - for example M3.1 - Backpressure]"
 ---
 

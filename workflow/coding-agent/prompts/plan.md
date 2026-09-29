@@ -1,5 +1,5 @@
 ---
-description: Major-loop planning workflow. Runs a plan session for planning and design work in place of `/iter`: opens the session, records the goal and problem, aligns scope, interviews, and routes the outcome to its write-back target. Deliverable is documents. Use when a plan or design needs shaping and iteration is not required.
+description: Major-loop planning workflow. Runs a plan session for planning and design work in place of `/iter` - opens the session, records the goal and problem, aligns scope, interviews, and routes the outcome to its write-back target. Deliverable is documents. Use when a plan or design needs shaping and iteration is not required.
 argument-hint: "[goal or scope to plan - required]"
 ---
 
