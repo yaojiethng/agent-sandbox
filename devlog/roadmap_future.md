@@ -102,17 +102,6 @@ Multiple well-specified `auto` tasks run once, in the background, with the opera
 
 ---
 
-### M4.6 -- Background Auto (parallel-auto)
-
-Multiple well-specified `auto` tasks run once, in the background, with the operator releasing the plan once up front and not gating each unit. Each task is one `auto` run; `parallel-auto` is the extension that runs several at once, unattended, and collects the results for later merge. The work-unit and merge responsibilities from the existing `parallel-auto.md` (own worktree and branch per track, primary holds verification and merge) carry over.
-
-**Source:** the active T1 `parallel-auto` row, relocated here under the M4 umbrella.
-
-- [ ] Build the `parallel-auto` prompt as background auto
-- [ ] Mark the existing `parallel-auto.md` draft as a stub
-
----
-
 ## Standalone
 
 ### M7 -- Security and Network hardening (Policy Layer)
