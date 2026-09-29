@@ -32,9 +32,9 @@ Example (from new-session eval):
 
 | Invariant | Grounding |
 |---|---|
-| I1  --  No "Step 1b" references | `iteration_policy.md` Step naming |
-| I2  --  No compaction at Step 1 | `roadmap_policy.md` Steps 8-9 |
-| I3  --  Post-close bookkeeping recovery present | `handover_policy.md` Step 1 recovery check |
+| I1  --  No minor-loop step-number scaffolding in the policies | `iteration_policy.md` and `roadmap_policy.md` state invariants, not `Step N --` procedure mirrors |
+| I2  --  No compaction at iteration start | `roadmap_policy.md` roadmap-maintenance rules |
+| I3  --  Post-close bookkeeping recovery present | `handover_policy.md` recovery check |
 | I4  --  Scope gate + release gate present | `iteration_policy.md` Gate names |
 
 ### 2. Write code-based evaluators
@@ -42,11 +42,11 @@ Example (from new-session eval):
 For each invariant, write a deterministic check. Prefer grep over LLM:
 
 ```bash
-# I1: No stale step references
-grep -qi "step.*1b" "$f" && echo "FAIL I1" || echo "PASS I1"
+# I1: No minor-loop step-number scaffolding in the policies (Step 1..N mirror headings)
+grep -Eq "^###? Step [0-9]" "$f" && echo "FAIL I1" || echo "PASS I1"
 
-# I2: No compaction at Step 1 (allow negations)
-grep -qi "compact.*step 1\|compaction.*step 1" "$f" | grep -qi "no longer" && echo "PASS I2 (negation)" || ...
+# I2: No compaction at iteration start (allow negations)
+grep -qi "compact.*iteration start\|compaction.*iteration start" "$f" | grep -qi "no longer" && echo "PASS I2 (negation)" || ...
 ```
 
 Code-based evaluators are free, fast, and reproducible. They produce false positives on negation/clarification text  --  flag these for human triage, don't remove them.

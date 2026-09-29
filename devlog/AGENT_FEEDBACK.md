@@ -261,6 +261,13 @@ scoped: M3 T1 -- documentation conventions; `documentation_policy.md` `### Numbe
 legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
 mitigation: when the agent presents several numbered or lettered sets in one exchange -- a review's numbered findings beside lettered option choices -- the operator's index reply can map to the wrong axis, and the agent must guess. Present exactly one indexable axis per presentation, or name each axis so the reply is self-mapping ("finding 1", "option A"). Do not place two independent numbering schemes side by side and let the operator index one of them. The numbering convention in `documentation_policy.md` `### Numbering and cross-references` must state this rule. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
 
+### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed
+
+state: open
+scoped: M3 T1 -- prompt authoring; `docs/development/prompt-authoring-conventions.md`; review prompts `advisor.md` and `thermo-nuclear-code-quality-review`
+legacy: the review-loop-entry guidance on re-runs ("re-run sparingly", AGENT_FEEDBACK `[A]` 2026-09-28 advisor re-run value) covers when a re-run earns its cost, not whether convergence is optional.
+mitigation: a review prompt must not hard-mandate "work to consensus". The convergence loop is one mode; a single-pass review is a legitimate invocation and must be allowed. Advisor-style prompts should be invokable as a single consultation without being forced to converge. Thermo-nuclear-style review prompts should be invokable with or without the convergence constraint. Every review prompt should echo a subagent invocation budget -- the prompt states how many subagent runs the loop may use, so the cost is bounded and visible before dispatch. Put the budget in the brief and the invocation. Raised 2026-09-29 when the operator observed advisor "work to consensus" is a hard constraint and thermo-nuclear carries no budget; record in handover `20260929-11`.
+
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work

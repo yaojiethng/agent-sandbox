@@ -13,7 +13,7 @@ argument-hint: "[optional: a commit range to audit]"
 
 You run the consolidated close for an active-operator session that ends at its release point. Two jobs share this document: the **commit-discipline checkpoint** runs during the session after each committed task group; the **close** runs once at the session end. Both deliver a HEAD that reads as one coherent delivery commit per unit, with an open handover naming it, and no pile of typed checkpoints left for the operator to untangle.
 
-Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- `git_policy.md` names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` Step 1 opens the handover before output, and a commit with no open handover is a missing record. Fourth, fix the root cause, not the symptom: a detected pile is squashed now and what let it accumulate is recorded -- a recurrence is a feedback or policy gap, catalogued on `devlog/AGENT_FEEDBACK.md` (grep for an existing entry first) or amended in the policy that failed to stop it.
+Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- `git_policy.md` names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause, not the symptom: a detected pile is squashed now and what let it accumulate is recorded -- a recurrence is a feedback or policy gap, catalogued on `devlog/AGENT_FEEDBACK.md` (grep for an existing entry first) or amended in the policy that failed to stop it.
 
 ## Called from
 
@@ -61,13 +61,7 @@ Present the boundary and the squash plan. For a multi-unit split, the operator d
 
 ### A5. Squash to one delivery commit
 
-```bash
-git reset --soft <base>          # keep the work staged
-git add -A
-git commit -m "<type>: ..."      # one typed commit
-```
-
-When the work is already committed and clean, use an interactive rebase squash (`git rebase -i` folding the range into the base delivery commit). The close edit and write-back are staged into the same commit, never a separate one.
+Run the canonical squash procedure in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Canonical procedures -- squash to one delivery commit). The canonical block is the single source; do not restate it here. The close edit and write-back are staged into the same commit, never a separate one.
 
 ### A6. Confirm an open handover names the unit
 
@@ -83,7 +77,7 @@ bash scripts/lint.sh             # pre-close gate clean
 
 ## Part B - The close (end of session, shared)
 
-Run this once when the session reaches its end. It follows the unit's release point. Each step is ordered; the operator releases the close gate before the steps run.
+Run this once when the session reaches its end. It follows the unit's release point. There is one release: the operator's forward signal on the release gate (per [`iteration_policy.md`](docs/operations/iteration_policy.md) gate invariants) is the release for this part; Part B does not add a second operator approval. The close steps below run the close invariants in [`iteration_policy.md`](docs/operations/iteration_policy.md); a step states the invariant it satisfies and links it, rather than redefining it.
 
 ### B1. AC verification
 
@@ -91,11 +85,11 @@ Read the acceptance criteria from the session's handover. For each criterion, st
 
 ### B2. Propagation replay
 
-When the session applied a naming, structural, or interface change across more than two files, produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears", produce a propagation replay table: `file | change planned | status`. Every row carries `completed`, `deferred`, or `not started`; a deferred or not-started row must appear in the handover's Deferred items before the close. When replay is not required, state that explicitly.
+Run the propagation-replay invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row in Deferred items) before the release gate releases.
 
 ### B3. Scope reconciliation
 
-Compare the confirmed scope against the Completed table. Every in-scope item not completed must appear in Deferred items with what it is, why it did not complete, and where it goes next. No unaccounted items.
+Run the scope-reconciliation invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed must appear in Deferred items; no unaccounted items.
 
 ### B4. Roadmap write-back and compaction
 
@@ -103,11 +97,11 @@ Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`
 
 ### B5. Carry-forward resolution
 
-Compare every Carried forward item in the handover against the Completed table and Deferred items. Each must be completed, re-deferred, or escalated to a named roadmap entry. An item in none of the three is dropped -- find it and triage it.
+Run the carry-forward-resolution invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): every Carried forward item must be completed, re-deferred with reason, or escalated to a named roadmap entry; an item in none of the three is dropped -- find it and triage it.
 
 ### B6. Findings review/publish
 
-Route each Findings entry to a destination: the Decisions table, Deferred items, What's Next via Carried forward, a named roadmap entry, or `devlog/AGENT_FEEDBACK.md` tagged `[A]` (agent-raised) or `[O]` (operator-raised). Attribution is operator-owned; the agent proposes a class. The Findings section is empty or holds only entries with a triage destination before the close.
+Run the findings-review/publish invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): route each entry to its destination; attribution is operator-owned (the agent proposes a class) and the Findings section is empty or holds only entries with a triage destination before the close.
 
 ### B7. Close ADRs and discussion docs whose work landed
 

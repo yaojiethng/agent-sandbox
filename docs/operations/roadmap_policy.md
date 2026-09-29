@@ -12,18 +12,18 @@ The roadmap is not updated continuously during an iteration. It is touched at de
 
 **Roadmap-update timing rule:** a roadmap task is marked `- [x]` in the same iteration its resolving handover closes -- the handover's Closed state is the trigger, not a later cleanup pass. If the operator rejects a completion claim at the pre-close gate, revert the marker to `- [ ]` and record the discrepancy as a resolved mid-iteration finding. When an iteration generates a task (an explicit named roadmap entry), add it to the roadmap at iteration end. The roadmap is the sole task list. Do not leave new tasks in the handover alone; a task without a roadmap destination can fall through.
 
-### Iteration start (Step 1)
+### Iteration start
 
 1. Read `roadmap.md`
 2. Read the task list as this iteration's pending work; do not copy it into the handover
 
-### Step 7 -- Pre-close verification
+### Pre-close write-back
 
-Per [`iteration_policy.md` Step 7](iteration_policy.md#step-7----pre-close-verification), the agent presents a pre-close summary whose Roadmap write-back section states, per task touched, the exact row change -- including compaction proposals for fully-completed task groups (outcome summaries that would replace their checklists if the operator accepts at the release gate).
+The agent presents a pre-close summary (per [`/iter`](../../workflow/coding-agent/prompts/iter.md) Step 7) whose Roadmap write-back section states, per task touched, the exact row change -- including compaction proposals for fully-completed task groups (outcome summaries that would replace their checklists if the operator accepts at the release gate).
 
-The operator reviews the compaction proposal alongside AC verification at the release gate. Accepted compaction text is applied mechanically at Steps 8-9.
+The operator reviews the compaction proposal alongside AC verification at the release gate. Accepted compaction text is applied mechanically at the close.
 
-### Iteration end (Steps 8-9)
+### Iteration end
 
 Apply the approved write-back: compaction summaries replace completed groups' checklists; generated tasks land as named entries. The mechanical rules are under [Roadmap maintenance](#roadmap-maintenance); the compaction format under [Compaction cascading](#compaction-cascading).
 
@@ -33,7 +33,7 @@ Produce all roadmap edits as targeted changes, not full-file rewrites.
 
 ## Roadmap maintenance
 
-After every iteration end (Steps 8-9), run roadmap maintenance on every node in the fractal tree whose children were modified files. Roadmap maintenance is not an event or gate -- it is a mechanical normalization step that always runs.
+After every iteration close, run roadmap maintenance on every node in the fractal tree whose children were modified files. Roadmap maintenance is not an event or gate -- it is a mechanical normalization step that always runs.
 
 ### Compaction cascading
 
@@ -75,7 +75,7 @@ Future milestone detail lives in `roadmap_future.md` to keep `roadmap.md` focuse
 
 ### Promotion check
 
-At minor loop Step 2 (scope confirmation), before presenting the scope proposal:
+At the scope gate, before presenting the scope proposal:
 
 1. Read the Milestone Summary table.
 2. Identify the milestone targeted by this iteration (from roadmap frontmatter or iteration context).

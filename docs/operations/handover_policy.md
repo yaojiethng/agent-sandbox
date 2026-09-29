@@ -44,7 +44,7 @@ Stored in the `devlog/handovers/` directory. One file per iteration. Do not over
 
 ## Types
 
-Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at scope confirmation (Steps 1-2), before the work is known in detail; the commit type at close disambiguates the subclass.
+Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at the scope gate, before the work is known in detail; the commit type at close disambiguates the subclass.
 Each iteration type must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types.
 
 | Type | Shortform | Deliverable -- what the iteration produces | Commit mapping |
@@ -67,11 +67,11 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 
 A handover has three states:
 
-**Open** -- created at iteration start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1----open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
+**Open** -- created at iteration start (`iteration_policy.md` [Minor Loop -- Invariants](iteration_policy.md#minor-loop----invariants)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
 
 **Active** -- updated throughout the iteration as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** -- finalised at iteration end (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-8-9----close-and-seed)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
+**Closed** -- finalised at iteration end (`iteration_policy.md` [close invariants](iteration_policy.md#minor-loop----invariants)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
 
 ---
 
@@ -93,7 +93,7 @@ A handover has three states:
 <Which task groups or tasks from the roadmap this iteration targets. Reference by group name; do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
 
 ## Carried forward
-<Items explicitly deferred from the prior iteration that this iteration is picking up. One row per item, with a reference to the handover it came from. Populated per `iteration_policy.md` Step 1 from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
+<Items explicitly deferred from the prior iteration that this iteration is picking up. One row per item, with a reference to the handover it came from. Populated from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
 
 | Item | From handover |
 |---|---|
@@ -118,7 +118,7 @@ At iteration end, mark each criterion as accepted or pushed to next iteration. B
 Not yet defined.
 
 ## Hot files
-<Files in scope for this iteration. Each entry is a markdown link with a one-line note on why it is in scope. Populated per `iteration_policy.md` Step 1 from the roadmap task list. Updated per `iteration_policy.md` Steps 8-9 Details as tasks complete or new files enter scope.>
+<Files in scope for this iteration. Each entry is a markdown link with a one-line note on why it is in scope. Populated from the roadmap task list. Updated as tasks complete or new files enter scope.>
 
 | File | Why in scope |
 |---|---|
@@ -212,7 +212,7 @@ Keep the blank line before the closing fence. Without it, the tag paragraph pars
 
 1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
 2. Do not alter the Status, timestamps, or any other metadata field in the corrected record.
-3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-8-9----close-and-seed)):
+3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [close invariants](iteration_policy.md#minor-loop----invariants)):
 
 - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
 - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
@@ -255,10 +255,8 @@ Policy documents that this document depends on:
 
 | Document | Governs |
 |---|---|
-| [`milestone_policy.md`](milestone_policy.md) | Major loop: milestone planning, story and investigation process |
-| [`story_policy.md`](story_policy.md) | Story lifecycle: creation, investigation trigger, graduation, closure |
-| [`study_policy.md`](study_policy.md) | Study lifecycle: structure, states, recommendation, closure |
-| [`handover_policy.md`](handover_policy.md) | Handover content rules: valid field states, null markers, format conventions, correction procedure |
+| [`handover_policy.md`](handover_policy.md) | Handover content rules -- this document |
+| [`iteration_policy.md`](iteration_policy.md) | Minor loop invariants and the handover lifecycle |
 
 ---
 

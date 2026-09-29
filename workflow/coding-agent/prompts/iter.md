@@ -60,7 +60,7 @@ If the directive slot is non-empty:
 Before creating the handover:
 
 ```text
-Range-read: docs/operations/iteration_policy.md [Step 1  --  Open handover, under Minor Loop -- Step Details](iteration_policy.md#step-1----open-handover).
+Range-read: docs/operations/iteration_policy.md [Minor Loop -- Invariants, the record-state and close invariants](iteration_policy.md#minor-loop----invariants).
 ```
 
 Create the handover per those rules. Set Status to `Active`.
@@ -114,6 +114,7 @@ Universal preconditions (`make test passes clean`, `bash -n passes`) are precond
 
 Present together:
 
+- **Restate the intent first.** State the operator's goal and the problem the work solves, so the gate confirms understood intent rather than echoing the request back. Present the scope against that intent.
 - The iteration type with a one-line justification (the operator confirms the type alongside scope)
 - What is in scope this iteration and why
 - The full acceptance criteria table with pre-verification results
@@ -130,19 +131,15 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 ## Step 6  --  Implementation and the write-back discipline
 
-The communication rules below operationalise the canonical rules in [`iteration_policy.md`](docs/operations/iteration_policy.md) During the iteration: this prompt is the runbook that walks through them; the policy is their owner.
-
 Produce changes against the confirmed scope. Write tests alongside per [`testing_policy.md`](docs/development/testing_policy.md). On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 
-The handover write-back fires at three moments:
+The record-state invariants live in [`iteration_policy.md`](docs/operations/iteration_policy.md); this step applies them to the handover. The policy owns the rules; this step is their operational face. Satisfy each record-state invariant as you produce deliverables: record decisions where they are made, write findings as they arise, and verify every record write landed in the same turn (grep the row key or content you claim to have written -- the write is not done until the grep finds it).
 
-- **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task. Do not accumulate updates  --  write immediately.
-- **On discovery:** a bug, contradiction, design gap, blocker, or new file in scope goes to Findings immediately. If it changes the approach, surface it in chat before proceeding.
-- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming. If it affects a future iteration, also write it to Deferred items or What's Next.
+The handover write-back fires at three moments in the runbook's operation:
 
-Record decisions in the Decisions table as they are made, with the document where each was recorded. If a decision is only in chat, it does not exist for the next iteration. Record new acceptance criteria as they are defined. Update Deferred items immediately when an item leaves scope.
-
-**Record write-back gate.** When announcing a record write (a finding row, a decision, a task, a roadmap row), verify it landed in the same turn. Grep the row key or content you claim to have written. The write is not done until the grep finds it.
+- **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task.
+- **On discovery:** a bug, contradiction, design gap, blocker, or new file in scope goes to Findings immediately; if it changes the approach, surface it in chat before proceeding.
+- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it affects a future iteration, also write it to Deferred items or What's Next.
 
 **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently.
 

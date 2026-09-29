@@ -14,17 +14,18 @@ Read this document at the start of any iteration. Read the relevant child docume
 | | 4. Investigate or design | [`discussion_policy.md`](discussion_policy.md) |
 | | 5. Resolve stories | [`discussion_policy.md`](discussion_policy.md) -- Stories |
 | | **Gate 3** | release sub-milestone for execution |
-| **Minor** | 1. Open handover ... 9. Seed, with the scope gate and the release gate | [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs the steps; [Minor Loop -- Step Details](#minor-loop----step-details) holds the rules |
+| **Minor** | 1. Open handover ... 9. Seed, with the scope gate and the release gate | [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs the steps; [Minor Loop -- Invariants](#minor-loop----invariants) holds the rules |
 
 ## Loop workflow prompts
 
-The loops run as invocable workflow prompts under `workflow/coding-agent/prompts/`. The procedure lives in the prompts; this policy holds the rules the prompts must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram.
+The loops run as invocable runbooks under `workflow/coding-agent/prompts/` (each runbook is a workflow prompt). The procedure lives in the runbooks; this policy holds the invariants the runbooks must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram. A runbook may evolve freely as the model improves; the invariants here are the durable half.
 
 - `/iter` -- the base interactive minor loop: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
 - `/auto` and `/parallel-auto` -- declared expansions of `/iter`: [`auto.md`](../../workflow/coding-agent/prompts/auto.md), [`parallel-auto.md`](../../workflow/coding-agent/prompts/parallel-auto.md).
 - `/milestone-start` -- opens the major loop: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
 - `/milestone-close` -- closes the major and sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md).
 - `/plan` -- major-loop planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
+- `/wrapup` -- the consolidated close for the active-operator prompts: [`wrapup.md`](../../workflow/coding-agent/prompts/wrapup.md).
 
 ---
 
@@ -75,119 +76,79 @@ The major loop is sequential at the top: a major milestone must be open before i
 
 ---
 
-## Minor Loop -- Iteration Workflow
+## Minor Loop -- Invariants
 
-The minor loop runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). The prompt owns the step sequence, the entry and exit conditions of each step, and the templates. This policy holds the rules the steps must not break. Rules that bind every step regardless of prompt:
+The minor loop runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). The prompt owns the procedure: the step sequence, the entry and exit conditions, and the templates. This section holds the invariants the procedure must not break -- the state the repository must be in at every point a commit lands. It is organized by invariant, not by procedure step: the procedure in `/iter` may evolve, and the invariant set below should not change when the runbook changes, only when the system is redesigned.
 
-- **Gate names.** The minor loop has two gates: the **scope gate** and the **release gate**. The scope gate confirms scope and acceptance criteria together; the release gate is the common acceptance gate the operator-involved workflows share, and after its release the close hands off to `/wrapup`.
-- **Gates stop for explicit operator release.** The scope gate and the release gate each stop the loop until the operator sends a forward signal. A message that reviews output without a clear forward signal does not release a gate. Packaging changes (`/package-branch`) do not release the release gate -- iteration-end actions do not begin until the operator explicitly confirms after testing.
-- **One iteration, one unit.** One iteration is one roadmap task, scoped as one vertical slice and landed as one commit with one handover; a slice crosses file kinds and directories, so a policy file, a template and a record that serve one outcome form one unit. Propose no split by default. **Split:** each part delivers an outcome of its own, closes on its own handover, and leaves the repository working after it lands; the scope proposal carries a work-unit table -- the unit, its commit type, the owned files, the handover -- released at the scope gate. **Consolidate:** no part delivers an outcome of its own; such a part is work inside one unit (a per-section, per-file, or per-layer change, or a phase of an iteration). The work-unit table an autonomous run's proposal carries is defined in [`auto.md`](../../workflow/coding-agent/prompts/auto.md). The review cadence does not change the unit count: a policy change released one section at a time is one iteration.
-- **Activity tags.** `(always)` runs without exception; `(confirmed)` requires explicit operator release; `(assessed)` check runs, skip allowed when not applicable to iteration type.
-- **Acceptance criteria describe a delta.** An AC must be an observable change -- verified by running the system, never by reading source alone. See Principles.
-- **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when the exchange resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes, the record is provisional; commit it as `wip:` per [`git_policy.md`](git_policy.md#transient-commits-fold-into-the-delivery-commit).
+**Decoupling principle.** The runbook and the invariants are independent layers. The runbook is expected to evolve as the model improves. The invariant set below should be insensitive to runbook changes: a change to `/iter` should never *require* a change here. Improving the invariant set is welcome and autonomous; what signals coupling is not that it was edited, but *why* -- an edit forced by a runbook rename or renumber is entanglement, while an edit stating a better durable rule is healthy evolution.
 
----
+**Two forms of rule.** Policy may state an invariant (a property of the state, holding at every commit gate) or a canonical procedure (a deterministic code-block guaranteed to satisfy an invariant). A loose procedure -- one with a large agent-decision space where the shape is not canonical -- is not stated here; it lives in `/iter` and references these invariants rather than restating them.
 
-## Minor Loop -- Step Details
+### Unit and scope invariants
 
-`/iter` carries the procedure of each step and gate. This section holds the rules that survive: who owns a decision, what state a handover must reach, and what a gate's exit condition requires.
-
-### Step 1 -- Open handover
-
-The roadmap maintenance check and the handover creation procedure run from [`/iter`](../../workflow/coding-agent/prompts/iter.md); the handover content rules are in [`handover_policy.md`](handover_policy.md). Rules the prompt must not break:
-
-- **Roadmap maintenance ordering.** If the prior handover's What's Next notes roadmap maintenance is pending, or the roadmap still shows a completed sub-milestone as active, run roadmap maintenance after creating the handover but before presenting the scope proposal. Record the maintenance execution in this handover's Completed table. Read the roadmap as-is at iteration open -- no compaction checks are needed at iteration open.
-
-### Step 2 -- Define the task scope
-
-The scope definition procedure runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). This step derives and defines scope; it does not stop for a release. Rules the prompt must not break:
-
+- **One iteration, one unit.** One iteration is one roadmap task, scoped as one vertical slice, landed as one commit with one handover. Propose no split by default. A slice crosses file kinds and directories, so a policy file, a template and a record that serve one outcome form one unit. **Split:** each part delivers an outcome of its own, closes on its own handover, and leaves the repository working after it lands; the scope proposal carries a work-unit table -- the unit, its commit type, the owned files, the handover -- released at the scope gate. **Consolidate:** no part delivers an outcome of its own; such a part is work inside one unit. The work-unit table an autonomous run's proposal carries is defined in [`auto.md`](../../workflow/coding-agent/prompts/auto.md). The review cadence does not change the unit count: a policy change released one section at a time is one iteration.
+- **No output before scope is confirmed.** The scope gate applies to every iteration type without exception. For housekeeping iterations, a target file list and the nature of the change is a sufficient scope proposal -- the gate still applies.
+- **The scope gate confirms understood intent.** The agent restates the operator's goal and the problem the work solves before presenting the formal gate, so the gate confirms that the agent understood the intent rather than re-presenting the request.
 - **Context sufficiency.** If context is insufficient for a scope proposal (key files missing, roadmap task list unclear, prior handover not available), the agent does not guess at scope; it asks the operator one question at a time until a proposal can be made, then the scope gate presents it.
-- **Purpose reconciliation.** Before presenting the scope proposal at the scope gate -- which also carries the acceptance criteria -- check the expressed purpose of the iteration against the current tree: a purpose may already be silently resolved by landed work (fixes, tests, skills, docs) that no record claims. If so, surface it in the proposal; the scope becomes recording or retiring the existing resolution, not re-implementing it, and the acceptance criteria are phrased against the tree as it is.
+- **Purpose reconciliation.** Before presenting the scope proposal at the scope gate -- which also carries the acceptance criteria -- check the expressed purpose of the iteration against the current tree: a purpose may already be silently resolved by landed work (fixes, tests, skills, docs) that no record claims. If so, surface it; the scope becomes recording or retiring the existing resolution, not re-implementing it.
 - **Multi-iteration sessions.** When a session contains multiple iterations, write the detailed per-step implementation plan only for the active iteration. The handover may list all iterations for orientation. Do not write iteration N+1's plan or its dependencies until iteration N's output is confirmed.
 - **Handover Scope section.** The Scope section of the handover reflects the confirmed scope before the iteration proceeds.
+- **Release is explicit where a decision is required.** Some steps require explicit operator release and some run without it; the release-gate invariant fixes where a release is required. The runbook attaches the release requirement to a step; the policy does not enumerate which steps.
 
-### Scope gate
+### Gate invariants
 
-This is the collapsed gate the operator-involved workflows share. It confirms scope **and** acceptance criteria together, and clears on a single operator approval. No output until the operator releases.
-
-- **No output before scope is confirmed.** The scope gate applies to every iteration type without exception. For housekeeping iterations, a target file list and the nature of the change is a sufficient scope proposal -- the gate still applies.
-- **Conditional scope definition.** If scope is unclear, the agent asks the operator one question at a time to define the task scope before presenting the formal scope gate. Do not guess; do not present the gate until scope is clear.
+- **Two gates.** The minor loop has two gates: the **scope gate** and the **release gate**. The scope gate confirms scope and acceptance criteria together on a single operator approval. The release gate is the common acceptance gate the operator-involved workflows share, and after its release the close hands off to [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) Part B.
+- **Gates stop for explicit operator release.** Each gate stops the loop until the operator sends a forward signal. A message that reviews output without a clear forward signal does not release a gate. Packaging changes (`/package-branch`) do not release the release gate -- iteration-end actions do not begin until the operator explicitly confirms after testing.
 - **AC satisfiability.** Every criterion is re-read and verified satisfiable given the confirmed scope; a criterion that would fail on a correct implementation is a specification bug -- resolve it now, not at pre-close.
-- The agent presents the iteration type with brief justification as part of the scope proposal -- the operator confirms the type alongside scope.
 
-### Step 5 -- Acceptance criteria (at the scope gate)
+### Acceptance-criteria invariants
 
-The AC table is defined and presented here, under the scope gate, so the numbering runs Step 4, Step 5, Step 6 without a gap. Per [`handover_policy.md`](handover_policy.md#acceptance-criteria) for AC format and null marker rules; the defining and pre-verification procedure runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). Rules the prompt must not break:
+- **Acceptance criteria describe a delta.** An AC is an observable change -- verified by running the system, never by reading source alone. See Principles.
+- **Universal preconditions are not ACs.** Universal preconditions (`make test passes clean`, `bash -n passes`) gate every iteration equally and add no iteration-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
+- **Criteria the agent cannot verify** -- manual review, head -N, operator-only access -- are marked `Operator`; criteria with a runnable command are marked `Agent [x]` (pass) or `Agent [ ]` (fail, expected in pre-state).
+- **The `Not yet defined.` marker is replaced before implementation.** The handover is the canonical location for acceptance criteria; a criterion left as `Not yet defined.` when the scope gate releases is not confirmed.
 
-- Universal preconditions (`make test passes clean`, `bash -n passes`) are preconditions, not acceptance criteria. They gate every iteration equally and add no iteration-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
-- The `Not yet defined.` marker must be replaced before Step 6.
-- Criteria the agent cannot verify -- manual review, head -N, operator-only access -- are marked `Operator`; criteria with a runnable command are marked `Agent [x]` (pass) or `Agent [ ]` (fail, expected in pre-state).
-
-Exit condition: scope and acceptance criteria confirmed together. Explicit release received.
-
-### During the iteration
-
-The communication rules the iteration must satisfy are stated here, canonically. [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs them as a procedural runbook -- the three write-back moments and where each writes. A rule here is the invariant; the prompt's restatement of it is the runbook around the rule, not a second owner.
+### Record-state invariants
 
 - **Record decisions live.** A decision is recorded in the handover's Decisions table as it is made, with the document where it was recorded. If a decision is only in chat, it does not exist for the next iteration.
-- **Write Findings immediately.** A bug, contradiction, design gap, blocker, or new file entering scope goes to Findings at once -- not accumulated. On task completion, check whether its findings belong in Findings before starting the next task. On steering received, write it to Findings (and to Deferred items or What's Next when it affects a future iteration) before resuming.
-- **Surface approach changes in chat.** If a discovery changes the current approach, surface it in chat before proceeding.
-- **Verify record writes landed.** When announcing a record write (a finding row, a decision, a task, a roadmap row), grep the row key or content claimed. A claimed record that is not verified to exist is a record defect: the write is not done until the grep finds it. This gate fires at the moment of writing; it is distinct from the roadmap write-back at Step 7/8-9, which fires at pre-close.
-- **Findings is the shared agent-managed recording surface** for the agent-feedback and gotchas records. Entries are classified at the review/publish step at iteration end, not at the moment of writing. Attribution is operator-owned; the agent proposes a class and the operator confirms it.
-- **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly (for example the test runner, not just "tests"); if a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently by extending or narrowing scope. The stop-and-ask behavior applies to the subagent and to the main agent authoring the prompt.
+- **Write Findings immediately.** A bug, contradiction, design gap, blocker, or new file entering scope goes to Findings at once -- not accumulated.
+- **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when the exchange resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes the record is provisional; commit it as `wip:` per [`git_policy.md`](git_policy.md#transient-commits-fold-into-the-delivery-commit).
+- **Verify record writes landed.** When announcing a record write (a finding row, a decision, a task, a roadmap row), grep the row key or content claimed. A claimed record that is not verified to exist is a record defect: the write is not done until the grep finds it.
+- **Findings is the shared agent-managed recording surface.** Entries are classified at the review/publish step at iteration end. Attribution is operator-owned; the agent proposes a class and the operator confirms it.
 
-### Step 7 -- Pre-close verification
+### Close invariants
 
-Step 7 is the pre-close verification before the release gate; it is not a named gate (the minor loop has two: the scope gate and the release gate). The pre-close summary's four-section format and the presentation procedure run from [`/iter`](../../workflow/coding-agent/prompts/iter.md). Rules the prompt must not break:
+- **Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it. The commit message matches the iteration type per [`git_policy.md`](git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`.
+- **Scope reconciliation.** Compare the confirmed scope against the Completed table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items.
+- **Carry-forward resolution.** Every Carried forward item must have a resolution: completed (in Completed table), re-deferred (in Deferred items with reason), or escalated to the roadmap (a named entry). A carried-forward item in none of the three is dropped -- find it and triage it.
+- **Findings review/publish.** Route each Findings entry to its destination: the Decisions table, Deferred items, What's Next (via Carried forward), `roadmap.md` (via a named task entry), or [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed.
+- **Propagation replay.** When the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears", a row-by-row replay is required: `file | change planned | status`. Every row carries `completed`, `deferred`, or `not started`; every row must be accounted for before the release gate releases: `completed`, or `deferred`/`not started` with the row in Deferred items. When a replay is not required, the summary still covers what was built, tests produced, AC status per criterion, and recommended manual checks.
+- **Scope amendment.** If any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
+- **Seed what's next.** Populate What's Next as source material for the next iteration's orientation, not a continuation directive: the next agent creates its own handover before acting on anything written here. Deferred items take priority when identifying the next iteration's scope. If a completed sub-milestone was the last in the major milestone, write "Major loop required before next iteration".
 
-- The summary shows the AC status table -- every criterion marked accepted or pushed, verifiable checks run with output shown -- and the delivery commit message (subject, body, footer), which the operator reads against the body budget in [`git_policy.md`](git_policy.md).
-- The roadmap write-back section states, per task touched, the exact row change and the completed rows the change supersedes or invalidates, per [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched). When no task was touched, it states `none worked this iteration` -- never leave the row implicit.
-- **Propagation replay.** A row-by-row replay is required when any of the following apply: the iteration applied a naming rule, structural rule, or interface change across more than two files; the scope produced an explicit file table at Step 4 (information gathering pass); or the task description used language like "all", "every", "throughout", or "wherever X appears". Every row carries a status (`completed` / `deferred` / `not started`); a row with status `deferred` or `not started` must appear in the Deferred items section before the release gate, and the release gate cannot release while any row is unresolved. When a replay is not required, the summary still covers what was built, tests produced, AC status per criterion, and recommended manual checks.
+### Canonical procedures
 
-The operator's forward signal on the pre-close summary is the release gate's release; the loop then runs Steps 8-9 via `/wrapup`. The release rule is above under Minor Loop -- Iteration Workflow.
+The procedures below are deterministic code-blocks guaranteed to satisfy the invariants above. A procedure with a large decision space is not canonical and lives in `/iter`, not here.
 
-### Release gate
+- **Squash to one delivery commit.** Given a commit range `base..HEAD`, land one delivery commit that satisfies the close-produces-one-commit invariant:
 
-The common acceptance gate the operator-involved workflows share. The AC status table and the commit message must be visible -- every criterion shown, every status populated, the commit body within the git policy's body budget. No close until operator releases. After this gate's release, the close hands off to `/wrapup`.
+```bash
+git reset --soft <base>          # keep the work staged
+git add -A
+git commit -m "<type>: ..."      # one typed commit
+```
 
-Exit condition: Explicit release received.
+A clean committed range uses the same fold; `/wrapup` runs the squash where the pile lands. The close edit and write-back are staged into the same commit, never a separate one.
 
 ### Sub-milestone close
 
-A sub-milestone follows the sequence `active -> pre-close -> close`. The close procedure runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md), which carries the review gate, compaction, changelog, record updates, escalation, and the close commit.
+A sub-milestone follows the sequence `active -> pre-close -> close`. The close procedure runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md).
 
 - A sub-milestone is `active` while substantive work is in progress.
-- A sub-milestone is `pre-close` when its implementation is complete. In pre-close, the agent completes compaction, changelog drafting, escalation clearance, and the review gate.
-- A sub-milestone is `close` when its close checklist completes. At close, no new decisions are made. Substantive work does not occur after close.
+- A sub-milestone is `pre-close` when its implementation is complete.
+- A sub-milestone is `close` when its close completes. At close, no new decisions are made. Substantive work does not occur after close.
 
 **Probation decisions are operator-owned.** For an entry under `probation` in `devlog/AGENT_FEEDBACK.md`, the operator decides dismiss / maintain / escalate. The agent does not decide a probation entry. Escalation of far-reaching correctness work defers the sub-milestone close until the escalated work is complete. Low-urgency escalation is filed as a named task at the top of the next sub-milestone. There is no dedicated `close-blocked` state; a deferred close keeps the sub-milestone `active` until pre-close passes.
-
----
-
-### Steps 8-9 -- Close and seed
-
-After the release gate, the close is mechanical -- the operator has already reviewed and approved the compaction text and AC status. The unified close for the active-operator prompts (`/iter`, `/plan`, `/document`) runs from [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) Part B; the milestone-record close runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md). Both stop for operator release at the close gate. The rules below bind the close; `/wrapup` runs them.
-
-**Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it. The commit message matches the iteration type per [`docs/operations/git_policy.md`](git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`.
-
-**Scope reconciliation -- run before writing anything else.** Compare the confirmed scope from Step 2 against the Completed table. Every item that was in scope but is not in Completed must appear in Deferred items. There must be no unaccounted items -- if something was attempted but not finished, it is deferred; if it was never started, it is deferred; if it was descoped mid-iteration, it is deferred with the reason. The Deferred items section is not complete until this check passes.
-
-**Carry-forward resolution gate -- run after scope reconciliation, before seeding What's Next.** Compare every item in the Carried forward section against the Completed table and the Deferred items section. Every carried-forward item must have a resolution: it was completed (in Completed table), it is re-deferred (in Deferred items table with reason), or it is escalated to the roadmap (a named entry in `roadmap.md`). Any carried-forward item that is absent from all three is a dropped item -- find it, triage it, and write it to one of the three destinations. The Deferred items section is not complete until this gate passes.
-
-**Findings review/publish -- run after the carry-forward resolution gate.** Route each Findings entry to its destination: the Decisions table, Deferred items, What's Next (via Carried forward), `roadmap.md` (via a named task entry), or the feedback record [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry: the agent (`[A]`) or the operator (`[O]`). **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed. **Entry condition for seeding What's Next:** this gate must pass before What's Next is written.
-
-**Scope amendment:** if any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
-
-#### Seed next iteration
-
-- Identify the next iteration's scope from two sources: the roadmap task list, and the Deferred items just written. Deferred items take priority -- they represent work already started or committed to that must not be silently dropped.
-- If this was the final iteration of a sub-milestone, note in What's Next whether roadmap maintenance has been run or is pending. This is the signal the next iteration uses in its Step 1 roadmap maintenance check.
-- List any blocking design questions explicitly -- these are not general notes, they are concrete blockers the next agent must resolve before advancing.
-- Populate the **Conclusions from this iteration** field: decisions made, approaches confirmed, dead ends ruled out this iteration. Only what the next agent would otherwise re-derive from scratch -- not a full log.
-- Populate What's Next with enough orientation that the next agent does not need to read this iteration's history: it is written for the next agent, not the current one. It is source material for that agent's Step 1, not a continuation directive; the next agent creates its own handover before acting on anything written here.
-- If the completed sub-milestone was the last in the major milestone, write "Major loop required before next iteration" in What's Next and leave the sub-milestone ID blank.
-- **If this iteration supersedes a prior implementation handover**, include a **Context handover** line in What's Next with a markdown link to the last relevant implementation handover, so the next agent can load full context directly.
 
 ---
 

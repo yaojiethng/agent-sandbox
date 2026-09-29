@@ -58,7 +58,7 @@ Evaluates a specific candidate approach. One study per candidate. Runs until a r
 
 ### Designs (`design`)
 
-Opened during the minor loop Step 3 (Design) -- see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
+Opened during the minor loop design phase -- see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
 
 #### Required sections
 
