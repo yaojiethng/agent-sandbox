@@ -99,6 +99,8 @@ After design is confirmed, read in order: the roadmap task, the design decisions
 
 This is the collapsed gate the operator-involved workflows share. It confirms scope **and** acceptance criteria together, and clears on a single operator approval. Step 2 defined the scope; this gate presents it and the AC table as one release.
 
+Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in [`roadmap_policy.md`](docs/operations/roadmap_policy.md) Milestone Promotion.
+
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
 Define the acceptance criteria in a four-column table:

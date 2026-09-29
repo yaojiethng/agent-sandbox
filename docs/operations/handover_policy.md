@@ -160,7 +160,7 @@ None.
 **Conclusions from this iteration:** decisions made, approaches confirmed, dead ends ruled out. Not a full log -- only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
 
-What's Next is context-only. It does not carry a task list. The roadmap is the sole task list; its update procedure lives in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched).
+What's Next is context-only. It does not carry a task list. The roadmap is the sole task list; the when and invariants of its update live in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched), and the runbooks execute it.
 
 ---
 

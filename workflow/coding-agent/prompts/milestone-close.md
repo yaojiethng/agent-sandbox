@@ -40,7 +40,7 @@ Replace the named milestone's task checklist with `- [x]` outcome summaries, one
 The close boundary tells how far the cascade goes:
 
 - A sub-milestone whose siblings are incomplete does not cascade upward. The parent milestone keeps its task list and its `In progress` status.
-- A full milestone whose direct children are all complete cascades to the [Top-level milestone close](docs/operations/roadmap_policy.md) sequence.
+- A full milestone whose direct children are all complete cascades to the [Top-level milestone close](docs/operations/roadmap_policy.md#top-level-milestone-close) sequence.
 
 ## Write the changelog entry
 
@@ -59,7 +59,7 @@ In `devlog/roadmap.md`:
 Give every item the milestone leaves open a recorded home before the close:
 
 - An item the next iteration will pick up goes to the handover's Deferred items.
-- An item that will not be picked up next goes to `roadmap.md` as a named task per [roadmap_policy.md](docs/operations/roadmap_policy.md) Carry-forward escalation; the operator names the destination milestone.
+- An item that will not be picked up next goes to `roadmap.md` as a named task under [roadmap-policy Roadmap task placement](docs/operations/roadmap_policy.md#filing-rules); the operator names the destination milestone.
 - An item already resident elsewhere in `roadmap.md` or `roadmap_future.md` is named, not duplicated.
 
 ## Close the milestone
