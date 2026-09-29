@@ -166,7 +166,7 @@ A sub-milestone follows the sequence `active -> pre-close -> close`. The close p
 
 ### Steps 8-9 -- Close and seed
 
-After Gate 3 is released, the close is mechanical -- the operator has already reviewed and approved the compaction text and AC status. The per-iteration close runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md); the milestone-record close runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md). Both stop for operator release at the close gate.
+After Gate 3 is released, the close is mechanical -- the operator has already reviewed and approved the compaction text and AC status. The unified close for the active-operator prompts (`/iter`, `/plan`, `/document`) runs from [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) Part B; the milestone-record close runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md). Both stop for operator release at the close gate. The rules below bind the close; `/wrapup` runs them.
 
 **Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it. The commit message matches the iteration type per [`docs/operations/git_policy.md`](git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`.
 

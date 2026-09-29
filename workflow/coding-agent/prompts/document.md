@@ -21,6 +21,7 @@ The docs-session runbook covers:
 - **Grill-me alignment.** Use grill-me to align on rewrite requirements ahead of the rewrite, not just for planning. A rewrite that changes the meaning of an existing document is a negotiation, not a mechanical edit.
 - **Workflow-document identification.** How to tell a document is a workflow document (a prompt or skill) as opposed to a reference or policy document. Workflow documents follow the presentation rules in the authoring-guidelines convention ([`prompt-authoring-conventions.md`](../../../docs/development/prompt-authoring-conventions.md)).
 - **Acceptance-criteria machinery.** How the AC machinery applies when the session type has no standard AC: a docs session defines ACs as read/lint-observable deltas rather than runtime-verified deltas.
+- **Consolidated close.** The docs-session close runs from [`/wrapup`](wrapup.md) Part B, as one of the active-operator prompts (`/iter`, `/plan`, `/document`).
 
 ## Non-goals
 

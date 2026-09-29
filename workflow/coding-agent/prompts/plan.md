@@ -54,3 +54,7 @@ Route the interview result to a write-back target. Choose one: a written report 
 Write the plan to the confirmed target: the roadmap entry, the scoped sub-milestone, decisions, and ADRs. Apply the binding rules in [`milestone_policy.md`](docs/operations/milestone_policy.md), [`iteration_policy.md`](docs/operations/iteration_policy.md) Major Loop, [`roadmap_policy.md`](docs/operations/roadmap_policy.md), and [`adr_policy.md`](docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
+
+## Close
+
+After the operator confirms the written plan, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the close steps -- roadmap write-back and compaction, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- applied to a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit. Land the plan single commit per `git_policy.md`.

@@ -34,6 +34,8 @@ The harness targets four loop kinds, with two declared expansions of `/iter`.
 | `/milestone-close` | loop kind, major and sub-milestone close | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | loop kind, major-loop planning | `workflow/coding-agent/prompts/plan.md` |
 
+`/wrapup` is a shared close runbook, not a loop prompt: the active-operator prompts (`/iter`, `/plan`, `/document`) invoke its Part B close rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt. `milestone-start`, `auto` and `parallel-auto` do not invoke it -- the milestone-record close is `/milestone-close`, and the auto runs substitute an autonomous review for the operator gate.
+
 ## State diagram
 
 The major/minor loop workflow, drawn as the invariant the loop prompts and policy must together satisfy.

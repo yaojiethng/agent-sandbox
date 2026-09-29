@@ -172,17 +172,14 @@ The acceptance criteria status table and the commit message must be visible. Eve
 
 ---
 
-## Steps 8-9  --  Close and seed
+## Steps 8-9  --  Close and seed (via /wrapup)
 
-After Gate 3 is released, these steps are mechanical. Close produces **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it. The commit message matches the iteration type per [`git_policy.md`](docs/operations/git_policy.md).
+After Gate 3 is released, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back and compaction, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B8 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](docs/operations/git_policy.md).
 
-Order:
+Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
-1. Apply the approved roadmap write-back per [`roadmap_policy.md`](docs/operations/roadmap_policy.md). Run roadmap maintenance. Keep the Completed table accurate, one row per file. Mark each acceptance criterion accepted or pushed.
-2. **Scope reconciliation** -- before writing anything else, compare the confirmed Step 2 scope against the Completed table. Every item in scope but not in Completed must be in Deferred items. No unaccounted items.
-3. **Carry-forward resolution gate** -- compare every Carried forward item against the Completed table and Deferred items. Each must be completed, re-deferred, or escalated to a named roadmap entry. A carried-forward item in none of the three is dropped -- find it and triage it.
-4. **Findings review/publish** -- route each Findings entry to a destination: Decisions table, Deferred items, What's Next via Carried forward, a named roadmap entry, or the feedback record [`devlog/AGENT_FEEDBACK.md`](../../../devlog/AGENT_FEEDBACK.md) tagged `[A]` (agent-raised) or `[O]` (operator-raised). Attribution is operator-owned; the agent proposes a class. The Findings section must be empty or contain only entries with a triage destination before close.
-5. **Seed What's Next** -- identify the next iteration's scope from the roadmap task list and Deferred items (deferred items take priority). Note whether roadmap maintenance is run or pending. List blocking design questions. Populate Conclusions and What's Next for the next agent; a superseded implementation handover gets a Context line.
+1. **Step 7 pre-close summary** (above) presents the AC table, roadmap write-back, propagation replay, and commit message to the operator before Gate 3 -- the operator, not the close, judges the work.
+2. **Findings attribution.** Pass the Findings triage destinations to `/wrapup` B6; attribution stays operator-owned.
 
 ---
 
