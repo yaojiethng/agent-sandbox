@@ -102,14 +102,6 @@ Multiple well-specified `auto` tasks run once, in the background, with the opera
 
 ---
 
-### M4.7 -- task-queue
-
-Parallel fan-out over disjoint file sets with the operator as the synchronous bottleneck. The main agent gathers a batch of tasks that touch disjoint file sets and runs each in its own worktree and branch, then re-orients the operator and asks for feedback or decisions as each worker lands. The operator's review and decision rate, not the agent's turn time, sets the wall clock. This is the extracted `fanout` use case (1), split into its own prompt; `fanout` keeps the design-option-exploration case (2).
-
-- [ ] Build the `task-queue` prompt, reusing the `parallel-auto` worktree-and-branch machinery
-
----
-
 ## Standalone
 
 ### M7 -- Security and Network hardening (Policy Layer)

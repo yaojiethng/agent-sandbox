@@ -18,7 +18,7 @@ Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to
 
 - The agent runtime is untrusted. Agents operate inside containers; no direct host access.
 - All outputs are proposals. The operator reviews, approves, and commits all changes.
-- Multi-agent coordination (parent/child dispatch) is a future milestone -- not currently active. See `roadmap_future.md` -- M4 (Multi-Agent Coordination, with M4.1-M4.7).
+- Multi-agent coordination (parent/child dispatch) is a future milestone -- not currently active. `task-queue`, the parallel fan-out prompt, is an active M3.2.1 task. See `roadmap_future.md` -- M4 (Multi-Agent Coordination, with M4.1-M4.6).
 - Output naming conventions and metadata requirements are defined per milestone as they are implemented.
 
 For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/concepts/agent_workflow.md`](../concepts/agent_workflow.md).
