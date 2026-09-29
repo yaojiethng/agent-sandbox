@@ -35,7 +35,7 @@ Example (from new-session eval):
 | I1  --  No "Step 1b" references | `iteration_policy.md` Step naming |
 | I2  --  No compaction at Step 1 | `roadmap_policy.md` Steps 8-9 |
 | I3  --  Post-close bookkeeping recovery present | `handover_policy.md` Step 1 recovery check |
-| I4  --  Scope + AC gates present | `handover_policy.md` Gates 1 and 2 |
+| I4  --  Scope gate + release gate present | `iteration_policy.md` Gate names |
 
 ### 2. Write code-based evaluators
 
@@ -83,7 +83,7 @@ When the parallel session gap is resolved, behavioral eval adds:
 
 - Given a project with handover X and roadmap state Y, does the agent create the correct handover?
 - Does divergence detection trigger under the right conditions?
-- Does the agent stop at Gate 1 / Gate 2 without producing output?
+- Does the agent stop at the scope gate or the release gate without producing output?
 
 ---
 

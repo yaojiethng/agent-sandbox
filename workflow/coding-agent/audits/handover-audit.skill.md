@@ -30,7 +30,7 @@ The agent must have run a grep or read the relevant file during the iteration to
 
 ## Run Conditions
 
-- **When:** At Gate 2 (before implementation) for design-to-source integrity and structured output format. At Step 7 (pre-close) for validation tool coverage.
+- **When:** At the scope gate (before implementation) for design-to-source integrity and structured output format. At Step 7 (pre-close) for validation tool coverage.
 - **Who:** Agent self-check. Not operator-invoked.
 - **Severity:** Warning  --  flags do not block gates but must be triaged before iteration close.
 

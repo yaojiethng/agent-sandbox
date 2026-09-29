@@ -37,7 +37,7 @@ Identify the task from the operator's request before reading any other files:
 3. The marker signals "ready for operator verification at Step 7"
 4. If the operator disagrees at Step 7, revert to `- [ ]`, record discrepancy as resolved mid-iteration finding, reformulate scope, rewrite the incomplete task
 5. Compaction: replace a fully-completed task group's checklist with a 1-3 sentence outcome summary. Keep the `- [x]` marker. Remove file lists, implementation notes, "Depends on" / "Prerequisite for" lines referencing now-completed items. Preserve design doc links and "Not in scope" / deferred tags.
-6. Compaction proposal is presented at Step 7 for operator review; applied mechanically at Steps 8-9 after Gate 3 release.
+6. Compaction proposal is presented at Step 7 for operator review; applied mechanically at Steps 8-9 after the release gate.
 7. Compaction applies at every level of nesting  --  a sub-group within an incomplete parent compacts independently once its own items are all complete.
 8. Multi-level: when all subtasks are done, compact to a single task-level summary.
 9. Remove superseded items immediately on supersession. Rationale in iteration handover.

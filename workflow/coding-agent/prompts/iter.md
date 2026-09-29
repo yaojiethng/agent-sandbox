@@ -67,44 +67,41 @@ Create the handover per those rules. Set Status to `Active`.
 
 ---
 
-## Gate 1  --  Confirm scope (Step 2)
+## Step 2  --  Define the task scope
 
 Derive scope from the argument, the prior handover, and the roadmap. Read any additional files needed to make the scope concrete  --  what files will change, what will not change, and why.
+
+If scope cannot be confidently derived, ask the operator one question at a time to define the task scope. Do not guess. Only when scope is clear do you continue to the design step below.
 
 **One iteration, one unit.** One iteration is one roadmap task, scoped as one vertical slice, landed as one commit with one handover. Propose no split by default; a slice that cannot deliver the outcome in one unit names the handling method (split or consolidate).
 
 **Purpose reconciliation.** Before presenting the scope, check the iteration's expressed purpose against the current tree. A purpose already silently resolved by landed work becomes recording or retiring that resolution, not re-implementing it.
 
-Present:
-
-- The iteration type with a one-line justification (the operator confirms the type alongside scope)
-- What is in scope this iteration and why
-- What is explicitly deferred and why
-- Any questions that must be resolved before work can begin
-
-Everything you present is a proposal: the operator reviews, approves, and commits (the project [`AGENTS.md`](../../AGENTS.md) Output Format owns this rule).
-
-If scope cannot be confidently derived, ask the operator one question at a time. Do not guess. Do not produce any file, code, or structural output until the operator confirms scope and sends an explicit release.
-
-Stop here and wait for an explicit release before continuing.
+This step defines scope but does not stop for a release. The scope gate below confirms it together with the acceptance criteria.
 
 ---
 
 ## Step 3  --  Design
 
-After Gate 1 is released, skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](docs/operations/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per [`roadmap_policy.md`](docs/operations/roadmap_policy.md). If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](docs/operations/adr_policy.md)).
+Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](docs/operations/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per [`roadmap_policy.md`](docs/operations/roadmap_policy.md). If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](docs/operations/adr_policy.md)). Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
 
-Exit condition: all design questions resolved and recorded, ADR created if applicable, and the operator confirmed.
+Exit condition: all design questions resolved and recorded, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
 
 ---
 
 ## Step 4  --  Information gathering pass
 
-After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together before Gate 2 per [`documentation_policy.md`](docs/operations/documentation_policy.md). (Assessed step: run unless not applicable to the iteration type.)
+After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate per [`documentation_policy.md`](docs/operations/documentation_policy.md). (Assessed step: run unless not applicable to the iteration type.)
 
-## Step 5  --  Acceptance criteria
+---
 
-Once Gate 1 is released, define the acceptance criteria in a four-column table:
+## Scope gate
+
+This is the collapsed gate the operator-involved workflows share. It confirms scope **and** acceptance criteria together, and clears on a single operator approval. Step 2 defined the scope; this gate presents it and the AC table as one release.
+
+### Step 5 -- Acceptance criteria (at the scope gate)
+
+Define the acceptance criteria in a four-column table:
 
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
@@ -115,15 +112,21 @@ Universal preconditions (`make test passes clean`, `bash -n passes`) are precond
 
 **When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs  --  they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see `testing_policy.md`).
 
-Present the full table with pre-verification results. Wait for the operator to confirm the acceptance criteria. Once confirmed, update the handover  --  replace `Not yet defined.` with the confirmed criteria. The handover is the canonical location for AC.
+Present together:
+
+- The iteration type with a one-line justification (the operator confirms the type alongside scope)
+- What is in scope this iteration and why
+- The full acceptance criteria table with pre-verification results
+- What is explicitly deferred and why
+- Any questions that must be resolved before work can begin
+
+Re-read each criterion and verify it is satisfiable given the confirmed scope. A criterion that would fail on a correct implementation is a specification bug  --  resolve it now, not at pre-close.
+
+Everything you present is a proposal: the operator reviews, approves, and commits (the project [`AGENTS.md`](../../AGENTS.md) Output Format owns this rule). Do not produce any file, code, or structural output until the operator releases this gate.
+
+Stop here and wait for an explicit release before continuing. On release, update the handover  --  replace `Not yet defined.` with the confirmed acceptance criteria. The handover is the canonical location for AC.
 
 ---
-
-## Gate 2  --  Stop before implementation
-
-Before releasing, present the acceptance criteria table to the operator. Every criterion must be visible, not implied. Re-read each criterion and verify it is satisfiable given the confirmed scope. A criterion that would fail on a correct implementation is a specification bug  --  resolve it now, not at pre-close. Do not begin implementation until the operator releases this gate.
-
-Exit condition: Operator confirmed the criteria are satisfiable. Explicit release received.
 
 ---
 
@@ -149,9 +152,9 @@ Record decisions in the Decisions table as they are made, with the document wher
 
 ## Step 7  --  Pre-close verification
 
-Step 7 is a mandatory gate before iteration end. Present a pre-close summary and wait for an explicit operator release before advancing to Steps 8-9. The summary has four sections:
+Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has four sections:
 
-1. **Acceptance criteria** -- table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the Step 5 format; this table answers "did it pass?", not "who can verify?".
+1. **Acceptance criteria** -- table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the scope-gate AC-presentation format from Step 5; this table answers "did it pass?", not "who can verify?".
 2. **Roadmap write-back** -- per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Per [`roadmap_policy.md`](docs/operations/roadmap_policy.md). When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
@@ -166,19 +169,19 @@ The operator releases this gate with an explicit forward signal. A message that 
 
 ---
 
-## Gate 3  --  Stop before close
+## Release gate
 
-The acceptance criteria status table and the commit message must be visible. Every criterion shown, every status populated, the commit body within the git policy's body budget. Do not close until the operator releases. Exit condition: explicit release received.
+This is the common acceptance gate the operator-involved workflows share. The acceptance criteria status table and the commit message must be visible. Every criterion shown, every status populated, the commit body within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup`. Exit condition: explicit release received.
 
 ---
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
-After Gate 3 is released, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back and compaction, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B8 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](docs/operations/git_policy.md).
+After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back and compaction, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B8 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](docs/operations/git_policy.md).
 
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
-1. **Step 7 pre-close summary** (above) presents the AC table, roadmap write-back, propagation replay, and commit message to the operator before Gate 3 -- the operator, not the close, judges the work.
+1. **Step 7 pre-close summary** (above) presents the AC table, roadmap write-back, propagation replay, and commit message to the operator before the release gate -- the operator, not the close, judges the work.
 2. **Findings attribution.** Pass the Findings triage destinations to `/wrapup` B6; attribution stays operator-owned.
 
 ---

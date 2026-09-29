@@ -149,7 +149,7 @@ Agent output is complete and ready for review when it follows the format rules b
 
 **Work unit and iteration scoping.** One iteration is one roadmap task, scoped as one vertical slice and landed as one commit with one handover. Propose no split by default. When one slice cannot deliver the task's outcome, name the handling method you propose:
 
-- **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at Gate 1.
+- **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at the scope gate.
 - **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
 
 See [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) for the criteria and the close mechanics.

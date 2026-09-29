@@ -253,6 +253,13 @@ scoped: M3.2.1 -- `/iter` gate collapse and per-prompt quality pass (roadmap row
 legacy: none
 mitigation: the operator previously expected to respond to the agent only at Gate 1, Gate 2, and Gate 3. After the loop-to-workflow move, `/iter` stops for confirmation at nearly every step, and each pause reads as a gate, so the operator approves step after step instead of only at the three decision points. The gate-collapse and quality pass (roadmap row 83) must restore gates as the only confirmation points and cut the per-step pauses that add no operator decision. The quality bar is: a step is a gate only when the operator must decide something; a step that only reports progress or awaits an acknowledge signal should not pause the loop. Recorded in handover `20260929-08`.
 
+### [O] 2026-09-29  --  Conversational numbering must be unambiguous
+
+state: open
+scoped: M3 T1 -- documentation conventions; `documentation_policy.md` `### Numbering and cross-references`
+legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
+mitigation: when the agent presents several numbered or lettered sets in one exchange -- a review's numbered findings beside lettered option choices -- the operator's index reply can map to the wrong axis, and the agent must guess. Present exactly one indexable axis per presentation, or name each axis so the reply is self-mapping ("finding 1", "option A"). Do not place two independent numbering schemes side by side and let the operator index one of them. The numbering convention in `documentation_policy.md` `### Numbering and cross-references` must state this rule. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
+
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work

@@ -19,9 +19,9 @@ The roadmap is not updated continuously during an iteration. It is touched at de
 
 ### Step 7 -- Pre-close verification
 
-Per [`iteration_policy.md` Step 7](iteration_policy.md#step-7--pre-close-verification), the agent presents a pre-close summary whose Roadmap write-back section states, per task touched, the exact row change -- including compaction proposals for fully-completed task groups (outcome summaries that would replace their checklists if the operator accepts at Gate 3).
+Per [`iteration_policy.md` Step 7](iteration_policy.md#step-7--pre-close-verification), the agent presents a pre-close summary whose Roadmap write-back section states, per task touched, the exact row change -- including compaction proposals for fully-completed task groups (outcome summaries that would replace their checklists if the operator accepts at the release gate).
 
-The operator reviews the compaction proposal alongside AC verification at Gate 3. Accepted compaction text is applied mechanically at Steps 8-9.
+The operator reviews the compaction proposal alongside AC verification at the release gate. Accepted compaction text is applied mechanically at Steps 8-9.
 
 ### Iteration end (Steps 8-9)
 
