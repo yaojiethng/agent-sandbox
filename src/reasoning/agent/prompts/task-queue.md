@@ -1,5 +1,5 @@
 ---
-description: Run a task fan-out as a fork and a join: per-task worktrees, a blocking join that hands each worker-requested break point to the operator, both re-queue routes, a usable or not-usable termination audit, a write-back proposal judged by the operator, a bring-back that writes a file set and prunes the worktree, and a clean close. Use when several segments of work need the operator's decision at their own boundaries.
+description: "Run a task fan-out as a fork and a join: per-task worktrees, a blocking join that hands each worker-requested break point to the operator, both re-queue routes, a usable or not-usable termination audit, a write-back proposal judged by the operator, a bring-back that writes a file set and prunes the worktree, and a clean close. Use when several segments of work need the operator's decision at their own boundaries."
 argument-hint: "[task list - the tasks to fork, each a track with a worker - optional]"
 ---
 
