@@ -8,6 +8,8 @@
  *   joinOp     - the join: record, schedule, and trigger as one derivation
  *                (I11), so it holds every gate the three ops hold and
  *                adds nothing of its own
+ *   joinAllOp  - the same join across a whole pool of tasks, under one
+ *                derivation; a fold, not a new action
  *   recordOp   - referential integrity (I3), exactly-once request ids (I1),
  *                one pending break point per task (serialized segments)
  *   scheduleOp - legal transitions (I4)
@@ -618,4 +620,41 @@ export function joinOp(state: RunState, p: JoinParams, at: string): OpResult<Joi
 	next = t.state;
 	events.push(...t.events);
 	return { state: next, events, data: { entry: t.data.entry, task: t.data.task, recorded } };
+}
+
+export interface JoinedBatch {
+	/** One delivery per task of the pool, in the order the pool named them. */
+	joins: Joined[];
+}
+
+/**
+ * The pool join: the join transition applied to every task of the pool in
+ * one derivation, so the whole batch records, schedules, and triggers in
+ * the one load-derive-save the caller holds the lock for (I11).
+ *
+ * A pool is N joins of the one action, not a new action: the table
+ * carries no pool row, and every gate a single join holds is the gate
+ * this fold holds, task by task. A task of the pool that the fold refuses
+ * stops the whole fold, and a derivation that throws is never saved, so a
+ * pool is delivered whole or not at all - never partly delivered with a
+ * task's break point left unaccounted for (I1).
+ *
+ * The refusal is the one the single join raises, contention included, so
+ * the caller re-scans the whole pool on a contention rather than the
+ * tasks that happened to be applied.
+ */
+export function joinAllOp(state: RunState, ps: JoinParams[], at: string): OpResult<JoinedBatch> {
+	if (ps.length === 0) {
+		throw new TaskQueueError("request-invalid", "a pool join names no task; name the tasks to join");
+	}
+	const events: JournalEvent[] = [];
+	const joins: Joined[] = [];
+	let next = state;
+	for (const p of ps) {
+		const r = joinOp(next, p, at);
+		next = r.state;
+		events.push(...r.events);
+		joins.push(r.data);
+	}
+	return { state: next, events, data: { joins } };
 }

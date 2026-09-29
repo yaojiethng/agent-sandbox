@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_taskq.sh
-# TEST_DEADLINE: 180
+# TEST_DEADLINE: 420
 # The Node/TypeScript conformance suite of the task-queue pi-extension
 # (src/reasoning/providers/pi/config/agent/extensions/task-queue): the queue
 # invariants I1-I13, the transition table, the ownership lock, the
@@ -18,15 +18,25 @@ source "$(dirname "${BASH_SOURCE[0]}")/libs/test_common.sh"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TESTSQ_DIR="$REPO_ROOT/tests/taskq"
 
-# The registered node test files of the conformance suite.
+# The registered node test files of the conformance suite. Two of them are
+# gates over the suite rather than cases in it: `invariants.test.ts` is the
+# named invariant report, and `mutation.test.ts` replays a catalog of
+# deliberate breaks and fails unless the suite turns red against each one.
+# The mutation gate copies the extension and the suite into a temp mirror
+# per row and runs a child process per row, so the deadline above leaves
+# room for it on a busy host.
 NODE_TEST_FILES=(
   bench.test.ts
   extension-load.test.ts
+  invariants.test.ts
   join.test.ts
   lifecycle.test.ts
   lock.test.ts
   merge.test.ts
+  mutation.test.ts
   ops.test.ts
+  pool-join.test.ts
+  pool-wired.test.ts
   protocol.test.ts
   queue.test.ts
   state.test.ts

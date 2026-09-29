@@ -188,6 +188,21 @@ Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "u
 
 Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
 
+## Node
+
+### [A] 2026-09-29  --  A nested `node --test` inherits `NODE_TEST_CONTEXT` and exits 0 without running anything
+
+state: open
+scoped: none
+legacy: none
+mitigation: when a test spawns `node --test` as a child, delete `NODE_TEST_CONTEXT` from the child's environment. Before trusting a child test runner's exit status, confirm the child ran its file: the recursive-run guard warns on stderr and exits 0, so a harness that reads the status alone records every run as green.
+
+The mutation gate for the task-queue extension replays each catalog row in a temp mirror and runs the owning suite in a child process. Its first run reported all 22 rows as survivors in 10 seconds, which is faster than the suites it claimed to have run. The cause was the harness, not the extension: `node --test` sets `NODE_TEST_CONTEXT=child-v8` in its children, and a child that inherits the marker and receives a `--test` argument treats the invocation as a recursive run. It prints "node:test run() is being called recursively within a test file. skipping running files." on stderr, runs nothing, and exits 0. Every mutant therefore looked uncaught, and the failure mode is a gate that reports a clean result on a broken subject. The tell is the wall time: a gate that replays suites finishes faster than the suites, and it is the one signal available before the subjects are re-checked by hand.
+
+The family is the [A] 2026-09-25 entry on a mutation that is not a mutation, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
+
+---
+
 ## Gotchas  --  operator-raised entries
 
 Entries raised by the operator (tagged `[O]`), migrated from the former `devlog/GOTCHAS.md` (deleted in the unification).

@@ -39,7 +39,7 @@ The extension holds these rules; a violation is a tool error, and the error name
 - Every recorded request enters the queue exactly once. A request id recorded twice is rejected.
 - Every entry passes request -> scheduled -> triggered, in that order, and triggers at most once. The join performs the whole passage in one call, so the queue never rests in the first two states.
 - Entries trigger in request order per task. Cross-task order is the primary's choice; the queue does not constrain it.
-- One break point waits on the operator at a time. The join reports the undecided one instead of delivering a second payload beside it.
+- One join-unit waits on the operator at a time, and a join-unit is a single break point or one pool batch. The join reports the undecided one instead of delivering another payload beside it.
 - Every entry references exactly one task, one worker, and one working directory; the references are the same at trigger as at record.
 - A task accepts new segments only while `forked` or `active`. `terminated` and `retired` are closed.
 - A task audits only after its worker requested the terminal break point with nothing pending.
@@ -54,10 +54,19 @@ The extension holds these rules; a violation is a tool error, and the error name
 
 - **It blocks.** The call blocks the primary's turn until a break point is ready or the timeout expires. `timeoutMs` is required and bounds the block. Prefer a generous timeout over any sleep, and never sleep and re-poll: the call is the wait, and a timeout is a timed wait that changes nothing. A timeout that is not a finite positive number is refused at once, and a `taskId` no task holds is refused at once rather than at the end of the wait.
 - **It subsumes the whole transition.** The call scans the task worktrees, records the worker's request, schedules it, triggers it, and returns the join payload. No other tool deploys a break point, so the call cannot be made out of order.
-- **It delivers at most one break point, exactly once.** A retry neither re-delivers nor skips a break point.
+- **It delivers at most one break point, exactly once.** A retry neither re-delivers nor skips a break point. Pool mode delivers one break point per task of the pool, each exactly once, in one write.
 - **It holds the operator's one hold.** While a delivered break point is undecided, the call returns that hold, the worker's message, and the step that clears it. A regular break point clears when the worker requests again; a terminal one clears at the audit. A worker that requested again already decided its previous break point, terminal or not. A re-queued task holds on the worker's next request: the re-queue the not-usable audit asked for is already recorded, so the hold never names it a second time.
-- **It selects.** The named `taskId` wins; the default is the earliest forked task that has a break point ready, and inside a task the earliest request.
+- **It selects the mode and the task.** The selector picks one of three modes: `taskIds` joins a pool, `taskId` joins that one task, and naming neither joins any task. In the default mode the earliest forked task with a break point ready wins, and inside a task the earliest request.
 - **It reports a timeout as a result, not an error.** A `timeout` outcome means no break point became ready. Nothing was recorded, scheduled, or triggered.
+
+## The pool mode
+
+`taskIds` turns the join into a pool join. Read the task list from `taskq_status`, pass the ids in the order the operator should see them, and the call blocks until every one of them has a break point ready:
+
+- **The batch is one transition.** The call records, schedules, and triggers every break point of the pool in one write, so the whole set moves together and one payload comes back per task, in the order the pool named them. A task that moved under the call holds the whole batch back and the pool is re-scanned as a unit, so no task of a pool is ever delivered half.
+- **A pool timeout is inert like any other.** It triggers nothing, and it names the tasks of the pool that did have a break point, so the primary can join any of them on its own, or the whole pool again.
+- **A pool is a batch milestone, not a shortcut past the operator.** The operator holds every break point of the batch until each is cleared, exactly as with a single one. `taskq_status` reports the whole held unit as `holdTasks`.
+- **A pool is refused at once when it could never deliver.** An empty list, a repeated task, a task no fork holds, a task the queue has closed to requests, and naming both `taskId` and `taskIds` are all refused before the block rather than at the end of it.
 - **It archives what it admitted.** The archive holds the exact bytes of the request document the join validated, so the record and the document can never diverge.
 - **It carries the diagnostics.** The payload names the uncommitted paths left in the worker's worktree, which the branch diff does not carry, and the protocol notices the scan collected: a broken request document, one whose name and content disagree, a worker that requested again before its hold cleared, and a request document a task the queue has already closed can never admit. A segment whose only change is the worker's protocol files reports no deliverable at all, never the protocol diff as a segment.
 
@@ -111,9 +120,9 @@ The primary does not read the request documents: `taskq_join` reads them, valida
 
 ## Step 3 - Join
 
-Call `taskq_join` with a generous `timeoutMs` and let it block. The call returns the join payload: the task, the worker, the worktree, the branch, what the worker asks, and the segment the worker changed since the last break point.
+Call `taskq_join` with a generous `timeoutMs` and let it block. The call returns the join payload: the task, the worker, the worktree, the branch, what the worker asks, and the segment the worker changed since the last break point. For a batch milestone, pass `taskIds` and hold on the pool of payloads the call returns in one go.
 
-Hold at each delivered break point. Present the operator the payload: what changed, what the worker asks, what is uncommitted, and what the options are. Then wait. The hold is the point of the primitive; do not advance, do not bring back, do not dispatch the next segment until the operator decides.
+Hold at each delivered break point. Present the operator the payload: what changed, what the worker asks, what is uncommitted, and what the options are. Then wait. The hold is the point of the primitive; do not advance, do not bring back, do not dispatch the next segment until the operator decides. A pool batch is held the same way, one break point at a time: clear every break point of the batch before joining again.
 
 A call that returns `timeout` is normal while a worker runs its segment: join again. A call that returns `held` names the break point the operator still holds, what the worker asked, and the step that clears it: do that step before joining again.
 
@@ -208,7 +217,7 @@ A closed run's state directory stays put, and every tool then reports the run cl
 - One task per worktree, one branch per task, one baseline for all tasks, a branch rather than a detached HEAD, and a worktree location the fork owns.
 - The queue records only requested break points, never marks their kind, and admits a request id exactly once.
 - Break points trigger in request order per task, at most once, and only through request -> scheduled -> triggered - a passage the join performs in one call.
-- One break point waits on the operator at a time; the join delivers the next one only after the hold clears.
+- One join-unit waits on the operator at a time, and a join-unit is a single break point or one pool batch; the join delivers the next one only after the hold clears.
 - Every entry references exactly one task, one worker, and one working directory, and the references are the same at trigger as at record.
 - No worker write lands in the primary tree except through the primary's bring-back; the main tree is mutated only by the primary.
 - The audit runs only after the worker's terminal request, never mid-segment. A `usable` audit is the only way to `terminated`, and a `not-usable` one is answered by a re-queue, not by a second audit.

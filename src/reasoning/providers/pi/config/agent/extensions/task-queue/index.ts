@@ -3,14 +3,16 @@
  *
  * The extension gives the primary a fork and a join. The fork cuts a
  * worker worktree and branch at a location the tool owns. The join is
- * the one blocking call through which a break point is waited for and
- * handled: one call records, schedules, and triggers it as one atomic
+ * the one blocking call through which break points are waited for and
+ * handled: one call records, schedules, and triggers them as one atomic
  * transition and returns the join payload, so the operator's decision is
- * the only thing the primary drives. Around the join sit the termination
- * audit, the two re-queue routes, the write-back proposal, the
- * bring-back, and the clean close. The worker side gets one tool that
- * writes its break-point requests into its own worktree; the request
- * protocol is plain files, so any worker can participate.
+ * the only thing the primary drives. The join has three modes and the
+ * selector picks one: any task, one named task, or a whole pool of tasks
+ * in one batch. Around the join sit the termination audit, the two
+ * re-queue routes, the write-back proposal, the bring-back, and the clean
+ * close. The worker side gets one tool that writes its break-point
+ * requests into its own worktree; the request protocol is plain files, so
+ * any worker can participate.
  *
  * The queue and the gates are pure modules (queue.ts, tasks.ts, ops.ts,
  * join.ts, transitions.ts); persistence, the ownership lock, git, and
@@ -33,8 +35,8 @@ import { defineTool, withFileMutationQueue, type ExtensionAPI, type ExtensionCon
 import { TaskQueueError, type TaskQueueErrorCode } from "./errors.ts";
 import { assertFileSet, canBringBack, canClose, canPropose, canRequeue, type TaskRecord } from "./tasks.ts";
 import type { RequeueRoute } from "./transitions.ts";
-import { bringBackOp, closeOp, forkOp, integrityCounts, joinOp, nowIso, proposalOp, requeueOp, verifyOp, type OpResult } from "./ops.ts";
-import { heldBreakPoint, scanReady, waitForBreakPoint, type HeldResult, type JoinResult } from "./join.ts";
+import { bringBackOp, closeOp, forkOp, integrityCounts, joinAllOp, joinOp, nowIso, proposalOp, requeueOp, verifyOp, type JoinParams, type OpResult } from "./ops.ts";
+import { heldBreakPoint, heldUnit, scanReady, waitForBreakPoint, type HeldResult, type JoinResult, type PoolJoinedResult } from "./join.ts";
 import { Run } from "./run.ts";
 import { loadState, statePathOf, type RunState } from "./state.ts";
 import type { LockScope, SectionLive } from "./lock.ts";
@@ -163,6 +165,8 @@ const forkSchema = Type.Object({
 const joinSchema = Type.Object({
 	timeoutMs: Type.Integer({ minimum: 100, maximum: 3_600_000 }),
 	taskId: Type.Optional(Type.String({ minLength: 1 })),
+	// Pool mode: the model reads the task list from taskq_status.
+	taskIds: Type.Optional(Type.Array(Type.String({ minLength: 1 }), { minItems: 1 })),
 });
 
 const verifySchema = Type.Object({
@@ -283,7 +287,7 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_join",
 			"Join a worker break point",
-			"Block until a worker break point is ready, then deliver it: one call scans the task worktrees, records the worker request into the queue, schedules it, and triggers it as one atomic transition, and returns the join payload - task, worker, worktree, the worker message, the segment the worker changed since the last break point, and any uncommitted path left in its worktree. This is the queue fork(2)/wait(2): it is the only way a break point is deployed, so the call cannot be made out of order and there is nothing to drive in between. Set timeoutMs to bound the block and prefer it to any sleep; a timeout return is inert (nothing was recorded, scheduled, or triggered) and is normal while a worker runs its segment. One break point waits on the operator at a time: while a delivered break point is undecided, the call returns that hold and the step that clears it instead of a second payload. Name taskId to join that task; the default is the earliest-forked ready task, and inside a task the earliest request. A taskId no task holds is refused at once instead of at the end of the timeout. Never sleep and re-poll: this call is the wait.",
+			"Block until worker break points are ready, then deliver them: one call scans the task worktrees, records the worker requests into the queue, schedules them, and triggers them as one atomic transition, and returns the join payload - task, worker, worktree, the worker message, the segment the worker changed since the last break point, and any uncommitted path left in its worktree. This is the queue fork(2)/wait(2): it is the only way a break point is deployed, so the call cannot be made out of order and there is nothing to drive in between. Set timeoutMs to bound the block and prefer it to any sleep; a timeout return is inert (nothing was recorded, scheduled, or triggered) and is normal while a worker runs its segment. Never sleep and re-poll: this call is the wait. The selector picks one of three modes: name taskIds to join a pool, name taskId to join that one task, and name neither to join any task. Pool mode blocks until every named task has a break point ready, then records, schedules, and triggers the whole set in one transition - the batch moves as one, so a task that moved under it holds the whole batch back - and returns one payload per task, in the order the pool named them; read the task list from taskq_status. A pool timeout is inert like any other and names the tasks of the pool that had a break point, so the caller can join any of them on its own, or the whole pool again. One join-unit waits on the operator at a time, and a join-unit is a single break point or one pool batch: while the operator has not decided it, the call returns that hold and the step that clears it instead of another payload. A taskId no task holds, a taskIds list that names no task or the same task twice, a task the queue has closed to requests, and naming both selectors are all refused at once instead of at the end of the timeout.",
 			joinSchema,
 			async (params, ctx, signal) => {
 				const run = openRun(ctx);
@@ -293,30 +297,27 @@ export default function (pi: ExtensionAPI): void {
 						current: () => run.current(),
 						join: async (p) => {
 							const data = await runTool(ctx, { taskId: p.taskId }, (state, live) => {
-								// The head the payload's segment was measured from
-								// is read again here, under the lock, and a worker
-								// that committed since is a contention: recording
-								// the older head would make the re-queue roll back
-								// past a commit the operator never saw.
-								const task = state.tasks[p.taskId];
-								if (p.baseHead !== undefined && task) {
-									live.beat();
-									const head = worktreeHead(task.workdir);
-									if (head !== p.head) {
-										throw new TaskQueueError(
-											"join-contended",
-											`task ${p.taskId} is at ${head}, not ${p.head}; the worker committed under this join, so the segment and the uncommitted notice are read again`,
-										);
-									}
-								}
+								assertHeadUnmoved(state, live, p, "join");
 								return joinOp(state, p, nowIso());
 							});
 							return { data };
+						},
+						joinAll: async (ps) => {
+							// One locked transaction for the whole pool: the
+							// batch records, schedules, and triggers together
+							// or not at all (I11). The lock names no single
+							// task, because the section drives them all.
+							const data = await runTool(ctx, undefined, (state, live) => {
+								for (const p of ps) assertHeadUnmoved(state, live, p, "pool");
+								return joinAllOp(state, ps, nowIso());
+							});
+							return { data: data.joins };
 						},
 					},
 					{
 						timeoutMs: params.timeoutMs,
 						taskId: params.taskId,
+						taskIds: params.taskIds,
 						signal,
 						onJoin: (payload) => {
 							if (ctx.hasUI) {
@@ -331,10 +332,38 @@ export default function (pi: ExtensionAPI): void {
 		),
 	);
 
+	/**
+	 * The head the payload's segment was measured from is read again here,
+	 * under the lock. A worker that committed since is a contention:
+	 * recording the older head would make the re-queue roll back past a
+	 * commit the operator never saw, so the delivery is refused and the
+	 * join re-scans.
+	 */
+	function assertHeadUnmoved(state: RunState, live: SectionLive, p: JoinParams, subject: string): void {
+		const task = state.tasks[p.taskId];
+		if (p.baseHead === undefined || !task) return;
+		live.beat();
+		const head = worktreeHead(task.workdir);
+		if (head !== p.head) {
+			throw new TaskQueueError(
+				"join-contended",
+				`task ${p.taskId} is at ${head}, not ${p.head}; the worker committed under this ${subject}, so the segment and the uncommitted notice are read again`,
+			);
+		}
+	}
+
 	/** The join result plus the next step it names for the primary. */
 	function joinResultOf(result: JoinResult): Record<string, unknown> {
 		switch (result.outcome) {
 			case "joined":
+				if ("mode" in result) {
+					const pool: PoolJoinedResult = result;
+					return {
+						...pool,
+						note:
+							`${pool.payloads.length} break point(s) delivered as one pool batch. The operator now holds every break point in it; the next join reports the hold until each is cleared`,
+					};
+				}
 				return result;
 			case "held": {
 				const hold: HeldResult = result;
@@ -346,7 +375,13 @@ export default function (pi: ExtensionAPI): void {
 				};
 			}
 			case "timeout":
-				return { ...result, note: "no break point became ready within the timeout; nothing was consumed. Join again, or call taskq_status" };
+				return {
+					...result,
+					note:
+						result.missing === undefined
+							? "no break point became ready within the timeout; nothing was consumed. Join again, or call taskq_status"
+							: `no break point became ready within the timeout; nothing was consumed. Pool task(s) ${result.missing.join(", ")} had none; join the ready one(s) ${result.ready?.join(", ") || ""} by taskId, join the pool again, or call taskq_status`,
+				};
 			case "aborted":
 				return { ...result, note: "the call was aborted before a break point was ready; nothing was consumed" };
 		}
@@ -653,14 +688,15 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_status",
 			"Queue status",
-			"Snapshot of the run: the tasks with their phases, each task's verification record, its proposal, and the file set its bring-back wrote; every queue entry with its state; the pending entries; the break point the operator holds; and the integrity counts. One primary writes one state directory.",
+			"Snapshot of the run: the tasks with their phases, each task's verification record, its proposal, and the file set its bring-back wrote; every queue entry with its state; the pending entries; the break point the operator holds, with the whole held join-unit; and the integrity counts. Read the task ids from here to name a pool join. One primary writes one state directory.",
 			Type.Object({}),
 			async (_params, ctx) => {
 				const run = openRun(ctx);
 				const state = run.current();
 				// The hold is what the join would report, so an observer and the
 				// driver read the queue the same way.
-				const hold = heldBreakPoint({ stateDir: run.stateDir }, state, scanReady(state));
+				const scan = scanReady(state);
+				const hold = heldBreakPoint({ stateDir: run.stateDir }, state, scan);
 				return {
 					closed: state.closed,
 					stateDir: state.stateDir,
@@ -680,6 +716,7 @@ export default function (pi: ExtensionAPI): void {
 						proposalPaths: t.proposal?.paths ?? undefined,
 					})),
 					hold: hold ?? undefined,
+					holdTasks: heldUnit(state, scan),
 					pending: state.entries.filter((e) => e.state !== "triggered").map((e) => ({ entryId: e.entryId, taskId: e.taskId, state: e.state })),
 					entries: state.entries.map((e) => ({ entryId: e.entryId, taskId: e.taskId, state: e.state })),
 				};
