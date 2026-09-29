@@ -11,6 +11,7 @@ import { TaskQueueError } from "../../src/reasoning/providers/pi/config/agent/ex
 import { freshState, loadState, saveState } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
 import { appendJournal, readJournal } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/record.ts";
 import { Run } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts";
+import { lockPathOf } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/lock.ts";
 import { forkOp, recordOp, triggerOp, scheduleOp } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
 import { entryIdOf } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/queue.ts";
 import { withTmp } from "./helpers.ts";
@@ -50,30 +51,48 @@ describe("state file", () => {
 			fs.mkdirSync(stateDir);
 			const write = (state: unknown) => fs.writeFileSync(path.join(stateDir, "state.json"), JSON.stringify(state), "utf8");
 			const base = { mainRoot: "/repo/main", stateDir, openedAt: AT, closed: false, entries: [], tasks: {}, requests: {} };
-			write({ ...base, version: 2, tasks: [] });
+			write({ ...base, version: 3, tasks: [] });
 			assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt");
-			write({ ...base, version: 2, requests: [] });
+			write({ ...base, version: 3, requests: [] });
 			assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt");
-			write({ ...base, version: 2, entries: [{ entryId: "t1#1", taskId: "t1", requestId: 7, requestSeq: 1, state: "requested" }] });
+			write({ ...base, version: 3, entries: [{ entryId: "t1#1", taskId: "t1", requestId: 7, requestSeq: 1, state: "requested" }] });
 			assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt");
-			write({ ...base, version: 2, entries: [{ entryId: "t1#1", taskId: "t1", workerId: "t1", workdir: "/wt/t1", requestId: "t1-1", requestSeq: 1, state: "triggering" }] });
+			write({ ...base, version: 3, entries: [{ entryId: "t1#1", taskId: "t1", workerId: "t1", workdir: "/wt/t1", requestId: "t1-1", requestSeq: 1, state: "triggering" }] });
 			assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt");
 		});
 	});
 
-	it("rejects an unknown state version and accepts a version-1 state", () => {
+	it("rejects a task phase the transition table does not name", () => {
+		withTmp((dir) => {
+			const stateDir = path.join(dir, ".taskq");
+			fs.mkdirSync(stateDir);
+			const base = { mainRoot: "/repo/main", stateDir, openedAt: AT, closed: false, entries: [], requests: {} };
+			// A phase from the pre-consolidation phase set, on a current
+			// version: a state that loads as valid would fail every gate with
+			// a message about the phase, so it is refused as corruption.
+			fs.writeFileSync(path.join(stateDir, "state.json"), JSON.stringify({ ...base, version: 3, tasks: { t1: { taskId: "t1", phase: "verified" } } }), "utf8");
+			assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt");
+			// The current phase set loads.
+			fs.writeFileSync(path.join(stateDir, "state.json"), JSON.stringify({ ...base, version: 3, tasks: { t1: { taskId: "t1", phase: "terminated" } } }), "utf8");
+			assert.equal(loadState(stateDir)?.tasks.t1.phase, "terminated");
+		});
+	});
+
+	it("loads the current version and refuses every earlier one", () => {
 		withTmp((dir) => {
 			const stateDir = path.join(dir, ".taskq");
 			fs.mkdirSync(stateDir);
 			const base = { mainRoot: "/repo/main", stateDir, openedAt: AT, closed: false, entries: [], tasks: {}, requests: {} };
-			fs.writeFileSync(path.join(stateDir, "state.json"), JSON.stringify({ ...base, version: 99 }), "utf8");
-			assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt");
-			// A pre-baseline-capture state still loads; the close sweep skips
-			// it because the baseline fields are absent.
-			fs.writeFileSync(path.join(stateDir, "state.json"), JSON.stringify({ ...base, version: 1 }), "utf8");
-			const loaded = loadState(stateDir);
-			assert.ok(loaded);
-			assert.equal(loaded.baselineWorktrees, undefined);
+			const file = path.join(stateDir, "state.json");
+			fs.writeFileSync(file, JSON.stringify({ ...base, version: 3 }), "utf8");
+			assert.equal(loadState(stateDir)?.version, 3);
+			// Version 2 carries the pre-consolidation phase set, version 1 no
+			// baseline capture, and 99 is unknown: none of them is a run this
+			// extension can drive, so each is one loud refusal.
+			for (const version of [1, 2, 99]) {
+				fs.writeFileSync(file, JSON.stringify({ ...base, version }), "utf8");
+				assert.throws(() => loadState(stateDir), (e) => e instanceof TaskQueueError && e.code === "state-corrupt", `version ${String(version)} is refused`);
+			}
 		});
 	});
 
@@ -167,6 +186,43 @@ describe("Run facade", () => {
 			const res = run.handle((s) => forkOp(s, { taskId: "t1", workdir: "/wt/t1", branch: "exp/t1", baseline: "b0", mainRoot: "/repo/main" }, AT));
 			assert.ok(res.journalError);
 			assert.equal(run.current().tasks.t1.phase, "forked", "the op still persisted despite the journal failure");
+		});
+	});
+
+	it("refuses an asynchronous derive, and writes nothing when it does", () => {
+		withTmp((dir) => {
+			const stateDir = path.join(dir, ".taskq");
+			const run = Run.open(stateDir, "/repo/main", AT);
+			// A derive that awaits would release the ownership lock at the
+			// await and keep writing past it. The derive body is synchronous
+			// by contract, so this call does not type-check; the cast stands
+			// for what the extension gets when jiti erases the type.
+			const derive = async () => forkOp(run.current(), { taskId: "t1", workdir: "/wt/t1", branch: "exp/t1", baseline: "b0", mainRoot: "/repo/main" }, AT);
+			const transact = (fn: unknown): unknown => run.transact(fn as never);
+			assert.throws(
+				() => transact(derive),
+				(e) => e instanceof TaskQueueError && e.code === "state-corrupt" && /a derive must be synchronous/.test(e.message),
+			);
+			assert.equal(run.current().tasks.t1, undefined, "the refused derive wrote no state");
+			assert.ok(!readJournal(stateDir).some((e) => e.type === "task:fork"), "the refused derive wrote no journal event");
+			assert.equal(fs.existsSync(lockPathOf(stateDir)), false, "the refused transaction released the lock");
+		});
+	});
+
+	it("runs a transition's post-record step after the state write, under the lock", () => {
+		withTmp((dir) => {
+			const stateDir = path.join(dir, ".taskq");
+			const run = Run.open(stateDir, "/repo/main", AT);
+			const order: string[] = [];
+			run.handle((s) => ({
+				...forkOp(s, { taskId: "t1", workdir: "/wt/t1", branch: "exp/t1", baseline: "b0", mainRoot: "/repo/main" }, AT),
+				commit: () => {
+					order.push("commit");
+					order.push(`lock:${fs.existsSync(lockPathOf(stateDir))}`);
+					order.push(`state:${run.current().tasks.t1?.phase ?? "none"}`);
+				},
+			}));
+			assert.deepEqual(order, ["commit", "lock:true", "state:forked"], "the post-record step runs last, with the record durable and the lock held");
 		});
 	});
 });

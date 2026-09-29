@@ -73,3 +73,18 @@ export function workerRequest(workdir: string, taskId: string, status: WorkerSta
 	const requestId = nextRequestId(workdir, taskId);
 	return writeWorkerRequest(workdir, { taskId, requestId, status, message, at: NOW });
 }
+
+/** One worker segment: write the files, commit them, request a break point. */
+export function workerSegment(
+	workdir: string,
+	taskId: string,
+	files: Record<string, string>,
+	status: WorkerStatus,
+	message: string,
+): string {
+	for (const [name, content] of Object.entries(files)) {
+		writeFile(workdir, name, content);
+	}
+	commitAll(workdir, message);
+	return workerRequest(workdir, taskId, status, message);
+}

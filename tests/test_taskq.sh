@@ -3,10 +3,11 @@
 # TEST_DEADLINE: 180
 # The Node/TypeScript conformance suite of the task-queue pi-extension
 # (src/reasoning/providers/pi/config/agent/extensions/task-queue): the queue
-# invariants I1-I13, the persistence and journal, the git-backed fork and
-# merge, and the wired tool surface, all held against real repositories. The
-# extension has its own runner (node --test); this file wires it into the
-# harness so the suite cannot rot under `make test`.
+# invariants I1-I13, the transition table, the ownership lock, the
+# persistence and journal, the git-backed fork and bring-back, and the wired
+# tool surface, all held against real repositories. The extension has its
+# own runner (node --test); this file wires it into the harness so the suite
+# cannot rot under `make test`.
 #
 # One harness unit runs every registered node test file in a single node
 # process. A node test file that is not registered here fails the coverage
@@ -21,12 +22,15 @@ TESTSQ_DIR="$REPO_ROOT/tests/taskq"
 NODE_TEST_FILES=(
   bench.test.ts
   extension-load.test.ts
+  join.test.ts
   lifecycle.test.ts
+  lock.test.ts
   merge.test.ts
   ops.test.ts
   protocol.test.ts
   queue.test.ts
   state.test.ts
+  transitions.test.ts
   wired.test.ts
   worktree.test.ts
 )

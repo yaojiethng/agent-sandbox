@@ -2,7 +2,9 @@
  * The run record: an append-only journal of every state transition, plus
  * the archived worker request documents and archived diffs. The journal is
  * the primary's record of the run; tests and audits replay it to verify the
- * exactly-once identities (I1) and the transition ordering.
+ * exactly-once identities (I1) and the transition ordering. Every event
+ * type names a row of the transition table, so the journal is a replay of
+ * that table rather than a parallel account of it.
  */
 
 import * as fs from "node:fs";
@@ -13,13 +15,24 @@ import { parseWorkerRequest, type WorkerRequest } from "./protocol.ts";
 export type JournalEvent =
 	| { type: "run:open"; at: string; mainRoot: string }
 	| { type: "task:fork"; at: string; taskId: string; workerId: string; workdir: string; branch: string; baseline: string }
+	| { type: "task:requeue"; at: string; taskId: string; route: "in-place" | "fresh"; workdir: string; branch: string; from: string; to: string; entryId: string }
 	| { type: "request:record"; at: string; entryId: string; taskId: string; requestId: string; status: "running" | "done" }
 	| { type: "entry:schedule"; at: string; entryId: string; taskId: string }
 	| { type: "entry:trigger"; at: string; entryId: string; taskId: string; head: string; changed: number }
-	| { type: "verify"; at: string; taskId: string; outcome: "passed" | "failed"; notes: string }
+	| { type: "verify"; at: string; taskId: string; outcome: "usable" | "not-usable"; entryId: string; notes: string }
 	| { type: "proposal"; at: string; taskId: string; paths: string[]; description: string }
-	| { type: "merge"; at: string; taskId: string; scope: "all" | "partial" | "none"; applied: string[]; archived: boolean }
-	| { type: "retire"; at: string; taskId: string; removedWorktree: string; prunedBranch: string }
+	| {
+		type: "bringback";
+		at: string;
+		taskId: string;
+		paths: string[];
+		applied: string[];
+		archived: boolean;
+		removedWorktree: string;
+		prunedBranch: string;
+		/** True when the record infers an earlier attempt's write. */
+		resumed: boolean;
+	  }
 	| { type: "run:close"; at: string; tasks: number; entries: number; triggered: number; pending: number; requests: number };
 
 export interface IntegrityCounts {
@@ -72,12 +85,12 @@ export function readArchivedRequest(stateDir: string, requestId: string): Worker
 	if (!fs.existsSync(p)) {
 		throw new TaskQueueError(
 			"state-corrupt",
-			`no archived request document for ${requestId}; taskq_record archives every request before recording it`,
+			`no archived request document for ${requestId}; the join archives every request before it records it`,
 		);
 	}
-	// The archive holds the same bytes taskq_record validated, so the
-	// archived document re-parses with the worker protocol validation; a
-	// malformed archive is state corruption, not a worker protocol error.
+	// The archive holds the same bytes the join validated, so the archived
+	// document re-parses with the worker protocol validation; a malformed
+	// archive is state corruption, not a worker protocol error.
 	const raw = fs.readFileSync(p, "utf8");
 	try {
 		return parseWorkerRequest(raw, p);
@@ -89,7 +102,7 @@ export function readArchivedRequest(stateDir: string, requestId: string): Worker
 	}
 }
 
-/** Archived branch diff for a discarded track (verdict none). */
+/** Archived branch diff for a track whose bring-back wrote nothing back. */
 export function archiveDiffPathOf(stateDir: string, taskId: string): string {
 	return path.join(stateDir, "archive", `${taskId}.diff`);
 }
@@ -98,4 +111,72 @@ export function archiveDiff(stateDir: string, taskId: string, diff: string): voi
 	const p = archiveDiffPathOf(stateDir, taskId);
 	fs.mkdirSync(path.dirname(p), { recursive: true });
 	fs.writeFileSync(p, diff, "utf8");
+}
+
+/**
+ * The bring-back intent: the one file a bring-back writes before it does
+ * any git work, and deletes in the same locked section that writes its
+ * record. The prune precedes the record, so an interrupted bring-back is
+ * resumable only if something says the write happened. A gone worktree
+ * does not: the operator can remove a worktree and a branch by hand with
+ * the two commands the fork refusal prints, and a call that refused at
+ * the prune gate leaves a gone tree behind with no write either. The
+ * intent record is this tool's own outbox, so the resume path reads
+ * evidence rather than inferring it (I7, I12).
+ */
+export interface BringBackIntent {
+	/** The file set this attempt wrote, or was about to write. */
+	paths: string[];
+	/** When the attempt started. */
+	at: string;
+	/**
+	 * When the main-tree write, or the archive, completed. Absent while the
+	 * attempt is still pending, and a resume refuses without it: an
+	 * interrupted attempt that never reached its write proves nothing.
+	 */
+	writtenAt?: string;
+}
+
+export function bringBackIntentPathOf(stateDir: string, taskId: string): string {
+	return path.join(stateDir, "bringback", `${taskId}.json`);
+}
+
+/** Record the intent before any git work, replacing an earlier attempt's. */
+export function writeBringBackIntent(stateDir: string, taskId: string, intent: BringBackIntent): void {
+	const p = bringBackIntentPathOf(stateDir, taskId);
+	fs.mkdirSync(path.dirname(p), { recursive: true });
+	fs.writeFileSync(p, JSON.stringify(intent, null, 2), "utf8");
+}
+
+/** Mark the attempt's write as landed, so a resume can prove it. */
+export function markBringBackWritten(stateDir: string, taskId: string, at: string): void {
+	const intent = readBringBackIntent(stateDir, taskId);
+	if (!intent) return;
+	writeBringBackIntent(stateDir, taskId, { ...intent, writtenAt: at });
+}
+
+/**
+ * The intent this tool wrote for a task, or undefined when there is none
+ * to read. Unreadable bytes read as no intent: a resume must fail closed,
+ * and the refusal it raises names the evidence that is missing.
+ */
+export function readBringBackIntent(stateDir: string, taskId: string): BringBackIntent | undefined {
+	const p = bringBackIntentPathOf(stateDir, taskId);
+	if (!fs.existsSync(p)) return undefined;
+	try {
+		const parsed = JSON.parse(fs.readFileSync(p, "utf8")) as Partial<BringBackIntent>;
+		if (!Array.isArray(parsed.paths) || parsed.paths.some((p) => typeof p !== "string")) return undefined;
+		return { paths: parsed.paths as string[], at: typeof parsed.at === "string" ? parsed.at : "", writtenAt: typeof parsed.writtenAt === "string" ? parsed.writtenAt : undefined };
+	} catch {
+		return undefined;
+	}
+}
+
+/** Drop the intent once the record that replaces it is durable. */
+export function clearBringBackIntent(stateDir: string, taskId: string): void {
+	try {
+		fs.unlinkSync(bringBackIntentPathOf(stateDir, taskId));
+	} catch {
+		// Already gone: the record it stood in for is written either way.
+	}
 }

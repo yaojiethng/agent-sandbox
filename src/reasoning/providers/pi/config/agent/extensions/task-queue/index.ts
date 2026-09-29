@@ -1,17 +1,29 @@
 /**
  * task-queue: the general sequencing primitive as a pi extension.
  *
- * The extension gives the primary agent a queue of worker-requested break
- * points with an exactly-once state machine (request -> scheduled ->
- * triggered), the fork/join/re-queue mechanics, the final verification
- * gates, the write-back proposal, the verdict-scoped merge, and the
- * clean-close retirement of worktrees and branches. The worker side gets
- * one tool that writes its break-point requests into its own worktree; the
- * request protocol is plain files, so any worker can participate.
+ * The extension gives the primary a fork and a join. The fork cuts a
+ * worker worktree and branch at a location the tool owns. The join is
+ * the one blocking call through which a break point is waited for and
+ * handled: one call records, schedules, and triggers it as one atomic
+ * transition and returns the join payload, so the operator's decision is
+ * the only thing the primary drives. Around the join sit the termination
+ * audit, the two re-queue routes, the write-back proposal, the
+ * bring-back, and the clean close. The worker side gets one tool that
+ * writes its break-point requests into its own worktree; the request
+ * protocol is plain files, so any worker can participate.
  *
- * The queue and the gates are pure modules (queue.ts, tasks.ts, ops.ts);
- * persistence, git, and the merge are separate modules. This file wires
- * them to pi as tools.
+ * The queue and the gates are pure modules (queue.ts, tasks.ts, ops.ts,
+ * join.ts, transitions.ts); persistence, the ownership lock, git, and
+ * the main-tree write are separate modules. This file wires them to pi as
+ * tools.
+ *
+ * One primary writes one state directory. Every state-mutating tool runs
+ * its whole load-derive-save under the state directory's ownership lock,
+ * and the git work it must not interleave with another writer's runs in
+ * the same critical section: the fork's cut, the re-queue's rollback, and
+ * the bring-back's write each sit inside the transaction that records
+ * them. A second process on the same state directory is refused with its
+ * owner named, not raced.
  */
 
 import * as fs from "node:fs";
@@ -19,16 +31,35 @@ import * as path from "node:path";
 import { Type, type Static, type TSchema } from "typebox";
 import { defineTool, withFileMutationQueue, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { TaskQueueError, type TaskQueueErrorCode } from "./errors.ts";
-import { getEntry, pendingForTask } from "./queue.ts";
-import { canMerge, canPropose, canRetire, type TaskRecord, type Verdict } from "./tasks.ts";
-import { nowIso, forkOp, recordOp, scheduleOp, triggerOp, verifyOp, proposalOp, mergeOp, retireOp, closeOp, integrityCounts } from "./ops.ts";
-import { archiveRequest, readArchivedRequest, type JournalEvent } from "./record.ts";
+import { assertFileSet, canBringBack, canClose, canPropose, canRequeue, type TaskRecord } from "./tasks.ts";
+import type { RequeueRoute } from "./transitions.ts";
+import { bringBackOp, closeOp, forkOp, integrityCounts, joinOp, nowIso, proposalOp, requeueOp, verifyOp, type OpResult } from "./ops.ts";
+import { heldBreakPoint, scanReady, waitForBreakPoint, type HeldResult, type JoinResult } from "./join.ts";
 import { Run } from "./run.ts";
-import { loadState, statePathOf } from "./state.ts";
-import { gitRoot, resolveRev, addWorktree, worktreeHead, segmentInfo, pruneWorktree, isPruned, statusPorcelain, listWorktrees, listBranches, currentBranch } from "./worktree.ts";
+import { loadState, statePathOf, type RunState } from "./state.ts";
+import type { LockScope, SectionLive } from "./lock.ts";
+import { previousSeq } from "./queue.ts";
+import {
+	addWorktree,
+	assertPrunable,
+	assertWorkdirFree,
+	canonicalWorkdir,
+	currentBranch,
+	gitRoot,
+	isPruned,
+	listBranches,
+	listWorktrees,
+	pruneWorktree,
+	resolveRev,
+	rollbackWorktree,
+	statusPorcelain,
+	worktreeHead,
+	worktreeRootOf,
+} from "./worktree.ts";
 import { proposalPaths } from "./proposal.ts";
-import { applyVerdict, archiveDiscardedTrack } from "./merge.ts";
-import { REQUESTS_DIR, listWorkerRequests, nextRequestId, parseWorkerRequest, writeWorkerRequest, type WorkerStatus } from "./protocol.ts";
+import { applyBringBack, archiveTrack } from "./merge.ts";
+import { archiveDiffPathOf, bringBackIntentPathOf, clearBringBackIntent, markBringBackWritten, readBringBackIntent, writeBringBackIntent } from "./record.ts";
+import { nextRequestId, writeWorkerRequest, writeWorkerState } from "./protocol.ts";
 
 const STATE_DIR_ENV = "TASKQ_STATE_DIR";
 
@@ -36,41 +67,56 @@ function stateDirOf(root: string): string {
 	const given = process.env[STATE_DIR_ENV];
 	if (given) return given;
 	// Production default: a sibling of the repo root. The state directory
-	// must never live inside the main tree: the merge gate requires a clean
-	// tree, and the journal, the archives, and the state file would
-	// permanently dirty it.
+	// must never live inside the main tree: the bring-back needs the main
+	// tree clean on the paths it writes, and the journal, the archives, and
+	// the state file would permanently dirty it.
 	return path.join(path.dirname(root), `.taskq-${path.basename(root)}`);
 }
 
-function openRunAt(root: string): Run {
-	const stateDir = stateDirOf(root);
-	if (!fs.existsSync(statePathOf(stateDir))) {
+/** The pi session writing this state directory, for the lock metadata. */
+function sessionIdOf(ctx: ExtensionContext): string {
+	return ctx.sessionManager?.getSessionId?.() ?? "unknown";
+}
+
+function openRunAt(root: string, sessionId: string): Run {
+	return Run.open(stateDirOf(root), root, undefined, undefined, {
+		sessionId,
 		// A fresh run records the worktrees and branches that predate it; the
 		// close sweep treats those as the repository's own, not leftovers.
-		return Run.open(stateDir, root, new Date().toISOString(), {
-			worktrees: listWorktrees(root),
-			branches: listBranches(root),
-		});
-	}
-	return Run.open(stateDir, root);
+		// The snapshot is read inside the lock, and only when the run is new.
+		snapshotBaseline: () => ({ worktrees: listWorktrees(root), branches: listBranches(root) }),
+	});
 }
 
 function openRun(ctx: ExtensionContext): Run {
-	return openRunAt(gitRoot(ctx.cwd));
+	return openRunAt(gitRoot(ctx.cwd), sessionIdOf(ctx));
 }
 
 /**
- * Run one state-mutating operation: the complete read-modify-write of the
- * state file is serialized against other tool calls of the same turn.
+ * Run one state-mutating operation as one locked transaction: the
+ * derivation, the git work it needs, the atomic state write, and the
+ * journal entry are one unit no other process on this state directory can
+ * interleave with. The scope names the task and worktree the call drives,
+ * so a lock left behind by a crash says which worktree its owner held.
+ * The derive also receives the lock's liveness refresh and beats at each
+ * git step, because a bring-back that runs longer than the stale window
+ * would otherwise have its live lock taken from it.
  */
 async function runTool<D>(
 	ctx: ExtensionContext,
-	fn: (run: Run) => { data: D; events: JournalEvent[]; journalError?: string },
-): Promise<{ data: D; journalError?: string }> {
+	scope: LockScope | undefined,
+	derive: (state: RunState, live: SectionLive) => OpResult<D>,
+): Promise<D> {
 	const root = gitRoot(ctx.cwd);
 	const statePath = statePathOf(stateDirOf(root));
-	const result = await withFileMutationQueue(statePath, async () => fn(openRunAt(root)));
-	return { data: result.data, journalError: result.journalError };
+	const sessionId = sessionIdOf(ctx);
+	const result = await withFileMutationQueue(statePath, async () => openRunAt(root, sessionId).transact(derive, scope));
+	if (result.journalError) {
+		// The state file is durable even when the audit trail is not; say so
+		// rather than failing an operation that already committed.
+		process.stderr.write(`task-queue: the journal could not be appended: ${result.journalError}\n`);
+	}
+	return result.data;
 }
 
 function requireTaskPhase(run: Run, taskId: string, ok: (t: TaskRecord) => boolean, code: TaskQueueErrorCode): TaskRecord {
@@ -82,16 +128,24 @@ function requireTaskPhase(run: Run, taskId: string, ok: (t: TaskRecord) => boole
 	return task;
 }
 
-/** One request document as the poll tool reports it. */
-interface PollEntry {
-	taskId: string;
-	requestId: string;
-	file: string;
-	recorded: boolean;
-	status: WorkerStatus | undefined;
-	message: string | undefined;
-	invalid: boolean;
-	warning: string | undefined;
+/** True when a registered task owns the worktree path and the branch. */
+function registeredOwns(root: string, workdir: string, branch: string): boolean {
+	try {
+		const state = loadState(stateDirOf(root));
+		if (!state) return false;
+		return Object.values(state.tasks).some((t) => t.branch === branch && path.resolve(t.workdir) === path.resolve(workdir));
+	} catch {
+		// The state is unreadable; an undo cannot prove ownership and leaves
+		// the worktree for the close sweep to name (I10).
+		return true;
+	}
+}
+
+/** Two file sets name the same paths, in whatever order they were named. */
+function sameFileSet(a: readonly string[], b: readonly string[]): boolean {
+	const left = [...a].sort();
+	const right = [...b].sort();
+	return left.length === right.length && left.every((p, i) => p === right[i]);
 }
 
 // ---------------------------------------------------------------------------
@@ -99,25 +153,21 @@ interface PollEntry {
 // ---------------------------------------------------------------------------
 
 const forkSchema = Type.Object({
-	taskId: Type.String({ minLength: 1 }),
+	// One path segment, nothing else: the worktree path is derived from it.
+	taskId: Type.String({ minLength: 1, pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*$" }),
 	workerId: Type.Optional(Type.String({ minLength: 1 })),
-	workdir: Type.String({ minLength: 1 }),
 	branch: Type.Optional(Type.String({ minLength: 1 })),
 	baseline: Type.Optional(Type.String({ minLength: 1 })),
 });
 
-const recordSchema = Type.Object({
-	taskId: Type.String({ minLength: 1 }),
-	requestPath: Type.String({ minLength: 1 }),
-});
-
-const entrySchema = Type.Object({
-	entryId: Type.String({ minLength: 1 }),
+const joinSchema = Type.Object({
+	timeoutMs: Type.Integer({ minimum: 100, maximum: 3_600_000 }),
+	taskId: Type.Optional(Type.String({ minLength: 1 })),
 });
 
 const verifySchema = Type.Object({
 	taskId: Type.String({ minLength: 1 }),
-	outcome: Type.Union([Type.Literal("passed"), Type.Literal("failed")]),
+	outcome: Type.Union([Type.Literal("usable"), Type.Literal("not-usable")]),
 	notes: Type.String({ default: "" }),
 });
 
@@ -127,22 +177,18 @@ const proposalSchema = Type.Object({
 	excludePaths: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
 });
 
-// The verdict schema mirrors the Verdict union exactly: "all" and "none"
-// carry no paths, "partial" requires a non-empty path list. A scope with a
-// mismatched paths field is rejected at the tool boundary.
-const verdictSchema = Type.Union([
-	Type.Object({ scope: Type.Literal("all") }),
-	Type.Object({ scope: Type.Literal("partial"), paths: Type.Array(Type.String({ minLength: 1 })) }),
-	Type.Object({ scope: Type.Literal("none") }),
-]);
-
-const mergeSchema = Type.Object({
+// The file set the bring-back writes: what lands in the main tree. An
+// empty set is legal and means "write nothing back"; a named path the
+// proposal does not contain is rejected at the tool boundary and again at
+// the write.
+const bringBackSchema = Type.Object({
 	taskId: Type.String({ minLength: 1 }),
-	verdict: verdictSchema,
+	paths: Type.Array(Type.String({ minLength: 1 })),
 });
 
-const retireSchema = Type.Object({
+const requeueSchema = Type.Object({
 	taskId: Type.String({ minLength: 1 }),
+	route: Type.Union([Type.Literal("in-place"), Type.Literal("fresh")]),
 });
 
 const workerRequestSchema = Type.Object({
@@ -160,7 +206,7 @@ function define<P extends TSchema, D>(
 	label: string,
 	description: string,
 	parameters: P,
-	execute: (params: Static<P>, ctx: ExtensionContext) => Promise<D>,
+	execute: (params: Static<P>, ctx: ExtensionContext, signal: AbortSignal | undefined) => Promise<D>,
 	opts: { snippet?: string; sequential?: boolean } = {},
 ) {
 	return defineTool({
@@ -170,8 +216,8 @@ function define<P extends TSchema, D>(
 		promptSnippet: opts.snippet,
 		parameters,
 		executionMode: opts.sequential ? "sequential" : "parallel",
-		execute: async (_callId, params, _signal, _onUpdate, ctx) => {
-			const data = await execute(params as Static<P>, ctx);
+		execute: async (_callId, params, signal, _onUpdate, ctx) => {
+			const data = await execute(params as Static<P>, ctx, signal);
 			return { content: [{ type: "text", text: JSON.stringify(data) }], details: data };
 		},
 	});
@@ -184,7 +230,7 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_fork",
 			"Fork a task",
-			"Cut one worker worktree and branch from the baseline commit and register the task in the queue. One fresh subagent per task runs in that worktree on that branch. The primary keeps the main tree free of its own edits for the whole run; the merged verdicts accumulate in the working tree.",
+			"Cut one worker worktree and branch from the baseline commit and register the task in the queue. The call owns the location: it cuts the worktree at the run-scoped canonical path and returns it, so the caller creates no worktree and passes no path. The worktree is cut outside the main tree, which this call never writes to, and the cut, the collision check, and the registration are one serialized transaction: two forks on one state directory cannot interleave, and one fork's undo cannot remove another's worktree. One fresh subagent per task runs in that worktree on that branch; the primary keeps the main tree free of its own edits for the whole run, and the brought-back file sets accumulate in the working tree. A leftover worktree, branch, or directory at the canonical path is refused with that path named: clear it by hand and fork again. One primary writes one state directory; a call against a directory a live process owns is refused with that owner's lock named.",
 			forkSchema,
 			async (params, ctx) => {
 				const run = openRun(ctx);
@@ -192,213 +238,135 @@ export default function (pi: ExtensionAPI): void {
 					throw new TaskQueueError("task-duplicate", `task ${params.taskId} is already forked`);
 				}
 				const mainRoot = run.mainRoot;
-				const workdir = path.resolve(ctx.cwd, params.workdir);
-				const normalized = workdir.replace(/\/+$/, "");
-				if (normalized === mainRoot || normalized.startsWith(mainRoot + "/")) {
-					throw new TaskQueueError(
-						"task-workdir-inside-main",
-						`workdir ${normalized} must not be the main tree or inside it: workers never write in the main tree`,
-					);
-				}
-				const baseline = resolveRev(mainRoot, params.baseline ?? "HEAD");
+				const workdir = canonicalWorkdir(mainRoot, run.stateDir, params.taskId);
 				const branch = params.branch ?? `exp/${params.taskId}`;
-				addWorktree(mainRoot, { branch, path: workdir, baseline });
-				try {
-					const result = await runTool(ctx, (r) =>
-						r.handle((state) => forkOp(state, { taskId: params.taskId, workerId: params.workerId, workdir: normalized, branch, baseline, mainRoot }, nowIso())),
-					);
-					return { ...result.data, workdir: normalized, baseline };
-				} catch (err) {
-					// The worktree was cut but the registration failed; undo the fork.
-					// The undo prunes only while no registered task owns the branch or
-					// the path: the serialized tool order closes the window, but the
-					// guard keeps the undo from removing a worktree a retry owns.
-					if (!registeredOwns(mainRoot, workdir, branch)) {
-						try {
-							pruneWorktree(mainRoot, { branch, path: workdir, baseline });
-						} catch {
-							// Best effort only; the close sweep refuses while an unregistered
-							// worktree or branch survives, so the leftover stays visible.
+				const baseline = resolveRev(mainRoot, params.baseline ?? "HEAD");
+				const spec = { branch, path: workdir, baseline };
+				const task = await runTool(ctx, { taskId: params.taskId, workdir }, (state, live) => {
+					// The fork owns the location, so a leftover is refused
+					// before anything is cut: the operator clears it, never a
+					// second path.
+					assertWorkdirFree(mainRoot, spec);
+					live.beat();
+					addWorktree(mainRoot, spec);
+					live.beat();
+					try {
+						return forkOp(state, { taskId: params.taskId, workerId: params.workerId, workdir, branch, baseline, mainRoot }, nowIso());
+					} catch (err) {
+						// The worktree was cut but the registration failed; undo
+						// the fork. The undo prunes only while no registered task
+						// owns the branch or the path, and it runs inside the same
+						// lock as the cut and the record, so nothing else can claim
+						// the worktree in between.
+						if (!registeredOwns(mainRoot, workdir, branch)) {
+							try {
+								live.beat();
+								pruneWorktree(mainRoot, spec);
+							} catch {
+								// Best effort only; the close sweep refuses while an
+								// unregistered worktree or branch survives, so the
+								// leftover stays visible.
+							}
 						}
+						throw err;
 					}
-					throw err;
-				}
+				});
+				return { ...task, workdir, branch, baseline, worktreeRoot: worktreeRootOf(mainRoot, run.stateDir) };
 			},
-			{ snippet: "taskq_fork - cut a worker worktree and branch from the baseline", sequential: true },
+			{ snippet: "taskq_fork - cut a worker worktree and branch at the run-scoped canonical path", sequential: true },
 		),
 	);
 
-	/** True when a registered task owns the worktree path and the branch. */
-	function registeredOwns(root: string, workdir: string, branch: string): boolean {
-		try {
-			const state = loadState(stateDirOf(root));
-			if (!state) return false;
-			return Object.values(state.tasks).some(
-				(t) => t.branch === branch && path.resolve(t.workdir) === path.resolve(workdir),
-			);
-		} catch {
-			// The state is unreadable; the undo cannot prove ownership and
-			// leaves the worktree for the close sweep to name (I10).
-			return true;
+	// --- join -------------------------------------------------------------
+
+	pi.registerTool(
+		define(
+			"taskq_join",
+			"Join a worker break point",
+			"Block until a worker break point is ready, then deliver it: one call scans the task worktrees, records the worker request into the queue, schedules it, and triggers it as one atomic transition, and returns the join payload - task, worker, worktree, the worker message, the segment the worker changed since the last break point, and any uncommitted path left in its worktree. This is the queue fork(2)/wait(2): it is the only way a break point is deployed, so the call cannot be made out of order and there is nothing to drive in between. Set timeoutMs to bound the block and prefer it to any sleep; a timeout return is inert (nothing was recorded, scheduled, or triggered) and is normal while a worker runs its segment. One break point waits on the operator at a time: while a delivered break point is undecided, the call returns that hold and the step that clears it instead of a second payload. Name taskId to join that task; the default is the earliest-forked ready task, and inside a task the earliest request. A taskId no task holds is refused at once instead of at the end of the timeout. Never sleep and re-poll: this call is the wait.",
+			joinSchema,
+			async (params, ctx, signal) => {
+				const run = openRun(ctx);
+				const result = await waitForBreakPoint(
+					{
+						stateDir: run.stateDir,
+						current: () => run.current(),
+						join: async (p) => {
+							const data = await runTool(ctx, { taskId: p.taskId }, (state, live) => {
+								// The head the payload's segment was measured from
+								// is read again here, under the lock, and a worker
+								// that committed since is a contention: recording
+								// the older head would make the re-queue roll back
+								// past a commit the operator never saw.
+								const task = state.tasks[p.taskId];
+								if (p.baseHead !== undefined && task) {
+									live.beat();
+									const head = worktreeHead(task.workdir);
+									if (head !== p.head) {
+										throw new TaskQueueError(
+											"join-contended",
+											`task ${p.taskId} is at ${head}, not ${p.head}; the worker committed under this join, so the segment and the uncommitted notice are read again`,
+										);
+									}
+								}
+								return joinOp(state, p, nowIso());
+							});
+							return { data };
+						},
+					},
+					{
+						timeoutMs: params.timeoutMs,
+						taskId: params.taskId,
+						signal,
+						onJoin: (payload) => {
+							if (ctx.hasUI) {
+								ctx.ui.notify(`Break point ${payload.entryId} of task ${payload.taskId}: join the operator`, "info");
+							}
+						},
+					},
+				);
+				return joinResultOf(result);
+			},
+			{ snippet: "taskq_join - block until a worker break point is ready, then deliver it", sequential: true },
+		),
+	);
+
+	/** The join result plus the next step it names for the primary. */
+	function joinResultOf(result: JoinResult): Record<string, unknown> {
+		switch (result.outcome) {
+			case "joined":
+				return result;
+			case "held": {
+				const hold: HeldResult = result;
+				return {
+					...hold,
+					note:
+						`break point ${hold.hold.entryId} of task ${hold.hold.taskId} waits on the operator and the worker asked: ${hold.hold.message}. ` +
+						`Clear it with ${hold.hold.clearsBy}`,
+				};
+			}
+			case "timeout":
+				return { ...result, note: "no break point became ready within the timeout; nothing was consumed. Join again, or call taskq_status" };
+			case "aborted":
+				return { ...result, note: "the call was aborted before a break point was ready; nothing was consumed" };
 		}
 	}
-
-	// --- poll -------------------------------------------------------------
-
-	pi.registerTool(
-		define(
-			"taskq_poll",
-			"Poll worker requests",
-			"Scan every task's worktree for break-point request documents the primary has not recorded yet, plus protocol warnings. Read-only.",
-			Type.Object({}),
-			async (_params, ctx) => {
-				const run = openRun(ctx);
-				const state = run.current();
-				const requests: PollEntry[] = [];
-				for (const task of Object.values(state.tasks)) {
-					if (task.phase === "verified" || task.phase === "merged" || task.phase === "discarded" || task.phase === "retired") continue;
-					const pending = pendingForTask(state.entries, task.taskId);
-					const latestPendingSeq = pending.reduce((m, e) => Math.max(m, e.requestSeq), 0);
-					for (const item of listWorkerRequests(task.workdir)) {
-						const recorded = Object.prototype.hasOwnProperty.call(state.requests, item.requestId);
-						const seq = Number(item.requestId.slice(item.requestId.lastIndexOf("-") + 1));
-						requests.push({
-							taskId: task.taskId,
-							requestId: item.requestId,
-							file: path.join(task.workdir, REQUESTS_DIR, `${item.requestId}.json`),
-							recorded,
-							status: item.request?.status ?? undefined,
-							message: item.request?.message ?? undefined,
-							invalid: item.invalid,
-							warning: !recorded && latestPendingSeq > 0 && seq > latestPendingSeq ? "request advanced before the pending break point cleared" : undefined,
-						});
-					}
-				}
-				return { closed: state.closed, requests };
-			},
-			{ snippet: "taskq_poll - scan worker worktrees for unrecorded break-point requests" },
-		),
-	);
-
-	// --- record -----------------------------------------------------------
-
-	pi.registerTool(
-		define(
-			"taskq_record",
-			"Record a break point",
-			"Record a worker's requested break point into the queue (state: requested). The request document must live in the task's own worktree under taskq/requests/. The request id enters the queue exactly once.",
-			recordSchema,
-			async (params, ctx) => {
-				const run = openRun(ctx);
-				const task = run.current().tasks[params.taskId];
-				if (!task) throw new TaskQueueError("task-unknown", `no task with id ${params.taskId}`);
-				const dir = path.join(task.workdir, REQUESTS_DIR);
-				if (path.dirname(path.resolve(params.requestPath)) !== path.resolve(dir)) {
-					throw new TaskQueueError(
-						"request-path-mismatch",
-						`requestPath must sit in ${dir}, the task's own request directory`,
-					);
-				}
-				// Read once: the queue validates and the archive keeps the same
-				// bytes, so a hand-written document that changes between a parse
-				// and a re-read cannot diverge from the recorded request.
-				let content: string;
-				try {
-					content = fs.readFileSync(params.requestPath, "utf8");
-				} catch {
-					throw new TaskQueueError("request-file-missing", `no request document at ${params.requestPath}`);
-				}
-				const request = parseWorkerRequest(content, params.requestPath);
-				if (request.taskId !== params.taskId) {
-					throw new TaskQueueError("request-invalid", `request ${request.requestId} names task ${request.taskId}, not ${params.taskId}`);
-				}
-				archiveRequest(run.stateDir, request.requestId, content);
-				const result = await runTool(ctx, (r) =>
-					r.handle((state) => recordOp(state, { taskId: params.taskId, requestId: request.requestId, status: request.status, workdir: task.workdir }, nowIso())),
-				);
-				return { ...result.data.entry, status: request.status, message: request.message };
-			},
-			{ snippet: "taskq_record - record one requested break point into the queue", sequential: true },
-		),
-	);
-
-	// --- schedule ---------------------------------------------------------
-
-	pi.registerTool(
-		define(
-			"taskq_schedule",
-			"Schedule a break point",
-			"Transition one recorded break point from requested to scheduled. Cross-task scheduling order is the primary's choice; a scheduled break point cannot be re-scheduled.",
-			entrySchema,
-			async (params, ctx) => {
-				const result = await runTool(ctx, (r) => r.handle((state) => scheduleOp(state, params.entryId, nowIso())));
-				return { entryId: result.data.entry.entryId, taskId: result.data.entry.taskId, state: result.data.entry.state };
-			},
-			{ snippet: "taskq_schedule - move one requested break point to scheduled", sequential: true },
-		),
-	);
-
-	// --- trigger ----------------------------------------------------------
-
-	pi.registerTool(
-		define(
-			"taskq_trigger",
-			"Trigger a break point",
-			"Trigger one scheduled break point: the dequeue. Returns the join payload - task, worker, worktree, the worker's request message, and the segment the worker changed since the last break point. The primary then holds at this break point, re-orients the operator, and waits.",
-			entrySchema,
-			async (params, ctx) => {
-				const run = openRun(ctx);
-				const state = run.current();
-				const entry = getEntry(state.entries, params.entryId);
-				if (!entry) throw new TaskQueueError("entry-unknown", `no entry with id ${params.entryId}`);
-				const task = state.tasks[entry.taskId];
-				// Entry refs must equal the task refs at dequeue time (I3).
-				if (!task || entry.workerId !== task.workerId || entry.workdir !== task.workdir) {
-					throw new TaskQueueError("entry-ref-mismatch", `entry ${entry.entryId} no longer matches its task`);
-				}
-				const head = worktreeHead(task.workdir);
-				const from = task.lastSegmentHead || task.baseline;
-				const seg = segmentInfo(task.workdir, from, head);
-				// The archive is written before the record, so a recorded entry has
-				// an archived document by construction; the re-parse uses the
-				// worker protocol validation, and a malformed archive is state
-				// corruption, not a display fallback.
-				const { status: requestStatus, message } = readArchivedRequest(run.stateDir, entry.requestId);
-				const result = await runTool(ctx, (r) => r.handle((state) => triggerOp(state, { entryId: params.entryId, head, changed: seg.changed.length }, nowIso())));
-				const join = {
-					entryId: result.data.entry.entryId,
-					taskId: entry.taskId,
-					workerId: entry.workerId,
-					workdir: entry.workdir,
-					branch: task.branch,
-					baseline: task.baseline,
-					requestStatus,
-					message,
-					segmentStat: seg.stat || "(no commits since the last break point)",
-					segmentChanged: seg.changed,
-				};
-				if (ctx.hasUI) {
-					ctx.ui.notify(`Break point ${entry.entryId} of task ${entry.taskId}: join the operator`, "info");
-				}
-				return join;
-			},
-			{ snippet: "taskq_trigger - trigger one scheduled break point and join the operator", sequential: true },
-		),
-	);
 
 	// --- verify -----------------------------------------------------------
 
 	pi.registerTool(
 		define(
 			"taskq_verify",
-			"Run final verification",
-			"Record the final verification outcome for a task. Refuses before the worker requested its terminal break point and while any break point is pending. The verification audit itself (reading the report, running the checks) is the primary's run; this tool records its verdict.",
+			"Record the final verification",
+			"Record the termination audit for a task: usable or not-usable, with the notes that back the finding. The audit itself is the primary's own run - read the diff, run the checks the brief named, confirm the report landed - and this call records what it found. It refuses before the worker requested its terminal break point, while any break point is pending, and for a second audit of the same terminal break point. A usable audit terminates the task, which is the only state a bring-back runs from; a not-usable one leaves the task in the queue, and the next step is the re-queue. The audit is structural: it records whether the return arrived as directed, never whether the work is good.",
 			verifySchema,
 			async (params, ctx) => {
-				const result = await runTool(ctx, (r) => r.handle((state) => verifyOp(state, { taskId: params.taskId, outcome: params.outcome, notes: params.notes }, nowIso())));
-				return { taskId: params.taskId, phase: result.data.task.phase, outcome: params.outcome };
+				const { task } = await runTool(ctx, { taskId: params.taskId }, (state) =>
+					verifyOp(state, { taskId: params.taskId, outcome: params.outcome, notes: params.notes }, nowIso()),
+				);
+				return { taskId: params.taskId, phase: task.phase, outcome: params.outcome, entryId: task.verification?.entryId };
 			},
-			{ snippet: "taskq_verify - record passed or failed final verification for a task", sequential: true },
+			{ snippet: "taskq_verify - record the usable or not-usable termination audit for a task", sequential: true },
 		),
 	);
 
@@ -408,83 +376,208 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_proposal",
 			"Build the write-back proposal",
-			"Build the write-back proposal for a verified task: the changed paths of the worker branch against the baseline, minus the worker's protocol directory and any excluded paths. The primary distills the proposal further with a description; the operator judges this proposal at the final break point.",
+			"Build the write-back proposal for a terminated task: the changed paths of the worker branch against the baseline, minus the worker's protocol directory and any excluded paths. The primary distills the proposal further with a description; the operator judges this proposal at the terminal break point, and the bring-back writes a subset of it back into the main tree.",
 			proposalSchema,
 			async (params, ctx) => {
 				const run = openRun(ctx);
 				requireTaskPhase(run, params.taskId, canPropose, "proposal-gate");
 				const task = run.current().tasks[params.taskId];
 				const paths = proposalPaths(run.mainRoot, task.baseline, task.branch, params.excludePaths ?? []);
-				const result = await runTool(ctx, (r) => r.handle((state) => proposalOp(state, { taskId: params.taskId, description: params.description ?? "", paths }, nowIso())));
-				return { taskId: params.taskId, proposal: result.data.proposal };
+				const proposal = await runTool(ctx, { taskId: params.taskId, workdir: task.workdir }, (state) =>
+					proposalOp(state, { taskId: params.taskId, description: params.description ?? "", paths }, nowIso()),
+				);
+				return { taskId: params.taskId, proposal: proposal.proposal };
 			},
-			{ snippet: "taskq_proposal - distill a verified task into a write-back proposal", sequential: true },
+			{ snippet: "taskq_proposal - distill a terminated task into a write-back proposal", sequential: true },
 		),
 	);
 
-	// --- merge ------------------------------------------------------------
+	// --- bring-back -------------------------------------------------------
 
 	pi.registerTool(
 		define(
 			"taskq_merge",
-			"Merge by verdict",
-			"Apply the operator's bring-back verdict over the write-back proposal: all, partial, or none. Only a verified task merges (never before final verification). Partial must name a subset of the proposal. None archives the branch diff and discards the track. The main tree must be clean on the paths this verdict touches; earlier verdicts' results may stay uncommitted in the working tree.",
-			mergeSchema,
+			"Write back a file set",
+			"The bring-back: write a file set into the main tree and end the task, in one call. The file set is the verdict - a subset of the write-back proposal, possibly the empty set - and the call then removes the worktree and prunes the branch, which is why there is no separate retirement step. An empty file set writes nothing back and still prunes; the branch diff is archived into the run record, and a usable-terminated branch is packaged before this call, so nothing is lost. Only a terminated task comes back: its terminal break point delivered, the audit recorded usable, and the proposal built. A bring-back refused with `bring-back-unprovable` has written nothing: the task is not retired, the main tree is unchanged, and no file set came back. The worktree and the branch are gone, and no record of this tool says it wrote them, so the call refuses to infer a retirement it cannot prove. Restore the worktree and the branch from a branch package and bring back again, or recover the file set by hand. A named path outside the proposal is rejected. The main tree must be clean on the paths the file set names; earlier bring-backs' results and unrelated primary edits never block one. A rejected bring-back leaves the main tree untouched: the prune-refusal is checked before anything is written, and the write itself applies atomically. A worktree that grows content between that check and the prune still refuses after the write, and the re-run resumes that attempt from the record it left. The write is idempotent: a call interrupted after the write completes on a retry, and a re-run on an already-retired task reports the same result.",
+			bringBackSchema,
 			async (params, ctx) => {
 				const run = openRun(ctx);
-				const task = requireTaskPhase(run, params.taskId, canMerge, "merge-gate");
-				if (!task.proposal) throw new TaskQueueError("merge-gate", `task ${params.taskId} has no proposal`);
-				const verdict: Verdict = params.verdict;
-				let applied: string[] = [];
-				let archived = false;
-				if (verdict.scope === "none") {
-					archiveDiscardedTrack(run.stateDir, params.taskId, run.mainRoot, task.baseline, task.branch);
-					archived = true;
-				} else {
-					// The apply is idempotent: a verdict interrupted between the
-					// apply and the record re-applies nothing and records normally.
-					applied = applyVerdict(run.mainRoot, { baseline: task.baseline, branch: task.branch, proposal: task.proposal, verdict }).applied;
+				// A task interrupted between the prune and the record still reads
+				// terminated with a removed worktree; the gate admits it so the
+				// re-run can resume it from its intent record. A retired
+				// task whose worktree still exists predates this ordering
+				// (record-first) and the re-run completes its removal.
+				const gate = requireTaskPhase(run, params.taskId, (t) => canBringBack(t) || t.phase === "retired", "bring-back-gate");
+				if (!gate.proposal) throw new TaskQueueError("bring-back-gate", `task ${params.taskId} has no proposal`);
+				try {
+					assertFileSet(params.paths, gate.proposal);
+				} catch (err) {
+					throw new TaskQueueError("file-set-invalid", String(err instanceof Error ? err.message : err));
 				}
-				const result = await runTool(ctx, (r) => r.handle((state) => mergeOp(state, { taskId: params.taskId, verdict, applied, archived }, nowIso())));
-				return { taskId: params.taskId, phase: result.data.task.phase, verdict, applied };
+				const mainRoot = run.mainRoot;
+				// The write, the prune, and the record are one transaction: a
+				// failed write or a refused prune leaves the state and the
+				// journal untouched, so a re-run completes the bring-back (I12).
+				const result = await runTool(ctx, { taskId: params.taskId, workdir: gate.workdir }, (state, live) => {
+					const task = state.tasks[params.taskId];
+					const spec = { branch: task.branch, path: task.workdir, baseline: task.baseline };
+					// The prune precedes the record, so an interrupted bring-back
+					// is resumable - but only on this tool's own evidence. A gone
+					// worktree proves a write on its own only when this call's
+					// prune removed it, and nothing else records that: the
+					// operator removes a worktree and a branch with the two
+					// commands the fork refusal prints, and a call that refused
+					// at the prune gate leaves a gone tree behind with no write
+					// either. The intent record, written here before any git
+					// work, is that evidence (I7, I12).
+					const alreadyPruned = isPruned(mainRoot, spec);
+					let applied: string[] = [];
+					let archived = false;
+					if (!alreadyPruned) {
+						// Recorded before the prune-refusal is even asked, so no
+						// record ever claims a write an attempt did not make: a
+						// refusal here leaves a pending intent that no resume
+						// accepts, because the write never completed.
+						writeBringBackIntent(run.stateDir, params.taskId, { paths: [...params.paths], at: nowIso() });
+						// The prune-refusal is asked before the write and before
+						// the archive, inside this same locked derive: a worktree
+						// holding unwritten content refuses the whole call while
+						// the main tree is still exactly as it was (I7, I12).
+						live.beat();
+						assertPrunable(spec);
+						live.beat();
+						if (params.paths.length === 0) {
+							archiveTrack(run.stateDir, params.taskId, mainRoot, task.baseline, task.branch);
+							archived = true;
+						} else {
+							applied = applyBringBack(mainRoot, { baseline: task.baseline, branch: task.branch, proposal: task.proposal!, paths: params.paths }).applied;
+						}
+						// The write landed, so the evidence says so; the prune
+						// that follows is what a later call reads back.
+						markBringBackWritten(run.stateDir, params.taskId, nowIso());
+						live.beat();
+						pruneWorktree(mainRoot, spec);
+					} else if (task.phase === "retired") {
+						// The record already exists and the worktree is gone: the
+						// call answers twice and changes nothing (I13), so it
+						// reports what the record says.
+						applied = [...(task.bringBack?.paths ?? [])];
+						archived = task.bringBack?.archived ?? false;
+					} else {
+						// A terminated task with a gone worktree is an attempt
+						// interrupted between its prune and its record. It
+						// resumes on that attempt's own intent record and on
+						// nothing else; a missing or unwritten intent is
+						// refused, so the tool never infers a main-tree write it
+						// cannot prove (I7).
+						const intent = readBringBackIntent(run.stateDir, params.taskId);
+						const evidence = bringBackIntentPathOf(run.stateDir, params.taskId);
+						if (!intent?.writtenAt) {
+							throw new TaskQueueError(
+								"bring-back-unprovable",
+								`task ${params.taskId} is ${task.phase} and its worktree ${task.workdir} and branch ${task.branch} are gone, but ${evidence} records no completed bring-back of this run. A gone worktree proves a write only when this tool's own prune removed it, and nothing here says one did. Nothing was written into the main tree, nothing was archived, and nothing was recorded. Restore the worktree and the branch from a branch package and bring back again, or recover the file set by hand`,
+							);
+						}
+						if (!sameFileSet(intent.paths, params.paths)) {
+							throw new TaskQueueError(
+								"bring-back-unprovable",
+								`task ${params.taskId} is ${task.phase} and its worktree is gone; ${evidence} records the file set [${intent.paths.join(", ")}] the interrupted attempt wrote, and this call named [${params.paths.join(", ")}]. A resumed bring-back names the file set that attempt wrote. Nothing was written and nothing was recorded: name the recorded file set, or recover the other one by hand`,
+							);
+						}
+						// The record infers the interrupted attempt's write
+						// instead of reporting an empty apply. `resumed` on the
+						// journal event tells an inferred record from a
+						// performed one.
+						applied = [...intent.paths];
+						// The archived diff is the empty file set's whole
+						// deliverable, so the claim rests on that file, not on
+						// the intent alone.
+						archived = params.paths.length === 0 && fs.existsSync(archiveDiffPathOf(run.stateDir, params.taskId));
+					}
+					const back = bringBackOp(
+						state,
+						{ taskId: params.taskId, paths: params.paths, applied, archived, removedWorktree: task.workdir, prunedBranch: task.branch, resumed: alreadyPruned },
+						nowIso(),
+					);
+					return {
+						state: back.state,
+						events: back.events,
+						data: { task: back.data.task, applied, archived, resumed: alreadyPruned },
+						// The intent is dropped in the same locked section that
+						// writes the record, and only once that record is
+						// durable: a crash between the two leaves the evidence
+						// a re-run needs, and the evidence never outlives the
+						// record that replaced it.
+						commit: () => clearBringBackIntent(run.stateDir, params.taskId),
+					};
+				});
+				return {
+					taskId: params.taskId,
+					phase: result.task.phase,
+					broughtBack: result.task.bringBack?.paths ?? [],
+					applied: result.applied,
+					archived: result.archived,
+					removedWorktree: result.task.workdir,
+					prunedBranch: result.task.branch,
+					resumed: result.resumed,
+				};
 			},
-			{ snippet: "taskq_merge - apply exactly the bring-back verdict over the proposal", sequential: true },
+			{ snippet: "taskq_merge - write back the named file set, then prune the worktree and the branch", sequential: true },
 		),
 	);
 
-	// --- retire -----------------------------------------------------------
+	// --- requeue ----------------------------------------------------------
 
 	pi.registerTool(
 		define(
-			"taskq_retire",
-			"Retire a task",
-			"Remove a merged or discarded task's worktree and prune its branch. Refuses while the worktree holds files outside the taskq/ protocol directory. The primary exports anything it wants to keep before retiring.",
-			retireSchema,
+			"taskq_requeue",
+			"Re-queue a task",
+			"The answer to a not-usable verification audit: put the task back in the queue for another segment. The primary chooses the route by where the defect is. Route in-place rolls the worktree back to the branch head the last delivered segment reached, keeps the worktree, the branch, and the same worker's session log, and clears the segment's uncommitted wreckage; use it when the corruption is contained to the segment. Route fresh removes the worktree and the branch, cuts a new one from the baseline, and reseeds the worker's request sequence; use it when the worktree, its git state, or the environment around it is poisoned, so that a rollback would carry the damage forward. The fresh route is a forced removal, so package the branch before calling it. Either way the queue entries stay: the next segment is a new entry, never a second run. Only an active task re-queues, and only between segments.",
+			requeueSchema,
 			async (params, ctx) => {
 				const run = openRun(ctx);
-				// A task interrupted between the prune and the record has phase
-				// merged with a removed worktree; the gate admits it so the re-run
-				// records the retire and the close completes. A retired phase with
-				// a live worktree predates this ordering (record-first) and the
-				// re-run completes its removal.
-				const task = requireTaskPhase(run, params.taskId, (t) => canRetire(t) || t.phase === "retired", "retire-gate");
-				const spec = { branch: task.branch, path: task.workdir, baseline: task.baseline };
-				if (task.phase === "retired" && isPruned(run.mainRoot, spec)) {
-					// The record and the prune both landed; the replay is a no-op.
-					return { taskId: params.taskId, phase: "retired", removedWorktree: task.workdir, prunedBranch: task.branch };
-				}
-				// Prune first, record second: a failed prune leaves both the state
-				// and the journal untouched, so an interrupted retire never leaves
-				// a retire event the state does not confirm (I12).
-				if (!isPruned(run.mainRoot, spec)) {
-					pruneWorktree(run.mainRoot, spec);
-				}
-				if (task.phase !== "retired") {
-					await runTool(ctx, (r) => r.handle((state) => retireOp(state, params.taskId, nowIso())));
-				}
-				return { taskId: params.taskId, phase: "retired", removedWorktree: task.workdir, prunedBranch: task.branch };
+				const gate = requireTaskPhase(run, params.taskId, canRequeue, "requeue-gate");
+				const route: RequeueRoute = params.route;
+				const mainRoot = run.mainRoot;
+				// The worktree move and the record are one transaction, so no
+				// other writer on this state directory can observe a worktree
+				// at a head no record names.
+				const result = await runTool(ctx, { taskId: params.taskId, workdir: gate.workdir }, (state, live) => {
+					const task = state.tasks[params.taskId];
+					const spec = { branch: task.branch, path: task.workdir, baseline: task.baseline };
+					let head: string;
+					if (route === "in-place") {
+						head = task.lastSegmentHead;
+						live.beat();
+						rollbackWorktree(task.workdir, head);
+					} else {
+						head = task.baseline;
+						live.beat();
+						// Forced: abandoning a poisoned track is the point of this
+						// route, and the branch is packaged before the call.
+						pruneWorktree(mainRoot, spec, { force: true });
+						live.beat();
+						addWorktree(mainRoot, spec);
+						// The fresh worktree starts with an empty request counter;
+						// seed it at the sequence the queue already reached, or
+						// the worker's next request would reuse an id this run
+						// recorded and the scan would skip it forever.
+						writeWorkerState(task.workdir, { seq: previousSeq(state.entries, params.taskId) });
+					}
+					live.beat();
+					return requeueOp(state, { taskId: params.taskId, route, head }, nowIso());
+				});
+				return {
+					taskId: params.taskId,
+					route,
+					phase: result.task.phase,
+					workdir: result.task.workdir,
+					branch: result.task.branch,
+					head: result.task.lastSegmentHead,
+					nextRequestSeq: result.requestSeq + 1,
+				};
 			},
-			{ snippet: "taskq_retire - remove a decided task's worktree and prune its branch", sequential: true },
+			{ snippet: "taskq_requeue - roll the worktree back in place, or cut a fresh worktree from the baseline", sequential: true },
 		),
 	);
 
@@ -494,7 +587,7 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_close",
 			"Close the run",
-			"Close the run: every task must be retired first, every worktree removed, every branch pruned. Runs the exactly-once close audit (every recorded request produced exactly one entry; every entry triggered exactly once) and reports the counts.",
+			"Close the run: every task must be retired first, every worktree removed, every branch pruned. Runs the exactly-once close audit (every recorded request produced exactly one entry; every entry triggered exactly once) and reports the counts. A close that was interrupted and re-run reports the same counts instead of failing.",
 			Type.Object({}),
 			async (_params, ctx) => {
 				const run = openRun(ctx);
@@ -504,38 +597,51 @@ export default function (pi: ExtensionAPI): void {
 					// instead of failing on a closed run (I13).
 					return { closed: true, counts: integrityCounts(state) };
 				}
-				const leftovers = Object.values(state.tasks).filter((t) => !isPruned(run.mainRoot, { branch: t.branch, path: t.workdir, baseline: t.baseline }));
-				if (leftovers.length > 0) {
-					throw new TaskQueueError(
-						"close-gate",
-						`${leftovers.length} task(s) still have a worktree or branch: ${leftovers.map((t) => t.taskId).join(", ")}; retire them first`,
-					);
-				}
-				// Sweep unregistered leftovers (I10): a fork interrupted between
-				// cutting the worktree and registering the task must not survive
-				// a clean close. Worktrees and branches that existed when the run
-				// opened belong to the repository, not to this run, and are not
-				// leftovers.
-				if (state.baselineWorktrees !== undefined && state.baselineBranches !== undefined) {
-					const ownedWorktrees = new Set(Object.values(state.tasks).map((t) => path.resolve(t.workdir)));
-					const openedWorktrees = new Set(state.baselineWorktrees.map((p) => path.resolve(p)));
-					const strayWorktrees = listWorktrees(run.mainRoot).filter((p) => {
-						const resolved = path.resolve(p);
-						return resolved !== path.resolve(run.mainRoot) && !ownedWorktrees.has(resolved) && !openedWorktrees.has(resolved);
-					});
-					const ownedBranches = new Set(Object.values(state.tasks).map((t) => t.branch));
-					const openedBranches = new Set(state.baselineBranches);
-					const current = currentBranch(run.mainRoot);
-					const strayBranches = listBranches(run.mainRoot).filter((b) => b !== current && !ownedBranches.has(b) && !openedBranches.has(b));
-					if (strayWorktrees.length > 0 || strayBranches.length > 0) {
+				// The sweep and the close record are one locked derive: a fork
+				// that crashed between cutting a worktree and registering it
+				// cannot leave a cut between the sweep and the record and
+				// survive a clean close.
+				const counts = await runTool(ctx, undefined, (s) => {
+					const leftovers = Object.values(s.tasks).filter((t) => !isPruned(run.mainRoot, { branch: t.branch, path: t.workdir, baseline: t.baseline }));
+					if (leftovers.length > 0) {
 						throw new TaskQueueError(
 							"close-gate",
-							`close refuses ${strayWorktrees.length} unregistered worktree(s) and ${strayBranches.length} unregistered branch(es) not owned by any task: ${strayWorktrees.join(", ")} / ${strayBranches.join(", ")}. Remove the leftovers of an aborted fork before closing`,
+							`${leftovers.length} task(s) still have a worktree or branch: ${leftovers.map((t) => t.taskId).join(", ")}; bring them back first`,
 						);
 					}
-				}
-				const result = await runTool(ctx, (r) => r.handle((state) => closeOp(state, nowIso())));
-				return { closed: true, counts: result.data.counts };
+					// Sweep unregistered leftovers (I10): a fork interrupted between
+					// cutting the worktree and registering the task must not survive
+					// a clean close. Worktrees and branches that existed when the run
+					// opened belong to the repository, not to this run, and are not
+					// leftovers.
+					if (s.baselineWorktrees !== undefined && s.baselineBranches !== undefined) {
+						const ownedWorktrees = new Set(Object.values(s.tasks).map((t) => path.resolve(t.workdir)));
+						const openedWorktrees = new Set(s.baselineWorktrees.map((p) => path.resolve(p)));
+						const strayWorktrees = listWorktrees(run.mainRoot).filter((p) => {
+							const resolved = path.resolve(p);
+							return resolved !== path.resolve(run.mainRoot) && !ownedWorktrees.has(resolved) && !openedWorktrees.has(resolved);
+						});
+						const ownedBranches = new Set(Object.values(s.tasks).map((t) => t.branch));
+						const openedBranches = new Set(s.baselineBranches);
+						const current = currentBranch(run.mainRoot);
+						const strayBranches = listBranches(run.mainRoot).filter((b) => b !== current && !ownedBranches.has(b) && !openedBranches.has(b));
+						if (strayWorktrees.length > 0 || strayBranches.length > 0) {
+							throw new TaskQueueError(
+								"close-gate",
+								`close refuses ${strayWorktrees.length} unregistered worktree(s) and ${strayBranches.length} unregistered branch(es) not owned by any task: ${strayWorktrees.join(", ")} / ${strayBranches.join(", ")}. Remove the leftovers of an aborted fork before closing`,
+							);
+						}
+					}
+					const unclosed = Object.values(s.tasks).filter((t) => !canClose(t));
+					if (unclosed.length > 0) {
+						throw new TaskQueueError(
+							"close-gate",
+							`cannot close with ${unclosed.length} task(s) not retired: ${unclosed.map((t) => t.taskId).join(", ")}`,
+						);
+					}
+					return closeOp(s, nowIso());
+				});
+				return { closed: true, counts: counts.counts };
 			},
 			{ snippet: "taskq_close - close the run after every task is retired", sequential: true },
 		),
@@ -547,14 +653,18 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_status",
 			"Queue status",
-			"Snapshot of the run: tasks with phases, every queue entry with its state, pending entries, and the integrity counts.",
+			"Snapshot of the run: the tasks with their phases, each task's verification record, its proposal, and the file set its bring-back wrote; every queue entry with its state; the pending entries; the break point the operator holds; and the integrity counts. One primary writes one state directory.",
 			Type.Object({}),
 			async (_params, ctx) => {
 				const run = openRun(ctx);
 				const state = run.current();
+				// The hold is what the join would report, so an observer and the
+				// driver read the queue the same way.
+				const hold = heldBreakPoint({ stateDir: run.stateDir }, state, scanReady(state));
 				return {
 					closed: state.closed,
 					stateDir: state.stateDir,
+					worktreeRoot: worktreeRootOf(run.mainRoot, run.stateDir),
 					counts: integrityCounts(state),
 					tasks: Object.values(state.tasks).map((t) => ({
 						taskId: t.taskId,
@@ -564,9 +674,12 @@ export default function (pi: ExtensionAPI): void {
 						baseline: t.baseline,
 						phase: t.phase,
 						workerDone: t.workerDone,
-						verdict: t.verdict ?? undefined,
+						lastSegmentHead: t.lastSegmentHead,
+						verification: t.verification ?? undefined,
+						bringBack: t.bringBack ?? undefined,
 						proposalPaths: t.proposal?.paths ?? undefined,
 					})),
+					hold: hold ?? undefined,
 					pending: state.entries.filter((e) => e.state !== "triggered").map((e) => ({ entryId: e.entryId, taskId: e.taskId, state: e.state })),
 					entries: state.entries.map((e) => ({ entryId: e.entryId, taskId: e.taskId, state: e.state })),
 				};
@@ -581,7 +694,7 @@ export default function (pi: ExtensionAPI): void {
 		define(
 			"taskq_worker_request",
 			"Request a break point",
-			"Worker-side: request a break point from your own worktree. status \"running\" pauses for the operator; status \"done\" is the terminal break point, after which the primary runs the final verification. Commit your segment before requesting; the request document is written once and never overwritten.",
+			"Worker-side: request a break point from your own worktree. status \"running\" pauses for the operator; status \"done\" is the terminal break point, after which the primary runs the termination audit. Commit your segment before requesting; the request document is written once and never overwritten.",
 			workerRequestSchema,
 			async (params, ctx) => {
 				const requestId = nextRequestId(ctx.cwd, params.taskId);

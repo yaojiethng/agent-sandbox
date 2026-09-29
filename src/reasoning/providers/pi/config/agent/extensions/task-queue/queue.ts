@@ -13,10 +13,11 @@
  * State machine
  * -------------
  * Every entry transitions request -> scheduled -> triggered, in that order,
- * and stops at triggered. Only the primary performs transitions: it records
- * a worker's request (birth, state "requested"), schedules the entry, and
- * triggers it. The triggered state is the dequeue: the primary handles the
- * break point exactly when the entry triggers.
+ * and stops at triggered. Only the primary performs transitions, and only
+ * through the join: one call records a worker's request (birth, state
+ * "requested"), schedules the entry, and triggers it as one derivation, so
+ * the queue rests only in triggered. The triggered state is the dequeue:
+ * the primary handles the break point exactly when the entry triggers.
  *
  * The queue does not mark a break point's kind. A final break point and a
  * regular break point are the same kind of entry. The primary reads the

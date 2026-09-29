@@ -1,8 +1,9 @@
 /**
  * The operation gates: referential integrity (I3), exactly-once request ids
  * (I1), one pending break point per task, the verification gate (I8), the
- * merge gate (I9), the verdict scope discipline (I7), and the lifecycle
- * phases. Pure unit tests over the state transition functions.
+ * re-queue routes, the proposal gate, the bring-back gate (I9), the file
+ * set's scope discipline (I7), and the four lifecycle phases. Pure unit
+ * tests over the state transition functions.
  */
 
 import { describe, it } from "node:test";
@@ -11,13 +12,14 @@ import { TaskQueueError } from "../../src/reasoning/providers/pi/config/agent/ex
 import { entryIdOf, getEntry } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/queue.ts";
 import { freshState, type RunState } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
 import {
+	bringBackOp,
 	closeOp,
 	forkOp,
 	integrityCounts,
-	mergeOp,
+	joinOp,
 	proposalOp,
+	requeueOp,
 	recordOp,
-	retireOp,
 	scheduleOp,
 	triggerOp,
 	verifyOp,
@@ -38,30 +40,53 @@ function record(state: RunState, taskId: string, requestId: string, status: "run
 	return recordOp(state, { taskId, requestId, status, workdir: `/wt/${taskId}` }, AT).state;
 }
 
-function through(state: RunState, taskId: string, n = 1, status: "running" | "done" = "running"): RunState {
+/** Deliver n segments of a task; the last one carries the given status. */
+function through(state: RunState, taskId: string, n = 1, status: "running" | "done" = "running", heads?: string[]): RunState {
 	let s = state;
 	for (let i = 1; i <= n; i++) {
 		s = record(s, taskId, `${taskId}-${i}`, i === n ? status : "running");
 		s = scheduleOp(s, entryIdOf(taskId, i), AT).state;
-		s = triggerOp(s, { entryId: entryIdOf(taskId, i), head: `h${i}`, changed: i }, AT).state;
+		s = triggerOp(s, { entryId: entryIdOf(taskId, i), head: heads?.[i - 1] ?? `h${i}`, changed: i }, AT).state;
 	}
 	return s;
 }
 
-function terminal(state: RunState, taskId: string): RunState {
-	return through(state, taskId, 1, "done");
+/** One terminal segment: the task is active and waiting for its audit. */
+function terminal(state: RunState, taskId: string, heads?: string[]): RunState {
+	return through(state, taskId, 1, "done", heads);
 }
 
-function verified(state: RunState, taskId: string): RunState {
-	let s = terminal(state, taskId);
-	s = verifyOp(s, { taskId, outcome: "passed", notes: "ok" }, AT).state;
-	return s;
+/** The usable audit: the only state a bring-back runs from. */
+function usable(state: RunState, taskId: string): RunState {
+	return verifyOp(state, { taskId, outcome: "usable", notes: "report landed" }, AT).state;
+}
+
+/** The not-usable audit: the state a re-queue runs from. */
+function notUsable(state: RunState, taskId: string): RunState {
+	return verifyOp(state, { taskId, outcome: "not-usable", notes: "no report" }, AT).state;
 }
 
 function proposed(state: RunState, taskId: string, paths = ["a.txt", "b.txt"]): RunState {
-	let s = verified(state, taskId);
-	s = proposalOp(s, { taskId, description: "the distilled change", paths }, AT).state;
-	return s;
+	return proposalOp(state, { taskId, description: "the distilled change", paths }, AT).state;
+}
+
+function broughtBack(state: RunState, taskId: string, paths = ["a.txt", "b.txt"]): RunState {
+	return bringBackOp(
+		state,
+		{ taskId, paths, applied: paths, archived: paths.length === 0, removedWorktree: `/wt/${taskId}`, prunedBranch: `exp/${taskId}`, resumed: false },
+		AT,
+	).state;
+}
+
+/** A second terminal segment, by hand: the re-queue kept the first entry. */
+function nextTerminalSegment(state: RunState, taskId: string, head: string): RunState {
+	let s = record(state, taskId, `${taskId}-${previousSeqOf(state, taskId) + 1}`, "done");
+	s = scheduleOp(s, entryIdOf(taskId, previousSeqOf(state, taskId) + 1), AT).state;
+	return triggerOp(s, { entryId: entryIdOf(taskId, previousSeqOf(state, taskId) + 1), head, changed: 1 }, AT).state;
+}
+
+function previousSeqOf(state: RunState, taskId: string): number {
+	return state.entries.filter((e) => e.taskId === taskId).length;
 }
 
 function expects(code: string): (e: unknown) => boolean {
@@ -134,20 +159,20 @@ describe("record (I3, I1, segment serialization)", () => {
 		assert.equal(getEntry(s.entries, entryIdOf("t2", 1))?.requestSeq, 1);
 	});
 
-	it("rejects a request for a verified, merged, discarded, or retired task", () => {
-		assert.throws(() => record(verified(fork(base(), "t1"), "t1"), "t1", "t1-2"), expects("task-phase"));
-		let s = proposed(fork(base(), "t1"), "t1");
-		s = mergeOp(s, { taskId: "t1", verdict: { scope: "all" }, applied: ["a.txt", "b.txt"], archived: false }, AT).state;
-		assert.throws(() => record(s, "t1", "t1-2"), expects("task-phase"));
+	it("rejects a request for a terminated or retired task", () => {
+		const forked = fork(base(), "t1");
+		assert.throws(() => record(usable(terminal(forked, "t1"), "t1"), "t1", "t1-2"), expects("task-phase"));
+		const retired = broughtBack(proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1"), "t1");
+		assert.throws(() => record(retired, "t1", "t1-2"), expects("task-phase"));
 	});
 
-	it("accepts a repair segment after a failed verification", () => {
-		let s = terminal(fork(base(), "t1"), "t1");
-		s = verifyOp(s, { taskId: "t1", outcome: "failed", notes: "report missing" }, AT).state;
-		assert.equal(s.tasks.t1.phase, "failed");
-		s = record(s, "t1", "t1-2", "running");
+	it("accepts another segment after a not-usable audit", () => {
+		// The audit leaves the task active; the re-queue is what the primary
+		// does next, and the segment that follows it re-enters through the
+		// same join.
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
 		assert.equal(s.tasks.t1.phase, "active");
-		assert.equal(s.tasks.t1.workerDone, false);
+		assert.doesNotThrow(() => recordOp(s, { taskId: "t1", requestId: "t1-2", status: "running", workdir: "/wt/t1" }, AT));
 	});
 });
 
@@ -163,125 +188,204 @@ describe("trigger (I3 dequeue check)", () => {
 
 describe("verify (I8: only at the worker's terminal request, never mid-segment)", () => {
 	it("rejects when no break point was ever recorded", () => {
-		assert.throws(() => verifyOp(fork(base(), "t1"), { taskId: "t1", outcome: "passed", notes: "" }, AT), expects("verify-gate"));
+		assert.throws(() => verifyOp(fork(base(), "t1"), { taskId: "t1", outcome: "usable", notes: "" }, AT), expects("verify-gate"));
 	});
 
 	it("rejects while a segment's break point is pending (mid-segment)", () => {
 		let s = record(fork(base(), "t1"), "t1", "t1-1");
 		s = scheduleOp(s, entryIdOf("t1", 1), AT).state;
-		assert.throws(() => verifyOp(s, { taskId: "t1", outcome: "passed", notes: "" }, AT), expects("verify-gate"));
+		assert.throws(() => verifyOp(s, { taskId: "t1", outcome: "usable", notes: "" }, AT), expects("verify-gate"));
 	});
 
 	it("rejects when the latest break point is triggered but the worker did not request its terminal break point", () => {
 		const s = through(fork(base(), "t1"), "t1");
 		assert.equal(s.tasks.t1.workerDone, false);
-		assert.throws(() => verifyOp(s, { taskId: "t1", outcome: "passed", notes: "" }, AT), expects("verify-gate"));
+		assert.throws(() => verifyOp(s, { taskId: "t1", outcome: "usable", notes: "" }, AT), expects("verify-gate"));
 	});
 
-	it("accepts only after the terminal request triggered and nothing is pending", () => {
-		const s = terminal(fork(base(), "t1"), "t1");
-		const r = verifyOp(s, { taskId: "t1", outcome: "passed", notes: "report landed" }, AT);
-		assert.equal(r.data.task.phase, "verified");
+	it("terminates the task on a usable audit and records the break point it decided", () => {
+		const r = verifyOp(terminal(fork(base(), "t1"), "t1"), { taskId: "t1", outcome: "usable", notes: "report landed" }, AT);
+		assert.equal(r.data.task.phase, "terminated");
+		assert.equal(r.data.task.verification?.outcome, "usable");
+		assert.equal(r.data.task.verification?.entryId, "t1#1");
 	});
 
-	it("records a failed outcome and allows a repair segment (I8 repair path)", () => {
-		let s = terminal(fork(base(), "t1"), "t1");
-		s = verifyOp(s, { taskId: "t1", outcome: "failed", notes: "missing report" }, AT).state;
-		assert.equal(s.tasks.t1.phase, "failed");
-		s = record(s, "t1", "t1-2");
-		s = scheduleOp(s, entryIdOf("t1", 2), AT).state;
-		s = triggerOp(s, { entryId: entryIdOf("t1", 2), head: "h2", changed: 1 }, AT).state;
-		s = record(s, "t1", "t1-3", "done");
-		s = scheduleOp(s, entryIdOf("t1", 3), AT).state;
-		s = triggerOp(s, { entryId: entryIdOf("t1", 3), head: "h3", changed: 1 }, AT).state;
-		s = verifyOp(s, { taskId: "t1", outcome: "passed", notes: "now landed" }, AT).state;
-		assert.equal(s.tasks.t1.phase, "verified");
+	it("leaves the task active on a not-usable audit, and records why", () => {
+		const r = verifyOp(terminal(fork(base(), "t1"), "t1"), { taskId: "t1", outcome: "not-usable", notes: "no report" }, AT);
+		assert.equal(r.data.task.phase, "active", "a not-usable audit never terminates the task");
+		assert.equal(r.data.task.verification?.outcome, "not-usable");
+		assert.equal(r.data.task.verification?.entryId, "t1#1");
+	});
+
+	it("refuses a second audit of the same terminal break point", () => {
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		assert.throws(() => verifyOp(s, { taskId: "t1", outcome: "usable", notes: "now landed" }, AT), expects("verify-gate"));
+	});
+
+	it("refuses a second audit after a usable audit, because the task is terminated", () => {
+		const s = usable(terminal(fork(base(), "t1"), "t1"), "t1");
+		assert.throws(() => verifyOp(s, { taskId: "t1", outcome: "usable", notes: "again" }, AT), expects("verify-gate"));
+	});
+
+	it("audits the new terminal break point after a re-queued segment", () => {
+		let s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		s = requeueOp(s, { taskId: "t1", route: "in-place", head: "h1" }, AT).state;
+		s = nextTerminalSegment(s, "t1", "h2");
+		s = verifyOp(s, { taskId: "t1", outcome: "usable", notes: "now landed" }, AT).state;
+		assert.equal(s.tasks.t1.phase, "terminated");
+		assert.equal(s.tasks.t1.verification?.entryId, "t1#2");
 	});
 });
 
-describe("proposal (I9 ordering: distilled from verified state)", () => {
-	it("rejects a proposal before verification", () => {
+describe("requeue (both routes; the primary chooses)", () => {
+	it("rolls the worktree back in place and keeps the task active", () => {
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		const r = requeueOp(s, { taskId: "t1", route: "in-place", head: "h1" }, AT);
+		assert.equal(r.data.task.phase, "active");
+		assert.equal(r.data.task.lastSegmentHead, "h1");
+		assert.equal(r.data.task.workerDone, false, "the worker has another segment to run");
+		assert.equal(r.data.requestSeq, 1, "the next request continues the sequence the queue reached");
+	});
+
+	it("a fresh re-queue returns the task to forked at the baseline", () => {
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		const r = requeueOp(s, { taskId: "t1", route: "fresh", head: "b0" }, AT);
+		assert.equal(r.data.task.phase, "forked");
+		assert.equal(r.data.task.lastSegmentHead, "b0");
+		assert.equal(r.data.task.workerDone, false);
+		assert.equal(r.data.requestSeq, 1);
+	});
+
+	it("refuses a head the route did not put the worktree at", () => {
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		assert.throws(() => requeueOp(s, { taskId: "t1", route: "in-place", head: "b0" }, AT), expects("requeue-gate"));
+		assert.throws(() => requeueOp(s, { taskId: "t1", route: "fresh", head: "h1" }, AT), expects("requeue-gate"));
+	});
+
+	it("refuses a re-queue before a terminal break point and after termination", () => {
+		assert.throws(() => requeueOp(fork(base(), "t1"), { taskId: "t1", route: "in-place", head: "b0" }, AT), expects("requeue-gate"));
+		assert.throws(() => requeueOp(usable(terminal(fork(base(), "t1"), "t1"), "t1"), { taskId: "t1", route: "in-place", head: "h1" }, AT), expects("requeue-gate"));
+	});
+
+	it("refuses a re-queue while a break point is pending", () => {
+		const s = record(fork(base(), "t1"), "t1", "t1-1");
+		assert.throws(() => requeueOp(s, { taskId: "t1", route: "in-place", head: "b0" }, AT), expects("requeue-gate"));
+	});
+
+	it("keeps the queue entries across a re-queue, so the run holds no duplicate (I1)", () => {
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		const after = requeueOp(s, { taskId: "t1", route: "fresh", head: "b0" }, AT).state;
+		assert.deepEqual(after.entries.map((e) => e.entryId), ["t1#1"]);
+		assert.deepEqual(Object.keys(after.requests), ["t1-1"]);
+	});
+});
+
+describe("proposal (I9 ordering: distilled from terminated state)", () => {
+	it("rejects a proposal before the termination audit", () => {
 		const s = terminal(fork(base(), "t1"), "t1");
 		assert.throws(() => proposalOp(s, { taskId: "t1", description: "", paths: ["a.txt"] }, AT), expects("proposal-gate"));
 	});
 
-	it("stores the proposal on a verified task", () => {
-		const s = verified(fork(base(), "t1"), "t1");
+	it("rejects a proposal for a not-usable task: the primary judges a usable return", () => {
+		const s = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		assert.throws(() => proposalOp(s, { taskId: "t1", description: "", paths: ["a.txt"] }, AT), expects("proposal-gate"));
+	});
+
+	it("stores the proposal on a terminated task", () => {
+		const s = usable(terminal(fork(base(), "t1"), "t1"), "t1");
 		const r = proposalOp(s, { taskId: "t1", description: "the change", paths: ["a.txt"] }, AT);
 		assert.deepEqual(r.data.proposal.paths, ["a.txt"]);
 	});
 });
 
-describe("merge (I9, I7)", () => {
-	it("rejects a merge before final verification (I9)", () => {
-		let s = terminal(fork(base(), "t1"), "t1");
-		assert.throws(() => mergeOp(s, { taskId: "t1", verdict: { scope: "all" }, applied: [], archived: false }, AT), expects("merge-gate"));
-	});
-
-	it("rejects a merge without a proposal", () => {
-		const s = verified(fork(base(), "t1"), "t1");
-		assert.throws(() => mergeOp(s, { taskId: "t1", verdict: { scope: "all" }, applied: [], archived: false }, AT), expects("merge-gate"));
-	});
-
-	it("rejects a partial verdict naming a path outside the proposal (I7)", () => {
-		const s = proposed(fork(base(), "t1"), "t1", ["a.txt"]);
+describe("bring-back (I9, I7)", () => {
+	it("rejects a bring-back before the termination audit is usable (I9)", () => {
+		const pending = terminal(fork(base(), "t1"), "t1");
 		assert.throws(
-			() => mergeOp(s, { taskId: "t1", verdict: { scope: "partial", paths: ["b.txt"] }, applied: [], archived: false }, AT),
-			expects("verdict-invalid"),
+			() => bringBackOp(pending, { taskId: "t1", paths: [], applied: [], archived: true, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT),
+			expects("bring-back-gate"),
+		);
+		const rejected = notUsable(terminal(fork(base(), "t1"), "t1"), "t1");
+		assert.throws(
+			() => bringBackOp(rejected, { taskId: "t1", paths: [], applied: [], archived: true, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT),
+			expects("bring-back-gate"),
 		);
 	});
 
-	it("rejects an empty or duplicated partial verdict", () => {
-		const s = proposed(fork(base(), "t1"), "t1", ["a.txt"]);
-		assert.throws(() => mergeOp(s, { taskId: "t1", verdict: { scope: "partial", paths: [] }, applied: [], archived: false }, AT), expects("verdict-invalid"));
+	it("rejects a bring-back without a proposal", () => {
+		const s = usable(terminal(fork(base(), "t1"), "t1"), "t1");
 		assert.throws(
-			() => mergeOp(s, { taskId: "t1", verdict: { scope: "partial", paths: ["a.txt", "a.txt"] }, applied: [], archived: false }, AT),
-			expects("verdict-invalid"),
+			() => bringBackOp(s, { taskId: "t1", paths: [], applied: [], archived: true, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT),
+			expects("bring-back-gate"),
 		);
 	});
 
-	it("all marks the task merged, none marks it discarded", () => {
-		let s = proposed(fork(base(), "t1"), "t1");
-		s = mergeOp(s, { taskId: "t1", verdict: { scope: "all" }, applied: ["a.txt", "b.txt"], archived: false }, AT).state;
-		assert.equal(s.tasks.t1.phase, "merged");
-		assert.deepEqual(s.tasks.t1.verdict, { scope: "all" });
-
-		let s2 = proposed(fork(base(), "t2"), "t2");
-		s2 = mergeOp(s2, { taskId: "t2", verdict: { scope: "none" }, applied: [], archived: true }, AT).state;
-		assert.equal(s2.tasks.t2.phase, "discarded");
-		assert.deepEqual(s2.tasks.t2.verdict, { scope: "none" });
+	it("rejects a file set naming a path outside the proposal (I7)", () => {
+		const s = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1", ["a.txt"]);
+		assert.throws(
+			() => bringBackOp(s, { taskId: "t1", paths: ["b.txt"], applied: [], archived: false, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT),
+			expects("file-set-invalid"),
+		);
 	});
 
-	it("records exactly the applied paths with a partial verdict (I7)", () => {
-		const s = proposed(fork(base(), "t1"), "t1", ["a.txt", "b.txt", "c.txt"]);
-		const r = mergeOp(s, { taskId: "t1", verdict: { scope: "partial", paths: ["a.txt", "c.txt"] }, applied: ["a.txt", "c.txt"], archived: false }, AT);
-		assert.equal(r.data.task.phase, "merged");
-		assert.deepEqual(r.data.task.verdict, { scope: "partial", paths: ["a.txt", "c.txt"] });
+	it("rejects a file set that names a path twice", () => {
+		const s = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1", ["a.txt"]);
+		assert.throws(
+			() => bringBackOp(s, { taskId: "t1", paths: ["a.txt", "a.txt"], applied: [], archived: false, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT),
+			expects("file-set-invalid"),
+		);
+	});
+
+	it("retires the task and records the file set it wrote", () => {
+		const open = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1");
+		const s = bringBackOp(open, { taskId: "t1", paths: ["a.txt"], applied: ["a.txt"], archived: false, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT).state;
+		assert.equal(s.tasks.t1.phase, "retired");
+		assert.deepEqual(s.tasks.t1.bringBack?.paths, ["a.txt"]);
+		assert.equal(s.tasks.t1.bringBack?.archived, false);
+	});
+
+	it("the empty file set is legal: nothing written back, the task still retires", () => {
+		const open = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1");
+		const s = bringBackOp(open, { taskId: "t1", paths: [], applied: [], archived: true, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT).state;
+		assert.equal(s.tasks.t1.phase, "retired");
+		assert.deepEqual(s.tasks.t1.bringBack?.paths, []);
+		assert.equal(s.tasks.t1.bringBack?.archived, true, "the branch diff is archived into the run record");
+	});
+
+	it("refuses a bring-back while a break point is pending", () => {
+		const open = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1");
+		const pending = { ...open, entries: [{ ...open.entries[0], state: "scheduled" as const }] };
+		assert.throws(
+			() => bringBackOp(pending, { taskId: "t1", paths: ["a.txt"], applied: [], archived: false, removedWorktree: "/wt/t1", prunedBranch: "exp/t1", resumed: false }, AT),
+			expects("bring-back-gate"),
+		);
 	});
 });
 
-describe("retire and close (I10, I1 close audit)", () => {
-	it("retires only a merged or discarded task", () => {
-		assert.throws(() => retireOp(fork(base(), "t1"), "t1", AT), expects("retire-gate"));
-		assert.throws(() => retireOp(verified(fork(base(), "t1"), "t1"), "t1", AT), expects("retire-gate"));
+describe("join (one derivation, one delivery)", () => {
+	it("records, schedules, and triggers as one transition", () => {
+		const r = joinOp(fork(base(), "t1"), { taskId: "t1", requestId: "t1-1", status: "running", head: "h1", changed: 1 }, AT);
+		assert.equal(r.data.recorded, true);
+		assert.equal(r.state.entries[0].state, "triggered");
+		assert.equal(r.state.tasks.t1.phase, "active");
+		assert.equal(r.state.tasks.t1.lastSegmentHead, "h1");
+		assert.deepEqual(r.events.map((e) => e.type), ["request:record", "entry:schedule", "entry:trigger"]);
 	});
+});
 
-	it("closes only when every task retired", () => {
-		let s = proposed(fork(base(), "t1"), "t1");
-		s = mergeOp(s, { taskId: "t1", verdict: { scope: "all" }, applied: ["a.txt"], archived: false }, AT).state;
-		assert.throws(() => closeOp(s, AT), expects("close-gate"));
-		s = retireOp(s, "t1", AT).state;
-		const r = closeOp(s, AT);
+describe("close (I10, I1 close audit)", () => {
+	it("closes only when every task is retired", () => {
+		const open = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1");
+		assert.throws(() => closeOp(open, AT), expects("close-gate"));
+		const r = closeOp(broughtBack(open, "t1"), AT);
 		assert.equal(r.data.counts.entries, 1);
 		assert.equal(r.data.counts.requests, 1);
 		assert.equal(r.data.counts.triggered, 1);
 	});
 
 	it("rejects transitions on a closed run", () => {
-		let s = proposed(fork(base(), "t1"), "t1");
-		s = mergeOp(s, { taskId: "t1", verdict: { scope: "none" }, applied: [], archived: true }, AT).state;
-		s = retireOp(s, "t1", AT).state;
-		s = closeOp(s, AT).state;
+		const open = proposed(usable(terminal(fork(base(), "t1"), "t1"), "t1"), "t1", []);
+		const s = closeOp(broughtBack(open, "t1", []), AT).state;
 		assert.equal(s.closed, true);
 		assert.throws(() => forkOp(s, { taskId: "t2", workdir: "/wt/t2", branch: "exp/t2", baseline: "b0", mainRoot: MAIN }, AT), expects("run-closed"));
 	});
@@ -289,17 +393,14 @@ describe("retire and close (I10, I1 close audit)", () => {
 	it("close audit counts hold over a mixed run (I1 identity)", () => {
 		let s = fork(base(), "t1");
 		s = fork(s, "t2");
-		// t1: two segments, terminal; t2: one segment.
-		s = through(s, "t1", 2, "done");
-		s = verifyOp(s, { taskId: "t1", outcome: "passed", notes: "" }, AT).state;
-		s = proposalOp(s, { taskId: "t1", description: "", paths: [] }, AT).state;
-		s = mergeOp(s, { taskId: "t1", verdict: { scope: "all" }, applied: [], archived: false }, AT).state;
-		s = retireOp(s, "t1", AT).state;
-		s = through(s, "t2", 1, "done");
-		s = verifyOp(s, { taskId: "t2", outcome: "passed", notes: "" }, AT).state;
-		s = proposalOp(s, { taskId: "t2", description: "", paths: [] }, AT).state;
-		s = mergeOp(s, { taskId: "t2", verdict: { scope: "none" }, applied: [], archived: true }, AT).state;
-		s = retireOp(s, "t2", AT).state;
+		// t1: a not-usable audit, an in-place re-queue, a second terminal
+		// segment, and a usable return brought back as the empty file set;
+		// t2: one terminal segment whose file set is one path.
+		s = notUsable(terminal(s, "t1", ["h1"]), "t1");
+		s = requeueOp(s, { taskId: "t1", route: "in-place", head: "h1" }, AT).state;
+		s = nextTerminalSegment(s, "t1", "h2");
+		s = broughtBack(proposed(usable(s, "t1"), "t1", []), "t1", []);
+		s = broughtBack(proposed(usable(terminal(s, "t2"), "t2"), "t2", ["a.txt"]), "t2", ["a.txt"]);
 		const before = integrityCounts(s);
 		assert.deepEqual(before, { tasks: 2, entries: 3, triggered: 3, pending: 0, requests: 3 });
 		const r = closeOp(s, AT);

@@ -1,9 +1,21 @@
 /**
  * Error codes for the task-queue extension.
  *
- * Every gate in the queue, the task lifecycle, and the merge reports a
- * distinct code so a rejected operation tells the primary exactly which
- * contract rule it violated.
+ * Every gate in the queue, the task lifecycle, and the bring-back reports
+ * a distinct code so a rejected operation tells the primary exactly which
+ * contract rule it violated. The bring-back is the operation; the merge is
+ * the main-tree write it performs, so the two codes that name the write
+ * keep the merge prefix.
+ *
+ * "join-contended" is the one code the join itself raises: a break point
+ * moved under a delivery because another join took it. The join re-scans
+ * on that code; a state that keeps contending surfaces it to the caller.
+ * "lock-held" is the other: the state directory is owned by a live writer
+ * this process is not, so the call reports the contention instead of
+ * racing it. "bring-back-unprovable" separates the two bring-back gates:
+ * the file set is legal but the record this tool would infer from a gone
+ * worktree has no evidence behind it, so the call refuses rather than
+ * write a retirement it cannot prove.
  */
 export type TaskQueueErrorCode =
 	| "run-closed"
@@ -13,6 +25,8 @@ export type TaskQueueErrorCode =
 	| "task-duplicate"
 	| "task-unknown"
 	| "task-workdir-inside-main"
+	| "worktree-occupied"
+	| "join-contended"
 	| "task-phase"
 	| "entry-unknown"
 	| "entry-not-requested"
@@ -27,11 +41,13 @@ export type TaskQueueErrorCode =
 	| "request-invalid"
 	| "verify-gate"
 	| "proposal-gate"
-	| "merge-gate"
-	| "verdict-invalid"
+	| "requeue-gate"
+	| "bring-back-gate"
+	| "bring-back-unprovable"
+	| "file-set-invalid"
 	| "merge-dirty-main"
 	| "merge-apply-failed"
-	| "retire-gate"
+	| "lock-held"
 	| "prune-failed"
 	| "close-gate"
 	| "state-corrupt"

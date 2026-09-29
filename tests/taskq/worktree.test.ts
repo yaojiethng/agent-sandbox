@@ -11,6 +11,7 @@ import * as path from "node:path";
 import { TaskQueueError } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
 import {
 	addWorktree,
+	assertPrunable,
 	git,
 	gitRoot,
 	isPruned,
@@ -20,6 +21,7 @@ import {
 	resolveRev,
 	segmentInfo,
 	statusPorcelain,
+	strayPaths,
 	worktreeHead,
 } from "../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
 import { commitAll, gitInit, makeMainRepo, rmrf, tmpdir, writeFile } from "./helpers.ts";
@@ -145,6 +147,34 @@ describe("retire (I10)", () => {
 			assert.throws(() => pruneWorktree(root, { branch: "exp/t1", path: wt, baseline }), (e) => e instanceof TaskQueueError && e.code === "prune-failed");
 			assert.equal(fs.existsSync(wt), true);
 			assert.ok(listBranches(root).includes("exp/t1"));
+		} finally {
+			rmrf(dir);
+		}
+	});
+
+	it("asks the prune's refusal without removing anything", () => {
+		const dir = tmpdir();
+		try {
+			const { root, baseline } = makeMainRepo(dir);
+			const spec = { branch: "exp/t1", path: path.join(dir, "wt-t1"), baseline };
+			addWorktree(root, spec);
+			// The worker's own protocol files are bookkeeping, not content.
+			writeFile(spec.path, "taskq/requests/t1-1.json", "{}");
+			assert.deepEqual(strayPaths(spec), []);
+			assertPrunable(spec);
+			// A deliverable the worker never committed is the refusal, and
+			// asking leaves the worktree and the branch in place.
+			writeFile(spec.path, "precious.txt", "uncommitted deliverable\n");
+			assert.deepEqual(strayPaths(spec), ["precious.txt"]);
+			assert.throws(() => assertPrunable(spec), (e) => e instanceof TaskQueueError && e.code === "prune-failed" && String((e as Error).message).includes("precious.txt"));
+			assert.equal(fs.existsSync(spec.path), true);
+			assert.ok(listBranches(root).includes("exp/t1"));
+			// The fresh re-queue route asks about a poisoned worktree it will
+			// force-remove, and the forced answer is the one that proceeds.
+			assertPrunable(spec, { force: true });
+			// A worktree that is gone holds nothing to refuse.
+			assert.deepEqual(strayPaths({ ...spec, path: path.join(dir, "gone") }), []);
+			assertPrunable({ ...spec, path: path.join(dir, "gone") });
 		} finally {
 			rmrf(dir);
 		}

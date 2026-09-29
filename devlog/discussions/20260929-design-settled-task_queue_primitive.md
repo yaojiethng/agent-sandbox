@@ -151,7 +151,7 @@ The comparison read the third-party `pi-subagents` v0.73.1 source and docs in fu
 7. Tool-surface size is not the adoption cost. `pi-subagents` registers two tools, but adopting it puts our protocol on a tool outside the project's control.
 8. Reuse is still available; installing `pi-subagents` for delegation, background runs, and steering is independent of keeping task-queue ours.
 
-### Open issues on our own extension's interface
+### Interface issues on our own extension
 
 These come from a review of how the extension behaves for an operator-driving primary, not from the invariants, which the extension holds.
 
@@ -161,7 +161,9 @@ These come from a review of how the extension behaves for an operator-driving pr
 
 **Open issue 3 -- the state machine surface is larger than the conceptual loop.** The operator's read of the loop is: fork, executing, waiting, join (operator processes), processing, done. The extension surfaces 7 task phases (forked, active, verified, failed, merged, discarded, retired) plus 3 queue-entry states (requested, scheduled, triggered) across 12 tools. Part of this is legitimate: the queue entries genuinely have the minimal 3 states, and the task phases are not sequence states but the bring-back and retirement lifecycle that makes the merge and close safe and crash-recoverable, the same lifecycle `pi-subagents` hides inside its runner. The critique is that we surface lifecycle bookkeeping as first-class work the primary must drive, so the extension reads as more complex than the loop it serves. The reachable fix is to reduce the surface, not the state count: consolidate the per-break-point drive (poll, record, schedule) into one higher-level join, and document the conceptual five-state loop and map each task phase onto it so the tool suite reads as one lifecycle rather than a roll of arbitrary states.
 
-None of these three blocks the primitive; Track B holds the contract's invariants and is landed. They are the next Track B ergonomics fixes before the primitive is reused as a base for `fanout` and `parallel-auto`.
+All three are closed by the fork and join surface, recorded in [`task_queue_primitive.md`](../../docs/adr/task_queue_primitive.md) under "The fork and join surface": `taskq_join` is the one blocking call that waits for and delivers a break point, the four intermediate tools are gone, `taskq_fork` owns a run-scoped worktree path derived from the run id and the task id, and the prompt maps the task phases and entry states onto the loop.
+
+The seven task phases and twelve tools this record describes are themselves superseded. The lifecycle is four phases - `forked`, `active`, `terminated`, `retired` - the termination audit is a task record with a `usable` or `not-usable` outcome, the re-queue has two routes, and the bring-back writes a file set and prunes the worktree in one call. The invariant set and the reasoning above stand; the phase list in open issue 3 and the verdict object in the procedure section are the record of the surface as it was, not as it is. The current decisions are in [`task_queue_primitive.md`](../../docs/adr/task_queue_primitive.md) under "The task lifecycle, the fused bring-back, and the ownership lock".
 
 ## Consequences
 
@@ -170,6 +172,19 @@ None of these three blocks the primitive; Track B holds the contract's invariant
 - The primitive lands first; `fanout` and a rewritten `parallel-auto` consume it later.
 - The `/auto` generalization consideration is logged in the M3.2.1 roadmap for a future session.
 - The nushell-revisit (T4), patch-capture-before-removal, and per-prompt quality-pass rows carry the remaining follow-ups.
+
+### Deferred, non-blocking
+
+A thermo-nuclear review of the four-phase surface left these open. Each is recorded rather than fixed. None blocks the round; each is a later iteration's row.
+
+- m1 - the re-queue's head check restates what the git call the route just ran already proved, so it belongs in a comment beside the check rather than in the op.
+- m2 - the close's phase gate names `retired` where `nextPhase` would keep the gate and the transition table in step.
+- m6 - `writeWorkerRequest` tests the document's absence and then writes it, where `O_EXCL` is the one atomic test; the same window the fork's cut closed is still open on the worker side.
+- m8 - the lock-holder fixture carries two more modes worth adding: a delivery in flight, and a long section that beats.
+- m9 - dead code the round left behind.
+- m10 - every join poll re-reads every request document of every worktree, joinable or not, so a long wait costs O(polls) reads per document. It is a read cost, not a correctness one; the fix is to skip a worktree whose requests directory has not changed.
+- m11 - the archive writes its diff directly where a temp file and a rename would survive a crash mid-write.
+- m12 - `syncSleep` spins the clock out for a runtime without `Atomics.wait`.
 
 ### Open questions
 

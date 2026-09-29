@@ -15,9 +15,17 @@
  * runs the final verification. The queue entry never stores the status; the
  * primary reads the archived document when it handles the entry.
  *
- * The primary never writes into a worker's worktree. It reads the request
- * documents during poll, archives a copy into the run record, and the
- * protocol directory is always excluded from write-back proposals.
+ * The primary never writes into a worker's worktree, with one exception:
+ * the fresh re-queue route cuts a new worktree and seeds its
+ * `taskq/state.json` at the request sequence the queue already reached.
+ * That is the queue's own bookkeeping, not worker content - the seed is a
+ * counter, and without it the next request would reuse an id this run
+ * already recorded. The single-writer rule is about content (I6): the
+ * primary never puts worker output in the main tree, and the seed never
+ * travels there, because the protocol directory is excluded from every
+ * write-back proposal. The join reads the request documents, archives a
+ * copy into the run record, and the protocol directory is always excluded
+ * from write-back proposals.
  */
 
 import * as fs from "node:fs";
@@ -134,30 +142,46 @@ export function readWorkerRequest(workdir: string, requestId: string): WorkerReq
 }
 
 /** The numeric request sequence a request id carries after its last dash. */
-function requestSeqOf(requestId: string): number {
+export function requestSeqOf(requestId: string): number {
 	const seq = Number(requestId.slice(requestId.lastIndexOf("-") + 1));
 	return Number.isInteger(seq) && seq > 0 ? seq : Number.MAX_SAFE_INTEGER;
 }
 
+/** The worker files one scan read, with the exact bytes that were validated. */
+export interface WorkerRequestFile {
+	requestId: string;
+	request: WorkerRequest | undefined;
+	/** The bytes the parse ran on; the archive writes exactly these. */
+	raw: string;
+	invalid: boolean;
+}
+
 /**
- * List the request documents of a worktree in request order. Returns the
- * request id and the parsed document; documents that do not parse are
- * reported as invalid so the primary (not the worker's own process) decides
- * what to do with a broken protocol file.
+ * List the request documents of a worktree in request order. Each entry
+ * carries the document, the bytes it was parsed from, and whether it
+ * parsed at all, so a caller that admits a document archives the same
+ * bytes the queue validated rather than reading the file a second time:
+ * a document rewritten between the two reads could otherwise enter the
+ * queue under one id and be archived under another (F4). Documents that
+ * do not parse are reported as invalid so the primary (not the worker's
+ * own process) decides what to do with a broken protocol file.
  */
-export function listWorkerRequests(workdir: string): { requestId: string; request: WorkerRequest | undefined; invalid: boolean }[] {
+export function listWorkerRequests(workdir: string): WorkerRequestFile[] {
 	const dir = workerRequestsDir(workdir);
 	if (!fs.existsSync(dir)) return [];
-	const out: { requestId: string; request: WorkerRequest | undefined; invalid: boolean }[] = [];
+	const out: WorkerRequestFile[] = [];
 	// Numeric request order, not lexicographic: t1-10 follows t1-2.
 	const names = fs.readdirSync(dir).filter((n) => n.endsWith(".json"));
 	names.sort((a, b) => requestSeqOf(a.slice(0, -".json".length)) - requestSeqOf(b.slice(0, -".json".length)));
 	for (const name of names) {
 		const requestId = name.slice(0, -".json".length);
+		const file = path.join(dir, name);
+		let raw = "";
 		try {
-			out.push({ requestId, request: readWorkerRequest(workdir, requestId), invalid: false });
+			raw = fs.readFileSync(file, "utf8");
+			out.push({ requestId, request: parseWorkerRequest(raw, file), raw, invalid: false });
 		} catch {
-			out.push({ requestId, request: undefined, invalid: true });
+			out.push({ requestId, request: undefined, raw, invalid: true });
 		}
 	}
 	return out;

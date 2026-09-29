@@ -10,6 +10,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { TaskQueueError } from "./errors.ts";
 import type { QueueEntry } from "./queue.ts";
+import { TASK_PHASES } from "./transitions.ts";
 import type { TaskRecord } from "./tasks.ts";
 
 export interface RunBaseline {
@@ -20,7 +21,7 @@ export interface RunBaseline {
 }
 
 export interface RunState {
-	version: 2; // 1: pre-baseline-capture states (fields below absent)
+	version: 3; // 1: pre-baseline-capture; 2: the pre-consolidation phase set
 	mainRoot: string;
 	stateDir: string;
 	openedAt: string;
@@ -42,7 +43,7 @@ export interface RunState {
 
 export function freshState(mainRoot: string, stateDir: string, openedAt: string, baseline?: RunBaseline): RunState {
 	return {
-		version: 2,
+		version: 3,
 		mainRoot,
 		stateDir,
 		openedAt,
@@ -95,13 +96,17 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 /**
  * The shape guard: a state whose core fields are missing, mistyped, or
- * malformed is corruption, not a run. Version 1 (pre-baseline-capture)
- * and version 2 (this version) both load; the baseline fields stay
- * optional so older states keep loading with the close sweep skipped.
+ * malformed is corruption, not a run. Only version 3 loads. The earlier
+ * versions carry a different task record - version 2 the seven-phase set -
+ * so a state written before the four phases loads as a record no gate
+ * admits and every call fails with a misleading phase message; it is
+ * refused here instead, as one loud corruption (I13). The baseline fields
+ * stay optional, so a hand-written run without them loads with the close
+ * sweep skipped.
  */
 function validShape(v: unknown): v is RunState {
 	if (!isRecord(v)) return false;
-	if (v.version !== 1 && v.version !== 2) return false;
+	if (v.version !== 3) return false;
 	if (!Array.isArray(v.entries)) return false;
 	for (const entry of v.entries) {
 		if (!isRecord(entry)) return false;
@@ -124,6 +129,10 @@ function validShape(v: unknown): v is RunState {
 		if (!isRecord(task) || typeof task.taskId !== "string" || typeof task.phase !== "string") {
 			return false;
 		}
+		// A phase the transition table does not name is a state no gate
+		// admits: the run would fail every call with a message about the
+		// phase instead of about the record.
+		if (!TASK_PHASES.includes(task.phase as TaskRecord["phase"])) return false;
 	}
 	if (!isRecord(v.requests)) return false;
 	return true;
