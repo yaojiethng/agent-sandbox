@@ -4,7 +4,7 @@ Documentation describes the **current system reality**. It must stay concise, re
 
 Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../concepts/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
 
-The policy has five parts: where documents live (Folder Structure), hard gates (Enforcement Rules), how to write prose (Communication Standards), the document types (Document Types), and how records are produced and maintained (Record Lifecycle). Diagnostic checklists for compliance live in [`workflow/coding-agent/audits/documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md).
+The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md). Diagnostic checklists for compliance live in [`workflow/coding-agent/audits/documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md).
 
 ---
 
@@ -17,7 +17,7 @@ Each document belongs to **exactly one** of the following categories:
 | `architecture/` | Implementation design and decisions |
 | `concepts/` | The conceptual models the system runs on: abstract state transitions, multi-component interactions, principles of interaction. The *what* at the conceptual level. |
 | `operations/` | How to run the system |
-| `development/` | Contributor workflow, policy, and active planning |
+| `development/` | Contributor workflow and development conventions |
 | `adr/` | The rationale (the *why*) behind standing principles, interface shapes, and contracts. Superseded or awaiting-review ADRs live in `adr/archive/`. |
 
 Architecture documents must not describe things a frozen layer does not yet do. The layer model, the per-layer freeze status, and the freeze rule live in [`system_overview.md`](../architecture/system_overview.md#architecture-layer-model); `documentation_policy.md` applies them to document drafting.
@@ -77,8 +77,6 @@ The config enables the rules that match this policy. It disables `MD013` because
 ## Communication Standards
 
 ### Document depth and verbosity
-
-Policy documents are the authoritative source for workflow rules. A rule that exists only in a skill file or prompt template is not authoritative: bypass the skill and the constraint disappears.
 
 Put a rule where the reader meets it. A rule governing Step 6 of the minor loop belongs in the Step 6 entry of the workflow table, not in a separate document.
 
@@ -153,37 +151,25 @@ A document that must be read in full to extract one fact is structured wrong. If
 
 ## Document Types
 
-### Durability
+This section holds the obligations that apply per document type; it describes no genre.
 
-A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable -- a policy, an ADR, a concept doc, an architecture doc, readme.md, AGENTS.md. A handover or discussion is one session's evidence and decays; a tmp file or chat record is never kept. Referencing applies this classification.
+### Rule authority
 
-### `roadmap.md`
+A rule is authoritative only where a policy document canonically states it. A rule that exists only in a skill file or prompt template is not authoritative: bypass the skill and the constraint disappears. A concept document or ADR may describe a rule in readable form, but it links to the policy and is not the rule's home. A rule with no policy home is descriptive, not binding.
 
-`roadmap.md` lives in `development/` and receives future language and TODO items removed from architecture documents. Milestones organize it; each milestone is a feature completion boundary.
+A statement is a rule when it imposes an obligation a document or its author must meet, and belongs in policy. A statement is a model when it describes the system's structure as a consequence of earlier decisions, and belongs in a concept document, which states it readably and links the rules behind it.
 
-### Agent-facing documents
+### Concept document obligations
 
-Four documents govern agent behaviour. Each answers one question and duplicates none of the others.
-
-**`readme.md`** -- entry point for humans and agents. System invariants, architecture layer model, documentation guide path.
-
-**`AGENTS.md`** -- provider-specific notes, collaboration protocol, role definition, read discipline, output format rules. Governs all agents regardless of provider. Swapped out when the provider changes.
-
-**`devlog/handovers/YYYYMMDD-NN-TYPE-description.md`** -- session log, not a document. Not subject to this policy. See [`handover_policy.md`](handover_policy.md) for format rules.
-
-### Concepts docs
-
-A concepts doc states a conceptual model the system runs on: abstract state transitions, multi-component interactions, or principles of interaction that no single component owns. It states the *what*, not the *how*. It is not an introduction to one component.
-
-A concept doc is not an ADR and not a discussion.
-
-- **Concept doc** -- durable and standalone. A reader new to the area needs no other document to understand the model and what it guarantees; outbound links exist for further reading, not as prerequisites.
-- **ADR** -- also durable; explains *why* the model was chosen. It owns the rationale, the design history, the requirements, and the failure records. A concept doc links to its ADR and does not restate the ADR's record. When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -- When an ADR begins.
-- **Discussion document** -- transient one-session evidence. A concept doc carries no discussion transcripts, no incident narratives, no previous-implementation comparisons, no handover references, no session ids, no "discovered in" pointers. When a defect shapes the model, its lasting content is a requirement owned by the ADR.
+A concept document is standalone and content-complete: a reader new to the area understands the model and what it guarantees without another document. Outbound links are for further reading, not prerequisites.
 
 **Requirements as behavioral contracts.** Restate requirements as user-observable guarantees, without seam vocabulary -- requirement numbers, promotion history, internal component names. The ADR owns the numbering, the design mapping, and the history; the concept doc owns the readable form.
 
 **Interface-level descriptions.** Describe components as interfaces, contracts, or diagrams. Exact commands and variable values appear only for external interactions the harness does not control (for example `docker` CLI mappings). Internal command sequences, function names, and file paths belong in the architecture docs or the ADR.
+
+### ADR obligations
+
+When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -- When an ADR begins. A concept document links to its ADR and does not restate the ADR's record.
 
 ---
 
@@ -199,7 +185,7 @@ Before writing an ADR, concept doc, or architecture doc, propose the skeleton in
 
 ### Records state, not session history
 
-A durable record states the current state of its subject; Document Types -- Durability classifies what endures. A durable record does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
+A durable record states the current state of its subject; the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md) classifies what endures. A durable record does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
 
 A design document records the completed design, not the open-questions-and-replies transcript that produced it. When a question is answered during the design, write the answer into the body of the document at the place the answer belongs; do not keep it as a reply. Keep a short section of the designs that were considered and rejected, and why each was rejected. Put the final design at the forefront of the document.
 
@@ -228,7 +214,7 @@ Rules:
 
 ### Post-close document corrections
 
-**Principle.** A closed record's content does not change. It gains the marker its type carries, and a record that tracks state also gains a successor entry. The mechanic follows what the record is for: a record that states what is true is corrected in place, and a record that tracks open and closed tasks is corrected by addition.
+**Principle.** A closed record's content does not change; whether a record is durable or transient is classified in the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md#durability). It gains the marker its type carries, and a record that tracks state also gains a successor entry. The mechanic follows what the record is for: a record that states what is true is corrected in place, and a record that tracks open and closed tasks is corrected by addition.
 
 **Direction.** A closed record is corrected at the operator's direction. The agent may notice a correction and propose it in one line, and may not apply one unasked. The agent never deletes a record; deletion is an operator action. Applying a correction is bounded by two stops and one smell:
 

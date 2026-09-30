@@ -104,4 +104,4 @@ A `rc=0` with an empty log means the subagent did no work: treat it as an outcom
 
 Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
 
-A `Warning: No models match pattern` message means pi did not keep the requested model and fell back to the startup default; it is not benign noise. Check the model line in the session header or run log to confirm the effective model before trusting the run.
+A `Warning: No models match pattern` message means pi did not keep the requested model and fell back to the startup default; it is not benign noise. Confirm the effective model before trusting a run: give the run an explicit session path (`pi --session /tmp/review.jsonl ...`) and read the model from that file with `grep -o '"model":"[^"]*"' /tmp/review.jsonl | sort -u`.

@@ -1,0 +1,60 @@
+# Documentation Taxonomy
+
+This document is the index and view of the documentation ecosystem. It states no obligations and defines no rules; every rule it names links to the policy document that canonically owns it. Read it to learn what documents exist, what each is for, how a record changes over time, and which document governs a question.
+
+## What documents exist
+
+| Document | What it is | Durability | Governed by |
+|---|---|---|---|
+| Policy document (`docs/operations/`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | per-file; the rules of rule-hood are in [`policy_declarative_framing`](../adr/policy_declarative_framing.md) |
+| ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | [`adr_policy.md`](../operations/adr_policy.md) |
+| Concept document (`docs/concepts/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | [`documentation_policy.md`](../operations/documentation_policy.md) -- Concept document obligations |
+| Architecture document (`docs/architecture/`) | implementation design and decisions | durable | [`documentation_policy.md`](../operations/documentation_policy.md); the freeze rule is in [`system_overview.md`](../architecture/system_overview.md) |
+| `readme.md` | entry point for humans and agents: system invariants, architecture layer model, documentation guide path | durable | -- |
+| `AGENTS.md` | provider notes, collaboration protocol, role, read discipline, output format rules | durable | -- |
+| Roadmap (`devlog/roadmap.md`) | active planning; the only task list; future and TODO items land here | durable | [`roadmap_policy.md`](../operations/roadmap_policy.md) |
+| Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | [`roadmap_policy.md`](../operations/roadmap_policy.md) |
+| Handover (`devlog/handovers/`) | one session's record of the work done | transient | [`handover_policy.md`](../operations/handover_policy.md) |
+| Discussion document (`devlog/discussions/`) | one session's evidence | transient | [`discussion_policy.md`](../operations/discussion_policy.md) |
+| Story document (`devlog/discussions/`) | one session's user-story investigation | transient | [`story_policy.md`](../operations/story_policy.md) |
+| Study or investigation document (`devlog/discussions/`) | one session's settled findings | transient | [`study_policy.md`](../operations/study_policy.md) |
+
+The folders that hold these documents and their purposes are in [`documentation_policy.md`](../operations/documentation_policy.md) -- Folder Structure.
+
+## Durability
+
+A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A handover or discussion is one session's evidence and decays; a tmp file or chat record is never kept. Rules that depend on the durable/transient line link here for the classification.
+
+## Record lifecycle view
+
+A record moves through stages. Each stage is a readable summary; the rule that governs it lives in the policy it names.
+
+- **Place.** Pick the folder category before drafting. Rule: [`documentation_policy.md`](../operations/documentation_policy.md) -- Folder placement.
+- **Author.** A record-layer document starts with a confirmed skeleton. Rule: [`documentation_policy.md`](../operations/documentation_policy.md) -- Skeleton first for record-layer documents.
+- **Format.** Every `docs/` document opens with the same header block. Rule: [`documentation_policy.md`](../operations/documentation_policy.md) -- Document header format.
+- **Maintain.** A durable record states the current state, not the session that produced it. Rule: [`documentation_policy.md`](../operations/documentation_policy.md) -- Records state, not session history.
+- **Correct after close.** A closed record's content does not change; it gains its type's marker. Rule: [`documentation_policy.md`](../operations/documentation_policy.md) -- Post-close document corrections.
+- **Reference a missing document.** A missing document is an error unless its link carries `[REMOVED]`. Rule: [`documentation_policy.md`](../operations/documentation_policy.md) -- Missing documents.
+
+## Promotion topology
+
+Documents promote along a path, and each step is an obligation with one policy home.
+
+- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: [`adr_policy.md`](../operations/adr_policy.md) -- When an ADR begins.
+- **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: [`adr_policy.md`](../operations/adr_policy.md) -- Relationship to other records.
+- **Concept to architecture.** The concept states the model; the architecture document carries the implementation design. The concept doc describes the model, not the implementation.
+
+## Boundary
+
+Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`documentation_policy.md`](../operations/documentation_policy.md) -- Rule authority. The rules that govern a handover are in [`handover_policy.md`](../operations/handover_policy.md).
+
+## Audience dispatch
+
+| Reader question | Open |
+|---|---|
+| "I am new here -- what documents exist and which do I need?" | this document |
+| "What is a concept document against an ADR or a discussion?" | Promotion topology |
+| "Where does this file go?" | [`documentation_policy.md`](../operations/documentation_policy.md) -- Folder Structure |
+| "Is this statement a rule or a description? Where is the canonical home of a rule?" | [`documentation_policy.md`](../operations/documentation_policy.md) -- Rule authority |
+| "How do I write the prose?" | [`documentation_policy.md`](../operations/documentation_policy.md) -- Communication Standards |
+| "How do I correct a closed record?" | [`documentation_policy.md`](../operations/documentation_policy.md) -- Post-close document corrections |
