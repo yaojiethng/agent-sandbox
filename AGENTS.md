@@ -101,13 +101,13 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. This table is the single source for which model and thinking level to use for each role. Read a recommendation by role tag. When one model is required but several are listed, use the first in listed order; a routing clause on a row takes precedence. When a prompt is not tied to a role tag, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`).
+A prompt or skill dispatches subagents for a role. This table is the single source for which provider, model, and thinking level to use for each role. Read a recommendation by role tag; each role tag names the provider, the model, and the thinking level (the provider prefix `opencode/` or `opencode-go/` disambiguates a model served by more than one provider). When one model is required but several are listed, use the first in listed order; a routing clause on a row takes precedence. When a prompt is not tied to a role tag, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`).
 
 | Role tag | Recommendation, in order |
 |---|---|
-| `_IMPLEMENTER` | space-bunny-free at high; deepseek-v4-flash at medium |
-| `_REVIEWER` | space-bunny-free at xhigh; deepseek-v4-flash at medium |
-| `_ADVISOR` | glm-5.3-flash at high for documentation and language reviews; deepseek-v4-flash at xhigh for code reviews |
+| `_IMPLEMENTER` | opencode/space-bunny-free at high; opencode-go/deepseek-v4-flash at medium |
+| `_REVIEWER` | opencode/space-bunny-free at xhigh; opencode-go/deepseek-v4-flash at medium |
+| `_ADVISOR` | opencode-go/glm-5.3-flash at high for documentation and language reviews; opencode-go/deepseek-v4-flash at xhigh for code reviews |
 
 If a prompt names a role tag that this table does not list, resolve the startup default as above. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
 

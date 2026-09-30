@@ -18,7 +18,7 @@ The main agent orchestrates; subagents review. Subagents are fresh contexts (`pi
 pi -p "$(cat <review-prompt-or-skill-file>)"
 ```
 
-Use the reviewer role recommendation. Read the model and thinking level from the `_REVIEWER` role recommendation in the project-level `AGENTS.md`; when one model is needed but several are listed, use the first in order. State the model and thinking level inside the brief so the subagent calibrates depth and the report carries attribution.
+Use the reviewer role recommendation. Read the provider, model and thinking level from the `_REVIEWER` role recommendation in the project-level `AGENTS.md`; when one model is needed but several are listed, use the first in order. State the provider, model and thinking level inside the brief so the subagent calibrates depth and the report carries attribution.
 
 ```bash
 timeout 1800 pi --provider <provider> --model <model> --thinking <level> -p "$(cat <brief>)" > /tmp/review_run.log 2>&1

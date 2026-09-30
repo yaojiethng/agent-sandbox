@@ -78,7 +78,13 @@ The subagent runs in the same container/workspace as the primary agent, with the
 
 ## Running Review Subagents
 
-State the model and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Read the model recommendation by role tag from the project-level `AGENTS.md` (for example `_REVIEWER`). If the tag is absent, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`); a project-level `.pi/settings.json` override takes precedence if present.
+State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices at the project level, never here. Read the recommendation by role tag from the project-level `AGENTS.md` (for example `_REVIEWER`); each token names the provider, model, and thinking level. When the tag is absent, resolve the model in this order:
+
+1. The project-level `AGENTS.md` role recommendation.
+2. The pi default, read from `~/.pi/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`), a project-level `.pi/settings.json` override taking precedence. Confirm with the operator that this is the model to use.
+3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
+
+The last two rungs confirm with the operator so a fallback never guesses silently. A `No models match pattern` message means pi fell back to the startup default; verify the effective model from the session header.
 
 Capture each subagent run to a log file, never through a pipe. Give the run a timeout you set, and a provider, model, and thinking level. Pre-flight the brief, then run and record the exit code and elapsed seconds:
 

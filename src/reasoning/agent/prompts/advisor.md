@@ -13,7 +13,7 @@ The advisor reviews one concrete artifact. You are the leader with decision auth
 
 Run a fresh subagent with its own context. It does not inherit this session's conversation, loaded files, or tool state, so pass the whole assignment in the argument.
 
-State the model and thinking level in the brief, because the subagent cannot see the invocation flags. Read the `_ADVISOR` role recommendation from the project-level `AGENTS.md`, following its routing clause for the review shape. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
+State the provider, model and thinking level in the brief, because the subagent cannot see the invocation flags. Read the `_ADVISOR` role recommendation from the project-level `AGENTS.md`, following its routing clause for the review shape. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
 
 ```bash
 timeout 1800 pi --provider <provider> --model <model> --thinking <level> -p "$(cat /tmp/advisor-brief.md)" > /tmp/advisor.log 2>&1
