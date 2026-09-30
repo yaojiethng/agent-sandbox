@@ -70,12 +70,12 @@ test_sandbox_image_name_lowercases_project() {
 # from it, so it must not drift between build orchestrators.
 # Given: no arguments
 # When:  shared_base_image_name runs
-# Then:  it prints agent-node-base
+# Then:  it prints agent-base
 # Asserts: the shared reasoning-layer base is one canonical constant
 test_shared_base_image_name_is_constant() {
   local out
   out=$(shared_base_image_name)
-  assert_eq "$out" "agent-node-base" "shared_base_image_name returns canonical constant"
+  assert_eq "$out" "agent-base" "shared_base_image_name returns canonical constant"
 }
 
 # Missing arguments are hard errors (:? expansions), never empty-tag builds.

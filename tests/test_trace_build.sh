@@ -371,7 +371,7 @@ test_build_main_requires_project() {
 test_build_agent_missing_provider_dockerfile() {
   local FI="$FIXTURE_DIR/fake_agent_repo"
   mkdir -p "$FI/src/reasoning/providers/fake"
-  : > "$FI/src/reasoning/node.dockerfile"
+  : > "$FI/src/reasoning/base.dockerfile"
   : > "$FI/src/reasoning/providers/fake/base.dockerfile"
 
   local OUT RC=0

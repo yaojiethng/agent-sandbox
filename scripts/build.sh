@@ -67,7 +67,7 @@ build_image() {
 
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
-#   1. agent-node-base (shared  --  node.dockerfile)
+#   1. agent-base (shared runtime set  --  base.dockerfile)
 #   2. <provider>-base (provider-specific  --  providers/<n>/base.dockerfile)
 #   3. <provider>-agent-<project> (final  --  providers/<n>/provider.dockerfile)
 #
@@ -99,9 +99,9 @@ build_agent() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  # Tier 1: shared node base
+  # Tier 1: shared runtime base
   local shared_base; shared_base="$(shared_base_image_name)"
-  local shared_dockerfile="$repo_root/src/reasoning/node.dockerfile"
+  local shared_dockerfile="$repo_root/src/reasoning/base.dockerfile"
 
   # Tier 2: provider-specific base
   local agent_base_image; agent_base_image="$(agent_base_image_name "$provider")"
@@ -139,7 +139,7 @@ build_agent() {
     fi
   }
 
-  # Tier 1: shared node base  --  no contract label (no sandbox/workflow content)
+  # Tier 1: shared runtime base  --  no contract label (no sandbox/workflow content)
   build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" \
     "${uid_args[@]+${uid_args[@]}}"
 

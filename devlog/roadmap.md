@@ -105,6 +105,10 @@ Move the major and minor loops out of policy into workflows: `iteration_policy.m
 - [ ] **`/plan` improvement: per-prompt quality pass** -- raise `/plan` to the per-prompt quality bar before the milestone closes.
 - [ ] **`/milestone-start` and `/milestone-close` improvement: per-prompt quality passes** -- raise both prompts to the per-prompt quality bar before the milestone closes; `/milestone-close` stays the milestone-record close, distinct from `/wrapup`'s iteration-close mechanics.
 
+**Container images (cross-cutting):**
+
+- [ ] **One shared runtime base for the reasoning layer** -- `src/reasoning/base.dockerfile` (image `agent-base`) owns Node, Python, uv, the shared CLI tools, and the repo lint gates; each provider's `base.dockerfile` adds only its agent install. Removes the drift where Hermes installed its own Node, uv, and `markdownlint-cli2` and never got `hadolint`, while pi and opencode inherited neither Python nor uv. `tests/test_shared_base_contract.sh` fails the build if a provider base reinstalls a runtime or a linter. Handover `20261002-01`.
+
 **Acceptance criteria:**
 
 - `iteration_policy.md` and `milestone_policy.md` state rules and links and carry no step-by-step procedure: a read through both yields no instruction sequence.

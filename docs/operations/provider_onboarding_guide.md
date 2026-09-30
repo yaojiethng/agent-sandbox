@@ -62,21 +62,26 @@ Use a short lowercase name with hyphens if needed (e.g. `claude-ai`, `claude-cod
 
 ## Step 2 -- Write `base.dockerfile`
 
-`base.dockerfile` contains the slow, stable install layers: system packages, language runtimes, and the agent source installation. It is tagged `<provider>-base` and contains no project-specific content.
+`base.dockerfile` contains the slow, stable install layer: the agent package installation and nothing else. It is tagged `<provider>-base` and contains no project-specific content.
 
-The base image is built once and reused across all projects using this provider. It is only rebuilt when system packages or the agent runtime version changes. `scripts/build.sh`'s `build_agent` function handles base-image skip logic (base is skipped if it already exists) unless `--rebuild-base` is passed.
+The runtimes are not yours to install. The shared base `src/reasoning/base.dockerfile` (image `agent-base`) owns Node, Python 3.11, uv, the shared CLI tools, and the repo lint gates, and every provider base inherits it. A provider base that installs a runtime or a linter duplicates a version pin and lets two containers drift apart; `tests/test_shared_base_contract.sh` fails the build on that.
+
+The base image is built once and reused across all projects using this provider. It is only rebuilt when the agent version changes. `scripts/build.sh`'s `build_agent` function handles base-image skip logic (the shared base and the provider base are skipped if they already exist) unless `--no-cache` is passed.
 
 ```dockerfile
 # providers/<n>/base.dockerfile
-FROM <base-os>
+ARG BASE_IMAGE=agent-base
+FROM ${BASE_IMAGE}
 
-# System packages, runtimes, agent install
+# The agent install only.
 RUN ...
 ```
 
+A multi-stage build, where the final stage also starts from `agent-base` and copies the built artifacts across, keeps build tools out of the runtime image. See `providers/hermes/base.dockerfile`.
+
 The base image ends as root. User creation and runtime configuration belong in `provider.dockerfile`.
 
-**Reference:** `providers/claude-ai/base.dockerfile`, `providers/claude-code/base.dockerfile`
+**Reference:** `providers/pi/base.dockerfile`, `providers/opencode/base.dockerfile`, `providers/hermes/base.dockerfile`
 
 ---
 

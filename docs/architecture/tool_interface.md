@@ -273,7 +273,7 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 
 | File | Required | Purpose |
 |---|---|---|
-| `base.dockerfile` | Yes | Stable install layers (system packages, runtimes, agent source); tagged `<provider>-base` |
+| `base.dockerfile` | Yes | The agent install only, inheriting `agent-base` (Node, Python, uv, CLI tools, lint gates); tagged `<provider>-base` |
 | `provider.dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
@@ -286,6 +286,8 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context -- providers do not author it.
 
 See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
+
+The reasoning layer builds in three tiers. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. Each provider's `base.dockerfile` builds `<provider>-base` on top of it, and its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
 
 ---
 

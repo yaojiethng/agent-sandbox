@@ -30,11 +30,12 @@ agent_image_name() {
 }
 
 # shared_base_image_name
-# Returns: agent-node-base (shared reasoning layer base image)
-# All providers inherit from this. Defined here rather than hardcoded in
+# Returns: agent-base (shared reasoning layer base image)
+# Carries the runtime set every provider inherits: Node, Python, uv, the shared
+# CLI tools, and the repo lint gates. Defined here rather than hardcoded in
 # build orchestrators so the constant has a single canonical source.
 shared_base_image_name() {
-  echo "agent-node-base"
+  echo "agent-base"
 }
 
 # sandbox_image_name <project_name>
