@@ -103,15 +103,21 @@ Run the carry-forward-resolution invariant in [`iteration_policy.md`](../../../d
 
 Run the findings-review/publish invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): route each entry to its destination; attribution is operator-owned (the agent proposes a class) and the Findings section is empty or holds only entries with a triage destination before the close.
 
-### B7. Close ADRs and discussion docs whose work landed
+### B7. Pending-decision resolution
+
+Every row of the handover's `Decisions pending` table closes before the handover closes, per [`handover_policy.md`](../../../docs/operations/handover_policy.md). Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work moves to Deferred items and the question leaves the handover with it.
+
+A row left open here is a question the operator meets twice, which is the cost this section exists to remove. A table holding only the canonical marker is closed with no work.
+
+### B8. Close ADRs and discussion docs whose work landed
 
 When a `docs/adr/` or `devlog/discussions/` document's work landed this session, mark it closed or fold it, per `adr_policy.md` and `discussion_policy.md`. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
 
-### B8. Close the handover and land the single commit
+### B9. Close the handover and land the single commit
 
 Mark each AC accepted or pushed. Complete the Completed and Deferred items sections. Update Hot files. Set `Status: Closed`. Land the delivery commit carrying the work, the `Status: Closed` edit, and the roadmap write-back.
 
-### B9. Seed what's next
+### B10. Seed what's next
 
 Populate What's Next per `handover_policy.md`, identifying the next iteration's scope from the roadmap task list and Deferred items (deferred items take priority). Note whether roadmap maintenance is run or pending.
 

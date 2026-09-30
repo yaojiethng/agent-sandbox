@@ -27,7 +27,7 @@ Read `docs/operations/handover_policy.md` and `docs/operations/documentation_pol
 A full handover audit covers:
 
 1. **Status completeness**  --  every handover in scope must have `**Status:**` set to `Active` or `Closed`.
-2. **Structural completeness**  --  every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Findings, Completed, Deferred items, What's Next), with null markers where empty.
+2. **Structural completeness**  --  every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, Completed, Deferred items, What's Next), with null markers where empty. `Decisions pending` applies from handover `20261001-03` forward; a handover closed before it is not flagged for its absence.
 3. **Deferred item chain integrity**  --  each deferred item with a next-iteration destination must have been resolved or re-deferred in the target iteration.
 4. **Carry-forward escalation**  --  a deferred item that has survived 2+ hops must be escalated to the roadmap per `handover_policy.md`.
 5. **Findings triage**  --  all entries must be triaged at iteration close.

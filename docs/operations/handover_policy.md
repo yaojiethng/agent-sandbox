@@ -129,6 +129,23 @@ Not yet defined.
 
 None.
 
+## Decisions pending
+<Table: question | what it blocks | options. Questions the operator still owns, raised at any point in the iteration. If none, write the canonical marker.>
+
+A pending decision is one the agent cannot settle from the records. It is not a task, and it never appears in the roadmap: the roadmap holds work, and a question is not work until it has an answer. The section exists so the operator is never surprised by a question the agent has been holding.
+
+The agent writes an entry the moment it becomes blocked, not at the gate where the block is felt. A decision raised during design is recorded while the design is open, so the operator sees it while there is still time to redirect the iteration.
+
+Every entry names what it blocks, so the operator can judge urgency, and gives the options with their consequences, so a reply can be a pick rather than a question. An entry that only states that a decision is needed is not an entry.
+
+A pending decision closes in one of three ways, and the close is recorded in this section until the section is empty: the operator answers it and the answer moves to the Decisions table with its rationale; the agent finds the answer in a record and cites it; or the block is real and the work is deferred, in which case the item moves to Deferred items and the question leaves with it.
+
+| Question | Blocks | Options |
+|---|---|---|
+| <the decision, in one question> | <the work that cannot proceed without it> | <option and consequence, per option> |
+
+None.
+
 ## Findings
 <Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a blocker encountered, or a new file entering scope. Do not log routine reads or completed tasks here -- only write when something changes what you are doing or what the next iteration needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at iteration end and route it to its destination (`AGENT_FEEDBACK.md`, Decisions table, Deferred items, or `roadmap.md`). The `[A]`/`[O]` tag names who raised the entry. Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
 
@@ -172,6 +189,7 @@ When a section has nothing to record, write the canonical marker and nothing els
 |---|---|
 | Acceptance criteria | `Not yet defined.` |
 | Decisions | `None.` |
+| Decisions pending | `None.` |
 | Findings | `None.` |
 | Completed | `No file changes this iteration.` |
 | Deferred items | `None.` |

@@ -101,6 +101,8 @@ This is the collapsed gate the operator-involved workflows share. It confirms sc
 
 Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) Milestone Promotion.
 
+Present the handover's `Decisions pending` table with the scope, per [`handover_policy.md`](../../../docs/operations/handover_policy.md). Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
+
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
 Define the acceptance criteria in a four-column table:
@@ -149,7 +151,7 @@ The handover write-back fires at three moments in the runbook's operation:
 
 ## Step 7  --  Pre-close verification
 
-Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has four sections:
+Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has five sections:
 
 1. **Acceptance criteria** -- table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the scope-gate AC-presentation format from Step 5; this table answers "did it pass?", not "who can verify?".
 2. **Roadmap write-back** -- per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Per [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md). When no task was touched, state `none worked this iteration`.
@@ -161,6 +163,7 @@ Step 7 is the pre-close verification before the release gate. Present a pre-clos
 Every row must carry a status. A deferred or not-started row must appear in the handover's Deferred items before the gate closes.
 
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in [`git_policy.md`](../../../docs/operations/git_policy.md).
+5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to Deferred items before the gate releases; an entry that leaves the iteration still open is a question the operator will meet again in the next one. A table holding only the canonical marker is reported as empty, not shown.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 
@@ -174,7 +177,7 @@ This is the common acceptance gate the operator-involved workflows share. The ac
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
-After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back and compaction, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B8 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](../../../docs/operations/git_policy.md).
+After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back and compaction, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B9 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](../../../docs/operations/git_policy.md).
 
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
