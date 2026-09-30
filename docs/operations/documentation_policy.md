@@ -125,45 +125,23 @@ Documents use plain ASCII punctuation.
 
 Prose is one paragraph per physical line, however long the line. Never break inside a paragraph -- not at sentence boundaries, not at a column limit; editors and viewers soft-wrap. Hard breaks separate blocks only: paragraphs, headings, list items. The rule covers all prose: guidance blocks, `AGENTS.md`, provider-layer files. Code comments wrap at about 80 columns. Fenced code blocks and table rows are exempt.
 
-### Numbering and cross-references
+### References
 
-A number is valid only in the conversation or document where it appears. Use a numbered list when order matters or readers refer to items by number; otherwise use bullets. Outside the defining place, use the item's descriptive name or a link. A persistent record (a roadmap task, a handover entry, a code comment) does not take a number from a transient list; rename the item descriptively. When many references point to one item, move it to a heading.
+Make references with links. Link what the reader might need next; a well-linked document is a good one. Link a document the reader may need to open; otherwise write its name. Inline code (backticks) is not a substitute for a link.
 
-**One indexable axis per presentation.** When the operator may refer to items by index, present exactly one numbering or lettering scheme, so an index reply is unambiguous. Do not place two numbered or lettered sets side by side (for example a review's numbered findings beside the agent's lettered option choices); the reply then maps to the wrong axis. If several sets must appear together, name each axis so a reply is self-mapping (`finding 1`, `option A`).
+Prefer durable targets. Link a durable document to the durable document that records the fact, not to its evidence: documentation and policy link to an ADR, and the ADR links to the handover that evidences its decision. When a durable document must name transient evidence, write the name as plain text and do not link it.
+
+Place handoff links at the point of use. When a workflow document (such as `iteration_policy.md`) hands off to a subprocess governed by a child policy document, link that policy where the handoff happens -- not only in a References table -- and name the specific section. A References table is navigation, not a handoff.
+
+A number is valid only in the conversation or document where it appears. Use a numbered list when order matters or readers refer to items by number; otherwise use bullets. A durable artifact -- a roadmap task, a code comment -- does not take a number from a transient list; give it a descriptive name. When many references point to one item, move it to a heading.
+
+**One indexable axis per presentation.** When the operator may refer to items by index, present one numbering or lettering scheme, so a reply is unambiguous. Do not place two numbered or lettered sets side by side (for example a review's numbered findings beside the agent's lettered option choices); the reply then maps to the wrong axis. If several sets must appear together, name each axis so a reply is self-mapping (`finding 1`, `option A`).
+
+Form the link precisely. Step-level references carry a section anchor; document-level references use a plain document link. When an agent may need to locate a section programmatically, give a grep command instead of a link.
 
 ### No bridge documents
 
 A bridge document exists only to connect two documents that could reference each other directly. Bridge documents are prohibited -- collapse them into the more relevant destination document.
-
-### Link sparingly, at points of use
-
-When a document names another document and the reader may need to open it, use a markdown link; otherwise write its name.
-
-Do not link transient documents -- handovers, discussion docs, session exports. These are scratch documents: they decay quickly, and the harness does not maintain them. Link a transient document only where the document format calls for it; prefer plain text otherwise. Durable documents -- policies, ADRs, concept docs, architecture docs -- are maintained, so links into them do not decay. Link what the reader might need next; a well-linked document is a good one.
-
-Inline code (backticks) is for command names, flag values, variable names, and short code fragments. It is not a substitute for a link when the target is a document the reader may need to open.
-
-### Link to policy documents at workflow handoff points
-
-When a workflow document (such as `iteration_policy.md`) hands off to a subprocess governed by a child policy document, the instruction carries a markdown link to that policy at the point of handoff -- not only in a References table. Name the specific section if the document has several.
-
-**Pattern:**
-
-```text
-Perform X per [`policy_document.md`](path/to/policy_document.md) -- Section Name.
-```
-
-**Rationale:** A References table is navigation, not a handoff. An agent at step 9a who sees "mark completions" must remember the policy exists; one who sees "mark completions per [`roadmap_policy.md`](roadmap_policy.md) -- Step 9a" has the handoff when it is needed.
-
-### Link anchors
-
-Step-level references carry section anchors to the governing section. Document-level references (Child Documents tables, References tables) use plain document links; an anchor there implies a narrower scope than intended.
-
-When a document is long enough that an agent may need to locate a section programmatically, give a grep command in code backticks instead of a link. A link says "open the document"; a grep says "find the section".
-
-```bash
-grep -n "## Section Name" docs/operations/policy.md
-```
 
 ### Read pass economics
 
@@ -174,6 +152,10 @@ A document that must be read in full to extract one fact is structured wrong. If
 ---
 
 ## Document Types
+
+### Durability
+
+A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable -- a policy, an ADR, a concept doc, an architecture doc, readme.md, AGENTS.md. A handover or discussion is one session's evidence and decays; a tmp file or chat record is never kept. Referencing applies this classification.
 
 ### `roadmap.md`
 
@@ -193,28 +175,15 @@ Four documents govern agent behaviour. Each answers one question and duplicates 
 
 A concepts doc states a conceptual model the system runs on: abstract state transitions, multi-component interactions, or principles of interaction that no single component owns. It states the *what*, not the *how*. It is not an introduction to one component.
 
-A concept doc is **standalone and content-complete for onboarding**: a reader new to the area needs no other document to understand the model and what it guarantees. Outbound links exist for further reading, not as prerequisites.
+A concept doc is not an ADR and not a discussion.
 
-**Requirements as behavioral contracts.** Restate requirements as user-observable guarantees, without seam vocabulary -- requirement numbers, promotion history, internal component names. Do not link to the ADR's requirement table instead of restating. The ADR owns the numbering, the design mapping, and the history; the concept doc owns the readable form.
+- **Concept doc** -- durable and standalone. A reader new to the area needs no other document to understand the model and what it guarantees; outbound links exist for further reading, not as prerequisites.
+- **ADR** -- also durable; explains *why* the model was chosen. It owns the rationale, the design history, the requirements, and the failure records. A concept doc links to its ADR and does not restate the ADR's record. When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -- When an ADR begins.
+- **Discussion document** -- transient one-session evidence. A concept doc carries no discussion transcripts, no incident narratives, no previous-implementation comparisons, no handover references, no session ids, no "discovered in" pointers. When a defect shapes the model, its lasting content is a requirement owned by the ADR.
+
+**Requirements as behavioral contracts.** Restate requirements as user-observable guarantees, without seam vocabulary -- requirement numbers, promotion history, internal component names. The ADR owns the numbering, the design mapping, and the history; the concept doc owns the readable form.
 
 **Interface-level descriptions.** Describe components as interfaces, contracts, or diagrams. Exact commands and variable values appear only for external interactions the harness does not control (for example `docker` CLI mappings). Internal command sequences, function names, and file paths belong in the architecture docs or the ADR.
-
-**Defect history lives in the ADR.** A concept doc carries no incident narratives, no previous-implementation comparisons, no handover references, no session ids, no "discovered in" pointers. When a defect shapes the model, its lasting content is a requirement (owned by the ADR); the ADR entry for the fixing solution owns the failure record.
-
-A concept doc links to the ADR that explains why the model was chosen. The ADR workflow lives in [`adr_policy.md`](adr_policy.md).
-
-Suggest an ADR when:
-
-- The feature introduces a primitive or model other components must reason about
-- The area has non-obvious invariants that cannot be stated concisely in the architecture doc
-- A design doc exists for the area and is too long or branched to serve as a stable reference
-
-Distill a design doc into an ADR:
-
-1. Remove delivery-sequence framing -- "Change N", "prerequisite", "introduced in".
-2. Remove command shapes and implementation detail that belong in the architecture doc.
-3. Keep primitives, invariants, design rationale, and collision or interaction tables.
-4. During active development, links to design and discussion documents are expected.
 
 ---
 
@@ -230,7 +199,7 @@ Before writing an ADR, concept doc, or architecture doc, propose the skeleton in
 
 ### Records state, not session history
 
-A durable record (ADR, concept, architecture, policy) describes the current state of its subject. It does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
+A durable record states the current state of its subject; Document Types -- Durability classifies what endures. A durable record does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
 
 A design document records the completed design, not the open-questions-and-replies transcript that produced it. When a question is answered during the design, write the answer into the body of the document at the place the answer belongs; do not keep it as a reply. Keep a short section of the designs that were considered and rejected, and why each was rejected. Put the final design at the forefront of the document.
 

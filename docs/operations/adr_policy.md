@@ -39,6 +39,19 @@ A choice that affects only one implementation detail in one file does not spawn 
 
 Write the ADR when the principle is committed or being actively resolved. It is not required to be written when code lands. It may precede or follow implementation.
 
+Suggest an ADR when:
+
+- The feature introduces a primitive or model other components must reason about
+- The area has non-obvious invariants that cannot be stated concisely in the architecture doc
+- A design doc exists for the area and is too long or branched to serve as a stable reference
+
+Distill a design doc into an ADR:
+
+1. Remove delivery-sequence framing -- "Change N", "prerequisite", "introduced in".
+2. Remove command shapes and implementation detail that belong in the architecture doc.
+3. Keep primitives, invariants, design rationale, and collision or interaction tables.
+4. During active development, links to design and discussion documents are expected.
+
 ## Liveness and evolution
 
 An ADR is the current record of one principle. When the principle changes, edit the ADR in place and keep the timeline inside the file.
