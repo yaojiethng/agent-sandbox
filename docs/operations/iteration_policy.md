@@ -114,6 +114,7 @@ The minor loop runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md).
 - **Write Findings immediately.** A bug, contradiction, design gap, blocker, or new file entering scope goes to Findings at once -- not accumulated.
 - **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when the exchange resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes the record is provisional; commit it as `wip:` per [`git_policy.md`](git_policy.md#transient-commits-fold-into-the-delivery-commit).
 - **Verify record writes landed.** When announcing a record write (a finding row, a decision, a task, a roadmap row), grep the row key or content claimed. A claimed record that is not verified to exist is a record defect: the write is not done until the grep finds it.
+- **Record a document-relevant change when you make it.** Record a change to an invariant, interface, or contract when you make it, not at iteration close. If the record waits for close, a stale document governs the work in the meantime.
 - **Findings is the shared agent-managed recording surface.** Entries are classified at the review/publish step at iteration end. Attribution is operator-owned; the agent proposes a class and the operator confirms it.
 
 ### Close invariants

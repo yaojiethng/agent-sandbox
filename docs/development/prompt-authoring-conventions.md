@@ -106,7 +106,7 @@ Construct defensively against two decay modes:
 - **No-ops.** An instruction the agent already obeys by default pays load to say nothing. The test is model-relative: does the sentence change behaviour against the default? When a sentence fails, delete the whole sentence rather than trim its words.
 - **Stale accumulation.** Content accumulates because adding feels safe and removing feels risky. A document without pruning keeps obsolete content. Prune by relevance: does each line still bear on what the document does? Shorter documents are easier to keep relevant.
 
-`documentation-pass.md` is the diagnostic register for these checks. The prescriptive rules are here and in `documentation_policy.md` (its `### Document depth and verbosity`); `documentation-pass.md` lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
+`documentation-pass.md` is the diagnostic register for these checks. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); `documentation-pass.md` lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
 
 ## Naming
 

@@ -117,7 +117,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 | Agent feedback and gotchas | routing: [`iteration_policy.md`](../operations/iteration_policy.md) (close review/publish invariants); record: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
 | Story lifecycle | [`story_policy.md`](../operations/story_policy.md) | Story creation, lifecycle states, graduation criteria, closure | Investigation evaluation, roadmap entry format |
 | Study lifecycle | [`study_policy.md`](../operations/study_policy.md) | Study structure, lifecycle states, recommendation format, closure | Story framing, roadmap entry production |
-| Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, document depth and verbosity, linking conventions, read pass economics, policy-vs-skill separation | Workflow sequencing |
+| Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, rule placement, linking conventions, grep navigation, policy-vs-skill separation | Workflow sequencing |
 | Security model and invariants | [`security.md`](../architecture/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
 | Execution mechanics | [`execution_model.md`](../architecture/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
 | External contract | [`tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
@@ -135,7 +135,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../operations/documentation_policy.md#audit-checks) to resolve which document is authoritative.
+When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../operations/documentation_policy.md#rule-authority) to resolve which document is authoritative.
 
 ---
 
