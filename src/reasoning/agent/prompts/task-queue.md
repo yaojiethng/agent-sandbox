@@ -27,10 +27,10 @@ Run this way when several independent tracks of work each need the operator's de
 
 Not this template:
 
-- one track with no operator boundary - use `iter.md` or `auto.md`.
+- one track with no operator boundary - use `iter.md` or `sequential-work.md`.
 - a read-mostly pass where each subagent returns verdicts and merges nothing - use `fanout-run.md`.
 
-The independence rule of `parallel-auto` applies to the tracks: no track reads or writes a file another track owns. The queue does not make dependent tracks safe; it makes independent tracks reviewable.
+The independence rule of `parallel-work` applies to the tracks: no track reads or writes a file another track owns. The queue does not make dependent tracks safe; it makes independent tracks reviewable.
 
 ## The queue contract
 
@@ -94,7 +94,7 @@ Call `taskq_fork` per task with the task id and the baseline. The extension owns
 
 One primary writes one state directory. A second process on the same directory is refused with the live owner's lock named, because the lock is what keeps two writers from overwriting each other's record. Do not start a second primary against the same run.
 
-Dispatch one fresh subagent per task into the worktree the fork returned, on its own branch, with a brief that names the task, its segments, its owned files, its report, and the worker protocol. Wrap every dispatch so its failure and its duration are visible - the wrapper from `parallel-auto` Step 3, verbatim:
+Dispatch one fresh subagent per task into the worktree the fork returned, on its own branch, with a brief that names the task, its segments, its owned files, its report, and the worker protocol. Wrap every dispatch so its failure and its duration are visible - the wrapper from `parallel-work` Step 3, verbatim:
 
 ```bash
 cd "<worktree>" && S=$(date +%s) && pi --provider <p> --model <m> --thinking <t> -p "$(cat <brief>)" && echo "RC=$?" && echo "SECONDS=$(( $(date +%s) - S ))"

@@ -7,7 +7,7 @@ argument-hint: "[optional: a commit range to audit]"
 
 # /wrapup - The Consolidated Close
 
-**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, run compaction, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. `milestone-start`, `auto` and `parallel-auto` do not invoke it: milestone-close owns the milestone-record close, and the auto runs substitute an autonomous review for the operator gate.
+**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, run compaction, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it: milestone-close owns the milestone-record close, and the work runs substitute an autonomous review for the operator gate.
 
 ## Mandate
 
@@ -22,7 +22,7 @@ Each active-operator prompt invokes the part of this runbook that applies:
 - `/iter` and `/document` run the commit-discipline checkpoint during the session and the close at the end.
 - `/plan` runs the close at the end of a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit.
 - `milestone-start` does not invoke it -- `/milestone-close` owns the milestone-record close, distinct from the unit close.
-- `auto` and `parallel-auto` do not invoke it -- their run review substitutes for the operator gate (roadmap row `/auto` bypasses the two operator-acceptance points).
+- `sequential-work` and `parallel-work` do not invoke it -- their run review substitutes for the operator gate (roadmap row `/auto` bypasses the two operator-acceptance points).
 
 ## Input contract
 

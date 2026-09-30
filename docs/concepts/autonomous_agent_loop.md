@@ -9,7 +9,8 @@ This is a shell in U1 of M3.2.1. Its full content builds across the migration un
 The harness targets four loop kinds, with two declared expansions of `/iter`. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy table and the state diagram.
 
 - `/iter` -- the base interactive minor loop.
-- `/auto` and `/parallel-auto` -- declared expansions of `/iter` for autonomous runs.
+- `/sequential-work` and `/parallel-work` -- the `/iter` work-loop expansions for autonomous runs, owned and refined by M3.2.3 (the `-work` dispatch command surface).
+- `/auto` and `/goal` -- M4's smart dispatcher and loose-goal decomposition (reserved; not `/iter` work-loop expansions).
 - `/milestone-start` -- opens the major loop.
 - `/milestone-close` -- closes the major and sub-milestone.
 - `/plan` -- major-loop planning.

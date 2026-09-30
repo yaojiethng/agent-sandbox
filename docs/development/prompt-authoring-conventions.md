@@ -78,7 +78,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 3. **When to use** states the conditions that invoke it and the routing: what it is for, and what replaces it in the cases it is not for. The task-queue prompt names `iter.md` and `fanout-run.md` as the not-this-template cases.
 4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; a reference region lists its rules consulted on demand.
 5. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
-6. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style prompts (`auto`, `parallel-auto`, `fanout-run`) and `task-queue` carry them.
+6. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
 
 The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only home of a rule.
 

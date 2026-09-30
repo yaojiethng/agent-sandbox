@@ -88,10 +88,10 @@ confirm an append shows one insertion and zero deletions. Second instance the sa
 
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
 
-state: mitigated
-scoped: M3.1 -- doc-format lint rules
-legacy: none
-mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure). The add-a-lint-rule clause landed: the `doc-wrap` rule is live in `.markdownlint-cli2.mjs`.
+state: open
+scoped: M3.1 -- doc-format lint rules; `scripts/lint/doc-wrap.mjs`
+legacy: the doc-wrap rule was claimed landed and live in `.markdownlint-cli2.mjs` (the 2026-09-21 add-a-lint-rule clause), which had the entry mitigated.
+mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure). The add-a-lint-rule clause landed: the `doc-wrap` rule is live in `.markdownlint-cli2.mjs`. **Recurrence (2026-10-01):** the doc-wrap rule, though enabled (`"doc-wrap": true`) and listed as live, does not fire on a paragraph explicitly hard-wrapped across two physical lines (a two-line test paragraph in-repo reports a clean gate). The one-paragraph-per-physical-line policy in `documentation_policy.md` `### Line wrapping` is therefore not enforced by the gate; an agent must comply by hand. Re-open: the add-lint-rule mitigation did not land an effective rule.
 
 ### [A] 2026-09-28  --  Handover-table stray-pipe and write-tool trailing-newline class (U3)
 
@@ -267,6 +267,13 @@ state: open
 scoped: M3 T1 -- prompt authoring; `docs/development/prompt-authoring-conventions.md`; review prompts `advisor.md` and `thermo-nuclear-code-quality-review`
 legacy: the review-loop-entry guidance on re-runs ("re-run sparingly", AGENT_FEEDBACK `[A]` 2026-09-28 advisor re-run value) covers when a re-run earns its cost, not whether convergence is optional.
 mitigation: a review prompt must not hard-mandate "work to consensus". The convergence loop is one mode; a single-pass review is a legitimate invocation and must be allowed. Advisor-style prompts should be invokable as a single consultation without being forced to converge. Thermo-nuclear-style review prompts should be invokable with or without the convergence constraint. Every review prompt should echo a subagent invocation budget -- the prompt states how many subagent runs the loop may use, so the cost is bounded and visible before dispatch. Put the budget in the brief and the invocation. Raised 2026-09-29 when the operator observed advisor "work to consensus" is a hard constraint and thermo-nuclear carries no budget; record in handover `20260929-11`.
+
+### [O] 2026-10-01  --  The roadmap's closed rows are ritual re-description, not the durable record; the handover is the durable record
+
+state: open
+scoped: M3 T1 -- roadmap policy; `docs/operations/roadmap_policy.md`
+legacy: the roadmap `roadmap_policy.md` line "The roadmap is the accumulated decision log for the milestone" and "A closed roadmap entry ... does not change" treat closed rows as durable history; the changelog is the permanent record (roadmap_future already says this).
+mitigation: an agent needs to rewrite the milestone's own task rows in the active sub-milestone when the semantics of a name shift (for example renaming `/auto` to `sequential-work`) rather than treating a closed `[x]` row as history to preserve. The handover is the durable record of each iteration's work; the changelog holds a proper description of what landed a milestone at its close. The roadmap is a living task list and its rows may be rewritten freely within the active milestone. A closed row needing correction is a narrow exception, not the default. Raised 2026-10-01 when the agent proposed leaving the roadmap's historical `/auto`/`/parallel-auto` rows untouched because it assumed they were durable history; the operator corrected: the milestone's changelog entry, not the roadmap rows, is the record that outlives the milestone.
 
 ## Agent experience  --  session 20260809-04
 

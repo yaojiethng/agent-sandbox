@@ -93,14 +93,25 @@ Suggestion, not a scheduled task (subsumed under the Roadmap-mechanism rewrite s
 
 ---
 
-### M4.6 -- Background Auto (parallel-auto)
+### M4.6 -- Background Work (parallel-work)
 
-Multiple well-specified `auto` tasks run once, in the background, with the operator releasing the plan once up front and not gating each unit. Each task is one `auto` run; `parallel-auto` is the extension that runs several at once, unattended, and collects the results for later merge. The work-unit and merge responsibilities from the existing `parallel-auto.md` (own worktree and branch per track, primary holds verification and merge) carry over.
+Multiple well-specified work tasks run once, in the background, with the operator releasing the plan once up front and not gating each unit. Each task is one unit run; the `work` family runs several at once, unattended, and collects the results for later merge. The work-unit and merge responsibilities from the dispatch-prompts `parallel-work.md`/`sequential-work.md` (own worktree and branch per track, primary holds verification and merge) carry over.
 
-**Source:** the active T1 `parallel-auto` row, relocated here under the M4 umbrella.
+**Source:** the active T1 `parallel-auto` row, relocated here under the M4 umbrella and renamed with the `-work` family (M3.2.3).
 
-- [ ] Build the `parallel-auto` prompt as background auto
-- [ ] Mark the existing `parallel-auto.md` draft as a stub
+- [ ] Build the `parallel-work` prompt as background work
+
+### M4.7 -- The `/auto` Smart Dispatcher
+
+`/auto` becomes a generalized dispatcher (Option A): given a roadmap task list (possibly out of order, subtasks each carrying an execution rank), it resolves the execution order, picks the dispatch shape per the work structure, and orchestrates. It parks any unit that genuinely needs operator input. The curated dispatch shapes (`sequential-work`, `parallel-work`, `task-queue`, `fanout`) are its building blocks. M3.2.3 reserves the `/auto` keyword with a stub; M4 implements the dispatcher. Design precedes implementation -- the semantics record and the ADR section are written before code changes.
+
+- [ ] Implement the `/auto` smart dispatcher
+
+### M4.8 -- `/goal` (Loose-Goal Decomposition)
+
+`/goal` is the Option B capability, reworked from the removed and stale external extension: given a loose goal, it decomposes the goal into units itself and schedules every unit it can run, asking the operator only when a unit genuinely needs a decision. It is distinct from `/auto` (Option A), which takes a provided task decomposition and resolves its order and shape. `/goal` is the decomposition-and-schedule engine that runs autonomously until no non-operator-blocked unit remains.
+
+- [ ] Rebuild `/goal` as a first-class prompt or extension
 
 ---
 

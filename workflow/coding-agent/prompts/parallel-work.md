@@ -1,17 +1,17 @@
 ---
-description: Draft - run two or more work tracks concurrently, each in its own git worktree on its own branch, with a fresh subagent per track, the primary holding verification, records and the merge.
+description: Draft - run two or more work tracks concurrently, each in its own git worktree on its own branch, with a fresh subagent per track, the primary holding verification, records and the merge; a curated parallel dispatch shape.
 argument-hint: "[track list - a roadmap task set, a row list, or a named track plan - optional]"
 ---
 
 > $@
 
-# Parallel Tracks - Concurrent Auto Runs (Main-Agent Template)
+# Parallel Work - Concurrent Work Tracks (Main-Agent Template)
 
 **Scope:** how the primary runs several work tracks at once: the track plan, the worktree and branch lifecycle, the concurrent dispatch, the per-track verification, the repair path, the merge order, and the record rule that makes the merge possible.
 
 ## Purpose
 
-`auto.md` runs one unit at a time, because a subagent that has worked one unit carries its assumptions into the next. That rule is about context, not about wall clock: two units that share no files and no assumptions lose nothing by running side by side, and the trial this template records ran two tracks concurrently with no interference and no lost defect. The saving is real only when the tracks are genuinely independent, so this template spends most of its length deciding that, because the failure mode is not a merge conflict - it is two tracks that quietly depend on each other and produce a plausible wrong answer.
+`sequential-work.md` runs one unit at a time, because a subagent that has worked one unit carries its assumptions into the next. That rule is about context, not about wall clock: two units that share no files and no assumptions lose nothing by running side by side, and the trial this template records ran two tracks concurrently with no interference and no lost defect. The saving is real only when the tracks are genuinely independent, so this template spends most of its length deciding that, because the failure mode is not a merge conflict - it is two tracks that quietly depend on each other and produce a plausible wrong answer.
 
 The primary holds the plan, the worktrees, the briefs, the dispatch, the verification of every return, the records, and the merge. A track subagent holds one track's work inside its own worktree. Nothing crosses between a track subagent and the primary's tree except a return, a brief, and a merge.
 
@@ -23,7 +23,7 @@ Run this way when the plan names two or more tracks that are independent, each i
 
 Not this template:
 
-- one track, or units with a real dependency between them - use [`auto.md`](auto.md), which is sequential by design and needs no worktrees.
+- one track, or units with a real dependency between them - use [`sequential-work.md`](sequential-work.md), which is sequential by design and needs no worktrees.
 - a read-mostly pass over many files, where each subagent reads a slice and returns verdicts with no commits - use [`fanout-run.md`](fanout-run.md). Its frozen snapshot is cheaper, because a subagent's edits stay in its own extraction and the primary merges nothing.
 - a whole campaign handed to a single subagent - use [`test-quality-campaign-run.md`](test-quality-campaign-run.md).
 - tracks where the operator must decide at boundaries the worker itself detects - use [`task-queue.md`](../../../src/reasoning/agent/prompts/task-queue.md). It runs a fan-out as a fork and a join, hands each break point to the operator, and brings the accepted tracks back.
@@ -38,9 +38,9 @@ Not this template:
 
 ## Step 1 - Build the track plan
 
-Apply the well-specifiedness test from [`auto.md`](auto.md) Step 1 to each track: a scope confirmation must raise no open question about the design, the acceptance criteria, or the checks. A track that would raise a question is design work, not run work, and it does not go in the plan.
+Apply the well-specifiedness test from [`sequential-work.md`](sequential-work.md) Step 1 to each track: a scope confirmation must raise no open question about the design, the acceptance criteria, or the checks. A track that would raise a question is design work, not run work, and it does not go in the plan.
 
-**The independence test.** Write each track's owned-file set, then compare every pair of sets. Any file in two sets is a shared file, and the two tracks are one track. This is the same disjoint-files rule `auto.md` applies across units, lifted from within a run to across concurrent runs.
+**The independence test.** Write each track's owned-file set, then compare every pair of sets. Any file in two sets is a shared file, and the two tracks are one track. This is the same disjoint-files rule `sequential-work.md` applies across units, lifted from within a run to across concurrent runs.
 
 **Close each owned-file set under the test surface.** For every shell file a track changes, the track also owns every test file that exercises it, and the set is computed by searching the test tree for the file's basename rather than by naming convention. The convention `scripts/X.sh` to `tests/test_X.sh` covers most cases and misses the rest - `src/libs/cli.sh` is covered by `tests/test_cli_lib.sh` - and a track that changes a script without owning its test ships a red suite that no subagent will notice, because the subagent verifies the files its brief named. Compute the closure before the brief is written, and put the result in the brief.
 
@@ -118,7 +118,7 @@ A return that fails the primary's verification becomes a repair brief to the sam
 
 Give the repair brief a numeric acceptance criterion where one applies - the unit count the suite must report - and say so explicitly. The count is evidence, and a numeric target stops a repair from quietly adding a registration to make a number work.
 
-`auto.md`'s stop table has no row for this case, and this step is the row: a `done` return that the primary's verification rejects routes to a repair brief, not to a correction in the primary's own tree.
+`sequential-work.md`'s stop table has no row for this case, and this step is the row: a `done` return that the primary's verification rejects routes to a repair brief, not to a correction in the primary's own tree.
 
 ## Step 6 - Merge, in order
 
@@ -135,7 +135,7 @@ No track writes a record. Not `devlog/roadmap.md`, not `devlog/AGENT_FEEDBACK.md
 
 This is not tidiness. Concurrent record writes do not merge: two branches each flipping one checkbox on adjacent roadmap rows produce a content conflict, and the record files are precisely the files every unit would want to touch. The general rule is that in a parallel run, the files every unit needs are the files no unit may write. A unit that genuinely must change a shared record carries the change as a proposal, and the primary applies it.
 
-The one documented exception to `auto.md`'s "a subagent never commits": in this template a track subagent commits to its own branch, because the operator may want the track's work to outlive the run as a mergeable branch. The exception is scoped to the track's own branch. A track subagent still never commits to the integration branch, never stages anything outside its worktree, and never writes a record.
+The one documented exception to `sequential-work.md`'s "a subagent never commits": in this template a track subagent commits to its own branch, because the operator may want the track's work to outlive the run as a mergeable branch. The exception is scoped to the track's own branch. A track subagent still never commits to the integration branch, never stages anything outside its worktree, and never writes a record.
 
 ## Step 8 - Review the run
 
