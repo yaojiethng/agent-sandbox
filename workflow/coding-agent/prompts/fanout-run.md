@@ -16,6 +16,19 @@ Fan out when the pass covers many independent units and a single agent's context
 
 Use a batch for the dispatch, not a single subagent. A batch is the set of file groups read, mutated, and delivered in parallel before the next dispatch. Do not fan out a single-iteration diff; that is the review pass's job. Do not fan out a pass small enough for one context either: the batch's setup, collection, and integrity cost is real, and it buys nothing when the register already fits in one context.
 
+## Dispatching through taskq
+
+`taskq` is the dispatch when the operator must see the fan-out break-point by break-point, and for a read-only provenance fan-out -- a rename trace or a link trace -- where each worker returns a verdict and the primary consolidates the writes. The task-queue prompt ([`task-queue.md`](../../../src/reasoning/agent/prompts/task-queue.md)) owns the mechanics; this section names the loop and the worker contract.
+
+One task per unit. Fork every task from one baseline with `taskq_fork`, which cuts the worktree and the branch and returns the path; dispatch one fresh subagent into each returned worktree. The worker reads only its own worktree and the read-only git history, writes one report file, commits it, then writes one request document and stops:
+
+- report: `<worktree>/taskq-report.json` (or `.jsonl`), the unit's verdict in the register schema;
+- request: `<worktree>/taskq/requests/<taskId>-1.json`, exactly `{"taskId":"<id>","requestId":"<id>-1","status":"done","message":"<one line>","at":"<ISO-8601>"}`. The keys are camelCase; a snake_case document is skipped by the queue. Write it by hand, or let `taskq_worker_request` write it -- never both.
+
+The primary blocks in one pool `taskq_join` over the task ids; it delivers one payload per ready task, and a timeout is inert and names the ready set. Audit each task in its worktree -- read the report, check it against the tree and git -- then record `taskq_verify` `usable` or `not-usable`. Build the `taskq_proposal` per task; for a read-only fan-out the bring-back is the empty set, because the reports are the deliverable and the branch diff is archived in the run record. Call `taskq_close` once every task is retired.
+
+The primary consolidates the writes. No worker edits a shared file: the primary applies the renames, the link sweeps, or the register rows from the reports, in the main tree, after the run closes. This is the decompose-to-provenance / consolidate-writes shape the rename fan-out used; a mutation fan-out instead brings back each worker's owned files.
+
 ## The frozen snapshot
 
 Cut one archive of the tree per batch and hand every subagent in the batch the same frozen tree. This project's subagents share one container and one working tree, so the snapshot is what makes isolation real: a subagent's edits live in its own extraction and cannot be seen by a sibling, and the whole batch reads one byte-identical state, so the batch is reproducible and a later re-run starts from the same tree.
@@ -71,6 +84,8 @@ Each mode below has occurred in a fan-out. Treat each as an explicit warning, an
 (e) **A fragmented register table.** Blank lines and prose inside the findings table split it into fragments, so it was no longer one table. The same fragmentation hid unescaped pipes and code-span padding from the lint gate and made every scripted selection over the table unreliable. The rule: keep the table contiguous, with no blank line and no prose inside it, and treat a lint-clean table as a table the gate actually parsed.
 
 (f) **A leaked spin-loop process.** A test file leaked spin-loop processes; the runner's per-file deadline killed the test file but not its descendants, which were reparented and kept burning CPU. The load inflated the host and distorted the timing of every suite that ran beside it. The rule: a deadline kill must reap the descendant tree, and a batch checks for leaked processes after a suite before reading any timing.
+
+(g) **A snake_case request document.** A worker wrote the taskq request document with snake_case keys (`task_id`, `request_id`) instead of the camelCase schema, and the queue skipped the request; the pool join then waited on that task through a full timeout. The rule: the brief states the exact request schema, and the audit checks the request document keys before the join, not after a timeout.
 
 ## What would settle this brief
 
