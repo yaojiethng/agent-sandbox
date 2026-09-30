@@ -107,7 +107,8 @@ Move the major and minor loops out of policy into workflows: `iteration_policy.m
 
 **Container images (cross-cutting):**
 
-- [ ] **One shared runtime base for the reasoning layer** -- `src/reasoning/base.dockerfile` (image `agent-base`) owns Node, Python, uv, the shared CLI tools, and the repo lint gates; each provider's `base.dockerfile` adds only its agent install. Removes the drift where Hermes installed its own Node, uv, and `markdownlint-cli2` and never got `hadolint`, while pi and opencode inherited neither Python nor uv. `tests/test_shared_base_contract.sh` fails the build if a provider base reinstalls a runtime or a linter. Handover `20261002-01`.
+- [x] **One shared runtime base for the reasoning layer** -- `src/reasoning/base.dockerfile` (image `agent-base`) owns Node, Python, uv, the shared CLI tools, and the repo lint gates; each provider's `base.dockerfile` adds only its agent install. Removes the drift where Hermes installed its own Node, uv, and `markdownlint-cli2` and never got `hadolint`, while pi and opencode inherited neither Python nor uv. `tests/test_shared_base_contract.sh` fails the build if a provider base reinstalls a runtime or a linter. Handover `20261002-01`.
+- [x] **Provider onboarding guide rewrite** -- the guide named `claude-ai` and `claude-code` as its reference implementations, neither of which is a provider here; it listed a `.env.example` that nothing reads, a file tree rooted at `providers/<n>/` instead of `src/reasoning/providers/<n>/`, sample COPY paths no shipped provider uses, a fixed-UID user creation the `HOST_UID` threading exists to prevent, and a provider discovery scan no script performs. Rewritten as a link-heavy checklist pointing at the three shipped providers, with the `.env.example` row dropped from the `tool_interface.md` interface table. Handover `20261002-02`.
 
 **Acceptance criteria:**
 

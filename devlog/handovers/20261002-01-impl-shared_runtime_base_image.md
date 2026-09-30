@@ -13,6 +13,16 @@ Give every reasoning-layer provider image the same runtime set: Node, Python, an
 
 The shared base owns the runtime set and the lint gates. Each provider base adds only its agent install. The image name, the build path, the two tests that name them, and the two architecture documents follow. The capability layer keeps its own runtime set and its documented boundary.
 
+## Completed
+
+| Work | Result |
+|---|---|
+| `node.dockerfile` renamed to `base.dockerfile`; image renamed `agent-node-base` to `agent-base` | the shared base is the single runtime owner; one canonical constant, one test assertion |
+| Shared base gained uv and Python 3.11 (at or above the operator's 3.11.12 floor), and moved both tools out of `/root` | an agent running as `agentuser` has both on `PATH`, which the Hermes image did not |
+| Hermes base rewritten on the shared base, both stages | its private NodeSource, uv, and `markdownlint-cli2` installs are gone, and it inherits `hadolint` |
+| `tests/test_shared_base_contract.sh` added; `test_image_names.sh` and `test_trace_build.sh` follow the rename | 1008 tests across 68 files, lint clean, hadolint clean |
+| `tool_interface.md` and `provider_onboarding_guide.md` describe the three-tier build and the shared base | the shared base is documented once, as the owner of the runtime set |
+
 ## Acceptance criteria
 
 | # | Criterion | Verifiable by | Verified by |
@@ -59,17 +69,18 @@ The shared base owns the runtime set and the lint gates. Each provider base adds
 
 | Finding | Type | Impact |
 |---|---|---|
-| This container has `hadolint`, `markdownlint-cli2`, and `shellcheck` on `PATH` but no `python3` and no `uv`, which confirms the pi base shipped the linters and no Python | evidence | resolved by this iteration |
-| The Hermes image put uv under `/root/.local/bin`, which the unprivileged `agentuser` cannot read, so its `ENV PATH` line never reached the agent | bug | resolved by this iteration; both install directories moved outside `/root` |
-| `docs/operations/provider_onboarding_guide.md` is stale beyond Step 2: its file tree is rooted at `providers/<n>/` instead of `src/reasoning/providers/<n>/`, and Step 3's sample `COPY` paths (`/libs/`, `/usr/local/bin/provider-entrypoint.sh`, `/opt/context/config/`) match no real provider image | documentation gap | deferred; out of scope for a runtime-set change |
-| No docker in the agent container, so no test asserts the runtime set inside a built image | tooling gap | deferred; criterion 1 stays operator-verified until a build-capable environment can host such a test |
+| This container has `hadolint`, `markdownlint-cli2`, and `shellcheck` on `PATH` but no `python3` and no `uv`, which confirms the pi base shipped the linters and no Python | evidence | Triaged to: Completed -- the pre-state for criterion 1 |
+| The Hermes image put uv under `/root/.local/bin`, which the unprivileged `agentuser` cannot read, so its `ENV PATH` line never reached the agent | bug | Triaged to: Completed -- both install directories moved outside `/root` |
+| `docs/operations/provider_onboarding_guide.md` is stale beyond Step 2: its file tree is rooted at `providers/<n>/` instead of `src/reasoning/providers/<n>/`, and Step 3's sample `COPY` paths (`/libs/`, `/usr/local/bin/provider-entrypoint.sh`, `/opt/context/config/`) match no real provider image | documentation gap | Triaged to: roadmap -- task "Provider onboarding guide rewrite", iteration `20261002-02` |
+| No docker in the agent container, so no test asserts the runtime set inside a built image | tooling gap | Triaged to: Deferred items |
 
 ## Deferred items
 
 | Item | Reason |
 |---|---|
 | Give the capability layer a Node and Python runtime set | declined at the release gate; it keeps its documented no-Node boundary |
-| Fix the rest of `docs/operations/provider_onboarding_guide.md` (file tree root, Step 3 sample COPY paths) | a documentation gap raised by this change but not caused by it |
 | A test that asserts the runtime set inside a built image | no docker in the agent container |
 
 ## What's Next
+
+The capability layer runtime set is settled and needs no iteration. A build-capable environment would let the runtime set be asserted in CI rather than by the operator at each release.

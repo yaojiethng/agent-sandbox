@@ -276,8 +276,7 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 | `base.dockerfile` | Yes | The agent install only, inheriting `agent-base` (Node, Python, uv, CLI tools, lint gates); tagged `<provider>-base` |
 | `provider.dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
-| `.env.example` | Yes | Provider-specific `.env` stubs; appended to project `.env` at onboard time |
-| `config/` | Optional | Onboarding template -- copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`; `env.stub` renamed to `.env`; operator fills in secrets; never baked into image |
+| `config/` | Optional | Onboarding template -- copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`, with `env.stub` renamed to `.env` there; the operator fills in secrets, and nothing is baked into the image |
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
