@@ -79,7 +79,19 @@ The subagent runs in the same container/workspace as the primary agent, with the
 
 State the model and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Read the model recommendation by role tag from the project-level `AGENTS.md` (for example `_REVIEWER`). If the tag is absent, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`); a project-level `.pi/settings.json` override takes precedence if present.
 
-Capture a subagent run to a log file, never through a pipe. A pipe loses the unflushed output when a run is interrupted; the log file and the session transcript survive. Run with a generous timeout (`timeout 1800 pi --provider <provider> --model <model> --thinking <level> -p "$(cat brief)" > /tmp/review.log 2>&1`), substituting the role-resolved values.
+Capture each subagent run to a log file, never through a pipe. Give the run a timeout you set, and a provider, model, and thinking level. Pre-flight the brief, then run and record the exit code and elapsed seconds:
+
+```bash
+brief=<path to brief>                    # the subagent's instructions; must be non-empty
+[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }
+run_timeout=<seconds>                    # the run's timeout; set it yourself
+start=$(date +%s)
+timeout "$run_timeout" pi --provider <provider> --model <model> --thinking <level> -p "$(cat "$brief")" > /tmp/review.log 2>&1
+rc=$?
+echo "rc=$rc secs=$(( $(date +%s) - start ))" > /tmp/review.meta
+```
+
+A `rc=0` with an empty log means the subagent did no work: treat it as an outcome of failure. A `rc=0` with a non-empty log means the subagent ran; check its output.
 
 Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
 

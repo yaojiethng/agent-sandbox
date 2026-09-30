@@ -45,6 +45,8 @@ Co-location is the within-file companion. Keep a concept's definition, rules, an
 
 **Degrees of freedom.** Match the specificity to the task's fragility. A task with many valid approaches gets high-freedom guidance: heuristics, not fixed commands. A task that is fragile and error-prone gets low-freedom guidance: the exact sequence or the exact command, stated without alternatives. Offer a default where multiple approaches exist, then name the alternative for the exception case.
 
+**No magic constants in a snippet.** Do not hardcode a value the agent must choose in a command or snippet. A fixed literal reads as the sanctioned value and disincentivizes the agent from setting its own number, so the guidance does not change behaviour against the default. Name the value as an unbound variable or an explicit agent-chosen field (for example `run_timeout=<seconds>` instead of `timeout 1800`), and state what to set. The agent then reaches for its own value at the point of use.
+
 ## Runbook versus advisor versus skill
 
 A **runbook** is a prompt or skill that holds ordered steps. Each step ends on a completion criterion - the condition that tells the agent the work is done. A clear criterion is sharp and checkable: the agent can tell done from not-done. A vague bound invites premature completion, where the agent ends the step before it is genuinely done. Defend in order: sharpen the bound first; only if it is irreducibly fuzzy do you hide the later steps by splitting the sequence.

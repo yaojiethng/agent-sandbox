@@ -78,13 +78,20 @@ The baseline is the run's baseline commit, so the exported patches apply on top 
 
 One fresh subagent per track, all dispatched before any of them returns. The tracks are the unit of context here: a subagent that has worked one track's files carries its assumptions into the next, so one subagent per track, never one subagent for several tracks.
 
-**Wrap every dispatch so its failure and its duration are visible.** Redirect to a log file, never a pipe, and echo the exit code and the elapsed seconds:
+**Wrap every dispatch so its failure and its duration are visible.** Redirect to a log file, never a pipe, and echo the exit code and the elapsed seconds. Pre-flight each brief before dispatch:
 
 ```bash
-cd "/tmp/wt-<track>" && nohup bash -c 'S=$(date +%s); pi --provider <p> --model <m> --thinking <t> -p "$(cat <brief>)"; echo "RC=$?"; echo "SECONDS=$(( $(date +%s) - S ))"' > "/tmp/<track>.log" 2>&1 &
+brief="/tmp/<track>.brief"                    # the track's instructions; must exist and be non-empty
+[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }
+cd "/tmp/wt-<track>" && nohup bash -c 'S=$(date +%s); pi --provider <p> --model <m> --thinking <t> -p "$(cat /tmp/<track>.brief)"; echo "RC=$?"; echo "SECONDS=$(( $(date +%s) - S ))"' > "/tmp/<track>.log" 2>&1 &
 ```
 
-A subagent's log stays empty until the run flushes, so the wrapper is the only thing that distinguishes a slow track from a dead one. Without it, a dispatch that fails in seconds looks exactly like one that is thinking.
+Read `RC` and `SECONDS` from each log after the run, and map what you see to what happened:
+
+- `RC=0`, empty log, clean worktree: the brief was empty or missing and pi did no work - a no-op, not a pass. The guard should have caught it before dispatch.
+- `RC=0`, non-empty log, changed worktree: the track ran; the suite decides the rest.
+- `RC!=0`: the run failed; read the log.
+- Empty log while `SECONDS` grows: the track is still thinking, not dead.
 
 **Poll the worktrees, not the logs, for liveness.** Two `git` calls per track per poll answer the question the log cannot: is it working, has it finished a unit, has it stalled.
 
