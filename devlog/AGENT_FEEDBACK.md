@@ -261,6 +261,13 @@ scoped: M3 T1 -- documentation conventions; `documentation_policy.md` `### Numbe
 legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
 mitigation: when the agent presents several numbered or lettered sets in one exchange -- a review's numbered findings beside lettered option choices -- the operator's index reply can map to the wrong axis, and the agent must guess. Present exactly one indexable axis per presentation, or name each axis so the reply is self-mapping ("finding 1", "option A"). Do not place two independent numbering schemes side by side and let the operator index one of them. The numbering convention in `documentation_policy.md` `### Numbering and cross-references` must state this rule. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
 
+### [O] 2026-09-30  --  Writing rules must be framed as communication guidelines, not a documentation-task gate
+
+state: open
+scoped: M3.2.1 -- writing-rules redistribution (shadow the general communication standards into the two AGENTS.md layers)
+legacy: none
+mitigation: when an agent presents the `documentation_policy.md` Communication Standards, it must frame them as general communication guidelines that bind chat, prompts, roadmap and handover prose, not as a rule reached only before a documentation task. The frame "reached only before a documentation task" casts a general standard as a narrow documentation gate, which is a toxic frame: it hides that the same standard already applies to every agent output. Do not describe a rule by the narrowest task that reads its canonical copy. Durable fix: the general communication standards are shadowed (restated for context management) into the provider-layer `AGENTS.md` as a Communication Standards section, and the repo-root `AGENTS.md` enforces them across all output; `documentation_policy.md` stays the organizational home for documentation-specific rules. Raised 2026-09-30 when the agent audited writing-rule discoverability and framed `documentation_policy.md` as reached only before a documentation task.
+
 ### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed
 
 state: open

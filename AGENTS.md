@@ -143,7 +143,9 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
-**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose; prose meets ASD-STE100 -- active voice, short sentences, one term one meaning, common verbs, no hedging, delete-test every sentence. All three defined in `documentation_policy.md` -- Editing Guidelines and Conventions.
+Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/operations/documentation_policy.md).
+
+**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
