@@ -5,7 +5,7 @@ argument-hint: "[direction or intent - optional]"
 
 > $@
 
-# Milestone Start - Major Loop Open
+# Milestone Start - Milestone Open
 
 **Scope:** turn the roadmap's remaining task pool into a named, scoped milestone at the current nesting level. Milestone numbering is fractal: the same protocol opens a sub-milestone within a milestone, or a milestone at the top level.
 

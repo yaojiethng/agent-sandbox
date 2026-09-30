@@ -51,7 +51,7 @@ Co-location is the within-file companion. Keep a concept's definition, rules, an
 
 A **runbook** is a prompt or skill that holds ordered steps. Each step ends on a completion criterion - the condition that tells the agent the work is done. A clear criterion is sharp and checkable: the agent can tell done from not-done. A vague bound invites premature completion, where the agent ends the step before it is genuinely done. Defend in order: sharpen the bound first; only if it is irreducibly fuzzy do you hide the later steps by splitting the sequence.
 
-The four loop prompts (`/iter`, `/plan`, `/milestone-start`, `/milestone-close`) are runbooks. Their steps map the minor and major loop procedures, and the rules stay in the policy documents.
+The four loop prompts (`/iter`, `/plan`, `/milestone-start`, `/milestone-close`) are runbooks. Their steps map the iteration and milestone workflow procedures, and the rules stay in the policy documents.
 
 An **advisor** is a prompt or skill that holds reference and judgement, run against a document or a code change to find defects. It is a diagnostic checklist: it identifies what has gone wrong, not what to do instead. The corresponding prescriptive rules live in the policy and the conventions. An audit prompt must not carry an authoritative rule, because a skill is a fast path, not a source of truth.
 

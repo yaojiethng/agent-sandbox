@@ -22,7 +22,7 @@ Studies are reasoning records. They are not architecture documents and are not r
 
 ## When to Open a Study
 
-Open a study during the major loop when a parent story has identified two or more candidate approaches that need comparative evaluation, and one study per candidate is warranted.
+Open a study when a parent story has identified two or more candidate approaches that need comparative evaluation, and one study per candidate is warranted.
 
 A study is not required when:
 
@@ -153,5 +153,5 @@ If a study document the agent expects to find is absent:
 | Document | Purpose |
 |---|---|
 | [`story_policy.md`](story_policy.md) | Parent story format, lifecycle, and graduation |
-| [`milestone_policy.md`](milestone_policy.md) | Major loop -- when studies are commissioned |
-| [`iteration_policy.md`](iteration_policy.md) | Minor loop -- where deferred studies may resume |
+| [`milestone_policy.md`](milestone_policy.md) | Milestone workflow -- when studies are commissioned |
+| [`iteration_policy.md`](iteration_policy.md) | Iteration -- where deferred studies may resume |

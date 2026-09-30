@@ -1,12 +1,12 @@
 # Story Policy
 
-Governs the creation, lifecycle, and closure of user story documents. Stories are planning tools used during the major loop to frame design problems before a solution approach is chosen. They are reasoning records -- not task lists, not architecture, not current system description.
+Governs the creation, lifecycle, and closure of user story documents. Stories are planning tools used to frame design problems before a solution approach is chosen. They are reasoning records -- not task lists, not architecture, not current system description.
 
 ---
 
 ## Purpose
 
-A story exists when a sub-milestone objective is understood but the approach is not. It frames the problem, surfaces constraints, and defines the investigation space. The output of a story is either a resolved design decision (graduated to a roadmap entry) or an explicit deferral (flagged for the relevant minor loop iteration).
+A story exists when a sub-milestone objective is understood but the approach is not. It frames the problem, surfaces constraints, and defines the investigation space. The output of a story is either a resolved design decision (graduated to a roadmap entry) or an explicit deferral (flagged for the relevant iteration).
 
 A story that is never closed is a planning failure. A story that is closed without a Resolution section is not closed.
 
@@ -22,7 +22,7 @@ Stories are reasoning documents, not architecture. No live links to stories are 
 
 ## When to Open a Story
 
-Open a story during the major loop when:
+Open a story when:
 
 - A sub-milestone objective is clear but the approach has not been agreed
 - Multiple candidate approaches exist and need evaluation
@@ -31,7 +31,7 @@ Open a story during the major loop when:
 Do not open a story when:
 
 - The design is already agreed -- write the roadmap entry directly
-- The uncertainty depends on an earlier sub-milestone's implementation decisions -- defer and flag in the roadmap entry; the story opens during the relevant minor loop iteration's design step
+- The uncertainty depends on an earlier sub-milestone's implementation decisions -- defer and flag in the roadmap entry; the story opens during the relevant iteration's design step
 
 ---
 
@@ -70,7 +70,7 @@ A story graduates to a roadmap entry when:
 - The pain point is fully understood and recorded
 - All open questions that can be resolved now are resolved
 - A concrete solution approach is agreed and recorded with rationale
-- The resulting tasks are specific enough to enter the minor loop (each identifies a file and a nature of change)
+- The resulting tasks are specific enough to enter the iteration (each identifies a file and a nature of change)
 
 When a story graduates:
 
@@ -116,7 +116,7 @@ Open stories are listed in the roadmap under a `## User Stories` section with a 
 
 | Document | Purpose |
 |---|---|
-| [`milestone_policy.md`](milestone_policy.md) | Major loop process -- when stories are opened and closed |
+| [`milestone_policy.md`](milestone_policy.md) | Milestone workflow -- when stories are opened and closed |
 | [`study_policy.md`](study_policy.md) | Study format and lifecycle |
-| [`iteration_policy.md`](iteration_policy.md) | Minor loop -- where deferred stories resurface |
+| [`iteration_policy.md`](iteration_policy.md) | Iteration -- where deferred stories resurface |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules -- User Stories section |

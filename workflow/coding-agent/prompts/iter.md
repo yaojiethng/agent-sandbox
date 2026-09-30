@@ -60,7 +60,7 @@ If the directive slot is non-empty:
 Before creating the handover:
 
 ```text
-Range-read: docs/operations/iteration_policy.md [Minor Loop -- Invariants, the record-state and close invariants](iteration_policy.md#minor-loop----invariants).
+Range-read: docs/operations/iteration_policy.md [Iteration Invariants, the record-state and close invariants](iteration_policy.md#iteration-invariants).
 ```
 
 Create the handover per those rules. Set Status to `Active`.

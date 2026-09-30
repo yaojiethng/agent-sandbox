@@ -34,7 +34,7 @@ Architecture documents must not describe things a frozen layer does not yet do. 
 
 ### Rule placement
 
-Put a rule where the reader meets it. A rule governing Step 6 of the minor loop belongs in the Step 6 entry of the workflow table, not in a separate document.
+Put a rule where the reader meets it. A rule governing Step 6 of the iteration belongs in the Step 6 entry of the workflow table, not in a separate document.
 
 Workflow table Action cells hold one imperative sentence plus a link to the governing section; detail defers to the child document. Negative cases that mark a rule's limit stay in the table cell; illustrative examples belong in the child document.
 

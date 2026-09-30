@@ -174,7 +174,7 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The minor loop -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), the Roadmap as the sole task list in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), the commit and delivery rules in [`docs/operations/git_policy.md`](docs/operations/git_policy.md), and the Markdown lint gate in [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/operations/iteration_policy.md#minor-loop----invariants).
+The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), the Roadmap as the sole task list in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), the commit and delivery rules in [`docs/operations/git_policy.md`](docs/operations/git_policy.md), and the Markdown lint gate in [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/operations/iteration_policy.md#iteration-invariants).
 
 The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/operations/iteration_policy.md)) before any further output.
 
@@ -193,9 +193,9 @@ Read these in order. Each answers a distinct question -- do not skip. Verify you
 | `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last iteration end? |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? -- after reading, state your proposed scope and wait for confirmation before producing any output |
 
-### Major loop only
+### Milestone planning
 
-Read these in addition to the above when opening a major loop planning iteration.
+Read these in addition to the above when opening a milestone planning iteration.
 
 | Document | Question it answers |
 |---|---|

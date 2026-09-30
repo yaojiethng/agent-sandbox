@@ -1,12 +1,12 @@
 # Iteration Policy
 
-The authoritative workflow for all development in agent-sandbox. Defines the two loops that govern work: the major loop for milestone planning, and the minor loop for iteration execution. Principles here are stable; the child documents that govern each subprocess will evolve as the project matures.
+The authoritative workflow for the iteration in agent-sandbox. The iteration is the unit of work that turns a scoped sub-milestone into delivered code and a closed handover; the milestone workflow that plans it is in [`milestone_policy.md`](milestone_policy.md). The loop model is in [`autonomous_agent_loop.md`](../concepts/autonomous_agent_loop.md). Principles here are stable; the child documents that govern each subprocess will evolve as the project matures.
 
 Read this document at the start of any iteration. Read the relevant child document before performing that subprocess.
 
-| Loop | Step | Governing document |
+| Phase | Step | Governing document |
 |---|---|---|
-| **Major** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#top-level-milestone-close) -- Top-level milestone close |
+| **Milestone** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#top-level-milestone-close) -- Top-level milestone close |
 | | **Gate 1** | select next milestone |
 | | 2. Orient to next milestone | `roadmap.md` |
 | | **Gate 2** | select sub-milestone (also entry point from roadmap maintenance when a sub-milestone closes) |
@@ -14,17 +14,17 @@ Read this document at the start of any iteration. Read the relevant child docume
 | | 4. Investigate or design | [`discussion_policy.md`](discussion_policy.md) |
 | | 5. Resolve stories | [`discussion_policy.md`](discussion_policy.md) -- Stories |
 | | **Gate 3** | release sub-milestone for execution |
-| **Minor** | 1. Open handover ... 9. Seed, with the scope gate and the release gate | [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs the steps; [Minor Loop -- Invariants](#minor-loop----invariants) holds the rules |
+| **Iteration** | 1. Open handover ... 9. Seed, with the scope gate and the release gate | [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs the steps; [Iteration Invariants](#iteration-invariants) holds the rules |
 
 ## Loop workflow prompts
 
-The loops run as invocable runbooks under `workflow/coding-agent/prompts/` (each runbook is a workflow prompt). The procedure lives in the runbooks; this policy holds the invariants the runbooks must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram. A runbook may evolve freely as the model improves; the invariants here are the durable half.
+The workflows run as invocable runbooks under `workflow/coding-agent/prompts/` (each runbook is a workflow prompt). The procedure lives in the runbooks; this policy holds the invariants the runbooks must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram. A runbook may evolve freely as the model improves; the invariants here are the durable half.
 
-- `/iter` -- the base interactive minor loop: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
+- `/iter` -- the iteration workflow: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
 - `/sequential-work` and `/parallel-work` -- the `/iter` work-loop expansions, owned by M3.2.3: [`sequential-work.md`](../../workflow/coding-agent/prompts/sequential-work.md), [`parallel-work.md`](../../workflow/coding-agent/prompts/parallel-work.md). `/auto` (smart dispatcher) and `/goal` (loose-goal decomposition) are M4's.
-- `/milestone-start` -- opens the major loop: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
-- `/milestone-close` -- closes the major and sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md).
-- `/plan` -- major-loop planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
+- `/milestone-start` -- opens a milestone: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
+- `/milestone-close` -- closes a milestone or sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md).
+- `/plan` -- milestone planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
 - `/wrapup` -- the consolidated close for the active-operator prompts: [`wrapup.md`](../../workflow/coding-agent/prompts/wrapup.md).
 
 ---
@@ -51,34 +51,15 @@ Principles owned by other layers and echoed here:
 
 ---
 
-## The Two Loops
+## The autonomous agent loop
 
-Development operates at two cadences:
-
-**Major loop** -- triggered when a major milestone closes (e.g. M1 -> M2). Plans the next major milestone: defines sub-milestones, opens stories, commissions investigations, and produces scoped roadmap entries. Operator-heavy. Output is a planned milestone ready for execution.
-
-**Minor loop** -- a single iteration targeting one sub-milestone (e.g. M2.1). Assumes the sub-milestone is scoped. Proceeds through scope, design, implementation, and documentation in sequence. Output is working software and updated documents, closed in a handover.
-
-The loops are sequential at the major level -- a major milestone must be planned before iterating on sub-milestones -- but the minor loop repeats for each sub-milestone within the major milestone.
+The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../concepts/autonomous_agent_loop.md). The milestone phase is governed by [`milestone_policy.md`](milestone_policy.md). The iteration phase is governed by this policy.
 
 ---
 
-## Major Loop -- Milestone Planning
+## Iteration Invariants
 
-The major loop opens a milestone and plans it before iteration begins. It is a planning and investigation cadence, not a coding one. The output is a scoped sub-milestone ready for iteration -- its readiness criteria are in [`milestone_policy.md`](milestone_policy.md).
-
-The major loop runs from the workflow prompts:
-
-- [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens the next major milestone.
-- [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes the milestone and refines its designs.
-
-The major loop is sequential at the top: a major milestone must be open before iterating on its sub-milestones. The minor loop then repeats for each sub-milestone within the milestone.
-
----
-
-## Minor Loop -- Invariants
-
-The minor loop runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). The prompt owns the procedure: the step sequence, the entry and exit conditions, and the templates. This section holds the invariants the procedure must not break -- the state the repository must be in at every point a commit lands. It is organized by invariant, not by procedure step: the procedure in `/iter` may evolve, and the invariant set below should not change when the runbook changes, only when the system is redesigned.
+The iteration runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). The prompt owns the procedure: the step sequence, the entry and exit conditions, and the templates. This section holds the invariants the procedure must not break -- the state the repository must be in at every point a commit lands. It is organized by invariant, not by procedure step: the procedure in `/iter` may evolve, and the invariant set below should not change when the runbook changes, only when the system is redesigned.
 
 **Decoupling principle.** The runbook and the invariants are independent layers. The runbook is expected to evolve as the model improves. The invariant set below should be insensitive to runbook changes: a change to `/iter` should never *require* a change here. Improving the invariant set is welcome and autonomous; what signals coupling is not that it was edited, but *why* -- an edit forced by a runbook rename or renumber is entanglement, while an edit stating a better durable rule is healthy evolution.
 
@@ -97,7 +78,7 @@ The minor loop runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md).
 
 ### Gate invariants
 
-- **Two gates.** The minor loop has two gates: the **scope gate** and the **release gate**. The scope gate confirms scope and acceptance criteria together on a single operator approval. The release gate is the common acceptance gate the operator-involved workflows share, and after its release the close hands off to [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) Part B.
+- **Two gates.** The iteration has two gates: the **scope gate** and the **release gate**. The scope gate confirms scope and acceptance criteria together on a single operator approval. The release gate is the common acceptance gate the operator-involved workflows share, and after its release the close hands off to [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) Part B.
 - **Gates stop for explicit operator release.** Each gate stops the loop until the operator sends a forward signal. A message that reviews output without a clear forward signal does not release a gate. Packaging changes (`/package-branch`) do not release the release gate -- iteration-end actions do not begin until the operator explicitly confirms after testing.
 - **AC satisfiability.** Every criterion is re-read and verified satisfiable given the confirmed scope; a criterion that would fail on a correct implementation is a specification bug -- resolve it now, not at pre-close.
 
@@ -125,7 +106,7 @@ The minor loop runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md).
 - **Findings review/publish.** Route each Findings entry to its destination: the Decisions table, Deferred items, What's Next (via Carried forward), `roadmap.md` (via a named task entry), or [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed.
 - **Propagation replay.** When the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears", a row-by-row replay is required: `file | change planned | status`. Every row carries `completed`, `deferred`, or `not started`; every row must be accounted for before the release gate releases: `completed`, or `deferred`/`not started` with the row in Deferred items. When a replay is not required, the summary still covers what was built, tests produced, AC status per criterion, and recommended manual checks.
 - **Scope amendment.** If any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
-- **Seed what's next.** Populate What's Next as source material for the next iteration's orientation, not a continuation directive: the next agent creates its own handover before acting on anything written here. Deferred items take priority when identifying the next iteration's scope. If a completed sub-milestone was the last in the major milestone, write "Major loop required before next iteration".
+- **Seed what's next.** Populate What's Next as source material for the next iteration's orientation, not a continuation directive: the next agent creates its own handover before acting on anything written here. Deferred items take priority when identifying the next iteration's scope. If a completed sub-milestone was the last in the major milestone, write "/milestone-close required before next iteration".
 
 ### Canonical procedures
 
@@ -163,7 +144,7 @@ There is no document registry. The docs tree itself is the authoritative file li
 
 | Document | Governs |
 |---|---|
-| [`milestone_policy.md`](milestone_policy.md) | Major loop: milestone planning, story and investigation process |
+| [`milestone_policy.md`](milestone_policy.md) | Milestone workflow: milestone planning, story and investigation process |
 | [`discussion_policy.md`](discussion_policy.md) | Discussion document lifecycle: naming, types, statuses |
 | [`story_policy.md`](story_policy.md) | Story lifecycle: format, graduation, closure |
 | [`study_policy.md`](study_policy.md) | Study lifecycle: format, recommendation, closure (formerly `investigation_policy.md`) |

@@ -52,7 +52,7 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 | Implementation | `impl` | Behaviour work: a new capability, a fix, or a restructure. The commit type (`feat`/`fix`/`refactor`/`test`/`build`) disambiguates the subclass at close. | `feat`, `fix`, `refactor`, `test`, `build` |
 | Discussion | `discussion` | An in-flight discussion document that has not yet resolved to a decision. | `docs` |
 | Design | `design` | Decision and evaluation work: ADRs, running investigations, option evaluation, maintaining ADRs while evaluating multiple candidates. Jump-right-in, often interleaved with `impl` commits. | `docs` |
-| Plan | `plan` | Major-loop milestone scoping: a large task list and assigning work to iterations. | `plan` |
+| Plan | `plan` | Milestone scoping: a large task list and assigning work to iterations. | `plan` |
 | Documentation | `docs` | Project documentation under `docs/` -- descriptive prose that is not a decision record. | `docs` |
 | Workflow | `workflow` | Policy, governance, AGENTS.md, prompts, and `workflow/` agent-behaviour contract files. | `workflow` |
 | Housekeeping | `chore` | Small administrative or cosmetic maintenance: stale links, linting, index cleanup, roadmap bookkeeping. | `chore` |
@@ -67,11 +67,11 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 
 A handover has three states:
 
-**Open** -- created at iteration start (`iteration_policy.md` [Minor Loop -- Invariants](iteration_policy.md#minor-loop----invariants)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
+**Open** -- created at iteration start (`iteration_policy.md` [Iteration Invariants](iteration_policy.md#iteration-invariants)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
 
 **Active** -- updated throughout the iteration as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** -- finalised at iteration end (`iteration_policy.md` [close invariants](iteration_policy.md#minor-loop----invariants)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
+**Closed** -- finalised at iteration end (`iteration_policy.md` [close invariants](iteration_policy.md#iteration-invariants)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
 
 ---
 
@@ -212,7 +212,7 @@ Keep the blank line before the closing fence. Without it, the tag paragraph pars
 
 1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
 2. Do not alter the Status, timestamps, or any other metadata field in the corrected record.
-3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [close invariants](iteration_policy.md#minor-loop----invariants)):
+3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [close invariants](iteration_policy.md#iteration-invariants)):
 
 - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
 - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
@@ -256,7 +256,7 @@ Policy documents that this document depends on:
 | Document | Governs |
 |---|---|
 | [`handover_policy.md`](handover_policy.md) | Handover content rules -- this document |
-| [`iteration_policy.md`](iteration_policy.md) | Minor loop invariants and the handover lifecycle |
+| [`iteration_policy.md`](iteration_policy.md) | Iteration invariants and the handover lifecycle |
 
 ---
 

@@ -1,20 +1,46 @@
 # Autonomous Agent Loop
 
-This document is the conceptual overview of the coding agent's loops: what each loop is, how it dispatches to prompts and skills, and its responsibilities. It is the explanatory home for the loop workflows the [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) ADR indexes and separates. It takes over the non-policy content of the policy docs.
+The autonomous agent loop is the continuous cycle by which the coding agent advances work: a milestone is opened, scoped, iterated, and closed, then the next milestone begins. It is one loop, not two cadences. The workflow runbooks under `workflow/coding-agent/prompts/` drive the loop's state transitions; each workflow enforces a different transition in the loop. Policy files under `docs/operations/` own the invariants those transitions must not break.
 
-This is a shell in U1 of M3.2.1. Its full content builds across the migration units U2-U4 and the per-prompt quality passes.
+The [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) ADR records the decisions behind the loop-and-workflow split and the state diagram.
 
-## The loops
+## The loop
 
-The harness targets four loop kinds, with two declared expansions of `/iter`. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy table and the state diagram.
+```text
+milestone-start        plan (scoping)         story / investigation
+     │                     │                          │
+     ▼                     ▼                          ▼
+streamlined open    scoped milestone           roadmap entry
+     │                     │                          │
+     └─────────────────────┴──────────────────────────┘
+                              │
+                              ▼
+          iteration (iter / sequential-work / parallel-work)
+             runs an iteration, closes in a handover
+                              │
+                              ▼
+                    pre-close verification
+                              │
+                              ▼
+      milestone-close (records the close)  ──▶  next milestone
+```
 
-- `/iter` -- the base interactive minor loop.
-- `/sequential-work` and `/parallel-work` -- the `/iter` work-loop expansions for autonomous runs, owned and refined by M3.2.3 (the `-work` dispatch command surface).
-- `/auto` and `/goal` -- M4's smart dispatcher and loose-goal decomposition (reserved; not `/iter` work-loop expansions).
-- `/milestone-start` -- opens the major loop.
-- `/milestone-close` -- closes the major and sub-milestone.
-- `/plan` -- major-loop planning.
+The loop returns to the top: closing a milestone opens the next one.
+
+## Workflows
+
+Each workflow enforces one group of state transitions in the loop.
+
+| Workflow | Transition it drives |
+|---|---|
+| `/milestone-start` | opens a milestone |
+| `/plan` | scopes a milestone; commissions stories and investigations; produces a roadmap entry |
+| `/iter` | runs one iteration: scope, design, implementation, documentation, handover |
+| `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, owned and refined by M3.2.3 |
+| `/milestone-close` | records a milestone or sub-milestone close; pre-close verification |
+
+The `/auto` smart dispatcher and `/goal` loose-goal decomposition are M4's. They are not `/iter` work-loop expansions and they do not drive a transition in this loop yet.
 
 ## Responsibilities
 
-A loop owns its steps and state transitions; policy owns the invariants those transitions must not break; a gate is a stop-and-wait check that output conforms to the expected state. Details are in the ADR and in the loop prompts under `workflow/coding-agent/prompts/`.
+A workflow owns its steps and the transitions it drives. Policy owns the invariants those transitions must not break. A gate is a stop-and-wait check that output conforms to the expected state. Details are in the ADR and in the workflow prompts under `workflow/coding-agent/prompts/`.

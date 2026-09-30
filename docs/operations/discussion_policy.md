@@ -50,7 +50,7 @@ Existing docs with old-format names keep their names until substantively edited.
 
 See [`story_policy.md`](story_policy.md).
 
-Defines the problem space. Created during the major loop when a sub-milestone objective is understood but the approach is not.
+Defines the problem space. Created when a sub-milestone objective is understood but the approach is not.
 
 ### Studies (`study`)
 
@@ -60,7 +60,7 @@ Evaluates a specific candidate approach. One study per candidate. Runs until a r
 
 ### Designs (`design`)
 
-Opened during the minor loop design phase -- see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
+Opened during the iteration design phase -- see [`iteration_policy.md`](iteration_policy.md) when design is active. A design doc resolves trade-offs between options and recommends a decision.
 
 #### Required sections
 

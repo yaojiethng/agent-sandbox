@@ -15,62 +15,62 @@
 
 ## 2026-09-28 -- Loops are workflows; policy carries the rules
 
-**Decision:** The coding agent runs its major and minor loops as invocable workflow prompts under `workflow/coding-agent/prompts/`. Loop prompts own the steps and the state transitions of a loop. Policy files under `docs/operations/` own the invariants those transitions must not break. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The loop prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
+**Decision:** The coding agent runs the autonomous agent loop as invocable workflow prompts under `workflow/coding-agent/prompts/`. Workflow prompts own the steps and the state transitions of the loop. Policy files under `docs/operations/` own the invariants those transitions must not break. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The workflow prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
 
-**Rationale:** The loops previously lived as step-by-step procedure interleaved with policy rules in `iteration_policy.md` and `milestone_policy.md`, which made the governance surface large and forced every loop change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a loop's steps reviewable in one prompt, and lets the loops evolve without a policy change. The separation itself is already ruled by [`policy_declarative_framing.md`](policy_declarative_framing.md): policy states rules declaratively and execution guidance does not belong in policy. This ADR records the loop-specific consequence of that rule and names the loop set.
+**Rationale:** The loop workflows previously lived as step-by-step procedure interleaved with policy rules in `iteration_policy.md` and `milestone_policy.md`, which made the governance surface large and forced every change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a workflow's steps reviewable in one prompt, and lets the workflows evolve without a policy change. The separation itself is already ruled by [`policy_declarative_framing.md`](policy_declarative_framing.md): policy states rules declaratively and execution guidance does not belong in policy. This ADR records the loop-specific consequence of that rule and names the loop set.
 
 **Rejected alternatives:**
 
-- *Keep the loops as procedure inside policy* -- rejected: the loops would stay interleaved with the rules, blocking the M3.2.1 migration's goal of a minimal shared governance surface.
-- *Make the loops conceptual documents in `docs/concepts/`* -- rejected: a loop is executable, not merely descriptive; its steps must run as a prompt. The conceptual overview offloads to `docs/concepts/autonomous_agent_loop.md` instead.
+- *Keep the loop workflows as procedure inside policy* -- rejected: the workflows would stay interleaved with the rules, blocking the M3.2.1 migration's goal of a minimal shared governance surface.
+- *Make the loop workflows conceptual documents in `docs/concepts/`* -- rejected: a workflow is executable, not merely descriptive; its steps must run as a prompt. The conceptual overview offloads to `docs/concepts/autonomous_agent_loop.md` instead.
 
 **Edge cases / drivers:**
 
 - The responsibilities separation does not move any invariant into a prompt: policy stays the owner of state rules, and a prompt is checked against its policy.
 - A policy change that states a new invariant is not a workflow change; the loop prompts keep their steps and the new invariant becomes the check.
-- A rule has one owner, which can be the policy or the prompt. The two do not conflict: the policy states the rule as an invariant; the prompt states it as a series of procedural checks that operationalise it. A rule whose variant differs by workflow (for example how a loop treats open questions) is owned by the workflow that applies it, not by a single policy. A rule that is general to all loops or to the collaboration protocol is owned by its policy or by the project `AGENTS.md`, and each loop prompt that depends on it echoes it as a runbook step.
+- A rule has one owner, which can be the policy or the prompt. The two do not conflict: the policy states the rule as an invariant; the prompt states it as a series of procedural checks that operationalise it. A rule whose variant differs by workflow (for example how a workflow treats open questions) is owned by the workflow that applies it, not by a single policy. A rule that is general to all workflows or to the collaboration protocol is owned by its policy or by the project `AGENTS.md`, and each loop prompt that depends on it echoes it as a runbook step.
 - The runbook is not a second owner. A prompt's procedural restatement of a rule is the runbook around the rule, not an independent authority claim. Echo a rule by linking its owner and stating the applying check.
 - The `-run` family of prompts (`churn-analysis-run`, `read-through-run`, `review-loop-run`, `review-pass-run`) is not in the loop taxonomy. It is one-shot operation work scoped to M3.2.2.
 - The `-work` family of dispatch prompts (`sequential-work`, `parallel-work`) is the renamed `/iter` work-loop expansion surface. It is not in the loop taxonomy proper; it is owned by M3.2.3 and refined there, with the temporary `-work` suffix removed when final naming lands. The new `/auto` smart dispatcher and `/goal` are M4's, not `/iter` work-loop expansions.
 
 ## The loop taxonomy
 
-The harness targets four loop kinds, with two declared expansions of `/iter`.
+The harness targets four workflow kinds, with two declared expansions of `/iter`.
 
-| Loop | Kind | Artifact |
+| Workflow | Kind | Artifact |
 |---|---|---|
-| `/iter` | base interactive minor loop | `workflow/coding-agent/prompts/iter.md`, renamed from `src/reasoning/agent/prompts/new-iteration.md` |
+| `/iter` | the iteration workflow | `workflow/coding-agent/prompts/iter.md`, renamed from `src/reasoning/agent/prompts/new-iteration.md` |
 | `/auto` | **M4 smart dispatcher (reserved stub), not an `/iter` work-loop expansion** | `workflow/coding-agent/prompts/auto.md` |
 | `/goal` | **M4 loose-goal decomposition (Option B), not an `/iter` work-loop expansion** | M4 |
 | `/sequential-work` | curated dispatch shape (was `/auto`), `/iter` work-loop expansion owned by M3.2.3 | `workflow/coding-agent/prompts/sequential-work.md` |
 | `/parallel-work` | curated dispatch shape (was `/parallel-auto`), `/iter` work-loop expansion owned by M3.2.3 | `workflow/coding-agent/prompts/parallel-work.md` |
-| `/milestone-start` | loop kind, major-loop open | `workflow/coding-agent/prompts/milestone-start.md` |
-| `/milestone-close` | loop kind, major and sub-milestone close | `workflow/coding-agent/prompts/milestone-close.md` |
-| `/plan` | loop kind, major-loop planning | `workflow/coding-agent/prompts/plan.md` |
+| `/milestone-start` | opens a milestone | `workflow/coding-agent/prompts/milestone-start.md` |
+| `/milestone-close` | closes a milestone or sub-milestone | `workflow/coding-agent/prompts/milestone-close.md` |
+| `/plan` | milestone planning | `workflow/coding-agent/prompts/plan.md` |
 
-`/wrapup` is a shared close runbook, not a loop prompt: the active-operator prompts (`/iter`, `/plan`, `/document`) invoke its Part B close rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
+`/wrapup` is a shared close runbook, not a workflow prompt: the active-operator prompts (`/iter`, `/plan`, `/document`) invoke its Part B close rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
 
 ## State diagram
 
-The major/minor loop workflow, drawn as the invariant the loop prompts and policy must together satisfy.
+The autonomous agent loop, drawn as the invariant the workflow prompts and policy must together satisfy.
 
 ```text
-major loop:  milestone-brainstorm ──▶ scoping ──▶ story / investigation
+milestone workflow:  milestone brainstorm ──▶ scoping ──▶ story / investigation
                  │                                    │
                  │                                    ▼
                  │                          roadmap entry created
                  │                                    │
                  ▼                                    ▼
-        minor-loop handoff ◀───────────  plan / iter dispatch
+            iteration handoff ◀───────────  plan / iter dispatch
                  │
                  ▼
            pre-close verification
                  │
                  ▼
-           formal close (milestone-close)
+      milestone-close (records the close)
 ```
 
-The minor loop iterates inside the handoff: `/iter` opens an iteration, runs its steps, and routes back to the handoff for the next iteration until the milestone's roadmap section is all checked.
+The iteration repeats inside the handoff: `/iter` runs one iteration, and routes back to the handoff for the next iteration until the milestone's roadmap section is all checked.
 
 ## Concept offload map
 

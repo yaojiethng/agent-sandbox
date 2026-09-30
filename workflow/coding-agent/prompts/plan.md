@@ -1,11 +1,11 @@
 ---
-description: Major-loop planning workflow. Runs a plan session for planning and design work in place of `/iter` - opens the session, records the goal and problem, aligns scope, interviews, and routes the outcome to its write-back target. Deliverable is documents. Use when a plan or design needs shaping and iteration is not required.
+description: Milestone planning workflow. Runs a plan session for planning and design work in place of `/iter` - opens the session, records the goal and problem, aligns scope, interviews, and routes the outcome to its write-back target. Deliverable is documents. Use when a plan or design needs shaping and iteration is not required.
 argument-hint: "[goal or scope to plan - required]"
 ---
 
 > $@
 
-# Plan - Major Loop Planning
+# Plan - Milestone Planning
 
 Run a plan session for planning and design work. Run `/iter` for feature work.
 
@@ -51,7 +51,7 @@ Route the interview result to a write-back target. Choose one: a written report 
 
 ## Write back
 
-Write the plan to the confirmed target: the roadmap entry, the scoped sub-milestone, decisions, and ADRs. Apply the binding rules in [`milestone_policy.md`](docs/operations/milestone_policy.md), [`iteration_policy.md`](docs/operations/iteration_policy.md) Major Loop, [`roadmap_policy.md`](docs/operations/roadmap_policy.md), and [`adr_policy.md`](docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
+Write the plan to the confirmed target: the roadmap entry, the scoped sub-milestone, decisions, and ADRs. Apply the binding rules in [`milestone_policy.md`](docs/operations/milestone_policy.md), [`iteration_policy.md`](docs/operations/iteration_policy.md) [Iteration Invariants](docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](docs/operations/roadmap_policy.md), and [`adr_policy.md`](docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
 

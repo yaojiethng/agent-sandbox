@@ -1,30 +1,30 @@
 # Milestone Policy
 
-Governs the major loop: the planning process that runs after a major milestone closes and before iteration execution on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to proceed" means for a milestone.
+Governs the milestone workflow: the planning process that runs after a major milestone closes and before iteration execution on the next major milestone begins. Defines how sub-milestones are scoped, how stories and investigations are used as planning tools, and what "ready to proceed" means for a milestone.
 
-This document is read during the major loop. The major-loop procedure runs from the workflow prompts: [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens the milestone, [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes it. For iteration execution, see [`iteration_policy.md`](iteration_policy.md).
+This document is read during the milestone workflow. It runs from the workflow prompts: [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens the milestone, [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes it. For iteration execution, see [`iteration_policy.md`](iteration_policy.md).
 
 ---
 
-## Purpose of the Major Loop
+## Purpose of the Milestone Workflow
 
-A major milestone (M1, M2, M3...) is a capability boundary -- a meaningful change in what the system can do. Sub-milestones (M2.1, M2.2...) are the implementation increments that deliver it. The major loop exists to scope those increments before coding begins.
+A major milestone (M1, M2, M3...) is a capability boundary -- a meaningful change in what the system can do. Sub-milestones (M2.1, M2.2...) are the implementation increments that deliver it. The milestone workflow exists to scope those increments before coding begins.
 
-The output of the major loop is not a complete plan for every sub-milestone. It is:
+The output of the milestone workflow is not a complete plan for every sub-milestone. It is:
 
 - A scoped and ready M2.1 (the first sub-milestone to iterate)
 - Sufficient understanding of M2.2 onward to sequence them correctly
 - Explicit records of what cannot yet be scoped and why
 
-Sub-milestones that depend on earlier implementation decisions are flagged and deferred. Their stories remain open. They are scoped during the design step of the relevant minor loop iteration, not during the major loop.
+Sub-milestones that depend on earlier implementation decisions are flagged and deferred. Their stories remain open. They are scoped during the design step of the relevant iteration, not during the milestone workflow.
 
 ---
 
 ## Trigger
 
-The major loop triggers when a top-level milestone closes (via roadmap maintenance in `roadmap_policy.md`) -- the milestone has been extracted to the changelog and the next major milestone promoted from `roadmap_future.md` into `roadmap.md`.
+The milestone workflow triggers when a top-level milestone closes (via roadmap maintenance in `roadmap_policy.md`) -- the milestone has been extracted to the changelog and the next major milestone promoted from `roadmap_future.md` into `roadmap.md`.
 
-Do not begin the major loop before the prior milestone is fully closed in the changelog.
+Do not begin the milestone workflow before the prior milestone is fully closed in the changelog.
 
 ---
 
@@ -35,7 +35,7 @@ Before beginning, read:
 - The promoted milestone section in `roadmap.md` -- objective, sub-milestones, any existing task lists or open decisions
 - `roadmap_future.md` -- remaining future milestone context
 - `changelog.md` -- the most recent entry, to confirm the prior milestone is fully closed
-- Any open stories or investigations in `devlog/discussions/` that were deferred from the prior major loop
+- Any open stories or investigations in `devlog/discussions/` that were deferred from the prior milestone workflow
 
 ---
 
@@ -50,19 +50,19 @@ A sub-milestone is **ready to proceed** when:
 
 A sub-milestone is **not ready to proceed** when:
 
-- It has open design questions that can be answered now (these must be resolved before closing the major loop)
+- It has open design questions that can be answered now (these must be resolved before closing the milestone workflow)
 - It has open design questions that depend on earlier implementation decisions (these are explicitly deferred and flagged)
 - Its task list is aspirational rather than specific
 
 ---
 
-## Stories in the Major Loop
+## Stories
 
 Stories frame the problem space when the approach is not yet settled. See [`story_policy.md`](story_policy.md) for when to open or skip a story, and for format, lifecycle, and graduation rules.
 
 ---
 
-## Investigations in the Major Loop
+## Investigations
 
 Investigations evaluate a specific candidate approach within a story. See [`study_policy.md`](study_policy.md) for when to commission an investigation, and for format, lifecycle, and recommendation rules.
 
@@ -74,18 +74,18 @@ When a story's open questions are resolved, graduate it to a roadmap entry per [
 
 ---
 
-## Closing the Major Loop
+## Closing the Milestone Workflow
 
 Read the state-transition rules here; the loop prompts drive the transitions: [`/milestone-start`](../../workflow/coding-agent/prompts/milestone-start.md) opens a milestone, [`/plan`](../../workflow/coding-agent/prompts/plan.md) scopes it, and [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md) records its close.
 
-The major loop closes when:
+The milestone workflow closes when:
 
 - M2.1 (or the first active sub-milestone) has a complete, confirmed roadmap entry
 - All stories that could be resolved have been resolved and graduated
 - All stories that cannot be resolved (deferred dependencies) are explicitly flagged in the roadmap entry for the sub-milestone whose iteration will resolve them
 - The next handover stub has been created and its Hot files section populated
 
-At this point, minor loop iterations may begin.
+At this point, iteration execution may begin.
 
 ---
 
@@ -93,7 +93,7 @@ At this point, minor loop iterations may begin.
 
 | Document | Purpose |
 |---|---|
-| [`iteration_policy.md`](iteration_policy.md) | Full two-loop workflow; minor loop iteration steps |
+| [`iteration_policy.md`](iteration_policy.md) | the iteration workflow: iteration steps |
 | [`story_policy.md`](story_policy.md) | Story creation, lifecycle, graduation, closure |
 | [`study_policy.md`](study_policy.md) | Study structure, lifecycle, recommendation |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
