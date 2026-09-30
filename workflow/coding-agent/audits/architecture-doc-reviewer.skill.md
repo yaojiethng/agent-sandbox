@@ -38,7 +38,7 @@ This project's documentation policy establishes the following rules. A finding i
 
 **Layer freeze is respected.** Frozen layers are not modified without explicit milestone scope. Changes that cross layer boundaries without milestone justification are findings.
 
-**Header format is consistent.** `story_` and `investigation_` documents carry a `Status:` line immediately after the title. Superseded documents carry a blockquote redirect. Architecture and concepts documents carry neither.
+**Header format is consistent.** Discussion documents (story, study, design, report) carry a `Status:` line immediately after the title. Superseded documents carry a blockquote redirect. Architecture and concepts documents carry neither.
 
 **TODOs and speculative content are absent from `architecture/`.** They belong in `roadmap.md`.
 

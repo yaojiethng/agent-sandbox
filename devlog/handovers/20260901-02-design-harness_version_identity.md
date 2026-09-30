@@ -26,8 +26,8 @@ ADR-status discipline is being confirmed via the design grill.)
   two-sig / staleness / digest-deferral threads. This iteration selects the
   mechanism.
 - Host-surface open questions from the two superseded docs feed the design:
-  `story_harness_packaging_and_install_versioning.md` (self-contained snapshot
-  vs semver) and `investigation_harness_sig_requirements.md` (change classes
+  `20260417-story-superseded-harness_packaging_and_install_versioning.md` (self-contained snapshot
+  vs semver) and `20260522-study-superseded-harness_sig_requirements.md` (change classes
   1/2/3 + self-contained-binary vs semver comparison).
 
 ## Scope (confirmed by operator)
@@ -59,7 +59,7 @@ ADR-status discipline is being confirmed via the design grill.)
 
 ## Completed
 
-- Read the two superseded docs in scope (`story_harness_packaging_and_install_versioning.md`, `investigation_harness_sig_requirements.md`).
+- Read the two superseded docs in scope (`20260417-story-superseded-harness_packaging_and_install_versioning.md`, `20260522-study-superseded-harness_sig_requirements.md`).
 - Grounded the design space in live code (`container_sig.sh`, `session_inventory.sh`, `compose.sh`, `Makefile install:`, `docker-compose.yml` labels).
 - Settled the mechanism via the grill (Q1-Q9); recorded decisions, findings, ACs in the handover.
 - Wrote ADR `docs/adr/harness_versioning.md` (Status: settled = decision recorded; task stays open until impl).
@@ -97,7 +97,7 @@ ADR-status discipline is being confirmed via the design grill.)
 
 - **Dry-run semantics overhaul (NEW, operator-directed):** dry-run's freshness semantics were ported from `start` unchanged in the `20260828` refactor, but they must be a distinct animal: dry-run is the operator's e2e/diagnostic for **current** source, so it must **always build/run current source** -- a stale container even after a fresh build is an **error**. `[IMAGE_STALE]` was a stopgap for un-refactored dry-run, not a design. `dry_run --fast` (cached/skip build) is a candidate that may legitimately use an old image and would warrant its own staleness warning -- mechanism undecided. **Also test `resume` semantics**, since dry-run controls its container fully. See the digest-roundtrip decision in the Decisions table.
 
-- **Interface-contract compatibility (NEW deferred thread, operator-directed):** the real need behind the retired freshness signal is that two co-resident harness copies (host checkout driving a session vs the wiring baked into the image) must speak the same *shape*. Historical failures in this band: bind-mount folder shape, `SANDBOX_DIR` format, onboard command shape, host/container command semantics -- i.e. the change-class-1/2/3 (command shape / dispatch / lib) High-severity band from `investigation_harness_sig_requirements.md`. Two contract points the host-vs-container framing misses: (1) **intra-session container<->container drift** (agent vs sandbox images buildable independently via `--targets=agent|sandbox`; mount-delivery wiring landing in one while the other is older); (2) **session-record schema as a resume-breaking contract** (`.compose/<session-id>.yml` + in-worktree `SESSION_STATE` written by host at start, read by both host-resume/list and container-entrypoint; sharper under exact-resume-via-digest). Livable mechanism is an explicit **interface/contract version** declared+compared by each co-resident copy (bumped only when the cross-boundary contract changes; immune to doc edits; no overlapping-file-set dependency) -- not a source fingerprint. Deferred capability; promoted to roadmap at iteration end.
+- **Interface-contract compatibility (NEW deferred thread, operator-directed):** the real need behind the retired freshness signal is that two co-resident harness copies (host checkout driving a session vs the wiring baked into the image) must speak the same *shape*. Historical failures in this band: bind-mount folder shape, `SANDBOX_DIR` format, onboard command shape, host/container command semantics -- i.e. the change-class-1/2/3 (command shape / dispatch / lib) High-severity band from `20260522-study-superseded-harness_sig_requirements.md`. Two contract points the host-vs-container framing misses: (1) **intra-session container<->container drift** (agent vs sandbox images buildable independently via `--targets=agent|sandbox`; mount-delivery wiring landing in one while the other is older); (2) **session-record schema as a resume-breaking contract** (`.compose/<session-id>.yml` + in-worktree `SESSION_STATE` written by host at start, read by both host-resume/list and container-entrypoint; sharper under exact-resume-via-digest). Livable mechanism is an explicit **interface/contract version** declared+compared by each co-resident copy (bumped only when the cross-boundary contract changes; immune to doc edits; no overlapping-file-set dependency) -- not a source fingerprint. Deferred capability; promoted to roadmap at iteration end.
 
 - `container_sig()` signs a fixed subset (`_sandbox_sig_sources` / `_agent_sig_sources`); misses base image / runtime / dependency versions.
 - Record (`x-session-labels` in `src/build/docker-compose.yml`) carries `host-head-sha`, `host-branch`, `session-ts`, `session-id`, `image-sig` (agent's container-sig copied in by `compose.sh`); sandbox has no record sig.

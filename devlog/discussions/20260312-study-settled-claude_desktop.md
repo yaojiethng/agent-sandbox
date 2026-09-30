@@ -3,7 +3,7 @@
 **Status:** Resolved. Recommendation: viable with manual session lifecycle. Prototype required before adoption.
 
 **Direction:** Direction 1 -- Provider replacement (special case: may replace harness entirely)
-**Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
+**Parent story:** [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md)
 
 ---
 
@@ -11,8 +11,8 @@
 
 - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence.
 - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants.
-- [story_provider_knowledge_store.md](story_provider_knowledge_store.md) -- the investigation questions this document must answer.
-- [investigation_mcp_server.md](investigation_mcp_server.md) -- Claude Desktop's viability is partly dependent on the MCP server mount strategy; read this first.
+- [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) -- the investigation questions this document must answer.
+- [20260312-study-settled-mcp_server.md](20260312-study-settled-mcp_server.md) -- Claude Desktop's viability is partly dependent on the MCP server mount strategy; read this first.
 
 ---
 
@@ -181,4 +181,4 @@ The remaining unknowns are procedural, not structural: how the operator reconnec
 
 No codebase changes arise from this investigation. The investigation is closed. Next step is a prototype against a test project to validate the operator workflow end-to-end before this path is adopted.
 
-This decision should be recorded in the parent story [story_provider_knowledge_store.md](story_provider_knowledge_store.md) and a roadmap entry created for the prototype work if the parent story graduates.
+This decision should be recorded in the parent story [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) and a roadmap entry created for the prototype work if the parent story graduates.

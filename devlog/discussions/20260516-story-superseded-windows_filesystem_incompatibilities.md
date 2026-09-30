@@ -1,6 +1,8 @@
 # Story - Windows Filesystem Incompatibilities (9p Mount Seam)
 
-**Status:** Identified -- three active issues, root causes confirmed. Resolution via avoidance (keep project on Linux-native WSL2 path) documented in CORRECTION blocks. A proactive detection mechanism is proposed below.
+**Status:** Superseded -- the agent_state_persistence reconciliation overturns this story's prescribed mitigations.
+
+> **Superseded.** Superseded by [`20260522-story-settled-agent_state_persistence.md`](20260522-story-settled-agent_state_persistence.md). Do not rely on the prescribed tmpfs overlay and Linux-only avoidance below.
 
 ---
 
@@ -160,7 +162,7 @@ _check_filesystem_compat() {
     echo "Warning: AGENT_HOME ($test_path) does not support utime()."
     echo "  This is likely a 9p/Windows mount. Settings locking will fail."
     echo "  Move your project to a Linux-native WSL2 path to resolve."
-    echo "  See: devlog/discussions/story_windows_filesystem_incompatibilities.md"
+    echo "  See: devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md"
   fi
   rm -f "$probe_file"
 }

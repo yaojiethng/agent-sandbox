@@ -13,7 +13,7 @@ The retired freshness signal addressed the wrong layer. The real need: the host
 checkout that drives a session and the wiring baked into the image must speak
 the same shape. Silence on that shape is how differences in bind-mount folder
 shape, `SANDBOX_DIR` format, onboard command shape, and host/container command
-semantics (the change-class-1/2/3 High band, `investigation_harness_sig_requirements.md`)
+semantics (the change-class-1/2/3 High band, `20260522-study-superseded-harness_sig_requirements.md`)
 became field failures instead of refused starts.
 
 Three contract surfaces carry the drift:

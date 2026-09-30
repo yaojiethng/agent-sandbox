@@ -4,11 +4,11 @@
 
 ## Direction + Parent story
 
-Parent: roadmap track T9 - Session and Harness Identity. Prune Rule 2's discovery key (`agent-sandbox.session-id`) is part of the session-identity label contract, which T9 owns. Triggered by the incident recorded in [`investigation_prune_rule2_orphan_visibility.md`](investigation_prune_rule2_orphan_visibility.md): `make prune` removed 7 stale records (Rule 1) and zero resources (Rule 2) in one pass; the host carries 64 leftover volumes, at least 6 of them orphaned by that run alone. This study evaluates the fix candidates; it does not implement them.
+Parent: roadmap track T9 - Session and Harness Identity. Prune Rule 2's discovery key (`agent-sandbox.session-id`) is part of the session-identity label contract, which T9 owns. Triggered by the incident recorded in [`20260926-study-active-prune_rule2_orphan_visibility.md`](20260926-study-active-prune_rule2_orphan_visibility.md): `make prune` removed 7 stale records (Rule 1) and zero resources (Rule 2) in one pass; the host carries 64 leftover volumes, at least 6 of them orphaned by that run alone. This study evaluates the fix candidates; it does not implement them.
 
 ## Required reading
 
-- [`investigation_prune_rule2_orphan_visibility.md`](investigation_prune_rule2_orphan_visibility.md) -- incident record: established facts, open question, host evidence
+- [`20260926-study-active-prune_rule2_orphan_visibility.md`](20260926-study-active-prune_rule2_orphan_visibility.md) -- incident record: established facts, open question, host evidence
 - [`scripts/prune.sh`](../../scripts/prune.sh) -- `rule2_orphan_resources`, `_session_id_of`, `_sid_is_orphaned`
 - [`src/libs/common.sh`](../../src/libs/common.sh) -- `sandbox_dir_canon`
 - [`20260923-design-active-session_identity_and_sandbox_command_ergonomics.md`](20260923-design-active-session_identity_and_sandbox_command_ergonomics.md) -- owning identity design

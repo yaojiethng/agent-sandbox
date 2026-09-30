@@ -13,7 +13,7 @@ their rationale out of the concept docs that currently host it:
 1. **Layer separation** -- reasoning/capability layers are separate because
    they vary independently. Rationale today is split between
    `docs/concepts/two_layer_model.md` ("Why the Layers Are Separate") and the
-   conclusion of `devlog/discussions/investigation_mcp_server.md` (the fused
+   conclusion of `devlog/discussions/20260312-study-settled-mcp_server.md` (the fused
    single-container model as rejected alternative).
 2. **Correspondence mechanism** -- git is never the correspondence mechanism
    between sandbox and host; the git-agnostic diff file is. Rationale today

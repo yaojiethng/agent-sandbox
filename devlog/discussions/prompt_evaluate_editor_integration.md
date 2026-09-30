@@ -1,6 +1,6 @@
 # Prompt -- Evaluate &lt;&lt;TOOL&gt;&gt; as a UI Option for agent-sandbox
 
-> *Operator: copy this prompt, replace `<<TOOL>>` with the editor/UI you want to evaluate (e.g. VSCode, JetBrains, Helix, Neovim+plugin), and paste it as the first task message of a fresh session. Upload `story_editor_integration_template.md` and the most recent handover before sending. The prompt assumes the agent will produce a single artefact: `story_<<tool>>_integration.md`, structured as a copy of the template with the tool-specific sections filled in.*
+> *Operator: copy this prompt, replace `<<TOOL>>` with the editor/UI you want to evaluate (e.g. VSCode, JetBrains, Helix, Neovim+plugin), and paste it as the first task message of a fresh session. Upload `20260506-story-draft-editor_integration_template.md` and the most recent handover before sending. The prompt assumes the agent will produce a single artefact: `story_<<tool>>_integration.md`, structured as a copy of the template with the tool-specific sections filled in.*
 
 ---
 
@@ -8,7 +8,7 @@
 
 I want to evaluate **&lt;&lt;TOOL&gt;&gt;** as a candidate operator-side UI for agent-sandbox. The output is a story document at `story_<<tool>>_integration.md`, mirroring the structure of the existing Zed and Warp evaluations so the three (or more) can be read in parallel.
 
-The template at `story_editor_integration_template.md` has the tool-independent backbone -- Pain Points, Constraints, framing axiom, standing rejected approaches -- already in place. Your job is to fill in the tool-specific sections by working through the steps below.
+The template at `20260506-story-draft-editor_integration_template.md` has the tool-independent backbone -- Pain Points, Constraints, framing axiom, standing rejected approaches -- already in place. Your job is to fill in the tool-specific sections by working through the steps below.
 
 The Pain Points, Constraints, framing axiom, and standing rejections are **stable across all tools**. Do not modify them except for the spots where the template explicitly invites tool-specific adjustment (constraint 6, standing rejections that the tool changes the argument for).
 

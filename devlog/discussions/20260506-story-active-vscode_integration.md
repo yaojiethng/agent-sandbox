@@ -579,7 +579,7 @@ Findings get appended to **Investigation Findings** as a new "Hand-rolled sessio
 | [`security.md`](../architecture/security.md) | Security invariants this scope must preserve |
 | [`threat_model_stride.md`](../architecture/threat_model_stride.md) | Threat model |
 | [`story_policy.md`](../operations/story_policy.md) | Story format, lifecycle, and graduation |
-| [`story_zed_integration.md`](story_zed_integration.md) | Parallel evaluation of Zed for the same use cases |
+| [`20260506-story-active-zed_integration.md`](20260506-story-active-zed_integration.md) | Parallel evaluation of Zed for the same use cases |
 | [VSCode Dev Containers docs](https://code.visualstudio.com/docs/devcontainers/containers) | Official documentation -- primary source |
 | [VSCode Attach to Running Container](https://code.visualstudio.com/docs/devcontainers/attach-container) | Attach path documentation |
 | [VSCode Multi-root Workspaces](https://code.visualstudio.com/docs/editing/workspaces/multi-root-workspaces) | Multi-root workspace documentation |

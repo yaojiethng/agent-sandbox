@@ -14,9 +14,9 @@ A story that is never closed is a planning failure. A story that is closed witho
 
 ## Where Stories Live
 
-Stories live in `devlog/discussions/` with the prefix `story_` (e.g. `story_capability_layer_mcp.md`).
+Stories live in `devlog/discussions/`. The naming convention is in [`discussion_policy.md`](discussion_policy.md) -- Naming.
 
-They are investigation documents, not architecture. No live links to stories are required from `architecture/` or `concepts/` documents. Stories are background reading for the decisions that produced roadmap entries -- they are not referenced from current system documentation.
+Stories are reasoning documents, not architecture. No live links to stories are required from `architecture/` or `concepts/` documents. Stories are background reading for the decisions that produced roadmap entries -- they are not referenced from current system documentation.
 
 ---
 
@@ -46,7 +46,7 @@ A story accumulates sections as it progresses. Not all sections are present at c
 | **Pain Points** | At creation | The concrete problems being investigated; what is broken or missing |
 | **Constraints** | At creation or during investigation | Non-negotiable requirements any solution must satisfy |
 | **Open Questions** | During investigation | Unresolved questions blocking progress; updated as questions resolve |
-| **Investigation Findings** | During investigation | What was discovered; may be iterative subsections linked to investigation documents |
+| **Study Findings** | During investigation | What was discovered; may be iterative subsections linked to study documents |
 | **Resolution** | At closure | Decision reached, where the work went, why |
 
 ---
@@ -94,13 +94,13 @@ When closing a story:
 3. If superseded by a broader decision, add a blockquote redirect immediately after the Status line pointing to the superseding document
 4. Remove the story from the roadmap User Stories list
 
-A closed story is never deleted. It is the reasoning record for the decision. Future agents and operators reading it must be able to reconstruct why the design went the way it did.
+A closed story is a reasoning record, reference-durable for the course of the implementation it describes. The approaches considered and the knowledge tested surface in summary in the ADR, the durable home of record. After the implementation, a story may be cleaned up or subsumed when it overlaps another record, holds more stale than current content, or conflicts in name.
 
 ---
 
-## Relationship to Investigations
+## Relationship to Studies
 
-A story may commission one or more investigation documents -- one per candidate approach -- when comparative evaluation is needed. The story owns the problem framing; investigations own the candidate evaluation. Investigation findings feed back into the story's Investigation Findings section as summary links.
+A story may commission one or more studies -- one per candidate approach -- when comparative evaluation is needed. The story owns the problem framing; the study owns the candidate evaluation. Study findings feed back into the story's Study Findings section as summary links.
 
 See [`study_policy.md`](study_policy.md) for study format and lifecycle.
 

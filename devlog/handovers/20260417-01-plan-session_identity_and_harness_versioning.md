@@ -29,7 +29,7 @@ Not applicable -- planning session.
 |---|---|
 | [`docs/discussions/story_session_identity_and_harness_versioning.md`](../discussions/story_session_identity_and_harness_versioning.md) | New -- primary story, resolved |
 | [`docs/discussions/story_parallel_sessions_worktree.md`](../discussions/story_parallel_sessions_worktree.md) | New -- sub-story, investigation in progress |
-| [`docs/discussions/story_harness_packaging_and_install_versioning.md`](../discussions/story_harness_packaging_and_install_versioning.md) | New -- sub-story stub, deferred large task |
+| [`docs/discussions/20260417-story-superseded-harness_packaging_and_install_versioning.md`](../discussions/20260417-story-superseded-harness_packaging_and_install_versioning.md) | New -- sub-story stub, deferred large task |
 | [`docs/discussions/investigation_staleness_and_interactivity_regression.md`](../discussions/investigation_staleness_and_interactivity_regression.md) | Superseded -- stripped to header + redirect |
 | [`docs/discussions/investigation_versioning_and_governance.md`](../discussions/investigation_versioning_and_governance.md) | Superseded -- stripped to header + redirect |
 
@@ -48,7 +48,7 @@ Not applicable -- planning session.
 | Container naming redesign required: explicit `container_name:` derived from session identity | Current image-name=container-name assumption already broken in practice (compose generates its own names); prerequisite for worktree support | `story_parallel_sessions_worktree.md` -- Investigation Findings |
 | `WORKTREE_ID` as discriminator, not `PROJECT_NAME` rename | `PROJECT_NAME` is identical across worktrees (committed Makefile); operator should not need to rename per worktree; path hash is unambiguous and requires no state tracking | `story_parallel_sessions_worktree.md` -- Investigation Findings |
 | Checkpoint tags namespaced by worktree: `agent-checkpoint/<worktree-id>/<timestamp>` | Prevents cross-session tag interference in shared git object store; scopes pruning correctly | `story_parallel_sessions_worktree.md` -- Investigation Findings |
-| Install versioning extracted as separate future story | Requires full rewrite of `make install` to snapshot harness source; does not block sig model | `story_harness_packaging_and_install_versioning.md` |
+| Install versioning extracted as separate future story | Requires full rewrite of `make install` to snapshot harness source; does not block sig model | `20260417-story-superseded-harness_packaging_and_install_versioning.md` |
 | Both prior investigations superseded and stripped | Pre-policy informal documents; reasoning fully re-expressed in story with better structure and accurate conclusions | `investigation_staleness_and_interactivity_regression.md`, `investigation_versioning_and_governance.md` |
 
 ## Completed this session
@@ -57,7 +57,7 @@ Not applicable -- planning session.
 |---|---|
 | `docs/discussions/story_session_identity_and_harness_versioning.md` | New -- resolved story, full design for session identity and harness versioning |
 | `docs/discussions/story_parallel_sessions_worktree.md` | New -- sub-story for parallel sessions via git worktree, investigation in progress |
-| `docs/discussions/story_harness_packaging_and_install_versioning.md` | New -- stub story for harness packaging and install versioning, deferred |
+| `docs/discussions/20260417-story-superseded-harness_packaging_and_install_versioning.md` | New -- stub story for harness packaging and install versioning, deferred |
 | `docs/discussions/investigation_staleness_and_interactivity_regression.md` | Superseded -- stripped to header + redirect block |
 | `docs/discussions/investigation_versioning_and_governance.md` | Superseded -- stripped to header + redirect block |
 

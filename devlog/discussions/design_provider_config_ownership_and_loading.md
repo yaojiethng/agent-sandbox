@@ -190,7 +190,7 @@ No changes needed: `providers/pi/setup.sh`, `scripts/onboard.sh`, `libs/compose.
 
 Mitigation (if copy-in is not possible): Pi's `settings-manager.js` must catch `EPERM` and proceed without locking, or `proper-lockfile`'s `mtimePrecision.probe()` must handle `EPERM` as a non-fatal error (falling back to second-level precision).
 
-See also: `devlog/discussions/story_windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues, and `devlog/handovers/20260522-05-design-pi_agent_mount_strategy.md` for the re-evaluation.
+See also: `devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues, and `devlog/handovers/20260522-05-design-pi_agent_mount_strategy.md` for the re-evaluation.
 
 ---
 

@@ -3,7 +3,7 @@
 **Status:** Resolved. Recommendation: viable. `serve` unsupported natively; RPC bridge or open-source web UI over RPC is a viable future path if needed.
 
 **Direction:** Direction 1 -- Provider replacement
-**Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
+**Parent story:** [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md)
 
 ---
 
@@ -11,7 +11,7 @@
 
 - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence.
 - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants.
-- [story_provider_knowledge_store.md](story_provider_knowledge_store.md) -- investigation questions this report must answer.
+- [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) -- investigation questions this report must answer.
 
 ---
 

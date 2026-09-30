@@ -135,7 +135,7 @@ The two-layer architecture (reasoning layer / capability layer) was adopted as t
 | Thread | Destination |
 |---|---|
 | KV5 -- agent modification workflow | Promoted to **M2.1** in the main roadmap (capability layer prototype: vault) |
-| Provider selection question | Reframed as reasoning layer candidate evaluation; continues as M2 prerequisite work in `investigation_claude_code.md` and peer investigation docs |
+| Provider selection question | Reframed as reasoning layer candidate evaluation; continues as M2 prerequisite work in `20260312-study-settled-claude_code.md` and peer investigation docs |
 | Operator input channel | Implemented in M1.5 directory restructuring as `SANDBOX_DIR/input/` |
 | Checkpoint branch pattern | Validated through KV4; formalisation deferred to M2.4 (apply workflow redesign) |
 | Vault-specific future use cases (attachment migration, OCR, etc.) | Retained as pending use cases in this story; not yet scoped into milestones |

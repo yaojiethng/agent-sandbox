@@ -35,7 +35,7 @@ Not defined -- investigation session. Root cause was identified and a workaround
 
 | File | Reason | Status |
 |---|---|---|
-| `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` | Issue 3 (`noexec` tmpfs) added | [x] Completed |
+| `docs/devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md` | Issue 3 (`noexec` tmpfs) added | [x] Completed |
 | `providers/pi/base.Dockerfile` | `fd-find`/`ripgrep` added to apt install | [x] Completed |
 | `/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/autocomplete.js` | Silent failure point (upstream) | [r] Referenced only |
 | `/proc/mounts` | Showed `noexec` flag during investigation | [r] Referenced only |
@@ -50,7 +50,7 @@ Not defined -- investigation session. Root cause was identified and a workaround
 
 | Finding | Triaged to |
 |---|---|
-| `~/.pi/agent/bin/` tmpfs has `noexec` -- blocks `fd`/`rg` execution | `story_windows_filesystem_incompatibilities.md` Issue 3 |
+| `~/.pi/agent/bin/` tmpfs has `noexec` -- blocks `fd`/`rg` execution | `20260516-story-superseded-windows_filesystem_incompatibilities.md` Issue 3 |
 | Pi silently swallows spawn errors in `walkDirectoryWithFd()` | Deferred -- upstream concern, not in scope |
 
 ## Completed this session
@@ -58,7 +58,7 @@ Not defined -- investigation session. Root cause was identified and a workaround
 | File | Change |
 |---|---|
 | [`providers/pi/base.Dockerfile`](../../providers/pi/base.Dockerfile) | Added `fd-find` and `ripgrep` to apt install list |
-| [`docs/devlog/discussions/story_windows_filesystem_incompatibilities.md`](../../docs/devlog/discussions/story_windows_filesystem_incompatibilities.md) | Added Issue 3 (`noexec` tmpfs) and documented workaround |
+| [`docs/devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md`](../../docs/devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md) | Added Issue 3 (`noexec` tmpfs) and documented workaround |
 | [`docs/devlog/handovers/20260523-07-study-at_popup_noexec_root_cause.md`](20260523-07-study-at_popup_noexec_root_cause.md) | This handover |
 
 ## Deferred items

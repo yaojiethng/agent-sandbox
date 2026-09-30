@@ -90,7 +90,7 @@ M2.7 items 1-7 (run_id derivation, Docker labels, stop redesign, prune, two-sig 
 
 **Resolution:** Prefer approach 1 -- keep `PROJECT_DIR` (and thus `SANDBOX_DIR`) on a Linux-native WSL2 path (e.g., `/home/user/projects/...`) rather than a Docker Desktop Windows drive (`/mnt/c/...`, `M:\`). When the project resides on the Linux-native ext4 filesystem, the `AGENT_HOME` bind mount inherits ext4's POSIX semantics and `utime()` succeeds. This avoids the 9p seam entirely with no code or mount changes.
 
-See also: `docs/devlog/discussions/story_windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues (Issue 1: utime EPERM, Issue 2: bin/ cross-filesystem moves) and a proposed proactive detection mechanism.
+See also: `docs/devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md` for the broader story on Windows filesystem issues (Issue 1: utime EPERM, Issue 2: bin/ cross-filesystem moves) and a proposed proactive detection mechanism.
 
 [MID-SESSION FINDING -- 2026-05-22]: The "No commit or push" constraint in `AGENTS.md` (project layer, sandbox) is stale. The diff pipeline handles in-sandbox commits successfully, as demonstrated by the correction commits in this session and prior sessions (e.g., commit `3248978`). The constraint was originally written under the assumption that any git mutation would break the baseline-diff comparison, but in practice the harness records its baseline at startup (before any agent action) and diff on exit -- intervening commits are captured correctly. Recommend removing or rewording the constraint to reflect actual behaviour: "Commits are permitted but optional; the session diff captures all changes between session start and exit regardless of commit state."
 

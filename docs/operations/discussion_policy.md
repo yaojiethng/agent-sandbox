@@ -21,6 +21,8 @@ Hyphens as section delimiters. Underscores as word separators in the description
 | `design` | Decision exploration -- should we, and how? |
 | `report` | Post-action record -- what an operation did, what it produced, what the operator and the agent learned from it |
 
+`investigation` was an earlier name for `study` and is retired; the type code is `study`.
+
 ### Statuses
 
 A report starts at draft, is reviewed, and transitions directly to settled; it never passes through active. A report that is rejected is deleted or archived at the operator's direction.

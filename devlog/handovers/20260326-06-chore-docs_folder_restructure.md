@@ -38,7 +38,7 @@ Not yet defined.
 | [`.skills/roadmap-management.skill.md`](.skills/roadmap-management.skill.md) | Contains references to moved paths |
 | [`docs/development/agent_context_brief.md`](docs/development/agent_context_brief.md) | Required reading table and inline links reference moved paths |
 | [`docs/devlog/changelog.md`](docs/devlog/changelog.md) | Moved file -- internal links may need updating |
-| [`docs/devlog/discussions/story_obsidian_vault_onboarding.md`](docs/devlog/discussions/story_obsidian_vault_onboarding.md) | Moved file -- may link to roadmap or other moved paths |
+| [`docs/devlog/discussions/20260311-story-superseded-obsidian_vault_onboarding.md`](docs/devlog/discussions/20260311-story-superseded-obsidian_vault_onboarding.md) | Moved file -- may link to roadmap or other moved paths |
 | [`docs/devlog/handovers/20260326-05-workflow-handover_leanness_audit.md`](docs/devlog/handovers/20260326-05-workflow-handover_leanness_audit.md) | Moved file -- contains links to moved paths |
 | [`docs/devlog/roadmap.md`](docs/devlog/roadmap.md) | Moved file -- internal links may need updating |
 | [`docs/devlog/roadmap_future.md`](docs/devlog/roadmap_future.md) | Moved file -- internal links may need updating |

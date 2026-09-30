@@ -193,7 +193,7 @@ decision and this story is closed as resolved.
 **Superseded / archived documents:** the two-sig model and its descendants are
 subsumed -- [`story_session_identity_and_harness_versioning.md`](story_session_identity_and_harness_versioning.md) [REMOVED]
 (two-sig design; content absorbed by the session-identity ADR; file deleted by
-operator), [`story_harness_packaging_and_install_versioning.md`](story_harness_packaging_and_install_versioning.md)
+operator), [`20260417-story-superseded-harness_packaging_and_install_versioning.md`](20260417-story-superseded-harness_packaging_and_install_versioning.md)
 (saved as `superseded` -- deferred questions feed the design), and
-`investigation_harness_sig_requirements.md` (`superseded`). Each remaining doc
+`20260522-study-superseded-harness_sig_requirements.md` (`superseded`). Each remaining doc
 carries a redirect to this document and stays as the reasoning record.

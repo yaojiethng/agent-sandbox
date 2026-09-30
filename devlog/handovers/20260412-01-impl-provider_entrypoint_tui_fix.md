@@ -26,7 +26,7 @@ Note: only test termination path (a) -- normal TUI exit. Path (b) -- `docker sto
 |---|---|
 | [`libs/provider-entrypoint.sh`](../../../libs/provider-entrypoint.sh) | TUI regression fixed here; final design is synchronous foreground child |
 | [`tests/test_provider_entrypoint.sh`](../../../tests/test_provider_entrypoint.sh) | New file -- 11 regression tests including stdin guard |
-| [`docs/discussions/investigation_provider_entrypoint_tui_regression.md`](../../../docs/discussions/investigation_provider_entrypoint_tui_regression.md) | New file -- 11 findings, full root cause record |
+| [`docs/discussions/20260413-study-settled-provider_entrypoint_tui_regression.md`](../../../docs/discussions/20260413-study-settled-provider_entrypoint_tui_regression.md) | New file -- 11 findings, full root cause record |
 | [`tests/dry_run.sh`](../../../tests/dry_run.sh) | Hardened -- PASS/FAIL/WARN framework, non-zero exit on critical failures |
 
 ## Decisions made this session
@@ -51,7 +51,7 @@ Note: only test termination path (a) -- normal TUI exit. Path (b) -- `docker sto
 |---|---|
 | `libs/provider-entrypoint.sh` | Rewritten: synchronous `"$@"` approach; `_require_var`, `_copy_in`, `_copy_out` as named functions; `PROVIDER_CONFIG_DIR` required (no default); no `set -m`, no `fg`, no background job |
 | `tests/test_provider_entrypoint.sh` | New file -- 11 tests: env validation, copy-in (3 cases), copy-out (2 cases), exit code (2 cases), stdin-not-/dev/null regression guard; all passing |
-| `docs/discussions/investigation_provider_entrypoint_tui_regression.md` | New file -- 11 findings documenting every failure mode encountered, constraints, final resolution with rationale, TUI requirements explanation, and testing plan |
+| `docs/discussions/20260413-study-settled-provider_entrypoint_tui_regression.md` | New file -- 11 findings documenting every failure mode encountered, constraints, final resolution with rationale, TUI requirements explanation, and testing plan |
 | `tests/dry_run.sh` | Hardened: removed `set -e`, added check framework (PASS/FAIL/WARN), non-zero exit on critical failures, 14 checks across 7 sections including stdin, env vars, and PROVIDER_CONFIG_DIR |
 
 ## Deferred items

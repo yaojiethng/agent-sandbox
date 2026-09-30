@@ -78,9 +78,9 @@ None.
 | [scripts/dry_run_reasoning.sh](/home/agentuser/sandbox/scripts/dry_run_reasoning.sh) | Comment "M2.7 item 8" -> "the M2.7 config bind-mount change" |
 | [tests/knowledge/knowledge_pi_config_cycle.sh](/home/agentuser/sandbox/tests/knowledge/knowledge_pi_config_cycle.sh) | Comment "M2.7 item 8" -> "(M2.7 config change)" |
 | [docs/operations/handover_policy.md](/home/agentuser/sandbox/docs/operations/handover_policy.md) | "roadmap.md item 13" -> descriptive-only routing example |
-| [devlog/discussions/investigation_harness_sig_requirements.md](/home/agentuser/sandbox/devlog/discussions/investigation_harness_sig_requirements.md) | "M2.7 item 5" -> "M2.7 (container-sig settled)" |
+| [devlog/discussions/20260522-study-superseded-harness_sig_requirements.md](/home/agentuser/sandbox/devlog/discussions/20260522-study-superseded-harness_sig_requirements.md) | "M2.7 item 5" -> "M2.7 (container-sig settled)" |
 | [devlog/discussions/design_provider_config_ownership_and_loading.md](/home/agentuser/sandbox/devlog/discussions/design_provider_config_ownership_and_loading.md) | "M2.7 item 8" -> "the M2.7 config bind-mount change" |
-| [devlog/discussions/story_windows_filesystem_incompatibilities.md](/home/agentuser/sandbox/devlog/discussions/story_windows_filesystem_incompatibilities.md) | "M2.7 item 8" -> "the M2.7 config bind-mount change" |
+| [devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md](/home/agentuser/sandbox/devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md) | "M2.7 item 8" -> "the M2.7 config bind-mount change" |
 | [devlog/changelog.md](/home/agentuser/sandbox/devlog/changelog.md) | "M2.7 item 11b" -> "M2.7" (historical CORRECTION entry, minimal fix) |
 | [src/reasoning/agent/drafts/roadmap-audit.skill.md](/home/agentuser/sandbox/src/reasoning/agent/drafts/roadmap-audit.skill.md) | Example row "M2.7 item 8" -> "M2.7 pre-flight checks" |
 | [devlog/GOTCHAS.md](/home/agentuser/sandbox/devlog/GOTCHAS.md) | Entry -> state probation; durable fix + remediation recorded |

@@ -3,7 +3,7 @@
 **Status:** Resolved. MCP server architecture adopted as the capability layer. Work promoted to M2.1. See Conclusion section.
 
 **Direction:** Direction 2 -- Stack supplementation
-**Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
+**Parent story:** [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md)
 
 ---
 
@@ -11,7 +11,7 @@
 >
 > - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence. This option departs from the current model significantly; understanding the baseline is prerequisite.
 > - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants. Several invariants do not hold under this option as stated.
-> - [story_provider_knowledge_store.md](story_provider_knowledge_store.md) -- investigation questions this report answers.
+> - [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) -- investigation questions this report answers.
 
 ---
 

@@ -171,7 +171,7 @@ Behavioural requirements established from prior investigation:
 
 ## Harness-sig (Runtime Drift Detection)
 
-**Deferred.** See [`investigation_harness_sig_requirements.md`](../discussions/investigation_harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) Harness Packaging and Versioning.
+**Deferred.** See [`20260522-study-superseded-harness_sig_requirements.md`](../discussions/20260522-study-superseded-harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) Harness Packaging and Versioning.
 
 Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic versioning. These are scoped as a standalone future milestone, not part of M2.7.
 

@@ -3,7 +3,7 @@
 **Status:** Resolved. Recommendation: viable. `serve` equivalent is Remote Control (`claude --remote-control`), a first-party Anthropic feature exposing the session via `claude.ai/code`; requires claude.ai subscription auth (no API key support).
 
 **Direction:** Direction 1 -- Provider replacement
-**Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
+**Parent story:** [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md)
 
 ---
 
@@ -11,7 +11,7 @@
 
 - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence.
 - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants.
-- [story_provider_knowledge_store.md](story_provider_knowledge_store.md) -- investigation questions this report answers.
+- [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) -- investigation questions this report answers.
 
 ---
 
@@ -79,7 +79,7 @@ Note: a known directory restriction issue (GitHub #3139) affects `claude mcp ser
 
 ### 7. Document repository suitability
 
-Not yet validated. Requires a live test against an initialised vault. Deferred to W1 (Vault Capability Layer Prototype) -- this is the same deferred item as in `investigation_claude_desktop.md` and is not a blocker for the provider integration recommendation.
+Not yet validated. Requires a live test against an initialised vault. Deferred to W1 (Vault Capability Layer Prototype) -- this is the same deferred item as in `20260312-study-settled-claude_desktop.md` and is not a blocker for the provider integration recommendation.
 
 ---
 
@@ -116,4 +116,4 @@ Remote Control is the first-party `serve` equivalent: the operator runs `claude 
 
 The one remaining unknown -- document repository suitability -- is deferred to W1 and does not affect the integration recommendation.
 
-No codebase changes arise from this investigation. Implementation proceeds under M2.2: create `providers/claude-code/` with `Dockerfile`, `build.sh`, and `run.sh`. This decision is recorded in the parent story [story_provider_knowledge_store.md](story_provider_knowledge_store.md).
+No codebase changes arise from this investigation. Implementation proceeds under M2.2: create `providers/claude-code/` with `Dockerfile`, `build.sh`, and `run.sh`. This decision is recorded in the parent story [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md).

@@ -15,15 +15,13 @@ This document is the index and view of the documentation ecosystem. It states no
 | Roadmap (`devlog/roadmap.md`) | active planning; the only task list; future and TODO items land here | durable | [`roadmap_policy.md`](../operations/roadmap_policy.md) |
 | Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | [`roadmap_policy.md`](../operations/roadmap_policy.md) |
 | Handover (`devlog/handovers/`) | one session's record of the work done | transient | [`handover_policy.md`](../operations/handover_policy.md) |
-| Discussion document (`devlog/discussions/`) | one session's evidence | transient | [`discussion_policy.md`](../operations/discussion_policy.md) |
-| Story document (`devlog/discussions/`) | one session's user-story investigation | transient | [`story_policy.md`](../operations/story_policy.md) |
-| Study or investigation document (`devlog/discussions/`) | one session's settled findings | transient | [`study_policy.md`](../operations/study_policy.md) |
+| Discussion document (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | [`discussion_policy.md`](../operations/discussion_policy.md); [`story_policy.md`](../operations/story_policy.md), [`study_policy.md`](../operations/study_policy.md) |
 
 The folders that hold these documents and their purposes are in [`documentation_policy.md`](../operations/documentation_policy.md) -- Folder Structure.
 
 ## Durability
 
-A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A handover or discussion is one session's evidence and decays; a tmp file or chat record is never kept. Rules that depend on the durable/transient line link here for the classification.
+A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: it stays as a reference for future work units for the course of the implementation it describes, then becomes subsumable and may be cleaned up or subsumed. A handover decays; a tmp file or chat record is never kept. The durable home of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
 
 ## Record lifecycle view
 

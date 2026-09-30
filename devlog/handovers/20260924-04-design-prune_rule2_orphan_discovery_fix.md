@@ -19,7 +19,7 @@ None.
 
 ## Acceptance criteria
 
-- [x] **Incident record exists and is accurate** -- `devlog/discussions/investigation_prune_rule2_orphan_visibility.md` records evidence, code-verified facts, the open hypothesis, impact, remediation, and follow-ups. Observable: the file opens with a Status line naming Active; section map via `grep -n "^##"` matches the investigation format.
+- [x] **Incident record exists and is accurate** -- `devlog/discussions/20260926-study-active-prune_rule2_orphan_visibility.md` records evidence, code-verified facts, the open hypothesis, impact, remediation, and follow-ups. Observable: the file opens with a Status line naming Active; section map via `grep -n "^##"` matches the investigation format.
 - [x] **Study evaluates the fix candidates and reaches a recommendation** -- `20260924-study-settled-prune_rule2_orphan_discovery_fix.md` follows the fixed study sections (Status, Direction + Parent story, Required reading, Summary, Findings, Open Questions, Constraints, Resolution) and recommends Fix A (empty-session-id orphan test) first, then Fix B (canonical label bake).
 - [x] **Roadmap owns the follow-up** -- `devlog/roadmap.md` track T9 gains the named task "Prune Rule 2 orphan-discovery reliability" linking the incident, the study, and the cleanup tool; no fix work lives only in the handover.
 - [x] **Host-side cleanup tool delivered** -- `scripts/manual/cleanup_orphan_volumes.sh` lists record-guarded orphans, asks for confirmation, removes only on confirmation, and reports the no-label review list separately. Observable: `bash -n` and `shellcheck` pass; `bash scripts/manual/cleanup_orphan_volumes.sh` prints the orphan count and prompts before removal.
@@ -29,7 +29,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`devlog/discussions/investigation_prune_rule2_orphan_visibility.md`](../discussions/investigation_prune_rule2_orphan_visibility.md) | incident record (new) |
+| [`devlog/discussions/20260926-study-active-prune_rule2_orphan_visibility.md`](../discussions/20260926-study-active-prune_rule2_orphan_visibility.md) | incident record (new) |
 | [`devlog/discussions/20260924-study-settled-prune_rule2_orphan_discovery_fix.md`](../discussions/20260924-study-settled-prune_rule2_orphan_discovery_fix.md) | fix-candidate study (new) |
 | [`scripts/manual/cleanup_orphan_volumes.sh`](../../scripts/manual/cleanup_orphan_volumes.sh) | record-guarded host-side removal tool (new) |
 | [`devlog/roadmap.md`](../roadmap.md) | T9 task added |
@@ -56,7 +56,7 @@ None.
 
 | File | Change |
 |---|---|
-| `devlog/discussions/investigation_prune_rule2_orphan_visibility.md` | added: incident report (evidence, established facts, open hypothesis, impact, remediation, follow-up, links) |
+| `devlog/discussions/20260926-study-active-prune_rule2_orphan_visibility.md` | added: incident report (evidence, established facts, open hypothesis, impact, remediation, follow-up, links) |
 | `scripts/manual/cleanup_orphan_volumes.sh` | added: operator-run script that lists record-guarded orphans, confirms, removes, and reports the no-label review list |
 | `devlog/discussions/20260924-study-settled-prune_rule2_orphan_discovery_fix.md` | added: study of Rule 2 fix candidates (empty-session-id orphan test; canonical label bake), recommendation recorded |
 | `devlog/roadmap.md` | added: T9 task "Prune Rule 2 orphan-discovery reliability" with incident, study, and tool links |

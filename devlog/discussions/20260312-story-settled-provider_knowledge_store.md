@@ -41,10 +41,10 @@ Swap OpenCode for a provider with better out-of-the-box support for large markdo
 
 | Candidate | Status | Report |
 |---|---|---|
-| Claude Code | Resolved -- viable; `start`/`dry-run`/`serve` supported; `serve` via Remote Control (first-party, requires claude.ai subscription auth) | [investigation_claude_code.md](investigation_claude_code.md) |
-| Claude Desktop | Resolved -- viable, pending prototype | [investigation_claude_desktop.md](investigation_claude_desktop.md) |
-| Hermes | Resolved -- viable; `start`/`dry-run`/`serve` supported; `serve` via Open WebUI compose service; persistent memory differentiates for vault workflows | [investigation_hermes.md](investigation_hermes.md) |
-| Pi | Resolved -- viable; `start`/`dry-run` supported; `serve` unsupported (RPC bridge or open-source web UI is a viable future path) | [investigation_pi.md](investigation_pi.md) |
+| Claude Code | Resolved -- viable; `start`/`dry-run`/`serve` supported; `serve` via Remote Control (first-party, requires claude.ai subscription auth) | [20260312-study-settled-claude_code.md](20260312-study-settled-claude_code.md) |
+| Claude Desktop | Resolved -- viable, pending prototype | [20260312-study-settled-claude_desktop.md](20260312-study-settled-claude_desktop.md) |
+| Hermes | Resolved -- viable; `start`/`dry-run`/`serve` supported; `serve` via Open WebUI compose service; persistent memory differentiates for vault workflows | [20260312-study-settled-hermes.md](20260312-study-settled-hermes.md) |
+| Pi | Resolved -- viable; `start`/`dry-run` supported; `serve` unsupported (RPC bridge or open-source web UI is a viable future path) | [20260312-study-settled-pi.md](20260312-study-settled-pi.md) |
 
 **Note on Claude Desktop:** If Claude Desktop is selected, it replaces the agent harness as the reasoning layer -- no harness container, just Claude Desktop connected to a Dockerised MCP filesystem server pointed at the existing `SANDBOX_DIR` paths. The investigation confirms that all harness invariants (snapshot isolation, `PROJECT_DIR` separation, diff-and-review via `make apply`) are preserved without codebase changes. Session lifecycle management becomes manual (`make sandbox` / `make apply`) rather than automated. Security guarantees are equivalent to the standard harness model. Platform dependency on Anthropic's desktop product is acknowledged. A prototype is required before adoption.
 
@@ -56,8 +56,8 @@ Keep OpenCode but address the text support gap by adding capabilities to the sta
 
 | Option | Status | Report |
 |---|---|---|
-| Dockerized Obsidian MCP Server | In progress | [investigation_mcp_server.md](investigation_mcp_server.md) |
-| Workspace input channel (task briefs + file pre-scoping) | Not started | [investigation_workspace_input_channel.md](investigation_workspace_input_channel.md) |
+| Dockerized Obsidian MCP Server | In progress | [20260312-study-settled-mcp_server.md](20260312-study-settled-mcp_server.md) |
+| Workspace input channel (task briefs + file pre-scoping) | Not started | [20260312-study-settled-workspace_input_channel.md](20260312-study-settled-workspace_input_channel.md) |
 
 ---
 
@@ -98,7 +98,7 @@ All provider candidate investigations (Direction 1) must answer:
 
 The investigation surfaced that the core problem was not the choice of agent runtime -- it was the fused architecture that coupled the agent to its working content. The right fix is architectural: separate the capability layer (what the agent can do) from the reasoning layer (which agent runs). Any MCP-compatible reasoning layer can then work with any capability layer that exposes the right tools.
 
-Full rationale in [`investigation_mcp_server.md`](investigation_mcp_server.md) -- Conclusion section. Conceptual model in [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md).
+Full rationale in [`20260312-study-settled-mcp_server.md`](20260312-study-settled-mcp_server.md) -- Conclusion section. Conceptual model in [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md).
 
 ### Where each investigation thread goes
 
@@ -106,10 +106,10 @@ Full rationale in [`investigation_mcp_server.md`](investigation_mcp_server.md) -
 These become reasoning layer candidates. Investigations continue as M2 prerequisite work. The evaluation framing changes: candidates no longer need to conform to a per-provider script interface; they need to be MCP-compatible clients. Investigation questions 4 (harness reuse) and 5 (sandbox constraint compatibility) are now answered differently under the two-layer model -- update investigation stubs when resuming.
 
 **Direction 2 -- MCP server (Dockerized)**
-This is the capability layer prototype and is the primary M2.1 work. `investigation_mcp_server.md` is the design document. Open questions (MCP server selection, working mount strategy) are M2.1 tasks.
+This is the capability layer prototype and is the primary M2.1 work. `20260312-study-settled-mcp_server.md` is the design document. Open questions (MCP server selection, working mount strategy) are M2.1 tasks.
 
 **Direction 2 -- Workspace input channel**
-Absorbed into the reporting workspace design. The operator input channel (`SANDBOX_DIR/input/`) is implemented in M1.5 as part of the directory restructuring. The `investigation_workspace_input_channel.md` open questions around mount shape and lifecycle are resolved by the M1.5 implementation. The `TASK.md` alignment remains a pending decision tracked in W1.
+Absorbed into the reporting workspace design. The operator input channel (`SANDBOX_DIR/input/`) is implemented in M1.5 as part of the directory restructuring. The `20260312-study-settled-workspace_input_channel.md` open questions around mount shape and lifecycle are resolved by the M1.5 implementation. The `TASK.md` alignment remains a pending decision tracked in W1.
 
 ### Story status per use case
 

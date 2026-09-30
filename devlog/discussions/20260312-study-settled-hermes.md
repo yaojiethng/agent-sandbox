@@ -3,7 +3,7 @@
 **Status:** Resolved. Recommendation: viable. `terminal.backend: local` satisfies harness constraints; `serve` via Open WebUI compose service; persistent memory is a differentiating capability for vault workflows.
 
 **Direction:** Direction 1 -- Provider replacement
-**Parent story:** [story_provider_knowledge_store.md](story_provider_knowledge_store.md)
+**Parent story:** [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md)
 
 ---
 
@@ -11,7 +11,7 @@
 
 - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence.
 - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants.
-- [story_provider_knowledge_store.md](story_provider_knowledge_store.md) -- investigation questions this report must answer.
+- [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) -- investigation questions this report must answer.
 
 ---
 
@@ -112,4 +112,4 @@ All harness invariants are preserved. The snapshot pipeline, diff mechanism, `ma
 
 **Remaining unknown:** Document repository suitability -- deferred to W1. Not a blocker for the integration recommendation.
 
-No codebase changes arise from this investigation. Implementation proceeds under M2.2: create `providers/hermes/` with `Dockerfile`, `build.sh`, `run.sh`, and a compose template that includes the Open WebUI service. This decision is recorded in the parent story [story_provider_knowledge_store.md](story_provider_knowledge_store.md).
+No codebase changes arise from this investigation. Implementation proceeds under M2.2: create `providers/hermes/` with `Dockerfile`, `build.sh`, `run.sh`, and a compose template that includes the Open WebUI service. This decision is recorded in the parent story [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md).

@@ -21,7 +21,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 **Tasks:**
 
 - [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`investigation_mcp_server.md`](discussions/investigation_mcp_server.md) candidates table)
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`20260312-study-settled-mcp_server.md`](discussions/20260312-study-settled-mcp_server.md) candidates table)
 - [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
 - [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
 - [ ] Validate binary file handling (vault attachments) under selected MCP server
@@ -186,7 +186,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 - Version bump policy agreed and documented
 - Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
 
-**Design reference:** [`devlog/discussions/investigation_harness_sig_requirements.md`](./discussions/investigation_harness_sig_requirements.md)
+**Design reference:** [`devlog/discussions/20260522-study-superseded-harness_sig_requirements.md`](./discussions/20260522-study-superseded-harness_sig_requirements.md)
 
 ---
 

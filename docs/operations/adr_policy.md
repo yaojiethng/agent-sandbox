@@ -12,14 +12,9 @@ An ADR is not meant to replace documentation. An ADR links to the documentation 
 
 ## Relationship to other records
 
-| Record | Contains | Expected current? | Immutable? |
-|---|---|---|---|
-| handover | the work done in one session (transaction log) | no | yes |
-| `docs/` (interface, architecture, conventions) | the current interface and architecture of each component | yes | no |
-| `docs/concepts/` | the models the system runs on | yes | no |
-| ADR | the rationale for a standing principle: the chosen option, the rejected alternatives, the reasons | yes | no |
-
 A concept doc states a model. The ADR states why that model was selected over alternatives. A concept doc links to its ADRs as further reading, like a paper cites references. The concept is the parent. The ADR is the explainer.
+
+The classification of each record type -- what it contains, whether it must be current, and its durability -- is the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md).
 
 ## Unit of record
 

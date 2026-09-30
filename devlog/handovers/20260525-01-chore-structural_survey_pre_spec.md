@@ -31,7 +31,7 @@ Not yet defined.
 | [`scripts/`](../scripts/) | Contains entrypoints and build pipeline; some files may move |
 | [`agent/`](../agent/) | Provider workflow files; may be partially affected |
 | [`providers/*/`](../providers/) | Provider-specific files; reference point for build context |
-| [`story_container_layer_model.md`](story_container_layer_model.md) | Proposed target structure for harness/ tree |
+| [`20260524-story-settled-container_layer_model.md`](20260524-story-settled-container_layer_model.md) | Proposed target structure for harness/ tree |
 | [`spec_container_layer_redesign.md`](spec_container_layer_redesign.md) | Implementation sequence, audit findings, deferred decisions |
 
 ## Decisions made this session

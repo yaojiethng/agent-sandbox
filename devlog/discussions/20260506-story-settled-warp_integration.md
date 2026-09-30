@@ -348,7 +348,7 @@ Operator noted: tabs opening when not expected; terminal shortcuts not behaving 
 | [`execution_model.md`](../architecture/execution_model.md) | Compose generation model -- `.warp.yml` overlay sits in this model alongside `.serve.yml` |
 | [`two_layer_model.md`](../concepts/two_layer_model.md) | Reasoning vs capability layer separation |
 | [`security.md`](../architecture/security.md) | Security invariants this scope preserves; no rescoping required |
-| [`story_zed_integration.md`](story_zed_integration.md) | Parallel evaluation of Zed as alternative tooling for the same use cases |
+| [`20260506-story-active-zed_integration.md`](20260506-story-active-zed_integration.md) | Parallel evaluation of Zed as alternative tooling for the same use cases |
 | [`story_policy.md`](../operations/story_policy.md) | Story format, lifecycle, and graduation |
 | [`investigation_policy.md`](../operations/investigation_policy.md) | If candidate evaluation is split into sub-investigations |
 | [`story_agent_git_surface.md`](story_agent_git_surface.md) | Adjacent surface -- agent's relationship to git, tracked separately |

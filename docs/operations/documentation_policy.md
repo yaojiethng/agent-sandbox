@@ -198,7 +198,7 @@ All documents in `docs/` open with a consistent header block, so status and scop
 ```text
 # <Title>
 <blank line>
-**Status:** <value>         (stories and investigations only)
+**Status:** <value>         (discussion documents only)
 **Location:** <path>        (only if the file has been moved or renamed)
 <blank line>
 > **Superseded / Resolved.** <one sentence pointing to the authoritative document.>
@@ -206,7 +206,7 @@ All documents in `docs/` open with a consistent header block, so status and scop
 
 Rules:
 
-- `**Status:**` is the first line after the title on all `story_` and `investigation_` documents. No preamble before it.
+- `**Status:**` is the first line after the title on all discussion documents (story, study, design, report). No preamble before it.
 - Superseded and resolved documents carry a blockquote redirect immediately after the status line, naming the target document.
 - Architecture, concepts, and policy documents carry no status line -- the layer-freeze table in `system_overview.md` governs them.
 - ADR headers and entry structure are defined in [`adr_policy.md`](adr_policy.md), not here.
@@ -233,7 +233,7 @@ Rules:
 | Handover | states what the iteration did | rewrite the paragraph, or reopen the record and close it again; either way a `[CORRECTION -- YYYY-MM-DD: <...>]` tag at the end of the corrected section | [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) |
 | Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
 | Changelog entry | tracks closed tasks, archived | as a roadmap entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
-| Study or investigation | states what was found | rewrite, tag | [`study_policy.md`](study_policy.md#corrections-to-closed-investigations) |
+| Study | states what was found | rewrite, tag | [`study_policy.md`](study_policy.md#corrections-to-closed-studies) |
 | ADR, concept, architecture, policy | states what the system does | rewrite, tag | this section |
 
 ### Missing documents

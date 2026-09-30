@@ -57,7 +57,7 @@ None.
 
 | Description | Origin | Status |
 |---|---|---|
-| utime EPERM on 9p mounts -- workaround documented, code fix not implemented | `20260513-10` CORRITION block | [!] Referenced in `story_windows_filesystem_incompatibilities.md`; not escalated to roadmap |
+| utime EPERM on 9p mounts -- workaround documented, code fix not implemented | `20260513-10` CORRITION block | [!] Referenced in `20260516-story-superseded-windows_filesystem_incompatibilities.md`; not escalated to roadmap |
 
 ### Root cause pattern
 
