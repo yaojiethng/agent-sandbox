@@ -1,8 +1,9 @@
 {
   "lastChangelogVersion": "0.87.1",
+  "defaultProjectTrust": "always",
   "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-flash",
-  "defaultThinkingLevel": "off",
+  "defaultModel": "space-bunny-free",
+  "defaultThinkingLevel": "low",
   "followUpMode": "all",
   "enablePromptCommands": true,
   "compaction": {
@@ -23,8 +24,7 @@
   "enabledModels": [
     "openrouter/z-ai/*",
     "openrouter/qwen/*",
-    "anthropic/*",
-    "opencode/*-free",
+    "opencode/*",
     "opencode-go/*",
     "openrouter/deepseek/*",
     "deepseek/*"
