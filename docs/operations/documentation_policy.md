@@ -78,31 +78,35 @@ The config enables the rules that match this policy. It disables `MD013` because
 
 ### Document depth and verbosity
 
-Policy documents are the authoritative source for workflow rules. A rule that exists only in a skill file or prompt template is not authoritative -- if the operator bypasses the skill, the constraint disappears.
+Policy documents are the authoritative source for workflow rules. A rule that exists only in a skill file or prompt template is not authoritative: bypass the skill and the constraint disappears.
 
-Put a rule where the reader meets it. A rule that governs Step 6 of the minor loop belongs in the Step 6 entry of the workflow table, not in a separate document.
+Put a rule where the reader meets it. A rule governing Step 6 of the minor loop belongs in the Step 6 entry of the workflow table, not in a separate document.
 
-Duplicate content is a defect. When the same rule appears in two documents, one is the canonical owner and the other links to it. The owner is the document an agent reads first when it needs the rule.
+Duplicate content is a defect. When the same rule appears in two documents, one document is the canonical owner and the other links to it. The canonical owner is the document an agent reads first when it needs the rule.
 
-Workflow table Action cells hold one imperative sentence plus a link to the governing section. Detail defers to the child document. Negative cases that mark a rule's limit are scope constraints: keep them in the table cell. Illustrative examples belong in the child document.
+Workflow table Action cells hold one imperative sentence plus a link to the governing section; detail defers to the child document. Negative cases that mark a rule's limit stay in the table cell; illustrative examples belong in the child document.
 
 ### Simplified Technical English
 
-New and changed prose meets ASD-STE100. The test for each word, phrase, and sentence: *can a reader delete it without changing the required meaning?* Delete what the test removes. Delete any word, phrase, or sentence that adds no information (for example a throat-clearing opener such as "it is worth noting that").
+New and changed prose meets ASD-STE100.
 
-Quick rules for writers (a working subset, not the full dictionary):
+Phrasing rules (a working subset of the full dictionary, not a replacement for it):
 
 - Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it. Rotating synonyms ("volume" / "sandbox" / "workspace" for one object) is a defect.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
-- Place the defined noun phrase before the imperative command: the reader must know exactly what object is being discussed before being told what to do with it. If the sentence uses a term the reader has not met, define it first, in its own clause ("Negative cases are scope constraints"), then apply it ("Keep scope constraints in the cell"). Avoid thin subjects that rely on a trailing dash clause for definition; the main clause must not depend on its afterthought.
+- Place the defined noun phrase before the imperative command. The reader must know exactly what object is discussed before being told what to do with it.
+- Define a term the reader has not met first, in its own clause, then apply it ("Negative cases are scope constraints", then "Keep scope constraints in the cell").
+- Avoid thin subjects that rely on a trailing dash clause for their definition; the main clause must not depend on its afterthought.
 - Keep technical nouns the reader needs. STE100 simplifies structure and verbs, not precision.
+- State the allowed form and name the action; do not state only what to avoid. Write "a space-separated hyphen", not "do not use an em-dash"; say "apply the durable fix the entry's `scoped:` row names", not "avoid or re-check those patterns".
 
-State encoding rules as instructions, not prohibitions. "Write a dash as a space-separated hyphen" beats "do not use an em-dash": the instruction gives the allowed form directly.
+Evaluate prose with two tests:
 
-Apply the literal-reader test to every instruction. A literal reader follows the words exactly and infers no intent. Ask: could a literal reader turn this sentence into a task, an action, or an inference that was not intended? If yes, rephrase as a positive, bounded, noun-first imperative. Name the actor and the object. State what the reader does, never what it avoids. An instruction that tells the reader to "avoid or re-check those patterns" leaves the action undefined; an instruction that says "apply the durable fix the entry's `scoped:` row names" names the object and the action.
+- **Delete test.** Can a reader delete a word, phrase, or sentence without changing the required meaning? Delete what the test removes, including empty openers such as "it is worth noting that".
+- **Literal-reader test.** A literal reader follows the words exactly and infers no intent. Could the reader turn the sentence into a task, an action, or an inference that was not intended? If yes, rephrase it with the phrasing rules.
 
 **Reserved technical terms** are defined in [`docs/concepts/terminology.md`](../concepts/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
 
@@ -115,7 +119,7 @@ Documents use plain ASCII punctuation.
 - Write status markers as `[x]` / `[ ]` (tables) or `- [x]` / `- [ ]` (lists). Do not use checkmark or cross emoji.
 - Do not use non-ASCII punctuation (section sign U+00A7, pilcrow U+00B6) or control and formatting symbols (space glyphs, chapter symbols).
 
-**Allowed exception -- box-drawing characters.** Box-drawing characters (U+2502 vertical, U+251C left tee, U+2514 corner, U+2500 horizontal) may appear inside ASCII-art diagrams (for example directory trees), where they carry the diagram's geometry. Use them nowhere else; convert banners, table rules, and decoration to ASCII hyphens.
+**Exception -- ASCII-art diagrams.** Box-drawing characters (U+2502 vertical, U+251C left tee, U+2514 corner, U+2500 horizontal) may appear inside ASCII-art diagrams (for example directory trees), where they carry the diagram's geometry. Use them nowhere else; convert banners, table rules, and decoration to ASCII hyphens.
 
 ### Line wrapping
 
@@ -125,7 +129,7 @@ Prose is one paragraph per physical line, however long the line. Never break ins
 
 A number is valid only in the conversation or document where it appears. Use a numbered list when order matters or readers refer to items by number; otherwise use bullets. Outside the defining place, use the item's descriptive name or a link. A persistent record (a roadmap task, a handover entry, a code comment) does not take a number from a transient list; rename the item descriptively. When many references point to one item, move it to a heading.
 
-**One indexable axis per presentation.** When the operator may refer to items by index, present exactly one numbering or lettering scheme in an exchange, so an index reply is unambiguous. Do not place two numbered or lettered sets side by side (for example a review's numbered findings beside the agent's lettered option choices) and let the operator index one of them; the reply then maps to the wrong axis and the agent must guess. If several sets must appear together, name each axis explicitly so a reply is self-mapping (`finding 1`, `option A`).
+**One indexable axis per presentation.** When the operator may refer to items by index, present exactly one numbering or lettering scheme, so an index reply is unambiguous. Do not place two numbered or lettered sets side by side (for example a review's numbered findings beside the agent's lettered option choices); the reply then maps to the wrong axis. If several sets must appear together, name each axis so a reply is self-mapping (`finding 1`, `option A`).
 
 ### No bridge documents
 
@@ -133,11 +137,11 @@ A bridge document exists only to connect two documents that could reference each
 
 ### Link sparingly, at points of use
 
-When a document names another document and the reader may need to open it at that point, use a markdown link, not inline code or plain text. Link what the reader might need next; a well-linked document is a good one.
+When a document names another document and the reader may need to open it, use a markdown link; otherwise write its name.
 
-The defect to avoid is over-linking **transient documents**: handovers, discussion docs, session exports. These are scratch and log documents -- timestamped evidence for the session that produced them. They decay quickly, and the harness does not maintain them. Link a transient document only where the document format calls for it (for example a handover's evidence table, or a design doc's parent link), and prefer plain text otherwise. The maintained tier -- policies, ADRs, concept docs, architecture docs -- is always the right link target, and linking into it freely is encouraged.
+Do not link transient documents -- handovers, discussion docs, session exports. These are scratch documents: they decay quickly, and the harness does not maintain them. Link a transient document only where the document format calls for it; prefer plain text otherwise. Durable documents -- policies, ADRs, concept docs, architecture docs -- are maintained, so links into them do not decay. Link what the reader might need next; a well-linked document is a good one.
 
-Inline code (backticks) is for command names, flag values, variable names, and short code fragments that are not navigable documents. It is not a substitute for a link when the target is a file the reader may need to open.
+Inline code (backticks) is for command names, flag values, variable names, and short code fragments. It is not a substitute for a link when the target is a document the reader may need to open.
 
 ### Link to policy documents at workflow handoff points
 
@@ -149,13 +153,13 @@ When a workflow document (such as `iteration_policy.md`) hands off to a subproce
 Perform X per [`policy_document.md`](path/to/policy_document.md) -- Section Name.
 ```
 
-**Rationale:** A References table is navigation, not a handoff. An agent at step 9a who sees "mark completions" must remember the policy exists. An agent who sees "mark completions per [`roadmap_policy.md`](roadmap_policy.md) -- Step 9a" has the handoff at the moment it is needed.
+**Rationale:** A References table is navigation, not a handoff. An agent at step 9a who sees "mark completions" must remember the policy exists; one who sees "mark completions per [`roadmap_policy.md`](roadmap_policy.md) -- Step 9a" has the handoff when it is needed.
 
 ### Link anchors
 
 Step-level references carry section anchors to the governing section. Document-level references (Child Documents tables, References tables) use plain document links; an anchor there implies a narrower scope than intended.
 
-When a document is long enough that an agent might need to locate a section programmatically, give a grep command in code backticks instead of a link. A link says "open the document"; a grep says "find the section".
+When a document is long enough that an agent may need to locate a section programmatically, give a grep command in code backticks instead of a link. A link says "open the document"; a grep says "find the section".
 
 ```bash
 grep -n "## Section Name" docs/operations/policy.md
@@ -165,7 +169,7 @@ grep -n "## Section Name" docs/operations/policy.md
 
 Structure documents so agents can grep section headers and range-read only what they need. Every section an agent might need in isolation has a `##` or `###` header -- unnamed blocks are not grep-targetable.
 
-The corollary: a document that must be read in full to extract one fact is structured wrong. If a fact is needed at a specific moment in a workflow, put it in a named section or inline it at the point of use.
+A document that must be read in full to extract one fact is structured wrong. If a fact is needed at a specific moment in a workflow, put it in a named section or inline it at the point of use.
 
 ---
 
