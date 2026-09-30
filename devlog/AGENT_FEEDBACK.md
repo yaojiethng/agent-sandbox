@@ -189,6 +189,18 @@ Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "u
 
 Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
 
+### [A] 2026-09-30  --  A backgrounded process holding the caller's stdout stalls the whole tool call
+
+A script that starts a long-lived background process without redirecting its stdout keeps the caller's stdout pipe open for as long as it lives. A pipeline such as `timeout 300 bash script.sh | tail -20` then reports nothing at all: `timeout` kills the foreground script at 300s, the orphan keeps the write end of the pipe open, and the reader blocks until the tool call itself is aborted. Measured cost: 47 minutes for a script whose own budget was 300 seconds. The failure is silent, because the killed script produced no output to explain itself.
+
+Two rules follow. First, every backgrounded process redirects stdout and stderr to a file or to `/dev/null`, so it cannot hold a pipe the caller reads. Second, a script that starts a background process stops it explicitly before its last statement rather than from an `EXIT` trap: `tests/libs/test_common.sh`'s `test_setup` installs its own `EXIT` trap, so a trap the file sets beforehand is replaced and never runs. A harness that owns the exit path also owns the cleanup, and a scratch directory placed under the harness's `FIXTURE_ROOT` is removed on every path the harness does own.
+
+Two adjacent traps in the same session, both from a cleanup scan written as a shell loop over `/proc`. A scan matching a process name with a glob also matches the scanning shell's own command line, because the pattern text is in that command line: the loop signalled itself and the tool call died with 143. And `pkill` does not exist in this image, so an earlier cleanup that used it silently removed nothing and left the port held, which made the next run's probe talk to a dead server and report that nothing had been captured. Match on the executable as well as the argument (`node\ *server.mjs`), exclude the current pid, and verify a port is closed rather than assuming a kill worked.
+
+Scope: any test or script that starts a background process or scans for one. Cross-reference: `docs/development/bash-coding-conventions.md`.
+
+Resolved at the source rather than mitigated: the script that caused the stall stood up a loopback capture server to read a request body, and pi already exposes `onPayload` plus an injectable `fetch` for exactly that. Rewritten to use the hook, the background process is gone, and the class of incident goes with it. The rules above still stand for any script that genuinely needs a background process.
+
 ## Node
 
 ### [A] 2026-09-29  --  A nested `node --test` inherits `NODE_TEST_CONTEXT` and exits 0 without running anything

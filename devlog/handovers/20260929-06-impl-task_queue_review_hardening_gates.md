@@ -11,7 +11,7 @@ Build the two machine gates the task-queue review-hardening row asks for, so tha
 
 ## Scope
 
-The conformance suite `tests/taskq/` and its harness wrapper `tests/test_taskq.sh`. No production code changes: the extension, its transition table, and its tool surface are untouched.
+The conformance suite `tests/extensions/pi/task-queue/` and its harness wrapper `tests/test_taskq.sh`. No production code changes: the extension, its transition table, and its tool surface are untouched.
 
 Out of scope: the pool join (`join_all`, roadmap row 91) and the adversarial novel-bug review, which stays one focused reviewer.
 
@@ -19,13 +19,13 @@ Out of scope: the pool join (`join_all`, roadmap row 91) and the adversarial nov
 
 | # | Criterion | Verifiable by | Status |
 |---|---|---|---|
-| 1 | A catalog of deliberate breaks replays in a throwaway mirror, and the gate fails unless the owning suite turns red against every row | `node --test tests/taskq/mutation.test.ts`; 22 rows, 22 proven | Met |
+| 1 | A catalog of deliberate breaks replays in a throwaway mirror, and the gate fails unless the owning suite turns red against every row | `node --test tests/extensions/pi/task-queue/mutation.test.ts`; 22 rows, 22 proven | Met |
 | 2 | A row whose mutant does not load, or whose anchor text no longer matches, is a loud failure rather than a pass | the catalog's `unloadable` and `no-op` verdicts both fail the gate | Met |
-| 3 | The invariant report holds one named case per invariant and prints an index whose red line names the invariant | `node --test tests/taskq/invariants.test.ts`; 22 cases across 19 invariants | Met |
+| 3 | The invariant report holds one named case per invariant and prints an index whose red line names the invariant | `node --test tests/extensions/pi/task-queue/invariants.test.ts`; 22 cases across 19 invariants | Met |
 | 4 | The lifecycle cases are derived from `transitions.ts`, so no phase enumeration is written in the report | the R12 case asserts the derived set equals `TASK_PHASES`; `stepInto` reads the row | Met |
 | 5 | The J4 case is phrased as one held join-unit (a single join or one pool batch) | the report's J4 statement and the `it` name | Met |
 | 6 | The tool surface is unchanged: nine tools, no additions, no removals | the S3 case asserts the registered names equal the surface | Met |
-| 7 | The whole node suite stays green with both gates registered | `node --test tests/taskq/*.test.ts` (247/247, from 202/202) | Met |
+| 7 | The whole node suite stays green with both gates registered | `node --test tests/extensions/pi/task-queue/*.test.ts` (247/247, from 202/202) | Met |
 | 8 | The harness suite stays green | `bash scripts/run_tests.sh` (1004/1004 across 67 files) | Met |
 | 9 | Lint is clean | `bash scripts/lint.sh` | Met |
 | 10 | No mutation of the extension leaves the working tree modified | the runner copies into a temp mirror; `git status` shows only the new test files | Met |
@@ -34,11 +34,11 @@ Out of scope: the pool join (`join_all`, roadmap row 91) and the adversarial nov
 
 | File | Why in scope |
 |---|---|
-| [`tests/taskq/mutation.test.ts`](../../tests/taskq/mutation.test.ts) | the gate: one case per catalog row |
-| [`tests/taskq/mutation/catalog.ts`](../../tests/taskq/mutation/catalog.ts) | the catalog: 22 rows, each with its invariant, its anchor, and the suites that must catch it |
-| [`tests/taskq/mutation/runner.ts`](../../tests/taskq/mutation/runner.ts) | the replay engine: temp mirror, anchor check, load probe, child suite run |
-| [`tests/taskq/invariants.test.ts`](../../tests/taskq/invariants.test.ts) | the invariant cases over the wired surface |
-| [`tests/taskq/invariants.ts`](../../tests/taskq/invariants.ts) | the case catalog and the index renderer |
+| [`tests/extensions/pi/task-queue/mutation.test.ts`](../../tests/extensions/pi/task-queue/mutation.test.ts) | the gate: one case per catalog row |
+| [`tests/extensions/pi/task-queue/mutation/catalog.ts`](../../tests/extensions/pi/task-queue/mutation/catalog.ts) | the catalog: 22 rows, each with its invariant, its anchor, and the suites that must catch it |
+| [`tests/extensions/pi/task-queue/mutation/runner.ts`](../../tests/extensions/pi/task-queue/mutation/runner.ts) | the replay engine: temp mirror, anchor check, load probe, child suite run |
+| [`tests/extensions/pi/task-queue/invariants.test.ts`](../../tests/extensions/pi/task-queue/invariants.test.ts) | the invariant cases over the wired surface |
+| [`tests/extensions/pi/task-queue/invariants.ts`](../../tests/extensions/pi/task-queue/invariants.ts) | the case catalog and the index renderer |
 | [`tests/test_taskq.sh`](../../tests/test_taskq.sh) | registers the two new suites and states the budget the mutation tier needs |
 
 ## Decisions
@@ -65,11 +65,11 @@ Out of scope: the pool join (`join_all`, roadmap row 91) and the adversarial nov
 
 | File | What changed and why |
 |---|---|
-| `tests/taskq/mutation.test.ts` (new) | The gate. One case per row, rendered as a table after the run. |
-| `tests/taskq/mutation/catalog.ts` (new) | The 22-row catalog: a dropped gate, a reordered effect, a weakened identity, and a removed heartbeat, each with the invariant it attacks and the suites that must notice. |
-| `tests/taskq/mutation/runner.ts` (new) | The replay engine: a temp mirror of the extension and the suite, a unique-anchor check, a jiti load probe, and a child suite run. |
-| `tests/taskq/invariants.test.ts` (new) | The invariant cases over the real tool surface, read from `taskq_status` snapshots and the transition table. Includes the three cases that close the survivors. |
-| `tests/taskq/invariants.ts` (new) | The case catalog and the index renderer. `TOOL_OF_ACTION` keys the tool map by the action union, so an action the table gains is a type error here. |
+| `tests/extensions/pi/task-queue/mutation.test.ts` (new) | The gate. One case per row, rendered as a table after the run. |
+| `tests/extensions/pi/task-queue/mutation/catalog.ts` (new) | The 22-row catalog: a dropped gate, a reordered effect, a weakened identity, and a removed heartbeat, each with the invariant it attacks and the suites that must notice. |
+| `tests/extensions/pi/task-queue/mutation/runner.ts` (new) | The replay engine: a temp mirror of the extension and the suite, a unique-anchor check, a jiti load probe, and a child suite run. |
+| `tests/extensions/pi/task-queue/invariants.test.ts` (new) | The invariant cases over the real tool surface, read from `taskq_status` snapshots and the transition table. Includes the three cases that close the survivors. |
+| `tests/extensions/pi/task-queue/invariants.ts` (new) | The case catalog and the index renderer. `TOOL_OF_ACTION` keys the tool map by the action union, so an action the table gains is a type error here. |
 | `tests/test_taskq.sh` | Registers the two new suites and raises the declared budget to 420 s. |
 | `devlog/AGENT_FEEDBACK.md` | The `NODE_TEST_CONTEXT` entry under a new `## Node` section. |
 | `devlog/roadmap.md` | The review-hardening row closed. |

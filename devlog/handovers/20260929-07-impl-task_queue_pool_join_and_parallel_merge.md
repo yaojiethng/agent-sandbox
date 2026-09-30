@@ -28,8 +28,8 @@ Two worker worktrees forked from `7536273`: `feat/review-hardening` and `feat/jo
 | 3 | Pool timeout is inert and names ready/missing; after it the operator joins any or single tasks | node suite | Met |
 | 4 | J4 is one held join-unit (single or pool batch); `taskq_status` reports the batch as `holdTasks` | node suite | Met |
 | 5 | The tool surface is unchanged (pool mode is a mode of join, not a new tool) | extension-load test | Met |
-| 6 | Mutation tier: 22 cataloged breaks replay in a temp mirror and fail unless the owning suite turns red | `node --test tests/taskq/mutation.test.ts` | Met |
-| 7 | BDD-lite invariant report: 22 named cases across 19 invariants, derived from the transition table, J4 phrased as join-unit | `node --test tests/taskq/invariants.test.ts` | Met |
+| 6 | Mutation tier: 22 cataloged breaks replay in a temp mirror and fail unless the owning suite turns red | `node --test tests/extensions/pi/task-queue/mutation.test.ts` | Met |
+| 7 | BDD-lite invariant report: 22 named cases across 19 invariants, derived from the transition table, J4 phrased as join-unit | `node --test tests/extensions/pi/task-queue/invariants.test.ts` | Met |
 | 8 | Seam honored on both branches: `transitions.ts` and the overlap test files unchanged | git diff vs baseline | Met |
 | 9 | Merged tree is a coherent new state: full suite green after the sequence | node 264/264, harness 1004/1004, lint clean | Met |
 | 10 | Integration finding resolved: the hold mutation re-anchored to `heldUnits`, 22 proven again | mutation gate output | Met |
@@ -41,10 +41,10 @@ Two worker worktrees forked from `7536273`: `feat/review-hardening` and `feat/jo
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts` | `joinAllOp`, the fold over `joinOp` |
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/join.ts` | pool face, `heldUnit`/`heldUnits`, shared head re-read |
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/index.ts` | `taskIds` schema, three-mode tool description, `holdTasks` |
-| `tests/taskq/mutation/catalog.ts` | the hold mutation re-anchored to `heldUnits` |
-| `tests/taskq/pool-join.test.ts`, `pool-wired.test.ts` | new: the pool contract over the real tool surface |
-| `tests/taskq/invariants.ts` | the invariant case catalog, J4 as one held join-unit |
-| `tests/taskq/mutation/` | the mutation catalog and replay runner |
+| `tests/extensions/pi/task-queue/mutation/catalog.ts` | the hold mutation re-anchored to `heldUnits` |
+| `tests/extensions/pi/task-queue/pool-join.test.ts`, `pool-wired.test.ts` | new: the pool contract over the real tool surface |
+| `tests/extensions/pi/task-queue/invariants.ts` | the invariant case catalog, J4 as one held join-unit |
+| `tests/extensions/pi/task-queue/mutation/` | the mutation catalog and replay runner |
 | `docs/adr/task_queue_primitive.md` | dated amendment section for the pool join and the gates |
 | `devlog/roadmap.md` | rows 91 and 92 marked landed |
 

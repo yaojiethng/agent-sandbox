@@ -16,7 +16,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/libs/test_common.sh"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TESTSQ_DIR="$REPO_ROOT/tests/taskq"
+TESTSQ_DIR="$REPO_ROOT/tests/extensions/pi/task-queue"
 
 # The registered node test files of the conformance suite. Two of them are
 # gates over the suite rather than cases in it: `invariants.test.ts` is the
@@ -70,7 +70,7 @@ test_taskq_node_suite() {
 }
 
 # test_taskq_node_coverage
-#   Registration guard: every node test file under tests/taskq/ must be
+#   Registration guard: every node test file under tests/extensions/pi/task-queue/ must be
 #   named in NODE_TEST_FILES above, so a new file cannot rot while everyone
 #   believes the suite runs it.
 test_taskq_node_coverage() {

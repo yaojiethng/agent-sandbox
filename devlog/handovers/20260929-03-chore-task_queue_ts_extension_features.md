@@ -17,8 +17,8 @@ The M3.2.1 roadmap row `task-queue: general sequencing primitive`. This iteratio
 
 | # | Criterion | Verifiable by | Status |
 |---|---|---|---|
-| 1 | The Track B TS task-queue extension registers its 12 tools (`taskq_fork` through `taskq_worker_request`) and loads in a pi session | run `node --test tests/taskq/extension-load.test.ts` | Accepted |
-| 2 | The I1-I13 queue invariants hold across the node conformance suite | run `node --test tests/taskq/*.test.ts` | Accepted (101/101) |
+| 1 | The Track B TS task-queue extension registers its 12 tools (`taskq_fork` through `taskq_worker_request`) and loads in a pi session | run `node --test tests/extensions/pi/task-queue/extension-load.test.ts` | Accepted |
+| 2 | The I1-I13 queue invariants hold across the node conformance suite | run `node --test tests/extensions/pi/task-queue/*.test.ts` | Accepted (101/101) |
 | 3 | The `task-queue.md` prompt is present and names the operations the extension enforces | read `src/reasoning/agent/prompts/task-queue.md` | Accepted |
 | 4 | The task-queue prompt is a general sequencing primitive, not a task shape | read `src/reasoning/agent/prompts/task-queue.md` Purpose section | Accepted |
 
@@ -28,7 +28,7 @@ The M3.2.1 roadmap row `task-queue: general sequencing primitive`. This iteratio
 |---|---|
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/*.ts` (12 files) | the landed Track B deliverable this handover records |
 | `src/reasoning/agent/prompts/task-queue.md` | the prompt that names the operations the extension enforces |
-| `tests/taskq/*.test.ts` + `tests/test_taskq.sh` | the I1-I13 conformance suite and its harness wiring |
+| `tests/extensions/pi/task-queue/*.test.ts` + `tests/test_taskq.sh` | the I1-I13 conformance suite and its harness wiring |
 | `devlog/handovers/20260929-02-workflow-task_queue_prompt.md` | the prior task-queue iteration handover, admin-maintained to the landed state |
 | `devlog/roadmap_future.md` | removed a duplicated `M4.6 -- Background Auto` block |
 
@@ -73,4 +73,4 @@ Next in the sequence: the prompt/skill authoring-guidelines convention (T1), the
 
 **Conclusions from this iteration:** task-queue is a general sequencing primitive, not a task-shaped prompt. The TS pi-extension implements the queue, the state machine, the fork, the merge, and the close; the prompt names the operations; the conformance suite holds I1-I13. `fanout` and a rewritten `parallel-auto` sit on the primitive.
 
-**Grep or file reads to run at iteration start:** read `src/reasoning/providers/pi/config/agent/extensions/task-queue/index.ts` for the 12-tool surface; read `src/reasoning/agent/prompts/task-queue.md` for the prompt; read `tests/taskq/` for the conformance suite.
+**Grep or file reads to run at iteration start:** read `src/reasoning/providers/pi/config/agent/extensions/task-queue/index.ts` for the 12-tool surface; read `src/reasoning/agent/prompts/task-queue.md` for the prompt; read `tests/extensions/pi/task-queue/` for the conformance suite.

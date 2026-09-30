@@ -11,7 +11,7 @@ Restructure the task-queue extension's operator-driving surface. Round 1 (landed
 
 ## Scope
 
-The Task B TypeScript task-queue extension at `src/reasoning/providers/pi/config/agent/extensions/task-queue/`, its prompt `src/reasoning/agent/prompts/task-queue.md`, and the conformance suite `tests/taskq/*.test.ts`.
+The Task B TypeScript task-queue extension at `src/reasoning/providers/pi/config/agent/extensions/task-queue/`, its prompt `src/reasoning/agent/prompts/task-queue.md`, and the conformance suite `tests/extensions/pi/task-queue/*.test.ts`.
 
 The end-user surface becomes: `taskq_fork`, `taskq_join`, `taskq_verify`, `taskq_proposal`, `taskq_merge` (fused bring-back, writes a file set, possibly empty), `taskq_close` (+ `taskq_worker_request` worker-side, `taskq_status` observability). Removed: the intermediate `poll/record/schedule/trigger` tools (subsumed by the join) and `taskq_retire` (fused into the bring-back). The lifecycle is `forked -> active -> terminated -> retired`; there is no `verified`/`failed`/`merged`/`discarded`. Both re-queue routes (in-place rollback-retry, fresh re-fork) exist and the main chooses. A file-level ownership lock at the state directory serializes cross-process writers and carries crash-debug metadata.
 
@@ -28,7 +28,7 @@ Out of scope: changing the queue mechanics I1-I13' ordering/durability core, or 
 | 5 | `taskq_fork` cuts worktree + branch to a canonical run-scoped path, requires no pre-creation, and reports branch-exists with the documented error | existing + new fork tests | Met |
 | 6 | `taskq_join` contract (blocking, timeout, one-held, what one call does) is documented in the tool description and the prompt, drawing on the fork/join idea | read tool description + prompt | Met |
 | 7 | No stale `poll`/`record`/`schedule`/`trigger` name survives in the normal-loop surface, prompt, or tests | grep the extension + prompt + tests | Met |
-| 8 | The pre-existing I1-I13 conformance suite stays green under the restructure | run `node --test tests/taskq/*.test.ts` (baseline 101/101) | Met |
+| 8 | The pre-existing I1-I13 conformance suite stays green under the restructure | run `node --test tests/extensions/pi/task-queue/*.test.ts` (baseline 101/101) | Met |
 | 9 | Round 2: the lifecycle is four value-free phases with no `verified`/`failed`/`merged`/`discarded`; the bring-back fuses merge+retire and writes a file set (possibly empty); both re-queue routes exist; the ownership lock serializes cross-process writers | node suite + harness + confirm-review probe | Met |
 | 10 | The bring-back's resumed path infers a write only from an outbox intent record, refuses `bring-back-unprovable` without evidence, and holds the exactly-once / idempotent-sink edge | confirm-review AWS-catalog edge walk | Met |
 | 11 | The ownership lock holds across a synchronous section only (D3 guard); a re-queued task's hold names the worker's next request, not the completed break point (D4) | confirm-review probes | Met |
@@ -42,7 +42,7 @@ Out of scope: changing the queue mechanics I1-I13' ordering/durability core, or 
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts` | the run-ops that the join's atomic subsumption executes |
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts` | canonical run-scoped fork location and the single-writer doc |
 | `src/reasoning/agent/prompts/task-queue.md` | the primary's loop instructions rewrite for the join-driven loop |
-| `tests/taskq/*.test.ts` | new join/fork-suite tests; the I1-I13 baseline stays green |
+| `tests/extensions/pi/task-queue/*.test.ts` | new join/fork-suite tests; the I1-I13 baseline stays green |
 | `docs/adr/task_queue_primitive.md` | update after convergence with the locked fork+join surface contract |
 
 ## Decisions
@@ -82,14 +82,14 @@ Out of scope: changing the queue mechanics I1-I13' ordering/durability core, or 
 | `extensions/task-queue/transitions.ts` (new) | The R12 transition table and its lookup helpers, one typed constant walked by the suite. |
 | `extensions/task-queue/tasks.ts` | TaskPhase narrowed to forked/active/terminated/retired; gates consult the table. |
 | `src/reasoning/agent/prompts/task-queue.md` | Round 2: the four-phase map, usable/not-usable audit, both re-queue routes, packaged-branch durability, fused bring-back and the empty file set, one-primary-per-directory and the lock, `bring-back-unprovable` failure mode. |
-| `tests/taskq/lock.test.ts`, `transitions.test.ts`, `fixtures/*` (new) | The lock (two-process, stale takeover, sync guard) and the R12 table walk + reachability/terminability. |
+| `tests/extensions/pi/task-queue/lock.test.ts`, `transitions.test.ts`, `fixtures/*` (new) | The lock (two-process, stale takeover, sync guard) and the R12 table walk + reachability/terminability. |
 | `docs/adr/task_queue_primitive.md` | Round 2 entry + confirmation-review entry with label clarification, the finding-6 recorded trade, and the R12/R13/R14 requirements. |
 | `extensions/task-queue/worktree.ts` | Round 1: the run-scoped canonical worktree path plus the pre-flight collision check; round 2: `rollbackWorktree` (in-place re-queue) and the `assertPrunable`/`strayPaths` refusal factored out of `pruneWorktree`. |
 | `extensions/task-queue/errors.ts` | The `join-contended`, `worktree-occupied`, `bring-back-unprovable` codes. |
 | `extensions/task-queue/run.ts` | The synchronous-section guard (`requireSync`) in the transact path. |
-| `tests/taskq/join.test.ts` (new) | The join's contract against real repositories: atomic subsume and the heal path, exactly-once under racing joins, blocking and inert timeout, one held break point, order-safe selection, the worktree contract, and the whole written loop from fork to close. |
-| `tests/taskq/wired.test.ts` | The loop driven through the registered tools, plus the canonical fork path, the pre-created-worktree refusal, and a join timeout that consumes nothing. |
-| `tests/taskq/extension-load.test.ts` | The registered surface, and the guard that no intermediate tool exists. |
+| `tests/extensions/pi/task-queue/join.test.ts` (new) | The join's contract against real repositories: atomic subsume and the heal path, exactly-once under racing joins, blocking and inert timeout, one held break point, order-safe selection, the worktree contract, and the whole written loop from fork to close. |
+| `tests/extensions/pi/task-queue/wired.test.ts` | The loop driven through the registered tools, plus the canonical fork path, the pre-created-worktree refusal, and a join timeout that consumes nothing. |
+| `tests/extensions/pi/task-queue/extension-load.test.ts` | The registered surface, and the guard that no intermediate tool exists. |
 | `docs/adr/task_queue_primitive.md` | The fork and join surface, its requirements, and the rejected alternatives. |
 
 ## Deferred items
