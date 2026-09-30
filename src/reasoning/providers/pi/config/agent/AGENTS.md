@@ -105,3 +105,23 @@ A `rc=0` with an empty log means the subagent did no work: treat it as an outcom
 Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
 
 A `Warning: No models match pattern` message means pi did not keep the requested model and fell back to the startup default; it is not benign noise. Confirm the effective model before trusting a run: give the run an explicit session path (`pi --session /tmp/review.jsonl ...`) and read the model from that file with `grep -o '"model":"[^"]*"' /tmp/review.jsonl | sort -u`.
+
+### Keeping a subagent alive
+
+A subagent must not outlive the tool call that launched it. A process started with `&` is orphaned when that call returns, and its work is lost with no error and a short log. Run it in the foreground of the call that needs its result.
+
+To run subagents in parallel, put every one of them inside a single call and let that call own them:
+
+```bash
+start=$(date +%s)
+for name in a b; do
+  timeout "$run_timeout" pi --provider <provider> --model <model> --thinking <level> \
+    -p "$(cat "$brief_$name")" > "/tmp/$name.log" 2>&1 &
+done
+wait
+echo "secs=$(( $(date +%s) - start ))"
+```
+
+Each subagent gets its own brief file and its own log. Give the call a timeout larger than the per-agent timeout times the count, so the call is the outer bound rather than a second accidental cap. Nothing is orphaned, because the call does not return until every child has finished.
+
+A run can still be truncated by its own timeout. The signature is a short log with no report, and a subject tree that is partially patched. Score the tree rather than the report in that case, and say so.
