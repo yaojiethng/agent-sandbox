@@ -87,3 +87,9 @@ before the task that needs it.
 
 Then ask which direction to take. Stop there; no work begins before the user
 picks a scope.
+
+If the picked direction is an unattended run rather than a supervised
+iteration, run [`backlog-triage.md`](backlog-triage.md) on the inventory
+before opening the run. The survey answers "what is open"; triage answers
+"which of it runs without the user", and the two questions have different
+answers once the inventory holds more than a few rows.

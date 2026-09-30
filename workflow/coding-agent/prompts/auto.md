@@ -27,4 +27,5 @@ Until M4 implements the dispatcher, `/auto` does not guess a shape. It accepts a
 ## Reference
 
 - Semantics record: `devlog/discussions/20261001-design-settled-auto_smart_dispatch.md`
+- Predecessor check: [`backlog-triage.md`](backlog-triage.md) answers the per-row form of the classification this dispatcher performs across a whole plan -- which open roadmap rows run unattended and which carry a question. It is available now and needs no dispatcher.
 - ADR section: [`coding_agent_loop_workflow.md`](../../../docs/adr/coding_agent_loop_workflow.md) -- the `/auto` smart-dispatcher and `/goal` rows that M3.2.3 records and M4 implements.

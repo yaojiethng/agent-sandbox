@@ -32,6 +32,7 @@
 - The runbook is not a second owner. A prompt's procedural restatement of a rule is the runbook around the rule, not an independent authority claim. Echo a rule by linking its owner and stating the applying check.
 - The `-run` family of prompts (`churn-analysis-run`, `read-through-run`, `review-loop-run`, `review-pass-run`) is not in the loop taxonomy. It is one-shot operation work scoped to M3.2.2.
 - The `-work` family of dispatch prompts (`sequential-work`, `parallel-work`) is the renamed `/iter` work-loop expansion surface. It is not in the loop taxonomy proper; it is owned by M3.2.3 and refined there, with the temporary `-work` suffix removed when final naming lands. The new `/auto` smart dispatcher and `/goal` are M4's, not `/iter` work-loop expansions.
+- `backlog-triage` is a pre-dispatch classifier, not a dispatch shape. It sorts open roadmap rows into those an autonomous run can dispatch and those carrying a question, and runs no iteration. It is owned by M3.2.3 alongside the dispatch family it feeds.
 
 ## The loop taxonomy
 
@@ -44,6 +45,7 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 | `/goal` | **M4 loose-goal decomposition (Option B), not an `/iter` work-loop expansion** | M4 |
 | `/sequential-work` | curated dispatch shape (was `/auto`), `/iter` work-loop expansion owned by M3.2.3 | `workflow/coding-agent/prompts/sequential-work.md` |
 | `/parallel-work` | curated dispatch shape (was `/parallel-auto`), `/iter` work-loop expansion owned by M3.2.3 | `workflow/coding-agent/prompts/parallel-work.md` |
+| `/backlog-triage` | pre-dispatch classifier: sorts open roadmap rows into runnable and parked; drives no transition, owned by M3.2.3 | `workflow/coding-agent/prompts/backlog-triage.md` |
 | `/milestone-start` | opens a milestone | `workflow/coding-agent/prompts/milestone-start.md` |
 | `/milestone-close` | closes a milestone or sub-milestone | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | milestone planning | `workflow/coding-agent/prompts/plan.md` |
