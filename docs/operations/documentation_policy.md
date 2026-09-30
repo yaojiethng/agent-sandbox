@@ -22,15 +22,7 @@ A statement is a rule when it imposes an obligation a document or its author mus
 
 ## Folder Structure
 
-Each `docs/` document belongs to **exactly one** of the following categories:
-
-| Folder | Purpose |
-|---|---|
-| `architecture/` | Implementation design and decisions |
-| `concepts/` | The conceptual models the system runs on: abstract state transitions, multi-component interactions, principles of interaction. The *what* at the conceptual level. |
-| `operations/` | How to run the system |
-| `development/` | Contributor workflow and development conventions |
-| `adr/` | The rationale (the *why*) behind standing principles, interface shapes, and contracts. Superseded or awaiting-review ADRs live in `adr/archive/`. |
+Each `docs/` document belongs to **exactly one** folder: `architecture/`, `concepts/`, `operations/`, `development/`, or `adr/`. What each folder holds and why are in [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md#folder-taxonomy). Superseded or awaiting-review ADRs live in `adr/archive/`.
 
 Records outside `docs/` live in `devlog/`: the roadmap, the changelog, handovers, and discussion documents. Their placement and governance are in [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md).
 
