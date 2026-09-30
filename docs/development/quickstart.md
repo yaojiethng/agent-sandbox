@@ -54,7 +54,7 @@ After onboarding, `SANDBOX_DIR` contains:
     └── session-diffs/
 ```
 
-See [`project_onboarding_guide.md`](project_onboarding_guide.md) for the full procedure.
+See [`project_onboarding_guide.md`](../operations/project_onboarding_guide.md) for the full procedure.
 
 ---
 
@@ -151,6 +151,6 @@ git reset --hard agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
 
 | Document | Purpose |
 |---|---|
-| [`project_onboarding_guide.md`](project_onboarding_guide.md) | Full onboarding procedure |
-| [`provider_onboarding_guide.md`](provider_onboarding_guide.md) | Adding a new provider |
+| [`project_onboarding_guide.md`](../operations/project_onboarding_guide.md) | Full onboarding procedure |
+| [`provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) | Adding a new provider |
 | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | Command shapes, `.env` variables, mount guarantees |

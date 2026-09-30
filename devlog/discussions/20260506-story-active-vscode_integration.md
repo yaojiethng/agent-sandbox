@@ -108,7 +108,7 @@ claude.ai web chat (this conversation) is excluded -- operator-side reasoning, n
 1. **Lifetime coupling.** When the operator uses agent-sandbox via VSCode, closing VSCode closes the session.
 2. **Cold start.** agent-sandbox is not running when VSCode opens. The session starts inside VSCode.
 3. **Operator restart authority.** Within a VSCode session, the operator can stop and restart the agent-sandbox container set freely.
-4. **Security invariants preserved.** The four invariants in [`security.md`](../architecture/security.md) hold: agents in containers, output via diffs, human approval gate, depth <= 2 with no grandchildren. No path under this evaluation requires invariant rescoping.
+4. **Security invariants preserved.** The four invariants in [`security.md`](../../docs/architecture/security.md) hold: agents in containers, output via diffs, human approval gate, depth <= 2 with no grandchildren. No path under this evaluation requires invariant rescoping.
 5. **Bare terminal still works.** `make start` and `make serve` are not changed in shape or behaviour by VSCode integration.
 6. **Harness change is permitted but should be minimal.** Host-only path requires no harness change. Container attach path requires no harness change for basic operation -- VS Code Server installs on first attach and is confirmed to work in both harness container images. Optional: pre-install VS Code Server into the Dockerfile to eliminate the per-attach installation delay (see primitives table). No compose overlay is required -- attachment is initiated from VSCode, not from a harness command.
 
@@ -124,7 +124,7 @@ Without any harness change, an operator with VSCode installed has access to:
 |---|---|---|
 | `make start PROVIDER=<n>` | [`tool_interface.md`](../architecture/tool_interface.md#make-start-provider-provider-rebuild1) | Foreground task; closing terminal pane signals teardown |
 | `make serve PROVIDER=<n>` | [`tool_interface.md`](../architecture/tool_interface.md#make-serve-provider-provider-rebuild1) | Background mode; agent on `127.0.0.1:SERVE_PORT` |
-| `make stop` | [`tool_interface.md`](../architecture/tool_interface.md) | Explicit teardown |
+| `make stop` | [`tool_interface.md`](../../docs/architecture/tool_interface.md) | Explicit teardown |
 | Deterministic container names | [`tool_interface.md`](../architecture/tool_interface.md#container-naming) | `sandbox-<project>` and `<provider>-agent-<project>` -- known at workflow-write time |
 | `docker attach <container>` | Docker | TTY connection to running container's PID 1 |
 | `docker exec -it <container> <cmd>` | Docker | Fresh shell or process inside running container |
@@ -571,14 +571,14 @@ Findings get appended to **Investigation Findings** as a new "Hand-rolled sessio
 
 | Document | Purpose |
 |---|---|
-| [`tool_interface.md`](../architecture/tool_interface.md) | Existing harness primitives -- commands, container names, mount guarantees |
-| [`container_model.md`](../architecture/container_model.md) | Two-container lifecycle and volume ownership rationale |
-| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot, work, diff pipeline phases |
-| [`execution_model.md`](../architecture/execution_model.md) | Compose generation model |
-| [`two_layer_model.md`](../concepts/two_layer_model.md) | Reasoning vs capability layer separation |
-| [`security.md`](../architecture/security.md) | Security invariants this scope must preserve |
-| [`threat_model_stride.md`](../architecture/threat_model_stride.md) | Threat model |
-| [`story_policy.md`](../operations/story_policy.md) | Story format, lifecycle, and graduation |
+| [`tool_interface.md`](../../docs/architecture/tool_interface.md) | Existing harness primitives -- commands, container names, mount guarantees |
+| [`execution_model.md`](../../docs/architecture/execution_model.md) | Two-container lifecycle and volume ownership rationale |
+| [`sandbox_lifecycle.md`](../../docs/architecture/sandbox_lifecycle.md) | Snapshot, work, diff pipeline phases |
+| [`execution_model.md`](../../docs/architecture/execution_model.md) | Compose generation model |
+| [`two_layer_model.md`](../../docs/concepts/two_layer_model.md) | Reasoning vs capability layer separation |
+| [`security.md`](../../docs/architecture/security.md) | Security invariants this scope must preserve |
+| [`threat_model_stride.md`](../../docs/architecture/threat_model_stride.md) | Threat model |
+| [`story_policy.md`](../../docs/operations/story_policy.md) | Story format, lifecycle, and graduation |
 | [`20260506-story-active-zed_integration.md`](20260506-story-active-zed_integration.md) | Parallel evaluation of Zed for the same use cases |
 | [VSCode Dev Containers docs](https://code.visualstudio.com/docs/devcontainers/containers) | Official documentation -- primary source |
 | [VSCode Attach to Running Container](https://code.visualstudio.com/docs/devcontainers/attach-container) | Attach path documentation |

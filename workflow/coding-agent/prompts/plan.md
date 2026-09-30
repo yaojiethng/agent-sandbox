@@ -24,7 +24,7 @@ Read the prior handover's What's Next section and any open stories in `devlog/di
 
 Capture the goal and the problem for this session. Read the goal from the invocation argument or from the operator's direction. When no goal is stated, state it and confirm it with the operator. Capture the problem statement from the invocation argument or from the operator as well. Keep every planned item inside the goal.
 
-Open a plan-session handover per [`handover_policy.md`](docs/operations/handover_policy.md), mirroring `/iter` Step 1. Record the goal and the problem in the handover so they are a durable record. Assign the handover to the session's milestone. When no major milestone is open, stop and ask the operator.
+Open a plan-session handover per [`handover_policy.md`](../../../docs/operations/handover_policy.md), mirroring `/iter` Step 1. Record the goal and the problem in the handover so they are a durable record. Assign the handover to the session's milestone. When no major milestone is open, stop and ask the operator.
 
 **Skip condition.** If the work is already well-scoped and needs no planning, record that decision in the handover, say so, and end the session.
 
@@ -51,7 +51,7 @@ Route the interview result to a write-back target. Choose one: a written report 
 
 ## Write back
 
-Write the plan to the confirmed target: the roadmap entry, the scoped sub-milestone, decisions, and ADRs. Apply the binding rules in [`milestone_policy.md`](docs/operations/milestone_policy.md), [`iteration_policy.md`](docs/operations/iteration_policy.md) [Iteration Invariants](docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](docs/operations/roadmap_policy.md), and [`adr_policy.md`](docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
+Write the plan to the confirmed target: the roadmap entry, the scoped sub-milestone, decisions, and ADRs. Apply the binding rules in [`milestone_policy.md`](../../../docs/operations/milestone_policy.md), [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) [Iteration Invariants](docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md), and [`adr_policy.md`](../../../docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
 

@@ -2,7 +2,7 @@
 
 **Status:** Superseded -- see [`docs/adr/session_identifier.md`](../../docs/adr/session_identifier.md)
 
-**Supersedes:** [`story_session_identity_and_harness_versioning.md`](../devlog/discussions/story_session_identity_and_harness_versioning.md)
+**Supersedes:** [`session_identifier.md`](../../docs/adr/session_identifier.md)
 
 ---
 
@@ -171,7 +171,7 @@ Behavioural requirements established from prior investigation:
 
 ## Harness-sig (Runtime Drift Detection)
 
-**Deferred.** See [`20260522-study-superseded-harness_sig_requirements.md`](../discussions/20260522-study-superseded-harness_sig_requirements.md) and [`roadmap_future.md`](../devlog/roadmap_future.md) Harness Packaging and Versioning.
+**Deferred.** See [`20260522-study-superseded-harness_sig_requirements.md`](../discussions/20260522-study-superseded-harness_sig_requirements.md) and [`roadmap_future.md`](../roadmap_future.md) Harness Packaging and Versioning.
 
 Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic versioning. These are scoped as a standalone future milestone, not part of M2.7.
 
@@ -185,7 +185,7 @@ Harness-sig requires two preconditions: (1) self-contained binary, (2) semantic 
 
 ## References
 
-- [`story_session_identity_and_harness_versioning.md`](../devlog/discussions/story_session_identity_and_harness_versioning.md) -- superseded design
+- [`session_identifier.md`](../../docs/adr/session_identifier.md) -- superseded design
 - [`docs/concepts/sandbox_identity.md`](../../docs/concepts/sandbox_identity.md) -- stable reference for primitives, derivation, labels, and paths
 - [`scripts/start_agent.sh`](../../scripts/start_agent.sh) -- primitive set implementation
 - [`scripts/stop.sh`](../../scripts/stop.sh) -- current stop implementation

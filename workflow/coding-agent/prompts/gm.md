@@ -6,7 +6,7 @@ argument-hint: "[context or intent - optional, e.g. back after a break, easy sta
 > $@
 
 gm is a check-in, not an iteration. The agent's only permitted change during a check-in is a cosmetic record-bug fix: a stale record state, a mis-dated record entry, or forward-looking text in a completed item. Apply all such fixes found, aggregate them into a single `chore:` commit, and do not open a handover. All other changes wait; the user picks the next task before a new iteration starts -- see
-[iteration policy](docs/operations/iteration_policy.md).
+[iteration policy](../../../docs/operations/iteration_policy.md).
 
 ## Survey
 
@@ -17,12 +17,12 @@ needs.
 - Handover chain: the latest file in [`devlog/handovers/`](devlog/handovers/)
   -- highest date and index in the filename. Read its status, findings, and
   deferred items.
-- Roadmap: [`devlog/roadmap.md`](devlog/roadmap.md). Read the
+- Roadmap: [`devlog/roadmap.md`](../../../devlog/roadmap.md). Read the
   `active-milestone` frontmatter field, that milestone's section, and its
   open items. Check done items for forward-looking text left behind.
 - Recent git history (`git log --oneline -20`): what landed, and the time
   gap since the last iteration.
-- Open entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.
+- Open entries in [`devlog/AGENT_FEEDBACK.md`](../../../devlog/AGENT_FEEDBACK.md) -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.
 - Stale-state sweep: `git status`, `git stash list`, `git branch` -- look for
   uncommitted changes, stashes, leftover branches.
 - Settled design docs in [`devlog/discussions/`](devlog/discussions/) with

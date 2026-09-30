@@ -5,7 +5,7 @@ argument-hint: "<change description>"
 
 Propagation audit for: $@
 
-Per the propagation discipline in [AGENTS.md](AGENTS.md).
+Per the propagation discipline in [AGENTS.md](../../../../AGENTS.md).
 
 **Establish the change signature.** State in one line what the change looks like in code or text  --  specific enough that a grep can find it (e.g. `OLD_NAME` -> `NEW_NAME`, label `agent-sandbox.session-name` added to every container definition).
 

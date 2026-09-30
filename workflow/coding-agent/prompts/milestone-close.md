@@ -33,7 +33,7 @@ Reconcile the feedback per the operator's decisions. Do not decide a probation e
 
 ## Compact the task list
 
-Replace the named milestone's task checklist with `- [x]` outcome summaries, one to three sentences describing what was built. Keep design-document links and the `Not in scope` / deferred tags. Remove task breakdowns, file lists, and implementation notes -- the handovers retain them. Follow Compaction cascading and the Changelog Format in [roadmap_policy.md](docs/operations/roadmap_policy.md).
+Replace the named milestone's task checklist with `- [x]` outcome summaries, one to three sentences describing what was built. Keep design-document links and the `Not in scope` / deferred tags. Remove task breakdowns, file lists, and implementation notes -- the handovers retain them. Follow Compaction cascading and the Changelog Format in [roadmap_policy.md](../../../docs/operations/roadmap_policy.md).
 
 ## Stop at the close boundary
 
@@ -44,7 +44,7 @@ The close boundary tells how far the cascade goes:
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order per [roadmap_policy.md](docs/operations/roadmap_policy.md) Changelog Format. The italic sentence names the capability. The body states what was built and the decisions that shaped it. No file lists. No future language. Output the entry as a fenced block so the operator can append it verbatim to `changelog.md`.
+Append the milestone's entry to `devlog/changelog.md` in milestone order per [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) Changelog Format. The italic sentence names the capability. The body states what was built and the decisions that shaped it. No file lists. No future language. Output the entry as a fenced block so the operator can append it verbatim to `changelog.md`.
 
 ## Update the records
 
@@ -52,7 +52,7 @@ In `devlog/roadmap.md`:
 
 1. **Summary table:** flip the milestone's row to `Complete` with a changelog link. Leave the parent `In progress` unless all its direct children are complete.
 2. **Frontmatter:** set `active-milestone` to the parent milestone when a sub-milestone closes; set it to the next milestone at a full top-level close.
-3. **Top-level close (full milestone only):** remove the completed milestone's detail section from `roadmap.md`, and promote the next incomplete milestone from `roadmap_future.md` into `roadmap.md` per [roadmap_policy.md](docs/operations/roadmap_policy.md) Milestone Promotion.
+3. **Top-level close (full milestone only):** remove the completed milestone's detail section from `roadmap.md`, and promote the next incomplete milestone from `roadmap_future.md` into `roadmap.md` per [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) Milestone Promotion.
 
 ## Escalate deferred work
 
@@ -69,9 +69,9 @@ Before the record edits and the close commit, present to the operator the compac
 Then:
 
 1. Mark every acceptance criterion accepted in the handover.
-2. Run scope reconciliation and the carry-forward resolution gate at milestone grain; see [iteration_policy.md](docs/operations/iteration_policy.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
+2. Run scope reconciliation and the carry-forward resolution gate at milestone grain; see [iteration_policy.md](../../../docs/operations/iteration_policy.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
 3. Set the handover `Status: Closed` before the commit -- the commit is the close.
-4. Land one delivery commit per [git_policy.md](docs/operations/git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of Active Types. The M2.7 and M3.1 closes both typed `plan`.
+4. Land one delivery commit per [git_policy.md](../../../docs/operations/git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of Active Types. The M2.7 and M3.1 closes both typed `plan`.
 
 After the close commit, stop: report the landed commit and the updated records. No substantive work lands after the operator's close direction.
 

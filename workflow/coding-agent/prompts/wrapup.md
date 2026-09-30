@@ -61,7 +61,7 @@ Present the boundary and the squash plan. For a multi-unit split, the operator d
 
 ### A5. Squash to one delivery commit
 
-Run the canonical squash procedure in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Canonical procedures -- squash to one delivery commit). The canonical block is the single source; do not restate it here. The close edit and write-back are staged into the same commit, never a separate one.
+Run the canonical squash procedure in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Canonical procedures -- squash to one delivery commit). The canonical block is the single source; do not restate it here. The close edit and write-back are staged into the same commit, never a separate one.
 
 ### A6. Confirm an open handover names the unit
 
@@ -77,7 +77,7 @@ bash scripts/lint.sh             # pre-close gate clean
 
 ## Part B - The close (end of session, shared)
 
-Run this once when the session reaches its end. It follows the unit's release point. There is one release: the operator's forward signal on the release gate (per [`iteration_policy.md`](docs/operations/iteration_policy.md) gate invariants) is the release for this part; Part B does not add a second operator approval. The close steps below run the close invariants in [`iteration_policy.md`](docs/operations/iteration_policy.md); a step states the invariant it satisfies and links it, rather than redefining it.
+Run this once when the session reaches its end. It follows the unit's release point. There is one release: the operator's forward signal on the release gate (per [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) gate invariants) is the release for this part; Part B does not add a second operator approval. The close steps below run the close invariants in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md); a step states the invariant it satisfies and links it, rather than redefining it.
 
 ### B1. AC verification
 
@@ -85,11 +85,11 @@ Read the acceptance criteria from the session's handover. For each criterion, st
 
 ### B2. Propagation replay
 
-Run the propagation-replay invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row in Deferred items) before the release gate releases.
+Run the propagation-replay invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row in Deferred items) before the release gate releases.
 
 ### B3. Scope reconciliation
 
-Run the scope-reconciliation invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed must appear in Deferred items; no unaccounted items.
+Run the scope-reconciliation invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed must appear in Deferred items; no unaccounted items.
 
 ### B4. Roadmap write-back and compaction
 
@@ -97,11 +97,11 @@ Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`
 
 ### B5. Carry-forward resolution
 
-Run the carry-forward-resolution invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): every Carried forward item must be completed, re-deferred with reason, or escalated to a named roadmap entry; an item in none of the three is dropped -- find it and triage it.
+Run the carry-forward-resolution invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): every Carried forward item must be completed, re-deferred with reason, or escalated to a named roadmap entry; an item in none of the three is dropped -- find it and triage it.
 
 ### B6. Findings review/publish
 
-Run the findings-review/publish invariant in [`iteration_policy.md`](docs/operations/iteration_policy.md) (Close invariants): route each entry to its destination; attribution is operator-owned (the agent proposes a class) and the Findings section is empty or holds only entries with a triage destination before the close.
+Run the findings-review/publish invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): route each entry to its destination; attribution is operator-owned (the agent proposes a class) and the Findings section is empty or holds only entries with a triage destination before the close.
 
 ### B7. Close ADRs and discussion docs whose work landed
 

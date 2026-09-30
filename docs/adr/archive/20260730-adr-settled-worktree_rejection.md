@@ -20,13 +20,13 @@ Worktree backing -- linking the agent's working tree to the host repository via 
 
 - Worktree backing permanently removed from roadmap scope (M2.6.6 Not in scope).
 - `docs/architecture/security.md` Mount modes table: Worktree row removed or marked rejected.
-- The full investigation (mechanism, security delta, residual risk analysis) is preserved in [`devlog/discussions/20260730-study-settled-worktree_rejection.md`](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
+- The full investigation (mechanism, security delta, residual risk analysis) is preserved in [`devlog/discussions/20260730-study-settled-worktree_rejection.md`](../../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
 - The backing axis in the mount model design now has one active option: user-provided `.git`.
 
 ## References
 
 | Document | Purpose |
 |---|---|
-| [`devlog/discussions/20260730-study-settled-worktree_rejection.md`](../../devlog/discussions/20260730-study-settled-worktree_rejection.md) | Full investigation record |
-| [`devlog/discussions/20260730-design-settled-mount_model.md`](../../devlog/discussions/20260730-design-settled-mount_model.md) | Mount model design |
-| [`devlog/roadmap.md`](../../devlog/roadmap.md) | M2.6.6 Not in scope |
+| [`devlog/discussions/20260730-study-settled-worktree_rejection.md`](../../../devlog/discussions/20260730-study-settled-worktree_rejection.md) | Full investigation record |
+| [`devlog/discussions/20260730-design-settled-mount_model.md`](../../../devlog/discussions/20260730-design-settled-mount_model.md) | Mount model design |
+| [`devlog/roadmap.md`](../../../devlog/roadmap.md) | M2.6.6 Not in scope |

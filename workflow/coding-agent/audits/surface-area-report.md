@@ -8,7 +8,7 @@ The envisioned future state: a targeted workflow file for each current use case,
 
 | File | Use case | Status | M3 target |
 |---|---|---|---|
-| [`gm.md`](../gm.md) | Kickoff: check-in -- survey the project state, present a work inventory, wait for direction | Current, canonical (rewritten 2026-09-11) | Keep |
+| [`gm.md`](../prompts/gm.md) | Kickoff: check-in -- survey the project state, present a work inventory, wait for direction | Current, canonical (rewritten 2026-09-11) | Keep |
 | `prompts/iter.md` | Kickoff: open an iteration with a known directive -- scope gate and release gate | Current, canonical | Keep; the loop workflow for the M3.2.1 migration |
 | `prompts/agent-sandbox.md` | Meta: redirect harness questions to `/opt/sandbox/docs/` | Current | Keep |
 | `prompts/` (wrapup removed) | Close: superseded by `iteration_policy.md` Steps 7-9 and the transient-commits rule in `git_policy.md` | Removed 2026-09-24 | -- |

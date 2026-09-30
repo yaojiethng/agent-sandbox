@@ -25,7 +25,7 @@ These are 3-4 git commands each. An operator could type them manually. Rejected:
 
 ### Option C: Merge draft/apply into a single command
 
-Considered in [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) -- deferred. They solve different problems (branch review vs direct recovery) and merging would force one behavior to accommodate the other, making both worse.
+Considered in [`design_apply_draft_workflow.md`](../../../devlog/discussions/design_apply_draft_workflow.md) -- deferred. They solve different problems (branch review vs direct recovery) and merging would force one behavior to accommodate the other, making both worse.
 
 ### Option D: Remove `.draft-state` commit, use tags
 
@@ -73,7 +73,7 @@ No migration needed. Existing workflow behavior is unchanged. Savepoint tags and
 
 ## Supersedes
 
-- [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) -- unified design doc describing the current system
+- [`design_apply_draft_workflow.md`](../../../devlog/discussions/design_apply_draft_workflow.md) -- unified design doc describing the current system
 - `design_apply_workflow_and_baseline_advancement.md` -- original M2.3 design (deleted, superseded by this ADR)
 - `design_diff_and_branch_packaging_workflow.md` -- earlier packaging workflow design (deleted, superseded)
 - `design_remove_package_diff.md` -- package-diff removal design (deleted, absorbed into this ADR)

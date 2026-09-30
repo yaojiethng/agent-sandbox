@@ -51,7 +51,7 @@ These hold across any combination across the axes.
 1. **Lifetime coupling.** When the operator uses agent-sandbox via Zed, closing Zed closes the session.
 2. **Cold start.** agent-sandbox is not running when Zed opens. The session starts inside Zed.
 3. **Operator restart authority.** Within a Zed session, the operator can stop and restart the agent-sandbox container set freely.
-4. **Security invariants preserved.** The four invariants in [`security.md`](../architecture/security.md) hold: agents in containers, output via diffs, human approval gate, depth <= 2 with no grandchildren.
+4. **Security invariants preserved.** The four invariants in [`security.md`](../../docs/architecture/security.md) hold: agents in containers, output via diffs, human approval gate, depth <= 2 with no grandchildren.
 5. **Bare terminal still works.** `make start` and `make serve` are not changed in shape or behaviour by Zed integration.
 6. **Harness change is permitted but should be minimal.** Changes are not avoided on principle, but the question is framed around reuse of existing primitives first.
 
@@ -69,7 +69,7 @@ Without any harness change, an operator with Zed installed has access to:
 |---|---|---|
 | `make start PROVIDER=<n>` | [`tool_interface.md`](../architecture/tool_interface.md#make-start-provider-provider-rebuild1) | Foreground task; closing terminal pane signals teardown |
 | `make serve PROVIDER=<n>` | [`tool_interface.md`](../architecture/tool_interface.md#make-serve-provider-provider-rebuild1) | Background mode; agent on `127.0.0.1:SERVE_PORT` (provider-specific server interface) |
-| `make stop` | [`tool_interface.md`](../architecture/tool_interface.md) | Explicit teardown |
+| `make stop` | [`tool_interface.md`](../../docs/architecture/tool_interface.md) | Explicit teardown |
 | Deterministic container names | [`tool_interface.md`](../architecture/tool_interface.md#container-naming) | `sandbox-<project>` and `<provider>-agent-<project>` -- known at task-write time |
 | `docker attach <container>` | Docker | TTY connection to running container's PID 1 |
 | `docker exec -it <container> <cmd>` | Docker | Fresh shell or process inside running container |
@@ -140,7 +140,7 @@ This shape has three blockers that make it impractical without substantial harne
 
 - **Foreground-blocking.** `make start` foreground-attaches to the agent TUI. Zed expects `initializeCommand` to return so it can attach its remote server. The harness cannot return control to Zed without `make start` either backgrounding (breaking the TUI surface) or finishing (which means the session is over).
 - **Static `service` name.** Compose-based devcontainers want a static service name. agent-sandbox names are deterministic so this is solvable per-project.
-- **Compose file is generated, not authored.** agent-sandbox composes the runtime compose file by merging many partial fragments at session start ([`execution_model.md`](../architecture/execution_model.md)). The merged file is a tmpfile, not a stable on-disk artifact at a path Zed can name in `dockerComposeFile`. Adopting Shape 3 would require either pre-materialising the merged compose file at a stable path (a non-trivial change to the compose generation model) or designing around fragment-aware devcontainer config (which Zed does not support).
+- **Compose file is generated, not authored.** agent-sandbox composes the runtime compose file by merging many partial fragments at session start ([`execution_model.md`](../../docs/architecture/execution_model.md)). The merged file is a tmpfile, not a stable on-disk artifact at a path Zed can name in `dockerComposeFile`. Adopting Shape 3 would require either pre-materialising the merged compose file at a stable path (a non-trivial change to the compose generation model) or designing around fragment-aware devcontainer config (which Zed does not support).
 
 **Shape 4 -- Dynamic service name via `${localEnv:...}`:**
 
@@ -185,7 +185,7 @@ Multiple values can be combined -- Zed supports multiple workspaces per window.
 | C1 | `SANDBOX_DIR` as a host workspace. Operator's view of `AGENTS.md`, `.workspace/`, provider config. |
 | C2 | Container workspace via Dev Container remote-server. Zed injects its remote server into a container; full IDE features on the container's filesystem including `sandbox/`. Adds a long-running Zed process to the container -- meaningful change to container runtime profile. |
 | C3 | No editor workspace on container -- container access is via terminal panes only (axis B). |
-| C4 | Sandbox volume bind-mounted to host so Zed can open it as a workspace without entering the container. Requires harness change -- `sandbox/` is currently a Docker anonymous volume specifically because it should not appear on the host. Breaks the rationale in [`container_model.md` -- Why `--volumes-from` rather than a named volume](../architecture/container_model.md). |
+| C4 | Sandbox volume bind-mounted to host so Zed can open it as a workspace without entering the container. Requires harness change -- `sandbox/` is currently a Docker anonymous volume specifically because it should not appear on the host. Breaks the rationale in [`execution_model.md` -- Why `--volumes-from` rather than a named volume](../../docs/architecture/execution_model.md). |
 
 #### Axis D -- Operator/agent edit policy on `sandbox/`
 
@@ -508,12 +508,12 @@ The cluster's coverage cells stay positive in the table but are footnoted to ref
 
 | Document | Purpose |
 |---|---|
-| [`tool_interface.md`](../architecture/tool_interface.md) | Existing harness primitives -- commands, container names, mount guarantees |
-| [`container_model.md`](../architecture/container_model.md) | Two-container lifecycle and volume ownership rationale |
-| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot, work, diff pipeline phases |
-| [`execution_model.md`](../architecture/execution_model.md) | Compose generation model |
-| [`two_layer_model.md`](../concepts/two_layer_model.md) | Reasoning vs capability layer separation |
-| [`security.md`](../architecture/security.md) | Security invariants this scope must preserve |
-| [`story_policy.md`](../operations/story_policy.md) | Story format, lifecycle, and graduation |
-| [`investigation_policy.md`](../operations/investigation_policy.md) | If candidate evaluation is split into sub-investigations |
-| [`story_agent_git_surface.md`](story_agent_git_surface.md) | Adjacent surface -- agent's relationship to git, tracked separately |
+| [`tool_interface.md`](../../docs/architecture/tool_interface.md) | Existing harness primitives -- commands, container names, mount guarantees |
+| [`execution_model.md`](../../docs/architecture/execution_model.md) | Two-container lifecycle and volume ownership rationale |
+| [`sandbox_lifecycle.md`](../../docs/architecture/sandbox_lifecycle.md) | Snapshot, work, diff pipeline phases |
+| [`execution_model.md`](../../docs/architecture/execution_model.md) | Compose generation model |
+| [`two_layer_model.md`](../../docs/concepts/two_layer_model.md) | Reasoning vs capability layer separation |
+| [`security.md`](../../docs/architecture/security.md) | Security invariants this scope must preserve |
+| [`story_policy.md`](../../docs/operations/story_policy.md) | Story format, lifecycle, and graduation |
+| [`study_policy.md`](../../docs/operations/study_policy.md) | If candidate evaluation is split into sub-investigations |
+| [`20260730-design-settled-mount_model.md`](20260730-design-settled-mount_model.md) | Adjacent surface -- agent's relationship to git, tracked separately |
