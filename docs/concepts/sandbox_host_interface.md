@@ -7,7 +7,7 @@ This document is the interface contract between them. It names the contract surf
 The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary -- see [`tool_interface.md`](../architecture/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
 
 Implementation detail and command shapes: [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../architecture/tool_interface.md) (Commands).
-Reasoning record: [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
+Reasoning record: [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md).
 
 ---
 
@@ -52,7 +52,7 @@ The interim `container-sig` source-subset hash and its preflight comparison are 
 
 Deferred (host constant vs record stamps at preflight): the record surface compares at the agent entrypoint only, not yet at preflight. This remains a candidate extension; it is not scheduled.
 
-The P0-P3 rollover and the container-sig retirement are recorded in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The P0-P3 rollover and the container-sig retirement are recorded in [the design record](../../devlog/discussions/20260919-design-settled-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
 ### Relationship to MAKEFILE_VERSION
 
@@ -225,6 +225,6 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 | [`harness_versioning.md`](../adr/harness_versioning.md) | Per-surface version semantics (digest, HEAD, symlink) |
 | [`drift_state_coherence.md`](../adr/drift_state_coherence.md) | Coherence by minimisation, not detection |
 | [`session_identifier.md`](../adr/session_identifier.md) | Project/session identity |
-| [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
+| [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config copy-in at session start |

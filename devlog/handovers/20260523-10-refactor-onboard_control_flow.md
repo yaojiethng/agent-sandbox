@@ -92,4 +92,4 @@ These ACs must pass after each refactoring step. They are guards, not completion
 
 ## Next session
 
-UID Mapping implementation (build pipeline threading + Dockerfile changes + compose update). See design doc `docs/devlog/discussions/design_settings_permissions_group_bind.md` rule 3 for surface area and priority order.
+UID Mapping implementation (build pipeline threading + Dockerfile changes + compose update). See design doc `docs/devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` rule 3 for surface area and priority order.

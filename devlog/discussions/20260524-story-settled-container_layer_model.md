@@ -127,7 +127,7 @@ All open questions from the initial design were resolved during the design audit
 | `execution_model.md` -- Build Context | Describes how build contexts are assembled |
 | `provider_lifecycle.md` | Reasoning layer session arc |
 | `containers.sh` -- `build_agent()` | The build pipeline that assembles and caches the two-tier images |
-| `design_settings_permissions_group_bind.md` rule 3 | UID Mapping surface area table -- the 5 Dockerfiles that need changes |
+| `20260524-design-settled-uid_mapping_bind_mount_permissions.md` rule 3 | UID Mapping surface area table -- the 5 Dockerfiles that need changes |
 | `roadmap.md` -- Track C Phase 2 | The implementation phase that would benefit from consolidation |
 
 ## Resolution

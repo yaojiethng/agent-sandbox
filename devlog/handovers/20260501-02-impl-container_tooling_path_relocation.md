@@ -11,7 +11,7 @@ Implement the container tooling path relocation design spec -- relocating harnes
 
 ## Scope
 
-- [x] Implement all file changes described in [`docs/devlog/discussions/design_container_tooling_path_relocation.md`](../discussions/design_container_tooling_path_relocation.md) -- the 11 exact-change sections (File change spec items 1-11), plus any prompt template `~/sandbox/libs/` path updates and docs path updates listed there.
+- [x] Implement all file changes described in [`docs/devlog/discussions/20260501-design-settled-container_tooling_path_relocation.md`](../discussions/20260501-design-settled-container_tooling_path_relocation.md) -- the 11 exact-change sections (File change spec items 1-11), plus any prompt template `~/sandbox/libs/` path updates and docs path updates listed there.
 - [x] Update architecture documents in scope to reflect the system as built (e.g. `sandbox-architecture.md`, `execution_model.md` if they reference old paths).
 - [x] Verify with `make test` (all tests passing with updated assertions) and the AC grep patterns.
 - Explicitly out of scope: docs restructuring (operations/development/devlog folding -- deferred to future investigation); prompt templates `defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md` (pre-existing concern, deferred); the `--interactive` flag for `apply`/`draft` (pending under M2.3, separate scope).
@@ -37,7 +37,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`docs/devlog/discussions/design_container_tooling_path_relocation.md`](../discussions/design_container_tooling_path_relocation.md) | Design spec -- exact per-file changes |
+| [`docs/devlog/discussions/20260501-design-settled-container_tooling_path_relocation.md`](../discussions/20260501-design-settled-container_tooling_path_relocation.md) | Design spec -- exact per-file changes |
 | [`libs/containers.sh`](../../libs/containers.sh) | Update build context COPY lists -- sandbox (7 files + docs) and agent (4 files + docs) |
 | [`libs/sandbox.Dockerfile`](../../libs/sandbox.Dockerfile) | Update COPY destinations to `/opt/sandbox/bin/`/`lib/`, add docs COPY, update ENTRYPOINT |
 | [`libs/sandbox-entrypoint.sh`](../../libs/sandbox-entrypoint.sh) | Update 3 source paths from `/libs/` to `/opt/sandbox/lib/` |
@@ -93,7 +93,7 @@ None.
 
 **Sub-milestone:** M2.3 -- Apply Workflow: Capability Layer Diff Pipeline -- `--interactive` flag still pending.
 
-**Context handover:** Container tooling path relocation -- prerequisite complete. Design spec at `docs/devlog/discussions/design_container_tooling_path_relocation.md`. Implementation covered 15 files; `test_build_context.sh` passes 39/39; all stale path greps return 0.
+**Context handover:** Container tooling path relocation -- prerequisite complete. Design spec at `docs/devlog/discussions/20260501-design-settled-container_tooling_path_relocation.md`. Implementation covered 15 files; `test_build_context.sh` passes 39/39; all stale path greps return 0.
 
 **Trigger B:** Not applicable -- this session closed a prerequisite, not a sub-milestone.
 

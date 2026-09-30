@@ -282,6 +282,13 @@ scoped: M3 T1 -- roadmap policy; `docs/operations/roadmap_policy.md`
 legacy: the roadmap `roadmap_policy.md` line "The roadmap is the accumulated decision log for the milestone" and "A closed roadmap entry ... does not change" treat closed rows as durable history; the changelog is the permanent record (roadmap_future already says this).
 mitigation: an agent needs to rewrite the milestone's own task rows in the active sub-milestone when the semantics of a name shift (for example renaming `/auto` to `sequential-work`) rather than treating a closed `[x]` row as history to preserve. The handover is the durable record of each iteration's work; the changelog holds a proper description of what landed a milestone at its close. The roadmap is a living task list and its rows may be rewritten freely within the active milestone. A closed row needing correction is a narrow exception, not the default. Raised 2026-10-01 when the agent proposed leaving the roadmap's historical `/auto`/`/parallel-auto` rows untouched because it assumed they were durable history; the operator corrected: the milestone's changelog entry, not the roadmap rows, is the record that outlives the milestone.
 
+### [O] 2026-10-01  --  Discussion status semantics: no clean term for a doc rolled into a handover and deleted
+
+state: open
+scoped: M3 T1 -- discussion policy status model; `docs/operations/discussion_policy.md`
+legacy: none
+mitigation: the status table defines `superseded` as "replaced by a newer doc" and `archived` as "terminal -- no active references", but neither covers a discussion doc whose content was rolled into a handover and the file deleted. The `20260721-03` spec cleanup used the word "Deleted" (not a table status) for exactly this case, and recorded the deletion while the deletion commit never landed, so two vestigial specs persisted under `settled` until 2026-10-01. There is no determination rule for `settled` vs `superseded` vs rolled-up. Proposed fix: widen `superseded` to "replaced by a newer record (doc or handover)" and state the rule -- a file is `superseded` only when a successor record explicitly absorbs it (banner or commit message); otherwise it is `settled`, and a rolled-up-and-deleted doc is deleted, not relabelled. Raised 2026-10-01 during the discussion-rename chore.
+
 ## Agent experience  --  session 20260809-04
 
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work

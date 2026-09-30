@@ -8,7 +8,7 @@
 
 **Related:**
 
-- [`design_change_a_contract.md`](design_change_a_contract.md) -- CLI contract, routers, channel model (prerequisite)
+- [`20260504-design-settled-change_a_contract.md`](20260504-design-settled-change_a_contract.md) -- CLI contract, routers, channel model (prerequisite)
 - [`design_diff_and_branch_packaging_workflow.md`](design_diff_and_branch_packaging_workflow.md) -- core diff pipeline
 - [`libs/routing.sh`](../../libs/routing.sh) -- router functions
 - [`scripts/agent-sandbox.sh`](../../scripts/agent-sandbox.sh) -- dispatch entry point
@@ -442,7 +442,7 @@ No open questions remain. All Q-B entries resolved. Design is ready for Gate 2 (
 | Document | Purpose |
 |---|---|
 | `recovery-design-step-b.md` (input file) | Source design surface |
-| `design_change_a_contract.md` | Precedent design doc format, CLI contract, channel model |
+| `20260504-design-settled-change_a_contract.md` | Precedent design doc format, CLI contract, channel model |
 | `design_diff_and_branch_packaging_workflow.md` | Core diff pipeline |
 | `libs/routing.sh` | Router functions |
 | `libs/dirs.sh` | Path derivation |

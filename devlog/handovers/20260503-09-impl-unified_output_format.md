@@ -45,7 +45,7 @@ None.
 7. `sandbox-entrypoint.sh` has no `BASELINE_SHA` variable or reference to it
 8. `write_changed_files` helper exists in `libs/diff.sh` and is called from both `package_branch` and `package_diff.sh`
 9. `package_diff.sh` has a `BASH_SOURCE` main guard (sourceable); `package_branch.sh` retains its existing guard
-10. Architecture documents in scope describe the system as built. (Design doc `design_change_a_contract.md` will be referenced; no architecture docs updated in this entry.)
+10. Architecture documents in scope describe the system as built. (Design doc `20260504-design-settled-change_a_contract.md` will be referenced; no architecture docs updated in this entry.)
 
 ## Hot files
 
@@ -96,7 +96,7 @@ None.
 
 **Objective:** Add `--channel` flag, router functions, new `apply_run`/`draft_run` signatures, Makefile flag mappings.
 
-**A.2 design reference:** `docs/devlog/discussions/design_change_a_contract.md`  4.
+**A.2 design reference:** `docs/devlog/discussions/20260504-design-settled-change_a_contract.md`  4.
 **A.2 roadmap:** `docs/devlog/roadmap.md`  A.2.
 
 **Expanded A.2 scope (from mid-session finding):** Unify `diff_on_exit` and `diff_on_autosave` into a single `diff_export(SANDBOX_DIR, OUTPUT_DIR)` function. Path construction (subfolder, `EXPORT-TIME.txt`) moves to callers (`sandbox-entrypoint.sh`). Reduces test surface; aligns with A.2's path-resolution focus. Hot files expanded to include `libs/diff.sh`, `libs/sandbox-entrypoint.sh`, `tests/test_diff_dispatch.sh`.

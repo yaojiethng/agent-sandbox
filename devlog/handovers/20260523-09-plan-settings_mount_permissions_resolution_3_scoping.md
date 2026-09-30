@@ -26,7 +26,7 @@ Scope and design a durable permission strategy to replace the interim ACL-based 
 
 ## Confirmed surface area
 
-Design document at `docs/devlog/discussions/design_settings_permissions_group_bind.md` contains the full 14-item file-change inventory with dependency ordering.
+Design document at `docs/devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` contains the full 14-item file-change inventory with dependency ordering.
 
 **Final solution:** UID Mapping (User Hijack) -- Strategy 4 in the story document. The container runs as the host user's UID/GID via build args + compose `user:` override. Universal across WSL, macOS, Windows DD, and CI. Replaces the ACL-based approach from session 20260523-08.
 
@@ -38,7 +38,7 @@ None.
 
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
-| 1 | A design document exists at `docs/devlog/discussions/design_settings_permissions_group_bind.md` covering: problem statement (linked to story doc), design considerations, tradeoffs, final solution with rationale, complete 14-item surface area table, documentation needs, and roadmap task | `read` the design doc | Operator |
+| 1 | A design document exists at `docs/devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` covering: problem statement (linked to story doc), design considerations, tradeoffs, final solution with rationale, complete 14-item surface area table, documentation needs, and roadmap task | `read` the design doc | Operator |
 | 2 | The design document is internally consistent with `20260524-story-settled-linux_filesystem_uid_mismatch.md` -- no contradictions in problem description or solution scope | manual comparison | Operator |
 | 3 | The design document includes a proposed roadmap task entry for M2.7 Track C that encapsulates the implementation work, referencing the surface area table as the file-change plan | `read` the design doc | Operator |
 | 4 | `20260524-story-settled-linux_filesystem_uid_mismatch.md` is updated with Strategy 4 (UID Mapping / User Hijack) -- full technical spec, platform constraints, implementation steps, pros/cons | `read` the story doc | Operator |
@@ -47,7 +47,7 @@ None.
 
 | File | Reason | Status |
 |---|---|---|
-| `docs/devlog/discussions/design_settings_permissions_group_bind.md` | Design document -- final solution, surface area, roadmap task | [x] Produced |
+| `docs/devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` | Design document -- final solution, surface area, roadmap task | [x] Produced |
 | `docs/devlog/discussions/20260524-story-settled-linux_filesystem_uid_mismatch.md` | Story document -- updated with Strategy 4, setgid correction | [x] Updated |
 | `docs/devlog/handovers/20260523-08-impl-acl_permissions_baseline.md` | Retroactive handover for the ACL baseline implementation | [x] Produced |
 | `docs/devlog/handovers/20260523-09-plan-*.md` | This handover -- session record | [x] Updated |
@@ -78,7 +78,7 @@ None.
 | File | Change |
 |---|---|
 | `docs/devlog/discussions/20260524-story-settled-linux_filesystem_uid_mismatch.md` | Added Strategy 4 (UID Mapping / User Hijack) with full spec: platform breakdown, Dockerfile with collision handling, compose config, pipeline changes, pros/cons. Updated comparison matrix to 4 columns. Added setgid limitation note to Strategy 3. Updated status to "Resolved via Strategy 4". |
-| `docs/devlog/discussions/design_settings_permissions_group_bind.md` | New design document: problem statement, 6 design considerations with tradeoff tables, final solution with rationale, 14-item surface area with dependency ordering, user-facing documentation contract (rule 4 with 5 documentation subsections), roadmap task entry for M2.7 Track C, implementation ACs, supplementary techniques (GID+macOS, rsync provisioning), setgid correction. |
+| `docs/devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` | New design document: problem statement, 6 design considerations with tradeoff tables, final solution with rationale, 14-item surface area with dependency ordering, user-facing documentation contract (rule 4 with 5 documentation subsections), roadmap task entry for M2.7 Track C, implementation ACs, supplementary techniques (GID+macOS, rsync provisioning), setgid correction. |
 | `docs/devlog/handovers/20260523-08-impl-acl_permissions_baseline.md` | Retroactive handover for the ACL baseline implementation (session 08). |
 | `docs/devlog/handovers/20260523-09-plan-settings_mount_permissions_resolution_3_scoping.md` | This handover. |
 | `docs/devlog/roadmap.md` | Added Track C -- Universal Bind Mount Permission Strategy (UID Mapping) under M2.7 with design reference link. |

@@ -13,7 +13,7 @@ Resolve the eight open design questions (Q-L2-1 through Q-L2-8) identified in `r
 
 - Resolve all eight open design questions from the Layer 2 investigation (Q-L2-1 through Q-L2-8) through operator-directed discussion (grill-me).
 - Record each decision with rationale and location.
-- Produce a final design spec (`docs/devlog/discussions/design_container_tooling_path_relocation.md`) that lists every file to change, the exact change per file, and the file set for each of the two container build contexts (sandbox, agent).
+- Produce a final design spec (`docs/devlog/discussions/20260501-design-settled-container_tooling_path_relocation.md`) that lists every file to change, the exact change per file, and the file set for each of the two container build contexts (sandbox, agent).
 - Explicitly out of scope: any implementation file edits; test changes; changes to `scripts/` (except `scripts/dry_run.sh` which is in scope per Q-L2-5).
 - The prior `20260430-01-impl-*` session's objectives are superseded. This session produces the design; implementation is deferred to a subsequent session.
 
@@ -54,7 +54,7 @@ None.
 
 | ID | Decision | Rationale | Reference |
 |---|---|---|---|
-| Q-L2-2 | Layout: `/opt/sandbox/bin/` + `/opt/sandbox/lib/` + `/opt/sandbox/docs/` | FHS-compliant; PATH alignment for ENTRYPOINTs; role separation | `design_container_tooling_path_relocation.md` |
+| Q-L2-2 | Layout: `/opt/sandbox/bin/` + `/opt/sandbox/lib/` + `/opt/sandbox/docs/` | FHS-compliant; PATH alignment for ENTRYPOINTs; role separation | `20260501-design-settled-container_tooling_path_relocation.md` |
 | Q-L2-4 | Full-path ENTRYPOINT + `ENV PATH=/opt/sandbox/bin:$PATH` | Zero ambiguity; consistent with sandbox Dockerfile | Same |
 | Q-L2-1 | Seed all 8 container-invoked files, segmented per image | External projects don't have harness libs in sandbox snapshot | Same |
 | Q-L2-8 | Keep segmented build contexts | Minimal overlap (2 shared files); smaller contexts; easier to audit | Same |
@@ -67,7 +67,7 @@ None.
 
 | Finding | Type | Impact |
 |---|---|---|
-| Script category table (container-infra / co-located / prompt-templates / repo-only) with per-category path strategies needs to be persisted for maintenance | design | Persistent reference -- recorded in `design_container_tooling_path_relocation.md` |
+| Script category table (container-infra / co-located / prompt-templates / repo-only) with per-category path strategies needs to be persisted for maintenance | design | Persistent reference -- recorded in `20260501-design-settled-container_tooling_path_relocation.md` |
 | `system_overview.md` links to `project_index.md` (in development/) -- link will break when development/ is excluded from baked docs. Broader concern: concept/architecture docs cross-reference dev/ops/doc folders, violating the sandbox-vs-coding-agent contract. Operations/ and development/ should be logically folded into a coding-agent workflow/ and taken out of the overarching docs/ repository. Same for devlog/ (artifacts of the coding-agent workflow). | architecture | Not in scope -- big renaming change for future investigation |
 | Prompt templates (`defer.md`, `wrapup.md`, `new-session.md`, `new-session-v2.md`) reference `docs/operations/iteration_policy.md` etc. by project-relative path. Only resolves when project IS agent-sandbox (dogfooding). Seeding docs into `/opt/sandbox/docs/` doesn't fix these -- they reference operations/ which is excluded. | pre-existing concern | Deferred -- these need a separate mechanism or a decision to seed operations/ too |
 | Repo directory structure for bash scripts does not properly organise files according to logical requirements (not against functionality, not against use location). The script category table (container-infra / co-located / prompt-templates / repo-only) surfaces a diagnosis: files are grouped by `libs/` or `scripts/` directory rather than by their lifecycle (image-baked vs host-only vs bind-mounted), creating ambiguity about what path strategy each file needs. | architecture | Not in scope -- restructure needed as a separate investigation |
@@ -76,7 +76,7 @@ None.
 
 | File | Change summary |
 |---|---|
-| `docs/devlog/discussions/design_container_tooling_path_relocation.md` | Created -- complete design spec with exact per-file change descriptions, script category table, and proposed AC |
+| `docs/devlog/discussions/20260501-design-settled-container_tooling_path_relocation.md` | Created -- complete design spec with exact per-file change descriptions, script category table, and proposed AC |
 | This handover | Created with all 8 decisions, mid-session findings, and acceptance criteria |
 
 ## Deferred items

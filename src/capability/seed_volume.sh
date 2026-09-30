@@ -184,7 +184,7 @@ main() {
   # the volume copy only -- the host stack is untouched.
   git -C "$DEST" stash clear || die "clearing the host stash stack in the volume failed"
 
-  # Object-store prune (study 20260911-study-seed_object_store_cleanliness.md,
+  # Object-store prune (study 20260911-study-settled-seed_object_store_cleanliness.md,
   # ADR 2026-09-11 entry): the native .git copy carries unreachable host data
   # (stash objects, reflog-anchored history). The sandbox baseline is the
   # seeded HEAD -- no archaeology crosses. The prune runs only when the probe

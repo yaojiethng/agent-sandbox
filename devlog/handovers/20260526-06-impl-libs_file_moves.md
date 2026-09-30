@@ -143,7 +143,7 @@ Not yet defined.
 | `agent/drafts/bash-dependency-audit.skill.md` | added -- bash dependency audit process |
 | `agent/drafts/refactor-mv-rename-file.skill.md` | added -- rename/move workflow skill |
 | `docs/concepts/context_resolution.md` | added -- three-layer context resolution model |
-| `devlog/discussions/20260526-design-shared_library_organisation.md` | added -- libs/ refactor design |
+| `devlog/discussions/20260526-design-settled-shared_library_organisation.md` | added -- libs/ refactor design |
 | `devlog/discussions/20260526-spec-path_resolution_convention.md` | added -- path resolution spec |
 | `docs/devlog/handovers/20260526-06-impl-libs_file_moves.md` | added -- this handover |
 | `libs/compose.sh` | deleted -- moved to src/build/compose.sh |

@@ -34,7 +34,7 @@ None.
 
 | # | Criterion |
 |---|---|
-| 1 | Design document exists in `devlog/discussions/design-dispatch-cleanup-and-help-system.md` |
+| 1 | Design document exists in `devlog/discussions/20260530-design-settled-dispatch_cleanup_and_help_system.md` |
 | 2 | Document specifies `agent-sandbox help <subcommand>` behaviour, usage string format, and storage location |
 | 3 | Document defines flag group taxonomy with grouping criteria and full group catalogue (universal, provider, build, git-state, routing, package, interactive) |
 | 4 | Document specifies streamlined dispatch: `parse_flags` limited to group flags, `UNPARSED` array passed through |
@@ -44,7 +44,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| `devlog/discussions/design-dispatch-cleanup-and-help-system.md` | Design document produced this session |
+| `devlog/discussions/20260530-design-settled-dispatch_cleanup_and_help_system.md` | Design document produced this session |
 
 ## Decisions made this session
 
@@ -69,7 +69,7 @@ None.
 
 | File | Change summary |
 |---|---|
-| `devlog/discussions/design-dispatch-cleanup-and-help-system.md` | Design document -- help system spec, flag group taxonomy with grouping criteria, streamlined dispatch architecture, 3-phase implementation plan |
+| `devlog/discussions/20260530-design-settled-dispatch_cleanup_and_help_system.md` | Design document -- help system spec, flag group taxonomy with grouping criteria, streamlined dispatch architecture, 3-phase implementation plan |
 
 ## Deferred items
 

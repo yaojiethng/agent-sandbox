@@ -83,7 +83,7 @@ Rejecting lacks an operator-visible surface for the discard decision: revert dis
 `apply` (direct recovery sync, no branch overhead, accepts arbitrary `DIFF=<path>`), `draft` (review branch with full patch series, enables `git rebase -i` shaping), `confirm` (guarded rebase + fast-forward merge), `reject` (guarded discard). `draft` and `confirm` use local savepoint tags for rollback safety (`git tag <name>-savepoint` before risky operations; on failure `git reset --hard <tag>`; delete the tag on either outcome; local tags are never pushed). `reject` is atomic by chaining checkout and branch delete -- a checkout failure leaves the draft branch intact. `.draft-state` (committed as the first draft commit, records source branch, from_hash, session identity, diff count) is kept as the draft metadata store and is dropped by `confirm` before merge, never landing on the target branch.
 
 **Rationale:** The harness exports agent changes as diff artefacts (`patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, `changed-files/`) that the operator reviews, shapes, and merges into the host repo. One export pipeline gives one mental model and removes pure duplication (`package-branch` is a strict superset of `package-diff`). The command guards shift the burden of correctness from the operator's memory to the tooling; savepoint tags make `confirm` and `draft` failures safely retryable. Reasoning record:
-[`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
+[`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md).
 
 **Rejected alternatives:**
 

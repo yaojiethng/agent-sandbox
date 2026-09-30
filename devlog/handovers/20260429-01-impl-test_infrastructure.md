@@ -46,7 +46,7 @@ Explicitly deferred from this session:
 | [`scripts/check_test_coverage.sh`](scripts/check_test_coverage.sh) | New -- grep-based coverage check; spec defines behaviour and output format |
 | [`Makefile`](Makefile) | Add `test` target; verify no conflict with existing targets |
 | [`tests/libs/`](tests/libs/) | Existing fixture directory; runner must exclude from execution, coverage check must exclude from results |
-| [`docs/devlog/discussions/spec_test_infrastructure.md`](docs/devlog/discussions/spec_test_infrastructure.md) | Approved spec; implementation reference |
+| `docs/devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` | Approved spec; implementation reference |
 
 ## Decisions made this session
 

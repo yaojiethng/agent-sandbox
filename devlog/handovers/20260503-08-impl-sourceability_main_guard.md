@@ -59,7 +59,7 @@ None.
 | File | Change |
 |---|---|
 | `scripts/agent-sandbox.sh` | Wrapped all dispatch logic in `main()` function; added `if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then main "$@"; fi` guard; fixed usage text to include all subcommands; scoped all dispatch variables with `local` inside `main()` |
-| `docs/devlog/discussions/design_change_a_contract.md` | Added sourceability requirement for `package_diff.sh` and `package_branch.sh` to "What Change A is" section |
+| `docs/devlog/discussions/20260504-design-settled-change_a_contract.md` | Added sourceability requirement for `package_diff.sh` and `package_branch.sh` to "What Change A is" section |
 
 ## Deferred items
 
@@ -73,7 +73,7 @@ None.
 
 **Objective:** Restructure all diff packaging around a single unified output format. Rewrite `package_branch.sh` as a dispatcher. Rewrite `diff_on_exit` and `diff_on_autosave` as thin wrappers. No sweep commit, no `BASELINE_SHA` parameter.
 
-**Design reference:** `docs/devlog/discussions/design_change_a_contract.md`  2-3,  6.
+**Design reference:** `docs/devlog/discussions/20260504-design-settled-change_a_contract.md`  2-3,  6.
 **Roadmap:** `docs/devlog/roadmap.md`  A.1.
 
 **Hot files:** `libs/diff.sh`, `libs/package_branch.sh`, `libs/package_diff.sh`, `libs/sandbox-entrypoint.sh`, `tests/test_diff.sh`, `tests/test_package_branch.sh`, `tests/test_package_diff.sh`

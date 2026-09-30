@@ -38,7 +38,7 @@ M2.7 item 12 investigation and cleanup.
 | `libs/sandbox-entrypoint.sh` | Updated pre-flight checks (brief.md -> AGENTS.md) |
 | `libs/compose.sh` | Removed stale brief.md host-side verification |
 | `docs/devlog/roadmap.md` | Updated item 12 description with completed + deferred sub-items |
-| `docs/devlog/discussions/design_dual_layer_seam_testing.md` | Updated pre-flight table, added provider dry-run checks section |
+| `docs/devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md` | Updated pre-flight table, added provider dry-run checks section |
 
 ## Decisions made this session
 
@@ -57,7 +57,7 @@ M2.7 item 12 investigation and cleanup.
 | `libs/sandbox-entrypoint.sh` | Pre-flight: `brief.md` -> `sandbox/AGENTS.md` + `AGENT_HOME/AGENTS.md` |
 | `libs/compose.sh` | Removed brief.md host-side verification block |
 | `docs/devlog/roadmap.md` | Updated item 12 description |
-| `docs/devlog/discussions/design_dual_layer_seam_testing.md` | Updated pre-flight table, added provider dry-run checks section |
+| `docs/devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md` | Updated pre-flight table, added provider dry-run checks section |
 
 ## Deferred items
 

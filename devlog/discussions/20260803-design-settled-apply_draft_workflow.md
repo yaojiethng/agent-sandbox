@@ -2,7 +2,7 @@
 
 **Purpose:** Describes how agent changes are exported from the container and how the operator reviews and merges them into the host repository.
 
-**Status:** Open
+**Status:** Settled
 
 ---
 

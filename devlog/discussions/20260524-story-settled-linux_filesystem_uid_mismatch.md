@@ -2,7 +2,7 @@
 
 **Status:** Evaluated -- resolved via Strategy 4
 
-> **Resolved.** Structural comparison and implementation specifications for host-container volume permission anomalies across WSL2 runtimes. **Strategy 4 (UID Mapping)** selected as the implementation target -- see design document at `docs/devlog/discussions/design_settings_permissions_group_bind.md`.
+> **Resolved.** Structural comparison and implementation specifications for host-container volume permission anomalies across WSL2 runtimes. **Strategy 4 (UID Mapping)** selected as the implementation target -- see design document at `docs/devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md`.
 
 ---
 

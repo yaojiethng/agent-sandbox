@@ -11,7 +11,7 @@ Implement the settings.json ownership collision fix (M2.7 item 8): replace the c
 
 ## Scope
 
-M2.7 item 8 -- Settings.json ownership collision fix, as designed in `docs/devlog/discussions/design_provider_config_ownership_and_loading.md`.
+M2.7 item 8 -- Settings.json ownership collision fix, as designed in `docs/devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md`.
 
 - Replace `/opt/provider-config` bind mount with `agent/` directory bind mount, `bin/` tmpfs, and `/opt/workflow-host/` mounts for skills/prompts.
 - Remove `_copy_in` and `_copy_out` from `libs/provider-entrypoint.sh`; add `_ensure_harness_keys` (Node.js pre-flight merge).

@@ -71,7 +71,7 @@ cause.
 
 **Rollover (container-sig -> interface-contract version), exact switch-over
 moments:** see the design record
-[`20260919-design-interface_contract_compatibility.md`](../../devlog/discussions/20260919-design-interface_contract_compatibility.md)
+[`20260919-design-settled-interface_contract_compatibility.md`](../../devlog/discussions/20260919-design-settled-interface_contract_compatibility.md)
 for the live matrix and the operator-released gates. The hard rule, from the
 recorded past failure (new-mechanism errors blocked container start after the
 old check was stripped): the old check is not stripped before the new check is

@@ -2,8 +2,8 @@
 # Tests for libs/routing.sh
 #
 # Pins cite: docs/concepts/sandbox_identity.md l.142 (export path layout);
-#             devlog/discussions/design_apply_draft_workflow.md (export_path is the
-#             single path constructor); design_workspace_path_resolution.md.
+#             devlog/discussions/20260803-design-settled-apply_draft_workflow.md (export_path is the
+#             single path constructor); 20260516-design-settled-workspace_path_resolution.md.
 
 # Covers:
 #   export_path                --  unified path construction

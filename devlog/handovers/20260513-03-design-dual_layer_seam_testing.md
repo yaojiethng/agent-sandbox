@@ -27,7 +27,7 @@ None.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Design document produced at `docs/devlog/discussions/design_dual_layer_seam_testing.md` | [x] |
+| 1 | Design document produced at `docs/devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md` | [x] |
 | 2 | Five implementation units scoped and sequenced | [x] |
 | 3 | M2.7 item 11 updated in roadmap with sub-items (11a-11e) | [x] |
 | 4 | AGENTS.md injection finding added to roadmap as M2.7 item 12 | [x] |
@@ -44,7 +44,7 @@ None.
 | `libs/docker-compose.dry-run.yml` | Dry-run overlay -- add sandbox bind mount for capability checks (11c) |
 | `libs/compose.sh` | `compose_dry_run` orchestration -- three-phase execution (11c, 11d, 11e) |
 | `tests/test_capability_layer.sh` | Docker-dependent tests to be subsumed into dry-run capability checks |
-| `docs/devlog/discussions/design_workspace_path_resolution.md` | Adjacent design doc -- path resolution context for seam testing |
+| `docs/devlog/discussions/20260516-design-settled-workspace_path_resolution.md` | Adjacent design doc -- path resolution context for seam testing |
 
 ## Decisions made this session
 
@@ -65,7 +65,7 @@ None.
 | File | Change |
 |---|---|
 | `docs/devlog/handovers/20260513-03-design-dual_layer_seam_testing.md` | **New** -- this handover (Status: Closed) |
-| `docs/devlog/discussions/design_dual_layer_seam_testing.md` | **New** -- design document for the full dual-layer mechanism |
+| `docs/devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md` | **New** -- design document for the full dual-layer mechanism |
 | `docs/devlog/roadmap.md` | Item 11 restructured into 11a-11e sub-items; new item 12 (AGENTS.md injection) added |
 
 ## Deferred items
@@ -90,7 +90,7 @@ Checks:
 
 All CRITICAL failures exit non-zero (container fails healthcheck). WARN failures log but do not exit.
 
-**Design reference:** `docs/devlog/discussions/design_dual_layer_seam_testing.md`
+**Design reference:** `docs/devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md`
 
 **Conclusions from this session:**
 

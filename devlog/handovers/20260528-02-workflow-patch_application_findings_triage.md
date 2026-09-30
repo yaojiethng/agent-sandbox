@@ -7,7 +7,7 @@
 
 ## Objective
 
-Triage the open findings captured in `story-patch_application_failures.md` -- route each finding to its correct destination (roadmap task entry, deferred item, or resolved status) so the patch application failure story has a clear action plan.
+Triage the open findings captured in `20260526-story-active-patch_application_failures.md` -- route each finding to its correct destination (roadmap task entry, deferred item, or resolved status) so the patch application failure story has a clear action plan.
 
 ## Scope
 
@@ -16,7 +16,7 @@ Triage the open findings captured in `story-patch_application_failures.md` -- ro
 - F1: Change 3 echo messages in `scripts/agent-sandbox.sh` from `CHANNEL=` to `FROM=`
 - F1: Add CHANNEL guard to Makefile.template (error if CHANNEL= used, point to FROM=)
 - F1: Add Makefile variable validation section to `docs/development/cli-conventions.md`
-- F1-F6: Remove `## Mid-session Findings` from `story-patch_application_failures.md`; update Proposed Fixes with triage outcomes
+- F1-F6: Remove `## Mid-session Findings` from `20260526-story-active-patch_application_failures.md`; update Proposed Fixes with triage outcomes
 
 **Not in scope:**
 
@@ -37,7 +37,7 @@ None.
 | 1 | No `Running: make.*CHANNEL=` echo messages remain in `scripts/agent-sandbox.sh`; all 3 use `FROM=` | `grep 'Running: make.*FROM=' scripts/agent-sandbox.sh \| wc -l` = 3; `grep 'Running: make.*CHANNEL=' scripts/agent-sandbox.sh \| wc -l` = 0 | Agent |
 | 2 | Makefile template errors if `CHANNEL=bundles` is passed | Make: pass `CHANNEL=bundles` to any target, exits 1 with error mentioning `FROM` | Agent |
 | 3 | `cli-conventions.md` has a Makefile variable validation section | `grep -n "^## \|Makefile" docs/development/cli-conventions.md` shows new section | Agent |
-| 4 | `story-patch_application_failures.md` has no `## Mid-session Findings` section | `grep -c "^## Mid-session" devlog/discussions/story-patch_application_failures.md` = 0 | Agent |
+| 4 | `20260526-story-active-patch_application_failures.md` has no `## Mid-session Findings` section | `grep -c "^## Mid-session" devlog/discussions/20260526-story-active-patch_application_failures.md` = 0 | Agent |
 | 5 | Proposed Fixes in story file updated: F1 resolved, F2-F6 closed; status reflects the triage | Read Proposed Fixes section | Operator |
 
 ## Hot files
@@ -47,7 +47,7 @@ None.
 | [`scripts/agent-sandbox.sh`](../scripts/agent-sandbox.sh) | Change 3 echo messages: `CHANNEL=` -> `FROM=` |
 | [`scripts/templates/Makefile.template`](../scripts/templates/Makefile.template) | Add CHANNEL guard erroring with FROM= hint |
 | [`docs/development/cli-conventions.md`](../docs/development/cli-conventions.md) | Add Makefile variable validation section |
-| [`devlog/discussions/story-patch_application_failures.md`](../discussions/story-patch_application_failures.md) | Remove Mid-session Findings section; update Proposed Fixes |
+| [`devlog/discussions/20260526-story-active-patch_application_failures.md`](../discussions/20260526-story-active-patch_application_failures.md) | Remove Mid-session Findings section; update Proposed Fixes |
 
 ## Decisions made this session
 
@@ -55,7 +55,7 @@ None.
 |---|---|---|
 | F1: Fix echo messages + Makefile guard + cli-conventions convention | Makefile variable is `FROM`; `CHANNEL=` is wrong input that must error, not be silently ignored | `Makefile.template`, `cli-conventions.md` |
 | F2: Add to roadmap as a deferred task | Git limitation has no known fix; needs future investigation | `roadmap.md` Track B entry |
-| F3-F6: Close as resolved/confirmed | Correct behaviour or already fixed | `story-patch_application_failures.md` Proposed Fixes table |
+| F3-F6: Close as resolved/confirmed | Correct behaviour or already fixed | `20260526-story-active-patch_application_failures.md` Proposed Fixes table |
 
 ## Mid-session findings
 
@@ -68,7 +68,7 @@ None.
 | [`scripts/agent-sandbox.sh`](../scripts/agent-sandbox.sh) | Changed 3 echo messages from `CHANNEL=` to `FROM=` (lines 277, 335, 349) |
 | [`scripts/templates/Makefile.template`](../scripts/templates/Makefile.template) | Added `ifdef CHANNEL` guard that errors with `FROM=` hint |
 | [`docs/development/cli-conventions.md`](../docs/development/cli-conventions.md) | Added rule 8 -- Makefile variable overrides must be validated |
-| [`devlog/discussions/story-patch_application_failures.md`](../discussions/story-patch_application_failures.md) | Removed Mid-session Findings section; updated Proposed Fixes with triage status table |
+| [`devlog/discussions/20260526-story-active-patch_application_failures.md`](../discussions/20260526-story-active-patch_application_failures.md) | Removed Mid-session Findings section; updated Proposed Fixes with triage status table |
 | [`devlog/roadmap.md`](../roadmap.md) | Added F2 task: git diff `--no-renames` index conflict under Track B |
 
 ## Deferred items

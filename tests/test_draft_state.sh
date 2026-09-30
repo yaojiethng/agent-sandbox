@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/test_draft_state.sh
 # Unit tests for libs/draft_state.sh  --  folder name parsing, state I/O, branch validation.
-# Pins cite: devlog/discussions/design_apply_draft_workflow.md (state schema, guard surface).
+# Pins cite: devlog/discussions/20260803-design-settled-apply_draft_workflow.md (state schema, guard surface).
 
 #
 # Covers:

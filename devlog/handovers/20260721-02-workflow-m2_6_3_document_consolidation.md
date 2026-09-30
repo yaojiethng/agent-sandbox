@@ -28,8 +28,8 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 | File | Reason |
 |---|---|
 | `devlog/discussions/spec_context_dir_removal.md` | Spec file to roll into handover and delete |
-| `devlog/discussions/spec_apply_workspace_refactor.md` | Spec file to roll into handover and delete |
-| `devlog/discussions/spec_test_infrastructure.md` | Spec file to roll into handover and delete |
+| `devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` | Spec file to roll into handover and delete |
+| `devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` | Spec file to roll into handover and delete |
 | `devlog/discussions/spec_container_layer_redesign.md` | Spec file to rename to design type and keep |
 | `devlog/discussions/20260416-study-superseded-git_worktrees.md` | Mount-model doc superseded by ADR |
 | `devlog/discussions/20260611-story-superseded-agent_git_surface.md` | Mount-model doc superseded by ADR |
@@ -74,4 +74,4 @@ Deferred tasks under M2.6 Phase 1.6 (from `devlog/roadmap.md`).
 
 **M2.6 Phase 1.6 -- Spec file cleanup.**
 
-Roll `spec_context_dir_removal.md`, `spec_apply_workspace_refactor.md`, `spec_test_infrastructure.md` into their corresponding handovers and delete. Rename `spec_container_layer_redesign.md` to design type and keep.
+Roll `spec_context_dir_removal.md`, `20260427-design-settled-apply_workspace_refactor.md`, `20260428-design-settled-test_infrastructure_improvements.md` into their corresponding handovers and delete. Rename `spec_container_layer_redesign.md` to design type and keep.

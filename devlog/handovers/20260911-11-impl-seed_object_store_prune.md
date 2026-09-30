@@ -7,7 +7,7 @@
 
 ## Objective
 
-Implement Option B from study `20260911-study-seed_object_store_cleanliness.md`: the seeder prunes unreachable objects from the volume copy so the sandbox baseline carries no host archaeology.
+Implement Option B from study `20260911-study-settled-seed_object_store_cleanliness.md`: the seeder prunes unreachable objects from the volume copy so the sandbox baseline carries no host archaeology.
 
 ## Scope
 
@@ -33,7 +33,7 @@ Implement Option B from study `20260911-study-seed_object_store_cleanliness.md`:
 | [`src/capability/seed_volume.sh`](src/capability/seed_volume.sh) | fsck probe -> conditional reflog expire + `gc --prune=now` -> fsck-empty tripwire, all fail closed |
 | [`tests/test_seed_volume.sh`](tests/test_seed_volume.sh) | `test_seeder_prunes_unreachable_objects`: stash + dangling-blob fixture; volume fsck-clean, dangling blob absent, host untouched |
 | [`docs/adr/sandbox_delivery_model.md`](docs/adr/sandbox_delivery_model.md) | 2026-09-11 entry: residual paragraph superseded by the prune mechanism |
-| [`devlog/discussions/20260911-study-seed_object_store_cleanliness.md`](devlog/discussions/20260911-study-seed_object_store_cleanliness.md) | Study settled; Resolution records adoption |
+| [`devlog/discussions/20260911-study-settled-seed_object_store_cleanliness.md`](devlog/discussions/20260911-study-settled-seed_object_store_cleanliness.md) | Study settled; Resolution records adoption |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | New item recorded and closed |
 
 ## Deferred items

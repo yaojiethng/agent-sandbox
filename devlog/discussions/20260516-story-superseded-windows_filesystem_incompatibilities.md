@@ -32,7 +32,7 @@ Warning: (runtime creation, global settings) EPERM: operation not permitted, uti
 **Status:** Investigated and documented. See CORRECTION blocks in:
 
 - `devlog/handovers/20260513-10-impl-settings_json_collision_fix.md`
-- `devlog/discussions/design_provider_config_ownership_and_loading.md`
+- `devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md`
 - `libs/docker-compose.yml` (CONSTRAINT comment at the `AGENT_HOME` mount)
 
 ---
@@ -52,7 +52,7 @@ Warning: (runtime creation, global settings) EPERM: operation not permitted, uti
 
 This shadows the bind-mount's `bin/` with a container-local tmpfs, so Pi's cross-filesystem `mv` from `/tmp/` to `~/.pi/agent/bin/` stays within the tmpfs (same filesystem). The trade-off is that binaries are re-downloaded every session.
 
-**First observed:** During the design phase of the M2.7 config bind-mount change (see `design_provider_config_ownership_and_loading.md`, constraint 2).
+**First observed:** During the design phase of the M2.7 config bind-mount change (see `20260512-design-settled-provider_config_ownership_and_loading.md`, constraint 2).
 
 **Status:** Mitigated via tmpfs overlay -- but this mitigation introduced Issue 3 below.
 

@@ -2,7 +2,7 @@
 
 **Status:** settled -- recommendation adopted and implemented (handover `20260911-11`; ADR sandbox_delivery_model.md, 2026-09-11 unreachable-object prune entry)
 **Type:** study
-**Parent:** `20260911-study-stash_copy_prevention.md` (settled); operator question: does leaving stash objects (and other unreachable data) in the volume violate the cleanliness goal, and do clone/bundle offer a better transport?
+**Parent:** `20260911-study-settled-stash_copy_prevention.md` (settled); operator question: does leaving stash objects (and other unreachable data) in the volume violate the cleanliness goal, and do clone/bundle offer a better transport?
 
 ## Question
 

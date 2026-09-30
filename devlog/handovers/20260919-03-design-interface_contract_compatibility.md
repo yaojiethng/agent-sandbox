@@ -50,7 +50,7 @@ is a follow-up `impl` iteration.
 
 | # | Criterion | Status |
 |---|---|---|
-| AC1 | Design doc settled: contract-version scheme (single version, dual declaration, layered preflight + agent-entrypoint comparator), all three surfaces, mismatch policy (warn-then-strict, operator-released switch-over gates) | **done (agent)** -- `devlog/discussions/20260919-design-interface_contract_compatibility.md`, Status settled |
+| AC1 | Design doc settled: contract-version scheme (single version, dual declaration, layered preflight + agent-entrypoint comparator), all three surfaces, mismatch policy (warn-then-strict, operator-released switch-over gates) | **done (agent)** -- `devlog/discussions/20260919-design-settled-interface_contract_compatibility.md`, Status settled |
 | AC2 | `container-sig` interim role confirmed, P0-P3 rollover plan recorded (old check not stripped before new proven; exact switch-over moments in the table; live matrix defined) | **done (agent)** -- design doc Rollover section |
 | AC3 | ADR written recording the mechanism decision per adr_policy | **done (agent)** -- `docs/adr/interface_contract_compatibility.md`, open/pending-impl until the impl lands |
 | AC4 | Roadmap rows reconciled (row 117 design-settled marker + impl task; M2.6.7 future entry) | **done (agent)** -- see Verification |
@@ -58,7 +58,7 @@ is a follow-up `impl` iteration.
 
 ## Completed
 
-- Design doc settled: `devlog/discussions/20260919-design-interface_contract_compatibility.md` (Status settled; Context / Options A-D / Decision / Rollover with exact switch-over gates / Rename section / Consequences / Open items resolved).
+- Design doc settled: `devlog/discussions/20260919-design-settled-interface_contract_compatibility.md` (Status settled; Context / Options A-D / Decision / Rollover with exact switch-over gates / Rename section / Consequences / Open items resolved).
 - ADR created: `docs/adr/interface_contract_compatibility.md` (one version, two declarations, layered comparison; R1-R6 requirements preamble; rejected alternatives; open/pending-impl).
 - Roadmap row 117 rewritten (design-settled marker; impl NEXT M2.6.7); `roadmap_future.md` gained the M2.6.7 sub-milestone entry.
 - Operator steering folded in: entrypoint reframe (minimise wasted ops + blast radius; preflight for host<->container + record; agent entrypoint for container<->container; redundancy signals larger problem), rename to `sandbox_host_interface.md` (pro + assessed criticism), single-version-first confirmed.

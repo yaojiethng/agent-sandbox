@@ -27,14 +27,14 @@ Design a long-term fix for the settings.json ownership collision between pi and 
 | # | Criterion | Status |
 |---|---|---|
 | 1 | All open questions resolved (bind-mount vs copy, N-volumes, jq, packages) | [x] |
-| 2 | Settled design documented in `docs/devlog/discussions/design_provider_config_ownership_and_loading.md` | [x] |
+| 2 | Settled design documented in `docs/devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md` | [x] |
 | 3 | No implementation -- design record only | [x] |
 
 ## Hot files
 
 | File | Why in scope |
 |---|---|
-| `docs/devlog/discussions/design_provider_config_ownership_and_loading.md` | **Updated** -- settled design replaces earlier candidates; full decision record |
+| `docs/devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md` | **Updated** -- settled design replaces earlier candidates; full decision record |
 | `libs/docker-compose.yml` | Template -- mount layout changes in scope |
 | `libs/provider-entrypoint.sh` | Entrypoint -- copy-in/copy-out removed, pre-flight merge added |
 | `scripts/run_agent.sh` | Pre-creation of `sessions/` directory for bind mount |
@@ -58,7 +58,7 @@ Design a long-term fix for the settings.json ownership collision between pi and 
 
 | File | Change |
 |---|---|
-| `docs/devlog/discussions/design_provider_config_ownership_and_loading.md` | **Major restructure** -- replaced candidate enumeration with settled design: directory bind mount, tmpfs overlay at bin/, pre-flight merge via Node, settings.json path updates, full decision record |
+| `docs/devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md` | **Major restructure** -- replaced candidate enumeration with settled design: directory bind mount, tmpfs overlay at bin/, pre-flight merge via Node, settings.json path updates, full decision record |
 
 ## Deferred items
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/test_confirm_workflow.sh
 # Tests for libs/confirm_workflow.sh
-# Pins cite: devlog/discussions/design_apply_draft_workflow.md (draft branch
+# Pins cite: devlog/discussions/20260803-design-settled-apply_draft_workflow.md (draft branch
 # lifecycle: confirm_run rebases, merges, deletes the branch).
 
 #

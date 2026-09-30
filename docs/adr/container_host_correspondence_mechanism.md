@@ -12,7 +12,7 @@
 
 **Edge cases / drivers:** The roadmap's "git-based port-back becomes possible" framing (mount-worktree row) is retired by this verification; the row now records the mechanism as landed. Concept docs (`mount_delivery.md`, `sandbox_host_interface.md`) already stated port-back via the diff machinery and needed no change.
 
-*Decision settled with the apply/draft workflow design (M2.3 era, [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md)); originally recorded 2026-09-01, extended by the 2026-09-19 verification entry.*
+*Decision settled with the apply/draft workflow design (M2.3 era, [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md)); originally recorded 2026-09-01, extended by the 2026-09-19 verification entry.*
 
 ## 2026-09-01 -- The diff file is the correspondence mechanism; git never crosses the boundary
 

@@ -19,7 +19,7 @@ Establish a general communication convention for numbering and cross-references 
 - Context-aware numbering: an enumeration in one context (chat Q1..Q5, handover finding table) is never pointed to from another context without carrying the defining context
 - **Convention home (to be proposed):** canonical section in `docs/operations/documentation_policy.md`; chat + code-comment clauses in `AGENTS.md`. Text proposed one section at a time, operator-approved before writing (governance gate).
 - **Known instances to remediate (pending scope confirmation):**
-- `devlog/discussions/design_dual_layer_seam_testing.md` -- "Session 11b-11e" headings, "(11b)" inline refs, "M2.7 item 8/10/12" refs (dangling after M2.7 compaction)
+- `devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md` -- "Session 11b-11e" headings, "(11b)" inline refs, "M2.7 item 8/10/12" refs (dangling after M2.7 compaction)
 - `scripts/dry_run_reasoning.sh` L97, `tests/knowledge/knowledge_pi_config_cycle.sh` L23 -- "M2.7 item 8" comment refs (dangling)
 - `docs/operations/handover_policy.md` L203 -- "roadmap.md item 13" example (position-based reference)
 - Prior chat reply: "Finding 11 (loop-documentation structure + state diagram) -- M3" (context-heavy; behavior fix)
@@ -47,7 +47,7 @@ Establish a general communication convention for numbering and cross-references 
 |---|---|---|
 | [docs/operations/documentation_policy.md](../../docs/operations/documentation_policy.md) | canonical convention section (pending proposal) | pending |
 | [AGENTS.md](../../AGENTS.md) | chat + code-comment clauses (pending proposal) | pending |
-| [devlog/discussions/design_dual_layer_seam_testing.md](../../devlog/discussions/design_dual_layer_seam_testing.md) | "Session 11b-11e" / "item 8/10/12" dangling refs | pending |
+| [devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md](../../devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md) | "Session 11b-11e" / "item 8/10/12" dangling refs | pending |
 | [scripts/dry_run_reasoning.sh](../../scripts/dry_run_reasoning.sh) | "M2.7 item 8" comment | pending |
 | [tests/knowledge/knowledge_pi_config_cycle.sh](../../tests/knowledge/knowledge_pi_config_cycle.sh) | "M2.7 item 8" comment | pending |
 | [docs/operations/handover_policy.md](../../docs/operations/handover_policy.md) | "roadmap.md item 13" example | pending |
@@ -74,12 +74,12 @@ None.
 |---|---|
 | [docs/operations/documentation_policy.md](/home/agentuser/sandbox/docs/operations/documentation_policy.md) | New `### Numbering and cross-references` section; `### Character set` em-dash rule rewritten (lift ban, prescribe ` - ` / `--`) |
 | [AGENTS.md](/home/agentuser/sandbox/AGENTS.md) | Added `**Context-aware numbering.**` (Collaboration Protocol) + code-comment transient-numbering clause (Output Format) |
-| [devlog/discussions/design_dual_layer_seam_testing.md](/home/agentuser/sandbox/devlog/discussions/design_dual_layer_seam_testing.md) | Dropped "Session 11b-11e" prefixes + "(11b)"-style inline refs; "item 12/8/10" -> descriptive names |
+| [devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md](/home/agentuser/sandbox/devlog/discussions/20260516-design-settled-dual_layer_seam_testing.md) | Dropped "Session 11b-11e" prefixes + "(11b)"-style inline refs; "item 12/8/10" -> descriptive names |
 | [scripts/dry_run_reasoning.sh](/home/agentuser/sandbox/scripts/dry_run_reasoning.sh) | Comment "M2.7 item 8" -> "the M2.7 config bind-mount change" |
 | [tests/knowledge/knowledge_pi_config_cycle.sh](/home/agentuser/sandbox/tests/knowledge/knowledge_pi_config_cycle.sh) | Comment "M2.7 item 8" -> "(M2.7 config change)" |
 | [docs/operations/handover_policy.md](/home/agentuser/sandbox/docs/operations/handover_policy.md) | "roadmap.md item 13" -> descriptive-only routing example |
 | [devlog/discussions/20260522-study-superseded-harness_sig_requirements.md](/home/agentuser/sandbox/devlog/discussions/20260522-study-superseded-harness_sig_requirements.md) | "M2.7 item 5" -> "M2.7 (container-sig settled)" |
-| [devlog/discussions/design_provider_config_ownership_and_loading.md](/home/agentuser/sandbox/devlog/discussions/design_provider_config_ownership_and_loading.md) | "M2.7 item 8" -> "the M2.7 config bind-mount change" |
+| [devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md](/home/agentuser/sandbox/devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md) | "M2.7 item 8" -> "the M2.7 config bind-mount change" |
 | [devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md](/home/agentuser/sandbox/devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md) | "M2.7 item 8" -> "the M2.7 config bind-mount change" |
 | [devlog/changelog.md](/home/agentuser/sandbox/devlog/changelog.md) | "M2.7 item 11b" -> "M2.7" (historical CORRECTION entry, minimal fix) |
 | [src/reasoning/agent/drafts/roadmap-audit.skill.md](/home/agentuser/sandbox/src/reasoning/agent/drafts/roadmap-audit.skill.md) | Example row "M2.7 item 8" -> "M2.7 pre-flight checks" |

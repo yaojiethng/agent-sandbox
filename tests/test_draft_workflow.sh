@@ -2,7 +2,7 @@
 # TEST_DEADLINE: 15
 # tests/test_draft_workflow.sh
 # Tests for libs/draft_workflow.sh
-# Pins cite: devlog/discussions/design_apply_draft_workflow.md (commit-subject format).
+# Pins cite: devlog/discussions/20260803-design-settled-apply_draft_workflow.md (commit-subject format).
 
 #
 # Covers:

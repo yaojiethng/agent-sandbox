@@ -554,7 +554,7 @@ test_seeder_clears_host_stash() {
 
 # Object-store prune: stash objects, a dangling blob, and reflog-anchored
 # history must not survive into the volume (study
-# 20260911-study-seed_object_store_cleanliness.md); the host repo is untouched.
+# 20260911-study-settled-seed_object_store_cleanliness.md); the host repo is untouched.
 # Given: a repo with a stash and a dangling blob written to its object store
 # When:  the seeder runs
 # Then:  the volume carries no unreachable objects and the blob is absent, while the host keeps both

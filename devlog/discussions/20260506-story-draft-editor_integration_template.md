@@ -2,7 +2,7 @@
 
 **Status:** &lt;&lt;Investigation pre-experiment | Investigation in progress | Investigation complete | Ready for resolution&gt;&gt;
 
-> *Template note (delete on instantiation):* This template captures the tool-independent backbone of an editor/UI integration evaluation, plus structured placeholders for the tool-specific content. Copy this file, replace `<<TOOL>>` and other placeholders, fill in the tool-specific sections by working through the prompt in `prompt_evaluate_editor_integration.md`, and delete all template notes including this one before committing the story.
+> *Template note (delete on instantiation):* This template captures the tool-independent backbone of an editor/UI integration evaluation, plus structured placeholders for the tool-specific content. Copy this file, replace `<<TOOL>>` and other placeholders, fill in the tool-specific sections by working through the prompt in `20260506-study-active-evaluate_editor_integration.md`, and delete all template notes including this one before committing the story.
 >
 > *Section policy.* Sections marked **(stable)** are tool-independent and should be copied largely verbatim across evaluations. Sections marked **(structured, tool-specific)** have a fixed structure but tool-specific content. Sections marked **(open)** are entirely tool-specific.
 

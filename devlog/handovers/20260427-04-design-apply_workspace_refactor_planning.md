@@ -36,7 +36,7 @@ None.
 | `tests/test_apply_workspace.sh` | Existing workflow test coverage -- read to establish coverage baseline |
 | `tests/test_package_branch.sh` | Read to identify fixture duplication |
 | `tests/test_package_diff.sh` | Read to identify fixture duplication |
-| [`spec_apply_workspace_refactor.md`](spec_apply_workspace_refactor.md) | Output -- implementation-ready spec produced this session |
+| `20260427-design-settled-apply_workspace_refactor.md` | Output -- implementation-ready spec produced this session |
 
 ## Decisions made this session
 
@@ -58,7 +58,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`spec_apply_workspace_refactor.md`](spec_apply_workspace_refactor.md) | New -- implementation-ready design spec for the apply_workspace refactor, including file specifications, resolved open questions, and 7 atomic changes with explicit preconditions and postconditions |
+| `20260427-design-settled-apply_workspace_refactor.md` | New -- implementation-ready design spec for the apply_workspace refactor, including file specifications, resolved open questions, and 7 atomic changes with explicit preconditions and postconditions |
 
 ## Deferred items
 
@@ -68,7 +68,7 @@ None.
 
 No active milestone. The next session is an implementation session executing the spec produced this session.
 
-The spec is at `spec_apply_workspace_refactor.md` -- read it in full at session open. The atomic changes are the task list; execute them in order.
+The spec is at `20260427-design-settled-apply_workspace_refactor.md` -- read it in full at session open. The atomic changes are the task list; execute them in order.
 
 **First task: extract shared test fixtures.**
 

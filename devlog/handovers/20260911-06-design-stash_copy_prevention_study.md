@@ -11,7 +11,7 @@ Study, per the operator's direction from the stash-triage check-in item: confirm
 
 ## Scope
 
-Read-only investigation. Confirm the mechanism in `src/capability/seed_volume.sh`; assess risk; write the study doc `devlog/discussions/20260911-study-stash_copy_prevention.md` with a recommendation.
+Read-only investigation. Confirm the mechanism in `src/capability/seed_volume.sh`; assess risk; write the study doc `devlog/discussions/20260911-study-settled-stash_copy_prevention.md` with a recommendation.
 
 ## Acceptance criteria
 
@@ -33,7 +33,7 @@ Read-only investigation. Confirm the mechanism in `src/capability/seed_volume.sh
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20260911-study-stash_copy_prevention.md`](devlog/discussions/20260911-study-stash_copy_prevention.md) | New study: mechanism confirmed, three options, recommendation = `git stash clear` in the seeder after the `.git` copy (Option A) |
+| [`devlog/discussions/20260911-study-settled-stash_copy_prevention.md`](devlog/discussions/20260911-study-settled-stash_copy_prevention.md) | New study: mechanism confirmed, three options, recommendation = `git stash clear` in the seeder after the `.git` copy (Option A) |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | New open item: seeder stash-clear implementation referencing the study |
 
 ## Deferred items

@@ -11,7 +11,7 @@ Execute Changes 1, 2, 3, and 4 from the apply_workspace refactor spec on top of 
 
 ## Scope
 
-Changes 1-4 from `docs/devlog/discussions/spec_apply_workspace_refactor.md`:
+Changes 1-4 from `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md`:
 
 - **Change 1** -- Extract shared test fixtures (`tests/libs/git_fixtures.sh`, `tests/libs/session_fixtures.sh`); update `tests/test_package_branch.sh` and `tests/test_package_diff.sh` to source them.
 - **Change 2** -- Write `libs/session.sh` with `validate_project_dir` and `resolve_session_dir`; write `tests/test_session.sh` with cases for both functions.
@@ -91,7 +91,7 @@ None.
 | [`scripts/agent-sandbox.sh`](scripts/agent-sandbox.sh) | Read-only -- verify current source calls |
 | [`tests/test_apply.sh`](tests/test_apply.sh) | Read-only -- coverage map baseline |
 | [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Read-only -- coverage map baseline |
-| [`docs/devlog/discussions/spec_apply_workspace_refactor.md`](docs/devlog/discussions/spec_apply_workspace_refactor.md) | Spec reference |
+| `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` | Spec reference |
 
 ## Decisions made this session
 
@@ -141,7 +141,7 @@ Read `scripts/agent-sandbox.sh` before editing -- specifically the `source` call
 **Files to read at session start:**
 
 - `scripts/agent-sandbox.sh` -- source calls and case branches
-- `docs/devlog/discussions/spec_apply_workspace_refactor.md` -- Change 5 spec
+- `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` -- Change 5 spec
 
 **Watch-outs:**
 

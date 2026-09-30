@@ -18,7 +18,7 @@ their rationale out of the concept docs that currently host it:
 2. **Correspondence mechanism** -- git is never the correspondence mechanism
    between sandbox and host; the git-agnostic diff file is. Rationale today
    sits in `docs/concepts/sandbox_host_correspondence_model.md` ("Core
-   Principle") and `devlog/discussions/design_apply_draft_workflow.md`.
+   Principle") and `devlog/discussions/20260803-design-settled-apply_draft_workflow.md`.
 
 Concept docs keep the model (the *what*) and link the ADRs as further
 reading; the rejected-alternative reasoning moves into the ADR entries.

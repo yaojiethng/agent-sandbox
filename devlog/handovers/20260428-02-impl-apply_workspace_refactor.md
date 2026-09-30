@@ -11,7 +11,7 @@ Execute Change 5 from the apply_workspace refactor spec: switch `agent-sandbox.s
 
 ## Scope
 
-Change 5 from `docs/devlog/discussions/spec_apply_workspace_refactor.md`:
+Change 5 from `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md`:
 
 - Add `libs/draft_workflow.sh` and `libs/diff_workflow.sh` source calls to `scripts/agent-sandbox.sh`
 - Add missing `--force` and `--diff=*` cases to `parse_flags` in `agent-sandbox.sh`
@@ -50,7 +50,7 @@ None.
 | [`scripts/apply_workspace.sh`](scripts/apply_workspace.sh) | Rollback path -- deleted in Change 7 |
 | [`Makefile`](Makefile) | Change 6 target -- update to call `agent-sandbox` directly |
 | [`libs/_templates/Makefile.template`](libs/_templates/Makefile.template) | Change 6 target -- update to call `agent-sandbox` directly |
-| [`docs/devlog/discussions/spec_apply_workspace_refactor.md`](docs/devlog/discussions/spec_apply_workspace_refactor.md) | Spec reference |
+| `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` | Spec reference |
 
 ## Decisions made this session
 

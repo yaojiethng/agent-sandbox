@@ -72,7 +72,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | New -- unified design doc: export pipeline, channels, commands, file map |
+| [`devlog/discussions/20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md) | New -- unified design doc: export pipeline, channels, commands, file map |
 | [`docs/adr/diff_packaging.md`](../../docs/adr/diff_packaging.md) | New -- ADR: command rationale, package-diff removal, savepoint rollback |
 | `devlog/discussions/design_apply_workflow_and_baseline_advancement.md` | Deleted -- superseded |
 | `devlog/discussions/design_diff_and_branch_packaging_workflow.md` | Deleted -- superseded |

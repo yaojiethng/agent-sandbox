@@ -71,7 +71,7 @@ The M3.2.1 task-queue row. Build `src/reasoning/agent/prompts/task-queue.md` as 
 | `src/reasoning/providers/pi/config/agent/extensions/task-queue/*.ts` (12 files) | the Track B TS pi-extension that implements the queue state machine, fork, merge, and close |
 | `src/reasoning/agent/prompts/task-queue.md` | the task-queue general-sequencing-primitive prompt that names the operations the extension enforces |
 | `tests/taskq/*.test.ts` (11 files) + `tests/test_taskq.sh` | the node conformance suite (I1-I13) and its harness wiring |
-| `devlog/discussions/20260929-spec-task_queue_fanout_contract.md` | the shared I1-I13 fan-out contract |
+| `devlog/discussions/20260929-design-superseded-task_queue_fanout_contract.md` | the shared I1-I13 fan-out contract |
 | `devlog/discussions/20260929-design-draft-task_queue_general_sequencing_primitive.md` | the design record |
 | `devlog/roadmap_future.md` | removed the duplicated `M4.6 -- Background Auto` block (lint blocker) |
 

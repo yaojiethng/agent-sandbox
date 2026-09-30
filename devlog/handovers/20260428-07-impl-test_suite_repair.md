@@ -30,11 +30,11 @@ Diagnose and repair the failing tests identified in the M2.3 test suite so that 
 - Audit all `tests/test_*.sh` for explicit writes to `$SNAPSHOT_DIR`, `$CHANGES_DIR`, `$INPUT_DIR`, `$OUTPUT_DIR` -- confirm none treat these env vars as writable targets.
 - Audit all `tests/test_*.sh` for tampering with harness-managed env vars (`AGENT_HOME`, `PROVIDER_NAME`, `PROVIDER_CONFIG_DIR`, `SESSION_TS`, `SANITIZED_HOST_BRANCH`) -- confirm tests do not leak changes to the outer shell.
 - Audit all `tests/test_*.sh` for use of `/opt/provider-config` or `$PROVIDER_CONFIG_DIR` as a fixture path -- confirm none create temp fixtures inside the bind-mount path.
-- Update `docs/discussions/spec_test_infrastructure.md` to reference `tests/libs/` instead of `tests/lib/` (the latter is globally gitignored; the actual directory must be `tests/libs/`).
+- Update `docs/discussions/20260428-design-settled-test_infrastructure_improvements.md` to reference `tests/libs/` instead of `tests/lib/` (the latter is globally gitignored; the actual directory must be `tests/libs/`).
 
 **Explicitly deferred from this session:**
 
-- **Test infrastructure** (`scripts/run_tests.sh`, `scripts/check_test_coverage.sh`, `make test` target) -- blocked on clean baseline; spec already written in `docs/discussions/spec_test_infrastructure.md`
+- **Test infrastructure** (`scripts/run_tests.sh`, `scripts/check_test_coverage.sh`, `make test` target) -- blocked on clean baseline; spec already written in `docs/discussions/20260428-design-settled-test_infrastructure_improvements.md`
 - **Interactive confirmation flag** (`--interactive` for `make apply` and `make draft`) -- depends on test suite repair completion
 
 ## Carried forward
@@ -72,7 +72,7 @@ None.
 | [`libs/package_diff.sh`](libs/package_diff.sh) | Must source `session.sh` and use `session_state_read` for `SESSION_TS` resolution |
 | [`libs/package_branch.sh`](libs/package_branch.sh) | Already references `session_state_read`; function must now exist |
 | [`tests/test_package_branch.sh`](tests/test_package_branch.sh) | Must create `.git/SESSION_STATE` fixtures for `session_state_read` |
-| [`docs/discussions/spec_test_infrastructure.md`](docs/discussions/spec_test_infrastructure.md) | Path fix: `tests/lib/` -> `tests/libs/` |
+| `docs/discussions/20260428-design-settled-test_infrastructure_improvements.md` | Path fix: `tests/lib/` -> `tests/libs/` |
 
 ## Decisions made this session
 
@@ -112,7 +112,7 @@ None.
 | `tests/test_session.sh` | Hardened `mktemp -d` |
 | `tests/test_snapshot_container.sh` | Hardened `mktemp -d` |
 | `tests/test_snapshot_host.sh` | Hardened `mktemp -d` |
-| `docs/devlog/discussions/spec_test_infrastructure.md` | All `tests/lib/` references updated to `tests/libs/` |
+| `docs/devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` | All `tests/lib/` references updated to `tests/libs/` |
 
 ## Deferred items
 
@@ -146,12 +146,12 @@ Milestone: M2.3 -- Apply Workflow: Capability Layer Diff Pipeline
 
 **Test suite repair is complete.** All 248 tests across 13 `tests/test_*.sh` files pass. The next session should implement the **test infrastructure** task group.
 
-1. **Test infrastructure** -- `scripts/run_tests.sh`, `scripts/check_test_coverage.sh`, `make test` Makefile target. Spec at `docs/devlog/discussions/spec_test_infrastructure.md`. Runner auto-discovers `tests/test_*.sh` via glob -- no hardcoded file list. Coverage check is informational only. Both scripts are independent; implement runner first.
+1. **Test infrastructure** -- `scripts/run_tests.sh`, `scripts/check_test_coverage.sh`, `make test` Makefile target. Spec at `docs/devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md`. Runner auto-discovers `tests/test_*.sh` via glob -- no hardcoded file list. Coverage check is informational only. Both scripts are independent; implement runner first.
 2. **Interactive confirmation flag** -- `--interactive` for `make apply` and `make draft`.
 
 **Files to read at session start:**
 
-- `docs/devlog/discussions/spec_test_infrastructure.md` -- full spec for runner and coverage check
+- `docs/devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` -- full spec for runner and coverage check
 - `Makefile` -- verify no conflict with existing `test` target before adding
 - `tests/libs/` -- existing fixtures to understand test patterns
 
