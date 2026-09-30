@@ -26,6 +26,7 @@ Not this template:
 - one track, or units with a real dependency between them - use [`auto.md`](auto.md), which is sequential by design and needs no worktrees.
 - a read-mostly pass over many files, where each subagent reads a slice and returns verdicts with no commits - use [`fanout-run.md`](fanout-run.md). Its frozen snapshot is cheaper, because a subagent's edits stay in its own extraction and the primary merges nothing.
 - a whole campaign handed to a single subagent - use [`test-quality-campaign-run.md`](test-quality-campaign-run.md).
+- tracks where the operator must decide at boundaries the worker itself detects - use [`task-queue.md`](../../../src/reasoning/agent/prompts/task-queue.md). It runs a fan-out as a fork and a join, hands each break point to the operator, and brings the accepted tracks back.
 
 ## Preconditions
 
