@@ -77,7 +77,17 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 **3.5 Dangling dependencies.** Remove a "Depends on" line on an active item that points at a removed or compacted item, or repoint it at the surviving item.
 
-Completion criterion: no floating prose summary, superseded item, empty section, redundant ordering block, or dangling dependency remains in the active sub-milestone.
+**3.6 Landed narrative in a closed row.** Reduce a closed row to one line of what landed plus a handover link. The implementation narrative and the counts are in the handover, which already records them. A number in a closed row is true exactly once, so a suite count or a version literal recorded there goes stale at the next change.
+
+**3.7 Related rows that are one task.** Merge rows that share an owner, a bar and a subject into one parent carrying them as subtasks, keeping each subtask's handover link. Two tell-tales: the same work described in different words, and one subject split across several rows with no owner distinguishing them.
+
+**3.8 A row that restates a known entry.** Move it to the record that already holds the problem and keep only the delta. A row whose first half is already recorded elsewhere earns nothing unless it names what is new.
+
+**3.9 A row bundling unrelated defects.** Split it. A row carrying its own priority order in its own text is a bucket, not a task.
+
+**3.10 Mis-filed rows.** A row belongs in the milestone whose section blurb claims the work. If a blurb claims it and it sits elsewhere, move it. If no blurb claims it, the milestone scope is wrong, and that is an operator call, not a move.
+
+Completion criterion: no floating prose summary, superseded item, empty section, redundant ordering block, or dangling dependency remains in the active sub-milestone, and every row passes 3.6 through 3.10.
 
 ### Step 4 - Pre-compaction readiness
 
