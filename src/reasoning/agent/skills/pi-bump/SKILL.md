@@ -49,21 +49,79 @@ the same data `pi update --self` would use, and commit the pin.
 curl -sS https://pi.dev/api/latest-version
 ```
 
-This returns JSON of the form `{"ok":true,"version":"0.84.1","packageName":"@earendil-works/pi-coding-agent"}`.
+This returns JSON of the form `{"ok":true,"version":"0.99.2","packageName":"@earendil-works/pi-coding-agent"}`.
 Record the `version` as `<NEW>`. This is the same endpoint pi's version-check
 uses; the "update" is performed by pinning this version.
 
-### 2. Review the changelog first (update-first-then-pin)
+### 2. Read the changelog for `<NEW>`
 
-Before you set `lastChangelogVersion` to `<NEW>`, review what changed in the
-release so the version bump is informed. `lastChangelogVersion` gates pi's
-changelog display: an older value makes pi show the full changelog on first
-start with the new version; matching it suppresses that repeated output on
-subsequent starts. Source the notes from
-`npm view @earendil-works/pi-coding-agent` or the pi release notes. Confirm
-`<NEW>` with the operator before editing.
+The release notes are the only place a bump's risk is written down. `npm view`
+carries no notes, so it is the wrong source; the changelog ships in the package:
 
-### 3. Edit the three repo files
+```bash
+npm pack @earendil-works/pi-coding-agent@<NEW> --pack-destination /tmp
+tar xzf /tmp/earendil-works-pi-coding-agent-<NEW>.tgz -C /tmp package/CHANGELOG.md
+```
+
+Read every section from `<NEW>` back to the currently pinned version, not only
+the newest one. A bump across a minor line carries every fix in between, and the
+one that matters is rarely the one in the top section.
+
+While reading, watch for four kinds of entry, because each one moves something
+this repository owns:
+
+- **extensions** -- a changed extension API, a changed registration form, a new
+  required field on a context an extension reads.
+- **providers and model catalogs** -- a changed default model per provider, a
+  refreshed baked catalog, a changed catalog merge. The `model-refresh` extension
+  is built on all three.
+- **model resolution and scope** -- anything about the saved default, the model
+  scope, or `enabledModels`.
+- **the bundled dependency tree** -- a new or removed package under
+  `node_modules/@earendil-works/`, which is where `pi-ai` and the `yaml` parser
+  the frontmatter gate resolves from live.
+
+`lastChangelogVersion` gates pi's changelog display: an older value makes pi
+show the full changelog on first start with the new version; matching it
+suppresses that repeated output on subsequent starts.
+
+### 3. Probe the extensions against `<NEW>`
+
+```bash
+node scripts/lint/pi-extension-compat.mjs --target <NEW>
+```
+
+The two home-spun extensions under `config/agent/extensions/` import from pi and
+from pi-ai. A bump that removes one of those names does not fail the build here;
+it fails at container start, inside an extension, with a stack that points at the
+extension rather than at the bump. The probe reads the imported names out of the
+extension sources, so an extension that starts importing something new is covered
+without editing the probe. It needs network and npm, because it installs the
+candidate into a temp prefix.
+
+**A clean probe is necessary and not sufficient.** It proves every name the
+extensions import is still exported. It cannot prove the semantics behind those
+names held, and that class of change is real in this repository: `mergeModels`
+became reachable between 0.87.1 and 0.99.1 without a single import changing.
+
+So walk the assumption table in `model-refresh/README.md` as well. Each row names
+the code that would falsify it; check those against `<NEW>` and update the table
+with what moved. A row that cannot be checked from the release is recorded as
+unverified rather than assumed to hold.
+
+### 4. Report the status, then stop
+
+Report before editing. A bump moves a pin, a settings record and a roadmap note;
+a reader who wants to know whether a bump is safe should not have to undo it to
+find out.
+
+The report states: the current pin, `<NEW>`, the probe verdict, which assumption
+rows moved, and the entries from step 2 that touch something this repository
+owns. Then stop and wait for the operator.
+
+**Do not edit any file before that release.** Steps 5 to 7 run only on it.
+
+### 5. Edit the three repo files
 
 - Bump the pin in `src/reasoning/providers/pi/base.dockerfile`.
 - Bump `lastChangelogVersion` in
@@ -75,17 +133,21 @@ Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for
 immediate record consistency (it is reseeded from the baked template on next
 container start regardless).
 
-### 4. Verify
+### 6. Verify
 
-- [ ] `curl -sS https://pi.dev/api/latest-version` reports `<NEW>`
+- [ ] `node scripts/lint/pi-extension-compat.mjs --target <NEW>` reports clean
 - [ ] `grep -rn "<NEW>"` hits `base.dockerfile`, `settings.json`, and the
       `roadmap_future.md` note
-- [ ] No stale `0.x` pin remains in those files (`grep -rn "0\.8[0-3]\."`)
+- [ ] Every version literal in those three files equals `<NEW>`. Read them; a
+      hardcoded range in a grep misses the stale pin that is actually there
 - [ ] `settings.json` is valid JSON (`node -e "require('./... settings.json')"`)
+- [ ] `bash scripts/lint.sh` is clean
 - [ ] Run `bash tests/knowledge/knowledge_pi_config_cycle.sh`  --  its version
       fixtures are intentional and decoupled from the installed version
+- [ ] The assumption table rows touched by step 2 are updated, or marked
+      unverified with the reason
 
-### 5. Commit
+### 7. Commit
 
 ```text
 workflow: bump pi to <NEW> and codify the bump procedure
