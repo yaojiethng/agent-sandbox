@@ -27,6 +27,7 @@ TESTSQ_DIR="$REPO_ROOT/tests/extensions/pi/task-queue"
 # room for it on a busy host.
 NODE_TEST_FILES=(
   bench.test.ts
+  compat-0992.test.ts
   extension-load.test.ts
   invariants.test.ts
   join.test.ts
