@@ -26,6 +26,7 @@ const REPO_ROOT = process.env.PROMPT_FRONTMATTER_SCAN_ROOT
 
 /** Roots holding a prompt or a skill. A missing root is skipped. */
 const ROOTS = [
+  // workflow/coding-agent/drafts is deliberately absent: a draft is not a live prompt.
   "workflow/coding-agent/prompts",
   "workflow/coding-agent/skills",
   "src/reasoning/providers/pi/config/agent/prompts",

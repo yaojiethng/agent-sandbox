@@ -88,7 +88,7 @@ One subject per prompt. The subject is the class of work the prompt owns. A prom
 
 Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../operations/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
 
-A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`src/reasoning/agent/prompts/task-queue.md`) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
+A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`workflow/coding-agent/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
 **Context pointers and trigger branches.** A prompt or skill reaches its content through pointers. The pointer's wording, not its target, decides when the agent reaches the material. Each trigger branch is one distinct case the document handles. One branch one trigger: synonyms that rename a single branch are one branch written twice, and collapse into one. A pointer that states one branch in prose holds a trigger word not yet written. Name the branch with one word and use that word.
 
@@ -113,6 +113,10 @@ Construct defensively against two decay modes:
 A workflow document's name states its subject, not its mechanism. Prefer a noun phrase that names the work (`task-queue`, `milestone-close`) or a gerund that names the activity (`documentation-pass`). Avoid vague names (`helper`, `utils`) and names that restate the loading mechanism.
 
 A name changes when its scope changes. Rename a document whose name no longer matches its subject, and run a doc pass over it at the same time.
+
+## Draft status and the switch-over gate
+
+A prompt or skill that is not yet operator-reviewed is a draft. The durable gate is the location: drafts live in `workflow/coding-agent/drafts/` -- a root the prompt-frontmatter gate does not scan, the dispatch conventions do not read, and live dispatch never references -- so an unreviewed prompt is structurally unreachable by the run paths that would trust it. The file itself carries `**Status:** draft` as the human-readable marker. A draft is released from draft status only with explicit operator direction; the release is one commit that moves the file from `drafts/` into its live root (or the agent-facing prompt tree), runs a documentation pass over it at the same time, and the move is the promotion -- there is no separate promotion step to forget. A prompt written by an autonomous worker unit is a draft by default, whatever its author claimed; the `maintenance` dispatch prompt's premature switch-over (it became load-bearing in the session that wrote it, and carried a merge-back contract that produced seven `merge:` commits) is the recorded incident this gate exists to stop.
 
 ## Compliance
 

@@ -345,6 +345,18 @@ when a side-question arises, queue it explicitly in the live pile and return to
 it after the main question is settled. An operator"s probing question is not
 an approval of the pending question; re-pose the pending question for explicit
 approval, naming what the probes settled and what remains open.
+recurrence (2026-10-02, planning session over the rescope learnings): two new
+specifics from the same class. One: after several exchanges, referring to an
+open question by number ("Q3 remains") is not helpful -- the question the
+number names has fallen out of operator working memory; restate the question
+in full when asking. Two: when the operator clarifies an earlier answer, the
+agent asked the next question before the clarification was recorded, so the
+operator had to choose between answering (growing the list) and not answering
+(risking implicit approval). The rule the skill needs: the next question waits
+until every open question so far is explicitly resolved -- answered, withdrawn,
+or explicitly parked by the operator; parked items are re-asked in full later,
+never silently approved. Both apply to the grill-me skill file; the skill
+lives outside the repo tree, so the routing is the record.
 
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently
 
