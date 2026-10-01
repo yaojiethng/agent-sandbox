@@ -150,12 +150,30 @@ container start regardless).
 ### 7. Commit
 
 ```text
-workflow: bump pi to <NEW> and codify the bump procedure
+chore: bump pi to <NEW>
 ```
 
-Wrap the configuration changes and the new skill in a single `workflow:`
-commit. Skill files under `src/reasoning/agent/` count as governance, so the
-skill addition makes this a workflow commit rather than a chore.
+The type follows what the slice touches, and a bump is never one commit.
+
+- A slice that only moves the pin -- `base.dockerfile` and the
+  `lastChangelogVersion` field in the repository copy of `settings.json` --
+  is a single `chore: bump pi to <NEW>`. It changes no governance and needs
+  no handover.
+- Extension changes are their own `workflow:` commit, carrying their own
+  handover. They are never folded into the bump commit, and a bump that
+  needs them is two commits, not one.
+- A skill-text change under `src/reasoning/agent/` is `workflow:`, because
+  a skill file is governance. It is its own commit with its own iteration
+  and handover.
+
+So a bump with extension changes and a skill edit is three commits:
+`chore:` for the pin, `workflow:` for the extensions, `workflow:` for the
+skill. Open an iteration per `workflow:` commit before writing it.
+
+Do not read one case as licensing another. Fixing this text on 2026-10-02,
+the skill demanded a single `workflow:` commit covering configuration and
+skill together, so a pin-only bump was committed as `chore:` against the
+instruction and the two cases were never separated.
 
 ## Notes
 
