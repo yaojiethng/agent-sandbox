@@ -4,6 +4,8 @@
 
 ## Purpose
 
+Superseded by [`handover-maintenance.md`](../skills/handover-maintenance.md), whose Track A carries this file's three content checks and leaves handovers correct rather than reporting on them. Kept until the operator's roadmap task removes it.
+
 Validates that handover and design content meets quality standards that go beyond format compliance. These rules are procedural (they check process, not field state) and don't fit the declarative framing of `handover_policy.md`.
 
 ## Audit Categories

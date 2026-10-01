@@ -2,6 +2,8 @@
 
 ## Purpose
 
+Superseded by [`handover-maintenance.md`](../skills/handover-maintenance.md), whose Track B carries this file's triggers, scope list, seven-step procedure, and report. Kept until the operator's roadmap task removes it.
+
 Formalised handover audit workflow  --  operator-invoked reviews of closed handovers to catch deferred items dropped across iterations, incomplete close sequences, non-standard formatting, dangling references, and unresolved findings before they compound.
 
 An audit is not an iteration type. It is invoked by the operator as needed.

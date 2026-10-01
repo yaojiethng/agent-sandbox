@@ -2,6 +2,8 @@
 
 ## Purpose
 
+Superseded by [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md), which carries this file's checks and leaves the roadmap correct rather than reporting on it. Kept until the operator's roadmap task removes it.
+
 Audit `devlog/roadmap.md` for policy compliance and structural integrity. Use this skill when asked to check the roadmap for deviations from `docs/operations/roadmap_policy.md`, to verify compaction state, or to prepare for a compaction pass.
 
 ---

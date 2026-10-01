@@ -24,9 +24,10 @@ const REPO_ROOT = process.env.PROMPT_FRONTMATTER_SCAN_ROOT
   ? resolve(process.env.PROMPT_FRONTMATTER_SCAN_ROOT)
   : resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-// Roots holding a prompt or a skill. A missing root is skipped.
+/** Roots holding a prompt or a skill. A missing root is skipped. */
 const ROOTS = [
   "workflow/coding-agent/prompts",
+  "workflow/coding-agent/skills",
   "src/reasoning/providers/pi/config/agent/prompts",
   "src/reasoning/agent/skills",
   "src/reasoning/providers/pi/config/agent/skills",

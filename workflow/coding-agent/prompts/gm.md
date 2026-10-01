@@ -10,32 +10,11 @@ gm is a check-in, not an iteration. The agent's only permitted change during a c
 
 ## Survey
 
-Read these sources. Apply the repo's read discipline: grep to locate, then
-read the needed sections. Do not open files wholesale beyond what the survey
-needs.
+The survey reads state; it does not repair it. Apply the repo's read discipline: grep to locate, then read the needed sections. Do not open files wholesale beyond what the survey needs.
 
-- Handover chain: the latest file in [`devlog/handovers/`](devlog/handovers/)
-  -- highest date and index in the filename. Read its status, findings, and
-  deferred items.
-- Roadmap: [`devlog/roadmap.md`](../../../devlog/roadmap.md). Read the
-  `active-milestone` frontmatter field, that milestone's section, and its
-  open items. Check done items for forward-looking text left behind.
-- Recent git history (`git log --oneline -20`): what landed, and the time
-  gap since the last iteration.
-- Open entries in [`devlog/AGENT_FEEDBACK.md`](../../../devlog/AGENT_FEEDBACK.md) -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.
-- Stale-state sweep: `git status`, `git stash list`, `git branch` -- look for
-  uncommitted changes, stashes, leftover branches.
-- Settled design docs in [`devlog/discussions/`](devlog/discussions/) with
-  no implementation handover referencing them yet.
+Delegate the record maintenance. Run [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md) over [`devlog/roadmap.md`](../../../devlog/roadmap.md) and [`handover-maintenance.md`](../skills/handover-maintenance.md) over the handover chain. Between them the two skills own the record checks, the corrections each may apply, and the defects each reports. Every finding they return becomes an inventory row or a finding, never a silent correction.
 
-Surface discrepancies, do not fix them: an open roadmap item whose work
-already landed on disk; a done item still carrying forward-looking text; a
-finding marked open whose fix landed; a feedback entry describing files that
-no longer exist; a test suite whose last recorded run is red or stale. Each
-becomes an inventory row or a finding, never a silent correction.
-
-Cosmetic record-bug fixes (the class named above) are applied immediately;
-substantive discrepancies are surfaced as rows and wait.
+Cosmetic record-bug fixes (the class named above) are applied immediately and aggregated into a single `chore:` commit; every other discrepancy is surfaced as a row and waits.
 
 ## State summary
 

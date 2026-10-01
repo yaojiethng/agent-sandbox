@@ -93,7 +93,7 @@ Run the scope-reconciliation invariant in [`iteration_policy.md`](../../../docs/
 
 ### B4. Roadmap write-back and compaction
 
-Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`, note the exact row change per task touched, and the completed rows the change supersedes or invalidates. Run roadmap maintenance (compaction cascading, summary table update, top-level milestone close if applicable). The write-back rides the delivery commit; it never forms its own commit.
+Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`, note the exact row change per task touched, and the completed rows the change supersedes or invalidates. Then run the [`roadmap-maintenance`](../skills/roadmap-maintenance.md) skill over the roadmap: it owns the compaction pass, the summary table update, and the top-level milestone close when one applies. The write-back rides the delivery commit; it never forms its own commit.
 
 ### B5. Carry-forward resolution
 
@@ -111,7 +111,7 @@ A row left open here is a question the operator meets twice, which is the cost t
 
 ### B8. Close ADRs and discussion docs whose work landed
 
-When a `docs/adr/` or `devlog/discussions/` document's work landed this session, mark it closed or fold it, per `adr_policy.md` and `discussion_policy.md`. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
+When a `docs/adr/` or `devlog/discussions/` document's work landed this session, close or fold it by running the [`handover-maintenance`](../skills/handover-maintenance.md) skill against it. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
 
 ### B9. Close the handover and land the single commit
 
