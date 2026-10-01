@@ -50,11 +50,35 @@ async function loadAndRegister() {
 		},
 	});
 	const registrations: { name: string; config: Record<string, unknown> }[] = [];
+	registeredHandlers.length = 0;
 	const module = await jiti.import<{ default: (pi: unknown) => void }>(EXTENSION_ENTRY);
 	module.default({
 		registerProvider: (name: string, config: Record<string, unknown>) => registrations.push({ name, config }),
+		// The extension renders its reconciliation from `session_start`, the
+		// first event that carries a UI, so the stub answers the event rather
+		// than letting the call fail.
+		on: (event: string, handler: (event: unknown, ctx: unknown) => void) => registeredHandlers.push({ event, handler }),
 	});
 	return registrations;
+}
+
+/** The event handlers the factory registered on its last load. */
+const registeredHandlers: { event: string; handler: (event: unknown, ctx: unknown) => void }[] = [];
+
+/** A stand-in for the part of `ExtensionContext` the handler reads. */
+function sessionStartCtx(mode: "tui" | "print") {
+	const shown: { method: string; args: unknown[] }[] = [];
+	return {
+		shown,
+		ctx: {
+			mode,
+			ui: {
+				setStatus: (key: string, text: string | undefined) => shown.push({ method: "setStatus", args: [key, text] }),
+				setWorkingMessage: (message?: string) => shown.push({ method: "setWorkingMessage", args: [message] }),
+				notify: (message: string, type?: string) => shown.push({ method: "notify", args: [message, type] }),
+			},
+		},
+	};
 }
 
 describe("extension load under jiti", { skip: skip() }, () => {
@@ -78,5 +102,44 @@ describe("extension load under jiti", { skip: skip() }, () => {
 		const [registration] = await loadAndRegister();
 		assert.equal(registration.config.baseUrl, undefined);
 		assert.equal(registration.config.authHeader, undefined);
+	});
+
+	it("renders nothing into the UI at load, before any event fires", async () => {
+		await loadAndRegister();
+		const { shown, ctx } = sessionStartCtx("tui");
+		assert.deepEqual(shown, [], "loading the extension touches no UI surface");
+		assert.ok(ctx, "the stub is what a TUI session hands the handler");
+	});
+
+	it("routes the reconciliation into the UI on session_start in tui mode", async () => {
+		await loadAndRegister();
+		const start = registeredHandlers.find((h) => h.event === "session_start");
+		assert.ok(start, "the extension subscribes to session_start");
+		const { shown, ctx } = sessionStartCtx("tui");
+		await start.handler({ type: "session_start", reason: "startup" }, ctx);
+		// A refresh that has already run is rendered on attach; a later refresh
+		// renders through the same path. Both are UI calls, never console writes.
+		assert.ok(Array.isArray(shown));
+	});
+
+	it("keeps the console as the sink in a mode with no TUI", async () => {
+		await loadAndRegister();
+		const start = registeredHandlers.find((h) => h.event === "session_start");
+		assert.ok(start);
+		const { shown, ctx } = sessionStartCtx("print");
+		const written: string[] = [];
+		const real = console.warn;
+		console.warn = (...a: unknown[]) => written.push(a.join(" "));
+		try {
+			await start.handler({ type: "session_start", reason: "startup" }, ctx);
+		} finally {
+			console.warn = real;
+		}
+		assert.deepEqual(shown, [], "a mode with no TUI shows nothing through the UI surface");
+		assert.equal(written.length, 1, "the registration line goes to the console instead");
+		// The wording is ours and is pinned. The baked count and the data date
+		// come from the installed pi and move with every release, so the case
+		// pins their shape rather than their value.
+		assert.match(written[0], /^\[model-refresh\] registered opencode-go \(baked base: [1-9][0-9]* models, baked data generated [^)]+\)$/);
 	});
 });

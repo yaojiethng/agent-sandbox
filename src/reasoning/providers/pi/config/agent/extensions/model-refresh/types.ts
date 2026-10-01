@@ -58,3 +58,24 @@ export interface ModelsDevModel {
 
 /** A fetcher injected into the union so the tests never touch the network. */
 export type FetchJson = <T>(url: string, signal: AbortSignal) => Promise<T>;
+
+/**
+ * What each source contributed to the served catalog, and what failed.
+ *
+ * The extension used to log this as prose on the console. Prose is unreadable
+ * without a parse, so the counts travel as data and `report.ts` renders them.
+ */
+export interface CatalogReport {
+	/** Ids the live endpoint advertised, or undefined when it was not reached. */
+	liveIds: number | undefined;
+	/** Entries models.dev held for the provider, or undefined when unreachable. */
+	modelsDev: number | undefined;
+	/** Ids in pi's baked catalog. */
+	baked: number;
+	/** Ids in pi's persisted pi.dev catalog, or 0 when there was none. */
+	stored: number;
+	/** Ids in the catalog the extension actually served. */
+	served: number;
+	/** One line per live source that failed, with the reason. */
+	failures: string[];
+}

@@ -485,7 +485,11 @@ async function loadRegistration(): Promise<{ id: string; config: Record<string, 
 	const module = await jiti.import(EXTENSION_ENTRY);
 	module.default({
 		registerProvider: (id: string, config: Record<string, unknown>) => registered.push({ id, config }),
-			});
+		// The extension renders its reconciliation from `session_start`, so the
+		// stub accepts the subscription rather than failing the load. The
+		// rendering itself is covered in load.test.ts and report.test.ts.
+		on: () => () => {},
+	});
 	return registered;
 	}
 

@@ -14,7 +14,7 @@
  */
 
 import { buildUnion, V1_BASE } from "./catalog.ts";
-import type { FetchJson, ModelDefinition, ModelsDevModel, StoredCatalog } from "./types.ts";
+import type { CatalogReport, FetchJson, ModelDefinition, ModelsDevModel, StoredCatalog } from "./types.ts";
 
 export const PROVIDER_ID = "opencode-go";
 export const LIVE_MODELS_URL = `${V1_BASE}/models`;
@@ -43,16 +43,31 @@ export interface GatherInput {
 	fetcher: FetchJson;
 	providerId?: string;
 	log?: (message: string) => void;
+	/**
+	 * Receives the per-source counts once the union is built. Additive, so a
+	 * caller that only wants the list passes nothing and is unaffected.
+	 */
+	onReport?: (report: CatalogReport) => void;
 }
 
 /** The list the extension serves, from whatever sources are available. */
 export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinition[]> {
-	const { signal, allowNetwork, stored, generatedAt, baked, fetcher, log } = input;
+	const { signal, allowNetwork, stored, generatedAt, baked, fetcher, log, onReport } = input;
 	const providerId = input.providerId ?? PROVIDER_ID;
 	const note = log ?? (() => {});
+	const failures: string[] = [];
 
 	if (!allowNetwork) {
-		return buildUnion({ baked, stored, generatedAt, liveIds: undefined, modelsDev: undefined, providerId });
+		const models = buildUnion({ baked, stored, generatedAt, liveIds: undefined, modelsDev: undefined, providerId });
+		onReport?.({
+			liveIds: undefined,
+			modelsDev: undefined,
+			baked: baked.length,
+			stored: stored?.models?.length ?? 0,
+			served: models.length,
+			failures: [...failures],
+		});
+		return models;
 	}
 
 	let liveIds: string[] | undefined;
@@ -63,7 +78,9 @@ export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinitio
 			.filter((id): id is string => !!id);
 		note(`live model list: ${liveIds.length} models from ${LIVE_MODELS_URL}`);
 	} catch (error) {
-		note(`live /models fetch failed (${(error as Error)?.message}); serving the baked and persisted catalogs`);
+		const reason = `live /models fetch failed (${(error as Error)?.message}); serving the baked and persisted catalogs`;
+		failures.push(reason);
+		note(reason);
 	}
 
 	let modelsDev: Record<string, ModelsDevModel> | undefined;
@@ -72,8 +89,21 @@ export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinitio
 		modelsDev = payload?.[providerId]?.models;
 		note(`models.dev metadata: ${Object.keys(modelsDev ?? {}).length} ${providerId} entries`);
 	} catch (error) {
-		note(`models.dev metadata unavailable (${(error as Error)?.message}); using baked metadata`);
+		const reason = `models.dev metadata unavailable (${(error as Error)?.message}); using baked metadata`;
+		failures.push(reason);
+		note(reason);
 	}
 
-	return buildUnion({ baked, stored, generatedAt, liveIds, modelsDev, providerId });
+	const models = buildUnion({ baked, stored, generatedAt, liveIds, modelsDev, providerId });
+	if (onReport) {
+		onReport({
+			liveIds: liveIds?.length,
+			modelsDev: modelsDev ? Object.keys(modelsDev).length : undefined,
+			baked: baked.length,
+			stored: stored?.models?.length ?? 0,
+			served: models.length,
+			failures: [...failures],
+		});
+	}
+	return models;
 }
