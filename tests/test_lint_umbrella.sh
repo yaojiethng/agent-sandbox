@@ -33,6 +33,19 @@ test_setup
 
 LINT="$REPO_ROOT/scripts/lint.sh"
 
+# make_frontmatter_fixture LINE...  -- builds a scan root holding a single
+# prompt whose file content is exactly the given lines, and echoes the root
+# path. The caller supplies the whole file, frontmatter fences included, so a
+# fixture that is not a prompt is as easy to write as one that is.
+make_frontmatter_fixture() {
+  local root dir
+  root="$FIXTURE_DIR/frontmatter_$$_$RANDOM"
+  dir="$root/workflow/coding-agent/prompts"
+  mkdir -p "$dir"
+  printf '%s\n' "$@" > "$dir/broken.md"
+  printf '%s\n' "$root"
+}
+
 LINT_RC=0
 LINT_OUT=""
 
@@ -428,7 +441,11 @@ test_lint_forwards_gate_output() {
   assert_contains "$LINT_OUT" "Lint: one or more gates failed" "umbrella prints its failure summary"
   run_lint 0 0
   assert_contains "$LINT_OUT" "Lint: clean in" "umbrella prints its clean summary"
-  assert_contains "$LINT_OUT" "across 3 gates" "clean summary names the gate count"
+  # The count is read from the GATES array rather than hardcoded, so adding a
+  # gate does not fail this test and tempt an author into deleting the check.
+  local declared
+  declared=$(sed -n 's/^GATES=(\(.*\))$/\1/p' "$LINT" | wc -w)
+  assert_contains "$LINT_OUT" "across $declared gates" "clean summary names the gate count"
 }
 
 # Given: a markdownlint stub that prints a finding line and exits 0
@@ -468,9 +485,71 @@ EOF
   assert_eq "$(cat "$bin/mdl.cwd")" "$REPO_ROOT" "markdownlint runs from the repository root"
 }
 
+# Given: a fixture root whose only prompt has frontmatter that parses
+# When:  check_prompt_frontmatter.sh runs against that root
+# Then:  rc is 0
+# Asserts: the clean verdict, so a passing gate is not a gate that never fires.
+test_frontmatter_gate_passes_on_a_parsing_block() {
+  local root out rc=0
+  root=$(make_frontmatter_fixture '---' 'description: "Draft: a quoted value"' '---' '' '# Sequential Work')
+  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 0 "$rc" "a parsing block passes the gate"
+  assert_contains "$out" "Clean" "the clean verdict reaches the operator"
+}
+
+# Given: a fixture root holding a prompt whose unquoted description contains a
+# colon followed by a space
+# When:  check_prompt_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding names the file, the line, and the offending text
+# Asserts: the silent drop is reported at the line an author has to edit. A gate
+# that only printed a count would leave the author hunting for it.
+test_frontmatter_gate_names_the_offending_line() {
+  local root out rc=0
+  root=$(make_frontmatter_fixture '---' 'description: Draft - the shape: run a plan' '---' '' '# Sequential Work')
+  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "an unquoted colon-space fails the gate"
+  assert_contains "$out" "broken.md" "the finding names the file"
+  assert_contains "$out" "offending line: description: Draft - the shape: run a plan" \
+    "the finding quotes the offending line"
+}
+
+# Given: a fixture root holding a prompt that opens on its title, with no
+# frontmatter block at all
+# When:  check_prompt_frontmatter.sh runs against that root
+# Then:  rc is 0
+# Asserts: the gate scopes itself to a block that fails to parse. A prompt draft
+# with no block is a separate, tracked defect; failing every known open item
+# would make this gate unreadable.
+test_frontmatter_gate_skips_a_prompt_with_no_block() {
+  local root out rc=0
+  root=$(make_frontmatter_fixture '# Fan-Out Run' '' '## Purpose')
+  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 0 "$rc" "a prompt with no frontmatter block is skipped, not flagged"
+  assert_contains "$out" "clean across 1 prompt and skill files" "the file is collected and its block skipped"
+}
+
+# Given: a PATH with no node on it
+# When:  check_prompt_frontmatter.sh runs
+# Then:  rc is 1
+# Asserts: the gate fails closed. A missing parser must never read as a pass.
+test_frontmatter_gate_fails_closed_without_node() {
+  local bin out rc=0
+  bin="$FIXTURE_DIR/bin_nonode"
+  mkdir -p "$bin"
+  ln -sf "$(command -v dirname)" "$bin/dirname"
+  ln -sf "$(command -v bash)" "$bin/bash"
+  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "no node on PATH fails the gate"
+  assert_contains "$out" "node is not on PATH" "the missing dependency is named"
+}
+
 run_test test_lint_gate_set_is_complete
 run_test test_lint_forwards_gate_output
 run_test test_markdown_finding_with_zero_status_fails
 run_test test_markdown_gate_runs_at_repo_root
+run_test test_frontmatter_gate_passes_on_a_parsing_block
+run_test test_frontmatter_gate_names_the_offending_line
+run_test test_frontmatter_gate_skips_a_prompt_with_no_block
+run_test test_frontmatter_gate_fails_closed_without_node
 
 test_done

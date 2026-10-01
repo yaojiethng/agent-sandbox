@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # scripts/lint.sh
 # Umbrella static-check gate. Runs the ShellCheck gate (check_shell.sh), the
-# sourced-library contract gate (check_lib_contract.sh), and the Markdown gate
-# (check_markdown.sh). BLOCKING: exits 1 when any gate reports findings or
-# cannot run.
+# sourced-library contract gate (check_lib_contract.sh), the Markdown gate
+# (check_markdown.sh), and the prompt frontmatter gate
+# (check_prompt_frontmatter.sh). BLOCKING: exits 1 when any gate reports
+# findings or cannot run.
 #
 # All gates always run, so a failure in one never hides the others. The gates
 # run concurrently (background jobs), which cuts the wall time; each gate's
@@ -18,7 +19,7 @@ SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh)
+GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_prompt_frontmatter.sh)
 
 OUT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX") || exit 1
 trap 'rm -rf "$OUT_DIR"' EXIT
