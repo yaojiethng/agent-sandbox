@@ -22,12 +22,13 @@
     "/opt/workflow/agent"
   ],
   "enabledModels": [
-    "openrouter/z-ai/*",
-    "openrouter/qwen/*",
-    "opencode/*",
+    "opencode-go/space-bunny-free",
     "opencode-go/*",
+    "opencode/*-free",
+    "deepseek/*",
     "openrouter/deepseek/*",
-    "deepseek/*"
+    "openrouter/z-ai/*",
+    "openrouter/qwen/*"
   ],
   "hideThinkingBlock": false,
   "skills": [

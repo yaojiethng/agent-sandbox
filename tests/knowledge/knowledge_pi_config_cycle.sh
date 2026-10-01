@@ -250,6 +250,47 @@ test_real_config_state() {
 }
 
 # ---------------------------------------------------------------------------
+# Test 5: the scope head names the configured default
+# ---------------------------------------------------------------------------
+
+# pi's `findInitialModel` selects `scopedModels[0]` and only reaches
+# `defaultProvider`/`defaultModel` when the scope is empty, so the first entry
+# of `enabledModels` decides which model every session starts on. A list whose
+# head does not name the default is not a tidier list; it is a different
+# default, applied silently. Measured on 0.87.1 and reported upstream in
+# devlog/discussions/20261002-report-draft-default_model_resolution_bug.md.
+test_scope_head_names_the_default() {
+  local settings="/home/agentuser/sandbox/src/reasoning/providers/pi/config/agent/settings.json"
+
+  echo ""
+  echo "--- Scope head names the configured default ---"
+
+  if ! command -v jq &>/dev/null; then
+    echo "    SKIP: jq not available"
+    return
+  fi
+  if [[ ! -f "$settings" ]]; then
+    echo "    FAIL: onboard settings not found at $settings"
+    return
+  fi
+
+  local head provider model expected
+  head=$(jq -r '.enabledModels[0] // ""' "$settings")
+  provider=$(jq -r '.defaultProvider // ""' "$settings")
+  model=$(jq -r '.defaultModel // ""' "$settings")
+  expected="${provider}/${model}"
+
+  if [[ -z "$head" ]]; then
+    echo "    FAIL: enabledModels is empty, so the scope does not constrain anything"
+  elif [[ "$head" == "$expected" ]]; then
+    echo "    PASS: scope head '${head}' is the configured default"
+  else
+    echo "    FAIL: scope head '${head}' is not the configured default '${expected}'"
+    echo "         pi starts on the scope head, so the session opens on ${head}."
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 
@@ -270,6 +311,8 @@ test_round_trip_preserves_keys
 echo ""
 echo "[ Real system config state ]"
 test_real_config_state
+
+test_scope_head_names_the_default
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
