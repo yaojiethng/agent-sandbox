@@ -78,7 +78,7 @@ Completion criterion: each criterion names a tool that covers its failure mode, 
 Determine the set of handovers to review.
 
 - Periodic: list the handovers in `devlog/handovers/` inside the date range and sort them by date.
-- Event-driven: trace the deferred item through each handover's `## What's Next` and `## Carried forward` sections.
+- Event-driven: trace the deferred item through the roadmap rows it was written back to, and the handovers that cite it.
 
 Completion criterion: the set is named, and each member has a reason for being in scope.
 
@@ -90,7 +90,7 @@ For each handover in scope, run:
 grep "^## " path/to/handover.md
 ```
 
-Confirm every required section is present and every header matches canonical casing. The required sections are Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, Completed, Deferred items, and What's Next. An empty section carries a null marker. `Decisions pending` applies from handover `20261001-03` forward, so a handover closed before that date is not flagged for its absence.
+Confirm every required section is present and every header matches canonical casing. The required sections are Objective, Scope, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, and Completed. An empty section carries a null marker. `Decisions pending` applies from handover `20261001-03` forward, so a handover closed before that date is not flagged for its absence.
 
 An anomaly falls into one of two categories:
 
@@ -101,14 +101,13 @@ Completion criterion: every handover in scope has every required section for its
 
 #### Step 6 - Deferred chain
 
-For each non-null deferred item, trace it forward.
+Handovers carry no deferred items: an item deferred with a destination is written back to the roadmap as an open row, and an item ruled out is a Scope sentence. For each handover in scope, confirm the pairing instead.
 
-1. Read the destination iteration's `## Carried forward` and note whether the item was picked up.
-2. If it was, confirm it was either resolved in the Completed table or re-deferred in Deferred items.
-3. If it disappeared without resolution, it is a dropped item.
-4. If it survived two or more hops, it needs carry-forward escalation to the roadmap under `handover_policy.md`.
+1. Confirm the handover's commit pairs with exactly one roadmap write-back: its own task row, or the subtask row raised for it.
+2. For items the handover ruled out of scope, confirm the Scope sentence carries the reason.
+3. For deferred items recorded before the sections were removed (older handovers), trace them through the roadmap rows they were written back to; an item that vanished without a roadmap row or a resolution is a dropped item.
 
-Completion criterion: every deferred item in scope is resolved, re-deferred, flagged as dropped, or flagged for escalation.
+Completion criterion: every handover in scope has its write-back pairing, and every older deferred item is resolved by a roadmap row, flagged as dropped, or flagged for escalation.
 
 #### Step 7 - Status
 
@@ -165,7 +164,7 @@ A Track A finding carries severity Warning. It does not block a gate and must be
 
 ## Failure modes
 
-- **A dropped deferred item reads as resolved.** Step 6 exists because an item can vanish from the chain silently. Read `## Carried forward` before concluding an item was resolved.
+- **A dropped deferred item reads as resolved.** Step 6 exists because an item can vanish from the chain silently. Older handovers carried deferred items in sections now removed; read the roadmap rows the items were written back to before concluding an item was resolved.
 - **A correction destroys the record.** Edit inline only for a factual error, and append the block. Never rewrite a closed handover's history without a block that says what changed and why.
 - **Case-only header repair loses content.** Confirm a header differs only in casing before replacing it. A header with custom content is not replaceable one to one.
 - **A `bash -n` acceptance criterion reads as passed.** The check passes on syntax the script never executes. Confirm the failure mode is a syntax error, or hold the criterion as a Warning.

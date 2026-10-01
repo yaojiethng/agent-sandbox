@@ -85,11 +85,11 @@ Read the acceptance criteria from the session's handover. For each criterion, st
 
 ### B2. Propagation replay
 
-Run the propagation-replay invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row in Deferred items) before the release gate releases.
+Run the propagation-replay invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row written back to the roadmap) before the release gate releases.
 
 ### B3. Scope reconciliation
 
-Run the scope-reconciliation invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed must appear in Deferred items; no unaccounted items.
+Run the scope-reconciliation invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed is resolved by the deferred-resolution rule; no unaccounted items.
 
 ### B4. Roadmap write-back and compaction
 
@@ -97,7 +97,7 @@ Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`
 
 ### B5. Carry-forward resolution
 
-Run the carry-forward-resolution invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): every Carried forward item must be completed, re-deferred with reason, or escalated to a named roadmap entry; an item in none of the three is dropped -- find it and triage it.
+Run the deferred-resolution invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): every item in scope but not completed is written back to the roadmap as an open row with its reason, or ruled out of scope with one Scope sentence. The handover carries no carried-forward or deferred-items section.
 
 ### B6. Findings review/publish
 
@@ -105,7 +105,7 @@ Run the findings-review/publish invariant in [`iteration_policy.md`](../../../do
 
 ### B7. Pending-decision resolution
 
-Every row of the handover's `Decisions pending` table closes before the handover closes, per [`handover_policy.md`](../../../docs/operations/handover_policy.md). Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work moves to Deferred items and the question leaves the handover with it.
+Every row of the handover's `Decisions pending` table closes before the handover closes, per [`handover_policy.md`](../../../docs/operations/handover_policy.md). Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work is written back as an open roadmap row and the question leaves the handover with it.
 
 A row left open here is a question the operator meets twice, which is the cost this section exists to remove. A table holding only the canonical marker is closed with no work.
 
@@ -113,19 +113,27 @@ A row left open here is a question the operator meets twice, which is the cost t
 
 When a `docs/adr/` or `devlog/discussions/` document's work landed this session, close or fold it by running the [`handover-maintenance`](../skills/handover-maintenance.md) skill against it. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
 
-### B9. Close the handover and land the single commit
+### B9. Prepare all files for the commit
 
-Mark each AC accepted or pushed. Complete the Completed and Deferred items sections. Update Hot files. Set `Status: Closed`. Land the delivery commit carrying the work, the `Status: Closed` edit, and the roadmap write-back.
+Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Update Hot files. Set `Status: Closed`. Confirm the roadmap write-back from B4 is staged: the write-back is unconditional, one row per handover, so the delivery commit pairs with exactly one write-back -- when the session's task has no pre-existing roadmap row, raise and resolve a subtask row under the owning parent so the pairing holds.
 
-### B10. Seed what's next
+### B10. Land the single commit
 
-Populate What's Next per `handover_policy.md`, identifying the next iteration's scope from the roadmap task list and Deferred items (deferred items take priority). Note whether roadmap maintenance is run or pending.
+Generate the commit message per [`git_policy.md`](../../../docs/operations/git_policy.md): a valid type prefix from the Active Types table, an imperative subject that completes "this commit will", and a body that carries the reason without restating the diff or duplicating the handover. Commit the work, the `Status: Closed` edit, and the roadmap write-back as one commit.
+
+### B11. Post-commit compliance self-check
+
+Re-read the session's commits against the rules before reporting success. Run `git log` over the session's range and check it against [`git_policy.md`](../../../docs/operations/git_policy.md) and [`iteration_policy.md`](../../../docs/operations/iteration_policy.md): (1) the range's squash state holds exactly one delivery-typed commit per unit and its handover -- read the amended history, not pre-amend hashes; (2) every subject's type is in the Active Types table; (3) no subject carries a scope field; (4) no commit's only path is a handover file, unless the unit's deliverable was the record change itself; (5) no close edit or roadmap write-back is separated from its unit's work -- a standalone `plan:` commit is bookkeeping, not this violation; (6) roadmap and milestone bookkeeping is typed `plan:`; (7) one handover bounds the range; (8) the delivery commit matches the handover's scope -- one work unit lands as one commit, no scope item outside the commit and no commit content outside the scope. A `wip:` commit in the range is not a violation: it is legal and folds at the close. A violation found here is fixed before B12 -- by amending, folding, or retyping -- or recorded as a deliberate deviation with its reason. This check is agent-side; it adds no operator stop beyond the release gate the unit already passed.
+
+### B12. Report the wrapup
+
+State that the wrapup succeeded: the commit, the lint and suite results, the write-back, and any deviation B11 recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. The recommendation is advisory context for the operator, not a task list; the roadmap stays the sole task list, and a fresh session starts from [`gm.md`](gm.md).
 
 ## Failure modes
 
 - **A pile reaches the close unsquashed.** The checkpoint missed a task group, or a `wip:` chain was never folded. Squash into the delivery commit before landing, and record what let it accumulate.
 - **The close duplicates the caller's own close steps.** Each invoking prompt must carry its own gates and presentation, and leave the shared close steps to `/wrapup`. A caller that re-states the close is the duplication this document exists to remove.
-- **An ADR or discussion doc stays open after its work shipped.** A stale open record misleads the next session. Close it in B7, or name the reason it stays open in Deferred items.
+- **An ADR or discussion doc stays open after its work shipped.** A stale open record misleads the next session. Close it in B8, or name the reason it stays open in the handover's Scope.
 - **The write-back lands as its own commit.** The roadmap write-back and the `Status: Closed` edit belong in the delivery commit, never a separate one.
 
 ## When to stop and ask

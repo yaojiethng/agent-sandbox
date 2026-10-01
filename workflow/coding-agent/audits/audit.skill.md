@@ -29,7 +29,7 @@ Read `docs/operations/handover_policy.md` and `docs/operations/documentation_pol
 A full handover audit covers:
 
 1. **Status completeness**  --  every handover in scope must have `**Status:**` set to `Active` or `Closed`.
-2. **Structural completeness**  --  every handover must have all required sections (Objective, Scope, Carried forward, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, Completed, Deferred items, What's Next), with null markers where empty. `Decisions pending` applies from handover `20261001-03` forward; a handover closed before it is not flagged for its absence.
+2. **Structural completeness**  --  every handover must have all required sections (Objective, Scope, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, Completed), with null markers where empty. `Decisions pending` applies from handover `20261001-03` forward; a handover closed before it is not flagged for its absence.
 3. **Deferred item chain integrity**  --  each deferred item with a next-iteration destination must have been resolved or re-deferred in the target iteration.
 4. **Carry-forward escalation**  --  a deferred item that has survived 2+ hops must be escalated to the roadmap per `handover_policy.md`.
 5. **Findings triage**  --  all entries must be triaged at iteration close.
@@ -45,7 +45,7 @@ A full handover audit covers:
 Determine the set of handovers to review:
 
 - **Periodic:** list all handovers in `devlog/handovers/` within the date range. Sort by date.
-- **Event-driven:** trace the deferred item through `## What's Next` and `## Carried forward` sections.
+- **Event-driven:** trace the deferred item through the roadmap rows it was written back to, and the handovers that cite it.
 
 ### 2. Structural scan
 
@@ -66,9 +66,9 @@ Anomalies fall into two categories:
 
 For each non-null deferred item, trace forward:
 
-1. Read the destination iteration's `## Carried forward`  --  was the item picked up?
-2. If yes, was it resolved (Completed table) or re-deferred (Deferred items)?
-3. If it disappeared without resolution, flag as **dropped**.
+1. Handovers carry no deferred items; the item was written back to the roadmap as an open row. Read the roadmap row -- was it resolved there?
+2. If the row is still open, it is an open task, not a dropped record; only an item with no roadmap row and no resolution is dropped.
+3. An item that vanished without a roadmap row or a resolution is flagged as **dropped**.
 4. If it survived 2+ hops, flag for **carry-forward escalation**.
 
 ### 4. Status audit

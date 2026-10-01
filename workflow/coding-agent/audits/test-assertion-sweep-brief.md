@@ -2,7 +2,7 @@
 
 ## Purpose
 
-A fresh-subagent review brief that sweeps a shell test suite's assertions against an authoring bar and reports findings without editing. This is the U7 brief from M3.1, preserved as input for the future workflow review of the thermonuclear review prompt (`workflow/coding-agent/prompts/review-pass-run.md`; roadmap row "Review-pass framing fixes"; AGENT_FEEDBACK entry `[A] 2026-09-22 -- A condition on an always-true helper is a vacuous assertion`).
+A fresh-subagent review brief that sweeps a shell test suite's assertions against an authoring bar and reports findings without editing. This is the U7 brief from M3.1, preserved as input for the future workflow review of the thermonuclear review prompt (`workflow/coding-agent/drafts/review-pass-run.md`, draft; roadmap row "Review-pass framing fixes"; AGENT_FEEDBACK entry `[A] 2026-09-22 -- A condition on an always-true helper is a vacuous assertion`).
 
 ## Run record for that review
 

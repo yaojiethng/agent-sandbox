@@ -58,7 +58,7 @@ In `devlog/roadmap.md`:
 
 Give every item the milestone leaves open a recorded home before the close:
 
-- An item the next iteration will pick up goes to the handover's Deferred items.
+- An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md).
 - An item that will not be picked up next goes to `roadmap.md` as a named task under [roadmap-policy Roadmap task placement](docs/operations/roadmap_policy.md#filing-rules); the operator names the destination milestone.
 - An item already resident elsewhere in `roadmap.md` or `roadmap_future.md` is named, not duplicated.
 
@@ -69,7 +69,7 @@ Before the record edits and the close commit, present to the operator the compac
 Then:
 
 1. Mark every acceptance criterion accepted in the handover.
-2. Run scope reconciliation and the carry-forward resolution gate at milestone grain; see [iteration_policy.md](../../../docs/operations/iteration_policy.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
+2. Run scope reconciliation and the deferred-resolution gate at milestone grain; see [iteration_policy.md](../../../docs/operations/iteration_policy.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
 3. Set the handover `Status: Closed` before the commit -- the commit is the close.
 4. Land one delivery commit per [git_policy.md](../../../docs/operations/git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of Active Types. The M2.7 and M3.1 closes both typed `plan`.
 

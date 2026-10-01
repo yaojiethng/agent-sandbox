@@ -1,5 +1,5 @@
 ---
-description: Open a new iteration. Finds the latest handover, runs the roadmap maintenance check, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every iteration. Accepts an optional argument describing the type and focus  --  this takes priority over the What's Next section of the prior handover.
+description: Open a new iteration. Finds the latest handover, runs the roadmap maintenance check, creates the new handover, then gates on scope and acceptance criteria before any work begins. Use at the start of every iteration. Accepts an optional argument describing the type and focus  --  this takes priority over the prior handover's orientation.
 argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus description>"
 ---
 
@@ -28,7 +28,7 @@ Verify the roadmap reflects the state the prior handover claims. If the roadmap 
 
 ## Directive
 
-Read the prior handover's What's Next section before evaluating the directive.
+Read the prior handover's Objective and Findings for context before evaluating the directive. The prior handover carries no continuation scope: the roadmap is the sole task list, and a missing directive is an unmet scope-gate precondition, not something the agent derives.
 
 | Type | Shortform |
 |---|---|
@@ -43,15 +43,11 @@ Read the prior handover's What's Next section before evaluating the directive.
 
 If the directive slot is empty:
 
-- Follow handover policy. Derive type and objective from What's Next.
+- Stop and ask the operator for the directive. A scope gate confirms a scope the operator named; an empty directive is that precondition unmet, and the agent does not derive one. Exception: a reply to a wrapup report that names a next task -- "ok", or the operator picking up the report's suggestion -- is the directive, not an empty scope.
 
 If the directive slot is non-empty:
 
 - Identify the type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
-- **Compare types.** Extract the type implied by What's Next. If the directive's type and What's Next's type do not match, this iteration diverges  --  see the Diverges from prior work case below.
-- **Compare topics.** If types match, check whether the directive subject overlaps with What's Next (shared keywords, named files, task references). If no recognisable overlap, ask the operator whether this iteration supersedes or adjusts prior work.
-  - **Continues or adjusts prior work:** The directive takes priority over What's Next's framing but does not change the type or supersede the work in progress.
-  - **Diverges from prior work:** This iteration supersedes the prior implementation thread. Record a Context handover line in What's Next so the implementation thread can be resumed. See `docs/operations/handover_policy.md` Types section.
 
 ---
 
@@ -143,11 +139,11 @@ The handover write-back fires at three moments in the runbook's operation:
 
 - **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task.
 - **On discovery:** a bug, contradiction, design gap, blocker, or new file in scope goes to Findings immediately; if it changes the approach, surface it in chat before proceeding.
-- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it affects a future iteration, also write it to Deferred items or What's Next.
+- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row.
 
 **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently.
 
----
+- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row.
 
 ## Step 7  --  Pre-close verification
 
@@ -160,10 +156,10 @@ Step 7 is the pre-close verification before the release gate. Present a pre-clos
 | File | Change planned | Status |
 |---|---|---|
 
-Every row must carry a status. A deferred or not-started row must appear in the handover's Deferred items before the gate closes.
+Every row must carry a status. A deferred or not-started row must be written back to the roadmap as an open row before the gate closes.
 
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in [`git_policy.md`](../../../docs/operations/git_policy.md).
-5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to Deferred items before the gate releases; an entry that leaves the iteration still open is a question the operator will meet again in the next one. A table holding only the canonical marker is reported as empty, not shown.
+5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 

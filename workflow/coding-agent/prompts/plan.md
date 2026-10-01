@@ -18,7 +18,7 @@ ls devlog/handovers/ | sort | tail -1 | xargs -I{} read devlog/handovers/{}
 read devlog/roadmap.md
 ```
 
-Read the prior handover's What's Next section and any open stories in `devlog/discussions/` that concern the session goal.
+Read the prior handover's Objective and Findings for context, and any open stories in `devlog/discussions/` that concern the session goal.
 
 ## Open the session
 

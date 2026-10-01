@@ -90,14 +90,7 @@ A handover has three states:
 <One sentence: what this iteration achieves. Scoped to the iteration, not the sub-milestone.>
 
 ## Scope
-<Which task groups or tasks from the roadmap this iteration targets. Reference by group name; do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
-
-## Carried forward
-<Items explicitly deferred from the prior iteration that this iteration is picking up. One row per item, with a reference to the handover it came from. Populated from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
-
-| Item | From handover |
-|---|---|
-| <deferred item description> | <YYYYMMDD-NN-TYPE-description> |
+<Which task groups or tasks from the roadmap this iteration targets. Reference by group name; do not copy the task list. If design questions are blocking, list them explicitly as blockers. When this iteration works a subtask of a parent row, open with one continuation line naming the parent row and the handover it continues from. An item raised in-session and ruled out of scope is recorded here as one sentence with its reason; an item deferred with a destination is written back to the roadmap instead. The handover carries no cross-iteration state beyond this, the milestone marker, and the iteration's own roadmap write-back.>
 
 ## Acceptance criteria
 <Every AC describes a delta: something observable that was false or absent before the iteration and true or present after it. The operator verifies by running the system -- never by reading source alone.
@@ -138,7 +131,7 @@ The agent writes an entry the moment it becomes blocked, not at the gate where t
 
 Every entry names what it blocks, so the operator can judge urgency, and gives the options with their consequences, so a reply can be a pick rather than a question. An entry that only states that a decision is needed is not an entry.
 
-A pending decision closes in one of three ways, and the close is recorded in this section until the section is empty: the operator answers it and the answer moves to the Decisions table with its rationale; the agent finds the answer in a record and cites it; or the block is real and the work is deferred, in which case the item moves to Deferred items and the question leaves with it.
+A pending decision closes in one of three ways, and the close is recorded in this section until the section is empty: the operator answers it and the answer moves to the Decisions table with its rationale; the agent finds the answer in a record and cites it; or the block is real and the work moves out of scope, in which case the work is written back as an open roadmap row and the question leaves the handover with it.
 
 | Question | Blocks | Options |
 |---|---|---|
@@ -147,7 +140,7 @@ A pending decision closes in one of three ways, and the close is recorded in thi
 None.
 
 ## Findings
-<Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a blocker encountered, or a new file entering scope. Do not log routine reads or completed tasks here -- only write when something changes what you are doing or what the next iteration needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at iteration end and route it to its destination (`AGENT_FEEDBACK.md`, Decisions table, Deferred items, or `roadmap.md`). The `[A]`/`[O]` tag names who raised the entry. Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
+<Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a blocker encountered, or a new file entering scope. Do not log routine reads or completed tasks here -- only write when something changes what you are doing or what the next iteration needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at iteration end and : route it to its destination (`AGENT_FEEDBACK.md`, Decisions table, or `roadmap.md`). The `[A]`/`[O]` tag names who raised the entry. Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
 
 | Finding | Type | Impact |
 |---|---|---|
@@ -160,24 +153,9 @@ None.
 
 No file changes this iteration.
 
-## Deferred items
-<Items that were in scope but are not complete. Each item must have an explicit reason for deferral and a note on where it goes next (next iteration, different sub-milestone, or roadmap_future.md). If nothing is deferred, write the canonical marker.>
+The handover has no Deferred items, Carried forward, or What's Next section. Each was a transient task record; the roadmap write-back handles the durable form. An item deferred with a destination becomes an open roadmap row at the close. An item ruled out of scope is one sentence in Scope with its reason. What to pick up next is the agent's advisory recommendation in the wrapup report -- the roadmap stays the sole task list, and the when and invariants of its update live in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched).
 
-Omit any item that is already a named task in `roadmap.md` or `roadmap_future.md`; do not re-list an item that has a roadmap home. The roadmap is the sole task list.
-
-None.
-
-## What's Next
-<Sub-milestone ID and name for the next iteration.>
-<Whether roadmap maintenance has been run or is pending -- omit if mid-milestone and no sub-milestone just completed.>
-<Blocking design questions the next agent must resolve before advancing.>
-<Known watch-out items (capped at three).>
-<Grep or file reads to run at iteration start, if known.>
-
-**Conclusions from this iteration:** decisions made, approaches confirmed, dead ends ruled out. Not a full log -- only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
-
-What's Next is context-only. It does not carry a task list. The roadmap is the sole task list; the when and invariants of its update live in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched), and the runbooks execute it.
 
 ---
 
@@ -192,8 +170,6 @@ When a section has nothing to record, write the canonical marker and nothing els
 | Decisions pending | `None.` |
 | Findings | `None.` |
 | Completed | `No file changes this iteration.` |
-| Deferred items | `None.` |
-| Carried forward | `None.` |
 
 ---
 
@@ -234,7 +210,7 @@ Keep the blank line before the closing fence. Without it, the tag paragraph pars
 
 - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
 - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
-- If the finding is a deferred item for the next iteration, add it to Deferred items in the active handover.
+- If the finding is a deferred item for the next iteration, write it back as an open roadmap row under the current sub-milestone.
 - If the finding is purely documentary (e.g. a known-limitation note), update the relevant document directly.
 
    The correction tag must document where the finding was routed (e.g. `Finding routed to roadmap.md -- autosave reliability.`).

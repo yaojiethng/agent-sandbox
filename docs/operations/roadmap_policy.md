@@ -92,7 +92,7 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 
 **Acceptance criteria** -- the active sub-milestone carries an `**Acceptance criteria:**` block listing the end-to-end operator checks that must pass before the sub-milestone is considered complete. The task list records what is built; acceptance criteria record what the operator can verify once it is built. Criteria describe what the operator runs and observes -- not what files contain or what tasks are checked off. A criterion that duplicates a task checklist item is not an acceptance criterion.
 
-**Non-active sub-milestones** -- carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active. Deferred items from prior sub-milestones are filed in `roadmap_future.md`, not accumulated in the scope paragraph.
+**Non-active sub-milestones** -- carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active. Deferred work from prior sub-milestones is filed in `roadmap_future.md`, not accumulated in the scope paragraph.
 
 **Task granularity** -- identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 
