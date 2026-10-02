@@ -11,12 +11,17 @@
 // line each) are exempt by construction, which matches the policy's
 // fenced-code and table-row exemptions.
 //
-// Progressive scope: the rule may name legacy files in its config
-// (legacyFiles). Prose in those files is not flagged while the files
-// await the conversion chore; the chore removes entries as it
-// reflows, and the enable step drops the option entirely. The
-// exemption is config-driven, never a per-file disable comment
-// (documentation_policy.md `### Markdown lint gate`).
+// Progressive scope, in two lists, both declared in .markdownlint-cli2.mjs.
+// `recordTrees` is the shared exclusion list, the same one record-links reads
+// under the same key: whole trees of closed records, whose prose is read as
+// history rather than maintained. `legacyFiles` names individual live files not
+// yet reflowed; those are exempt from the tree-wide run, and
+// scripts/check_doc_wrap_legacy.sh fails the commit that next touches one, so a
+// file's grandfathering lasts exactly until somebody edits it. One setting, one
+// home: neither list is repeated here, and neither uses a per-file disable
+// comment (documentation_policy.md `### Markdown lint gate`).
+
+import { relative, resolve } from "node:path";
 
 export default [
   {
@@ -28,8 +33,20 @@ export default [
         ? params.config
         : {};
       const legacy = Array.isArray(opts.legacyFiles) ? opts.legacyFiles : [];
-      const fn = String(params.name || "").replace(/\\/g, "/");
-      if (legacy.some((pattern) => fn.endsWith(pattern))) {
+      // A legacy file is exempt from the tree-wide run, and not exempt at all
+      // once the commit touches it: DOC_WRAP_ENFORCE carries the changed files,
+      // which scripts/check_doc_wrap_legacy.sh derives from the working tree.
+      const enforced = (process.env.DOC_WRAP_ENFORCE ?? "")
+        .split(",")
+        .filter((entry) => entry.length > 0);
+      const trees = Array.isArray(opts.recordTrees) ? opts.recordTrees : [];
+      // markdownlint hands the rule the absolute path it resolved the glob to, so a
+      // tree test compares against the path relative to the working directory.
+      const fn = relative(process.cwd(), resolve(String(params.name || ""))).replace(/\\/g, "/");
+      if (trees.some((root) => fn.startsWith(root))) {
+        return;
+      }
+      if (legacy.some((pattern) => fn.endsWith(pattern)) && !enforced.includes(fn)) {
         return;
       }
       for (const token of params.tokens) {

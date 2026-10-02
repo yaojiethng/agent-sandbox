@@ -2,8 +2,8 @@
 // Enables the subset of markdownlint rules that align with
 // docs/operations/documentation_policy.md, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
-// physical line). doc-wrap is live; the legacyFiles exemption seam
-// in the rule stays available for any future carve-out.
+// physical line) and record-links (link targets and heading fragments
+// resolve). Both exempt the record trees declared below, under one key.
 //
 // Deliberately DISABLED (they contradict written policy):
 //   MD013 line-length -- documentation_policy.md `### Line wrapping`
@@ -13,6 +13,15 @@
 //
 // Suppression policy mirrors scripts/check_shell.sh: targeted context
 // only, never a blanket disable in a source file.
+
+// The record trees: closed records whose pointers and prose are read as
+// history rather than as text to maintain. Declared once here and referenced by
+// every rule that exempts them, so the list has one home and no rule grows its
+// own copy. A tree leaves the list when its records are migrated.
+//   devlog/handovers/    -- closed handovers, written before the current paths
+//   devlog/discussions/  -- closed discussion records, pre-M1.5 restructure
+//   docs/adr/archive/    -- superseded ADRs, kept for the decision history
+export const recordTrees = ["devlog/handovers/", "devlog/discussions/", "docs/adr/archive/"];
 
 export default {
   config: {
@@ -45,12 +54,68 @@ export default {
 
     // custom rule, enabled by name (default:false suppresses it otherwise)
     "doc-ascii": true,
-    // doc-wrap: live since the zero-findings confirmation (iteration
-    // 20260921-11). An object value { legacyFiles: [...] } exempts the
-    // named files, config-driven, never a per-file disable comment.
-    "doc-wrap": true,
+    // doc-wrap: one paragraph per physical line, registered as of the
+    // maintenance pass that found it enabled but never registered. The record
+    // trees are exempt; legacyFiles names live files not yet reflowed, exempt
+    // from the tree-wide run and enforced by scripts/check_doc_wrap_legacy.sh
+    // on the commit that next touches them, so an entry ends when its file is
+    // edited rather than never.
+    "doc-wrap": {
+      recordTrees,
+      legacyFiles: [
+        // A living record, not a closed one: it is written to weekly, so it is
+        // exempt from the tree-wide run and enforced on its next edit.
+        "devlog/AGENT_FEEDBACK.md",
+        "docs/adr/agent_sandbox_two_container_separation.md",
+        "docs/adr/command_flag_parsing.md",
+        "docs/adr/container_host_correspondence_mechanism.md",
+        "docs/adr/diff_packaging.md",
+        "docs/adr/drift_state_coherence.md",
+        "docs/adr/env_resolution.md",
+        "docs/adr/harness_versioning.md",
+        "docs/adr/interface_contract_compatibility.md",
+        "docs/adr/policy_declarative_framing.md",
+        "docs/adr/session_identifier.md",
+        "docs/adr/single_source_model_recommendations.md",
+        "docs/adr/task_queue_primitive.md",
+        "docs/adr/task_type_taxonomy.md",
+        "docs/architecture/execution_model.md",
+        "docs/architecture/sandbox_lifecycle.md",
+        "docs/architecture/security.md",
+        "docs/architecture/tool_interface.md",
+        "docs/concepts/context_resolution.md",
+        "docs/concepts/sandbox_host_interface.md",
+        "docs/concepts/sandbox_identity.md",
+        "docs/concepts/terminology.md",
+        "docs/development/bash-coding-conventions.md",
+        "docs/development/interface-conventions.md",
+        "docs/development/testing-conventions.md",
+        "docs/development/testing_policy.md",
+        "docs/operations/handover_policy.md",
+        "src/reasoning/agent/skills/caveman/SKILL.md",
+        "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
+        "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",
+        "src/reasoning/agent/skills/pi-bump/SKILL.md",
+        "src/reasoning/agent/skills/thermo-nuclear-code-quality-review/SKILL.md",
+        "src/reasoning/providers/hermes/quickstart.md",
+        "src/reasoning/providers/opencode/quickstart.md",
+        "src/reasoning/providers/pi/onboard-readme.md",
+        "tests/integration/README.md",
+        "workflow/coding-agent/audits/bash-audit.skill.md",
+        "workflow/coding-agent/audits/documentation-audit-comparison.md",
+        "workflow/coding-agent/drafts/read-through-run.md",
+        "workflow/coding-agent/drafts/sequential-work.md",
+        "workflow/coding-agent/prompts/document.md",
+        "workflow/coding-agent/prompts/gm.md",
+        "workflow/knowledge-vault/README.md",
+      ],
+    },
   },
-  customRules: ["./scripts/lint/doc-ascii.mjs"],
+  customRules: [
+    "./scripts/lint/doc-ascii.mjs",
+    "./scripts/lint/doc-wrap.mjs",
+    "./scripts/lint/record-links.mjs",
+  ],
   globs: ["**/*.md"],
   ignores: ["**/node_modules/**"],
 };
