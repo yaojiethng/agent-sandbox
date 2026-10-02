@@ -30,7 +30,9 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;M2.6 - Session Persistence (Foundation and Copy Model) | [Complete - see changelog](changelog.md#m26---session-persistence-foundation-and-copy-model) |
 | &nbsp;&nbsp;M2.7 - Session Identity and Harness Versioning | [Complete - see changelog](changelog.md#m27---session-identity-and-harness-versioning) |
 | **M3 - Manual Dispatch, Autonomous Execution, Manual Review** | [In progress](#m3---manual-dispatch-autonomous-execution-manual-review) |
-| &nbsp;&nbsp;M3.1 - Backpressure | [Complete - see changelog](changelog.md#m31---backpressure) |
+| &nbsp;&nbsp;[M3.1 - Backpressure](#m31---backpressure) | [In progress](#m31---backpressure) |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.1.1 - Backpressure mechanisms](changelog.md#m311---backpressure-mechanisms) | [Complete - see changelog](changelog.md#m311---backpressure-mechanisms) |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.1.2 - Gate upkeep](#m312---gate-upkeep) | Not started |
 | &nbsp;&nbsp;[M3.2.1 - Loops as Workflows](#m321---loops-as-workflows) | In progress |
 | &nbsp;&nbsp;[M3.2.2 - Audit and Review Workflow Cleanup](#m322---audit-and-review-workflow-cleanup) | In progress |
 | &nbsp;&nbsp;[M3.2.3 - Dispatch Workflows as a Command Surface](#m323---dispatch-workflows-as-a-command-surface) | In progress |
@@ -73,9 +75,27 @@ Open stories under active investigation. Closed stories are removed from this li
 
 #### M3.1 - Backpressure
 
-The copy-delivery Markdown `pre-commit` hook is the first instance ([`git_hooks.md`](../docs/adr/git_hooks.md)); mount delivery carries no hook under the current delivery constraint. The test-family split landed in handover `20260920-03`. This sub-milestone owns the backpressure mechanisms: the commit-time hooks and the lint rules that give code and prose commit-time feedback, and the cost of running those gates.
+**Objective:** every commit gets gate feedback, cheaply enough that the author waits for it rather than reaching for the bypass. M3.1.1 holds the mechanisms that landed; M3.1.2 holds the gates' own upkeep, which is open because adding a gate and keeping it fast are both unowned.
+
+#### M3.1.1 - Backpressure mechanisms
+
+The sub-milestone that built the gates: the commit-time hooks and the lint rules that give code and prose feedback, and the test harness they run against. Its outcome is recorded in [`changelog.md`](changelog.md#m311---backpressure-mechanisms).
 
 - [x] **Backpressure mechanisms, test-harness hardening, and the suite read-through** -- every commit gets gate feedback: a host-side install model gives the host checkout a staged Markdown + ShellCheck `pre-commit` hook ([`docs/adr/git_hooks.md`](../docs/adr/git_hooks.md)); the full lint gate runs cheap in parallel with the doc-wrap, doc-ascii, and sourced-lib contracts; and the test suite runs files in parallel under a pure-bash per-file deadline with a reason on rc-driven failures ([`docs/adr/test_harness.md`](../docs/adr/test_harness.md)). The suite read through against a fixed inventory frame into a 319-row register with bite checks and BDD write-backs, and its evidence folded into that register (plan [`20260922-design-settled-test_harness_improvements.md`](../devlog/discussions/20260922-design-settled-test_harness_improvements.md); decision [`20260922-design-settled-m3_1_test_harness_decision.md`](../devlog/discussions/20260922-design-settled-m3_1_test_harness_decision.md); mutation tier [`20260926-design-draft-mutation_corpus_runner.md`](../devlog/discussions/20260926-design-draft-mutation_corpus_runner.md)). Handover `20260927-01`; record [`20260927-report-settled-test_suite_readthrough.md`](../devlog/discussions/20260927-report-settled-test_suite_readthrough.md). Out of scope by operator direction: the compose YAML and the capability dockerfile, `scripts/macos_bootstrap.sh`, `scripts/manual/*.sh`, and the `check_*.sh` gates.
+
+#### M3.1.2 - Gate upkeep
+
+The copy-delivery Markdown `pre-commit` hook is the first instance ([`git_hooks.md`](../docs/adr/git_hooks.md)); mount delivery carries no hook under the current delivery constraint. Two things about the gates are unowned: what they cost the author, and the procedure for changing one. The gates themselves are not in question here.
+
+**Acceptance criteria:**
+
+- A commit's gate cost is measured on a realistic staged change and stated in [`bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md), so a regression has a number to be measured against.
+- Adding, amending and retiring a gate is a documented procedure a new maintainer can follow without asking, and a gate that is enabled but not registered fails loudly rather than silently doing nothing.
+
+- [ ] **Shorten the wall-clock cost of the gates** -- measure the hook on a realistic staged change and the lint umbrella over the tree, then take the largest share down. The 2026-09 study measured the umbrella at about 30 seconds before the parallel-shellcheck change and it is about 5 seconds now; nothing states the budget, so nothing says when it has regressed. The T2 telemetry rows are the measurement source for the subagent and tool-call costs that compete with gate cost in the author's wait.
+  - [ ] **State the budget and where it lives** -- a number in the conventions doc, and a row that fails when the measurement exceeds it.
+- [ ] **Formalize the procedure for adding, amending or removing a gate** -- the draft braindump is [`precommit-gate-runbook.md`](../workflow/coding-agent/drafts/precommit-gate-runbook.md), carrying the proposals from the 2026-10-02 session review and the measured markdownlint-cli2 mechanics. Refinement happens here. Raised by the record-correction prompt (handover `20261002-14`).
+  - [ ] **The exempted record trees hold 1,195 dead links** -- `devlog/handovers/`, `devlog/discussions/` and `docs/adr/archive/` carry relative links that point at files which do not exist, mostly paths that moved when `devlog` was restructured at M1.5. The gate prints the exempt file count every run and does not measure this. Re-path them or record an accepted baseline, and give the tree list an owner and an end the way `legacyFiles` has one.
 
 #### M3.2.1 - Loops as Workflows
 
@@ -211,8 +231,6 @@ T1 holds the harness's own instruction surfaces: the workflow prompts and the co
 - [x] **Stale artifact processing: the retired framing rows' documents** -- the concept-doc cleanup and the close-checklist refresh are owned by the M3.2.1 rows that claim them, and the stale concept docs were swept. Handover `20260928-06`.
 - [ ] **Agent-instruction pattern review (ossrules.md library)** -- review the design draft [`devlog/discussions/20260922-design-draft-ossrules_instruction_patterns.md`](../devlog/discussions/20260922-design-draft-ossrules_instruction_patterns.md); decide which of the five instruction patterns (verification matrix, router extension, ratchets, prohibition hygiene, single-source) and four skills (implementation-final-review, writing-commit-messages, docs-style, human-like-code-review) move into `AGENTS.md` and the policy docs; record the decision and land the accepted changes
 - [x] **Register the doc-wrap lint rule, and grandfather the record layer** -- the rule is registered and now runs: `grandfatherTrees` exempts the three closed-record trees, and `legacyFiles` names the 42 live files still carrying wrapped prose, exempt from the tree-wide run and enforced by `scripts/check_doc_wrap_legacy.sh` on the commit that next touches them. The seam takes a path prefix, which the earlier note recorded as the blocker. Handovers `20261001-01`, `20261002-14` and `20261002-21`.
-  - [ ] **The exempted record trees hold 1,195 dead links** -- `devlog/handovers/`, `devlog/discussions/` and `docs/adr/archive/` carry 2,068 relative links, of which 1,195 point at files that do not exist, mostly paths that moved when `devlog` was restructured at M1.5. The gate prints the exempt count every run; it does not measure this debt. Re-path them or accept them as a baseline, and give the tree an owner and an end the way `legacyFiles` has one.
-- [ ] **Write a lint-rules skill for adding, wiring and retiring a custom lint rule** -- the record-correction prompt closed a narrow procedural gap; the broader lint-rules gap is unscoped. Handover `20261002-14`.
 - [ ] **Record a determination rule for `superseded` in `discussion_policy.md`** -- what absorbs a discussion doc, a successor document or a handover, is unstated, and the question was deferred through three consecutive handovers. Handovers `20261001-02`, `20261001-03` and `20261001-04`.
 - [ ] **Decide whether the pi-bump procedure belongs in a prompt rather than a skill** -- deferred to M3.2.3, which owns the sole-prompt tidy for the `-work` family. Handover `20261002-13`.
 - [ ] **Give the last unpaired handover a roadmap row** -- the 2026-10-01 and 2026-10-02 runs closed twelve iterations with no roadmap row naming them, so their work was unreachable from the roadmap and their deferred items had nowhere to land. `20261001-02`, the discussion rename and the vestigial `spec` deletion, is the one still without a row. The rule that prevents a repeat is the `roadmap_policy` filing row above.

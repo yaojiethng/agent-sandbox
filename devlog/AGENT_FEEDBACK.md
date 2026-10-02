@@ -472,3 +472,16 @@ The first dispatch of the parallel-track trial produced a unit that changed `scr
 Two sub-cases from the same trial. A per-unit file list invents a boundary that does not exist: a repair subagent found a defect in a file its own track already owned, declined to fix it because that unit's list omitted the file, and reported it instead - the right call under the brief it was given, and a wasted dispatch under a track-level one. And a subagent working in a worktree outside the canonical sandbox directory needs the brief to remap the boundary rule explicitly, because the provider-layer instruction not to modify files outside the sandbox is a contradiction until the brief says which directory is the project root.
 
 Scope: brief construction for every dispatched subagent, not only the parallel case. Cross-reference: the trial's design record [`20260927-design-draft-parallel_auto_experiment.md`](discussions/20260927-design-draft-parallel_auto_experiment.md), findings F3 and F4; the unit and brief contract in [`auto.md`](../workflow/coding-agent/drafts/auto.md).
+
+### [O] 2026-10-02  --  The policy forbids task lists in non-active milestones, and the roadmap contradicts it every day
+
+state: open
+scoped: none
+legacy: none
+mitigation: M3.1.2 is planned with its task list and a `Not started` status, and `roadmap_policy.md` gains the invariant the practice relies on -- a milestone holding open rows is never `Complete`
+
+`roadmap_policy.md` `### Record shape` states: "Non-active sub-milestones -- carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active." The roadmap has not followed that for months. M3.2.2 carries four rows and reads `Not started` until this session made it `In progress`; M3.2.3 carries nine; the T tracks carry their work as rows; and this session creates M3.1.2 with two tasks and two moved rows against the same line. The alternative the policy names -- a milestone whose work lives in prose and no task list -- is the shape that produced the eighteen deferred items dropped from the handover chain, which were filed nowhere and surfaced only when a survey looked for them.
+
+The line protects something real: a reader scanning for unchecked work at the top level should find the active milestone, and a milestone reading `Complete` while holding open rows is a status that lies. But the line as written forbids the one thing that keeps work reachable, and the practice it forbids is what the roadmap depends on. The fix is not to restore the line; it is to replace it with the invariant the practice actually relies on, which is that a milestone holding open rows is never `Complete`, and that a milestone's rows move with it.
+
+Raised by the operator during plan session `20261002-23`.

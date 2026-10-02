@@ -148,7 +148,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.15 The changelog section map is unambiguous
 
-**Rule.** A milestone entry is the only level-2 heading in its section. A correction block closes the section it corrects, at level 3, carrying `[CORRECTION -- YYYY-MM-DD]` and the date. A summary link resolves to a milestone entry, never to a correction.
+**Rule.** A milestone entry is the only level-2 heading in its section. A correction block closes the section it corrects, at level 3, carrying the date. Two forms are in use and both are accepted: the changelog's own `### [CORRECTION - YYYY-MM-DD] Title`, and the handover form `[CORRECTION -- YYYY-MM-DD: one to three lines]`. What the form must carry is the date and the change; which form it uses follows the file it appears in. A summary link resolves to a milestone entry, never to a correction.
 
 **Check.** Read the `##` headings of `changelog.md` in order. Any `##` that is not `## M{n}` is a finding. Any summary link whose fragment names a correction block is a finding.
 

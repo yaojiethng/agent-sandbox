@@ -167,7 +167,7 @@ A diagnostic test (`tests/knowledge/diagnose_preflight.sh`) was added to verify 
 
 ---
 
-## M3.1 - Backpressure
+## M3.1.1 - Backpressure mechanisms
 
 *Every commit now gets immediate gate feedback: a host-side `pre-commit` hook gates staged Markdown and shell files, the full lint gate is cheap enough to run on every commit, and the test suite runs files in parallel under a per-file deadline that reports a reason on failure.*
 
@@ -176,5 +176,9 @@ The sub-milestone owns the backpressure mechanisms and their cost. A host-initia
 The harness itself was hardened: subshell-per-test isolation with fail-fast, per-test-unit accounting, an untyped fixture allocator, and the capture-and-assert helper (see [`docs/adr/test_harness.md`](../docs/adr/test_harness.md)). The whole suite was then read through against a fixed inventory frame -- what each test asserts, why it matters, and whether the assertion bites -- into a 319-row JSON register with bite checks and BDD write-backs, closed by a findings-to-tasks plan session and a rectification campaign that moved units to their subject files and pinned the coverage gaps (`20260925-01` through `20260925-23`; record [`devlog/discussions/20260927-report-settled-test_suite_readthrough.md`](../devlog/discussions/20260927-report-settled-test_suite_readthrough.md)).
 
 Failure signalling was settled as a family of conventions (rule 3.5 plus reason-key fixes), the dry-run harness moved to one probe and one channel, the mutation tier landed operator-triggered behind `MUTATION=1` (catalog and replayable runner; its cadence is an M4.1 decision), and the runner accepts subset selection without dropping the whole-suite gate. The read-through record itself compacted into the settled report with its evidence folded into the register (iteration `20260927-01`). Suite 998/0 across 66 files; lint clean at close.
+
+### [CORRECTION - 2026-10-02] The entry is renumbered from M3.1 to M3.1.1
+
+M3.1 became a parent when M3.1.2 was created to own the gates own upkeep, so the completed work sits at M3.1.1 and this entry is filed under that id. The text is unchanged. Renumbering a closed entry is a change its mechanics do not provide -- `roadmap_policy.md` corrects a closed changelog entry by marker and successor, not by edit -- and it was done at the operator direction, recorded in handover `20261002-23`.
 
 ---
