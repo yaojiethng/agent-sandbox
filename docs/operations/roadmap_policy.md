@@ -39,7 +39,7 @@ Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-cl
 
 1. **Write the changelog entry** -- produce the entry for the completed milestone using [Changelog Format](#changelog-format). Output as a fenced block so the operator can append it verbatim to `changelog.md`.
 2. **Remove the milestone section** -- delete the completed milestone's detail section from `roadmap.md` Upcoming Milestones. The detailed task breakdown is now in the changelog.
-3. **Update the Summary table** -- change the milestone row to `[Complete -- see changelog](changelog.md#m{n}--{title})` linking to the specific milestone section anchor.
+3. **Update the Summary table** -- change the milestone row to `[Complete -- see changelog]` carrying the changelog anchor, as in `changelog.md#m1--barebones-agent-container` linking to the specific milestone section anchor.
 4. **Promote the next milestone** -- move the next incomplete milestone from `roadmap_future.md` into `roadmap.md` under `## Upcoming Milestones` (see [Milestone Promotion](#milestone-promotion)).
 
 This is part of roadmap maintenance -- no separate trigger, no event gate. It runs automatically when the condition is met.
@@ -51,6 +51,7 @@ After compaction, update the Milestone Summary table:
 - A node that was compacted to a single `- [x]` entry gets its status updated in the table.
 - A completed sub-milestone (all tasks done, no remaining items) shows as `Complete` with a changelog link.
 - The parent milestone's status remains `In progress` until all direct children are complete.
+- A row's status follows the state of the section it names, and a staged milestone takes its row in `roadmap_future.md` until a promotion moves it.
 
 ---
 
@@ -83,7 +84,7 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 
 - Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited in milestone numbering. If a milestone has phases, they are numbered as discrete sub-milestones with distinct integers (M2.6.1, M2.6.2, ...).
 - The summary table in `roadmap.md` uses indentation to show parent-child nesting. The table displays each sub-milestone indented under its parent.
-- Completed nesting levels are shown as `[Complete -- see changelog](changelog.md#...)` with a link to the relevant changelog section anchor.
+- Completed nesting levels are shown as `[Complete -- see changelog]` carrying the anchor of the relevant section.
 - Changelog links point to the individual milestone or sub-milestone section in `changelog.md`, not to the file root.
 
 ### Record shape
@@ -96,7 +97,7 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 
 **Task granularity** -- identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 
-**Summary table format** -- the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors or changelog.md section anchors), never to file roots.
+**Summary table format** -- the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors, roadmap_future.md anchors or changelog.md section anchors), never to file roots. A link names the whole heading of its target, so a heading that carries a suffix yields a longer fragment; a status or a removal note belongs in the entry body, not in the heading.
 
 **Persistent sections** -- Milestone Summary table, Upcoming Milestones, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
 

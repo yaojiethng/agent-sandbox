@@ -162,5 +162,5 @@ filtering decisions of `20260722` remain in force and are **not** subsumed.
 ## Terminology
 
 Uses `agent-sandbox` session identity without redefining it: session identity is
-governed by [terminology.md#session](../concepts/terminology.md#session) and the
+governed by [terminology.md#session](../../concepts/terminology.md#session) and the
 session-identity ADRs, and is orthogonal to this software-version model.

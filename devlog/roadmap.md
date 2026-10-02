@@ -15,41 +15,41 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 
 | Milestone | Status |
 |---|---|
-| M1 - Barebones Agent Container | [Complete - see changelog](changelog.md#m1--barebones-agent-container) |
-| &nbsp;&nbsp;M1.1 - Interactive Virtual Workspace / Serve Mode | [Complete - see changelog](changelog.md#m11--interactive-virtual-workspace--serve-mode) |
-| &nbsp;&nbsp;M1.2 - Sandbox File Isolation & Diff Workflow | [Complete - see changelog](changelog.md#m12--sandbox-file-isolation--diff-workflow) |
-| &nbsp;&nbsp;M1.3 - Invocation Cleanup & Onboarding Workflow | [Complete - see changelog](changelog.md#m13--invocation-cleanup--onboarding-workflow) |
-| &nbsp;&nbsp;M1.4 - Image Staleness Detection | [Complete - see changelog](changelog.md#m14--image-staleness-detection) |
-| &nbsp;&nbsp;M1.5 - Workflow Convergence & Directory Restructuring | [Complete - see changelog](changelog.md#m15--workflow-convergence--directory-restructuring) |
-| **M2 - Reasoning/Capability Layer Separation** | [Complete - see changelog](changelog.md#m2--reasoningcapability-layer-separation) |
-| &nbsp;&nbsp;M2.1 - General Capability Layer Prototype | [Complete - see changelog](changelog.md#m21--general-capability-layer-prototype) |
-| &nbsp;&nbsp;M2.2 - Reasoning Layer Modularisation | [Complete - see changelog](changelog.md#m22--reasoning-layer-modularisation) |
-| &nbsp;&nbsp;M2.3 - Apply Workflow: Capability Layer Diff Pipeline | [Complete - see changelog](changelog.md#m23--apply-workflow-capability-layer-diff-pipeline) |
-| &nbsp;&nbsp;M2.4 - Session and Config Persistence | [Complete - see changelog](changelog.md#m24--session-and-config-persistence) |
-| &nbsp;&nbsp;M2.5 - Vault Capability Layer Prototype | Deferred to [W1](roadmap_future.md#w1--vault-capability-layer-prototype) |
-| &nbsp;&nbsp;M2.6 - Session Persistence (Foundation and Copy Model) | [Complete - see changelog](changelog.md#m26--session-persistence-foundation-and-copy-model) |
-| &nbsp;&nbsp;M2.7 - Session Identity and Harness Versioning | [Complete - see changelog](changelog.md#m27--session-identity-and-harness-versioning) |
-| **M3 - Manual Dispatch, Autonomous Execution, Manual Review** | [In progress](#m3--manual-dispatch-autonomous-execution-manual-review) |
-| &nbsp;&nbsp;M3.1 - Backpressure | [Complete - see changelog](changelog.md#m31--backpressure) |
-| &nbsp;&nbsp;[M3.2.1 - Loops as Workflows](#m321--loops-as-workflows) | In progress |
-| &nbsp;&nbsp;[M3.2.2 - Audit and Review Workflow Cleanup](#m322--audit-and-review-workflow-cleanup) | In progress |
-| &nbsp;&nbsp;[M3.2.3 - Dispatch Workflows as a Command Surface](#m323--dispatch-workflows-as-a-command-surface) | In progress |
-| **T - Harness Development Tracks** | [In progress](#t--harness-development-tracks) |
+| M1 - Barebones Agent Container | [Complete - see changelog](changelog.md#m1---barebones-agent-container) |
+| &nbsp;&nbsp;M1.1 - Interactive Virtual Workspace / Serve Mode | [Complete - see changelog](changelog.md#m11---interactive-virtual-workspace--serve-mode) |
+| &nbsp;&nbsp;M1.2 - Sandbox File Isolation & Diff Workflow | [Complete - see changelog](changelog.md#m12---sandbox-file-isolation--diff-workflow) |
+| &nbsp;&nbsp;M1.3 - Invocation Cleanup & Onboarding Workflow | [Complete - see changelog](changelog.md#m13---invocation-cleanup--onboarding-workflow) |
+| &nbsp;&nbsp;M1.4 - Image Staleness Detection | [Complete - see changelog](changelog.md#m14---image-staleness-detection) |
+| &nbsp;&nbsp;M1.5 - Workflow Convergence & Directory Restructuring | [Complete - see changelog](changelog.md#m15---workflow-convergence--directory-restructuring) |
+| **M2 - Reasoning/Capability Layer Separation** | [Complete - see changelog](changelog.md#m2---reasoningcapability-layer-separation) |
+| &nbsp;&nbsp;M2.1 - General Capability Layer Prototype | [Complete - see changelog](changelog.md#m21---general-capability-layer-prototype) |
+| &nbsp;&nbsp;M2.2 - Reasoning Layer Modularisation | [Complete - see changelog](changelog.md#m22---reasoning-layer-modularisation) |
+| &nbsp;&nbsp;M2.3 - Apply Workflow: Capability Layer Diff Pipeline | [Complete - see changelog](changelog.md#m23---apply-workflow-capability-layer-diff-pipeline) |
+| &nbsp;&nbsp;M2.4 - Session and Config Persistence | [Complete - see changelog](changelog.md#m24---session-and-config-persistence) |
+| &nbsp;&nbsp;M2.5 - Vault Capability Layer Prototype | Deferred to [W1](roadmap_future.md#w1----vault-capability-layer-prototype) |
+| &nbsp;&nbsp;M2.6 - Session Persistence (Foundation and Copy Model) | [Complete - see changelog](changelog.md#m26---session-persistence-foundation-and-copy-model) |
+| &nbsp;&nbsp;M2.7 - Session Identity and Harness Versioning | [Complete - see changelog](changelog.md#m27---session-identity-and-harness-versioning) |
+| **M3 - Manual Dispatch, Autonomous Execution, Manual Review** | [In progress](#m3---manual-dispatch-autonomous-execution-manual-review) |
+| &nbsp;&nbsp;M3.1 - Backpressure | [Complete - see changelog](changelog.md#m31---backpressure) |
+| &nbsp;&nbsp;[M3.2.1 - Loops as Workflows](#m321---loops-as-workflows) | In progress |
+| &nbsp;&nbsp;[M3.2.2 - Audit and Review Workflow Cleanup](#m322---audit-and-review-workflow-cleanup) | In progress |
+| &nbsp;&nbsp;[M3.2.3 - Dispatch Workflows as a Command Surface](#m323---dispatch-workflows-as-a-command-surface) | In progress |
+| **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
-| &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4--multi-agent-coordination) | Not started |
-| &nbsp;&nbsp;[M4.1 - Metadata Seeding](roadmap_future.md#m41--metadata-seeding) | Not started |
-| &nbsp;&nbsp;[M4.2 - Agent-Assigned Branch Management](roadmap_future.md#m42--agent-assigned-branch-management) | Not started |
-| &nbsp;&nbsp;[M4.3 - Task Dispatch](roadmap_future.md#m43--task-dispatch) | Not started |
-| &nbsp;&nbsp;[M4.4 - Constraint Enforcement](roadmap_future.md#m44--constraint-enforcement) | Not started |
-| &nbsp;&nbsp;[M4.5 - Review & CI/CD Integration](roadmap_future.md#m45--review--cicd-integration) | Not started |
-| &nbsp;&nbsp;[M4.6 - Background Work (parallel-work)](roadmap_future.md#m46--background-work-parallel-work) | Not started |
-| &nbsp;&nbsp;[M4.7 - The /auto Smart Dispatcher](roadmap_future.md#m47--the-auto-smart-dispatcher) | Not started |
-| &nbsp;&nbsp;[M4.8 - /goal (Loose-Goal Decomposition)](roadmap_future.md#m48--goal-loose-goal-decomposition) | Not started |
-| &nbsp;&nbsp;[M5 - Multi-Agent Coordination (post-M4)](roadmap_future.md#m5--multi-agent-coordination-post-m4) | Not started |
+| &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
+| &nbsp;&nbsp;[M4.1 - Metadata Seeding](roadmap_future.md#m41----metadata-seeding) | Not started |
+| &nbsp;&nbsp;[M4.2 - Agent-Assigned Branch Management](roadmap_future.md#m42----agent-assigned-branch-management) | Not started |
+| &nbsp;&nbsp;[M4.3 - Task Dispatch](roadmap_future.md#m43----task-dispatch) | Not started |
+| &nbsp;&nbsp;[M4.4 - Constraint Enforcement](roadmap_future.md#m44----constraint-enforcement) | Not started |
+| &nbsp;&nbsp;[M4.5 - Review & CI/CD Integration](roadmap_future.md#m45----review--cicd-integration) | Not started |
+| &nbsp;&nbsp;[M4.6 - Background Work (parallel-work)](roadmap_future.md#m46----background-work-parallel-work) | Not started |
+| &nbsp;&nbsp;[M4.7 - The /auto Smart Dispatcher](roadmap_future.md#m47----the-auto-smart-dispatcher) | Not started |
+| &nbsp;&nbsp;[M4.8 - /goal (Loose-Goal Decomposition)](roadmap_future.md#m48----goal-loose-goal-decomposition) | Not started |
+| &nbsp;&nbsp;[M5 - Multi-Agent Coordination (post-M4)](roadmap_future.md#m5---multi-agent-coordination-post-m4) | Not started |
 | **Standalone** | |
-| &nbsp;&nbsp;[M7 - Security and Network Hardening (Policy Layer)](roadmap_future.md#m7--security-and-network-hardening-policy-layer) | Not started |
-| &nbsp;&nbsp;[M8 - Skills / Templates](roadmap_future.md#m8--skills--templates) | Not started |
-| &nbsp;&nbsp;[M9 - Governance Hardening](roadmap_future.md#m9--governance-hardening) | Not started |
+| &nbsp;&nbsp;[M7 - Security and Network Hardening (Policy Layer)](roadmap_future.md#m7---security-and-network-hardening-policy-layer) | Not started |
+| &nbsp;&nbsp;[M8 - Skills / Templates](roadmap_future.md#m8----skills--templates) | Not started |
+| &nbsp;&nbsp;[M9 - Governance Hardening](roadmap_future.md#m9----governance-hardening) | Not started |
 
 ---
 
@@ -67,7 +67,7 @@ Open stories under active investigation. Closed stories are removed from this li
 
 **Objective:** Move from interactive prompting to structured single-task execution with enough logging to verify the agent is doing useful work. Requires the two-layer foundation from M2.
 
-**Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2--reasoningcapability-layer-separation) (headless mode requires the capability layer tool interface; task briefs are the operator input channel from M1.5).
+**Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2---reasoningcapability-layer-separation) (headless mode requires the capability layer tool interface; task briefs are the operator input channel from M1.5).
 
 **Finding -- Sub-milestone containment (recorded, not designed):** Milestones and sub-milestones are intended to be self-contained, but partial implementations from later milestones are frequently needed while the current milestone is incomplete. This suggests that how features are cut into sub-milestones, and how strictly they are sequenced, may be the wrong seam. The sub-milestone-as-container model is recognized as a candidate for re-examination, not as settled. Design and any restructuring is deferred to M3. The current deferred-items / sub-milestone task-list system is maintained until then.
 
@@ -141,7 +141,8 @@ Also in scope, the review-pass family: the three framing fixes tracking the `202
   - [x] Autonomous subagent draft: exhaustive tally of maintenance run tasks: handover chain, roadmap open/stale items and compaction, `AGENT_FEEDBACK` entries, manual indexes (none maintained by hand now), ADRs and discussion docs left unclosed after the work they recorded ships. Handover `20261002-10`.
   - [x] Migration: the two maintenance skills landed and `/gm` delegates its record checks to them. Handover `20261002-10`.
   - [ ] Manual quality pass and acceptance -- Original the dispatch prompt landed with agent-only review (agent lint and worker self-report, no operator gate), and produced seven `merge:` commits in one session, polluting the worktree. Raised (agent, 2026-10-02)
-  - [ ] Remove the superseded audit files -- `workflow/coding-agent/audits/roadmap-audit.skill.md`, `handover-audit.skill.md` and `audit.skill.md` keep their content under the two maintenance skills and are named for removal there.
+  - [x] **Remove the superseded roadmap maintenance files** -- `workflow/coding-agent/audits/roadmap-audit.skill.md` and `src/reasoning/agent/drafts/roadmap-management.skill.md` are removed; their content lives in `workflow/coding-agent/skills/roadmap-maintenance.md`.
+  - [ ] Remove the superseded handover audit files -- `workflow/coding-agent/audits/handover-audit.skill.md` and `audit.skill.md` keep their content under `skills/handover-maintenance.md` and are named for removal there.
 
 #### Not in scope: M3.2.2
 
@@ -209,7 +210,8 @@ T1 holds the harness's own instruction surfaces: the workflow prompts and the co
 - [ ] **Confirm whether a longstanding `AGENT_FEEDBACK` entry can sit open across many iterations** -- a milestone close surfaces open `[A]`/`[O]` entries and probation decisions and the sub-milestone pre-close review gate is meant to clear the backlog, yet an entry can survive many iterations when no close triggers a surface. Verify that the surfacing path clears entries (probation dismiss, maintain or escalate, and the open-entry reconcile at close), and confirm no entry is left open forever once its fix and its milestone have both passed. Raised 2026-09-28 from a follow-on audit; out of scope for M3.2.1, which owns the loop-to-workflow migration.
 - [x] **Stale artifact processing: the retired framing rows' documents** -- the concept-doc cleanup and the close-checklist refresh are owned by the M3.2.1 rows that claim them, and the stale concept docs were swept. Handover `20260928-06`.
 - [ ] **Agent-instruction pattern review (ossrules.md library)** -- review the design draft [`devlog/discussions/20260922-design-draft-ossrules_instruction_patterns.md`](../devlog/discussions/20260922-design-draft-ossrules_instruction_patterns.md); decide which of the five instruction patterns (verification matrix, router extension, ratchets, prohibition hygiene, single-source) and four skills (implementation-final-review, writing-commit-messages, docs-style, human-like-code-review) move into `AGENTS.md` and the policy docs; record the decision and land the accepted changes
-- [ ] **Register the doc-wrap lint rule, or grandfather the record layer** -- enabling the rule under the repository config yields 1891 findings across 626 files, concentrated in `devlog/handovers`, `devlog/discussions` and `docs/adr`. The exemption seam matches by suffix only, so grandfathering the record layer needs a seam that accepts a path prefix. Two iterations deferred it as a `workflow:` change with its own iteration, and it reached the roadmap twice from two handovers. Handovers `20261001-01` and `20261002-14`.
+- [x] **Register the doc-wrap lint rule, and grandfather the record layer** -- the rule is registered and now runs: `grandfatherTrees` exempts the three closed-record trees, and `legacyFiles` names the 42 live files still carrying wrapped prose, exempt from the tree-wide run and enforced by `scripts/check_doc_wrap_legacy.sh` on the commit that next touches them. The seam takes a path prefix, which the earlier note recorded as the blocker. Handovers `20261001-01`, `20261002-14` and `20261002-21`.
+  - [ ] **The exempted record trees hold 1,195 dead links** -- `devlog/handovers/`, `devlog/discussions/` and `docs/adr/archive/` carry 2,068 relative links, of which 1,195 point at files that do not exist, mostly paths that moved when `devlog` was restructured at M1.5. The gate prints the exempt count every run; it does not measure this debt. Re-path them or accept them as a baseline, and give the tree an owner and an end the way `legacyFiles` has one.
 - [ ] **Write a lint-rules skill for adding, wiring and retiring a custom lint rule** -- the record-correction prompt closed a narrow procedural gap; the broader lint-rules gap is unscoped. Handover `20261002-14`.
 - [ ] **Record a determination rule for `superseded` in `discussion_policy.md`** -- what absorbs a discussion doc, a successor document or a handover, is unstated, and the question was deferred through three consecutive handovers. Handovers `20261001-02`, `20261001-03` and `20261001-04`.
 - [ ] **Decide whether the pi-bump procedure belongs in a prompt rather than a skill** -- deferred to M3.2.3, which owns the sole-prompt tidy for the `-work` family. Handover `20261002-13`.
@@ -220,7 +222,7 @@ T1 holds the harness's own instruction surfaces: the workflow prompts and the co
 - [ ] **Scope-to-unit decomposition for autonomous runs** -- an autonomous iteration's scope proposal must carry a work-unit table (unit, commit type, file ownership, own handover) that the operator confirms at Gate 1, and the delivery is one commit per unit. Raised (operator, 2026-09-25) after the immediate fix lane landed six units of work in one commit. **Runtime half (2026-09-26):** [`sequential-work.md`](../workflow/coding-agent/drafts/sequential-work.md) runs any well-specified roadmap task, releases the plan once before dispatch, and ends in a bounded review loop ([`review-loop-run.md`](../workflow/coding-agent/drafts/review-loop-run.md)); the design record is [`20260926-design-draft-auto_run_protocol.md`](../devlog/discussions/20260926-design-draft-auto_run_protocol.md). **Parallel half (2026-09-27):** [`parallel-work.md`](../workflow/coding-agent/drafts/parallel-work.md) extends the dispatch to concurrent tracks, each in its own git worktree and branch, with the primary holding verification, records and the merge; the measured trial is [`20260927-design-draft-parallel_auto_experiment.md`](../devlog/discussions/20260927-design-draft-parallel_auto_experiment.md). **Governance half (2026-09-27):** the unit this row presupposed is defined in `iteration_policy.md` Step 2, linked from [`sequential-work.md`](../workflow/coding-agent/drafts/sequential-work.md), and the project `AGENTS.md` carries the scoping rule (handover [`20260927-08`](../devlog/handovers/20260927-08-workflow-unit_boundary_proposal_and_commit_granularity.md)).
   - [ ] **Trial the missing arm: a subagent proposes the work-unit split** -- the 2026-09-27 parallel-track trial defined every unit in the primary and handed each subagent a finished unit, so it measured the workflow and never the split. The apparent conclusion that a subagent cannot do this is unsupported: the question was never put to one. Run the same track plan with the split left to the subagents, then check the proposal against the properties `sequential-work.md` Step 1 requires -- disjoint file sets across the run, one commit per unit, one verification per unit, and no unit needing a decision. The comparison to make is against the primary's own split of the same plan, which is the recorded precedent. Findings F3 and F4 in [`20260927-design-draft-parallel_auto_experiment.md`](../devlog/discussions/20260927-design-draft-parallel_auto_experiment.md) narrow what a subagent could contribute: the split needs the whole plan, and the failure the trial actually hit was a derived file set, not a bad boundary.
 - [ ] **The dispatch shapes bypass the two operator-acceptance points** -- `/wrapup` reintroduces operator review and release, so explicit acceptance sits at two points: the combined scope+AC gate (the scoping / iteration-planning phase) and the wrapup (final result review and release). The autonomous dispatch shapes (`/sequential-work`, `/parallel-work`, and later the M4 `/auto` smart dispatcher) bypass both. At the first gate they waive confirmation on the condition that the task is already well-specified and needs no substantial operator input. At the wrapup they need an autonomous substitute for operator acceptance -- a review agent or a suite of review agents (subject unspecified; settle when the task is defined). Raised (operator, 2026-09-28) from the planning-session implications for the dispatch family, and the fan-out.
-- [x] **`parallel-auto` as a parallel extension of `/auto`** -- retired here in favour of [M4.6 Background Work](roadmap_future.md#m46--background-work-parallel-work), which owns the parallel work track.
+- [x] **`parallel-auto` as a parallel extension of `/auto`** -- retired here in favour of [M4.6 Background Work](roadmap_future.md#m46----background-work-parallel-work), which owns the parallel work track.
 - [ ] **Rename `fanout-run` to `fanout` and give it a doc pass** -- `fanout-run.md` carries content unrelated to execution. Rename it to `fanout` and run the advisor + conventions doc pass over it, per the prompt/skill authoring guidelines convention (below). Raised (operator, 2026-09-28).
 - [x] **Prompt and skill authoring guidelines convention** -- `docs/development/prompt-authoring-conventions.md` holds the authoring rules for prompts and skills; the `fanout` doc pass and the per-prompt quality passes read against it. Handover `20260929-04`.
 - [ ] **`fanout` redesign as dispatch-and-merge** -- reframe `fanout` as a way to run several subagents on different things and bring the results back to the main agent to merge. One use case remains here: design-option exploration. `fanout` explores design options; after it finishes, the main iteration accepts one; the output is a report, design, or ADR explaining why one option wins; the main agent then acts like `/sequential-work`, porting the winning fan-out branch (or a mix of a few) back onto its own working branch. The rewrite use case (1) was extracted to its own prompt, `task-queue` (an active M3.2.1 task), which shares `fanout`'s dispatch-and-merge shape with the operator as the synchronous bottleneck. Raised (operator, 2026-09-28).
@@ -267,6 +269,7 @@ The parent finding (cost, throughput, and failure modes are invisible for subage
 - [ ] **Roadmap-mechanism rewrite study** -- study the roadmap and management mechanism and decide what to borrow; the linear-style design above is the fold point for agreed borrowings. This task is the home for issue-tracker adoption: the read-through register's machine-readable findings file (`devlog/discussions/20260927-report-settled-test_suite_readthrough.jsonl`) is the first step toward it, because labelled data is one step short of a tracker. Its format is specified in [`20260925-design-draft-findings_register_format.md`](../devlog/discussions/20260925-design-draft-findings_register_format.md).
   - [ ] Symphony-spec study -- evaluate which features of OpenAI's Symphony spec to borrow; feeds the linear-style design above.
   - [ ] Next-task placement -- move the next-session seed out of the handover into a next-task subheader in the sub-milestone (the handover next-session trim is immediate; the subheader placement rides on the linear format).
+  - [ ] **Make the changelog append-only by construction** -- one file holds every closed milestone, every correction block and the entry a close is writing, so nothing stops a later run editing what a closed run wrote, and `roadmap_policy.md` states a rule no tool enforces. Append-only is a property of the layout, not of the rule: a file per closed milestone under `devlog/changelog/` with one index, or a directory a writer may only extend. Raised by the roadmap-maintenance design.
   - [ ] `.workspace/metadata.json` -- a suggestion, not a scheduled task: if the mechanism adopts a labelled task record, this is the shape it would take (`agent_id`, `task_id`, allowed files, instructions). Carried down from `roadmap_future.md` M4.1.
 - [ ] **Rotate out stale handovers and discussions** -- completed-milestone handovers and graduated stories are archived to a git tag or branch and removed from `HEAD`; the roadmap, architecture docs, and changelog remain the permanent record.
 - [ ] **Session (chat) log + generated-artifact archival** -- define storage rules for chat logs and any generated artifacts (perf logs, metrics) the pipeline starts producing; see `20260428-story-active-sequencing_and_knowledge_persistence.md`.

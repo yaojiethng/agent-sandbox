@@ -100,7 +100,7 @@ Prompt templates do not contain authoritative rules.
 
 ### Persistent devlog records (interim)
 
-`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface it belongs to is scoped for trim under the [Rotate Out Stale Handovers and Discussions](../../devlog/roadmap.md#t5--archival) task. Its precise end-state form is not yet determined (exact rules TBD).
+`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface it belongs to is scoped for trim under the [Rotate Out Stale Handovers and Discussions](../../devlog/roadmap.md#t5---archival) task. Its precise end-state form is not yet determined (exact rules TBD).
 
 ---
 

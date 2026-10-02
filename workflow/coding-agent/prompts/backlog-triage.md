@@ -23,9 +23,9 @@ Run this when the operator asks which work can proceed without them, before rele
 
 Routing:
 
-- A specific multi-unit plan the operator has already released is [`sequential-work.md`](sequential-work.md). That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
+- A specific multi-unit plan the operator has already released is [`sequential-work.md`](../drafts/sequential-work.md). That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
-- The generalized dispatcher that resolves execution order and picks a dispatch shape is [`auto.md`](auto.md), reserved for M4. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
+- The generalized dispatcher that resolves execution order and picks a dispatch shape is [`auto.md`](../drafts/auto.md), reserved for M4. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
 
 ## Step 1 - Build the candidate set
 
@@ -37,7 +37,7 @@ One candidate per open row. A row is open when its checkbox is unchecked. Record
 
 ## Step 2 - Apply the well-specifiedness test
 
-Apply the test from [`sequential-work.md`](sequential-work.md) Step 1 to every candidate. The test is: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
+Apply the test from [`sequential-work.md`](../drafts/sequential-work.md) Step 1 to every candidate. The test is: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
@@ -90,9 +90,9 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 ## Non-goals
 
-- Sequencing the runnable rows into a run plan. [`sequential-work.md`](sequential-work.md) owns the order and the unit split of a released plan.
+- Sequencing the runnable rows into a run plan. [`sequential-work.md`](../drafts/sequential-work.md) owns the order and the unit split of a released plan.
 - Surveying the project for work that is not on the roadmap. [`gm.md`](gm.md) owns the situational survey.
-- Choosing a dispatch shape, or resolving execution order across a dependency graph. [`auto.md`](auto.md) owns that, from M4.
+- Choosing a dispatch shape, or resolving execution order across a dependency graph. [`auto.md`](../drafts/auto.md) owns that, from M4.
 - Editing any record. A stale row becomes a finding; the record is fixed in an iteration.
 - Answering a question the operator owns. Triage surfaces it once, in a form that can be answered in a reply.
 

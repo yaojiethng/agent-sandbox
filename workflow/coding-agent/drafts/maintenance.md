@@ -27,10 +27,10 @@ The authoritative rules stay in the policy documents. The payloads are convenien
 
 ## When not to run, and what replaces it
 
-- A survey of project state (git history, stashes, branches, open feedback entries, unsettled discussions, and a list of candidate next tasks) is [`gm.md`](gm.md). This prompt supersedes the roadmap and handover parts of that survey, because the two payloads carry both and this prompt dispatches them. Migrating `gm.md` onto this prompt is a separate step and has not happened. Until that step lands, `gm.md` keeps its inline survey, and running both in one session duplicates the work.
-- Choosing which roadmap rows can run unattended is [`backlog-triage.md`](backlog-triage.md). A parked row is a planning question, not a maintenance defect.
-- Planning or opening a unit is [`plan.md`](plan.md) and [`iter.md`](iter.md). Maintenance corrects records inside an open unit; it does not decide what the next unit is.
-- Ending a session is [`wrapup.md`](wrapup.md). The close owns its own maintenance step and does not hand that step to this prompt.
+- A survey of project state (git history, stashes, branches, open feedback entries, unsettled discussions, and a list of candidate next tasks) is [`gm.md`](../prompts/gm.md). This prompt supersedes the roadmap and handover parts of that survey, because the two payloads carry both and this prompt dispatches them. Migrating `gm.md` onto this prompt is a separate step and has not happened. Until that step lands, `gm.md` keeps its inline survey, and running both in one session duplicates the work.
+- Choosing which roadmap rows can run unattended is [`backlog-triage.md`](../prompts/backlog-triage.md). A parked row is a planning question, not a maintenance defect.
+- Planning or opening a unit is [`plan.md`](../prompts/plan.md) and [`iter.md`](../prompts/iter.md). Maintenance corrects records inside an open unit; it does not decide what the next unit is.
+- Ending a session is [`wrapup.md`](../prompts/wrapup.md). The close owns its own maintenance step and does not hand that step to this prompt.
 - A finding that no policy text covers is a gap to report, not a rule to add here.
 
 ## The procedure
@@ -157,7 +157,7 @@ A run that changed no record says so in one line, with the state it found and th
 ## Non-goals
 
 - Editing `gm.md`. This prompt supersedes the survey `gm.md` performs inline over the roadmap and the handover chain, and migrating `gm.md` onto this prompt is a separate step. Until it lands, `gm.md` remains as it is and this prompt is the way to reach either payload.
-- Surveying project state outside the two records. Git history, stashes, branches, feedback entries, and candidate next tasks belong to [`gm.md`](gm.md).
+- Surveying project state outside the two records. Git history, stashes, branches, feedback entries, and candidate next tasks belong to [`gm.md`](../prompts/gm.md).
 - Deciding what the next unit of work is. This prompt corrects records; it does not choose work.
 - Writing policy. A finding no policy covers is reported, and the rule belongs in `docs/operations/`.
 - Running several maintenance tracks at once. This prompt dispatches one worker at a time. A multi-track maintenance campaign is [`parallel-work.md`](parallel-work.md), and the fork, join, and bring-back primitive is the task-queue prompt.

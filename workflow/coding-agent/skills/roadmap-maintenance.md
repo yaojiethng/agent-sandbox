@@ -5,23 +5,36 @@ description: "Maintains devlog/roadmap.md and leaves it correct. Use when the op
 
 # roadmap-maintenance
 
-<!-- Source: this skill subsumes workflow/coding-agent/audits/roadmap-audit.skill.md. That file is superseded and its removal belongs to the operator's roadmap task. -->
+<!-- Source: this skill subsumed workflow/coding-agent/audits/roadmap-audit.skill.md, now removed. Steps 1 to 4 carry that file's checks A to D unchanged; Step 5 carries the correction pass it deliberately lacked. -->
 
 ## Purpose
 
-Maintains `devlog/roadmap.md`. The run finds each defect, corrects it, and records what it changed, so the roadmap is correct when the run ends. An audit only reports and leaves the defect in place. This runbook therefore corrects what it finds and holds back only what needs the operator's judgement.
+Maintains the three roadmap records: `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md`. The run finds each defect, corrects it, and records what it changed, so the records are correct when the run ends. An audit only reports and leaves the defect in place. This runbook therefore corrects what it finds and holds back only what needs the operator's judgement.
 
-This runbook is a convenience copy of the checks. The rules live in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md). Read that document for the authoritative form before acting. Where this runbook and the policy disagree, the policy wins.
+The three files are one record: a milestone title, a status, or an anchor that disagrees across them is the same defect whichever side of the boundary it sits on. `devlog/roadmap.md` carries the active and upcoming milestones, `devlog/roadmap_future.md` the milestones staged for promotion, and `devlog/changelog.md` the milestones already closed.
 
-The subject is the roadmap alone. Handover content and handover chain maintenance belong to [`handover-maintenance.md`](handover-maintenance.md).
+The transition procedures live in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) -- the compaction cascade and the top-level close -- and the milestone prompts invoke them. This runbook owns the coherence checks and the schedule that runs them; the policy owns the invariants those checks protect. A check stated here restates no rule the policy carries, and a rule the policy carries is never restated here.
+
+The handover is not the subject. Handover content and handover chain maintenance belong to [`handover-maintenance.md`](handover-maintenance.md).
 
 ## When to run
 
-- At iteration start, in the roadmap check that opens the iteration.
-- Before a compaction pass, to confirm the pass is safe (Step 4).
-- When the operator asks to check the roadmap against `roadmap_policy.md`.
+The schedule follows access rather than a calendar: a run checks a record when a run reads it.
 
-Do not run it as a closed-history sweep. A compacted roadmap has, by design, dropped the detail this runbook checks.
+| Record | When it is checked |
+|---|---|
+| `devlog/roadmap.md` | Every iteration open and close, because an iteration reads and writes it. |
+| `devlog/roadmap_future.md` | When a milestone promotion reads it to choose and move the next milestone, before the operator's promotion decision. |
+| `devlog/changelog.md` | When a milestone close reads it to append its entry. |
+
+The operator may also trigger a read of `devlog/roadmap_future.md` and `devlog/changelog.md` at any time, as a carve-out from the access rule, so a stale record never waits for a promotion that may not come.
+
+Also run it:
+
+- Before a compaction pass, to confirm the pass is safe (Step 4).
+- When the operator asks to check the records against `roadmap_policy.md`.
+
+Do not run it as a closed-history sweep over the records. A compacted roadmap has, by design, dropped the detail this runbook checks, and a closed changelog entry is a historical claim about what was true when its milestone closed.
 
 ## Procedure
 
@@ -36,6 +49,18 @@ Run through every task entry in the active sub-milestone.
 **1.3 Partial completion format.** For an item that has both done and pending sub-items, the parent item uses `- [ ]` and describes what is complete, the completed sub-items use `- [x]` indented under the parent, and the pending sub-items use `- [ ]` indented under the parent. An item is a defect when a done sub-item lacks its `- [x]` marker, or when the parent carries no completion context.
 
 Completion criterion: no unconverted marker remains, no sub-item sits inside prose, and every partially complete parent describes what is complete.
+
+### 1.4 A closed item carries no open work
+
+**Rule.** An item marked `- [x]` holds no `- [ ]` child. A parent whose children are not all complete is itself `- [ ]`; the marker on the parent states the parent's own outcome, not its children's.
+
+**Check.** Walk every `- [x]` item and read its indented children. Report any open child and the parent that carries it.
+
+**Correction.** Flip the parent to `- [ ]` and write the completion context the parent is missing, so a reader scanning task level sees what is still open.
+
+**Why this exists.** The task list is scanned for `- [ ]` at the parent level, so a closed parent holding open work reads as done.
+
+Completion criterion: 1.1 through 1.4 hold, and no `- [x]` item carries an open child.
 
 ### Step 2 - Compaction compliance
 
@@ -87,7 +112,77 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 **3.10 Mis-filed rows.** A row belongs in the milestone whose section blurb claims the work. If a blurb claims it and it sits elsewhere, move it. If no blurb claims it, the milestone scope is wrong, and that is an operator call, not a move.
 
-Completion criterion: no floating prose summary, superseded item, empty section, redundant ordering block, or dangling dependency remains in the active sub-milestone, and every row passes 3.6 through 3.10.
+### 3.11 The summary table agrees with the sections it names
+
+**Rule.** Every row of the Milestone Summary table resolves against what it names: the milestone's title is the section heading's title, its status matches the state of that section's task list, and its link target exists -- a heading in the file it points at, whether that is `roadmap.md`, `roadmap_future.md` or `changelog.md`. A heading that carries a suffix has that suffix in its fragment, so a summary link names the whole heading and nothing else.
+
+**Check.** For each row, read the linked heading and the status it declares. A row that says `Complete` whose section still carries open tasks is a finding; a row whose fragment matches no heading is a finding; two records naming one milestone differently are a finding.
+
+**Correction.** Repoint the link, align the title, and set the status from the section. A milestone staged in `roadmap_future.md` takes its row there; a closed one takes a changelog link.
+
+**Why this exists.** The table is what a reader consults instead of the sections, so a row that disagrees with its section is worse than no table.
+
+### 3.12 No item is restated across the records
+
+**Rule.** An item that exists in one roadmap file is named, not restated, in the other; one file owns it. The owning file is named in the other, so a reader can find it without searching.
+
+**Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate, keep one, and make the other name it.
+
+**Correction.** Keep the copy that sits under the milestone whose blurb claims the work, and reduce the other to a named pointer. Two rows that share an owner, a bar and a subject merge into one parent carrying both as subtasks.
+
+**Why this exists.** `roadmap_policy.md` `### Filing rules` already requires it: "Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`; name it, do not duplicate it." This check enforces that rule and adds the record-layer case the rule does not name -- a copy in `changelog.md` of a row still open in a roadmap file.
+
+### 3.13 A row states no fact the tree can falsify
+
+**Rule.** A row names no line number, no row number in another file, and no version literal. Numbers that go stale are held in the record they belong to: the handover, the report, or the file itself. A row that must name a literal names the file that owns it, so a reader re-derives the value.
+
+**Check.** Search each row for `\d+`, a `line \d+` or `row \d+` form, a version string, and a path that no longer exists. A row pointing at a sibling record by position rather than by name is a finding, because the position moves with every edit above it.
+
+**Correction.** Replace the positional or literal reference with the record's name or path, and put the number in the record it describes. When the row's subject is a value that must be readable at a glance, say where the authoritative value lives.
+
+**Why this exists.** A number in a record is true exactly once, and the pass that found these had two open rows pointing at roadmap rows that no longer held the work they named.
+
+### 3.14 The write-back pairing is not this run's to state
+
+Not a check. A landed row naming the handover that landed it is not a rule in any policy; `iteration_policy.md` `### Unconditional write-back` and `handover-maintenance.md` Step 6 own the pairing, and they run commit-to-row. A row that repeats a handover id states a link `git log` already holds, so a run that reports one as a missing rule is reporting the wrong direction. When the pairing has failed, the finding belongs to the close that let it through.
+
+### 3.15 The changelog section map is unambiguous
+
+**Rule.** A milestone entry is the only level-2 heading in its section. A correction block closes the section it corrects, at level 3, carrying `[CORRECTION -- YYYY-MM-DD]` and the date. A summary link resolves to a milestone entry, never to a correction.
+
+**Check.** Read the `##` headings of `changelog.md` in order. Any `##` that is not `## M{n}` is a finding. Any summary link whose fragment names a correction block is a finding.
+
+**Correction.** Move the correction block to the end of the section it corrects and demote it one level, keeping its date and its content.
+
+### 3.16 A new entry states whether its capability still stands
+
+**Rule.** The section a close has just written says whether the capability still stands, and its summary row agrees. A capability removed in a later milestone carries the removal as a statement inside its entry, not as a suffix on the heading and not as a sentence inside a correction block.
+
+**Check.** For each entry written or amended in this run, read the summary row that links it. A row reading `Complete` for an entry that records removal is a finding.
+
+**Correction.** Add the removal statement to the entry, and make the row name it.
+
+**Scope.** Only the section this run wrote or amended. Entries closed earlier are historical claims about what was true when they closed, and this check does not reach them.
+
+### 3.17 A new entry carries no fact the tree can falsify
+
+**Rule.** The section a close has just written carries no file path, version literal, line number, or file list. A closed entry describes what the system could do and the mechanism that enabled it; the mechanism's file names live in the handovers and the ADRs.
+
+**Check.** For the section this run wrote, search for paths, version strings and line numbers.
+
+**Correction.** Cut the path list and name the record that holds it.
+
+**Scope.** Only the section this run wrote. An older entry that names a path which no longer exists is true history, and correcting it rewrites the past into the present tense.
+
+### 3.18 A superseded entry says so where a reader will see it
+
+**Rule.** Supersession is a statement in the entry, under its own heading, carrying the milestone that superseded it. It is not a bracketed suffix on the milestone heading, because a suffix changes that heading's anchor and breaks every inbound summary link.
+
+**Check.** For each entry whose capability a later milestone removed, read the entry's opening. A suffix on the milestone heading, or a supersession sentence with no date, is a finding.
+
+**Correction.** Move the suffix into the entry as a `### Superseded` block naming the milestone and the date.
+
+Completion criterion: no floating prose summary, superseded item, empty section, redundant ordering block, or dangling dependency remains in the active sub-milestone; every row passes 3.6 through 3.13; and every entry this run wrote passes 3.15 through 3.18.
 
 ### Step 4 - Pre-compaction readiness
 
@@ -101,7 +196,17 @@ Completion criterion: all three hold, or the run stops with the failing conditio
 
 ### Step 5 - Record the run
 
-Report the changes per `roadmap_policy.md`. A correction that is purely mechanical is applied and reported. A correction that changes what the roadmap asserts needs the operator's release first. Report it, mark it High severity, and stop.
+Report the changes per `roadmap_policy.md`. A correction that is purely mechanical is applied and reported. A correction that changes what a record asserts needs the operator's release first. Report it, mark it High severity, and stop.
+
+Four rules bound what a run may write.
+
+**Permission follows the trigger.** The trigger that started the run sets its ceiling. Operator approval of one correction never widens it: work past the ceiling is an inventory row, and the operator picks it as the next unit.
+
+**A High finding carries its evidence.** Report the tree read that produced it -- the path, the grep, the count -- so the operator can check the claim without re-running the pass. A claim about the state of a record is a hypothesis until a command confirms it, and a reviewer's claim is a hypothesis until the command confirms it too. Disagreement resolves by command, not by another round.
+
+**A correction is the smallest edit that clears the check.** A rewrite is proposed, never applied. When the check is satisfied by moving a row or flipping a marker, the run moves or flips and does not restate the row's prose, and it does not drop a row where a compaction is the correct correction: a deletion loses the design links the survival table in Step 2.3 requires.
+
+**A correction never rewrites a claim the run has not re-read.** Every path, id, count and version a correction writes is read from the tree in the same run that writes it. Where the tree and the record disagree, the record is corrected and the finding says which one was wrong.
 
 ## Output shape
 

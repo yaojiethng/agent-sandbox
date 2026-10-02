@@ -14,7 +14,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
 
-**Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2--reasoningcapability-layer-separation).
+**Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2---reasoningcapability-layer-separation).
 
 **Hermes python base refactor (non-urgent):** The shared `python-harness` base was designed but never built. Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness. If W1 can be implemented without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider.
 

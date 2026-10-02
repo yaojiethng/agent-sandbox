@@ -18,7 +18,7 @@ Use a batch for the dispatch, not a single subagent. A batch is the set of file 
 
 ## Dispatching through taskq
 
-`taskq` is the dispatch when the operator must see the fan-out break-point by break-point, and for a read-only provenance fan-out -- a rename trace or a link trace -- where each worker returns a verdict and the primary consolidates the writes. The task-queue prompt ([`task-queue.md`](../../../src/reasoning/agent/prompts/task-queue.md)) owns the mechanics; this section names the loop and the worker contract.
+`taskq` is the dispatch when the operator must see the fan-out break-point by break-point, and for a read-only provenance fan-out -- a rename trace or a link trace -- where each worker returns a verdict and the primary consolidates the writes. The task-queue prompt ([`task-queue.md`](task-queue.md)) owns the mechanics; this section names the loop and the worker contract.
 
 One task per unit. Fork every task from one baseline with `taskq_fork`, which cuts the worktree and the branch and returns the path; dispatch one fresh subagent into each returned worktree. The worker reads only its own worktree and the read-only git history, writes one report file, commits it, then writes one request document and stops:
 

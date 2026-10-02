@@ -181,7 +181,7 @@ Debug helpers that verify the internal invariants of a specific production scrip
 
 **Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does the dry-run reasoning probe fail?"). Each section checks one link in the chain -- environment, library sourcing, path resolution, script hygiene, etc. Because they are diagnostic (not deterministic pass/fail, may need operator interpretation, or run only in a container), they are **not** in the `make test` suite.
 
-**Relation to ACs:** Diagnostic scripts can be referenced from acceptance criteria as a regression-guard AC for a recurring bug class where a full unit test is impractical. See [handover policy Acceptance criteria -- Regression guard](handover_policy.md#acceptance-criteria).
+**Relation to ACs:** Diagnostic scripts can be referenced from acceptance criteria as a regression-guard AC for a recurring bug class where a full unit test is impractical. See [handover policy Acceptance criteria -- Regression guard](../operations/handover_policy.md#acceptance-criteria).
 
 **Naming:** `tests/knowledge/diagnose_<subsystem>.sh` -- mirrors the production script name it diagnoses.
 

@@ -98,6 +98,6 @@ Image identity is separate: images are tagged by project name only (`sandbox-<pr
 ## Related Documents
 
 - [`docs/concepts/sandbox_identity.md`](../../concepts/sandbox_identity.md) -- stable reference for primitives, derivation formulas, artefact paths, and consumption table
-- [`scripts/start_agent.sh`](../../scripts/start_agent.sh) -- primitive set implementation
-- [`scripts/stop.sh`](../../scripts/stop.sh) -- label-based lifecycle filtering implementation
-- [`src/build/docker-compose.yml`](../../src/build/docker-compose.yml) -- compose template with label schema
+- [`scripts/start_agent.sh`](../../../scripts/start_agent.sh) -- primitive set implementation
+- [`scripts/stop.sh`](../../../scripts/stop.sh) -- label-based lifecycle filtering implementation
+- [`src/build/docker-compose.yml`](../../../src/build/docker-compose.yml) -- compose template with label schema
