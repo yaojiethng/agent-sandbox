@@ -1,8 +1,11 @@
 # Handover - The record-correction prompt
 
-## Status
+**Date:** 2026-10-02
+**Milestone:** M3.2.1 - Loops as Workflows
+**Type:** Workflow
+**Status:** Closed
 
-Complete.
+[CORRECTION -- 2026-10-02: The record carried no Date, Milestone, Type or Status field and stated its status as `Complete.` under a `## Status` heading. The metadata block above carries the values the record already stated.]
 
 ## Objective
 

@@ -24,7 +24,7 @@ The `maintenance` dispatch prompt was written by an autonomous worker unit, land
 
 | File | Change |
 |---|---|
-| `workflow/coding-agent/drafts/` (new) | eleven prompts moved in: fanout-run, parallel-work, sequential-work, the five `-run` review templates, auto (the reserved M4 stub), task-queue, maintenance |
+| `workflow/coding-agent/drafts/` (new) | twelve prompts moved in: fanout-run, parallel-work, sequential-work, review-loop-run, the five `-run` review templates, auto (the reserved M4 stub), task-queue, maintenance |
 | `docs/development/prompt-authoring-conventions.md` | the draft-status and switch-over-gate section |
 | `scripts/lint/prompt-frontmatter.mjs` | the drafts root's deliberate exclusion stated |
 | eight consumer files | references re-pathed; ADR and iteration-policy mentions carry the draft qualification |
@@ -36,12 +36,14 @@ The `maintenance` dispatch prompt was written by an autonomous worker unit, land
 
 | # | Criterion | Verification | Result |
 |---|---|---|---|
-| 1 | No unreviewed prompt is reachable from the live prompt roots | `ls workflow/coding-agent/prompts/` holds twelve, none drafted; the drafts folder holds eleven | pass |
+| 1 | No unreviewed prompt is reachable from the live prompt roots | `ls workflow/coding-agent/prompts/` holds twelve, none drafted; the drafts folder holds twelve | pass |
 | 2 | The frontmatter gate excludes the drafts root | gate scans 27 files (was 38) | pass |
-| 3 | Zero stale references to the moved paths | repo-wide sweep of `prompts/<moved>.md` clean | pass |
+| 3 | Zero stale references to the moved paths | repo-wide sweep of `prompts/<moved>.md` | fail: the handovers and `devlog/discussions/` and `devlog/AGENT_FEEDBACK.md` still carry the old paths |
 | 4 | Suite and lint green | run at close: 1012 of 1012, lint clean across 4 gates | pass |
 
 ## Findings
 
 - `parallel-work.md`, `sequential-work.md`, `adversarial-review-run.md` and `review-loop-run.md` already carried `Draft -` in their descriptions; `fanout-run.md` carried `**Status:** draft`. The move formalizes what those markers stated but did not enforce.
 - `churn-analysis-run.md`, `read-through-run.md`, `review-pass-run.md` and `test-quality-campaign-run.md` carried no draft marker; they move by the operator's explicit list, which is the review the rule requires.
+
+[CORRECTION -- 2026-10-02: The drafts root holds twelve files, not eleven; `review-loop-run.md` was unnamed in the Completed table. Acceptance criterion 3 did not hold at close: a repo-wide sweep returns stale `prompts/<moved>.md` paths in the closed handovers, in `devlog/discussions/` and in `devlog/AGENT_FEEDBACK.md`. Re-pathing those records is document-maintenance work and is recorded as a roadmap row.]

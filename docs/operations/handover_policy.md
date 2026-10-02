@@ -232,8 +232,8 @@ Skills and prompt templates that encode this policy. When this document is revis
 | Skill / Prompt | Purpose |
 |---|---|
 | [`agent/prompts/iter.md`](../../workflow/coding-agent/prompts/iter.md) | Iteration start -- handover creation, roadmap maintenance check, scope gate and release gate |
-| [`audits/roadmap-audit.skill.md`](../../workflow/coding-agent/audits/roadmap-audit.skill.md) | Roadmap format compliance, compaction audits |
-| [`audits/handover-audit.skill.md`](../../workflow/coding-agent/audits/handover-audit.skill.md) | Handover format compliance -- validates content rules defined here |
+| [`skills/roadmap-maintenance.md`](../../workflow/coding-agent/skills/roadmap-maintenance.md) | Roadmap format compliance and compaction, run as maintenance rather than audit |
+| [`skills/handover-maintenance.md`](../../workflow/coding-agent/skills/handover-maintenance.md) | Handover format compliance -- validates the content rules defined here |
 
 Policy documents that this document depends on:
 

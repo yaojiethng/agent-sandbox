@@ -1,6 +1,9 @@
 # Handover - The roadmap consolidation plan
 
-## Status
+**Date:** 2026-10-02
+**Milestone:** M3.2.1 - Loops as Workflows
+**Type:** Plan
+**Status:** Closed
 
 Plan. No consolidation is executed in this iteration.
 

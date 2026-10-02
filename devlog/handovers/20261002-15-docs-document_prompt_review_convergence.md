@@ -1,6 +1,9 @@
 # Handover - The /document prompt review convergence
 
-## Status
+**Date:** 2026-10-02
+**Milestone:** M3.2.1 - Loops as Workflows
+**Type:** Docs
+**Status:** Closed
 
 Convergence NOT reached. Three review rounds ran; two independent lenses, run twice, plus a third lens once. The findings from all three rounds are applied and the tree is green, but the two converging lenses have not stopped producing new material.
 

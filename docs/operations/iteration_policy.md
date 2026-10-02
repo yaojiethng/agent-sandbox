@@ -159,4 +159,4 @@ There is no document registry. The docs tree itself is the authoritative file li
 |---|---|
 | [`documentation_policy.md`](documentation_policy.md) | Document structure and folder ownership rules |
 | [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
-| [`audit.skill.md`](../../workflow/coding-agent/audits/audit.skill.md) | Operator-invoked handover audit procedure -- deferred chain integrity, structural completeness, dangling references |
+| [`skills/handover-maintenance.md`](../../workflow/coding-agent/skills/handover-maintenance.md) | Operator-invoked handover chain maintenance -- deferred chain integrity, structural completeness, dangling references |
