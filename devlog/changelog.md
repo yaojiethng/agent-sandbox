@@ -181,3 +181,13 @@ Failure signalling was settled as a family of conventions (rule 3.5 plus reason-
 M3.1 became a parent when M3.1.2 was created to own the gates own upkeep, so the completed work sits at M3.1.1 and this entry is filed under that id. The text is unchanged. Renumbering a closed entry is a change its mechanics do not provide -- `roadmap_policy.md` corrects a closed changelog entry by marker and successor, not by edit -- and it was done at the operator direction, recorded in handover `20261002-23`.
 
 ---
+
+## M3.2.1 - Loops as Workflows
+
+*The loop procedures now live in workflow prompts while the policies state only the rules, so a reader finds each rule in one place and each procedure in one runbook.*
+
+The minor and major loop procedures moved out of `iteration_policy.md` and `roadmap_policy.md` into `/iter`, `/plan`, `/milestone-start` and `/milestone-close`, with the policies keeping the invariants and linking their runbook. The policy and procedure deconfliction passes read 196 rules and 235 steps against a canonical-owner test, retiring `milestone_policy.md` and folding the milestone grain into `roadmap_policy.md`. The loop taxonomy and its two-grain state diagram took one home in the concept document, and the transition rules and rejected alternatives took another in the loop-workflow ADR.
+
+`/document` landed as the docs-session runbook, `task-queue` and its `taskq` extension as a general sequencing primitive, and `/wrapup` as the shared close mechanics for `/iter`, `/plan` and `/document`; `/iter` collapsed from three gates to two. The policy set was declared as every `docs/**/*_policy.md` file, each carrying a `description` and a `scope` in frontmatter, and the reasoning layer gained one shared runtime base.
+
+---

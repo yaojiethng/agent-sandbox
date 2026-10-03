@@ -27,7 +27,7 @@
 #  - libs/provider-entrypoint.sh (_ensure_harness_keys merge function)
 #  - docs/architecture/provider_lifecycle.md ("Config Flow and Fragility Notes")
 #  - docs/concepts/agent_workflow.md ("Skills and Prompts Layer Model")
-#  - docs/operations/testing_policy.md (knowledge test format)
+#  - docs/development/testing_policy.md (knowledge test format)
 #
 # Not run by make test. Run manually:
 #   bash tests/knowledge/knowledge_pi_config_cycle.sh

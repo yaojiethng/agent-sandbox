@@ -79,8 +79,7 @@ fi
 
 ### 1.6 `BASH_SOURCE[0]` resolves to the symlink path
 
-When called through a symlink, `${BASH_SOURCE[0]}` returns the symlink path.
-This is usually correct for intentional tooling symlinks. If the real file location is needed, use `realpath`:
+When called through a symlink, `${BASH_SOURCE[0]}` returns the symlink path. This is usually correct for intentional tooling symlinks. If the real file location is needed, use `realpath`:
 
 ```bash
 REAL_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
@@ -228,12 +227,9 @@ In the last row, weaker than `-uo pipefail` is permitted only with an inline rat
 
 Notes:
 
-- Direct execution of subcommand scripts is the rule 1.13 dispatch architecture,
-  not an accident to be designed away.
-- `-u` in library code would fire on consumer-controlled environments;
-  libraries validate their inputs explicitly instead.
-- A class change (e.g. a lib growing an entry point) means re-declaring flags
-  for the new class as part of that change.
+- Direct execution of subcommand scripts is the rule 1.13 dispatch architecture, not an accident to be designed away.
+- `-u` in library code would fire on consumer-controlled environments; libraries validate their inputs explicitly instead.
+- A class change (e.g. a lib growing an entry point) means re-declaring flags for the new class as part of that change.
 
 ---
 
@@ -359,6 +355,10 @@ A `while read` redirection inside a sourced-lib function -- `while IFS='=' read 
 ### 4.6 A prose comment must not start the token `shellcheck`
 
 ShellCheck parses any comment line whose first token after `#` is the word `shellcheck` as a directive. A prose line such as `# shellcheck absent -- rc 1` becomes a directive the tool tries to parse, failing the gate with SC1072/SC1073 that looks like a false positive until the directive rule is known. Word the line so the tool name is not the first token (for example "the shellcheck tool absent"). Real directives (`# shellcheck disable=SCxxxx`, `enable=`, `source=`) are exempt. The gate's prose-comment pass (`scripts/check_shell.sh`) enforces this rule.
+
+### 4.7 A process scan must not match the scanning shell
+
+A scan for a process by name matches its own command line, because the pattern text is in the scanner's arguments: a loop that feeds the matching pids to `kill` signals itself, and the calling tool dies with 143. Match on the executable as well as the argument (`node\ *server.mjs`), and exclude the current pid. `pkill` is absent from the runtime image, so a cleanup that uses it removes nothing and reports no error; when the cleanup holds a port, verify the port is closed rather than read the kill as success.
 
 ---
 

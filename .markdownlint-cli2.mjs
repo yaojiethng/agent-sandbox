@@ -70,9 +70,6 @@ export default {
     "doc-wrap": {
       recordTrees,
       legacyFiles: [
-        // A living record, not a closed one: it is written to weekly, so it is
-        // exempt from the tree-wide run and enforced on its next edit.
-        "devlog/AGENT_FEEDBACK.md",
         "docs/adr/agent_sandbox_two_container_separation.md",
         "docs/adr/command_flag_parsing.md",
         "docs/adr/container_host_correspondence_mechanism.md",
@@ -94,7 +91,6 @@ export default {
         "docs/concepts/sandbox_host_interface.md",
         "docs/concepts/sandbox_identity.md",
         "docs/concepts/terminology.md",
-        "docs/development/bash-coding-conventions.md",
         "docs/development/interface-conventions.md",
         "docs/development/testing-conventions.md",
         "src/reasoning/agent/skills/caveman/SKILL.md",
