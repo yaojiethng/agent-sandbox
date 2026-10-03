@@ -39,6 +39,8 @@ SRC="${SEED_SRC:-/src}"
 DEST="${SEED_DEST:-/home/agentuser/sandbox}"
 # session_state.sh comes from the harness libs bind mount (compose sets both).
 LIB_DIR="${SEED_LIB_DIR:-/opt/harness-libs}"
+# shellcheck disable=SC1090,SC1091  # mount-point path by design
+source "$LIB_DIR/session_inventory.sh"
 # FLATTEN is set by the seeder service environment from the session record.
 # false/empty = full (native .git copy); true = flattened (git-init baseline).
 FLATTEN="${SEED_FLATTEN:-false}"
@@ -93,7 +95,7 @@ verify_parity() {
 # enumerated set, nothing extra, nothing dropped.
 verify_baseline() {
   local src="$1" dest="$2"
-  if ! git -C "$dest" rev-parse HEAD >/dev/null 2>&1; then
+  if ! git_head_resolvable "$dest"; then
     echo "Error: flatten seed produced no baseline commit in $dest" >&2
     return 1
   fi
@@ -125,7 +127,7 @@ main() {
   # harness session-env gate already requires commits for every session before
   # delivery dispatch; this guard is the delivery-layer statement of the same
   # invariant for direct invocation of the seeder.
-  if ! git -C "$SRC" rev-parse HEAD >/dev/null 2>&1; then
+  if ! git_head_resolvable "$SRC"; then
     die "repository at $SRC has no commits. Make an initial commit before starting a session."
   fi
 
@@ -182,7 +184,7 @@ main() {
   # the volume copy only -- the host stack is untouched.
   git -C "$DEST" stash clear || die "clearing the host stash stack in the volume failed"
 
-  # Object-store prune (study 20260911-study-seed_object_store_cleanliness.md,
+  # Object-store prune (study 20260911-study-settled-seed_object_store_cleanliness.md,
   # ADR 2026-09-11 entry): the native .git copy carries unreachable host data
   # (stash objects, reflog-anchored history). The sandbox baseline is the
   # seeded HEAD -- no archaeology crosses. The prune runs only when the probe

@@ -32,21 +32,21 @@ Example (from new-session eval):
 
 | Invariant | Grounding |
 |---|---|
-| I1  --  No "Step 1b" references | `iteration_policy.md` Step naming |
-| I2  --  No compaction at Step 1 | `roadmap_policy.md` Steps 8-9 |
-| I3  --  Post-close bookkeeping recovery present | `handover_policy.md` Step 1 recovery check |
-| I4  --  Scope + AC gates present | `handover_policy.md` Gates 1 and 2 |
+| I1  --  No minor-loop step-number scaffolding in the policies | `iteration_policy.md` and `roadmap_policy.md` state invariants, not `Step N --` procedure mirrors |
+| I2  --  No compaction at iteration start | `roadmap_policy.md` roadmap-maintenance rules |
+| I3  --  Post-close bookkeeping recovery present | `handover_policy.md` recovery check |
+| I4  --  Scope gate + release gate present | `iteration_policy.md` Gate names |
 
 ### 2. Write code-based evaluators
 
 For each invariant, write a deterministic check. Prefer grep over LLM:
 
 ```bash
-# I1: No stale step references
-grep -qi "step.*1b" "$f" && echo "FAIL I1" || echo "PASS I1"
+# I1: No minor-loop step-number scaffolding in the policies (Step 1..N mirror headings)
+grep -Eq "^###? Step [0-9]" "$f" && echo "FAIL I1" || echo "PASS I1"
 
-# I2: No compaction at Step 1 (allow negations)
-grep -qi "compact.*step 1\|compaction.*step 1" "$f" | grep -qi "no longer" && echo "PASS I2 (negation)" || ...
+# I2: No compaction at iteration start (allow negations)
+grep -qi "compact.*iteration start\|compaction.*iteration start" "$f" | grep -qi "no longer" && echo "PASS I2 (negation)" || ...
 ```
 
 Code-based evaluators are free, fast, and reproducible. They produce false positives on negation/clarification text  --  flag these for human triage, don't remove them.
@@ -83,7 +83,7 @@ When the parallel session gap is resolved, behavioral eval adds:
 
 - Given a project with handover X and roadmap state Y, does the agent create the correct handover?
 - Does divergence detection trigger under the right conditions?
-- Does the agent stop at Gate 1 / Gate 2 without producing output?
+- Does the agent stop at the scope gate or the release gate without producing output?
 
 ---
 
@@ -114,5 +114,5 @@ Use the cheapest tier that catches the failure class. Code-based for regressions
 ## Related
 
 - [`20260522-story-active-prompt_eval_infrastructure.md`](../../devlog/discussions/20260522-story-active-prompt_eval_infrastructure.md)  --  Investigation findings, open questions, case study analysis
-- [`/tmp/eval-new-session.sh`](/tmp/eval-new-session.sh)  --  Concrete eval script for new-session prompts
+- `/tmp/eval-new-session.sh`  --  Concrete eval script for new-session prompts
 - `docs/operations/handover_policy.md#related-skills`  --  Skill->policy dependency mapping

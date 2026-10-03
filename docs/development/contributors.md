@@ -18,7 +18,7 @@ Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to
 
 - The agent runtime is untrusted. Agents operate inside containers; no direct host access.
 - All outputs are proposals. The operator reviews, approves, and commits all changes.
-- Multi-agent orchestration (parent/child dispatch) is a future milestone -- not currently active. See `roadmap_future.md` -- M4-M6.
+- Multi-agent coordination (parent/child dispatch) is a future milestone -- not currently active. `task-queue`, the parallel fan-out prompt, is an active M3.2.1 task. See `roadmap_future.md` -- M4 (Multi-Agent Coordination, with M4.1-M4.6).
 - Output naming conventions and metadata requirements are defined per milestone as they are implemented.
 
 For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/concepts/agent_workflow.md`](../concepts/agent_workflow.md).
@@ -61,9 +61,9 @@ See [`docs/operations/standard_operating_procedures.md`](../operations/standard_
 
 Before making any documentation or roadmap change, read the relevant policy:
 
-- [`docs/operations/documentation_policy.md`](documentation_policy.md) -- document structure, folder ownership, enforcement rules
-- [`docs/operations/roadmap_policy.md`](roadmap_policy.md) -- roadmap update sequence and cleanup rules
-- [`docs/operations/iteration_policy.md`](iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
+- [`docs/operations/documentation_policy.md`](../operations/documentation_policy.md) -- document structure, folder ownership, enforcement rules
+- [`docs/operations/roadmap_policy.md`](../operations/roadmap_policy.md) -- roadmap update sequence and cleanup rules
+- [`docs/operations/iteration_policy.md`](../operations/iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
 
 ---
 
@@ -75,6 +75,5 @@ Before making any documentation or roadmap change, read the relevant policy:
 | [`docs/architecture/security.md`](../architecture/security.md) | Security model and trust boundaries |
 | [`docs/architecture/threat_model_stride.md`](../architecture/threat_model_stride.md) | STRIDE threat model |
 | [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) | Operational SOPs |
-| [`docs/operations/iteration_policy.md`](iteration_policy.md) | Iteration workflow and milestone planning |
-| [`docs/operations/roadmap_policy.md`](roadmap_policy.md) | Roadmap policy |
-| [`docs/concepts/autonomous_task.md`](../concepts/autonomous_task.md) | Autonomous task lifecycle (M3) |
+| [`docs/operations/iteration_policy.md`](../operations/iteration_policy.md) | Iteration workflow and milestone planning |
+| [`docs/operations/roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap policy |

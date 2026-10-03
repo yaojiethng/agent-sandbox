@@ -25,8 +25,8 @@ M2.6 Phase 1.6 -- spec file cleanup only.
 | File | Reason |
 |---|---|
 | `devlog/discussions/spec_context_dir_removal.md` | Spec file -- roll into handover `20260611-01-impl-context_dir_removal.md`, then delete |
-| `devlog/discussions/spec_apply_workspace_refactor.md` | Spec file -- roll into handover `20260523-11-plan-container_layer_redesign.md`, then delete |
-| `devlog/discussions/spec_test_infrastructure.md` | Spec file -- roll into appropriate handover, then delete |
+| `devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` | Spec file -- roll into handover `20260523-11-plan-container_layer_redesign.md`, then delete |
+| `devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` | Spec file -- roll into appropriate handover, then delete |
 | `devlog/discussions/20260523-design-active-container_layer_redesign.md` | Active spec -- renamed to design format and kept |
 
 ## Completed this session
@@ -34,10 +34,10 @@ M2.6 Phase 1.6 -- spec file cleanup only.
 | File | Change |
 |---|---|
 | `devlog/discussions/spec_context_dir_removal.md` | Deleted -- decisions captured in `20260611-01-impl-context_dir_removal.md` |
-| `devlog/discussions/spec_apply_workspace_refactor.md` | Deleted -- decisions captured in `20260428-01-impl` and `20260428-03-impl` |
-| `devlog/discussions/spec_test_infrastructure.md` | Deleted -- decisions captured in `20260428-06-workflow` and `20260429-02-impl` |
+| `devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` | Deleted -- decisions captured in `20260428-01-impl` and `20260428-03-impl` |
+| `devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` | Deleted -- decisions captured in `20260428-06-workflow` and `20260429-02-impl` |
 | `devlog/discussions/spec_container_layer_redesign.md` | Renamed to `20260523-design-active-container_layer_redesign.md` -- still active |
-| `docs/development/project_index.md` | Removed stale reference to deleted `spec_test_infrastructure.md` |
+| `docs/development/project_index.md` | Removed stale reference to deleted `20260428-design-settled-test_infrastructure_improvements.md` |
 
 ## Acceptance criteria
 

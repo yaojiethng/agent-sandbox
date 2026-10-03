@@ -102,3 +102,5 @@ semantics decision; provider default; M2.6 mount work.
 - [ ] Roadmap checkboxes updated
 - [ ] Operator released pre-close gate
 - [ ] Status -> Closed; committed
+
+[CORRECTION -- 2026-09-21]: the git-operations-touching-index entries persist (routed M3 T7; not deleted). The negative-test-mutation and subagent-review-remedy entries raised this session consolidated into the M3 T1 evidence-validation entry; python3-absence consolidated into M3 T4 library-migrations. Entries reconciled and removed from `AGENT_FEEDBACK.md`.

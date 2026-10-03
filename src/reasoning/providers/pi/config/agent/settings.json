@@ -1,8 +1,9 @@
 {
-  "lastChangelogVersion": "0.86.0",
+  "lastChangelogVersion": "1.0.0",
+  "defaultProjectTrust": "always",
   "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-flash",
-  "defaultThinkingLevel": "off",
+  "defaultModel": "space-bunny-free",
+  "defaultThinkingLevel": "low",
   "followUpMode": "all",
   "enablePromptCommands": true,
   "compaction": {
@@ -21,13 +22,13 @@
     "/opt/workflow/agent"
   ],
   "enabledModels": [
-    "openrouter/z-ai/*",
-    "openrouter/qwen/*",
-    "anthropic/*",
-    "opencode/*-free",
+    "opencode-go/space-bunny-free",
     "opencode-go/*",
+    "opencode/*-free",
+    "deepseek/*",
     "openrouter/deepseek/*",
-    "deepseek/*"
+    "openrouter/z-ai/*",
+    "openrouter/qwen/*"
   ],
   "hideThinkingBlock": false,
   "skills": [

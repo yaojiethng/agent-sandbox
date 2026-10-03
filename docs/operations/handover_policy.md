@@ -1,6 +1,11 @@
+---
+description: "Owns handover content rules: valid field states, null markers, the section format, and the correction procedure."
+scope: ["devlog/handovers/", "/iter", "/plan", "/document", "/wrapup", "/milestone-close"]
+---
+
 # Handover Policy
 
-**Role:** Defines handover content rules: valid field states, null markers, format, and the correction procedure. For the operational workflow (when to populate each field, step sequencing, gates), see [`iteration_policy.md`](iteration_policy.md).
+For the operational workflow -- when to populate each field, step sequencing, and the gates -- see [`iteration_policy.md`](iteration_policy.md).
 
 A handover is a log describing the work done in the iteration: what was done and what comes next, with enough fidelity that a new agent can continue without reconstructing state from the iteration history.
 
@@ -44,15 +49,14 @@ Stored in the `devlog/handovers/` directory. One file per iteration. Do not over
 
 ## Types
 
-Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at scope confirmation (Steps 1-2), before the work is known in detail; the commit type at close disambiguates the subclass.
-Each iteration type must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types.
+Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at the scope gate, before the work is known in detail; the commit type at close disambiguates the subclass. Each iteration type must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types.
 
 | Type | Shortform | Deliverable -- what the iteration produces | Commit mapping |
 |---|---|---|---|
 | Implementation | `impl` | Behaviour work: a new capability, a fix, or a restructure. The commit type (`feat`/`fix`/`refactor`/`test`/`build`) disambiguates the subclass at close. | `feat`, `fix`, `refactor`, `test`, `build` |
 | Discussion | `discussion` | An in-flight discussion document that has not yet resolved to a decision. | `docs` |
 | Design | `design` | Decision and evaluation work: ADRs, running investigations, option evaluation, maintaining ADRs while evaluating multiple candidates. Jump-right-in, often interleaved with `impl` commits. | `docs` |
-| Plan | `plan` | Major-loop milestone scoping: a large task list and assigning work to iterations. | `docs` |
+| Plan | `plan` | Planning at any grain: a milestone's scope and its task list, or one task scoped to its unit. | `plan` |
 | Documentation | `docs` | Project documentation under `docs/` -- descriptive prose that is not a decision record. | `docs` |
 | Workflow | `workflow` | Policy, governance, AGENTS.md, prompts, and `workflow/` agent-behaviour contract files. | `workflow` |
 | Housekeeping | `chore` | Small administrative or cosmetic maintenance: stale links, linting, index cleanup, roadmap bookkeeping. | `chore` |
@@ -67,58 +71,43 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 
 A handover has three states:
 
-**Open** -- created at iteration start (`iteration_policy.md` [Step 1 Details](iteration_policy.md#step-1-open-handover)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
+**Open** -- created at iteration start (`iteration_policy.md` [Iteration Invariants](iteration_policy.md#iteration-invariants)). Populated from the roadmap entry for the target sub-milestone and from the prior handover if one exists. The prior handover's Status header must be verified; if it is not "Closed", continue the existing session rather than starting a new one. If there is reason to suspect progress was lost, propose recovery.
 
 **Active** -- updated throughout the iteration as tasks complete, decisions are made, and scope changes are noted. The Status header is set to "Active".
 
-**Closed** -- finalised at iteration end (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
+**Closed** -- finalised at iteration end (`iteration_policy.md` [close invariants](iteration_policy.md#iteration-invariants)). Records what was completed, marks deferrals explicitly, and seeds the next iteration. The Status header is set to "Closed".
 
 ---
 
 ## Format
 
 ```markdown
-# Agent Handover
+---
+date: YYYY-MM-DD
+milestone: <sub-milestone ID and name -- e.g. M2.1 -- General Capability Layer Prototype>
+type: <Implementation | Discussion | Design | Plan | Documentation | Workflow | Housekeeping | Audit>
+status: <Open | Active | Closed>
+---
 
-**Date:** YYYY-MM-DD
-**Milestone:** <sub-milestone ID and name -- e.g. M2.1 -- General Capability Layer Prototype>
-**Type:** <Implementation | Discussion | Design | Plan | Documentation | Workflow | Housekeeping | Audit>
-<Story | Study | Spec> (deprecated -- historical handovers only)
-**Status:** <Active | Closed>
+# Handover - <the concrete subject>
 
 ## Objective
 <One sentence: what this iteration achieves. Scoped to the iteration, not the sub-milestone.>
 
 ## Scope
-<Which task groups or tasks from the roadmap this iteration targets. Reference by group name; do not copy the task list. If design questions are blocking, list them explicitly as blockers.>
-
-## Carried forward
-<Items explicitly deferred from the prior iteration that this iteration is picking up. One row per item, with a reference to the handover it came from. Populated per `iteration_policy.md` Step 1 from the prior handover's Deferred items. If nothing was carried forward, write the canonical marker.>
-
-| Item | From handover |
-|---|---|
-| <deferred item description> | <YYYYMMDD-NN-TYPE-description> |
+<Which task groups or tasks from the roadmap this iteration targets. Reference by group name; do not copy the task list. If design questions are blocking, list them explicitly as obstacles. When this iteration works a subtask of a parent row, open with one continuation line naming the parent row and the handover it continues from. An item raised in-session and ruled out of scope is recorded here as one sentence with its reason; an item deferred with a destination is written back to the roadmap instead. The handover carries no cross-iteration state beyond this, the milestone marker, and the iteration's own roadmap write-back.>
 
 ## Acceptance criteria
-<Every AC describes a delta: something observable that was false or absent before the iteration and true or present after it. The operator verifies by running the system -- never by reading source alone.
+<Table: criterion | verification | result. One row per criterion.
 
-For bugfixes, the delta is implicit: "error X no longer appears in command Y's output." The original error log or test failure is the requirement anchor -- write the AC as a pass/fail check that asserts the error is gone.
+What makes a criterion well-formed -- the delta rule, traceability, the verification preference order, the paired negative check on a rename, the companion-file grep, the regression guard, and the `Operator` / `Agent` marking -- is [`iteration_policy.md`](iteration_policy.md#acceptance-criteria-invariants)'s. This section owns the table and the marker below.
 
-For features or reworks, the delta traces to a specific story pain point, requirement, or design decision. If the AC cannot be traced to something concrete (a story entry, a design record, a reported pain), it is likely not needed.
-
-Verification preference order: unit test > integration test > manual script > operator-run command with documented expected output. Use the minimal level that reliably asserts the delta. Manual verification is acceptable when automation is impractical.
-
-AC-level guidelines:
-- **Rename or delete:** include a paired negative check ("old path does not exist") alongside the positive check ("new path exists"). Both required.
-- **Rename companion files:** after defining the production ACs, grep for companion files (tests, knowledge tests, fixtures) matching the old path pattern and include or defer explicitly.
-- **Regression guard (bugfix only):** when the bug represents a recurring class -- a bash trap, a common mis-pattern, something review often misses -- add a generic guard (one repo-wide grep for all .sh files, not a per-file test). One-off logic errors do not need one.
-
-At iteration end, mark each criterion as accepted or pushed to next iteration. Both visible.>
+At iteration end, mark each criterion as accepted or pushed to the next iteration. Both visible.>
 
 Not yet defined.
 
 ## Hot files
-<Files in scope for this iteration. Each entry is a markdown link with a one-line note on why it is in scope. Populated per `iteration_policy.md` Step 1 from the roadmap task list. Updated per `iteration_policy.md` Steps 8-9 Details as tasks complete or new files enter scope.>
+<Files in scope for this iteration. Each entry is a markdown link with a one-line note on why it is in scope. Populated from the roadmap task list. Updated as tasks complete or new files enter scope.>
 
 | File | Why in scope |
 |---|---|
@@ -129,12 +118,29 @@ Not yet defined.
 
 None.
 
+## Decisions pending
+<Table: question | what it blocks | options. Questions the operator still owns, raised at any point in the iteration. If none, write the canonical marker.>
+
+A pending decision is one the agent cannot settle from the records. It is not a task, and it never appears in the roadmap: the roadmap holds work, and a question is not work until it has an answer. The section exists so the operator is never surprised by a question the agent has been holding.
+
+The agent writes an entry the moment it becomes blocked, not at the gate where the block is felt. A decision raised during design is recorded while the design is open, so the operator sees it while there is still time to redirect the iteration.
+
+Every entry names what it blocks, so the operator can judge urgency, and gives the options with their consequences, so a reply can be a pick rather than a question. An entry that only states that a decision is needed is not an entry.
+
+A pending decision closes in one of three ways, and the close is recorded in this section until the section is empty: the operator answers it and the answer moves to the Decisions table with its rationale; the agent finds the answer in a record and cites it; or the block is real and the work moves out of scope, in which case the work is written back as an open roadmap row and the question leaves the handover with it.
+
+| Question | Blocks | Options |
+|---|---|---|
+| <the decision, in one question> | <the work that cannot proceed without it> | <option and consequence, per option> |
+
+None.
+
 ## Findings
-<Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a blocker encountered, or a new file entering scope. Do not log routine reads or completed tasks here -- only write when something changes what you are doing or what the next iteration needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at iteration end and route it to its destination (`AGENT_FEEDBACK.md`, `GOTCHAS.md`, Decisions table, Deferred items, or `roadmap.md`). Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
+<Append-only. Written immediately when something changes the plan: a bug or contradiction encountered, steering received from the operator, a obstacle encountered, or a new file entering scope. Do not log routine reads or completed tasks here -- only write when something changes what you are doing or what the next iteration needs to know. This is the shared agent-managed recording surface for the agent-feedback and gotchas records. Classify each entry at the review/publish step at iteration end and : route it to its destination (`AGENT_FEEDBACK.md`, Decisions table, or `roadmap.md`). The `[A]`/`[O]` tag names who raised the entry. Attribution is operator-owned; the agent proposes a class and the operator confirms it.>
 
 | Finding | Type | Impact |
 |---|---|---|
-| <description> | bug / contradiction / steering / blocker / scope change | current iteration / next iteration / roadmap |
+| <description> | bug / contradiction / steering / obstacle / scope change | current iteration / next iteration / roadmap |
 
 None.
 
@@ -143,24 +149,20 @@ None.
 
 No file changes this iteration.
 
-## Deferred items
-<Items that were in scope but are not complete. Each item must have an explicit reason for deferral and a note on where it goes next (next iteration, different sub-milestone, or roadmap_future.md). If nothing is deferred, write the canonical marker.>
+The handover has no Deferred items, Carried forward, or What's Next section. Each was a transient task record; the roadmap write-back handles the durable form. An item deferred with a destination becomes an open roadmap row at the close. An item ruled out of scope is one sentence in Scope with its reason. What to pick up next is the agent's advisory recommendation in the wrapup report -- the roadmap stays the sole task list, and the when and invariants of its update live in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched).
 
-Omit any item that is already a named task in `roadmap.md` or `roadmap_future.md`; do not re-list an item that has a roadmap home. The roadmap is the sole task list.
-
-None.
-
-## What's Next
-<Sub-milestone ID and name for the next iteration.>
-<Whether roadmap maintenance has been run or is pending -- omit if mid-milestone and no sub-milestone just completed.>
-<Blocking design questions the next agent must resolve before advancing.>
-<Known watch-out items (capped at three).>
-<Grep or file reads to run at iteration start, if known.>
-
-**Conclusions from this iteration:** decisions made, approaches confirmed, dead ends ruled out. Not a full log -- only what would otherwise be re-derived from scratch. Omit if nothing was concluded beyond what is in the Decisions table.
 ```
 
-What's Next is context-only. It does not carry a task list. The roadmap is the sole task list; its update procedure lives in [`roadmap_policy.md`](roadmap_policy.md#when-the-roadmap-is-touched).
+---
+
+## The Format Window
+
+The format above is enforced on every handover dated **2026-10-01 or later**, and `scripts/check_handover_format.sh` enforces it as a blocking gate. A record dated before that date is exempt, and stays exempt when it is amended: a correction to an old record does not pull it into the window.
+
+Two properties bound what the window reaches, and both are properties of the tree rather than of the rule:
+
+- **A record with no frontmatter block is unreachable.** The scanner reads the block to find the date, so a record carrying the pre-YAML bold header is skipped whatever the window says. Naming the file on the command line enforces it regardless of date, and is the only way to reach such a record.
+- **The window is a floor, not a migration.** A record inside the window that does not conform is a gate finding, and the window amends it onto the format. A record outside it is not a defect and is not amended; its non-conformance is left to the day the window moves past it.
 
 ---
 
@@ -172,22 +174,27 @@ When a section has nothing to record, write the canonical marker and nothing els
 |---|---|
 | Acceptance criteria | `Not yet defined.` |
 | Decisions | `None.` |
+| Decisions pending | `None.` |
 | Findings | `None.` |
 | Completed | `No file changes this iteration.` |
-| Deferred items | `None.` |
-| Carried forward | `None.` |
 
 ---
 
 ## Corrections to Closed Handovers
 
-A closed handover is edited only at the operator's direction, and every edit carries the corresponding correction tag. The operator signals direction any way it is said: "amend the handover", "re-open the handover", "edit it", "fix the typo", or by naming the change. None of these signals changes the Status field; the correction procedure runs without re-opening the record.
+A closed handover is edited only at the operator's direction, and every edit carries the corresponding correction tag. A correction ends where the record started. The Status field, the original date and the metadata are unchanged in the corrected record; a reopen and re-close cycle is a mechanism, not a change. The operator signals direction any way it is said: "amend the handover", "re-open the handover", "edit it", "fix the typo", or by naming the change.
 
 A handover is a decision log, not a factual reference. It is never corrected autonomously. Only the operator directs an edit.
 
 ### When to apply
 
-Apply a correction only when the operator directs it. Reasons include a factual error in the record (an incorrect status, a wrong filename, a misrecorded decision) and folding a later fix into a close commit (a squash, a fixup, or an amend). Do not use a correction to add new information, change scope, or extend the record. New work belongs in a new handover.
+Apply a correction at the operator's direction. The shared principle, the propagation rule and the agent's two stops and one smell are in [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections); this section states what qualifies here. Three forms qualify:
+
+- A **misrecording**: an incorrect status, a wrong filename, a misrecorded decision, or a count or state that disagrees with the tree.
+- A **folded fix**: a later squash, fixup or amend folded into the close, and the record amendments that ride with it.
+- An **omission**, and only where the handover's own account of what the iteration turned in is wrong for want of it: the iteration delivered something and left the record silent about a defect in it.
+
+An omission is not a place to record work the iteration never did, and it is not a place to state a limit the iteration drew only afterwards. Both are new work, and a new handover carries them.
 
 ### Procedure
 
@@ -205,58 +212,20 @@ Apply a correction only when the operator directs it. Reasons include a factual 
 Keep the blank line before the closing fence. Without it, the tag paragraph parses as a setext heading and the Markdown lint gate reports `MD022` (see [`documentation_policy.md`](documentation_policy.md#markdown-lint-gate)).
 
 1. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
-2. Do not alter the Status, timestamps, or any other metadata field.
-3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [Steps 8-9 Details](iteration_policy.md#steps-89-close-and-seed)):
+2. Do not alter the Status, timestamps, or any other metadata field in the corrected record.
+3. **Findings triage -- if the correction surfaces a new finding** (a compatibility gap, a regression, a policy violation, a missing task, or any issue that changes what the next iteration or future iterations need to know), the finding must be routed to its correct destination before the correction is finalised. Use the same triage criteria as the iteration end findings gate (`iteration_policy.md` [close invariants](iteration_policy.md#iteration-invariants)):
 
 - If the finding belongs in the active handover (the current iteration's handover), add it to Findings there.
 - If the finding represents a new task, write it as a named entry in `roadmap.md` under the current sub-milestone.
-- If the finding is a deferred item for the next iteration, add it to Deferred items in the active handover.
+- If the finding is a deferred item for the next iteration, write it back as an open roadmap row under the current sub-milestone.
 - If the finding is purely documentary (e.g. a known-limitation note), update the relevant document directly.
 
    The correction tag must document where the finding was routed (e.g. `Finding routed to roadmap.md -- autosave reliability.`).
 
-1. Propose the amended handover to the operator. Do not self-commit.
+1. When the agent spotted the correction, propose the amended text and apply it on the operator's release. When the operator named the change directly, apply it. A correction is never applied unasked.
 
 ### What this is not
 
-A correction is not a substitute for a new handover. If the iteration requires new work, create a new handover first. The correction procedure applies only to the operator-directed edit, not to work that was omitted or deferred.
+A correction is not a substitute for a new handover. Work the iteration did not do is new work, and a new handover carries it.
 
----
-
-## Related Skills
-
-Skills and prompt templates that encode this policy. When this document is revised, these must be checked for drift.
-
-| Skill / Prompt | Purpose |
-|---|---|
-| [`agent/prompts/new-iteration.md`](../../src/reasoning/agent/prompts/new-iteration.md) | Iteration start -- handover creation, roadmap maintenance check, scope/AC gates |
-| [`audits/roadmap-audit.skill.md`](../../workflow/coding-agent/audits/roadmap-audit.skill.md) | Roadmap format compliance, compaction audits |
-| [`audits/handover-audit.skill.md`](../../workflow/coding-agent/audits/handover-audit.skill.md) | Handover format compliance -- validates content rules defined here |
-
-Policy documents that this document depends on:
-
-| Policy | Relationship |
-|---|---|
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap maintenance, compaction rules |
-| [`iteration_policy.md`](iteration_policy.md) | Operational workflow -- governs when handover fields are populated |
-| [`documentation_policy.md`](documentation_policy.md) | Post-close document corrections |
-
----
-
-## Child Documents
-
-| Document | Governs |
-|---|---|
-| [`milestone_policy.md`](milestone_policy.md) | Major loop: milestone planning, story and investigation process |
-| [`story_policy.md`](story_policy.md) | Story lifecycle: creation, investigation trigger, graduation, closure |
-| [`study_policy.md`](study_policy.md) | Study lifecycle: structure, states, recommendation, closure |
-| [`handover_policy.md`](handover_policy.md) | Handover content rules: valid field states, null markers, format conventions, correction procedure |
-
----
-
-## References
-
-| Document | Purpose |
-|---|---|
-| [`iteration_policy.md`](iteration_policy.md) | Operational workflow -- when handover is created, updated, and closed |
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules -- task checkbox discipline and roadmap maintenance |
+A correction may reopen the record. Reopening to adjust the work and closing again is a correction path. The record ends Closed, with the same date and metadata it carried before, and with a `[CORRECTION]` tag naming the change, its date, and where any finding it surfaced was routed. A correction that cannot be finished returns the record to Closed as it was.

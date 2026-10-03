@@ -11,7 +11,7 @@ Execute Changes 6 and 7 from the apply_workspace refactor spec: eliminate all re
 
 ## Scope
 
-Changes 6 and 7 from `docs/devlog/discussions/spec_apply_workspace_refactor.md`:
+Changes 6 and 7 from `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md`:
 
 **Change 6 -- Caller patching:**
 
@@ -57,7 +57,7 @@ None.
 | [`libs/draft.sh`](libs/draft.sh) | References `apply_workspace.sh` in header comment |
 | [`tests/test_apply.sh`](tests/test_apply.sh) | Calls `apply_workspace.sh` directly |
 | [`tests/test_apply_workspace.sh`](tests/test_apply_workspace.sh) | Calls `apply_workspace.sh` directly |
-| [`docs/devlog/discussions/spec_apply_workspace_refactor.md`](docs/devlog/discussions/spec_apply_workspace_refactor.md) | Spec reference |
+| `docs/devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` | Spec reference |
 
 ## Decisions made this session
 

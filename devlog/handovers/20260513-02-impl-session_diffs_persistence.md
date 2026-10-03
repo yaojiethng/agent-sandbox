@@ -119,7 +119,7 @@ None.
 
 ## Next session
 
-**The workspace path refactor (M2.7 item 10) is postponed.** The design document exists at `docs/devlog/discussions/design_workspace_path_resolution.md` and the task is in the roadmap, but no implementation will start this session.
+**The workspace path refactor (M2.7 item 10) is postponed.** The design document exists at `docs/devlog/discussions/20260516-design-settled-workspace_path_resolution.md` and the task is in the roadmap, but no implementation will start this session.
 
 **Priority: dry-run validation first.** The next session should pick up the dual-layer seam testing problem. The mid-session finding is the starting point: `dry_run.sh` only runs in the reasoning layer. To validate the host-container seam end-to-end, we need either:
 

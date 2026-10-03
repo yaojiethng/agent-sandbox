@@ -60,3 +60,5 @@ Task-type classification between `feature` and `workflow` is ambiguous at
 classification time; recorded in `devlog/AGENT_FEEDBACK.md` (session
 20260919-15). Candidate durable fix: sharpen `git_policy.md` type descriptions
 to state the boundary explicitly.
+
+[CORRECTION -- 2026-09-21]: the task-type-classification entry raised this session was closed by the M3 cleanup pass (decoupled handover/commit type; settled in handover 20260919-16). Entry reconciled and removed from `AGENT_FEEDBACK.md`.

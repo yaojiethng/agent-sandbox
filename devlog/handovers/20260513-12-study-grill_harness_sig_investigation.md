@@ -33,7 +33,7 @@ None.
 | `libs/containers.sh` | Where build functions live -- context for container-sig hash targets |
 | `scripts/start_agent.sh` | Where preflight checks run -- where container-sig check would go |
 | `devlog/discussions/design_session_identity_hash_based.md` | Container-sig design added in prior session |
-| `docs/devlog/discussions/investigation_harness_sig_requirements.md` | Investigation document to be grilled |
+| `docs/devlog/discussions/20260522-study-superseded-harness_sig_requirements.md` | Investigation document to be grilled |
 
 ## Decisions made this session
 
@@ -55,7 +55,7 @@ None.
 
 | File | Change |
 |---|---|
-| `docs/devlog/discussions/investigation_harness_sig_requirements.md` | Reframed from per-file scenarios to change class analysis. Added candidate comparison (self-contained binary vs semver). Status -> Complete. |
+| `docs/devlog/discussions/20260522-study-superseded-harness_sig_requirements.md` | Reframed from per-file scenarios to change class analysis. Added candidate comparison (self-contained binary vs semver). Status -> Complete. |
 | `devlog/discussions/design_session_identity_hash_based.md` | Harness-sig placeholder replaced with deferral reference to investigation doc and roadmap_future.md |
 | `docs/devlog/roadmap_future.md` | Added Harness Packaging and Versioning with self-contained binary + semver scope |
 | `docs/devlog/roadmap.md` | Updated known limitations: harness-sig reference replaced with deferred note to roadmap_future.md |

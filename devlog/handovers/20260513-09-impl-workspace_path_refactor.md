@@ -13,7 +13,7 @@ Implement the workspace path resolution refactor (M2.7 item 10): unify all works
 
 M2.7 item 10 -- Workspace path resolution refactor.
 
-Full implementation per the design document. See change inventory in `docs/devlog/discussions/design_workspace_path_resolution.md`.
+Full implementation per the design document. See change inventory in `docs/devlog/discussions/20260516-design-settled-workspace_path_resolution.md`.
 
 ## Carried forward
 

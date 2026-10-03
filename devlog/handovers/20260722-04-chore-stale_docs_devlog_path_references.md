@@ -32,7 +32,7 @@ Update all stale `docs/discussions/` and `docs/devlog/` path references in curre
 | `docs/operations/milestone_policy.md:36` | `` in `docs/discussions/` `` | `` in `devlog/discussions/` `` |
 | `docs/operations/study_policy.md:17` | `` `docs/discussions/` `` | `` `devlog/discussions/` `` |
 | `docs/development/project_index.md:51` | `### Discussions (`docs/discussions/`)` | `### Discussions (`devlog/discussions/`)` |
-| `docs/development/project_index.md:173` | `` `docs/discussions/story_obsidian_vault_onboarding.md` `` | `` `devlog/discussions/story_obsidian_vault_onboarding.md` `` |
+| `docs/development/project_index.md:173` | `` `docs/discussions/20260311-story-superseded-obsidian_vault_onboarding.md` `` | `` `devlog/discussions/20260311-story-superseded-obsidian_vault_onboarding.md` `` |
 
 ### `docs/discussions/` stale link targets in `devlog/roadmap.md` (6 references)
 
@@ -43,24 +43,24 @@ Update all stale `docs/discussions/` and `docs/devlog/` path references in curre
 | 106 | `(../discussions/20260622-study-settled-security_delta_worktree_model.md)` | `(./discussions/20260622-study-settled-security_delta_worktree_model.md)` |
 | 107 | `(../discussions/story_agent_git_surface.md)` | `(./discussions/story_agent_git_surface.md)` |
 | 108 | `(../discussions/20260522-story-settled-agent_state_persistence.md)` | `(./discussions/20260522-story-settled-agent_state_persistence.md)` |
-| 109 | `(../discussions/story_container_layer_model.md)` | `(./discussions/story_container_layer_model.md)` |
+| 109 | `(../discussions/20260524-story-settled-container_layer_model.md)` | `(./discussions/20260524-story-settled-container_layer_model.md)` |
 
 ### `docs/devlog/` references in live discussion docs and roadmap_future.md (9 references)
 
 **Discussion docs that are not superseded:**
 
-- `devlog/discussions/investigation_harness_sig_requirements.md:6` -- `docs/devlog/roadmap.md` -> `devlog/roadmap.md` (or `../roadmap.md`)
+- `devlog/discussions/20260522-study-superseded-harness_sig_requirements.md:6` -- `docs/devlog/roadmap.md` -> `devlog/roadmap.md` (or `../roadmap.md`)
 - `devlog/discussions/20260428-story-active-sequencing_and_knowledge_persistence.md:67` -- path description
-- `devlog/discussions/design_settings_permissions_group_bind.md:131` -- relative path to resolved story
-- `devlog/discussions/story_windows_filesystem_incompatibilities.md:31,161` -- path references
+- `devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md:131` -- relative path to resolved story
+- `devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md:31,161` -- path references
 - `devlog/roadmap_future.md:170,186` -- `docs/devlog/discussions/` -> `./discussions/`
 
 **Superseded docs (just headers, may not need fixing):**
 
 - `devlog/discussions/20260523-design-active-container_layer_redesign.md` (superseded)
 - `devlog/discussions/20260416-study-superseded-git_worktrees.md` (superseded)
-- `devlog/discussions/story_linux_filesystem_uid_mismatch.md` (resolved, superseded)
-- `devlog/discussions/story_obsidian_vault_onboarding.md` (superseded)
+- `devlog/discussions/20260524-story-settled-linux_filesystem_uid_mismatch.md` (resolved, superseded)
+- `devlog/discussions/20260311-story-superseded-obsidian_vault_onboarding.md` (superseded)
 
 **Superseded docs are excluded -- their path references are historical and not expected to resolve.**
 
@@ -75,11 +75,11 @@ Update all stale `docs/discussions/` and `docs/devlog/` path references in curre
 | `docs/operations/study_policy.md` | `docs/discussions/` -> `devlog/discussions/` |
 | `docs/development/project_index.md` | `docs/discussions/` -> `devlog/discussions/` (2 spots) |
 | `devlog/discussions/20260428-story-active-sequencing_and_knowledge_persistence.md` | `docs/devlog/` -> `devlog/` |
-| `devlog/discussions/design_provider_config_ownership_and_loading.md` | `docs/devlog/discussions/` + `docs/devlog/handovers/` -> `devlog/...` |
-| `devlog/discussions/investigation_harness_sig_requirements.md` | 3 display text refs `docs/devlog/` -> `devlog/` |
-| `devlog/discussions/story_windows_filesystem_incompatibilities.md` | 3 refs `docs/devlog/` -> `devlog/` |
+| `devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md` | `docs/devlog/discussions/` + `docs/devlog/handovers/` -> `devlog/...` |
+| `devlog/discussions/20260522-study-superseded-harness_sig_requirements.md` | 3 display text refs `docs/devlog/` -> `devlog/` |
+| `devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md` | 3 refs `docs/devlog/` -> `devlog/` |
 | `devlog/roadmap_future.md` | 2 refs `docs/devlog/discussions/` -> `devlog/discussions/` + link targets |
-| `devlog/discussions/design_settings_permissions_group_bind.md` | `docs/devlog/discussions/` -> `devlog/discussions/` |
+| `devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` | `docs/devlog/discussions/` -> `devlog/discussions/` |
 | `AGENTS.md` | 4 refs `docs/devlog/` -> `devlog/` |
 | `src/reasoning/agent/prompts/new-session.md` | 2 refs `docs/devlog/` -> `devlog/` |
 | `src/reasoning/agent/drafts/roadmap-audit.skill.md` | `docs/devlog/roadmap.md` -> `devlog/roadmap.md` |
@@ -107,10 +107,10 @@ Update all stale `docs/discussions/` and `docs/devlog/` path references in curre
 | `docs/operations/study_policy.md` | `docs/discussions/` -> `devlog/discussions/` |
 | `docs/development/project_index.md` | `docs/discussions/` -> `devlog/discussions/` (2 spots) |
 | `devlog/roadmap.md` | 6 stale link targets -> `./discussions/` |
-| `devlog/discussions/investigation_harness_sig_requirements.md` | `docs/devlog/roadmap.md` -> correct path |
+| `devlog/discussions/20260522-study-superseded-harness_sig_requirements.md` | `docs/devlog/roadmap.md` -> correct path |
 | `devlog/discussions/20260428-story-active-sequencing_and_knowledge_persistence.md` | `docs/devlog/` path description |
-| `devlog/discussions/design_settings_permissions_group_bind.md` | `docs/devlog/discussions/` -> correct path |
-| `devlog/discussions/story_windows_filesystem_incompatibilities.md` | 2 stale `docs/devlog/` paths |
+| `devlog/discussions/20260524-design-settled-uid_mapping_bind_mount_permissions.md` | `docs/devlog/discussions/` -> correct path |
+| `devlog/discussions/20260516-story-superseded-windows_filesystem_incompatibilities.md` | 2 stale `docs/devlog/` paths |
 | `devlog/roadmap_future.md` | 2 stale `docs/devlog/` paths |
 
 ## Dependencies

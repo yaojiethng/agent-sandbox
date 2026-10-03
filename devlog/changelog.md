@@ -6,48 +6,6 @@ New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
 
-## [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID -> SESSION_ID
-
-The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`). [SUPERSEDED in M2.6 -- the session-identity prefactor fold: derivation is now `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.]
-
-Renamed surfaces (current code/docs):
-
-- Identifier token `RUN_ID` -> `SESSION_ID`
-- `SESSION_STATE`/`.draft-state` key `run_id` -> `session_id`
-- Docker label `agent-sandbox.run-id` -> `agent-sandbox.session-id`
-- Compose registry filename `.compose/<run-id>.yml` -> `.compose/<session-id>.yml`
-- `--run-id` CLI flag -> `--session-id`
-- Container/volume/project naming embeds the session id
-
-This is a durable name change to reserved-term vocabulary (see [`docs/concepts/terminology.md`](../docs/concepts/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
-
----
-
-## [CORRECTION - 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
-
-Three issues corrected in the pre-flight check block added in M2.7:
-
-1. **Wrong container:** CRITICAL checks for INPUT_DIR and OUTPUT_DIR asserted mounts
-   that only exist in the agent container, not the sandbox container. Removed from
-   sandbox-entrypoint.sh; the brief.md WARN check was kept (non-fatal).
-
-2. **Silent failures:** `"$@" 2>/dev/null` suppressed the underlying error message
-   from failing check commands. Fixed to capture stderr and append to FAIL/WARN output.
-
-3. **set -e regression:** The initial stderr capture pattern (`_err=$(cmd 2>&1 >/dev/null)`)
-   propagated non-zero exit through command substitution, causing `set -e` to kill the
-   shell immediately. Fixed by using `if _err=$(cmd 2>&1 >/dev/null); then` so errexit
-   is suppressed by the `if` clause.
-
-A diagnostic test (`tests/knowledge/diagnose_preflight.sh`) was added to verify all
-three fixes and prevent future regressions.
-
-## [CORRECTION - 2026-04-12] Historical Inconsistency Warning
-
-The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.
-
----
-
 ## M1 - Barebones Agent Container
 
 *The agent runs inside an isolated Docker container with network access, driven by a per-project Makefile.*
@@ -80,13 +38,19 @@ The per-project conf file was removed in favour of named flags defined in the pr
 
 ---
 
-## M1.4 - Image Staleness Detection [SUPERSEDED/REMOVED in M2.1]
+## M1.4 - Image Staleness Detection
 
 *The harness warns the operator when the container image is out of date with the current source files before starting a run.*
 
-**NOTE:** This implementation (based on `libs/image.sh` and `image-files.txt`) was **deleted in Milestone 2.1** during the Two-Container refactor. The system currently relies on the operator manually running `make build`.
-
 A SHA-256 digest of all build inputs is embedded as a Docker image label at build time. At start time the digest is recomputed and compared; a mismatch produces a staleness warning and the run continues. Digest computation is centralised in `libs/image.sh` and covers all `libs/` files plus a provider-specific `image-files.txt`. The check applies to both `start` and `dry-run`.
+
+### Superseded
+
+This capability was **removed in M2.1** during the two-container refactor, on 2026-03-18. The implementation rested on `libs/image.sh` and `image-files.txt`, and the system now relies on the operator running `make build` manually. The entry is retained because the milestone completed at the time; see the correction below.
+
+### [CORRECTION - 2026-04-12] Historical Inconsistency Warning
+
+The following Milestone (M1.4) and its associated feature (Image Staleness Detection) was **DELETED** during the M2.1 refactor (2026-03-18). The changelog correctly reflects that it *was* completed at the time, but the code was later removed in favor of Docker layer caching at build-time. This removal led to a regression in the `start` flow where stale images are no longer detected.
 
 ---
 
@@ -170,4 +134,60 @@ Generic pre-flight in shared entrypoint: all 7 lib files checked, AGENT_HOME val
 
 - Harness-sig -- self-contained binary with semantic versioning for runtime drift detection. See `roadmap_future.md`.
 - Autosave/session-save reliability -- moved to M2.6.
+
+### [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID -> SESSION_ID
+
+The container-lifecycle identity token `RUN_ID` was renamed to `SESSION_ID` (terminology sweep, session `20260819-13`, the run->session phase). `SESSION_ID` identifies one container lifecycle (start -> run -> teardown). Its derivation is unchanged (`sha256(SESSION_TS:SANDBOX_ID)[:6]`). [SUPERSEDED in M2.6 -- the session-identity prefactor fold: derivation is now `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.]
+
+Renamed surfaces (current code/docs):
+
+- Identifier token `RUN_ID` -> `SESSION_ID`
+- `SESSION_STATE`/`.draft-state` key `run_id` -> `session_id`
+- Docker label `agent-sandbox.run-id` -> `agent-sandbox.session-id`
+- Compose registry filename `.compose/<run-id>.yml` -> `.compose/<session-id>.yml`
+- `--run-id` CLI flag -> `--session-id`
+- Container/volume/project naming embeds the session id
+
+This is a durable name change to reserved-term vocabulary (see [`docs/concepts/terminology.md`](../docs/concepts/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
+
+### [CORRECTION - 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
+
+Three issues corrected in the pre-flight check block added in M2.7:
+
+1. **Wrong container:** CRITICAL checks for INPUT_DIR and OUTPUT_DIR asserted mounts that only exist in the agent container, not the sandbox container. Removed from sandbox-entrypoint.sh; the brief.md WARN check was kept (non-fatal).
+
+2. **Silent failures:** `"$@" 2>/dev/null` suppressed the underlying error message from failing check commands. Fixed to capture stderr and append to FAIL/WARN output.
+
+3. **set -e regression:** The initial stderr capture pattern (`_err=$(cmd 2>&1 >/dev/null)`) propagated non-zero exit through command substitution, causing `set -e` to kill the shell immediately. Fixed by using `if _err=$(cmd 2>&1 >/dev/null); then` so errexit is suppressed by the `if` clause.
+
+A diagnostic test (`tests/knowledge/diagnose_preflight.sh`) was added to verify all three fixes and prevent future regressions.
+
 - Process improvements (fast-track criteria, decision recording, stale skill reference) -- not milestone-scoped.
+
+---
+
+## M3.1.1 - Backpressure mechanisms
+
+*Every commit now gets immediate gate feedback: a host-side `pre-commit` hook gates staged Markdown and shell files, the full lint gate is cheap enough to run on every commit, and the test suite runs files in parallel under a per-file deadline that reports a reason on failure.*
+
+The sub-milestone owns the backpressure mechanisms and their cost. A host-initiated install model gives the host checkout a staged Markdown + ShellCheck commit hook (the rejected host-exposure posture of mount delivery is preserved; see [`docs/adr/git_hooks.md`](../docs/adr/git_hooks.md)). The lint gate runs shell, lib-contract, and markdown checks concurrently -- ShellCheck once per file in parallel, the sourced-lib return-not-exit and guarded-read rules, and the doc-wrap and doc-ascii rules for prose. The test suite dispatches files in parallel under a pure-bash per-file deadline, with a reason on rc-driven failures; a per-file `# TEST_DEADLINE:` declaration lets a heavy harness file name its own budget.
+
+The harness itself was hardened: subshell-per-test isolation with fail-fast, per-test-unit accounting, an untyped fixture allocator, and the capture-and-assert helper (see [`docs/adr/test_harness.md`](../docs/adr/test_harness.md)). The whole suite was then read through against a fixed inventory frame -- what each test asserts, why it matters, and whether the assertion bites -- into a 319-row JSON register with bite checks and BDD write-backs, closed by a findings-to-tasks plan session and a rectification campaign that moved units to their subject files and pinned the coverage gaps (`20260925-01` through `20260925-23`; record [`devlog/discussions/20260927-report-settled-test_suite_readthrough.md`](../devlog/discussions/20260927-report-settled-test_suite_readthrough.md)).
+
+Failure signalling was settled as a family of conventions (rule 3.5 plus reason-key fixes), the dry-run harness moved to one probe and one channel, the mutation tier landed operator-triggered behind `MUTATION=1` (catalog and replayable runner; its cadence is an M4.1 decision), and the runner accepts subset selection without dropping the whole-suite gate. The read-through record itself compacted into the settled report with its evidence folded into the register (iteration `20260927-01`). Suite 998/0 across 66 files; lint clean at close.
+
+### [CORRECTION - 2026-10-02] The entry is renumbered from M3.1 to M3.1.1
+
+M3.1 became a parent when M3.1.2 was created to own the gates own upkeep, so the completed work sits at M3.1.1 and this entry is filed under that id. The text is unchanged. Renumbering a closed entry is a change its mechanics do not provide -- `roadmap_policy.md` corrects a closed changelog entry by marker and successor, not by edit -- and it was done at the operator direction, recorded in handover `20261002-23`.
+
+---
+
+## M3.2.1 - Loops as Workflows
+
+*The loop procedures now live in workflow prompts while the policies state only the rules, so a reader finds each rule in one place and each procedure in one runbook.*
+
+The minor and major loop procedures moved out of `iteration_policy.md` and `roadmap_policy.md` into `/iter`, `/plan`, `/milestone-start` and `/milestone-close`, with the policies keeping the invariants and linking their runbook. The policy and procedure deconfliction passes read 196 rules and 235 steps against a canonical-owner test, retiring `milestone_policy.md` and folding the milestone grain into `roadmap_policy.md`. The loop taxonomy and its two-grain state diagram took one home in the concept document, and the transition rules and rejected alternatives took another in the loop-workflow ADR.
+
+`/document` landed as the docs-session runbook, `task-queue` and its `taskq` extension as a general sequencing primitive, and `/wrapup` as the shared close mechanics for `/iter`, `/plan` and `/document`; `/iter` collapsed from three gates to two. The policy set was declared as every `docs/**/*_policy.md` file, each carrying a `description` and a `scope` in frontmatter, and the reasoning layer gained one shared runtime base.
+
+---

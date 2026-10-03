@@ -68,3 +68,5 @@ Test-harness scaffolding and per-command flag parsing are now single-source; the
 
 - (Operator-optional) convert the agent-sandbox.sh dispatcher to cli.sh in a collect mode, if the exception ever proves awkward.
 - (Operator-optional) fold the residual multi-condition assertion blocks (114) into compound asserts only if per-block review warrants it; the suite treats them as bespoke by design.
+
+[CORRECTION -- 2026-09-21]: the project_index.md-usefulness entry raised this session was closed by the M3 cleanup pass (freeze table relocated to `system_overview.md`, file deleted); the suite-green-certified-rerun entry consolidated into the M3 T1 evidence-validation entry. Entries reconciled in `AGENT_FEEDBACK.md`.

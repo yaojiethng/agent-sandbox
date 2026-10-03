@@ -79,8 +79,7 @@ fi
 
 ### 1.6 `BASH_SOURCE[0]` resolves to the symlink path
 
-When called through a symlink, `${BASH_SOURCE[0]}` returns the symlink path.
-This is usually correct for intentional tooling symlinks. If the real file location is needed, use `realpath`:
+When called through a symlink, `${BASH_SOURCE[0]}` returns the symlink path. This is usually correct for intentional tooling symlinks. If the real file location is needed, use `realpath`:
 
 ```bash
 REAL_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
@@ -182,7 +181,7 @@ Each subcommand gets a clean process boundary. Dispatch branches should be `exec
 ```bash
 build)
   parse_flags "$@"
-  exec bash "$SCRIPTS/build.sh" --target="$TARGET"
+  exec bash "$SCRIPTS/build.sh" --targets="$TARGETS"
   ;;
 ```
 
@@ -228,12 +227,9 @@ In the last row, weaker than `-uo pipefail` is permitted only with an inline rat
 
 Notes:
 
-- Direct execution of subcommand scripts is the rule 1.13 dispatch architecture,
-  not an accident to be designed away.
-- `-u` in library code would fire on consumer-controlled environments;
-  libraries validate their inputs explicitly instead.
-- A class change (e.g. a lib growing an entry point) means re-declaring flags
-  for the new class as part of that change.
+- Direct execution of subcommand scripts is the rule 1.13 dispatch architecture, not an accident to be designed away.
+- `-u` in library code would fire on consumer-controlled environments; libraries validate their inputs explicitly instead.
+- A class change (e.g. a lib growing an entry point) means re-declaring flags for the new class as part of that change.
 
 ---
 
@@ -305,6 +301,17 @@ Files in `src/libs/` may export functions (for sourcing) and also run standalone
 
 Do not add boolean/string mode parameters to a function unless at least one production call site passes a value that changes behaviour. A flag "for later" is dead API surface: it widens every signature it threads through, invites untested branches, and its eventual removal touches every file in between (`STRICT` and `AUTO_SELECT` were both removed for exactly this  --  see the 2026-08-21 loc-reduction campaign). When a mode is genuinely needed, add the parameter and the call-site change in the same commit.
 
+### 3.5 Checks fail closed, name their failure key, and never presume a predecessor succeeded
+
+A **check** is a call that reads an external capability (a tool, a daemon, a git repository, an environment) and returns a verdict. Its verdict is **pass** or **fail**. A run where the capability could not produce the answer is not a third state: it is a **fail** whose distinguishing key ("docker could not run", "no such image", "cannot derive the cutoff") the caller must be able to read. The whole family rests on one obligation: **a silent failure must never be readable as a success.**
+
+- **Fail closed by default.** When a check cannot determine its answer, refuse and stop. The refusal names the failing check on stderr. Treating an undeterminable result as success is how a broken input becomes a benign one (see rule 3.2).
+- **Never a bare `|| true` to absorb a check's status.** `foo || true` discards the very distinction the check exists to make. When proceeding is genuinely safe on a specific failure, say so: a named, opt-in override that prints a warning naming what was bypassed. A bare absorb is the silent-collapse bug.
+- **Never presume a predecessor succeeded.** `cmd1 | cmd2` and `if cmd; then : > out; else ...` must not read the pipe or the branch as proof that the earlier command ran. Break the pipe and validate its status explicitly (`PIPESTATUS[0]` for the stage you care about, or a split pipeline). A collection that feeds on one failed stage writes a trustworthy-looking partial or empty result.
+- **A check may not alias "the capability could not run" to "nothing to report."** Empty output is a legitimate answer only when the empty really is "no such thing"; when the capability itself could have failed, the check must distinguish the two (row 88) so the caller is not given wrong advice.
+
+Why the family is small and deliberate: bash's `$( )` captures stdout only, so a probe that wants to return both a value and a status has no ergonomic channel and falls back to empty-output-as-sentinel. That sentinel is honestly used most of the time, which is why the defects cluster at a handful of `$( )`/pipe boundaries rather than everywhere. This restraint is a data point for the bash-as-implementation-language boundary review (roadmap rows 135 and 168), not a mandate to retrofit every `|| true`; a `|| true` that absorbs a status that genuinely does not matter is still fine. Each check that can read a silent failure as a success owes a unit for its failed path and, where the capability can be absent, its cannot-run path.
+
 ---
 
 ## 4. Common Pitfalls
@@ -337,6 +344,22 @@ COUNT=${COUNT:-0}   # only needed for the error paths (missing file)
 
 Do NOT write `|| echo 0`: since grep already printed `0`, the substitution captures both lines and the variable becomes `0\n0` (two zeros). The plain `|| true` absorbs only the exit code; `${COUNT:-0}` covers the cases where grep produced no output at all.
 
+### 4.4 Sourced-lib reads must not redirect from unguaranteed paths
+
+A `while read` redirection inside a sourced-lib function -- `while IFS='=' read -r ...; done < "$file"` -- aborts the *call site* under `set -e` when `$file` is absent, even if the call is wrapped in `|| ...` (the abort happens inside the command substitution, not at the call). A sourced-lib function must not read a path the caller cannot guarantee. Guard before the read (`[[ -f "$file" ]] || return 0`) either in the caller or in the lib function itself.
+
+### 4.5 Absolutize `git rev-parse --git-path` output before filesystem use
+
+`git -C "$REPO" rev-parse --git-path info/exclude` prints `.git/info/exclude` -- relative to the repo root, not the caller's cwd. Using the output directly in a `mkdir -p`/append sequence writes into the caller's cwd. Absolutize before filesystem use: `[[ $p == /* ]] || p="$REPO/$p"`.
+
+### 4.6 A prose comment must not start the token `shellcheck`
+
+ShellCheck parses any comment line whose first token after `#` is the word `shellcheck` as a directive. A prose line such as `# shellcheck absent -- rc 1` becomes a directive the tool tries to parse, failing the gate with SC1072/SC1073 that looks like a false positive until the directive rule is known. Word the line so the tool name is not the first token (for example "the shellcheck tool absent"). Real directives (`# shellcheck disable=SCxxxx`, `enable=`, `source=`) are exempt. The gate's prose-comment pass (`scripts/check_shell.sh`) enforces this rule.
+
+### 4.7 A process scan must not match the scanning shell
+
+A scan for a process by name matches its own command line, because the pattern text is in the scanner's arguments: a loop that feeds the matching pids to `kill` signals itself, and the calling tool dies with 143. Match on the executable as well as the argument (`node\ *server.mjs`), and exclude the current pid. `pkill` is absent from the runtime image, so a cleanup that uses it removes nothing and reports no error; when the cleanup holds a port, verify the port is closed rather than read the kill as success.
+
 ---
 
 ## 5. Cross-References
@@ -347,5 +370,5 @@ Do NOT write `|| echo 0`: since grep already printed `0`, the substitution captu
 | `testing-conventions.md` | Test patterns and anti-patterns |
 | `testing_policy.md` | Testing policy and rules |
 | `workflow/coding-agent/audits/bash-audit.skill.md` | Automated audit skill |
-| `devlog/GOTCHAS.md` [H] | Original `exit` vs `return` finding |
+| `devlog/AGENT_FEEDBACK.md` Gotchas section `[O]` | Original `exit` vs `return` finding |
 | `devlog/AGENT_FEEDBACK.md` Bash section | Historical bash friction records |

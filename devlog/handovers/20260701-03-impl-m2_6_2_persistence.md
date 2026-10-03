@@ -55,7 +55,7 @@ Open stories under active investigation. Closed stories are removed from this li
 **Objective:** Separate the harness into a reasoning layer (agent container) and a capability layer (sandbox container, working content, optional MCP server). This is the foundational architectural change that enables vault workflows, webapp workflows, provider swapping, and autonomous task execution. All M1.x architecture documents are hot during this milestone and updated sub-milestone by sub-milestone.
 
 Conceptual model: [`docs/concepts/two_layer_model.md`](../concepts/two_layer_model.md)
-Design rationale: [`investigation_mcp_server.md`](../discussions/investigation_mcp_server.md) -- Conclusion
+Design rationale: [`20260312-study-settled-mcp_server.md`](../discussions/20260312-study-settled-mcp_server.md) -- Conclusion
 
 #### M2.4 -- Session and Config Persistence
 
@@ -121,7 +121,7 @@ The user chooses the model per session. The default is snapshot mount (backward 
 - [`docs/discussions/security_delta_worktree_model.md`](../discussions/security_delta_worktree_model.md) -- full invariant comparison, residual risk analysis, and required mitigations
 - [`docs/discussions/story_agent_git_surface.md`](../discussions/story_agent_git_surface.md) -- agent-in-git design questions (resolved by design: agent commits to a branch, operator reviews)
 - [`docs/discussions/story_agent_state_persistence.md`](../discussions/story_agent_state_persistence.md) -- persistence model (resolved: mount-based persistence)
-- [`docs/discussions/story_container_layer_model.md`](../discussions/story_container_layer_model.md) -- harness base layer design (settled; node harness implemented, python harness deferred -- see W1)
+- [`docs/discussions/20260524-story-settled-container_layer_model.md`](../discussions/20260524-story-settled-container_layer_model.md) -- harness base layer design (settled; node harness implemented, python harness deferred -- see W1)
 
 ---
 

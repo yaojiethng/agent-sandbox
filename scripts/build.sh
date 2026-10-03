@@ -67,7 +67,7 @@ build_image() {
 
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
-#   1. agent-node-base (shared  --  node.dockerfile)
+#   1. agent-base (shared runtime set  --  base.dockerfile)
 #   2. <provider>-base (provider-specific  --  providers/<n>/base.dockerfile)
 #   3. <provider>-agent-<project> (final  --  providers/<n>/provider.dockerfile)
 #
@@ -99,9 +99,9 @@ build_agent() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  # Tier 1: shared node base
+  # Tier 1: shared runtime base
   local shared_base; shared_base="$(shared_base_image_name)"
-  local shared_dockerfile="$repo_root/src/reasoning/node.dockerfile"
+  local shared_dockerfile="$repo_root/src/reasoning/base.dockerfile"
 
   # Tier 2: provider-specific base
   local agent_base_image; agent_base_image="$(agent_base_image_name "$provider")"
@@ -139,7 +139,7 @@ build_agent() {
     fi
   }
 
-  # Tier 1: shared node base  --  no contract label (no sandbox/workflow content)
+  # Tier 1: shared runtime base  --  no contract label (no sandbox/workflow content)
   build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" \
     "${uid_args[@]+${uid_args[@]}}"
 
@@ -258,7 +258,7 @@ _check_interface_contract() {
 # =============================================================================
 
 # Parses operator-facing flags and calls build_sandbox/build_agent as needed.
-# Expected flags: --name=<n> --project=<p> --sandbox=<s> [--targets=<t,...>] [--rebuild]
+# Expected flags: --name=<n> --project=<p> [--targets=<t,...>] [--rebuild]
 #
 # --targets defaults to "all" if omitted. Use comma-separated values:
 #   all                --  sandbox + all providers
@@ -268,18 +268,18 @@ _check_interface_contract() {
 
 usage() {
   cat <<EOF
-Usage: agent-sandbox build --name=<name> --project=<path> --sandbox=<path> [options]
+Usage: agent-sandbox build --name=<name> --project=<path> [options]
 
 Builds Docker images for the sandbox and/or agent providers.
 
-or, from a sandbox Makefile: make build [TARGET=<p>] [REBUILD=1]
+or, from a sandbox Makefile: make build [TARGETS=<p>] [REBUILD=1]
 
 Required:
   --name=<name>       Project name (used for image tags)
   --project=<path>    Path to the project directory
-  --sandbox=<path>    Path to the sandbox directory
 
 Options:
+  --sandbox=<path>    Accepted for CLI uniformity; build does not read it
   --targets=<list>    Comma-separated targets: all, sandbox, <provider>[,<provider>] (default: all)
   --rebuild           Force a full rebuild from scratch
 EOF
@@ -299,7 +299,7 @@ main() {
   local REBUILD_FLAG=""
   [[ "$REBUILD" == true ]] && REBUILD_FLAG="--no-cache"
 
-  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
+  if [[ -z "$PROJECT_NAME" || -z "$PROJECT_DIR" ]]; then
     usage >&2
     exit 1
   fi

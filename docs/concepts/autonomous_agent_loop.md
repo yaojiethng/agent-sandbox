@@ -1,48 +1,75 @@
 # Autonomous Agent Loop
 
-This is a stub file. It is meant to detail the conceptual design for supporting multiple types of agents, and using an autonomous agent runtime, encapsulated within a single container, to complete a single task.
+The autonomous agent loop is the continuous cycle by which the coding agent advances work: a milestone is opened, scoped, iterated, and closed, then the next milestone begins. It is one loop, not two cadences. The workflow runbooks under `workflow/coding-agent/prompts/` drive the loop's state transitions; each workflow enforces a different transition in the loop. Policy files under `docs/operations/` own the invariants those transitions must not break.
 
-# Agents
+The [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) ADR records the decisions behind the loop-and-workflow split and the rule behind each transition. This document draws the model.
 
-An agent is an autonomous system capable of analyzing code, generating modifications, and executing tasks toward a defined goal.
+## The loop
 
-Agents in this system are responsible for performing coding-related work such as implementing features, fixing bugs, or improving documentation.
+One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The loop runs at two grains, drawn once each. The rules behind each arrow -- the three edge types and the three gate states -- are in [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md#transitions).
 
-Agents typically perform the following loop:
+```text
+MILESTONE GRAIN
 
-1. Observe the current repository state.
-2. Plan a sequence of actions.
-3. Generate code or configuration changes.
-4. Execute tests or validation steps.
-5. Iterate until the task is complete.
+  [ms:none]                                  no active milestone
+      |
+      |  "milestone to promote?"              workflow-assisted operator decision
+      |    no  -> /milestone-start shapes one     (/milestone-start presents the shapes)
+      |    yes -> the operator picks one
+      v
+  [ms:active]  ----------  iterations run against this milestone
+      |
+      |  /milestone-close                     workflow-implemented
+      v
+  [ms:close-gate]                            compaction, changelog, boundary presented
+      |
+      |  operator release                     operator decision
+      v
+  [ms:successor?]                            handwaved: one milestone is modelled
+      |
+      |  yes -> promote                       workflow-assisted operator decision
+      |  no  -> shape one                    (edge to ms:none above)
+      v
+  [ms:active]  (the successor)
 
-Agents may operate in a hierarchical structure where a parent agent delegates subtasks to child agents.
+ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
 
-This model allows complex work to be decomposed while maintaining clear boundaries and limited execution depth.
+  [it:open] --/iter--> [it:scope-gate] --operator decision--> [it:implementing]
+                                                                    |
+                                                             /iter Step 7
+                                                                    v
+  [it:closed] <--operator decision-- [it:acceptance-gate] --/wrapup--> (Part B)
+      |
+      |  all tasks complete? /wrapup recommends
+      +-- yes --> ms:close-gate
+      +-- no  --> [it:open]   (operator picks the next task)
+```
 
-Related documents:
+Closing is the work that follows a gate decision, not a state; the close-seam rules are in the [ADR](../adr/coding_agent_loop_workflow.md#transitions).
 
-- architecture/agent_runtime.md
+## Workflows
 
-# Orchestration
+Each workflow enforces one group of state transitions in the loop.
 
-Orchestration describes how agents coordinate work across tasks.
+| Workflow | Transition it drives |
+|---|---|
+| `/milestone-start` | shapes and opens a milestone |
+| `/plan` | scopes a milestone; commissions stories and investigations; produces the roadmap entry |
+| `/iter` | runs one iteration: scope, design, implementation, documentation, handover |
+| `/wrapup` | lands the delivery commit and closes the handover; the shared close runbook |
+| `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, owned and refined by M3.2.3 |
+| `/milestone-close` | records a milestone or sub-milestone close: compaction, the changelog, the close boundary |
 
-In this system, orchestration is responsible for:
+`/wrapup` is a shared close runbook, not a standalone loop workflow: `/iter`, `/plan` and `/document` invoke it after their release point. `/milestone-start`, `/sequential-work` and `/parallel-work` do not invoke it.
 
-- assigning tasks to agents
-- managing parent/child relationships
-- controlling execution depth
-- sequencing tasks toward milestones
+The `/auto` smart dispatcher and `/goal` loose-goal decomposition are M4's. They are not `/iter` work-loop expansions and they do not drive a transition in this loop yet.
 
-The orchestration layer does not directly modify code.
-Instead, it coordinates agent execution and manages task flow.
+`/backlog-triage` drives no transition either. It sorts the open roadmap rows into the ones a dispatch shape can run and the ones carrying a question, so those questions are answered before a run starts rather than at a mid-run stop. The autonomous rows above consume its output.
 
-Typical orchestration responsibilities include:
+## Skills
 
-- milestone tracking
-- task decomposition
-- agent lifecycle management
-- validation checkpoints
+A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](../../workflow/coding-agent/skills/roadmap-maintenance.md) and [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance.md) own the record checks, the corrections each may apply, and the defects each reports: `/gm` runs both over the roadmap and the handover chain, `/milestone-close` runs `roadmap-maintenance` for the compaction pass, and `/wrapup` runs `handover-maintenance` to close a landed record. `/plan` and `/document` pass their session context to the `grill-me` skill for the interview. A skill owns its procedure; the workflow owns the transition that invokes it.
 
-The orchestration model is designed to keep agent behavior predictable while allowing complex coding tasks to be broken down into smaller steps.
+## Responsibilities
+
+A workflow owns its steps and the transitions it drives. Policy owns the invariants those transitions must not break. A gate is a stop-and-wait check that output conforms to the expected state. Details are in the ADR and in the workflow prompts under `workflow/coding-agent/prompts/`.

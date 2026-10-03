@@ -1,8 +1,9 @@
-# Git Policy
-
-Policy for commit messages and branch naming in agent-sandbox. Commit types are aligned with the iteration types defined in [`handover_policy.md`](handover_policy.md) so that the git log and iteration history tell the same story.
-
 ---
+description: "Owns commit-message and branch-naming rules. Commit types align with the iteration types defined in `handover_policy.md`, so the git log and iteration history tell the same story."
+scope: ["commit messages", "branches"]
+---
+
+# Git Policy
 
 ## Commit Message Format
 
@@ -14,11 +15,13 @@ Lower-case type prefix, colon, space, imperative summary. No scope field for now
 
 The short description completes the sentence "this commit will..." -- e.g. `feat: add snapshot validation gate`, not `feat: added snapshot validation gate`.
 
-Body and footer are optional. Use a body when the "why" is not obvious from the summary. Use a footer for references (`Closes #12`, `See roadmap M2.1`).
+Body and footer are optional. Use a body when the "why" is not obvious from the summary. The body carries the reason for the change, not a restatement of the diff; the diff already says what changed. Remove a body sentence that restates the diff. The body does not repeat the handover; the handover is the iteration record, and duplicating it in the commit body creates a second copy that rots when the record moves. Use a footer only for references that earn their place. A reference names a file, a record, or a decision a reader would otherwise have to hunt for. Drop a reference added for completeness, or a reference to a transient identifier such as a session id.
 
-The description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the body -- that is the diff's job.
+The budget: aim for a subject of 50 characters or fewer. A body is separated from the subject by a blank line, wraps at about 72 characters, and carries at most 280 characters. A reason longer than the budget does not fit the body: it lives in the handover or the ADR, and the body points there.
 
-Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- WIP checkpoints, corrections, test rollbacks, amends -- are not subject to this rule. Delivery commits without a valid prefix are rejected at review gate.
+The short description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the description -- that is the diff's job.
+
+Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- wip checkpoints, corrections, test rollbacks, amends -- are not subject to this rule, but a delivery type is reserved for the delivery commit: do not give an intermediate commit a prefix other than `wip:`, because a typed commit reads as a closed deliverable. Delivery commits without a valid prefix are rejected at review gate.
 
 ---
 
@@ -31,7 +34,8 @@ These types are adopted now. The commit type is decided from the nature of the c
 | `feat` | New capability or behaviour |
 | `fix` | Bug fix -- corrects broken behaviour |
 | `refactor` | Code restructuring with no behaviour change; large sweeping cleanups |
-| `docs` | Documentation-only changes -- descriptive prose, decision records, plans, reports |
+| `docs` | Documentation-only changes -- descriptive prose, decision records, reports |
+| `plan` | Roadmap and milestone planning: scoping at any grain, task assignment, compaction, close and promotion bookkeeping |
 | `chore` | Inert maintenance -- stale refs, index cleanup, linting, formatting |
 | `workflow` | Policy changes, CI/CD rules, governance -- skill files under `src/reasoning/agent/` count as governance |
 | `test` | Adding or updating tests or test infrastructure (runner, stubs, harness, `tests/libs/`) |
@@ -48,6 +52,8 @@ A commit that changes both code and documentation uses the type of the primary c
 `chore` vs `workflow`: a chore is inert -- it does not change how work is done, only tidies what exists. A workflow commit changes the rules: a new policy, a CI/CD gate, a linter configuration, a branch protection change. If merging the commit would require other contributors to change their behaviour, it is `workflow`, not `chore`.
 
 `chore` vs `docs`: if the change fixes stale links, updates an index, or cleans up formatting without changing the substance of what a document says, it is a chore. If the change updates the documented system reality, it is `docs`.
+
+`plan` vs `docs`: a plan commit performs roadmap and milestone bookkeeping -- scoping a milestone or a task, assigning work to iterations, compacting a completed task list, closing a milestone. A docs commit records the system or its decisions. `plan` was an iteration type in `handover_policy.md` before the 2026-09-20 taxonomy reframe dropped it from the type table; commit `1c11267` (`plan: close M2.7 and collapse sub milestones`) is the historical precedent.
 
 ---
 
@@ -159,7 +165,7 @@ An iteration that ends with uncommitted work is a risk -- the handover records i
 
 - At iteration end, commit all work-in-progress on the active branch with a clear message: `wip: description of incomplete state`
 - `wip` is not a commit type -- it is a prefix that signals the commit is not reviewable. The next iteration amends or follows up.
-- Intermediate commits (WIP, corrections, amends) are not subject to the type enforcement rule -- that rule applies only to the delivery commit at iteration end.
+- Intermediate commits (wip, corrections, amends) are not subject to the type enforcement rule -- that rule applies only to the delivery commit at iteration end. A delivery prefix is still reserved for the delivery commit; type an intermediate as `wip:` or as an amend of a prior `wip:`.
 - Do not leave uncommitted changes across iteration boundaries -- this includes stashes. If work is incomplete at iteration end, commit with `wip:` prefix instead of stashing. The handover cannot reconstruct files; the commit can.
 - On integration branches, session branches should be merged (not left dangling) before the session ends, even if the integration branch itself is not ready for `main`.
 
@@ -167,15 +173,51 @@ This is the git-level equivalent of the `autosave.diff` pattern in the execution
 
 ---
 
+## WIP Commits
+
+`wip:` is an accepted commit prefix for intermediate checkpoints. A `wip:` commit is a checkpoint, not a deliverable. It is never reviewable and never reaches `main` as-is. Squash every `wip:` commit into the typed delivery commit at iteration end.
+
+Intermediates are `wip:` or amends, never delivery-typed. A mid-iteration `fix:`/`feat:`/`docs:`/`chore:` commit reads as a closed deliverable that later folds away -- a false delivery surface that misleads the reviewer. When a discrete task group goes in, land it as `wip:` and squash it into the delivery commit at the same close that owns it, or amend an existing `wip:`. Type the delivery prefix only once, on the delivery commit.
+
+Use `wip:` when:
+
+- The current task is a far-reaching refactor or audit-type change and you need checkpoints.
+- An exchange is open, so its result is provisional. Write it to the record first, per the write-back rule in [`iteration_policy.md`](iteration_policy.md), and commit the record as `wip:`.
+- The operator directs a wip commit.
+- You propose a wip commit and the operator accepts.
+
+The delivery commit at iteration end always carries a type prefix from the Active Types table, however many wip commits preceded it. wip commits are implementation detail; the delivery commit replaces them.
+
+---
+
+## Transient commits fold into the delivery commit
+
+One delivery commit carries each iteration. Transient commits during the iteration fold into it. Three kinds exist:
+
+- `wip:` checkpoints -- in-progress snapshot that is never reviewable; squash into the delivery commit at iteration end.
+- Correction commits -- an amend or fixup that corrects a commit made earlier in the same iteration; fold into that commit via `git commit --fixup=<hash>` and `git rebase -i --autosquash`.
+- The close edit -- the `Status: Closed` flip and the roadmap write-back; they belong in the delivery commit.
+
+Each kind resolves to the single delivery commit; the delivery commit is the sole reviewable surface.
+
+**Stuck procedure.** When the iteration's history already holds the work commit and the close edit is still outstanding, fold the edit into the work commit: set `Status: Closed`, apply the write-back, then amend (`git commit --amend`) or, for a non-HEAD delivery commit, `git commit --fixup=<hash>` plus `git rebase -i --autosquash`. The end state is one commit per iteration.
+
+---
+
 ## Amending
 
-Amending folds changes into their parent commit rather than creating follow-up commits. Valid use cases:
+Amending folds a change into the commit it corrects, so the history reads as if the work had been done correctly the first time. Prefer the fold over a follow-up commit: a stack of one-line fixups on the same logical unit is the history's least readable form, and what the fold discards from the history the handover keeps.
 
-- **Squashing WIP commits** -- WIP checkpoints accumulated during an iteration are squashed into the delivery commit at iteration end.
-- **Correcting a prior commit** -- when a handover, task list, or implementation needs a correction that belongs to the same logical unit as a commit already made this iteration. The amendment bundles the fix with the commit where the work was done.
-- **Early iteration end** -- when the agent committed the delivery commit but the operator identifies a gap before the next iteration starts. The amendment is applied to the delivery commit rather than creating a separate correction commit.
+**Principles.**
 
-**Boundary:** Amend only within the current iteration's commit chain. Do not amend commits from prior iterations -- those are part of the permanent reviewed record. If a prior iteration's commit needs fixing, file a new issue or create a new iteration.
+- A change belongs to the commit of the work it corrects. Fold it there rather than stacking it after.
+- The unit of work, not the commit, is the unit of amendment. A change that alters a unit's task description, its code and its records is one amendment across all three.
+- Amend while the history is cheap to rewrite: on the same branch, and ideally within the same chat session. Beyond that the operator rules on it.
+- Report and stop when folding needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port: see [`rebase.md`](../../workflow/coding-agent/prompts/rebase.md).
+- Never rewrite a commit that has left this container, and never rewrite published history.
+- Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
+
+What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md).
 
 ---
 
@@ -196,9 +238,15 @@ If the file cannot be split by hunk boundaries (interleaved changes to the same 
 
 ## Merge Policy
 
+Two integration forms exist, and they keep separate commit disciplines. A live session branch that the agent still works on lands by squash merge, per the section below. A `draft/`-prefixed export of a reviewed session lands by one-for-one replay, per the draft section.
+
 ### Session branch -> integration branch
 
 **Squash merge.** Each session branch becomes a single commit on the integration branch. The squash message uses the appropriate commit type and summarises the session's contribution. Individual session commits are implementation detail -- the integration branch reads as a sequence of coherent steps.
+
+### Draft branch -> feature branch
+
+**One-for-one replay.** A `draft/`-prefixed export of a reviewed session lands on the feature branch as its own commits. The operator replays the export's commits one-for-one in export order, oldest draft first; each replayed commit keeps its message, author, and handover, so the branch history reads as original work. No merge commit and no squash describes the operation. The `.draft-state` commit that opens every export is never replayed: it records export state, which is false once the work lands on the branch. The operation is defined in the `/merge` workflow template under `workflow/coding-agent/prompts/`. A stale branch whose work must be re-derived against a changed target follows the `/rebase` template instead.
 
 ### Session branch -> `main` (simple case)
 
@@ -264,5 +312,7 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | [`handover_policy.md`](handover_policy.md) | Iteration types that map to commit types |
 | [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
+| [`/merge` template](../../workflow/coding-agent/prompts/merge.md) | Draft-export merging operation |
+| [`/rebase` template](../../workflow/coding-agent/prompts/rebase.md) | Stale-branch porting operation |
 
 ---

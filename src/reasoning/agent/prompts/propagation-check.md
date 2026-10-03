@@ -5,7 +5,7 @@ argument-hint: "<change description>"
 
 Propagation audit for: $@
 
-Per the propagation discipline in [AGENTS.md](AGENTS.md).
+Per the propagation discipline in [AGENTS.md](../../../../AGENTS.md).
 
 **Establish the change signature.** State in one line what the change looks like in code or text  --  specific enough that a grep can find it (e.g. `OLD_NAME` -> `NEW_NAME`, label `agent-sandbox.session-name` added to every container definition).
 
@@ -19,4 +19,4 @@ Per the propagation discipline in [AGENTS.md](AGENTS.md).
 
 **Report gaps.** For each row with status [ ] or partial, state exactly what is missing and whether it should be fixed now or deferred. If all rows are [x], state: "Propagation complete -- no gaps found."
 
-**Fix or defer.** Apply fix-now gaps and update the row to [x]. Record deferred gaps in the active handover's Deferred items section before closing the iteration.
+**Fix or defer.** Apply fix-now gaps and update the row to [x]. Write deferred gaps back to the roadmap as open rows before closing the iteration.

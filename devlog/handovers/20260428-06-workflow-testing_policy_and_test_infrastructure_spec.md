@@ -12,7 +12,7 @@ Evaluate the current `testing_policy.md` against gaps exposed by the apply_works
 ## Scope
 
 1. `docs/development/testing_policy.md` -- add four missing areas: test file self-containment rule, shared fixtures (`tests/lib/`) conventions, unified runner reference, staleness check rule; extend checklists; add Anti-Pattern 4 (cross-test-file sourcing).
-2. `spec_test_infrastructure.md` -- implementation-ready spec for `scripts/run_tests.sh` and `scripts/check_test_coverage.sh`; pre-commit lint script explicitly descoped with rationale.
+2. `20260428-design-settled-test_infrastructure_improvements.md` -- implementation-ready spec for `scripts/run_tests.sh` and `scripts/check_test_coverage.sh`; pre-commit lint script explicitly descoped with rationale.
 3. `docs/development/roadmap.md` -- add "Pending -- test infrastructure" task group to M2.3; add `make test` acceptance criterion.
 
 ## Carried forward
@@ -28,7 +28,7 @@ None -- this is a standalone workflow session.
 | 3 | `testing_policy.md` contains a "Running the Test Suite" section referencing `make test` as the required full-suite verification step | [x] Accepted |
 | 4 | `testing_policy.md` contains a "Keeping Tests Current" section with the grep pattern and the staleness rule | [x] Accepted |
 | 5 | Both checklists (new tests, lib/script changes) updated with runner and staleness items | [x] Accepted |
-| 6 | `spec_test_infrastructure.md` produced; acceptance criteria are operator-runnable | [x] Accepted |
+| 6 | `20260428-design-settled-test_infrastructure_improvements.md` produced; acceptance criteria are operator-runnable | [x] Accepted |
 | 7 | Roadmap M2.3 updated with test infrastructure task group and `make test` acceptance criterion | [x] Accepted |
 
 ## Hot files
@@ -36,7 +36,7 @@ None -- this is a standalone workflow session.
 | File | Why in scope |
 |---|---|
 | [`docs/development/testing_policy.md`](docs/development/testing_policy.md) | Primary output -- policy amendments |
-| [`spec_test_infrastructure.md`](docs/discussions/spec_test_infrastructure.md) | New -- implementation spec for runner and coverage check |
+| `20260428-design-settled-test_infrastructure_improvements.md` | New -- implementation spec for runner and coverage check |
 | [`docs/development/roadmap.md`](docs/development/roadmap.md) | Updated -- test infrastructure task group and acceptance criterion added to M2.3 |
 
 ## Decisions made this session
@@ -52,7 +52,7 @@ None -- this is a standalone workflow session.
 | File | Change |
 |---|---|
 | `docs/development/testing_policy.md` | Added Principle 4 (self-containment); new "Shared Fixtures" section; new "Running the Test Suite" section; new "Keeping Tests Current" section; Anti-Pattern 4 (cross-test-file sourcing); updated test structure template with `tests/lib/` source lines; two new checklists (new tests, lib/script changes) |
-| `docs/discussions/spec_test_infrastructure.md` | New -- spec for `scripts/run_tests.sh` and `scripts/check_test_coverage.sh`; pre-commit lint descoped with rationale |
+| `docs/discussions/20260428-design-settled-test_infrastructure_improvements.md` | New -- spec for `scripts/run_tests.sh` and `scripts/check_test_coverage.sh`; pre-commit lint descoped with rationale |
 | `docs/development/roadmap.md` | Added "Pending -- test infrastructure" task group to M2.3; added `make test` acceptance criterion |
 
 ## Deferred items
@@ -68,7 +68,7 @@ Test suite repair is the immediate next task. Running make test against a broken
 Remaining M2.3 task groups in dependency order:
 
 1. **Test suite repair** -- test_checkpoint.sh (8 failures, worktree scoping regression), test_build_context.sh (missing lib), test_capability_layer.sh (unclear), test_provider_entrypoint.sh (missing env vars). Investigate each independently before fixing -- root causes are not confirmed.
-2. **Test infrastructure** -- scripts/run_tests.sh, scripts/check_test_coverage.sh, make test Makefile target. Spec at docs/discussions/spec_test_infrastructure.md. Runner auto-discovers tests/test_*.sh via glob -- no hardcoded file list. Coverage check is informational only. Both scripts are independent of each other; implement runner first.
+2. **Test infrastructure** -- scripts/run_tests.sh, scripts/check_test_coverage.sh, make test Makefile target. Spec at docs/discussions/20260428-design-settled-test_infrastructure_improvements.md. Runner auto-discovers tests/test_*.sh via glob -- no hardcoded file list. Coverage check is informational only. Both scripts are independent of each other; implement runner first.
 3. **Interactive confirmation flag** -- --interactive for make apply and make draft
 
 Files to read at session start:

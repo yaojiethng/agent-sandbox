@@ -107,3 +107,5 @@ Recorded in the handover; operator routed **all 3** to `devlog/AGENT_FEEDBACK.md
 | [scripts/start_agent.sh](../../scripts/start_agent.sh) | Dropped the now-obsolete comment about common.sh setting SCRIPT_DIR; derivation unchanged (already self-resolves) |
 | [devlog/roadmap.md](../../devlog/roadmap.md) | Added the M2.6 General CLI/infra refactor track (3 sub-tasks: Finding B, rename, Finding A/C) |
 | [devlog/handovers/20260810-07...](../../devlog/handovers/20260810-07-refactor-cli_help_unification_and_script_dir_de_landmine.md) | This handover |
+
+[CORRECTION -- 2026-09-21]: the SCRIPT_DIR-ambiguity and edit-tool missing-path entries raised this session were closed by the M3 cleanup pass. SCRIPT_DIR resolution is canonical in `docs/concepts/context_resolution.md` (`_self_dir`); the edit-tool missing-path failure is subsumed by the M3 T2 edit-tool metric. Entries reconciled and removed from `AGENT_FEEDBACK.md`.

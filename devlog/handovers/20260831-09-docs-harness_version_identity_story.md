@@ -63,7 +63,7 @@ for next session), and reconcile the roadmap.
 - `devlog/discussions/20260831-story-active-image_and_harness_version_identity.md` -- created (full story).
 - `devlog/discussions/20260831-design-active-image_and_harness_version_identity.md` -- created (stub).
 - `devlog/roadmap.md` -- new harness-version-identity open task; SUPERSEDED note on image-staleness entry; compacted closed M2.6 mega-entries (build-progress, prune-redesign, terminology-sweep, start/resume, start/serve, prune-label-reliability, set-e, container_sig guard, onboard-refresh, mount-delivery, .run-identity, registry-prune, compose-template, resolve-design-questions).
-- Subsumed docs handled: `story_session_identity_and_harness_versioning.md` **deleted** (operator override), `story_harness_packaging_and_install_versioning.md` + `investigation_harness_sig_requirements.md` tagged `[SUPERSEDED in 20260831 ...]` + redirects.
+- Subsumed docs handled: `story_session_identity_and_harness_versioning.md` **deleted** (operator override), `20260417-story-superseded-harness_packaging_and_install_versioning.md` + `20260522-study-superseded-harness_sig_requirements.md` tagged `[SUPERSEDED in 20260831 ...]` + redirects.
 - Handover converted to `docs` type; Bug E resolved.
 
 ## Decisions

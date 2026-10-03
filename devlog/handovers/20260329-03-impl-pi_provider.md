@@ -41,7 +41,7 @@ New this session -- all accepted:
 | `providers/pi/setup.sh` | New |
 | `providers/pi/config/AGENTS.md` | New |
 | `scripts/start_agent.sh` | Stop-before-start + auto-build-if-missing |
-| `docs/discussions/investigation_pi.md` | Refreshed for Pi v0.63.1 |
+| `docs/discussions/20260312-study-settled-pi.md` | Refreshed for Pi v0.63.1 |
 | `docs/development/roadmap.md` | Trigger B -- M2.2 removed, M2.3 promoted |
 | `docs/development/changelog.md` | M2.2 entry appended |
 
@@ -49,7 +49,7 @@ New this session -- all accepted:
 
 | Decision | Rationale | Recorded in |
 |---|---|---|
-| Pi `AGENTS.md` via two mechanisms: project-committed file (primary) + `providers/pi/config/AGENTS.md` global stub (fallback) | Project file takes precedence via Pi's discovery order; stub ensures working harness context on projects with no `AGENTS.md` | `investigation_pi.md`, `providers/pi/config/AGENTS.md` |
+| Pi `AGENTS.md` via two mechanisms: project-committed file (primary) + `providers/pi/config/AGENTS.md` global stub (fallback) | Project file takes precedence via Pi's discovery order; stub ensures working harness context on projects with no `AGENTS.md` | `20260312-study-settled-pi.md`, `providers/pi/config/AGENTS.md` |
 | `PI_SKIP_VERSION_CHECK=1` set via provider overlay | Suppresses noisy update checks on every container start | `providers/pi/docker-compose.pi.yml` |
 | Pin Pi at `0.63.1` in `base.Dockerfile` | Rapid release cadence (~33 versions in 3 months); pinning prevents silent breakage | `providers/pi/base.Dockerfile` |
 | `AGENT_HOME=/home/agentuser/.pi/agent` | Pi's config directory is `~/.pi/agent/`; `PI_CODING_AGENT_DIR` overrides if needed | `providers/pi/provider.Dockerfile` |
@@ -69,7 +69,7 @@ New this session -- all accepted:
 | `providers/pi/setup.sh` | New -- pre-creates `$SANDBOX_DIR/.pi/` |
 | `providers/pi/config/AGENTS.md` | New -- global fallback brief stub |
 | `scripts/start_agent.sh` | Stop-before-start (compose label check + stop.sh) + auto-build-if-missing added before dispatch |
-| `docs/discussions/investigation_pi.md` | Refreshed -- all sections updated for Pi v0.63.1; implementation recorded |
+| `docs/discussions/20260312-study-settled-pi.md` | Refreshed -- all sections updated for Pi v0.63.1; implementation recorded |
 | `docs/development/roadmap.md` | M2.2 removed (Trigger B); summary table row marked complete; M2.3 promoted as active |
 | `docs/development/changelog.md` | M2.2 entry appended |
 

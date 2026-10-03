@@ -29,33 +29,18 @@ _branch_exists() {
 }
 
 # =============================================================================
-# _test_draft_run  --  backward-compat wrapper for old draft_run callers
+# _test_draft_run  --  draft orchestration prologue for the workflow suites
 #
-# Replicates the old draft_run contract (create branch + apply patches +
-# apply uncommitted) using the new decomposed functions.
-# Signature matches old draft_run: PROJECT_DIR SOURCE_DIR BUNDLE_NAME
-# BRANCH_FROM DIFFS BRANCH_SUMMARY
+# Delegates to production's _run_draft_workflow with force off, so the units
+# exercise the real orchestration (savepoint, apply loop, rollback, and the
+# uncommitted-only path). The signature keeps the historical argument order
+# the callers use: PROJECT_DIR SOURCE_DIR BUNDLE_NAME BRANCH_FROM DIFFS
+# BRANCH_SUMMARY.
 # =============================================================================
 _test_draft_run() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
   local BRANCH_FROM="$4" DIFFS="$5" BRANCH_SUMMARY="$6"
 
-  local PATCHES_DIR="$SOURCE_DIR/patches"
-  local PATCH_LIST
-  PATCH_LIST=$(draft_collect_patches "$PATCHES_DIR" "$DIFFS" || true)
-  local DIFF_COUNT
-  DIFF_COUNT=$(echo "$PATCH_LIST" | grep -c . || true)
-  if [[ "$DIFF_COUNT" -eq 0 ]]; then
-    echo "Error: no .diff files found in $PATCHES_DIR" >&2
-    return 1
-  fi
-
-  local AUTHOR
-  AUTHOR="$(git -C "$PROJECT_DIR" config user.name) <$(git -C "$PROJECT_DIR" config user.email)>"
-
-  draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
-    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
-
-  echo "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" false || return 1
-  draft_apply_uncommitted "$PROJECT_DIR" "$SOURCE_DIR" "$AUTHOR" false || return 1
+  _run_draft_workflow "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
+    "$BRANCH_FROM" "$DIFFS" "$BRANCH_SUMMARY" false
 }

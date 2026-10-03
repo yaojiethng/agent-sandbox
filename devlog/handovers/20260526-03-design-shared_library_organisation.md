@@ -79,7 +79,7 @@ Not yet defined.
 
 | File | Change |
 |---|---|
-| `devlog/discussions/20260526-design-shared_library_organisation.md` | Full design document: current-state analysis, pain points, proposed structure, deployment matrix, file mapping, key decisions, open questions |
+| `devlog/discussions/20260526-design-settled-shared_library_organisation.md` | Full design document: current-state analysis, pain points, proposed structure, deployment matrix, file mapping, key decisions, open questions |
 
 ## Deferred items
 

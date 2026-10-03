@@ -10,33 +10,33 @@ Close all four provider investigations: Claude Code, Pi, Hermes, and update the 
 
 ## Scope
 
-- `investigation_claude_code.md` -- resolved and closed
-- `investigation_pi.md` -- resolved and closed
-- `investigation_hermes.md` -- resolved and closed
-- `story_provider_knowledge_store.md` -- all four provider rows updated
+- `20260312-study-settled-claude_code.md` -- resolved and closed
+- `20260312-study-settled-pi.md` -- resolved and closed
+- `20260312-study-settled-hermes.md` -- resolved and closed
+- `20260312-story-settled-provider_knowledge_store.md` -- all four provider rows updated
 
 ## Acceptance criteria
 
-- [x] `investigation_claude_desktop.md` -- status Resolved (completed prior session)
+- [x] `20260312-study-settled-claude_desktop.md` -- status Resolved (completed prior session)
 - [ ] A second provider can be added under `providers/<n>/` with no changes to `scripts/` or `libs/` -- carried from M2.2 implementation sessions; not addressed this session
 
 ## Hot files
 
 | File | Why in scope |
 |---|---|
-| [`docs/discussions/investigation_claude_code.md`](docs/discussions/investigation_claude_code.md) | Resolved this session |
-| [`docs/discussions/investigation_pi.md`](docs/discussions/investigation_pi.md) | Resolved this session |
-| [`docs/discussions/investigation_hermes.md`](docs/discussions/investigation_hermes.md) | Resolved this session |
-| [`docs/discussions/story_provider_knowledge_store.md`](docs/discussions/story_provider_knowledge_store.md) | All four provider rows updated this session |
+| [`docs/discussions/20260312-study-settled-claude_code.md`](docs/discussions/20260312-study-settled-claude_code.md) | Resolved this session |
+| [`docs/discussions/20260312-study-settled-pi.md`](docs/discussions/20260312-study-settled-pi.md) | Resolved this session |
+| [`docs/discussions/20260312-study-settled-hermes.md`](docs/discussions/20260312-study-settled-hermes.md) | Resolved this session |
+| [`docs/discussions/20260312-story-settled-provider_knowledge_store.md`](docs/discussions/20260312-story-settled-provider_knowledge_store.md) | All four provider rows updated this session |
 
 ## Decisions made this session
 
 | Decision | Rationale | Recorded in |
 |---|---|---|
-| Claude Code `serve`: Remote Control (first-party); requires claude.ai subscription auth | Outbound HTTPS to Anthropic API; operator connects via `claude.ai/code` or mobile app; no third-party wrapper needed; API key insufficient for this mode | `investigation_claude_code.md` -- Resolution |
-| Pi `serve`: unsupported; confirmed by Pi developer | No native web UI or remote control equivalent; RPC bridge or open-source web UI over RPC is a viable future path if needed | `investigation_pi.md` -- Resolution |
-| Hermes `serve`: Open WebUI via compose template | `providers/hermes/` compose template defines Open WebUI service alongside Hermes container; same composition pattern as existing harness | `investigation_hermes.md` -- Resolution |
-| Hermes Dockerfile complexity: acceptable | Persistent memory and skill creation are genuinely additive for vault workflows; heavier image is the cost | `investigation_hermes.md` -- Resolution |
+| Claude Code `serve`: Remote Control (first-party); requires claude.ai subscription auth | Outbound HTTPS to Anthropic API; operator connects via `claude.ai/code` or mobile app; no third-party wrapper needed; API key insufficient for this mode | `20260312-study-settled-claude_code.md` -- Resolution |
+| Pi `serve`: unsupported; confirmed by Pi developer | No native web UI or remote control equivalent; RPC bridge or open-source web UI over RPC is a viable future path if needed | `20260312-study-settled-pi.md` -- Resolution |
+| Hermes `serve`: Open WebUI via compose template | `providers/hermes/` compose template defines Open WebUI service alongside Hermes container; same composition pattern as existing harness | `20260312-study-settled-hermes.md` -- Resolution |
+| Hermes Dockerfile complexity: acceptable | Persistent memory and skill creation are genuinely additive for vault workflows; heavier image is the cost | `20260312-study-settled-hermes.md` -- Resolution |
 | Compose templates are currently OpenCode-scoped; must be refactored before any second provider `serve` works | Discovered during Hermes investigation; M2.2 implementation prerequisite; needs roadmap task | Handover deferred items |
 | No codebase changes from any investigation this session | Investigations are findings-only | This handover |
 
@@ -44,10 +44,10 @@ Close all four provider investigations: Claude Code, Pi, Hermes, and update the 
 
 | File | Change |
 |---|---|
-| `docs/discussions/investigation_claude_code.md` | Status Resolved; Remote Control finding recorded; Resolution section written |
-| `docs/discussions/investigation_pi.md` | Status Resolved; `serve` declared unsupported; RPC bridge noted as future path; Resolution section written |
-| `docs/discussions/investigation_hermes.md` | Status Resolved; Open WebUI compose model recorded; persistent memory capability noted; Resolution section written |
-| `docs/discussions/story_provider_knowledge_store.md` | All four provider rows updated to Resolved |
+| `docs/discussions/20260312-study-settled-claude_code.md` | Status Resolved; Remote Control finding recorded; Resolution section written |
+| `docs/discussions/20260312-study-settled-pi.md` | Status Resolved; `serve` declared unsupported; RPC bridge noted as future path; Resolution section written |
+| `docs/discussions/20260312-study-settled-hermes.md` | Status Resolved; Open WebUI compose model recorded; persistent memory capability noted; Resolution section written |
+| `docs/discussions/20260312-story-settled-provider_knowledge_store.md` | All four provider rows updated to Resolved |
 
 ## Deferred items
 

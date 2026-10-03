@@ -46,7 +46,7 @@ Iteration-scoped resources: a draft branch, a diff bundle.
 ### Relationships
 
 - An iteration is hosted within exactly one [session](#session).
-- The `new-iteration` prompt (formerly `new-session`) opens an iteration.
+- The `iter` prompt (formerly `new-iteration`, formerly `new-session`) opens an iteration.
 
 **Last updated:** 2026-08-19
 

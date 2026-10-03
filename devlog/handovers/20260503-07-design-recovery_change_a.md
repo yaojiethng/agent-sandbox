@@ -36,7 +36,7 @@ The SESSION_STATE migration (pre-clean Group 1) is the only implementation that 
 
 ### D-1 -- Design doc
 
-**File:** `docs/devlog/discussions/design_change_a_contract.md`
+**File:** `docs/devlog/discussions/20260504-design-settled-change_a_contract.md`
 
 A single coherent design record describing Change A's contract as it will be implemented. Covers: unified output format ( 2), pipeline functions ( 3), CLI contract ( 4), session identity ( 5), `diff_on_exit` repair strategy ( 6), and dependency ordering ( 7). No recovery framing, no "Contract Amendments" fragments.
 
@@ -127,7 +127,7 @@ The handover `20260429-08-design-b_interactive.md` was found in the input direct
 
 | File | Change |
 |---|---|
-| `docs/devlog/discussions/design_change_a_contract.md` | Created -- D-1: Change A contract design document |
+| `docs/devlog/discussions/20260504-design-settled-change_a_contract.md` | Created -- D-1: Change A contract design document |
 | `docs/devlog/roadmap.md` | Added A.0-A.4 entries after pre-clean Group 3 and before M2.5 |
 | `docs/devlog/handovers/20260503-07-design-recovery_change_a.md` | Created -- D-3: this handover |
 | `recovery-change-a.md` | Created -- D-4: thin pointer file |
@@ -158,6 +158,6 @@ The handover `20260429-08-design-b_interactive.md` was found in the input direct
 
 - `scripts/agent-sandbox.sh` -- add `main` guard
 
-**Context handover:** This is an ordinary M2.3 implementation session. Read `docs/devlog/roadmap.md`  A.0 and `docs/devlog/discussions/design_change_a_contract.md`. No recovery context, no `staged.diff`, no lost-handover access. The file currently has no `main` guard -- the sole task is adding one.
+**Context handover:** This is an ordinary M2.3 implementation session. Read `docs/devlog/roadmap.md`  A.0 and `docs/devlog/discussions/20260504-design-settled-change_a_contract.md`. No recovery context, no `staged.diff`, no lost-handover access. The file currently has no `main` guard -- the sole task is adding one.
 
 **After A.0:** A.1 (data model). A.1 is the largest entry; it rewrites the packaging pipeline end-to-end.

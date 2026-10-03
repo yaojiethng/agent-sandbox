@@ -91,3 +91,5 @@ Implement the first M2.6.6 implementation task -- **Compose template: realize th
 
 - Baseline `e026891` -- squashed snapshot of the design settlement; both `20260818-01`/`20260818-02` handovers present and Closed (read-only).
 - Open gotchas relevant to this session: library functions must `return` not `exit` (`src/build/compose.sh` is sourced; new error paths use `return 1`); policy-text changes need per-section approval -- architecture docs (`execution_model.md`) are not policy files, but doc changes are presented in chat before writing where substantive.
+
+[CORRECTION -- 2026-09-21]: the repo-presence-assertions entry raised this session (referencing guard-the-injection-point) was closed by the M3 cleanup pass as superseded by the T1 evidence-validation discipline. Entry reconciled and removed from `AGENT_FEEDBACK.md`.

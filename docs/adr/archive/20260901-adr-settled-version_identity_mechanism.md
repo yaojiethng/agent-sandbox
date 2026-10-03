@@ -25,11 +25,11 @@ exact-resume, silently absorbs host checkout drift, and produced a ladder of
 partial remedies (`container-sig`, `harness-sig`, `image-sig`,
 `[IMAGE_STALE]`) that sign sparse file subsets and treat staleness as the defect
 rather than the gap under it. Grounded by the story
-[`20260831-story-settled-image_and_harness_version_identity.md`](../../devlog/discussions/20260831-story-settled-image_and_harness_version_identity.md)
+[`20260831-story-settled-image_and_harness_version_identity.md`](../../../devlog/discussions/20260831-story-settled-image_and_harness_version_identity.md)
 (`Resolved`), which fixed the requirements and problem frame.
 
 The design space opened by the story was stubbed in
-[`20260831-design-settled-image_and_harness_version_identity.md`](../../devlog/discussions/20260831-design-settled-image_and_harness_version_identity.md)
+[`20260831-design-settled-image_and_harness_version_identity.md`](../../../devlog/discussions/20260831-design-settled-image_and_harness_version_identity.md)
 and settled via the design grill this iteration.
 
 ## Options Considered
@@ -140,7 +140,7 @@ and settled via the design grill this iteration.
 ## Supersedes
 
 Partial -- replaces the image-identity marking claim in
-[`20260722-adr-settled-session_identity_and_container_markers.md`](../../docs/adr/20260722-adr-settled-session_identity_and_container_markers.md)
+[`20260722-adr-settled-session_identity_and_container_markers.md`](20260722-adr-settled-session_identity_and_container_markers.md)
 ("images carry no version; name tags encode harness identity") and additively
 extends its marker/label schema with the two image-digest labels. The
 session-identity derivation (superseded separately by
@@ -162,5 +162,5 @@ filtering decisions of `20260722` remain in force and are **not** subsumed.
 ## Terminology
 
 Uses `agent-sandbox` session identity without redefining it: session identity is
-governed by [terminology.md#session](../concepts/terminology.md#session) and the
+governed by [terminology.md#session](../../concepts/terminology.md#session) and the
 session-identity ADRs, and is orthogonal to this software-version model.

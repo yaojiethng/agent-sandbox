@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # src/libs/dry_run_harness.sh
 # Shared check framework for the dry-run probe scripts (dry_run_capability.sh
-# and dry_run_reasoning.sh). Sourced by both; defines the layer-aware
-# pass/fail/warn counting, the section headers, and the per-container
-# diagnostics record writer.
+# and dry_run_reasoning.sh). Sourced by both; defines the probe bootstrap, the
+# layer-aware pass/fail/warn counting, the section headers, and the
+# per-container diagnostics record writer.
 #
 # Intentionally no set -e/set -u: all checks must run even when some fail,
 # and env vars are checked explicitly with guards.
@@ -46,6 +46,34 @@ _is_writable() {
 
 _is_readonly() {
   _is_writable "$1" && return 1 || return 0
+}
+
+# ---------------------------------------------------------------------------
+# Probe bootstrap
+# ---------------------------------------------------------------------------
+
+# dry_run_bootstrap
+#   Resolves the four paths both probes share (SANDBOX_DIR, CHANGES_DIR,
+#   INPUT_DIR, OUTPUT_DIR) and sources session_state.sh. Each probe locates
+#   this file by its conventional lib path and then calls this function, so
+#   the preamble the two probes share lives here once instead of in two copies
+#   that drift.
+#
+#   The path defaults are container conventions. The dirs_resolve fallback
+#   serves a probe run without the compose-injected path vars (test fixtures).
+dry_run_bootstrap() {
+  ROOT="${ROOT:-/home/agentuser}"
+  # shellcheck source=/dev/null
+  source "$LIBS_DIR/session_state.sh"
+  SANDBOX_DIR="${SANDBOX_DIR:-$ROOT/${SANDBOX_DIR_NAME:-sandbox}}"
+  CHANGES_DIR="${CHANGES_DIR:-}"
+  INPUT_DIR="${INPUT_DIR:-}"
+  OUTPUT_DIR="${OUTPUT_DIR:-}"
+  if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
+    # shellcheck source=/dev/null
+    source "$LIBS_DIR/dirs.sh"
+    WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
+  fi
 }
 
 # dry_run_write_record RECORD_FILE LAYERS [EXTRA_FIELDS...]

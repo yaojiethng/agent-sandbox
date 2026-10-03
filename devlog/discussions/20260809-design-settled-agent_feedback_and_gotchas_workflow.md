@@ -1,5 +1,7 @@
 # Finalized Workflow -- Agent Feedback and Gotchas
 
+> **SUPERSEDED 2026-09-21:** the two-file design specified here was superseded by the unified-record decision. Iteration `20260921-04` merged `devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` into one record file; `GOTCHAS.md` is deleted and its entries merged under an operator-raised `[O]` section. The live authority is `docs/adr/harness_iterative_improvement_loop.md` and `AGENTS.md`. This document is retained as the historical record of the two-file design and its reader model.
+
 **Status:** Settled (design complete; implementation pending next session)
 **Date:** 2026-08-09
 > This document is the finalized workflow to be implemented. It is the deliverable of the workflow exploration session `20260809-03`. It is the spec for the next implementation session. It is not the current system state.
@@ -69,8 +71,8 @@ Entries are **deleted when resolved**. A resolved durable fix is recorded in the
 - **Writer:** operator.
 - **Purpose:** recurring agent mistakes and code smells.
 - **Source of entries:** chiefly mid-turn steering. When the operator says "did you forget X", the agent reacts, then lists it as a mid-session finding with an explicit note, then moves it into `GOTCHAS.md` at the review/publish step.
-- **Agent integration:** at session open (Step 1), the agent reads open gotchas and avoids/re-checks those patterns during the session. This is a session-open primer. Sweep-and-fix happens at sub-milestone cleanup.
-- **Durable housing:** when gotchas accumulate, fold the recurring patterns into a skill so the loaded surface stays small.
+- **Agent integration:** the agent does not read the raw file as a behavior source. The agent reads the durable fixes that elevated entries route to (`scoped:` roadmap rows). A mistake the agent trips is recorded as a Finding in the handover, so the agent knows the error when it recurs. Sweep-and-fix happens at sub-milestone cleanup.
+- **Durable housing:** when gotchas accumulate, fold the recurring patterns into a skill or a durable fix routed to a roadmap row so the loaded surface stays small. Long length is a signal the underlying problem needs a permanent fix, not better indexing.
 
 ---
 
@@ -93,6 +95,18 @@ discover → record → review/publish → durable-fix scope → probation → c
    - **dismiss** -- the fix held. Delete the entry.
    - **maintain** -- the fix is not yet stress-tested. Extend probation.
    - **escalate** -- the problem resurfaced. The prior fix failed. Re-scope with awareness of the prior fix; optionally retire the prior fix.
+
+---
+
+## Consolidation and deletion (cleanup pass)
+
+When several entries share one roadmap solution (scoped to the same row), consolidate them into a single entry rather than keeping one entry per instance. Run consolidation at the cleanup pass together with deletion of confirmed-closed entries.
+
+**Consolidation rule:** merge entries that share a `scoped:` destination. The surviving entry lives in `AGENT_FEEDBACK.md` only ` -- ` when a family spans `AGENT_FEEDBACK.md` and `GOTCHAS.md`, the single merged entry sits in the feedback file and the GOTCHAS member is removed. Date the surviving entry to today. Keep the distinct failure modes as sub-bullets so the family history survives inside the entry. Drop the consolidated member entries.
+
+**Deletion rule:** delete a probation or closed entry when monitoring confirms the fix durable and it has not resurfaced. Delete closed entries at the cleanup pass. Do not delete an entry without recording its history.
+
+**History preservation (mandatory):** whenever an entry is deleted or merged away, add a `[CORRECTION -- YYYY-MM-DD]` note to the handover that raised the original entry, recording the historical reconciliation record and that the entry is now closed or superseded. This preserves the record despite the entry leaving the active file. The correction follows the procedural rules for editing closed docs (`documentation_policy.md`); the handover carries the correction even though it is closed.
 
 ---
 
@@ -143,8 +157,8 @@ active → pre-close → close → [post-close admin, only if broken]
 
 ## Next session integration
 
-- **GOTCHAS pointer** in `AGENTS.md` (agent-facing section): at session open, read open gotchas and avoid/re-check them; sweep at sub-milestone cleanup.
-- **AGENT_FEEDBACK pointer** in `AGENTS.md` (adjacent to the Bash Friction Log): at sub-milestone pre-close review gate, surface open entries to the operator.
+- **GOTCHAS pointer** in `AGENTS.md` (agent-facing section): the raw file is not the agent's behavior source. The agent records a tripped mistake as a Finding in the handover; the durable fix routes to a roadmap row (`scoped:`); sweep at sub-milestone cleanup. Recurrences accumulate on one entry to raise a frequency signal the operator acts on at scoping time.
+- **AGENT_FEEDBACK pointer** in `AGENTS.md` (adjacent to the Bash Friction Log): catalogue a recurrence on its existing entry (grep-first, re-open); surface open entries to the operator at the sub-milestone pre-close review gate.
 - Both files are pointed to from `AGENTS.md`, which loads every session. Integration is automatic on both sides.
 
 ---

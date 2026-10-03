@@ -17,14 +17,14 @@ Every session runs two containers. You are inside the **reasoning** (agent runti
 Key behavioral rules:
 
 - Do not modify files outside `sandbox/`.
-- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are acceptable.
+- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](../../../../../../docs/operations/git_policy.md). `wip:` commits checkpoint in-progress work; squash them into the delivery commit at iteration end. A correction to a closed iteration's work, at the operator's direction, folds into that iteration's commit rather than starting a new one, and carries its record amendments in the same fold. The principles are in [`docs/adr/closed_record_corrections.md`](../../../../../../docs/adr/closed_record_corrections.md) and the record forms in the type policies. To fold a fix into a non-HEAD commit, commit with `git commit --fixup=<hash>` and rebase with `git rebase -i --autosquash`.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline
 
 Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs  --  fragmented or half-applied changes across iterations create review burden.
 
-Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](docs/operations/documentation_policy.md) `### Line wrapping`.
+Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](../../../../../../docs/operations/documentation_policy.md) `### Line wrapping`.
 
 When writing code, always take into account the following:
 
@@ -36,36 +36,36 @@ When writing code, always take into account the following:
 6. One line?                  -> one line
 7. Only then: the minimum that works
 
-Before creating any new document, read [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md).
+Run throwaway verification in `/tmp`, never in the repo tree. The repository is git-tracked; a stray file created during verification surfaces in `git status` and pollutes the diff. A throwaway file is any file you create only to check something and do not keep.
 
-### Handover rules
+Prefer the `edit` tool for in-place text changes. The `edit` tool reports a miss when its `oldText` does not match; a `sed` one-liner run through the `bash` tool with a missing file operand silently writes nothing. After a `sed` change, verify the write landed.
 
-- Close -> done. No commits after close. Open a new handover for new work.
-- Type must match dominant activity at close. Rename if it diverged.
-- Implementation needs its own handover. A design handover does not cover impl commits.
-- Every iteration updates the roadmap checkboxes for completed tasks.
-
-Each iteration is independent. The prior iteration's git history is not available (container is ephemeral). The iteration starts from the project's committed HEAD.
+Before creating any new document, read [`docs/operations/discussion_policy.md`](../../../../../../docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](../../../../../../docs/operations/adr_policy.md).
 
 Tools you have access to:
 
-- `/package-branch`  --  export committed changes as numbered diffs, uncommitted diff, and changed files
+- `/package-branch`  --  export the branch as numbered per-commit diffs, an uncommitted diff, and the changed-file set, taken at the branch point (merge-base of init_sha and HEAD) so a rebased history applies cleanly; the script states the branch point and reports when it moved
+- `/task-queue`  --  run a task fan-out as a fork and a join: per-task worktrees, a blocking operator join, the re-queue routes, and the bring-back
 - Standard development tools (git, bash, common CLI utilities)
 
-## Technical Writing Rules
+## Communication Standards
 
-Apply these to all prose you write: documentation, comments, chat deliverables, handovers. Full policy: `docs/operations/documentation_policy.md` in the target repo when present.
+General communication guidelines for all agent prose. Full policy: `docs/operations/documentation_policy.md` in the target repo when present.
 
 - Meet ASD-STE100. Delete-test every word, phrase, and sentence: if a reader can delete it without losing required meaning, delete it.
 - Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
+- Numbering: a number holds only where it appears. Present one indexable axis per exchange; if sets must co-exist, name each axis.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
+- That rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when it is marked as an inference.
+- No capacity claim without a signal. Stopping work early is a decision, and like any other it needs a reason the reader can check. Do not report being out of room, budget or context unless a signal in the environment says so; with no signal, name the claim as an inference or do not make it.
 - Place the defined noun phrase before the imperative command: the reader must know exactly what object is being discussed before being told what to do with it. If the sentence uses a term the reader has not met, define it first, in its own clause, then apply it. Avoid thin subjects that rely on a trailing dash clause for definition; the main clause must not depend on its afterthought.
 - One paragraph per physical line, however long the line. Never break inside a paragraph -- not at sentence boundaries, not at a column limit. Hard breaks separate blocks only.
 - Plain ASCII punctuation. Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. No non-ASCII symbols, no checkmark or cross emoji.
 - Link sparingly. Link what the reader might need next; keep context-only names as plain text. Do not over-link transient documents (handovers, discussion docs, session exports).
+- Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
 - Records state, not session history. A durable record does not narrate the session that produced it: no session ids, no commit hashes, no "as discussed" pointers.
 
 ## Fresh Subagent Invocation
@@ -82,10 +82,48 @@ The subagent runs in the same container/workspace as the primary agent, with the
 
 ## Running Review Subagents
 
-State the model and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Suggested pair under the opencode-go provider: `deepseek-v4-flash` at `xhigh` thinking and `glm-5.3-flash` at `high` thinking.
+State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices at the project level, never here. Read the recommendation by role tag from the project-level `AGENTS.md` (for example `_REVIEWER`); each token names the provider, model, and thinking level. When the tag is absent, resolve the model in this order:
 
-Capture a subagent run to a log file, never through a pipe. A pipe loses the unflushed output when a run is interrupted; the log file and the session transcript survive. Run with a generous timeout (`timeout 1800 pi --provider opencode-go --model deepseek-v4-flash --thinking xhigh -p "$(cat brief)" > /tmp/review.log 2>&1`).
+1. The project-level `AGENTS.md` role recommendation.
+2. The pi default, read from `~/.pi/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`), a project-level `.pi/settings.json` override taking precedence. Confirm with the operator that this is the model to use.
+3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
+
+The last two rungs confirm with the operator so a fallback never guesses silently. A `No models match pattern` message means pi fell back to the startup default; verify the effective model from the session header.
+
+Capture each subagent run to a log file, never through a pipe. Give the run a timeout you set, and a provider, model, and thinking level. Pre-flight the brief, then run and record the exit code and elapsed seconds:
+
+```bash
+brief=<path to brief>                    # the subagent's instructions; must be non-empty
+[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }
+run_timeout=<seconds>                    # the run's timeout; set it yourself
+start=$(date +%s)
+timeout "$run_timeout" pi --provider <provider> --model <model> --thinking <level> -p "$(cat "$brief")" > /tmp/review.log 2>&1
+rc=$?
+echo "rc=$rc secs=$(( $(date +%s) - start ))" > /tmp/review.meta
+```
+
+A `rc=0` with an empty log means the subagent did no work: treat it as an outcome of failure. A `rc=0` with a non-empty log means the subagent ran; check its output.
 
 Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
 
-Every run starts with benign model-resolution warnings (`Warning: No models match pattern ...`). They are noise, not a stall signal; do not abort on them.
+A `Warning: No models match pattern` message means pi did not keep the requested model and fell back to the startup default; it is not benign noise. Confirm the effective model before trusting a run: give the run an explicit session path (`pi --session /tmp/review.jsonl ...`) and read the model from that file with `grep -o '"model":"[^"]*"' /tmp/review.jsonl | sort -u`.
+
+### Keeping a subagent alive
+
+A subagent must not outlive the tool call that launched it. A process started with `&` is orphaned when that call returns, and its work is lost with no error and a short log. Run it in the foreground of the call that needs its result.
+
+To run subagents in parallel, put every one of them inside a single call and let that call own them:
+
+```bash
+start=$(date +%s)
+for name in a b; do
+  timeout "$run_timeout" pi --provider <provider> --model <model> --thinking <level> \
+    -p "$(cat "$brief_$name")" > "/tmp/$name.log" 2>&1 &
+done
+wait
+echo "secs=$(( $(date +%s) - start ))"
+```
+
+Each subagent gets its own brief file and its own log. Give the call a timeout larger than the per-agent timeout times the count, so the call is the outer bound rather than a second accidental cap. Nothing is orphaned, because the call does not return until every child has finished.
+
+A run can still be truncated by its own timeout. The signature is a short log with no report, and a subject tree that is partially patched. Score the tree rather than the report in that case, and say so.

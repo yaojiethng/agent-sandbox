@@ -1,76 +1,52 @@
 # providers/hermes/base.dockerfile
-# Stable install layers for the Hermes reasoning layer.
-# Built once per provider; rebuilt only when system packages, runtimes, or agent source change.
-# Tagged as hermes-base (no project suffix  --  contains no project-specific content).
-# Built by scripts/build_container.sh --type=agent --provider=hermes.
+# Hermes reasoning layer base image.
+# Inherits the shared runtime set from agent-base (see reasoning/base.dockerfile)
+# and adds the Hermes agent install. Tagged as hermes-base (no project suffix --
+# it contains no project-specific content).
+# Built by scripts/build.sh --type=agent as tier 2.
 #
-# Multi-stage build: builder compiles Python packages; runtime copies the venv
-# without carrying build tools (gcc, python3-dev, libffi-dev) into the final image.
+# Multi-stage build: the builder compiles the Hermes Python packages; the
+# runtime stage copies the venv and the source without carrying build tools
+# (gcc, libffi-dev) into the final image. Both stages start from agent-base, so
+# Node, Python, uv, and the repo lint gates are present in each.
 #
-# Based on the upstream Docker PR: NousResearch/hermes-agent#1841 (Aralobster rewrite)
-# Key changes vs original:
-#   - Multi-stage build  --  build tools excluded from runtime image
-#   - python:3.11-slim base  --  pinned Python version, smaller than debian:bookworm
-#   - Node.js 20 via NodeSource  --  current LTS, explicit version pin
-#   - Playwright removed  --  use Browserbase/CDP instead
-#   - uv used exclusively for venv creation and package installation
+# Provenance: the upstream Docker PR NousResearch/hermes-agent#1841 (Aralobster
+# rewrite) moved this image to a multi-stage build on a pinned Python slim base
+# with uv for venv and package work. Upstream installed Node and uv separately
+# per stage; the shared base now owns both.
+#
+# Browser automation is Browserbase/CDP, not Playwright, so no browser layer.
 
-# -- Stage 1: Builder --------------------------------------------
-FROM python:3.11-slim AS builder
+ARG BASE_IMAGE=agent-base
+
+# -- Stage 1: builder -------------------------------------------------
+FROM ${BASE_IMAGE} AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        gcc python3-dev libffi-dev git curl \
+        gcc libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 20 (WhatsApp bridge, MCP servers)
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv via official installer  --  used exclusively for venv + packages
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 WORKDIR /opt/hermes
 
-# Clone Hermes source
 RUN git clone https://github.com/NousResearch/hermes-agent /opt/hermes
 
-# Create venv and install all extras via uv
 RUN uv venv /opt/venv --python 3.11 && \
     uv pip install --python /opt/venv/bin/python --no-cache-dir -e ".[all]"
 
-# Install npm dependencies (no devDependencies)
 RUN npm install --omit=dev
 
-# -- Stage 2: Runtime --------------------------------------------
-FROM python:3.11-slim
+# -- Stage 2: runtime -------------------------------------------------
+FROM ${BASE_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git curl ca-certificates \
         ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 20 runtime (no build tools needed)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install markdownlint-cli2 (Markdown linter; repo gate via scripts/check_markdown.sh)
-RUN npm install -g markdownlint-cli2@0.23.2
-
-# uv in runtime  --  needed for MCP tool support at runtime
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
-
-# Copy built venv and Hermes source from builder
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /opt/hermes /opt/hermes
 
 WORKDIR /opt/hermes
 
-ENV PATH="/opt/venv/bin:/root/.local/bin:/usr/local/bin:$PATH" \
+ENV PATH="/opt/venv/bin:$PATH" \
     VIRTUAL_ENV="/opt/venv" \
     PYTHONUNBUFFERED=1

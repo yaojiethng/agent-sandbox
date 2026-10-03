@@ -62,8 +62,8 @@ A fourth change emerged from the image name removal: `SANDBOX_IMAGE_NAME` and `A
 
 Refactoring tasks complete. Open provider investigations:
 
-- `investigation_claude_code.md` -- Claude Code provider
-- `investigation_claude_desktop.md` -- Claude Desktop provider
+- `20260312-study-settled-claude_code.md` -- Claude Code provider
+- `20260312-study-settled-claude_desktop.md` -- Claude Desktop provider
 
 Trigger B does not fire until investigations are resolved and acceptance criterion 3 (second provider verified) is met.
 

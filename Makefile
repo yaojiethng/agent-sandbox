@@ -66,7 +66,8 @@ test:
 
 # -------------------------
 # Static checks. lint is a blocking gate: scripts/lint.sh runs the ShellCheck
-# gate (check_shell.sh) and the Markdown gate (check_markdown.sh); smoke +
+# gate (check_shell.sh), the sourced-library contract gate
+# (check_lib_contract.sh), and the Markdown gate (check_markdown.sh); smoke +
 # liveness remain advisory.
 # -------------------------
 

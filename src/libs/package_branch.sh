@@ -19,21 +19,24 @@
 #                                the diff_export caller) for host consumers
 #
 # Usage (library):
-#   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES]
+#   package_branch SANDBOX_DIR OUTPUT_DIR [NO_RENAMES] [BASELINE]
 #
 # Usage (direct):
-#   package_branch.sh --to=<dir> --bundle-summary=<text>
+#   package_branch.sh --to=<dir> --bundle-summary=<text> [--baseline=<sha>]
 #
 # Arguments (library mode):
 #   SANDBOX_DIR        --  path to the git repository
 #   OUTPUT_DIR         --  full destination directory path
 #   NO_RENAMES         --  if true, use git diff --no-renames
+#   BASELINE           --  optional explicit diff baseline (default: the
+#                          session branch point)
 #
 # Flags (direct mode):
 #   --to=<dir>        Base parent directory (required). Script creates
 #                     <to>/bundles/<ts>-<label>[-<ts>]/ subdirectory.
 #   --bundle-summary Short snake_case label for the output directory.
 #                     Default: "snapshot".
+#   --baseline=<sha>  Explicit diff baseline (default: the session branch point)
 #   --no-renames      Use git diff --no-renames (avoid rename operations)
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,6 +64,7 @@ Required:
 Options:
   --to=<dir>              Output directory (default: auto-resolved from sandbox)
   --bundle-summary=<txt>  Required snake_case label for the bundle directory
+  --baseline=<sha>        Explicit diff baseline (default: the session branch point)
   --no-renames            Use git diff --no-renames (avoid rename operations in diffs)
 EOF
 }
@@ -73,24 +77,27 @@ fi
 # -------------------------
 # package_commits
 #
-# Iterates commits since INIT_SHA (read from SESSION_STATE), produces
-# numbered .diff files with index lines stripped into OUTPUT_DIR/,
-# overwrites on each run.
+# Iterates commits since the baseline (explicit SINCE_SHA, else init_sha from
+# SESSION_STATE), produces numbered .diff files with index lines stripped into
+# OUTPUT_DIR/, overwrites on each run.
 # -------------------------
 package_commits() {
   local SANDBOX_DIR="$1"
   local OUTPUT_DIR="$2"
   local NO_RENAMES="${3:-false}"
+  local SINCE_SHA="${4:-}"
 
   if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
     echo "package_commits: SANDBOX_DIR and OUTPUT_DIR are required" >&2
     return 1
   fi
 
-  local INIT_SHA
-  INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  local INIT_SHA="$SINCE_SHA"
   if [[ -z "$INIT_SHA" ]]; then
-    echo "package_commits: init_sha not found in SESSION_STATE" >&2
+    INIT_SHA=$(session_state_read "$SANDBOX_DIR" "init_sha")
+  fi
+  if [[ -z "$INIT_SHA" ]]; then
+    echo "package_commits: init_sha not found in SESSION_STATE and no baseline given" >&2
     return 1
   fi
 
@@ -250,21 +257,85 @@ _package_preflight_check() {
 #   4. write_changed_files      --  changed-files/ with MANIFEST.txt
 #   5. .export-status           --  STATUS, TIMESTAMP, INIT_SHA (HEAD added by diff_export)
 #
-# Reads init_sha from SESSION_STATE. Overwrites OUTPUT_DIR on each run.
+# Resolves the diff baseline (explicit BASELINE, else the session branch
+# point). Overwrites OUTPUT_DIR on each run.
 #
 # Args:
 #   SANDBOX_DIR        --  path to the git repository
 #   OUTPUT_DIR         --  full destination directory (parent of patches/, etc.)
 #   NO_RENAMES         --  if true, use git diff --no-renames
+#   BASELINE           --  optional explicit baseline SHA
 # -------------------------
-package_branch() {
-  local SANDBOX_DIR="${1:-}"
-  local OUTPUT_DIR="${2:-}"
-  local NO_RENAMES="${3:-false}"
+# -------------------------
+# package_branch_baseline
+#
+# Prints the diff baseline for an export. An explicit baseline wins. Otherwise
+# the baseline is the newest commit shared by the session baseline (init_sha)
+# and HEAD: equal to init_sha when no history was rewritten, and the branch
+# point after a rebase. The host retains that same commit, so the exported
+# diffs apply onto it.
+# -------------------------
+# =============================================================================
+# package_branch_validate_summary  --  reject a bundle summary that cannot name
+#   a branch
+#
+# The summary becomes the draft branch name in draft.sh:
+#   draft/<session>-<summary>-<hash>
+# and git refuses a ref holding a space, a colon, or any character outside
+# [A-Za-z0-9._/-]. The export succeeds and the operator's `make draft` fails
+# later, at the far end of the loop, so the shape is checked where the value
+# enters.
+# =============================================================================
+package_branch_validate_summary() {
+  local SUMMARY="${1:-}"
 
-  if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
-    echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
+  if [[ -z "$SUMMARY" ]]; then
+    echo "package_branch: --bundle-summary is required and must be snake_case" >&2
+    _package_summary_usage
     return 1
+  fi
+
+  # ${#SUMMARY} is quoted: the lib-contract gate's brace counter stops at `#`,
+  # so an unquoted length expansion opens a brace it never closes and the rest
+  # of the file reads as function body.
+  local SLEN="${#SUMMARY}"
+  if (( SLEN < 3 || SLEN > 48 )); then
+    echo "package_branch: --bundle-summary must be 3 to 48 characters; got ${SLEN}" >&2
+    _package_summary_usage
+    return 1
+  fi
+
+  if [[ ! "$SUMMARY" =~ ^[a-z0-9]+(_[a-z0-9]+)*$ ]]; then
+    echo "package_branch: --bundle-summary must be lowercase snake_case" >&2
+    echo "  Allowed: letters, digits, and single underscores between words" >&2
+    echo "  Rejected: spaces, capitals, punctuation, a leading or trailing underscore" >&2
+    _package_summary_usage
+    return 1
+  fi
+
+  return 0
+}
+
+_package_summary_usage() {
+  echo "" >&2
+  echo "  Good: --bundle-summary=fix_provisioning_metadata_agnostic" >&2
+  echo "  Good: --bundle-summary=add_format_patch_support" >&2
+  echo "  Bad:  --bundle-summary=Rebased plan series (spaces)" >&2
+  echo "  Bad:  --bundle-summary=changes (too vague to name a change set)" >&2
+  echo "" >&2
+}
+
+package_branch_baseline() {
+  local SANDBOX_DIR="$1"
+  local EXPLICIT="${2:-}"
+
+  if [[ -n "$EXPLICIT" ]]; then
+    if ! git_commit_exists "$SANDBOX_DIR" "$EXPLICIT"; then
+      echo "package_branch: baseline does not resolve to a commit: $EXPLICIT" >&2
+      return 1
+    fi
+    printf '%s' "$EXPLICIT"
+    return 0
   fi
 
   local INIT_SHA
@@ -273,6 +344,25 @@ package_branch() {
     echo "package_branch: init_sha not found in SESSION_STATE" >&2
     return 1
   fi
+
+  local MERGE_BASE
+  MERGE_BASE=$(git -C "$SANDBOX_DIR" merge-base "$INIT_SHA" HEAD 2>/dev/null) || MERGE_BASE=""
+  printf '%s' "${MERGE_BASE:-$INIT_SHA}"
+}
+
+package_branch() {
+  local SANDBOX_DIR="${1:-}"
+  local OUTPUT_DIR="${2:-}"
+  local NO_RENAMES="${3:-false}"
+  local BASELINE_ARG="${4:-}"
+
+  if [[ -z "$SANDBOX_DIR" || -z "$OUTPUT_DIR" ]]; then
+    echo "package_branch: SANDBOX_DIR and OUTPUT_DIR are required" >&2
+    return 1
+  fi
+
+  local INIT_SHA
+  INIT_SHA=$(package_branch_baseline "$SANDBOX_DIR" "$BASELINE_ARG") || return 1
 
   # Validate SANDBOX_DIR exists and is a git repository
   if [[ ! -d "$SANDBOX_DIR/.git" ]]; then
@@ -284,9 +374,16 @@ package_branch() {
   # degrade to empty or partial while this function still reports success, so the
   # caller stamps a SUCCESS bundle over the last good one. Refuse the state here:
   # the save decision routes its undeterminable case into this function, and the
-  # callers' failure paths keep the previous artefact and write FAIL.
+  # callers' failure paths keep the previous artefact and write FAIL. Two probes:
+  # `git status --porcelain` reads the index; `git fsck --no-dangling` reads
+  # every reachable object, so a truncated blob is refused before the per-commit
+  # diff degrades.
   if ! git -C "$SANDBOX_DIR" status --porcelain >/dev/null 2>&1; then
-    echo "package_branch: cannot read the repository state at $SANDBOX_DIR; refusing to export" >&2
+    echo "package_branch: cannot read the repository index at $SANDBOX_DIR; refusing to export" >&2
+    return 1
+  fi
+  if ! git -C "$SANDBOX_DIR" fsck --no-dangling >/dev/null 2>&1; then
+    echo "package_branch: cannot read the object store at $SANDBOX_DIR; refusing to export" >&2
     return 1
   fi
 
@@ -298,13 +395,13 @@ package_branch() {
   mkdir -p "$OUTPUT_DIR"
 
   # 1. Per-commit diffs
-  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$NO_RENAMES"
+  package_commits "$SANDBOX_DIR" "${OUTPUT_DIR}/patches" "$NO_RENAMES" "$INIT_SHA"
 
   # 2. Uncommitted changes vs HEAD
   write_uncommitted_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/uncommitted.diff"
 
-  # 3. All changes since INIT_SHA
-  write_all_changes_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/all-changes.diff"
+  # 3. All changes since the baseline
+  write_all_changes_diff "$SANDBOX_DIR" "${OUTPUT_DIR}/all-changes.diff" "$INIT_SHA"
 
   # 4. Changed-file copies
   write_changed_files "$SANDBOX_DIR" "$INIT_SHA" "$OUTPUT_DIR"
@@ -316,22 +413,53 @@ package_branch() {
   _export_ts=$(date -u +%Y%m%d-%H%M%S)
   _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$INIT_SHA"
 
-  echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
+  # 6. Baseline provenance. After a rebase the merge-base is not the recorded
+  #    init_sha, and the operator must apply the bundle at the branch point
+  #    rather than at init_sha. The movement is stated here, beside the command
+  #    that carries the point, so the two cannot be read apart.
+  local RECORDED_INIT
+  RECORDED_INIT=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null || true)
+  local BASELINE_MOVED=false
+  if [[ -n "$RECORDED_INIT" && "$INIT_SHA" != "$RECORDED_INIT" ]]; then
+    BASELINE_MOVED=true
+  fi
 
   local bundle_name
   bundle_name=$(basename "$OUTPUT_DIR")
+
+  # The machine-readable copy of the block below. A host tool or a later
+  # session reads the facts without parsing chat or this file's stderr.
+  {
+    echo "BUNDLE=${bundle_name}"
+    echo "BRANCH_POINT=${INIT_SHA}"
+    echo "BASELINE_MOVED=${BASELINE_MOVED}"
+    echo "RECORDED_INIT_SHA=${RECORDED_INIT}"
+  } > "${OUTPUT_DIR}/.branch-point"
+
+  echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
+
+  if [[ "$BASELINE_MOVED" == true ]]; then
+    echo "" >&2
+    echo "Branch point moved: history was rewritten since init_sha ${RECORDED_INIT:0:7}." >&2
+    echo "  Export taken at ${INIT_SHA:0:7}. Apply the bundle there, not at init_sha." >&2
+    echo "  A rewritten history cannot fast-forward; confirm with:" >&2
+    echo "    make confirm TARGET_BRANCH=<new-branch> NEW=1" >&2
+  fi
+
   echo "To draft this bundle on host, run:" >&2
-  echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=<slug>" >&2
+  echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=${BUNDLE_SUMMARY:-$bundle_name} BRANCH_FROM=${INIT_SHA}" >&2
 }
 
 # If run directly (not sourced), parse flags and execute
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   TO_ARG=""
   BUNDLE_SUMMARY_ARG=""
+  BASELINE_ARG=""
   NO_RENAMES_ARG=false
 
   parse_args usage \
     --bundle-summary=BUNDLE_SUMMARY_ARG \
+    --baseline=BASELINE_ARG \
     --to=TO_ARG \
     --no-renames:NO_RENAMES_ARG \
     -- "$@"
@@ -353,20 +481,14 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     exit 1
   fi
 
-  # --bundle-summary is required (same class as --to)
-  if [[ -z "$BUNDLE_SUMMARY_ARG" ]]; then
-    echo "Error: --bundle-summary is required. Provide a concise snake_case label." >&2
-    echo "" >&2
-    echo "  Good: --bundle-summary=fix_provisioning_metadata_agnostic" >&2
-    echo "  Good: --bundle-summary=add_format_patch_support" >&2
-    echo "  Bad:  --bundle-summary=changes" >&2
-    echo "  Bad:  --bundle-summary=snapshot" >&2
-    echo "  Bad:  --bundle-summary=misc" >&2
-    echo "" >&2
-    echo "Usage: package_branch.sh --to=<dir> --bundle-summary=<text>" >&2
+  # --bundle-summary shape (same class as --to). The value names the bundle
+  # directory and, through BRANCH_SUMMARY, the draft branch; a value git cannot
+  # put in a ref is refused here rather than at the operator make draft.
+  if ! package_branch_validate_summary "$BUNDLE_SUMMARY_ARG"; then
+    echo "Usage: package_branch.sh --to=<dir> --bundle-summary=<slug>" >&2
     echo "" >&2
     echo "  --to=<dir>           Required. Base output directory." >&2
-    echo "  --bundle-summary     Required. Snake_case label for the bundle directory." >&2
+    echo "  --bundle-summary     Required. 3 to 48 chars, lowercase snake_case." >&2
     exit 1
   fi
   BUNDLE_SUMMARY="$BUNDLE_SUMMARY_ARG"
@@ -374,14 +496,10 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   # Auto-resolve SESSION_ID from SESSION_STATE
   SESSION_ID=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
 
-  # Construct output directory via export_path. LABEL (BUNDLE_SUMMARY)
-  # is optional  --  when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
-  if [[ -n "$BUNDLE_SUMMARY" ]]; then
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
-  else
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID")
-  fi
+  # Construct output directory via export_path. The summary is validated
+  # above, so the label half is always present on this path.
+  OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
   mkdir -p "$OUTPUT_DIR"
 
-  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$NO_RENAMES_ARG"
+  package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$NO_RENAMES_ARG" "$BASELINE_ARG"
 fi

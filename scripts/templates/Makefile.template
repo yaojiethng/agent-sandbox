@@ -33,6 +33,9 @@
 #   build policy, confirm, then start a new session. Fast path supplies
 #   PROVIDER= (and optionally REFRESH=1/REBUILD=1) directly; --interactive is
 #   the explicit slow mode (recommended when unsure of the provider).
+#   The same variable selects the interactive picker on resume (session),
+#   prune (plan + confirm), draft (channel + bundle), and apply (preview +
+#   confirm).
 #   Example: make start INTERACTIVE=1
 #            make start PROVIDER=hermes INTERACTIVE=1
 #
@@ -61,9 +64,9 @@
 #
 # BUILD TARGETS
 #   make build                         --  builds sandbox + all providers
-#   make build TARGET=all              --  explicit alias for build-all
-#   make build TARGET=hermes           --  builds hermes provider only
-#   make build TARGET=hermes,sandbox   --  builds hermes and sandbox
+#   make build TARGETS=all             --  explicit alias for build-all
+#   make build TARGETS=hermes          --  builds hermes provider only
+#   make build TARGETS=hermes,sandbox  --  builds hermes and sandbox
 #   make build REBUILD=1               --  forces full rebuild including base images
 #
 # STOP
@@ -84,17 +87,32 @@ SANDBOX_DIR  ?= $(error SANDBOX_DIR not set  --  .env missing or incomplete. Run
 # level, or the invocation CWD.
 ENV_FILE := $(CURDIR)/.env
 PROVIDER     ?=
+SERVE        ?=
 REFRESH      ?=
 REBUILD      ?=
-TARGET       ?=
+FAST         ?=
+TARGETS      ?=
 FROM         ?=
 INTERACTIVE  ?=
+BRANCH       ?=
 DIFF         ?=
 TARGET_BRANCH ?=
+NEW          ?=
 BUNDLE       ?=
 BUNDLE_SUMMARY ?=
 BASELINE ?=
-ALL ?=
+BRANCH_FROM  ?=
+DIFFS        ?=
+BRANCH_SUMMARY ?=
+NO_RENAMES   ?=
+PERMISSIVE   ?=
+FORCE        ?=
+LIST         ?=
+PRUNE        ?=
+SESSION_ID   ?=
+SANDBOX_TYPE ?=
+FLATTEN      ?=
+WORKTREE_DIR ?=
 STALE        ?=
 AGE_DAYS     ?=
 DRY_RUN      ?=
@@ -109,12 +127,40 @@ ifdef STALE_ONLY
 $(error STALE_ONLY is not a Make variable. Did you mean STALE? Example: make prune STALE=sandbox)
 endif
 
+ifdef NEW_BRANCH
+$(error NEW_BRANCH is not a Make variable. Did you mean TARGET_BRANCH=<new-branch> NEW=1? Example: make confirm TARGET_BRANCH=$(NEW_BRANCH) NEW=1)
+endif
+
+ifdef TARGET
+$(error TARGET is not a Make variable. Build targets use TARGETS. Example: make build TARGETS=pi,sandbox)
+endif
+
+# Guard: target-scoped variables used on the wrong target. Each names the flag
+# the target actually reads. MAKECMDGOALS is the make invocation's target list.
+ifneq ($(filter dry-run,$(MAKECMDGOALS)),)
+ifdef DRY_RUN
+$(error DRY_RUN is not a dry-run variable. Did you mean FAST=1? Example: make dry-run PROVIDER=pi FAST=1)
+endif
+endif
+
+ifneq ($(filter start,$(MAKECMDGOALS)),)
+ifdef FAST
+$(error FAST is not a start variable. FAST belongs to dry-run. Example: make dry-run PROVIDER=pi FAST=1)
+endif
+endif
+
+ifneq ($(filter build,$(MAKECMDGOALS)),)
+ifdef INTERACTIVE
+$(error INTERACTIVE is not a build variable. It drives the interactive picker on start, resume, prune, draft, and apply.)
+endif
+endif
+
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
 SERVE_FLAG        = $(if $(SERVE),--serve,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
-TARGET_FLAG       = --target=$(if $(TARGET),$(TARGET),all)
+TARGETS_FLAG      = --targets=$(if $(TARGETS),$(TARGETS),all)
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
 RESUME_LIST_FLAG        = $(if $(LIST),--list,)
 RESUME_INTERACTIVE_FLAG = $(if $(INTERACTIVE),--interactive,)
@@ -126,7 +172,7 @@ DRY_RUN_FLAG      = $(if $(DRY_RUN),--dry-run,)
 DELIVERY_FLAG     = $(if $(SANDBOX_TYPE),--delivery=$(SANDBOX_TYPE),)
 FLATTEN_FLAG      = $(if $(filter 1 true TRUE,$(FLATTEN)),--flatten,)
 
-.PHONY: build start dry-run stop apply draft confirm reject refresh help
+.PHONY: build start dry-run stop resume prune draft confirm reject apply package-branch refresh help
 
 # -------------------------
 # Help
@@ -137,7 +183,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  make build                         --  build sandbox + all provider images"
-	@echo "  make build TARGET=<p>              --  build specific provider (e.g. TARGET=pi)"
+	@echo "  make build TARGETS=<p>             --  build specific provider(s)"
 	@echo "  make start PROVIDER=<p> [SERVE=1]   --  start an agent session (SERVE=1: provider serve mode)"
 	@echo "  make dry-run PROVIDER=<p>          --  e2e check: rebuild current source, verify, tear down"
 	@echo "  make dry-run PROVIDER=<p> FAST=1   --  skip the rebuild, run existing images"
@@ -149,9 +195,12 @@ help:
 	@echo "  make prune INTERACTIVE=1         --  show plan + confirm before pruning"
 	@echo "  make prune DRY_RUN=1             --  print what would be pruned without acting"
 	@echo "  make draft                         --  apply session patches to a draft branch"
+	@echo "  make draft INTERACTIVE=1           --  interactive channel + bundle picker"
 	@echo "  make confirm                       --  merge draft branch to source"
+	@echo "  make confirm TARGET_BRANCH=<b> NEW=1 --  create new branch <b> at the draft tip (no merge)"
 	@echo "  make reject                        --  discard draft branch"
 	@echo "  make apply                         --  apply uncommitted changes"
+	@echo "  make apply INTERACTIVE=1           --  preview the changes, then confirm before applying"
 	@echo "  make package-branch                --  export branch as numbered diffs"
 	@echo "  make refresh                       --  update templates after harness upgrade"
 	@echo ""
@@ -169,9 +218,12 @@ help:
 	@echo "  WORKTREE_DIR=<p>  --  mount only: host worktree path (default <sandbox>/.worktree)"
 	@echo "  AGE_DAYS=<n>      --  prune stale-record age cutoff, default 3 (prune only)"
 	@echo "  DRY_RUN=1         --  print the prune plan without acting (prune only)"
-	@echo "  FORCE=1           --  apply with --reject (draft/apply)"
+	@echo "  FORCE=1           --  draft: apply with --reject; apply: tolerate a dirty tree and apply with --reject"
 	@echo "  FROM=<channel>    --  resolution channel: session|autosave|bundles (draft only)"
-	@echo "  INTERACTIVE=1     --  interactive config wizard: pick provider + build policy, then start (make start)"
+	@echo "  BRANCH_FROM=<sha> --  draft branch point; always name it, especially after a rebase (draft only)"
+	@echo "  BASELINE=<sha>    --  package-branch diff point; always name it, especially after a rebase"
+	@echo "  NEW=1             --  confirm into a new TARGET_BRANCH instead of merging (confirm only)"
+	@echo "  INTERACTIVE=1     --  interactive picker: start (provider + build policy), resume (session), prune (plan + confirm), draft (channel + bundle), apply (preview + confirm)"
 	@echo ""
 	@echo "See the comment block at the top of this Makefile for full usage."
 
@@ -181,7 +233,7 @@ help:
 
 build:
 	agent-sandbox build \
-	  $(TARGET_FLAG) \
+	  $(TARGETS_FLAG) \
 	  $(REBUILD_FLAG) \
 	  --env=$(ENV_FILE)
 
@@ -277,7 +329,7 @@ prune:
 #   make apply INTERACTIVE=1  ->  --interactive (preview + confirm)
 #
 # WORKFLOW:
-#   make draft                            --  apply session patches to a working branch for review
+#   make draft                            --  requires BUNDLE=<name>, or INTERACTIVE=1 for the picker
 #   make draft BUNDLE=<name>              --  apply from a named bundle under the channel directory
 #   make draft FROM=bundles               --  resolve from output/bundles/ instead of session/
 #   make draft FROM=autosave              --  resolve from session-diffs/autosave/ instead of session/
@@ -287,6 +339,7 @@ prune:
 #   git log -p HEAD~N..HEAD               --  review changes on the working branch
 #   make confirm                          --  rebase + fast-forward merge to source branch
 #   make confirm TARGET_BRANCH=x          --  merge to a different target branch
+#   make confirm TARGET_BRANCH=y NEW=1    --  create branch y at the draft tip (new history); prints the move-onto-series commands
 #   make reject                           --  discard draft branch, return to source branch
 #
 #   make apply DIFF=<path>                --  apply an exact diff file (required)
@@ -295,12 +348,10 @@ prune:
 #   make apply FORCE=1                    --  apply with --reject; .rej files created for conflicts
 
 
-DRAFT_CHANNEL := $(if $(FROM),$(FROM),session)
-
 draft:
 	agent-sandbox draft \
 	  --env=$(ENV_FILE) \
-	  --channel=$(DRAFT_CHANNEL) \
+	  $(if $(FROM),--channel=$(FROM),) \
 	  $(if $(BUNDLE),--bundle=$(BUNDLE),) \
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(BRANCH_FROM),--branch-from=$(BRANCH_FROM),) \
@@ -312,7 +363,8 @@ draft:
 confirm:
 	agent-sandbox confirm \
 	  --env=$(ENV_FILE) \
-	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),)
+	  $(if $(TARGET_BRANCH),--target=$(TARGET_BRANCH),) \
+	  $(if $(NEW),--new,)
 
 reject:
 	agent-sandbox reject \
@@ -325,13 +377,6 @@ apply:
 	  $(if $(BRANCH),--branch=$(BRANCH),) \
 	  $(if $(INTERACTIVE),--interactive,) \
 	  $(if $(FORCE),--force,)
-
-# -------------------------
-# Harness maintenance
-# -------------------------
-#
-# refresh: update stale template files and re-register git aliases after a
-# harness update. Safe to run repeatedly  --  does not overwrite .env.
 
 # -------------------------
 # Package exports

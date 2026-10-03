@@ -18,12 +18,12 @@ source "$REPO_ROOT/scripts/macos_bootstrap.sh"
 
 # fake brew: mode from BOOTSTRAP_FAKE_BREW. "absent" -> list fails, install
 # logs the package. "present" -> list succeeds.
-mkdir -p "$FIXTURE_DIR/shim_brew" "$FIXTURE_DIR/empty_shim"
+mkdir -p "$FIXTURE_ROOT/shim_brew" "$FIXTURE_ROOT/empty_shim"
 printf '#!/bin/sh\nif [ "$1" = "list" ] && [ "${BOOTSTRAP_FAKE_BREW:-absent}" = "absent" ]; then exit 1; fi\nif [ "$1" = "install" ]; then echo "$2" >> "${BOOTSTRAP_LOG:-/dev/null}"; fi\nexit 0\n' \
-  > "$FIXTURE_DIR/shim_brew/brew"
-chmod +x "$FIXTURE_DIR/shim_brew/brew"
+  > "$FIXTURE_ROOT/shim_brew/brew"
+chmod +x "$FIXTURE_ROOT/shim_brew/brew"
 
-# homebrew-prefix fixture: brew bash + the gnubin binaries.
+# homebrew-prefix fixture: brew bash + the binaries the bootstrap verifies.
 make_prefix() {
   local PREFIX="$1" WITH_GNUBIN="$2"
   mkdir -p "$PREFIX/bin"
@@ -31,10 +31,13 @@ make_prefix() {
   chmod +x "$PREFIX/bin/bash"
   if [[ "$WITH_GNUBIN" == "yes" ]]; then
     mkdir -p "$PREFIX/opt/coreutils/libexec/gnubin" \
+             "$PREFIX/opt/findutils/libexec/gnubin" \
              "$PREFIX/opt/gnu-sed/libexec/gnubin"
-    for bin in "$PREFIX/opt/coreutils/libexec/gnubin/realpath" \
+    for bin in "$PREFIX/opt/coreutils/libexec/gnubin/readlink" \
                "$PREFIX/opt/coreutils/libexec/gnubin/sha256sum" \
-               "$PREFIX/opt/gnu-sed/libexec/gnubin/sed"; do
+               "$PREFIX/opt/findutils/libexec/gnubin/find" \
+               "$PREFIX/opt/gnu-sed/libexec/gnubin/sed" \
+               "$PREFIX/bin/rsync"; do
       printf '#!/bin/sh\nexit 0\n' > "$bin"
       chmod +x "$bin"
     done
@@ -54,7 +57,7 @@ test_bootstrap_aborts_on_non_macos() {
 
 test_bootstrap_aborts_without_homebrew() {
   local OUT RC=0
-  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_DIR/empty_shim" \
+  OUT=$(INSTALL_OS=Darwin PATH="$FIXTURE_ROOT/empty_shim" \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"Homebrew is required"* && "$OUT" == *"install.sh"* ]]; then
@@ -68,13 +71,13 @@ test_bootstrap_installs_missing_packages() {
   make_prefix "$FIXTURE_DIR/hb_fresh" yes
   local LOG="$FIXTURE_DIR/brew.log" OUT RC=0
   OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_fresh" \
-        PATH="$FIXTURE_DIR/shim_brew:$PATH" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
         BOOTSTRAP_FAKE_BREW=absent BOOTSTRAP_LOG="$LOG" \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
   local installed
   installed="$(sort "$LOG" | tr '\n' ' ')"
-  if [[ $RC -eq 0 && "$installed" == "bash coreutils git gnu-sed " \
+  if [[ $RC -eq 0 && "$installed" == "bash coreutils findutils git gnu-sed rsync " \
      && "$OUT" == *"ok: brew bash 5.2.0"* && "$OUT" == *"make install"* ]]; then
     pass "absent packages install via brew and verification passes"
   else
@@ -86,7 +89,7 @@ test_bootstrap_skips_present_packages() {
   make_prefix "$FIXTURE_DIR/hb_full" yes
   local LOG="$FIXTURE_DIR/brew2.log" OUT RC=0
   OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_full" \
-        PATH="$FIXTURE_DIR/shim_brew:$PATH" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
         BOOTSTRAP_FAKE_BREW=present BOOTSTRAP_LOG="$LOG" \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
@@ -101,7 +104,7 @@ test_bootstrap_verification_flags_missing_gnubin() {
   make_prefix "$FIXTURE_DIR/hb_partial" no
   local OUT RC=0
   OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_partial" \
-        PATH="$FIXTURE_DIR/shim_brew:$PATH" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
         BOOTSTRAP_FAKE_BREW=present \
         macos_bootstrap_main 2>&1 </dev/null) || RC=$?
 
@@ -109,6 +112,25 @@ test_bootstrap_verification_flags_missing_gnubin() {
     pass "verification flags missing gnubin binaries"
   else
     fail "verification broken: rc=$RC out='$OUT'"
+  fi
+}
+
+test_bootstrap_verification_rejects_realpath_without_readlink() {
+  make_prefix "$FIXTURE_DIR/hb_realpath" yes
+  printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_DIR/hb_realpath/opt/coreutils/libexec/gnubin/realpath"
+  chmod +x "$FIXTURE_DIR/hb_realpath/opt/coreutils/libexec/gnubin/realpath"
+  rm -f "$FIXTURE_DIR/hb_realpath/opt/coreutils/libexec/gnubin/readlink"
+
+  local OUT RC=0
+  OUT=$(INSTALL_OS=Darwin HOMEBREW_PREFIX="$FIXTURE_DIR/hb_realpath" \
+        PATH="$FIXTURE_ROOT/shim_brew:$PATH" \
+        BOOTSTRAP_FAKE_BREW=present \
+        macos_bootstrap_main 2>&1 </dev/null) || RC=$?
+
+  if [[ $RC -ne 0 && "$OUT" == *"missing: $FIXTURE_DIR/hb_realpath/opt/coreutils/libexec/gnubin/readlink"* ]]; then
+    pass "verification rejects a prefix with realpath but no GNU readlink"
+  else
+    fail "realpath-only prefix not rejected: rc=$RC out='$OUT'"
   fi
 }
 
@@ -124,6 +146,9 @@ test_patch_shell_appends_once() {
   local lines
   lines="$(grep -c "export PATH=" "$FIXTURE_DIR/home/.zshrc")"
   assert_eq "$lines" "1" "--patch-shell appends the PATH export exactly once"
+  assert_contains "$(cat "$FIXTURE_DIR/home/.zshrc")" \
+    "$FIXTURE_DIR/hb_patch/opt/findutils/libexec/gnubin" \
+    "PATH export includes the findutils gnubin prefix"
 }
 
 run_test test_bootstrap_aborts_on_non_macos
@@ -131,6 +156,7 @@ run_test test_bootstrap_aborts_without_homebrew
 run_test test_bootstrap_installs_missing_packages
 run_test test_bootstrap_skips_present_packages
 run_test test_bootstrap_verification_flags_missing_gnubin
+run_test test_bootstrap_verification_rejects_realpath_without_readlink
 run_test test_patch_shell_appends_once
 
 test_done test_macos_bootstrap.sh

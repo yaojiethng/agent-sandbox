@@ -21,7 +21,7 @@ Catalogue every distinct path resolution pattern used across `libs/`, `scripts/`
 **Out of scope:**
 
 - The file moves themselves -- implementation deferred to an impl session
-- The directory structure decisions -- already settled in `20260526-design-shared_library_organisation.md`
+- The directory structure decisions -- already settled in `20260526-design-settled-shared_library_organisation.md`
 
 ## Carried forward
 

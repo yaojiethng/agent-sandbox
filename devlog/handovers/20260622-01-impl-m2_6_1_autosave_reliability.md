@@ -74,7 +74,7 @@ P1-A (Autosave / session-save reliability) with amendments from operator review:
 
 **Milestone:** M2.6 -- Session Resume and Mount Model Redesign
 
-**P1-B -- Security model update:** Rewrite `docs/architecture/security.md` invariants to reflect the user-choice mount model. Close `story_agent_state_persistence.md`, `story_agent_git_surface.md`, `security_delta_worktree_model.md`, and `story_container_layer_model.md` with Resolution sections.
+**P1-B -- Security model update:** Rewrite `docs/architecture/security.md` invariants to reflect the user-choice mount model. Close `story_agent_state_persistence.md`, `story_agent_git_surface.md`, `security_delta_worktree_model.md`, and `20260524-story-settled-container_layer_model.md` with Resolution sections.
 
 Or **P1-A adjunct -- capability layer dry-run checks** for autosave/session-save, if the operator prefers to finish the P1-A thread first.
 

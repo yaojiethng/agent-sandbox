@@ -38,3 +38,5 @@ None.
 ## Deferred
 
 - None.
+
+[CORRECTION -- 2026-09-21]: the campaign-prompt-scope-contradicted-criteria entry raised this session routes to the M3 T1 prompt-scope discipline (not deleted). The knowledge/diagnostic-tests and non-conforming-test-prefix entries were pre-existing mitigated records and were deleted by the M3 cleanup pass.

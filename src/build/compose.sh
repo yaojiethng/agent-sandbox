@@ -2,7 +2,7 @@
 # libs/compose.sh
 #
 # Shared Docker Compose primitives for provider run scripts.
-# Source this file after containers.sh.
+# Source this file after image.sh.
 #
 # Functions:
 #   compose_generate      Merges one or more compose files via
@@ -21,6 +21,9 @@
 #
 #   compose_args          Sets COMPOSE_ARGS in the caller's scope from a
 #                         single pre-generated compose file and project name.
+#
+#   compose_file_from_args  Prints the generated compose file path from
+#                         COMPOSE_ARGS (the last -f value set by compose_args).
 #
 #   compose_dry_run       Full dry-run sequence against COMPOSE_ARGS, in two
 #                         passes: up + verify (fresh), down (volume kept), up
@@ -75,7 +78,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 #   $3       provider_name     --  used to derive {{AGENT_IMAGE_NAME}}
 #   $4...$N  input_files       --  compose files to merge, in order
 #
-# Requires: containers.sh sourced (sandbox_image_name, agent_image_name)
+# Requires: image.sh sourced (sandbox_image_name, agent_image_name)
 # -------------------------
 compose_generate() {
   local output_file="$1"
@@ -112,16 +115,20 @@ compose_generate() {
   fi
 
   # Apply {{VAR}} substitutions to each input file into a temp staging dir,
-  # then run docker compose config --no-interpolate to merge them.
+  # then run docker compose config --no-interpolate to merge them. The staging
+  # dir is cleaned explicitly on every return path (no RETURN trap: under bats'
+  # functrace a RETURN trap fires across command-substitution boundaries, so the
+  # dir could be deleted mid-function). Paths before staging creation need no
+  # cleanup.
   local staging_dir
   staging_dir="$(mktemp -d)"
-  trap 'rm -rf "$staging_dir"' RETURN
 
   local staged_files=()
   local i=0
   for src in "${input_files[@]}"; do
     if [[ ! -f "$src" ]]; then
       echo "compose_generate: input file not found: $src" >&2
+      rm -rf "$staging_dir"
       return 1
     fi
     local dst
@@ -161,9 +168,16 @@ compose_generate() {
   #   name:              --  top-level project name (set via --project-name in compose_args)
   #   networks.default.name:  --  Compose injects the staging dir name; we want the
   #                            project-scoped default, set at runtime by --project-name
+  local merge_rc
   docker compose "${staged_files[@]}" config --no-interpolate \
     | grep -v '^[[:space:]]*name:' \
     > "$output_file"
+  merge_rc=${PIPESTATUS[0]}
+  if [[ "$merge_rc" -ne 0 ]]; then
+    rm -f "$output_file"
+  fi
+  rm -rf "$staging_dir"
+  return "$merge_rc"
 }
 
 # -------------------------
@@ -417,12 +431,9 @@ session_destroy() {
 # Polls until the sandbox container reports healthy.
 # Fails fast if the container exits before becoming healthy.
 # Times out after SANDBOX_WAIT_TIMEOUT seconds (default: 120).
-#
-# Args:
-#   $1  project_name
+# The container is named by SANDBOX_CONTAINER_NAME, set by session_env.sh.
 # -------------------------
 compose_sandbox_wait() {
-  local project_name="$1"
   local container
   container="$SANDBOX_CONTAINER_NAME"
  

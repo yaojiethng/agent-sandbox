@@ -7,7 +7,7 @@
 
 ## Objective
 
-Implement the roadmap item "Seeder stash-clear": the seeder removes the host stash stack from the volume copy after the native `.git` copy, per the settled ADR entry (2026-09-11) and study `20260911-study-stash_copy_prevention.md`.
+Implement the roadmap item "Seeder stash-clear": the seeder removes the host stash stack from the volume copy after the native `.git` copy, per the settled ADR entry (2026-09-11) and study `20260911-study-settled-stash_copy_prevention.md`.
 
 ## Scope
 

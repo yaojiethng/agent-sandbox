@@ -73,3 +73,5 @@ None.
 <Sub-milestone: M2.6 - Session Persistence>
 
 **Conclusions from this iteration:** pending the two model checks.
+
+[CORRECTION -- 2026-09-21]: the review-loop round-cap, name-the-base-commit, and pi's-AGENTS entries raised this session consolidated into the M3 T1 review-pass-framing entry (all three sub-cases). The subagent-review-pass expensive/unmeasured entry routes to the M3 T2 perf parent. Entries reconciled in `AGENT_FEEDBACK.md`.

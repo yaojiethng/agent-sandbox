@@ -146,7 +146,7 @@ beyond the archived set and the drift/coherence candidate.
 
 - New ADR candidates surfaced but not created (out of scope):
   two-layer separation rationale (`two_layer_model.md` "Why the layers are
-  separate"; reasoning currently lives in `investigation_mcp_server.md`),
+  separate"; reasoning currently lives in `20260312-study-settled-mcp_server.md`),
   and the sandbox/host correspondence core principle (git-agnostic diff
   exchange). Flag for the operator as possible next ADRs.
 - Pre-existing broken links listed in Findings -- candidate `chore` iteration.

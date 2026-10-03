@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # sandbox-entrypoint.sh (capability layer)
-# Snapshot unpacking, git baseline, diff pipeline, autosave.
+# Seeded-volume validation, git baseline, diff pipeline, autosave.
 #
 # Sequence:
 #   1. seeded volume validation          --  git state must exist (seeder wrote it); records baseline SHA
-#   3. register EXIT trap -> _session_export  --  fires on any exit; waits for git lockfile,
+#   2. register EXIT trap -> _session_export  --  fires on any exit; waits for git lockfile,
 #                                         runs session export, falls back to autosave on failure
-#   4. register TERM trap -> exit 0       --  docker stop sends SIGTERM to PID 1; clean exit
+#   3. register TERM trap -> exit 0       --  docker stop sends SIGTERM to PID 1; clean exit
 #                                         ensures EXIT trap fires reliably
-#   5. start autosave loop               --  if AUTOSAVE_INTERVAL > 0; logs every attempt to stderr
-#   6. wait                              --  stays running while reasoning layer is active
+#   4. start autosave loop               --  if AUTOSAVE_INTERVAL > 0; logs every attempt to stderr
+#   5. wait                              --  stays running while reasoning layer is active
 #
 # The reasoning layer container exits first. The harness then stops this
 # container via docker stop, which sends SIGTERM to PID 1 (this script).
@@ -174,7 +174,7 @@ fi
 if [[ "$SANDBOX_TYPE" == "copy" && -f "$GIT_HOOKS_DIR/pre-commit.sh" ]]; then
   mkdir -p "$SANDBOX_DIR/.git/hooks"
   install -m 0755 "$GIT_HOOKS_DIR/pre-commit.sh" "$SANDBOX_DIR/.git/hooks/pre-commit"
-  echo "Git hook installed: pre-commit (staged Markdown lint)"
+  echo "Git hook installed: pre-commit (staged Markdown + ShellCheck lint)"
 fi
 
 echo "Working tree status:"
@@ -219,12 +219,9 @@ _preflight_crit "SESSION_STATE has session_ts" \
 
 # Mount checks
 _preflight_crit "CHANGES_DIR is writable (session-diffs mount)"      touch "$CHANGES_DIR/.preflight_write_test" && rm -f "$CHANGES_DIR/.preflight_write_test"
-# viable for provider-entrypoint only
-# _preflight_crit "INPUT_DIR is readable (brief mount)"                test -d "$INPUT_DIR"
-# _preflight_crit "OUTPUT_DIR is writable (output mount)"              touch "$OUTPUT_DIR/.preflight_write_test" && rm -f "$OUTPUT_DIR/.preflight_write_test"
 
 # WARN: AGENTS.md at AGENT_HOME (pi-specific global context  --  seeded by provider config)
-_preflight_warn "AGENTS.md present at AGENT_HOME (pi context)"  test -f "${AGENT_HOME:-~/.pi}/AGENTS.md"
+_preflight_warn "AGENTS.md present at AGENT_HOME (pi context)"  test -f "${AGENT_HOME:-$HOME/.pi}/AGENTS.md"
 _preflight_warn "Working tree is clean"                              bash -c 'cd "$SANDBOX_DIR"; [[ -z "$(git status --short)" ]]'
 
 echo "--- pre-flight: $([ "$PREFLIGHT_FAILS" -eq 0 ] && echo 'ALL CHECKS PASSED' || echo "$PREFLIGHT_FAILS FAILURE(S)") ---"
@@ -262,14 +259,12 @@ _session_export() {
     return 1
   fi
 
-  # Skip when nothing changed since the last save (session_save_needed). The
-  # baseline is the freshest continuous checkpoint -- the autosave dir's own
-  # .export-status HEAD (init_sha when no autosave has fired yet). A clean
-  # tree at the last-saved HEAD means a fresh session bundle would be empty
-  # and redundant, so we do not create one at all.
-  local _prior
-  _prior=$(export_path "$_changes_dir" "autosave" "$_session_id")
-  save_decision "$_sandbox_dir" "$_prior" "session-export" || return 0
+  # Skip only when the session did no work relative to the durable branch
+  # point (SESSION_STATE init_sha), never because an autosave captured the
+  # state. The autosave dir is an ephemeral overwritten fallback slot, so an
+  # autosave that is current with the final state must not suppress the durable
+  # exit record.
+  session_export_needed "$_sandbox_dir" || return 0
 
   local _exit_dir
   _exit_dir=$(export_path "$_changes_dir" "session" "$_session_id")

@@ -7,7 +7,7 @@ This document is the interface contract between them. It names the contract surf
 The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary -- see [`tool_interface.md`](../architecture/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
 
 Implementation detail and command shapes: [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../architecture/tool_interface.md) (Commands).
-Reasoning record: [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
+Reasoning record: [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md).
 
 ---
 
@@ -52,7 +52,7 @@ The interim `container-sig` source-subset hash and its preflight comparison are 
 
 Deferred (host constant vs record stamps at preflight): the record surface compares at the agent entrypoint only, not yet at preflight. This remains a candidate extension; it is not scheduled.
 
-The P0-P3 rollover and the container-sig retirement are recorded in [the design record](../../devlog/discussions/20260919-design-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The P0-P3 rollover and the container-sig retirement are recorded in [the design record](../../devlog/discussions/20260919-design-settled-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
 ### Relationship to MAKEFILE_VERSION
 
@@ -74,8 +74,8 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 
 | Primitive | Definition |
 |---|---|
-| **`init_sha`** (from SESSION_STATE) | SHA of the root (baseline) commit in the sandbox. Written once at container init to `.git/SESSION_STATE`, never updated. Defines the lower boundary for `package-branch` -- all committed work after this commit belongs to the agent session. `session_ts` is written alongside it. |
-| **`package-branch` output** | Numbered per-commit `.diff` files (`patches/`), uncommitted working tree changes (`uncommitted.diff`), all-changes since baseline (`all-changes.diff`), changed-files/ with MANIFEST.txt, and `.export-status` (STATUS, TIMESTAMP, INIT_SHA). On exit, written to `CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/` by the dispatcher. Overwrites on each run -- always reflects full branch history since `init_sha`. |
+| **`init_sha`** (from SESSION_STATE) | SHA of the root (baseline) commit in the sandbox. Written once at container init to `.git/SESSION_STATE`, never updated. Sets the `package-branch` baseline, which resolves to `git merge-base init_sha HEAD`: equal to `init_sha` when no history was rewritten, and the branch point after a rebase. `--baseline=<sha>` overrides it. `session_ts` is written alongside it. |
+| **`package-branch` output** | Numbered per-commit `.diff` files (`patches/`), uncommitted working tree changes (`uncommitted.diff`), all-changes since baseline (`all-changes.diff`), changed-files/ with MANIFEST.txt, and `.export-status` (STATUS, TIMESTAMP, INIT_SHA). On exit, written to `CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/` by the dispatcher. Overwrites on each run -- always reflects full branch history since the baseline. |
 | **Draft branch** | `draft/<branch-name>` -- temporary branch on the host. Populated by sequential diff application + optional `uncommitted.diff`, ready for `git rebase -i`. |
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge -- never lands on the target branch. |
 | **`.export-status`** | Consolidated metadata file (key=value) written by both `diff_export` and `package_branch`. Both write STATUS, TIMESTAMP, and INIT_SHA; `diff_export` also writes HEAD on success and EXIT_CODE on failure. Consumed by `draft.sh` on the host to resolve baseline and timestamp, and by `_save_baseline` in `session_save_policy.sh` to resolve the save comparison point (it falls back to `init_sha` when HEAD is absent). Replaces prior `EXPORT-TIME.txt` and `.init_sha`. |
@@ -153,7 +153,7 @@ Changes can flow in either direction at any time while the sandbox is live. All 
 
 ### STOPPED -- applying persisted artefacts
 
-The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` creates a `draft/<branch>` branch from `FROM` (default: `HEAD`; supply an explicit hash if the host has advanced) and applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch.
+The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point (default: `HEAD`; pass `BRANCH_FROM=<sha>` when the host advanced or a rebase moved the branch point), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch; for a rewritten target history, `make confirm TARGET_BRANCH=<new> NEW=1` creates the new branch and prints the soft-reset direction that moves the target onto the series.
 
 On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator runs `make reject`, amends the failing diff in the source export folder, and re-runs `make draft`. The diff series is the source of truth; the draft branch is always derived from it.
 
@@ -211,7 +211,7 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 
 **Mixing `make apply` and `make draft` within a single session:** Resolved. Under the current model the two paths are structurally separate: `make apply` applies an exact diff file (`--diff=<path>`, no channel resolution) and lands changes uncommitted in the working tree; `make draft` resolves from the `session` channel (`session-diffs/session/`) or `bundles` channel (`output/bundles/`) and applies committed diffs to a branch. The artefact locations do not overlap and there is no shared application mechanism. No undefined behaviour remains.
 
-**Mixed session types across sessions:** Closed as explicitly out of scope. A project using both Claude Chat sessions (`package-branch` / `make apply`) and OpenCode sessions (`package-branch` / `make draft`) against the same repo involves intentionally different workflows targeting different artefact channels. The harness makes no claim to coordinate across session types, and doing so is not intended behaviour. If cross-session-type coordination becomes a real use case, it warrants a story at that time.
+**Mixed session types across sessions:** Closed as explicitly out of scope. A project using both the `make apply` channel and the `make draft` channel against the same repo involves intentionally different workflows targeting different artefact channels. The harness makes no claim to coordinate across session types, and doing so is not intended behaviour. If cross-session-type coordination becomes a real use case, it warrants a story at that time.
 
 ---
 
@@ -225,6 +225,6 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 | [`harness_versioning.md`](../adr/harness_versioning.md) | Per-surface version semantics (digest, HEAD, symlink) |
 | [`drift_state_coherence.md`](../adr/drift_state_coherence.md) | Coherence by minimisation, not detection |
 | [`session_identifier.md`](../adr/session_identifier.md) | Project/session identity |
-| [`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
+| [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config copy-in at session start |

@@ -101,7 +101,7 @@ M2.5 is the next active sub-milestone. The first task is "Validate vault workflo
 
 ### Blocking design questions
 
-1. Which MCP server candidate satisfies the criteria (licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency)? See [`investigation_mcp_server.md`](docs/discussions/investigation_mcp_server.md).
+1. Which MCP server candidate satisfies the criteria (licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency)? See [`20260312-study-settled-mcp_server.md`](docs/discussions/20260312-study-settled-mcp_server.md).
 
 ### Known watch-out items
 
@@ -112,7 +112,7 @@ M2.5 is the next active sub-milestone. The first task is "Validate vault workflo
 ### Grep or file reads to run at session start
 
 ```bash
-cat docs/discussions/investigation_mcp_server.md | grep -A5 "candidates table"
+cat docs/discussions/20260312-study-settled-mcp_server.md | grep -A5 "candidates table"
 ```
 
 ---

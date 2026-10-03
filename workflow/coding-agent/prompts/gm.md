@@ -5,37 +5,16 @@ argument-hint: "[context or intent - optional, e.g. back after a break, easy sta
 
 > $@
 
-gm is a check-in, not an iteration. No code or document changes, nor handover
-creation, is expected as a result of this survey. Wait for the user to pick a
-next task before starting a new iteration proper -- see
-[iteration policy](docs/operations/iteration_policy.md).
+gm is a check-in, not an iteration. The agent's only permitted change during a check-in is a cosmetic record-bug fix: a stale record state, a mis-dated record entry, or forward-looking text in a completed item. Apply all such fixes found, aggregate them into a single `chore:` commit, and do not open a handover. All other changes wait; the user picks the next task before a new iteration starts -- see
+[iteration policy](../../../docs/operations/iteration_policy.md).
 
 ## Survey
 
-Read these sources. Apply the repo's read discipline: grep to locate, then
-read the needed sections. Do not open files wholesale beyond what the survey
-needs.
+The survey reads state; it does not repair it. Apply the repo's read discipline: grep to locate, then read the needed sections. Do not open files wholesale beyond what the survey needs.
 
-- Handover chain: the latest file in [`devlog/handovers/`](devlog/handovers/)
-  -- highest date and index in the filename. Read its status, findings, and
-  deferred items.
-- Roadmap: [`devlog/roadmap.md`](devlog/roadmap.md). Read the
-  `active-milestone` frontmatter field, that milestone's section, and its
-  open items. Check done items for forward-looking text left behind.
-- Recent git history (`git log --oneline -20`): what landed, and the time
-  gap since the last iteration.
-- Open entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) and
-  [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- states `open` and `probation`.
-- Stale-state sweep: `git status`, `git stash list`, `git branch` -- look for
-  uncommitted changes, stashes, leftover branches.
-- Settled design docs in [`devlog/discussions/`](devlog/discussions/) with
-  no implementation handover referencing them yet.
+Delegate the record maintenance. Run [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md) over [`devlog/roadmap.md`](../../../devlog/roadmap.md) and [`handover-maintenance.md`](../skills/handover-maintenance.md) over the handover chain. Between them the two skills own the record checks, the corrections each may apply, and the defects each reports. Every finding they return becomes an inventory row or a finding, never a silent correction.
 
-Surface discrepancies, do not fix them: an open roadmap item whose work
-already landed on disk; a done item still carrying forward-looking text; a
-finding marked open whose fix landed; a feedback entry describing files that
-no longer exist; a test suite whose last recorded run is red or stale. Each
-becomes an inventory row or a finding, never a silent correction.
+Every other discrepancy is surfaced as an inventory row and waits; the cosmetic class above and its single `chore:` commit are the opening paragraph's rule.
 
 ## State summary
 
@@ -53,6 +32,8 @@ One row per open work item. The sample row below is illustrative, not a live ite
 | `<work item>` -- `<roadmap entry, handover, or feedback entry that names it>` | chore | small | deferred, no pickup date | cosmetic | offline `make test` |
 
 Field meanings:
+
+The axes below are this prompt's to define. `/milestone-start` grades its audited pool on the same three, and reads them here.
 
 - Item -- the work, plus the record that names it (roadmap entry, handover, feedback entry).
 - Type -- impl (build or fix code), design, chore (housekeeping), investigation, doc.
@@ -87,3 +68,9 @@ before the task that needs it.
 
 Then ask which direction to take. Stop there; no work begins before the user
 picks a scope.
+
+If the picked direction is an unattended run rather than a supervised
+iteration, run [`backlog-triage.md`](backlog-triage.md) on the inventory
+before opening the run. The survey answers "what is open"; triage answers
+"which of it runs without the user", and the two questions have different
+answers once the inventory holds more than a few rows.

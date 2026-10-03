@@ -30,7 +30,7 @@ Harness records - record each as present, missing, or stale:
 - `devlog/roadmap.md`, including its `active-milestone` frontmatter
 - `docs/operations/` policy set: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`, plus `discussion_policy.md` and `adr_policy.md`
 - `devlog/handovers/`
-- `devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md`
+- `devlog/AGENT_FEEDBACK.md`
 - `devlog/discussions/`
 
 Project conventions - evidence of life, in whatever form it exists:
@@ -69,7 +69,7 @@ Name the expected deviations; do not treat them as breakage:
 
 Answer these two first. They decide what gets created at all.
 
-1. Workflow intent: the full loop (roadmap, check-ins, one typed commit per iteration, handover chain), or a light mode (records only, no handovers, no `AGENT_FEEDBACK.md` and `GOTCHAS.md` files)?
+1. Workflow intent: the full loop (roadmap, check-ins, one typed commit per iteration, handover chain), or a light mode (records only, no handovers, no `AGENT_FEEDBACK.md` file)?
 2. Branch line: does the current branch stay the working line, or must work land on `main` first? If the branch is far ahead of `main`, state the numbers and ask. Never guess.
 
 If the argument already names the workflow intent and the branch line, use them; ask only for what is missing.
@@ -89,7 +89,7 @@ Only after the decisions. One iteration. In this order.
 2. Repo-root `AGENTS.md` - the project layer. Contains the primer from decision 3, links to the policy set, the verification contract from decision 5, and the workflow intent from decision 1. Follow the wording rules of `documentation_policy.md`.
 3. `devlog/roadmap.md` - the `active-milestone` frontmatter, the goal and definition of done from decision 4, and the first task row: the setup iteration itself, closing with handover 1.
 4. `devlog/handovers/` - the directory, ready for handover 1 at this wrap-up.
-5. `devlog/AGENT_FEEDBACK.md` and `devlog/GOTCHAS.md` - empty accumulation files, only under the full loop.
+5. `devlog/AGENT_FEEDBACK.md` - empty accumulation file, only under the full loop.
 6. `devlog/discussions/` - create it only when the first design doc lands. Not now.
 
 The delivery commit lands on the branch from decision 2.

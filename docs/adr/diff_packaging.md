@@ -1,6 +1,36 @@
 # Diff Packaging
 
-**Current:** 2026-09-19
+**Current:** 2026-10-02
+
+## 2026-10-02 -- The end-to-end apply flow is recorded here, not in the prompt that starts it
+
+**Decision:** The sequence an operator follows from a container export to a merged host worktree is owned by this ADR, and each step prints its own next hop at the moment the step is taken:
+
+| Step | Prints |
+|---|---|
+| `package_branch.sh` | the bundle path, a movement notice when the branch point moved from `init_sha`, then `make draft FROM=bundles BUNDLE=<b> BRANCH_SUMMARY=<slug> BRANCH_FROM=<sha>` |
+| `make draft` | the draft worktree, then the linear direction when the source worktree is an ancestor of the draft tip, or the `NEW=1` direction when it is not; both conditional branches also name `make reject` and `make apply DIFF=<path>` |
+| `make confirm ... NEW=1` | `git switch <source>` and `git reset --soft <new-branch>` |
+
+The bundle summary is validated at entry against `^[a-z0-9]+(_[a-z0-9]+)*$`, 3 to 48 characters, enforced by `package_branch.sh` in `package_branch_validate_summary`. The value names the bundle directory and, through `BRANCH_SUMMARY`, the draft worktree `draft/<session>-<slug>-<hash>`, and git refuses a ref holding a space or a colon. An unvalidated value exports cleanly and fails at the operator's `make draft` instead.
+
+`/package-branch` carries none of these instructions, and its former `How to apply` section was removed rather than trimmed. That section restated the `make draft`, `make confirm`, `make reject`, and soft-reset commands, and it had drifted: it described only the fast-forward route, so a reader following it on a rebased bundle was sent to a `make confirm` that cannot fast-forward. The prompt now runs the export, relays the script's block verbatim, and prints the change description and the host-only verification. `prompt-authoring-conventions.md` `## A workflow document owns one step, and owns it whole` is the rule that keeps the section out. The single prompt that exported a rebased branch, `/package-rebase`, is folded into it: the branch point is computed the same way in both cases, so the case is a runtime fact, not a routing decision.
+
+**Rationale:** The flow spans a container script, a host workflow, and a host confirm step. Held in a prompt, it was a second copy of what three scripts print, and it drifted: the prompt described only the fast-forward route while the soft-reset route existed and was needed after every rebase. A flow that is correct only when the author remembers which route applies is not a flow. Routing on `merge-base --is-ancestor` moves the decision to the only place that can answer it, and it also covers a host that advanced independently of the recorded `init_sha`.
+
+**Rejected alternatives:** *Keep both prompts* -- the split made the rebased case a separate invocation for a difference the script already detects. *Keep the apply instructions in the prompt as a fallback* -- a fallback nobody reads until the primary fails is a second source of truth. *Have the agent choose the route and print the direction* -- the agent cannot test fast-forwardability; it would guess from a hash.
+
+**Edge cases / drivers:** `merge apply` is recovery-only and takes an arbitrary diff path, which `make draft` does not; both are named in the `make draft` hint. A target that diverged for a reason other than a container rebase also fails `--is-ancestor` and correctly receives the `NEW=1` direction.
+
+## 2026-09-24 -- The export baseline is the branch point; a rewritten target applies by soft reset
+
+**Decision:** `package_branch` resolves its diff baseline to `git merge-base init_sha HEAD`, so the baseline equals `init_sha` when no history was rewritten and the branch point after a rebase; `--baseline=<sha>` overrides it. The diff pipeline's lower boundary is therefore the newest commit the host and the container share, not `init_sha` literally. On the host a rewritten target history cannot fast-forward, so `make confirm TARGET_BRANCH=<branch> NEW=1` creates `<branch>` (which must not exist) at the draft tip, leaves the source branch untouched, and prints the operator-run `git reset --soft` direction that moves the source branch onto the series. `TARGET_BRANCH` without `NEW` remains fast-forward / conflict-free-rebase only.
+
+**Rationale:** A rebase orphans `init_sha`, so diffs against it no longer match the host checkout. The merge-base recovers the shared commit without editing `SESSION_STATE` or naming the baseline by hand. The fast-forward path correctly refuses a target that is not an ancestor; the new-branch mode gives the operator a non-destructive way to obtain the rewritten series, and the printed reset keeps the branch-pointer move explicit rather than automated.
+
+**Rejected alternatives:** *Edit `SESSION_STATE.init_sha` to the branch point* -- an ad-hoc mutation of session identity with no recorded process, and it touches the seed record the harness treats as immutable. *Auto-detect the target with `git merge-base main HEAD`* -- assumes the branch is based on `main`, which the harness does not guarantee. *Have `confirm` reset or replace the target automatically* -- the operator owns moving a long-lived branch; the tool prints the direction and leaves the decision.
+
+**Edge cases / drivers:** A recorded `init_sha` whose object was garbage-collected makes `merge-base` fail; the resolver falls back to `init_sha`. The host may advance during a session, in which case `--baseline` names the newer shared commit.
 
 ## 2026-09-19 -- The autosave checkpoint is swapped in, never wiped first
 
@@ -33,6 +63,8 @@ A helper, `session_save_needed SANDBOX_DIR BASELINE`, makes the decision: 0 (sav
 **Reason superseded by 2026-09-19:** The status set is now three-valued (0 save, 1 skip, 2 undeterminable) and `save_decision` owns the dispatch; see the entry above.
 
 **Rationale:** The baseline folds two rules into one comparison, so there is a single code path. Level 1 (baseline = `init_sha`) skips a session that never changed. Level 2 (baseline = last save's HEAD) skips re-saving an unchanged state after the first save -- once HEAD has passed `init_sha`, comparing against `init_sha` alone would keep re-creating empty bundles every cycle. The baseline is always the last-saved HEAD, never a moving marker the harness must keep in sync: it is read from the previous save's own `.export-status`, so the save path stays self-describing. `init_sha` remains the immutable fixed lower boundary for the diff pipeline (`package_branch` diffs `init_sha..HEAD`); the save decision reuses it as the first-save baseline rather than introducing a new tracker file.
+
+**Reason superseded by 2026-09-24:** the diff pipeline's lower boundary is now the branch point (`git merge-base init_sha HEAD`), so `package_branch` diffs from the newest commit the host and the container share, not `init_sha` literally.
 
 The dirty-first precedence is the contract: any uncommitted change forces a save regardless of HEAD. So an in-progress edit is never dropped -- the guard never drops a change, it only avoids writing byte-identical empty bundles. `git status --porcelain` captures modified, staged, and untracked files alike.
 
@@ -71,7 +103,7 @@ Rejecting lacks an operator-visible surface for the discard decision: revert dis
 `apply` (direct recovery sync, no branch overhead, accepts arbitrary `DIFF=<path>`), `draft` (review branch with full patch series, enables `git rebase -i` shaping), `confirm` (guarded rebase + fast-forward merge), `reject` (guarded discard). `draft` and `confirm` use local savepoint tags for rollback safety (`git tag <name>-savepoint` before risky operations; on failure `git reset --hard <tag>`; delete the tag on either outcome; local tags are never pushed). `reject` is atomic by chaining checkout and branch delete -- a checkout failure leaves the draft branch intact. `.draft-state` (committed as the first draft commit, records source branch, from_hash, session identity, diff count) is kept as the draft metadata store and is dropped by `confirm` before merge, never landing on the target branch.
 
 **Rationale:** The harness exports agent changes as diff artefacts (`patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, `changed-files/`) that the operator reviews, shapes, and merges into the host repo. One export pipeline gives one mental model and removes pure duplication (`package-branch` is a strict superset of `package-diff`). The command guards shift the burden of correctness from the operator's memory to the tooling; savepoint tags make `confirm` and `draft` failures safely retryable. Reasoning record:
-[`design_apply_draft_workflow.md`](../../devlog/discussions/design_apply_draft_workflow.md).
+[`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/20260803-design-settled-apply_draft_workflow.md).
 
 **Rejected alternatives:**
 

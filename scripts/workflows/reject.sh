@@ -3,7 +3,7 @@
 # Reject workflow: checkout source branch, delete draft branch.
 # Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
 # sourced, so test suites may source this file for its functions.
-# Sources draft_state.sh for draft-state helpers and guards.sh for git guard functions.
+# Sources draft_state.sh for draft-state helpers, cli.sh for flag parsing, and guards.sh for git guard functions.
 
 set -euo pipefail
 
@@ -31,6 +31,10 @@ reject_run() {
   DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
   eval "$DRAFT_VALIDATION"
 
+  # source_branch and CURRENT_BRANCH are printed by draft_validate_branch
+  # (the assignments eval'd above) and materialized in this scope; ShellCheck
+  # cannot trace assignments introduced by `eval`.
+  # shellcheck disable=SC2154
   echo "Rejecting draft. Returning to $source_branch..."
   if ! git -C "$PROJECT_DIR" checkout "$source_branch" 2>/dev/null; then
     # Draft residue (e.g. uncommitted.diff applied to the working tree) blocks

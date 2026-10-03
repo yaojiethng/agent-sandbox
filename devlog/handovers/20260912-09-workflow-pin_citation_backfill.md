@@ -31,9 +31,9 @@ Pin census: ~190 raw matches, ~60 excluded (fixture data, self-induced errors, e
 | `tests/test_image_names.sh`, `tests/test_trace_build.sh` | 4+3 | `tool_interface.md` naming table (L15/28/266) |
 | `tests/test_session_env.sh` | 6 | `tool_interface.md` naming + `20260730-design-settled-mount_model.md` (delivery default) |
 | `tests/test_session_inventory.sh` | 6 | roadmap l.55 (list columns) + naming table |
-| `tests/test_draft_state.sh`, `tests/test_draft_workflow.sh` | 9+ | `design_apply_draft_workflow.md` (field order, commit-subject format) |
-| `tests/test_dirs.sh`, `tests/test_routing.sh` | 4+12 | `sandbox_identity.md` artefact-layout table + `design_workspace_path_resolution.md` |
-| `tests/test_providers_pi_preflight.sh` | 8 | `design_provider_config_ownership_and_loading.md`; or relax message asserts to "warns and names the file" |
+| `tests/test_draft_state.sh`, `tests/test_draft_workflow.sh` | 9+ | `20260803-design-settled-apply_draft_workflow.md` (field order, commit-subject format) |
+| `tests/test_dirs.sh`, `tests/test_routing.sh` | 4+12 | `sandbox_identity.md` artefact-layout table + `20260516-design-settled-workspace_path_resolution.md` |
+| `tests/test_providers_pi_preflight.sh` | 8 | `20260512-design-settled-provider_config_ownership_and_loading.md`; or relax message asserts to "warns and names the file" |
 | `tests/test_onboard.sh` | 10 | `docs/operations/provider_onboarding_guide.md` (.env schema) |
 | `tests/test_run_agent.sh` | 1 | `tool_interface.md` L175 SERVE_PORT row; or relax to "names the variable and the default" |
 | `tests/test_prune.sh` | 1 | roadmap l.99 (prune output) |

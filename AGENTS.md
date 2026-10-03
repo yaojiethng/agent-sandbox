@@ -12,7 +12,7 @@ You operate in three modes, often in combination:
 
 **Design** -- Propose architecture, system behaviour, and implementation plans grounded in the existing system. Do not propose designs that skip incomplete milestones.
 
-**Development** -- Generate code against an agreed design. The design proposal is the spec; correctness and adherence are the primary evaluation criteria.
+**Development** -- Generate code against an agreed design. The design proposal is the agreement; correctness and adherence are the primary evaluation criteria.
 
 **Audit** -- Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
 
@@ -24,7 +24,7 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate WIP and correction commits during the iteration are free-form -- only the delivery commit at iteration end is subject to format enforcement.
+**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
@@ -42,7 +42,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
-**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a persistent record, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/operations/documentation_policy.md#numbering-and-cross-references).
+**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/operations/documentation_policy.md#numbered-vs-bulleted-presentation).
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
@@ -91,14 +91,27 @@ Update the checklist:
 
 Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`docs/development/bash-coding-conventions.md`](docs/development/bash-coding-conventions.md) for canonical rules. The former separate friction-log file was subsumed here (session `20260809-04`).
 
-## Feedback and Gotchas Files
+## Feedback and Gotchas Record
 
-Two persistent records live in `devlog/`:
-
-- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- agent-experience feedback, recorded by the agent, reviewed by the operator. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
-- [`devlog/GOTCHAS.md`](devlog/GOTCHAS.md) -- recurring agent mistakes and code smells, recorded by the operator. At iteration start (Step 1), the agent reads the open gotchas and avoids or re-checks those patterns during the iteration. A sweep applies a gotcha fix across recent code at sub-milestone cleanup. When gotchas accumulate, fold the recurring patterns into a skill.
+- [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- the single living record of the coding agent's experience and recurring mistakes. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). Reviewed by the operator. Before writing an entry, grep the file for an existing entry on the same topic; record a recurrence on that entry (re-open it, note the prior fix in `legacy:`) instead of creating a new one. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
 
 These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
+
+---
+
+## Model Recommendations
+
+A prompt or skill dispatches subagents for a role. This table is the single source for which provider, model, and thinking level to use for each role. Read a recommendation by role tag; each role tag names the provider, the model, and the thinking level (the provider prefix `opencode/` or `opencode-go/` disambiguates a model served by more than one provider). When one model is required but several are listed, use the first in listed order; a routing clause on a row takes precedence. When a prompt is not tied to a role tag, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`).
+
+| Role tag | Recommendation, in order |
+|---|---|
+| `_IMPLEMENTER` | opencode/space-bunny-free at high; opencode-go/deepseek-v4-flash at medium |
+| `_REVIEWER` | opencode/space-bunny-free at xhigh; opencode-go/deepseek-v4-flash at medium |
+| `_ADVISOR` | opencode-go/glm-5.3-flash at high for documentation and language reviews; opencode-go/deepseek-v4-flash at xhigh for code reviews |
+
+If a prompt names a role tag that this table does not list, resolve the startup default as above. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
+
+A startup default resolved from a project-level `.pi/settings.json` override takes precedence over `~/.pi/agent/settings.json`. Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
 
 ---
 
@@ -124,17 +137,24 @@ Then read only the sections you need.
 
 A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.
 
-In interfaces without filesystem access (e.g. Claude Chat), run grep across uploaded files at `/mnt/user-data/uploads/` and `/mnt/user-data/outputs/` and apply the same discipline to deciding which sections to request from the operator.
-
 ---
 
 ## Output Format
 
 Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
-**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose; prose meets ASD-STE100 -- active voice, short sentences, one term one meaning, common verbs, no hedging, delete-test every sentence. All three defined in `documentation_policy.md` -- Editing Guidelines and Conventions.
+Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/operations/documentation_policy.md).
+
+**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
+
+**Work unit and iteration scoping.** One iteration is one roadmap task, scoped as one vertical slice and landed as one commit with one handover. Propose no split by default. When one slice cannot deliver the task's outcome, name the handling method you propose:
+
+- **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at the scope gate.
+- **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
+
+See [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) for the criteria and the close mechanics.
 
 **Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
@@ -154,11 +174,11 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The minor loop -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the handover format and lifecycle in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md). Its gates require explicit operator release: scope confirmation before any file output, and pre-close release before the close commit. The pre-close summary includes the Roadmap write-back row defined at [Step 7](docs/operations/iteration_policy.md#step-7--pre-close-verification). The roadmap is the sole task list; its update procedure lives in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md). Commit and delivery rules are in [`docs/operations/git_policy.md`](docs/operations/git_policy.md).
+The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), the Roadmap as the sole task list in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), the commit and delivery rules in [`docs/operations/git_policy.md`](docs/operations/git_policy.md), and the Markdown lint gate in [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/operations/iteration_policy.md#iteration-invariants).
 
-Run the Markdown lint gate documented in [`documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate) before the pre-close gate; the repository holds zero findings.
+The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/operations/iteration_policy.md)) before any further output.
 
-The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- triggers Step 1 (Open handover) before any further output. Open the handover file and pass the Step 2 scope gate before implementation. A green test suite and correctly typed commits do not close an iteration by themselves: the close commit must carry the handover with Status Closed. An iteration that lands commits with no open handover is a missing record, not a fast close, unless the operator explicitly requires a chore commit to land with no handover.
+**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
 
 ## Iteration Start
 
@@ -173,9 +193,9 @@ Read these in order. Each answers a distinct question -- do not skip. Verify you
 | `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last iteration end? |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? -- after reading, state your proposed scope and wait for confirmation before producing any output |
 
-### Major loop only
+### Milestone planning
 
-Read these in addition to the above when opening a major loop planning iteration.
+Read these in addition to the above when opening a milestone planning iteration.
 
 | Document | Question it answers |
 |---|---|

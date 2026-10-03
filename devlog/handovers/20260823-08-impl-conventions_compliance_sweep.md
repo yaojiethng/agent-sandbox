@@ -57,3 +57,5 @@ None new. Remaining campaign-fix bullets (empty-diff decision, savepoint bug, co
 ## What"s Next
 
 M2.6 continues per roadmap.
+
+[CORRECTION -- 2026-09-21]: the exec-style-scripts-without-dual-use-guards entry referenced by this session's conventions sweep was consolidated into the M3 T4 library-migrations entry (dual-use guard already canonical in bash-coding-conventions.md rule 1.11). Entry reconciled in `AGENT_FEEDBACK.md`.

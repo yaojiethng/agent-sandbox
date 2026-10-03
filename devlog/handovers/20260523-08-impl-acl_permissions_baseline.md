@@ -56,7 +56,7 @@ None.
 
 | Finding | Triaged to |
 |---|---|
-| ACL approach has known failure modes -- mask throttling, metadata reset, /mnt/c/ incompatibility | Documented in `story_linux_filesystem_uid_mismatch.md`. Replaced by UID Mapping strategy in session 20260523-09. |
+| ACL approach has known failure modes -- mask throttling, metadata reset, /mnt/c/ incompatibility | Documented in `20260524-story-settled-linux_filesystem_uid_mismatch.md`. Replaced by UID Mapping strategy in session 20260523-09. |
 
 ## Completed this session
 

@@ -26,13 +26,12 @@
 # Spec entries (order-insensitive, before the `--` separator):
 #   --flag=VAR      value flag: sets VAR to the flag's value
 #   --flag          boolean flag: sets <UPPER_SNAKE(flag)> to "true"
-#   --flag=         value flag writing into a caller-predeclared VAR named
-#                   <UPPER_SNAKE(flag)> (--branch-from writes BRANCH_FROM)
 #   --flag:VAR      boolean flag writing to a specific VAR (--yes:YES_FLAG)
-#   <literal>       accepted and ignored (compat toggles such as --permissive)
 #
 # parse_args returns 0 on success, 1 on unknown argument (usage printed),
 # and 2 when --help/-h was given (usage printed, caller decides to exit).
+# A value flag with no `=value` and a boolean flag with a value do not match
+# their spec shape; the mode's unknown-argument policy decides their fate.
 # Boolean vars default to "false" in the caller's scope before parsing,
 # value vars to "".
 
@@ -43,12 +42,13 @@
 #
 #   MODE:
 #     error     unmatched args print usage and return 1 (strict, default)
-#     drop      unmatched args are silently ignored (_CLI_TOLERANT=1 surface)
 #     collect   unmatched args append, in order, to the array named SINK_VAR;
 #               never errors. In collect mode --help/-h is not special: the
 #               caller owns help routing (the dispatcher scans its args).
 #
 #   --help/-h (MODE error|drop): prints usage via USAGE_FN and returns 2.
+#   The help scan stops at a `--` in the args so a positional `--help` can be
+#   passed through.
 #
 #   The only escaping state is intentional: matched value/boolean vars are
 #   written with declare -g so the caller reads them after the call.
@@ -74,8 +74,13 @@ _cli_parse() {
   # --help/-h anywhere wins (the pre-existing raw-scan behavior). Collect
   # mode leaves help routing to the caller.
   if [[ "$mode" != "collect" ]]; then
-    local a
+    local a scan_done=false
     for a in "${CALL_ARGS[@]-}"; do
+      [[ "$scan_done" == true ]] && break
+      if [[ "$a" == "--" ]]; then
+        scan_done=true
+        continue
+      fi
       [[ "$a" == "--help" || "$a" == "-h" ]] && { "$usage_fn"; return 2; }
     done
   fi
@@ -91,7 +96,6 @@ _cli_parse() {
       --*=*)
         flag="${spec%%=*}"
         var="${spec#*=}"
-        [[ -n "$var" ]] || var="$(printf '%s' "${flag#--}" | tr 'a-z-' 'A-Z_')"
         kind="value"
         ;;
       --*:*)
@@ -103,11 +107,6 @@ _cli_parse() {
         flag="$spec"
         var="$(printf '%s' "${spec#--}" | tr 'a-z-' 'A-Z_')"
         kind="boolean"
-        ;;
-      *)
-        flag="$spec"
-        var=""
-        kind="literal"
         ;;
     esac
     REG["$flag"]="$kind|$var"
@@ -129,6 +128,14 @@ _cli_parse() {
   for a in "${CALL_ARGS[@]-}"; do
     [[ -n "$a" ]] || continue
     entry="${REG[${a%%=*}]:-}"
+    if [[ -n "$entry" ]]; then
+      kind="${entry%%|*}"
+      # A value flag requires `=value`; a boolean flag takes no value. A
+      # mismatched shape is not a usable match, so the mode's unknown-argument
+      # policy decides its fate (reject, warn and drop, or forward).
+      if [[ "$kind" == "value" && "$a" != *=* ]]; then entry=""; fi
+      if [[ "$kind" == "boolean" && "$a" == *=* ]]; then entry=""; fi
+    fi
     if [[ -z "$entry" ]]; then
       case "$mode" in
         error)
@@ -138,7 +145,6 @@ _cli_parse() {
           "$usage_fn" >&2
           return 1
           ;;
-        drop) continue ;;
         collect) SINK+=( "$a" ); continue ;;
       esac
     fi
@@ -147,20 +153,17 @@ _cli_parse() {
     case "$kind" in
       value) declare -g "$var=${a#*=}" ;;
       boolean) declare -g "$var=true" ;;
-      literal) : ;;
     esac
   done
   return 0
 }
 
 # parse_args USAGE_FN spec... -- args...
-#   Strict or tolerant leaf parse (MODE error/drop per _CLI_TOLERANT).
+#   Strict leaf parse (MODE error).
 parse_args() {
   local usage_fn="$1"
   shift
-  local mode=error
-  [[ "${_CLI_TOLERANT:-}" == "1" ]] && mode=drop
-  _cli_parse "$mode" "$usage_fn" "" "$@"
+  _cli_parse error "$usage_fn" "" "$@"
 }
 
 # parse_args_collect SINK_VAR spec... -- args...

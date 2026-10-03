@@ -171,6 +171,8 @@ fi
 
 **Rule:** Assert the meaning, not the string. Prefer "the provider cell shows the provider" over "the cell does not contain the old suffix". Freeze a user-visible format only after the operator accepts it, and record why the format is a contract. When a test pins an exact string or byte class, the test (or its header comment) must cite the record that decides the pin (roadmap item, ADR, or design discussion). An uncited pin is change-mirror risk: no reader can tell contract from convenience.
 
+**The removed-design form.** A unit that pins the removal of a design asserts a fact true of any implementation: that a name no code creates stays absent, or that a stale value stays untouched. Both hold however the code is written, so the unit cannot fail for a reason that matters, and its name still describes the retired design. Rewrite the unit against the guard the code provides today, and rename it to say what it now guards. Example: `test_confirm_conflict_no_savepoint_tag_aborts_cleanly` and `test_confirm_conflict_stale_savepoint_preserves_draft` in `tests/test_confirm_workflow.sh` assert that a `confirm-savepoint` tag no code creates stays absent and a stale one stays untouched; both hold for every implementation.
+
 ### Anti-Pattern 7: Test-the-Copy
 
 **Symptom:** A test file contains a verbatim copy of a production function (inlined in the test file) and tests that copy. The tests stay green while production changes; the copy silently diverges.
@@ -181,9 +183,27 @@ fi
 
 ---
 
+### Anti-Pattern 8: Whole-Project Scan as a Unit Assertion
+
+**Symptom:** A unit test lints or scans the whole project tree as its assertion (for example "the repository carries zero findings of rule X"). The repo tree is not guaranteed to contain the negative cases the rule must reject, so the assertion checks project identity, not rule behaviour. It also re-does at test time the work the lint gate owns, and it makes the suite slow.
+
+**Rule:** A unit test probes the rule with fixtures that carry the positive and negative cases it must handle. A whole-tree scan as an assertion is an anti-pattern when the corpus is incidental (the pass holds only because the current files happen not to vary) and when it is expensive enough to slow the suite; in that case the negative cases you care about are the fixtures, and asserting zero findings across the whole tree is the lint gate's responsibility, not a fixture test's. A whole-tree conformance smoke is acceptable when it is cheap and the scanned corpus is exactly the object the rule governs (so the corpus itself is the negative-case set) -- for example `test_lib_contract.sh` scans the sourced libraries the return-not-exit rule constrains in ~0.1s. Either way, a whole-tree scan must never substitute for the fixture tests that carry the rule's behaviour.
+
+**Example:** `test_doc_wrap_rule.sh`'s `test_real_tree_zero_findings` ran `markdownlint-cli2` over every `.md` file in the repository with the rule on. It added about 4 seconds of node time to the suite and could pass only as long as no project file ever hard-wrapped prose -- a fact unrelated to whether the rule rejects wrapped fixtures. Removed as Anti-Pattern 8 (iteration `20260921-13`); the fixture tests carry the rule's behaviour, and the whole-tree lint is `check_markdown.sh`'s job.
+
+### Anti-Pattern 9: The Duplicate Unit
+
+**Symptom:** Two units assert the same property, so both run and both pass while the suite grows. The second is usually an appended block from a merge, written under a divergent naming convention for behaviour the file already covers.
+
+**Example:** `tests/test_routing.sh` carries three near-duplicate pairs, among them `test_latest_dir_missing_base_fails` beside `test_resolve_latest_dir_missing_base_fails`, and `test_latest_dir_picks_lexicographically_last` beside `test_resolve_latest_dir_picks_lexicographic_max_ignoring_files`. The pairs do not differ in what they pin, and the second member of each sits in a block appended after the first `run_test` group.
+
+**Rule:** One unit per case. When two units assert the same property, keep one and fold any extra clause into the survivor: the files-ignored clause of the selection pair belongs in the surviving assertion, not in a second unit. A pair that genuinely differs differs in a named behaviour, and each name states its own. A unit that re-covers a rule the repo gate already owns is deleted rather than kept as a second opinion, because the gate is the authority for that rule.
+
+---
+
 ## Test Structure Template
 
-**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass`/`fail`/`skip` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report. The runner flags a dead registration statically; the scan fires only on registrations targeting a `test_` function (the registration contract, same shape `check_test_liveness.sh` greps), so registration-shaped words inside quoted payloads are not flagged unless they sit at column 0.
+**The structure is mandatory, not advisory.** One registration block, one `test_done` call, nothing after it. Every test body must call `pass` or `fail` at least once -- `run_test` fails a function that completes without an assertion ("no assertion" check). A `run_test` call after `test_done` is dead: the suite has already reported, so the test never runs and the failure is silent. A second `test_done` splits the report. The runner flags a dead registration statically; the scan fires only on registrations targeting a `test_` function (the registration contract, same shape `check_test_liveness.sh` greps), so registration-shaped words inside quoted payloads are not flagged unless they sit at column 0.
 
 Document untested branches in the function-header comment at the point of the code: every documented branch of a sourced lib function has either a test or a gap note naming why it is untested (expressibility limits, low risk). There is no central known-gaps file -- the comment travels with the code it describes.
 
@@ -200,8 +220,7 @@ TARGET_SCRIPT="$TEST_DIR/../scripts/example.sh"
 source "$TEST_DIR/libs/test_common.sh"
 source "$TEST_DIR/libs/git_fixtures.sh"
 
-FIXTURE_DIR="$(mktemp -d)"
-trap 'rm -rf "$FIXTURE_DIR"' EXIT
+test_setup
 
 # -------------------------
 # Local helpers (not shared across files)
@@ -241,21 +260,30 @@ test_done
 
 (`test_done` prints the report and exits non-zero on failure. Do not inline a `Results:` echo or a manual `[[ "$FAIL" -eq 0 ]]` -- the template's former inline tail predates `test_done` and is retired.)
 
+Each test runs in its own subshell, so a test's environment, cwd, globals, and traps cannot leak into the next test: the suite is order-independent by construction. `run_test` allocates a fresh per-test `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, on exit. A test allocates extras with `get_fixture_dir` (alias `get_test_dir`), never with a bare `mktemp -d`. `test_setup` also sets a file-scope `FIXTURE_ROOT` for scaffolding that a file's tests share; a test reaches it by that name because `FIXTURE_DIR` is shadowed per test. Accounting is one unit per test: `run_test` emits a single unit marker (`PASS`, `FAIL`, or `SKIP`), and `test_done` reports the file's authoritative counts in one `UNIT: pass=... fail=... skip=...` line that `scripts/run_tests.sh` reads (it does not re-derive counts from the markers). A file that exits with no `UNIT:` report fails loudly. fail-fast means the first failing assertion ends the test.
+
+`test_done` prints the per-file report and exits on failure. A skipped test (`skip()` in the body) is a temporary absence -- the subject is not ready (an unstubbed operation, a missing dependency) -- reported as a warning and resolved short-term so skips trend back to zero; a skip is not a failure. Every file ends with `test_done`; the inline `Results:`/`[[ "$FAIL" -eq 0 ]]` footer is retired.
+
+Run a command that must fail (or whose rc matters) with the capture-and-assert helper `assert_run EXPECTED_RC CMD [LABEL]`: it runs `CMD` in a subshell, asserts its exit status, and keeps the combined output in `RUN_OUT` so the test can assert on it next (`assert_contains "$RUN_OUT" ...`). A mismatch names the captured output, so the failure is not blind. This replaces the rc-only, output-discarding style.
+
+Some commands return non-zero as a signal, not an error, and `|| true` after them is load-bearing -- do not strip it as noise. `git diff` returns rc 1 when it finds differences (rc 0 means no changes), so `git diff --cached > x.diff || true` must tolerate rc 1 to capture a real diff; `grep -c` returns rc 1 when it finds no matches, so a count expression needs it; a whole-pipeline `grep -v | awk` chain signals "nothing matched" the same way; a sourced preflight script may legitimately exit; and under the strict per-test rule (a non-zero exit from the test subshell is a failed test) the last command of a test function is its return, so a trailing cleanup command (for example `git rebase --abort`) must be masked or restructured or it flips an otherwise-passing test to a failure. These masks are the explicit tolerance the "no reliance on benign non-zero intermediates" rule permits; a mask on a plain command whose rc 0 means success is the one to avoid -- prefer `assert_run` and an rc or output assertion.
+
+Assertion labels carry the meaning, not the string: every `assert_*` call takes a label that names the behavior under test (for example `"serve: up failure still tears down"`), never a restatement of the values. The suite verifies at zero bare calls: no assertion relies on a helper's default label, so a failure names the behavior, not just the mismatch.
+
 ---
 
 ## Debugging Test Failures
 
 ### Symptom: Test Passes in Isolation, Fails in Sequence
 
-**Likely cause:** State pollution from previous test.
+**Likely cause:** The test reads state left by a file-scope scaffold or a sibling test. Each test already runs isolated in its own subshell, so env, cwd, globals, and traps cannot pollute; the remaining coupling is file-based.
 
 **Debug steps:**
 
 1. Run the full test suite and note which test fails
-2. Run only the failing test -- it should pass
-3. Run the test immediately before the failing test, then the failing test
-4. Check for: shared fixture paths, missing `rm -rf` in helpers, global state
-   not cleaned up
+2. Check for a `$FIXTURE_ROOT`-scoped scaffold that a test mutated, or a file one test wrote and another reads (`test.diff` is the recorded example)
+3. Make the failing test self-contained: build its own input under its own `$FIXTURE_DIR`, or rebuild the scaffold inside the test
+4. A test that depends on what a sibling test changed is a smell -- fix the test, do not restore the coupling
 
 ### Symptom: Test Fails on Re-run in Same Session
 
@@ -333,17 +361,15 @@ This pattern covers `exec` calls, subprocess scripts, and sourced function calls
 Before committing a new test:
 
 - [ ] **Placement decided per `testing_policy.md` Test Placement rule**: our maintained seam with an API -> `tests/test_*.sh` under `make test`; unmodifiable external seam / legacy mid-refactor -> `tests/knowledge/knowledge_*.sh`; still-not-runnable end-to-end flow -> `tests/integration/`
-- [ ] Uses `mktemp -d` for fixture directory
-- [ ] Has `trap 'rm -rf "$FIXTURE_DIR"' EXIT` for cleanup
+- [ ] Calls `test_setup` at file scope; `run_test` allocates the per-test `FIXTURE_DIR`; extras come from `get_fixture_dir`, never a bare `mktemp -d`
+- [ ] Relies on the allocator's unified teardown -- no manual `trap 'rm -rf "$FIXTURE_DIR"' EXIT`
 - [ ] All helper functions clean their inputs before creating state
-- [ ] No hardcoded paths outside fixture directory
+- [ ] No hardcoded paths outside the fixture directories
 - [ ] Sources shared fixtures from `tests/libs/` -- no sourcing of other test files
-- [ ] Sources `test_common.sh` for `pass()`/`fail()`/`skip()`/`run_test()`/`test_done()`
-- [ ] Test passes when run in isolation
-- [ ] Test passes when run after every other test in the file
-- [ ] Test passes when run twice in a row
+- [ ] Sources `test_common.sh` for `pass()`/`fail()`/`run_test()`/`test_done()`
+- [ ] The test never depends on a sibling test's written files -- any cross-test fixture is a smell; make it self-contained
 - [ ] `make test` passes clean after the new test is added
-- [ ] **`make test` invariant held**: the unit suite reports `failed 0, skipped 0`; no `skip()` in a `tests/test_*.sh` file
+- [ ] **`make test` invariant held**: the unit suite reports `failed 0`; no `skip()` in a `tests/test_*.sh` file for a fixable seam (a skip is a temporary warning, resolved short-term)
 - [ ] Test failure message clearly describes what went wrong
 - [ ] An assertion that pins a behaviour a future reader would be tempted to change names the record (ADR, design record, or handover decision) that explains why the behaviour is correct
 - [ ] Every `test_*()` in the file is registered via `run_test`, and every `run_test` target resolves

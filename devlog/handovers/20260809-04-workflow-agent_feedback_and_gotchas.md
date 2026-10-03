@@ -94,6 +94,13 @@ None.
 | 29 | **M3 recorded to `roadmap_future.md` now** (not pending next session): containment finding, close-script subtask, re-worded linear/next-task tasks | It is normal session cleanup to persist generated tasks at session end |
 | 30 | **Roadmap-update timing rule**: when a session generates tasks, update the roadmap at end of session. This behavior must be stated cleanly so it is unambiguous | Operator steer (mid-session finding): roadmap update timing should be explicit, not implicit |
 
+---
+[CORRECTION -- 2026-09-21: this handover is the origin of the two-file design (`devlog/AGENT_FEEDBACK.md` + `devlog/GOTCHAS.md`). Iteration `20260921-04` unified the pair into one record: `GOTCHAS.md` is deleted, its entries merged into `AGENT_FEEDBACK.md` under a `## Gotchas -- operator-raised entries` section, and the entry tags canonicalized to `[<A|O>]` (A = raised by agent, O = raised by operator); the former `[G]`/`[H]` tags are dropped. The `harness_iterative_improvement_loop` ADR carries the unified-record decision as its newest current entry. Going forward the single file is `AGENTS.md`-referenced; authority: `docs/adr/harness_iterative_improvement_loop.md` and `AGENTS.md`.]
+
+[CORRECTION -- 2026-09-21: decision table row 22 is superseded. It recorded GOTCHAS agent integration as a "session-open primer" (load open gotchas at Step 1, avoid/re-check day-to-day). The reader model changed to a cataloguing/frequency model in iteration `20260921-03` (workflow: record-write-back gate, prompt-scope discipline, feedback/gotchas reader-model reword). The raw file is no longer the agent's behavior source; a tripped mistake is recorded as a Finding in the handover, a recurrence re-opens and extends its entry on a frequency counter, and a durable fix routes to a roadmap row (`scoped:`). Agent integration now means the durable fixes the elevated entries route to, not a session-open read. `GOTCHAS` stays short because durable housing routes to skills and roadmap rows, not because it is a primer. Authority: `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md` and, going forward, `AGENTS.md`.]
+
+---
+
 ## Mid-session findings
 
 | # | Finding | Type | Impact | Triaged to |
@@ -133,3 +140,5 @@ Implement finalized workflow (Bucket 1): D1 create `AGENT_FEEDBACK.md`, D2 creat
 [CORRECTION -- 2026-08-09]: A finding surfaced during the close review (handover close-order contradiction) was mis-routed to M3 (`roadmap_future.md`) instead of being treated as a mid-session finding routed to a current destination. It is corrected to a current-roadmap item under M2.6 in `roadmap.md`, with a companion note in the finalized-workflow artifact. Finding routed to `roadmap.md` (M2.6 -- handover close-order contradiction) and the workflow artifact (close-order reconciliation / P2 companion).
 
 [CORRECTION -- 2026-08-09]: The Hot files entry `devlog/discussions/20260809-story-active-bash_complaints.md` refers to a file deleted by session `20260809-04` (T1 migration into `devlog/AGENT_FEEDBACK.md`). The bash entries now live in `devlog/AGENT_FEEDBACK.md` (`## Bash` section, 8 entries). The AGENTS.md Bash Friction Log pointer was updated accordingly.
+
+[CORRECTION -- 2026-09-21]: entries this session raised and later migrated, then closed/consolidated by the M3 cleanup pass: empty-string, rev-parse--verify, local-FOO, grep-c, sourced-lib while-read, fixture-lifecycle, set-u, SCRIPT_DIR, and the regex/write-land edit entries. The bash rules landed in `docs/development/bash-coding-conventions.md` sections 4.1-4.5; the edit-tool family consolidated into the M3 T2 edit-tool entry. Entries reconciled and removed from `AGENT_FEEDBACK.md`.

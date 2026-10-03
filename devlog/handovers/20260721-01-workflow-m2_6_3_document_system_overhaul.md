@@ -98,8 +98,8 @@ No bulk sweep. Rename-on-touch only. Overhead per session: at most 2-3 old docs 
 | File | Action | Reason |
 |---|---|---|
 | `devlog/discussions/spec_context_dir_removal.md` (221 lines) | Condense key decisions into `20260609-09-design-context_dir_removal.md` + `20260611-01-impl-context_dir_removal.md`. Delete spec. | Single-session impl, fully captured in handovers |
-| `devlog/discussions/spec_apply_workspace_refactor.md` (238 lines) | Condense key decisions into relevant apply workflow handovers. Delete spec. | Multi-session but fully implemented; spec is no longer referenced |
-| `devlog/discussions/spec_test_infrastructure.md` (134 lines) | Condense into test infrastructure handovers. Delete spec. | Implemented; code + handovers are the record |
+| `devlog/discussions/20260427-design-settled-apply_workspace_refactor.md` (238 lines) | Condense key decisions into relevant apply workflow handovers. Delete spec. | Multi-session but fully implemented; spec is no longer referenced |
+| `devlog/discussions/20260428-design-settled-test_infrastructure_improvements.md` (134 lines) | Condense into test infrastructure handovers. Delete spec. | Implemented; code + handovers are the record |
 | `devlog/discussions/spec_container_layer_redesign.md` (312 lines) | **Keep.** But rename to new format and update status. | Still Active -- sessions 2+ pending. Cannot delete. |
 
 **Mount-model docs to supersede into new ADR:**

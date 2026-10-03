@@ -32,7 +32,7 @@ Chat analysis from the stash study follow-up, formalized. No code changes; no co
 | File | Change |
 |---|---|
 | [`docs/adr/sandbox_delivery_model.md`](docs/adr/sandbox_delivery_model.md) | New 2026-09-11 entry: full `.git` copy is deliberate; stash disposition (post-copy clear) and history-trim disposition (rejected) |
-| [`devlog/discussions/20260911-study-stash_copy_prevention.md`](devlog/discussions/20260911-study-stash_copy_prevention.md) | Status settled; Resolution references the ADR entry |
+| [`devlog/discussions/20260911-study-settled-stash_copy_prevention.md`](devlog/discussions/20260911-study-settled-stash_copy_prevention.md) | Status settled; Resolution references the ADR entry |
 
 ## Deferred items
 

@@ -34,8 +34,8 @@ Targets A.3 from the roadmap. In scope:
 
 *Discussion docs:*
 
-- `docs/devlog/discussions/design_change_a_contract.md` -- verify design doc is self-consistent
-- `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` -- add forward-reference to `design_change_a_contract.md`
+- `docs/devlog/discussions/20260504-design-settled-change_a_contract.md` -- verify design doc is self-consistent
+- `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` -- add forward-reference to `20260504-design-settled-change_a_contract.md`
 
 *Drift verification:*
 
@@ -62,7 +62,7 @@ None.
 6. `tool_interface.md` documents `make draft --channel=`, `make apply --channel=`, `make package-diff`, `make package-branch`, `--to` flag
 7. `system_overview.md` diff/apply section uses current filenames; removes "legacy" framing
 8. `sandbox_host_correspondence_model.md` command map matches current CLI
-9. `design_diff_and_branch_packaging_workflow.md` has forward-reference to `design_change_a_contract.md`
+9. `design_diff_and_branch_packaging_workflow.md` has forward-reference to `20260504-design-settled-change_a_contract.md`
 10. `project_index.md` has `Last touched in` updated to M2.3 for all A.1/A.2/A.4/A.5 files
 11. `quickstart.md` recovery section consistent with current CLI
 12. Roadmap Trigger B status line reads "A.0-A.5"
@@ -80,7 +80,7 @@ None.
 | [`docs/development/project_index.md`](../../docs/development/project_index.md) | Last-touched updates |
 | [`docs/development/testing_policy.md`](../../docs/development/testing_policy.md) | Anti-pattern rename |
 | [`docs/development/quickstart.md`](../../docs/development/quickstart.md) | Recovery section |
-| [`docs/devlog/discussions/design_change_a_contract.md`](../../docs/devlog/discussions/design_change_a_contract.md) | Self-consistency check |
+| [`docs/devlog/discussions/20260504-design-settled-change_a_contract.md`](../../docs/devlog/discussions/20260504-design-settled-change_a_contract.md) | Self-consistency check |
 | [`docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md`](../../docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md) | Forward-reference |
 
 ## Decisions made this session
@@ -104,8 +104,8 @@ None.
 | `docs/concepts/sandbox_host_correspondence_model.md` | Updated correspondence cycle, command map, running section, model gaps -- all reflect current CLI and layout |
 | `docs/development/project_index.md` | Updated Last touched in to M2.3 for tool_interface, onboard, quickstart; added routing.sh entry; fixed stale package_branch/test_diff descriptions |
 | `docs/development/testing_policy.md` | Renamed `staged.diff` -> "diff files" in anti-pattern examples |
-| `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` | Added forward-reference to `design_change_a_contract.md` |
-| `docs/devlog/discussions/design_change_a_contract.md` | Updated scope to A.0-A.5; added A.5 to dependency ordering diagram |
+| `docs/devlog/discussions/design_diff_and_branch_packaging_workflow.md` | Added forward-reference to `20260504-design-settled-change_a_contract.md` |
+| `docs/devlog/discussions/20260504-design-settled-change_a_contract.md` | Updated scope to A.0-A.5; added A.5 to dependency ordering diagram |
 | `docs/devlog/roadmap.md` | Updated Trigger B status to A.0-A.5 |
 | `tests/test_dirs.sh` | **New** -- 11 tests for `dirs_resolve` (host convention, container convention, empty base, env overrides) |
 | `libs/dirs.sh` | Added `WORKSPACE_DIR_NAME` default (`.workspace`); changed `CHANGES_DIR_NAME`/`INPUT_DIR_NAME`/`OUTPUT_DIR_NAME` to leaf-only; added `dirs_resolve` function |

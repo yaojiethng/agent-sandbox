@@ -81,3 +81,5 @@ Retained: `snapshot_guard_sentinel` concept as a fail-closed tripwire for legacy
 - AC3 architecture-doc sweep (`execution_model.md`, `sandbox_lifecycle.md`) -- rides with implementation. **On roadmap.**
 - Documentation policy amendments (F11-F14 + STE100 quick rules, skeleton-first, records-state steering into `AGENTS.md` + `documentation_policy.md`). **On roadmap -- next iteration per operator.**
 - Relocation of draft/packaging worktree materialization out of the project tree (rides with mount-delivery work).
+
+[CORRECTION -- 2026-09-21]: the filtered-diff "trees-identical" entry raised this session consolidated into the M3 T1 evidence-validation entry; the git-rev-parse--git-path entry was closed and its rule added to `docs/development/bash-coding-conventions.md` section 4.5; the record-layer-docs entry routes to the M3 T8 STE sweep. Entries reconciled in `AGENT_FEEDBACK.md`.

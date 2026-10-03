@@ -10,18 +10,18 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ## W1 -- Vault Capability Layer Prototype
 
-**Status:** Deferred. Not a mainline milestone -- separate workflow for the Obsidian vault use case. Re-activate when KV5 timeline demands it.
+**Status:** Deferred. Not a mainline milestone -- separate workflow for the Obsidian vault use case. Re-activate when the KV5 timeline demands it.
 
 **Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
 
-**Depends on:** M2.1 two-container foundation, M2.2 modularised provider scripts, M2.3 apply workflow.
+**Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2---reasoningcapability-layer-separation).
 
-**Hermes python base refactor (non-urgent):** The shared `python-harness` base (`src/reasoning/python.dockerfile`) was designed but never built. Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness. If W1 can be implemented without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider.
+**Hermes python base refactor (non-urgent):** The shared `python-harness` base was designed but never built. Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness. If W1 can be implemented without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider.
 
 **Tasks:**
 
 - [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`investigation_mcp_server.md`](discussions/investigation_mcp_server.md) candidates table)
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`20260312-study-settled-mcp_server.md`](discussions/20260312-study-settled-mcp_server.md) candidates table)
 - [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
 - [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
 - [ ] Validate binary file handling (vault attachments) under selected MCP server
@@ -32,16 +32,22 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ## Multi-Agent Coordination
 
-### M4 -- Metadata Seeding
+### M4 - Multi-Agent Coordination
 
-- [ ] Define `.workspace/metadata.json` format:
-  - `agent_id`, `task_id`, allowed files, instructions
-- [ ] Ensure agent reads metadata to guide task execution
-- [ ] Ensure agent respects allowed file constraints
+Umbrella for the multi-agent milestones: coordinated dispatch of multiple task briefs across agents, the per-agent branch surface, and the metadata that feeds both. Metadata seeding is the parent milestone's first occupant, carried as `M4.1`. The name records the milestone's subject, and `### M5 - Multi-Agent Coordination (post-M4)` names what follows the M4 tracks.
 
 ---
 
-### M5 -- Agent-Assigned Branch Management
+### M4.1 -- Metadata Seeding
+
+- [ ] Read the seeded metadata to guide task execution
+- [ ] Respect the seeded allowed-file constraints
+- [ ] Decide the regular mutation-run frequency (the M3.1 mutation tier is operator-triggered only until this row sets a cadence)
+- [ ] Process the 2026-09-26 mutation-run survivors (62 rows with verdict `survived` in `tests/mutations/runs/20260926-184023-mutation_run.jsonl`): triage each survivor - re-run under the fixed-bite discipline or retire the row - and write the outcome back to the catalog. Dumped here by operator direction at the M3.1 close (2026-09-27), because the survivor set is the mutation tier's first real output and the tier's cadence and processing policy belong to M4.1
+
+---
+
+### M4.2 -- Agent-Assigned Branch Management
 
 **Objective:** Each agent gets its own branch from a shared baseline. Branches serve as both the agent's working surface and the snapshot of its work for review and merge.
 
@@ -53,9 +59,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
-## Multi-Agent Orchestration
-
-### M6.1 -- Task Dispatch
+### M4.3 -- Task Dispatch
 
 **Objective:** Extend the execution model to support coordinated dispatch of multiple task briefs across agents. Design precedes implementation -- `execution_model.md` must be updated before any code changes.
 
@@ -63,19 +67,21 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 - [ ] Update `execution_model.md` to reflect dispatch model before implementation begins
 - [ ] Implement dispatch mechanism in harness
 
+**Deferred capability home:** the `pi-subagents` orchestration capabilities not needed by the task-queue primitive (background and detached execution, retained resume and steering, acceptance gates, watchdog, mission schedules, TUI fleet, external-CLI runners, recursion guard) are evaluated here against a future delegation use case, not grafted onto the operator-bottleneck task-queue. They are scope without a task row; the rows that split them out land before the implementation.
+
 ---
 
-### M6.2 -- Constraint Enforcement
+### M4.4 -- Constraint Enforcement
 
 **Objective:** Enforce SOP constraints on agent dispatch and output. Partial enforcement may exist earlier from features built in prior milestones; this milestone brings it to a complete and auditable state.
 
 - [ ] Implement automated SOP enforcement scripts covering agent lifecycle, output handling, and secrets
-- [ ] Enforce allowed file and task constraints at dispatch time (builds on M4 metadata)
+- [ ] Enforce allowed file and task constraints at dispatch time (builds on M4.1 metadata)
 - [ ] Validate agent outputs against constraints before branch merge
 
 ---
 
-### M6.3 -- Review & CI/CD Integration
+### M4.5 -- Review & CI/CD Integration
 
 **Objective:** Automate review of agent-produced changes and integrate with CI/CD pipelines.
 
@@ -85,29 +91,60 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
+### M4.6 -- Background Work (parallel-work)
+
+Multiple well-specified work tasks run once, in the background, with the operator releasing the plan once up front and not gating each unit. Each task is one unit run; the `work` family runs several at once, unattended, and collects the results for later merge. The work-unit and merge responsibilities from the dispatch prompts `workflow/coding-agent/drafts/parallel-work.md` and `workflow/coding-agent/drafts/sequential-work.md` (own worktree and branch per track, primary holds verification and merge) carry over.
+
+**Source:** the retired T1 `parallel-auto` row, relocated here under the M4 umbrella and renamed with the `-work` family (M3.2.3).
+
+- [ ] Build the background-work surface on `workflow/coding-agent/drafts/parallel-work.md`
+
+### M4.7 -- The `/auto` Smart Dispatcher
+
+`/auto` becomes a generalized dispatcher (Option A): given a roadmap task list (possibly out of order, subtasks each carrying an execution rank), it resolves the execution order, picks the dispatch shape per the work structure, and orchestrates. It parks any unit that genuinely needs operator input. The curated dispatch shapes (`sequential-work`, `parallel-work`, `task-queue`, `fanout`) are its building blocks. M3.2.3 reserves the `/auto` keyword with a stub; M4 implements the dispatcher. Design precedes implementation -- the semantics record and the ADR section are written before code changes.
+
+- [ ] Implement the `/auto` smart dispatcher
+
+**Tentative workshape definition for autonomous dispatch units (persisted from the 2026-10-02 planning session; adapt on implementation).** One unit is roughly one fresh-context session: a narrow vertical slice through the layers the task touches, demoable or verifiable on its own rather than a horizontal layer cut. Sizing is a token-budget heuristic: estimate the work's tokens, and the unit budget is about a quarter of the context window -- 250k tokens against a 1M window -- with the total-work estimate divided by that budget naming the unit count. The durable destination the slice derives from is the roadmap row; this repo does not use specs and tickets, so a borrowed definition naming those adapts to the roadmap row and the handover scope instead. File-edit overlap is not the independence criterion: commits legitimately touch the same file (roadmap write-backs, fan-out subtasks), and a violation is work whose parts deliver no outcome of their own, not work that shares a file. `workflow/coding-agent/drafts/parallel-work.md` already carries a tracks-level independence test; whether the unit-level test cross-references it is the implementer's call at M4 time. Scope of this definition: the autonomous dispatch milestones (M4); M3 continues using the roadmap task list as the single unit of work, with the close self-check and the reviewer counterparty verifying that the iteration's confirmed scope lands as one unit in one commit.
+
+### M4.8 -- `/goal` (Loose-Goal Decomposition)
+
+`/goal` is the Option B capability, reworked from the removed and stale external extension: given a loose goal, it decomposes the goal into units itself and schedules every unit it can run, asking the operator only when a unit genuinely needs a decision. It is distinct from `/auto` (Option A), which takes a provided task decomposition and resolves its order and shape. `/goal` is the decomposition-and-schedule engine that runs autonomously until no non-operator-blocked unit remains.
+
+- [ ] Rebuild `/goal` as a first-class prompt or extension
+
+### M5 - Multi-Agent Coordination (post-M4)
+
+**Objective:** the coordination surface that outlives the M4 tracks: agents talking to each other, and two agents holding one task at once. M4.3's dispatch model and M4.4's constraint enforcement are the prerequisites; M5 owns what runs after them land.
+
+- [ ] Cross-agent message queue
+- [ ] Coordination (parallel writes) on a complex task
+
+---
+
 ## Standalone
 
-### M7 -- Security and Network hardening (Policy Layer)
+### M7 - Security and Network Hardening (Policy Layer)
 
 - [ ] Introduce `.config/workflow.yaml`
-  - Configure network access
-  - Configure resource limits (`--memory`, `--cpus`)
-  - Define allowed directories and workflow rules
+  - [ ] Configure network access
+  - [ ] Configure resource limits (`--memory`, `--cpus`)
+  - [ ] Define allowed directories and workflow rules
 - [ ] Enforce policy configuration in container startup
-  - Add automated isolation validation checks
+  - [ ] Add automated isolation validation checks
 - [ ] Implement `safe` mode: `--network=none` enforcement
-  - Evaluate `--network=none` mode for non-AI execution
+  - [ ] Evaluate `--network=none` mode for non-AI execution
 - [ ] Implement `restricted` mode: Restrict outbound network access
-  - Introduce outbound proxy or domain filtering to required AI endpoints
+  - [ ] Introduce outbound proxy or domain filtering to required AI endpoints
 
 #### Dependency Security
 
 Part of M7 -- supply-chain hardening for provider runtime dependencies.
 
-- [x] Pi version pinned in base Dockerfile (current: `@earendil-works/pi-coding-agent@0.86.0`)
+- [x] Pi version pinned in the provider base Dockerfile; the pin moves with the `pi-bump` unit that owns it
 - [x] Node base image pinned to specific version (`node:22.22.3-slim`)
 - [ ] Consider lockfile for `npm install -g` dependencies (transitive dependency locking)
-- [x] Bump policy -- operator decides when to bump based on: new functionality needed, critical fix, or security vulnerability. No automation. Bump manually by editing the pinned version in `base.Dockerfile` and rebuilding.
+- [x] Bump cadence policy -- the operator decides when to bump, on new functionality needed, a critical fix, or a security vulnerability, with no automation. The bump edits the pinned version in `src/reasoning/providers/pi/base.dockerfile` and rebuilds.
 
 ---
 
@@ -156,33 +193,23 @@ Progressive enforcement maturity for the documentation and architecture governan
 - Version bump policy agreed and documented
 - Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
 
-**Design reference:** [`devlog/discussions/investigation_harness_sig_requirements.md`](./discussions/investigation_harness_sig_requirements.md)
+**Design reference:** [`devlog/discussions/20260522-study-superseded-harness_sig_requirements.md`](./discussions/20260522-study-superseded-harness_sig_requirements.md)
 
 ---
 
 ## Deferred (Unplanned)
 
-### Harness-sig -- Host-Side Staleness Detection
-
-Described in Harness Packaging and Versioning above.
-
 ### Doc Language Cleanup -- STE-Clean Sweep
 
 **Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.
 
-### Copy-Model Seeding -- Host-Side Volume Seed (M2.6.5 follow-up) -- DONE 20260901-14
+### Copy-Model Seeding -- Host-Side Volume Seed (M2.6.5 follow-up, complete)
 
-**Deferred decision `20260818-02` (keep RO-mount-at-start); dependency landed; discovery validated `20260901-13`; implemented `20260901-14` -- entry retained as record.** Seed the volume host-side before the sandbox container starts (one-shot `docker compose create` + `docker cp` through the volume mount), no snapshot mount, fresh and resume compose files identical, staging exists only during the seed step. Serialization: git-enumerated tar under the `.agent-sandbox-seed/` sentinel; container-side init reconstructs index=HEAD/worktree=disk. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md). All three subtasks below are resolved: compose template carries no SNAPSHOT_DIR mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir`/SNAPSHOT_DIR env + session-state writes are retired repo-wide (incl. dirs.sh and the knowledge diagnostics).
+The volume is seeded host-side before the sandbox container starts, so the entrypoint mounts no snapshot directory: the compose template carries no `SNAPSHOT_DIR` mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir` environment and session-state writes are retired repo-wide. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md); design record [`20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md). Handovers `20260818-02` (the copy-in decision) and `20260901-14` (the implementation). The entrypoint branch inversion (`if ! -d .git` then init, else resume bookkeeping) belongs to the M2.6.6 delivery scope and is not filed here.
 
-- [ ] Drop the always-mounted `SNAPSHOT_DIR` from the compose template -- no conditional mount needed once seeding is host-side
-- [ ] Re-scope the unconditional preflight `baseline.tar` gate (entrypoint ~line 177) to fresh-init only -- vestigial on resume, where the volume's git state is authoritative
-- [ ] Re-examine `snapshot_dir`/SNAPSHOT_DIR env + session_state writes once the mount disappears
+### M2.6.7 -- Interface Contract Compatibility (complete)
 
-Records: design record `20260730-design-settled-mount_model.md`, handover `20260818-02` (copy-in mechanism decision). The entrypoint branch inversion (if `! -d .git` -> init; else -> resume bookkeeping) is not filed here -- it belongs to the M2.6.6 delivery implementation scope.
-
-### M2.6.7 -- Interface Contract Compatibility (Complete)
-
-**Design settled 20260919-03.** P0 landed 20260919-04 (version constant, image label, record stamps, warn-only preflight check). Doc consolidation landed 20260919-05: one interface concept doc (`docs/concepts/sandbox_host_interface.md`, renamed from the correspondence model) + one lifecycle architecture doc (`sandbox_lifecycle.md`). One version `INTERFACE_CONTRACT_VERSION` declared in `src/libs/interface_contract.sh`, stamped into tier-3 images at build (declaration 1) and into the record (`.compose` label set + `SESSION_STATE` key, declaration 2); comparison layered by surface: host<->container + record at start/resume preflight, container<->container at the agent entrypoint. P2 landed default-warn 20260919-06: flag `interface_contract_strict()` + preflight policy enforcement + agent-entrypoint `_check_container_contract`; container-sig untouched. 20260919-07 removed the flag entirely per operator direction: the contract is authoritative with no runtime escape hatch (an override would be a backdoor that weakens the contract and grows the maintenance surface); preflight refuses on a drift or missing label; the agent entrypoint hard-stops on a container<->container mismatch; a missing record key/file still warns (upgrade path). Container-sig rollover P0-P3, old check stripped only after the new is proven. 20260919-08 retired container-sig (P3): `container_sig`/`current_sig`/`image_baked_sig`, the label bake and `_check_container_sig` removed, `src/libs/container_sig.sh` and `tests/libs/sig_helpers.sh` deleted, install xargs note dropped, `image_digest` relocated to `src/build/image.sh`. ADR `docs/adr/interface_contract_compatibility.md` (closed -- authoritative; container-sig retired P3). Discussion `devlog/discussions/20260919-design-interface_contract_compatibility.md` (settled). M2.6.7 complete.
+One version constant, one image label, one warn-only preflight check, and a hard stop on a container-to-container mismatch; a missing record key still warns, which is the upgrade path. Interface concept doc `docs/concepts/sandbox_host_interface.md`, lifecycle architecture doc `docs/architecture/sandbox_lifecycle.md`, ADR `docs/adr/interface_contract_compatibility.md`. Handovers `20260919-03` (design), `20260919-04` (implementation) and `20260919-05` (documentation); design record [`20260919-design-settled-interface_contract_compatibility.md`](./discussions/20260919-design-settled-interface_contract_compatibility.md). The `container-sig` mechanism this sub-milestone superseded was retired at `20260919-08`.
 
 ### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
 

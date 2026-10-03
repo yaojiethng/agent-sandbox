@@ -11,7 +11,7 @@
 Performs P3 of the interface-contract rollover: strips the retired interim
 `container-sig` check and tooling, now that the authoritative
 `interface-contract-version` mechanism (P0 + P2, flag removed 20260919-07) is
-proven. The design record (`20260919-design-interface_contract_compatibility.md`,
+proven. The design record (`20260919-design-settled-interface_contract_compatibility.md`,
 `## Rollover / migration plan`, P3 row) gates this on "zero references to
 container-sig remain; suite green".
 

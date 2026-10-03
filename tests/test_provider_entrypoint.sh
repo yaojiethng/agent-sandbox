@@ -51,10 +51,9 @@ test_missing_agent_home() {
 }
 
 test_missing_provider_name() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local out rc=0
   out=$(unset PROVIDER_NAME; AGENT_HOME="$tmpdir/ah" bash "$ENTRYPOINT" true 2>&1) || rc=$?
-  rm -rf "$tmpdir"
   if [[ $rc -ne 0 && "$out" == *"PROVIDER_NAME is not set"* ]]; then
     pass "missing PROVIDER_NAME env var"
   else
@@ -65,10 +64,9 @@ test_missing_provider_name() {
 # -- Exit code --
 
 test_exit_code_zero() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local rc=0
   _run "$tmpdir/ah" bash -c "exit 0" || rc=$?
-  rm -rf "$tmpdir"
   if [[ $rc -eq 0 ]]; then
     pass "exit code 0 preserved"
   else
@@ -77,10 +75,9 @@ test_exit_code_zero() {
 }
 
 test_exit_code_nonzero() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local rc=0
   _run "$tmpdir/ah" bash -c "exit 42" || rc=$?
-  rm -rf "$tmpdir"
   if [[ $rc -eq 42 ]]; then
     pass "exit code 42 preserved"
   else
@@ -91,7 +88,7 @@ test_exit_code_nonzero() {
 # -- stdin regression guard --
 
 test_stdin_not_devnull() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local stdin_content="$tmpdir/stdin_content"
 
   echo "test-input-42" | _run "$tmpdir/ah" \
@@ -99,7 +96,6 @@ test_stdin_not_devnull() {
 
   local rc=0
   [[ -f "$stdin_content" ]] && grep -q "test-input-42" "$stdin_content" || rc=1
-  rm -rf "$tmpdir"
   if [[ $rc -eq 0 ]]; then
     pass "agent stdin is not /dev/null"
   else
@@ -139,7 +135,7 @@ test_provision_extraction_targets_live_source() {
 }
 
 test_provision_copies_config_files() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local tpl="$tmpdir/tpl"
   mkdir -p "$tpl"
   echo '{"model":"test"}' > "$tpl/settings.json"
@@ -159,11 +155,10 @@ test_provision_copies_config_files() {
     fail "auth.json missing or wrong content"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_provision_copies_all_items() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local tpl="$tmpdir/tpl"
   mkdir -p "$tpl/prompts" "$tpl/sessions" "$tpl/skills"
   echo 'prompt-content' > "$tpl/prompts/test.md"
@@ -195,11 +190,10 @@ test_provision_copies_all_items() {
     fail "skills/ subtree not copied"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_provision_fails_on_missing_template() {
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
   local tpl="$tmpdir/nonexistent"
   local ah="$tmpdir/ah"
   local rc=0
@@ -213,14 +207,13 @@ test_provision_fails_on_missing_template() {
     fail "should return non-zero for missing template"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 test_provision_no_double_nesting() {
   # Simulate Pi's scenario: template has agent/ dir, target already has
   # agent/ subdir (created by Docker for bind mount targets). The copy
   # must not produce agent/agent/ double-nesting.
-  local tmpdir; tmpdir=$(mktemp -d)
+  local tmpdir; tmpdir=$(get_fixture_dir)
 
   # Template mirrors src/reasoning/providers/pi/config/ structure
   local tpl="$tmpdir/tpl"
@@ -245,7 +238,6 @@ test_provision_no_double_nesting() {
     fail "agent/agent/ double nesting detected"
   fi
 
-  rm -rf "$tmpdir"
 }
 
 # ---------------------------------------------------------------------------

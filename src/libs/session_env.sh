@@ -24,6 +24,7 @@ source "$_self_session_dir/build/image.sh"
 source "$_self_session_dir/libs/env.sh"
 source "$_self_session_dir/libs/env_resolve.sh"
 source "$_self_session_dir/libs/dirs.sh"
+source "$_self_session_dir/libs/session_inventory.sh"
 
 # session_env_common_init <project_name> <project_dir> <sandbox_dir>
 #   Phase 1 (no SESSION_ID needed): resolves the identity triple
@@ -61,7 +62,7 @@ session_env_common_init() {
     echo "Error: PROJECT_DIR is not a git repository: $project_dir" >&2
     return 1
   fi
-  if ! git -C "$project_dir" rev-parse HEAD >/dev/null 2>&1; then
+  if ! git_head_resolvable "$project_dir"; then
     echo "Error: git repository has no commits: $project_dir" >&2
     echo "  Create an initial commit first:" >&2
     echo "    git -C '$project_dir' add -A" >&2
@@ -91,10 +92,7 @@ session_env_names() {
 
   # Host branch (sanitised; detached HEAD -> short SHA)
   local branch
-  branch="$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
-  if [[ "$branch" == "HEAD" || -z "$branch" ]]; then
-    branch="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || true)"
-  fi
+  branch="$(project_current_ref "$PROJECT_DIR")"
   local sanitized_branch
   sanitized_branch="$(echo "$branch" | sed 's/[^a-zA-Z0-9._-]/-/g')"
   export SANITIZED_HOST_BRANCH="$sanitized_branch"

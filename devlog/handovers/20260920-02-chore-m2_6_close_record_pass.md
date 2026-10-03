@@ -78,3 +78,5 @@ None.
 ## What's Next
 
 The next iteration resolves inventory item 2: the `run_test` `$1 || true` `set -e` suppression, then splits `tests/test_draft_workflow.sh` into the M3 backpressure group. The test split's missing roadmap row (discrepancy 5) lands with that iteration.
+
+[CORRECTION -- 2026-09-21]: the check-in survey's explanatory entries (roadmap-state-lagged, gotcha-commit-hash, changelog-identity, settled-designs-without-citation, feedback-backlog-has-no-home) were already closed and were deleted by the M3 cleanup pass as resolved historical records. The run_test `$1 || true` set-e suppression entry was closed (its fix landed) and deleted. Their durable resolutions remain the operative guidance; no active backlog entry survives.

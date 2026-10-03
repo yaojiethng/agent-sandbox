@@ -1,25 +1,15 @@
+---
+description: "Owns the ADR record: an ADR captures the reasoning behind a standing principle -- a pattern, an interface shape, a design philosophy, an invariant, or a user-interaction contract -- including the rejected alternatives and their reasons, and links to the documentation that describes the implementation it justifies."
+scope: ["docs/adr/", "docs/adr/archive/"]
+---
+
 # ADR Policy
-
-Governs files in `docs/adr/`.
-
-## Purpose
-
-An ADR records the reasoning behind standing principles, such as: a pattern, an interface shape, a design philosophy, an invariant, or a user-interaction contract.
-
-An ADR includes rejected alternatives and their reasons. Such reasons could include discovered edge cases and new requirements discovered during development. It is the durable place to retrieve the justification when iterating or extending a feature.
-
-An ADR is not meant to replace documentation. An ADR links to the documentation (in `docs/concepts` or `docs/architecture`) that describes the implementation the ADR justifies.
 
 ## Relationship to other records
 
-| Record | Contains | Expected current? | Immutable? |
-|---|---|---|---|
-| handover | the work done in one session (transaction log) | no | yes |
-| `docs/` (interface, architecture, conventions) | the current interface and architecture of each component | yes | no |
-| `docs/concepts/` | the models the system runs on | yes | no |
-| ADR | the rationale for a standing principle: the chosen option, the rejected alternatives, the reasons | yes | no |
-
 A concept doc states a model. The ADR states why that model was selected over alternatives. A concept doc links to its ADRs as further reading, like a paper cites references. The concept is the parent. The ADR is the explainer.
+
+The classification of each record type -- what it contains, whether it must be current, and its durability -- is the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md).
 
 ## Unit of record
 
@@ -38,6 +28,19 @@ Designs begin as discussion documents (`devlog/discussions/`). Spawn an ADR when
 A choice that affects only one implementation detail in one file does not spawn an ADR. Its rationale, if any, rides under an existing ADR.
 
 Write the ADR when the principle is committed or being actively resolved. It is not required to be written when code lands. It may precede or follow implementation.
+
+Suggest an ADR when:
+
+- The feature introduces a primitive or model other components must reason about
+- The area has non-obvious invariants that cannot be stated concisely in the architecture doc
+- A design doc exists for the area and is too long or branched to serve as a stable reference
+
+Distill a design doc into an ADR:
+
+1. Remove delivery-sequence framing -- "Change N", "prerequisite", "introduced in".
+2. Remove command shapes and implementation detail that belong in the architecture doc.
+3. Keep primitives, invariants, design rationale, and collision or interaction tables.
+4. During active development, links to design and discussion documents are expected.
 
 ## Liveness and evolution
 

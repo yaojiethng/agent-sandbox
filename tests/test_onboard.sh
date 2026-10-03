@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 15
+#   Budget rationale: the confirmation-gate units drive onboard under a pty
+#   (script), and the file runs more than twenty onboarding invocations, so its
+#   honest runtime sits near the 5s default and the parallel suite run can push
+#   it over.
 # scripts/onboard.sh end-to-end behavioural tests.
 #
 # Pins cite: docs/operations/provider_onboarding_guide.md (.env schema).
@@ -51,6 +56,10 @@ run_full_onboard() {
 # ---------------------------------------------------------------------------
 # Test: fresh onboard creates the expected directory structure
 # ---------------------------------------------------------------------------
+# Given: a project dir and an empty sandbox dir, with "y" on stdin
+# When:  onboard runs with --name, --project, and --sandbox
+# Then:  the Makefile, .env, and the three .workspace directories exist
+# Asserts: the fresh-onboard output tree
 test_fresh_onboard_creates_structure() {
   local PROJECT_DIR="$FIXTURE_DIR/fresh_project"
   local SANDBOX_DIR="$FIXTURE_DIR/fresh_sandbox"
@@ -69,6 +78,10 @@ test_fresh_onboard_creates_structure() {
 # ---------------------------------------------------------------------------
 # Test: .env contains required keys
 # ---------------------------------------------------------------------------
+# Given: a completed fresh onboard
+# When:  the generated .env is read
+# Then:  it carries PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, MAKEFILE_VERSION, INSTALL_DIR, SERVE_PORT, AUTOSAVE_INTERVAL
+# Asserts: the .env schema
 test_fresh_onboard_env_has_required_keys() {
   local PROJECT_DIR="$FIXTURE_DIR/env_project"
   local SANDBOX_DIR="$FIXTURE_DIR/env_sandbox"
@@ -91,6 +104,10 @@ test_fresh_onboard_env_has_required_keys() {
 # ---------------------------------------------------------------------------
 # Test: the generated Makefile reads the identity from .env, not a baked literal
 # ---------------------------------------------------------------------------
+# Given: a completed fresh onboard
+# When:  the generated Makefile is read
+# Then:  it forwards --name=$(PROJECT_NAME) and bakes no literal name
+# Asserts: identity lives in .env, not in the Makefile
 test_fresh_onboard_makefile_reads_name_from_env() {
   local PROJECT_DIR="$FIXTURE_DIR/name_env_project"
   local SANDBOX_DIR="$FIXTURE_DIR/name_env_sandbox"
@@ -117,6 +134,10 @@ test_fresh_onboard_makefile_reads_name_from_env() {
 # ---------------------------------------------------------------------------
 # Test: refresh inserts PROJECT_NAME into a pre-P1 (no-name) .env
 # ---------------------------------------------------------------------------
+# Given: a sandbox whose .env predates the PROJECT_NAME line
+# When:  refresh runs
+# Then:  PROJECT_NAME is appended to .env
+# Asserts: the pre-P1 .env migration
 test_refresh_migrates_project_name_into_env() {
   local PROJECT_DIR="$FIXTURE_DIR/migrate_project"
   local SANDBOX_DIR="$FIXTURE_DIR/migrate_sandbox"
@@ -140,6 +161,10 @@ test_refresh_migrates_project_name_into_env() {
 # ---------------------------------------------------------------------------
 # Test: provider config directories are created
 # ---------------------------------------------------------------------------
+# Given: a completed fresh onboard
+# When:  the sandbox is compared against the provider tree
+# Then:  every provider with a non-empty config dir has its .<provider>/ directory
+# Asserts: provider config seeding reaches every provider
 test_fresh_onboard_creates_provider_configs() {
   local PROJECT_DIR="$FIXTURE_DIR/provider_project"
   local SANDBOX_DIR="$FIXTURE_DIR/provider_sandbox"
@@ -168,8 +193,36 @@ test_fresh_onboard_creates_provider_configs() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: provider config modes are 775 dirs / 664 files under a restrictive umask
+# ---------------------------------------------------------------------------
+# Given: a fresh onboard run under umask 077
+# When:  the seeded provider config tree is inspected
+# Then:  the directory is 775 and the file is 664 regardless of the umask
+# Asserts: rsync -p makes --chmod effective instead of the invoking umask.
+test_provider_config_modes_resist_umask() {
+  local PROJECT_DIR="$FIXTURE_DIR/mode_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/mode_sandbox"
+
+  local OLD_UMASK
+  OLD_UMASK="$(umask)"
+  umask 077
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR"
+  umask "$OLD_UMASK"
+
+  local DIR_MODE FILE_MODE
+  DIR_MODE="$(stat -c '%a' "$SANDBOX_DIR/.hermes" 2>/dev/null)"
+  FILE_MODE="$(stat -c '%a' "$SANDBOX_DIR/.hermes/config.yaml" 2>/dev/null)"
+  assert_eq "$DIR_MODE" "775" "provider config dir mode is 775 under umask 077"
+  assert_eq "$FILE_MODE" "664" "provider config file mode is 664 under umask 077"
+}
+
+# ---------------------------------------------------------------------------
 # Test: fresh onboard aborts if SANDBOX_DIR already has outputs
 # ---------------------------------------------------------------------------
+# Given: a sandbox directory that already holds a Makefile
+# When:  onboard runs against it
+# Then:  it exits non-zero and reports "already contains"
+# Asserts: the clobber guard refuses an existing sandbox
 test_onboard_aborts_if_sandbox_exists() {
   local PROJECT_DIR="$FIXTURE_DIR/guard_project"
   local SANDBOX_DIR="$FIXTURE_DIR/guard_sandbox"
@@ -199,6 +252,10 @@ test_onboard_aborts_if_sandbox_exists() {
 # ---------------------------------------------------------------------------
 # Test: refresh mode updates Makefile
 # ---------------------------------------------------------------------------
+# Given: an onboarded sandbox whose Makefile was deleted
+# When:  refresh runs
+# Then:  the Makefile is present again
+# Asserts: refresh restores the versioned template file
 test_refresh_updates_makefile() {
   local PROJECT_DIR="$FIXTURE_DIR/refresh_project"
   local SANDBOX_DIR="$FIXTURE_DIR/refresh_sandbox"
@@ -219,6 +276,10 @@ test_refresh_updates_makefile() {
 # ---------------------------------------------------------------------------
 # Test: refresh does not clobber .env operator values
 # ---------------------------------------------------------------------------
+# Given: an onboarded sandbox whose SERVE_PORT was edited to 99999
+# When:  refresh runs
+# Then:  the edited value survives
+# Asserts: refresh does not clobber operator configuration
 test_refresh_preserves_env_values() {
   local PROJECT_DIR="$FIXTURE_DIR/preserve_project"
   local SANDBOX_DIR="$FIXTURE_DIR/preserve_sandbox"
@@ -240,6 +301,10 @@ test_refresh_preserves_env_values() {
 # ---------------------------------------------------------------------------
 # Test: refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR + SERVE_PORT
 # ---------------------------------------------------------------------------
+# Given: an onboarded sandbox whose project moved and whose INSTALL_DIR and SERVE_PORT were edited
+# When:  refresh runs with the new --project
+# Then:  PROJECT_DIR and SANDBOX_DIR are synced and both operator values survive
+# Asserts: the refresh split between derived paths and operator configuration
 test_refresh_syncs_paths_preserves_config() {
   local PROJECT_DIR="$FIXTURE_DIR/sync_paths_project"
   local MOVED_DIR="$FIXTURE_DIR/sync_paths_project_moved"
@@ -272,6 +337,10 @@ test_refresh_syncs_paths_preserves_config() {
 # ---------------------------------------------------------------------------
 # Test: refresh requires --name and --sandbox
 # ---------------------------------------------------------------------------
+# Given: --refresh --sandbox with no --name and stdin at /dev/null
+# When:  onboard runs
+# Then:  it exits non-zero
+# Asserts: refresh requires its minimal arguments; the empty value arrives by EOF, not by a rejected flag
 test_refresh_aborts_without_minimal_args() {
   local SANDBOX_DIR="$FIXTURE_DIR/minargs_sandbox"
   mkdir -p "$SANDBOX_DIR"
@@ -300,6 +369,7 @@ run_test test_fresh_onboard_env_has_required_keys
 run_test test_fresh_onboard_makefile_reads_name_from_env
 run_test test_refresh_migrates_project_name_into_env
 run_test test_fresh_onboard_creates_provider_configs
+run_test test_provider_config_modes_resist_umask
 run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values
@@ -311,6 +381,14 @@ run_test test_refresh_syncs_paths_preserves_config
 # ---------------------------------------------------------------------------
 source "$REPO_ROOT/scripts/onboard.sh"
 
+# Restore the file's declared shell options: onboarding's own top-level
+# `set -euo pipefail` must not leak into the units below.
+set +e
+
+# Given: a file whose first line is "# agent-sandbox template version: 3"
+# When:  template_version reads it
+# Then:  it prints 3
+# Asserts: the version marker parse
 test_template_version_reads_marker_line() {
   local f="$FIXTURE_DIR/tpl_with_version"
   printf '# agent-sandbox template version: 3\nother: line\n' > "$f"
@@ -319,6 +397,10 @@ test_template_version_reads_marker_line() {
   assert_eq "$out" "3" "template_version extracts number from marker line"
 }
 
+# Given: a file with no version marker
+# When:  template_version reads it
+# Then:  it prints nothing and exits 0
+# Asserts: an absent marker is an expected empty result, not a failure
 test_template_version_absent_marker_is_empty_and_clean() {
   local f="$FIXTURE_DIR/tpl_no_version"
   printf '# no marker here\ncontent: yes\n' > "$f"
@@ -331,6 +413,10 @@ test_template_version_absent_marker_is_empty_and_clean() {
   fi
 }
 
+# Given: the shipped scripts/templates/Makefile.template
+# When:  template_version reads it
+# Then:  the result matches ^[0-9]+$
+# Asserts: the shipped template carries a parseable version
 test_template_version_real_makefile_template_parses() {
   # The actual shipped template must carry a parseable numeric version  -- 
   # refresh gating silently degrades to "unknown" otherwise.
@@ -339,37 +425,176 @@ test_template_version_real_makefile_template_parses() {
   assert_matches "$out" '^[0-9]+$' "shipped Makefile.template carries numeric template version ($out)"
 }
 
-# The thin CLI (S3): run targets pass `--env=$(ENV_FILE)` (the .env path next
-# to the Makefile) and carry no identity flags. `make stop PRUNE=1` still gets
-# its project for the registry rule, but resolved by the dispatcher from .env.
-# The `refresh:` target is the exception: it passes identity flags to `onboard
-# --refresh`, which is exempt from resolution.
-test_run_targets_are_thin() {
-  local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
-  local stop_block
-  stop_block=$(sed -n '/^stop:/,/PRUNE_FLAG)/p' "$tpl")
+# Given: a project dir and an --sandbox spelled relative whose parent is absent
+# When:  onboard runs from the fixture directory
+# Then:  it rejects the path before creating anything
+# Asserts: the absolute-path guard keeps a relative sandbox out of .env
+test_onboard_rejects_unresolvable_relative_sandbox() {
+  local PROJECT_DIR="$FIXTURE_DIR/relpath_project"
+  make_project_dir "$PROJECT_DIR"
 
-  if [[ "$stop_block" == *"--env=\$(ENV_FILE)"* \
-        && "$stop_block" != *"--project=\$(PROJECT_DIR)"* \
-        && "$stop_block" != *"--sandbox=\$(SANDBOX_DIR)"* \
-        && "$stop_block" != *"--name=\$(PROJECT_NAME)"* ]]; then
-    pass "make stop carries --env and no identity flags (thin CLI)"
+  local OUT RC=0
+  OUT="$( cd "$FIXTURE_DIR" && bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox="./no-such-parent/sandbox" --yes 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"must be an absolute or resolvable path"* ]] \
+     && [[ ! -f "$FIXTURE_DIR/no-such-parent/sandbox/.env" ]]; then
+    pass "onboard rejects an unresolvable relative --sandbox without creating it"
   else
-    fail "make stop target not thin:\n$stop_block"
+    fail "onboard: expected relative --sandbox rejected (rc=$RC out=$OUT)"
   fi
 }
 
-test_start_target_is_thin() {
-  local tpl="$REPO_ROOT/scripts/templates/Makefile.template"
-  local start_block
-  start_block=$(sed -n '/^start:/,/ENV_FILE)$/p' "$tpl")
+# Given: a completed fresh onboard
+# When:  refresh runs with --name and --sandbox only
+# Then:  PROJECT_DIR in .env survives, derived from the file
+# Asserts: refresh derives PROJECT_DIR from .env when --project is omitted
+test_refresh_derives_project_dir_from_env() {
+  local PROJECT_DIR="$FIXTURE_DIR/derive_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/derive_sandbox"
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
 
-  if [[ "$start_block" == *"--env=\$(ENV_FILE)"* \
-        && "$start_block" != *"--project="* \
-        && "$start_block" != *"--sandbox="* ]]; then
-    pass "make start carries --env and no identity flags (thin CLI)"
+  echo y | bash "$ONBOARD_SCRIPT" --refresh --name="testproj" --sandbox="$SANDBOX_DIR" 2>&1
+
+  if grep -q "^PROJECT_DIR=$PROJECT_DIR$" "$SANDBOX_DIR/.env"; then
+    pass "refresh without --project preserves PROJECT_DIR from .env"
   else
-    fail "make start target not thin:\n$start_block"
+    fail "refresh without --project lost PROJECT_DIR: $(grep '^PROJECT_DIR=' "$SANDBOX_DIR/.env")"
+  fi
+}
+
+# Given: a completed fresh onboard
+# When:  the provider config directory is inspected
+# Then:  the shipped env.stub is promoted to .env
+# Asserts: the provider secret file the summary instructs the operator to fill exists
+test_fresh_onboard_promotes_provider_env_stub() {
+  local PROJECT_DIR="$FIXTURE_DIR/stub_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/stub_sandbox"
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  if [[ -f "$SANDBOX_DIR/.hermes/.env" && ! -e "$SANDBOX_DIR/.hermes/env.stub" ]]; then
+    pass "fresh onboard promotes provider env.stub to .env"
+  else
+    fail "fresh onboard left env.stub unpromoted: $(ls -A "$SANDBOX_DIR/.hermes" 2>/dev/null | tr '\n' ' ')"
+  fi
+}
+
+# Given: a completed fresh onboard
+# When:  the pi agent home is inspected
+# Then:  the provider setup hook's four directories exist
+# Asserts: the provider setup hook runs
+test_fresh_onboard_runs_provider_setup_hook() {
+  local PROJECT_DIR="$FIXTURE_DIR/hook_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/hook_sandbox"
+  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+
+  if [[ -d "$SANDBOX_DIR/.pi/agent/sessions" && -d "$SANDBOX_DIR/.pi/agent/prompts" \
+     && -d "$SANDBOX_DIR/.pi/agent/skills" && -d "$SANDBOX_DIR/.pi/agent/extensions" ]]; then
+    pass "fresh onboard runs the provider setup hook (pi agent-home dirs created)"
+  else
+    fail "provider setup hook effect missing under $SANDBOX_DIR/.pi/agent"
+  fi
+}
+
+# Given: a provider whose onboard.sh hook fails
+# When:  _provision_providers runs against that provider tree
+# Then:  it aborts non-zero naming the failed hook
+# Asserts: a failing provider setup hook is not swallowed
+test_provider_setup_hook_failure_aborts() {
+  local FI="$FIXTURE_DIR/hookfail"
+  mkdir -p "$FI/src/reasoning/providers/fake/config"
+  printf 'seed: 1\n' > "$FI/src/reasoning/providers/fake/config/config.yaml"
+  printf 'return 1\n' > "$FI/src/reasoning/providers/fake/onboard.sh"
+
+  local OUT RC=0
+  OUT="$( SANDBOX_DIR="$FIXTURE_DIR/hookfail_sandbox" \
+          bash -c 'source "'"$ONBOARD_SCRIPT"'"; REPO_ROOT="'"$FI"'"; _provision_providers' 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"provider setup hook failed"* ]]; then
+    pass "provider setup hook failure aborts onboarding"
+  else
+    fail "provider setup hook failure: expected abort (rc=$RC out=$OUT)"
+  fi
+}
+
+# Given: a sandbox dir whose .workspace is a regular file
+# When:  onboard runs with --yes and the second mkdir fails
+# Then:  it exits non-zero and prints the partial-state warning
+# Asserts: the ERR trap fires inside _run_onboard, not just in main
+# (errtrace; the warning names SANDBOX_DIR so the operator can clean up)
+test_onboard_warns_partial_state_on_failure_after_first_mkdir() {
+  local PROJECT_DIR="$FIXTURE_DIR/midfail_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/midfail_sandbox"
+  make_project_dir "$PROJECT_DIR"
+  mkdir -p "$SANDBOX_DIR"
+  touch "$SANDBOX_DIR/.workspace"
+
+  local OUT RC=0
+  OUT="$( bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" --yes 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"Warning: onboard.sh failed after creating files in SANDBOX_DIR."* ]]; then
+    pass "mid-onboard failure prints the partial-state warning"
+  else
+    fail "mid-onboard failure: expected partial-state warning (rc=$RC out=$OUT)"
+  fi
+}
+
+# Given: piped stdin carrying a declined answer and no --yes
+# When:  onboard runs
+# Then:  the non-tty detection proceeds without consuming the line
+# Asserts: a non-tty run is non-interactive
+test_onboard_non_tty_proceeds_without_prompt() {
+  local PROJECT_DIR="$FIXTURE_DIR/nontty_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/nontty_sandbox"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT
+  OUT="$( echo n | bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" 2>&1 )"
+
+  if [[ "$OUT" == *"Non-interactive mode"* && -f "$SANDBOX_DIR/.env" ]]; then
+    pass "non-tty onboard proceeds without prompting"
+  else
+    fail "non-tty onboard did not proceed: $OUT"
+  fi
+}
+
+# Given: an interactive pty run with a declined answer and no --yes
+# When:  onboard runs
+# Then:  the onboarding is cancelled and no files are created
+# Asserts: a declined confirmation stops before file creation
+test_onboard_interactive_decline_cancels() {
+  local PROJECT_DIR="$FIXTURE_DIR/decline_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/decline_sandbox"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT
+  OUT="$( printf 'n\n' | script -q -c "bash $ONBOARD_SCRIPT --name=testproj --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR" /dev/null 2>&1 )"
+
+  if [[ "$OUT" == *"Onboarding cancelled."* && ! -f "$SANDBOX_DIR/.env" ]]; then
+    pass "interactive decline cancels onboarding before file creation"
+  else
+    fail "interactive decline did not cancel: $OUT"
+  fi
+}
+
+# Given: an interactive pty run with --yes and a declined answer
+# When:  onboard runs
+# Then:  --yes forces non-interactive and the run completes
+# Asserts: --yes bypasses the confirmation gate even under a tty
+test_onboard_yes_forces_non_interactive_under_tty() {
+  local PROJECT_DIR="$FIXTURE_DIR/yes_project"
+  local SANDBOX_DIR="$FIXTURE_DIR/yes_sandbox"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT
+  OUT="$( printf 'n\n' | script -q -c "bash $ONBOARD_SCRIPT --name=testproj --project=$PROJECT_DIR --sandbox=$SANDBOX_DIR --yes" /dev/null 2>&1 )"
+
+  if [[ "$OUT" == *"Onboarding complete."* && -f "$SANDBOX_DIR/.env" ]]; then
+    pass "--yes forces non-interactive onboarding under a tty"
+  else
+    fail "--yes did not bypass the prompt under a tty: $OUT"
   fi
 }
 
@@ -377,8 +602,15 @@ run_test test_refresh_aborts_without_minimal_args
 run_test test_template_version_reads_marker_line
 run_test test_template_version_absent_marker_is_empty_and_clean
 run_test test_template_version_real_makefile_template_parses
-run_test test_run_targets_are_thin
-run_test test_start_target_is_thin
+run_test test_onboard_rejects_unresolvable_relative_sandbox
+run_test test_refresh_derives_project_dir_from_env
+run_test test_fresh_onboard_promotes_provider_env_stub
+run_test test_fresh_onboard_runs_provider_setup_hook
+run_test test_provider_setup_hook_failure_aborts
+run_test test_onboard_warns_partial_state_on_failure_after_first_mkdir
+run_test test_onboard_non_tty_proceeds_without_prompt
+run_test test_onboard_interactive_decline_cancels
+run_test test_onboard_yes_forces_non_interactive_under_tty
 
 test_done "scripts/onboard.sh"
 

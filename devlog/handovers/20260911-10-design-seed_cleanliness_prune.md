@@ -35,7 +35,7 @@ Adopt copy-then-prune (Option B): `fsck` probe -> conditional `reflog expire` + 
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20260911-study-seed_object_store_cleanliness.md`](devlog/discussions/20260911-study-seed_object_store_cleanliness.md) | New study: findings, four-option comparison, recommendation |
+| [`devlog/discussions/20260911-study-settled-seed_object_store_cleanliness.md`](devlog/discussions/20260911-study-settled-seed_object_store_cleanliness.md) | New study: findings, four-option comparison, recommendation |
 
 ## Deferred items
 

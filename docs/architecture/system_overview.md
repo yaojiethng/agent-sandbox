@@ -29,7 +29,7 @@ The implementation stack has three layers with a strict bottom-up stabilization 
 
 Two elements frame the stack without belonging to it:
 
-**Security Model** -- a design constraint applied to all implementation layers. The security spec is written before implementation and used to harden each layer against the threat model. It is not a build layer; it is a specification that the implementation must satisfy.
+**Security Model** -- a design constraint applied to all implementation layers. The security requirements are written before implementation and used to harden each layer against the threat model. It is not a build layer; it is a constraint that the implementation must satisfy.
 
 **Human Workflow** -- the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a layer that gets built in sequence.
 
