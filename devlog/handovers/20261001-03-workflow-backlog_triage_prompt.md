@@ -37,9 +37,9 @@ None. The prior handover (`20261001-02`) closed with one deferred item, a determ
 | File | Why in scope |
 |---|---|
 | [`workflow/coding-agent/prompts/backlog-triage.md`](../../workflow/coding-agent/prompts/backlog-triage.md) | New prompt: the backlog autonomy classifier |
-| [`workflow/coding-agent/prompts/sequential-work.md`](../../workflow/coding-agent/prompts/sequential-work.md) | Step 1 names `/backlog-triage` as the producer of the parked rows |
+| [`workflow/coding-agent/drafts/sequential-work.md`](../../workflow/coding-agent/drafts/sequential-work.md) | Step 1 names `/backlog-triage` as the producer of the parked rows |
 | [`workflow/coding-agent/prompts/gm.md`](../../workflow/coding-agent/prompts/gm.md) | Close routes the inventory's autonomy split to `/backlog-triage` |
-| [`workflow/coding-agent/prompts/auto.md`](../../workflow/coding-agent/prompts/auto.md) | Reference: `/backlog-triage` is the M4 precursor classifier |
+| [`workflow/coding-agent/drafts/auto.md`](../../workflow/coding-agent/drafts/auto.md) | Reference: `/backlog-triage` is the M4 precursor classifier |
 | [`docs/adr/coding_agent_loop_workflow.md`](../../docs/adr/coding_agent_loop_workflow.md) | Prompt table and family prose carry the new row |
 | [`docs/concepts/autonomous_agent_loop.md`](../../docs/concepts/autonomous_agent_loop.md) | Names the prompt as a classifier that drives no transition |
 | [`devlog/roadmap.md`](../roadmap.md) | The filed M3.2.3 row |
@@ -85,3 +85,7 @@ None.
 ## What's Next
 
 Unit 2 is handover `20261001-04`, the `Decisions pending` record under the M3 T1 track. It is independent of this prompt and lands as its own commit. After both, `fanout.md`'s rename and doc pass remains unstarted from the prior handover.
+
+---
+
+[CORRECTION -- 2026-10-03: the moved prompt paths in this record are re-pathed to `workflow/coding-agent/drafts/` (`sequential-work.md`, `auto.md`). They were under `workflow/coding-agent/prompts/` when the record closed, and became stale when the prompt draft gate moved them. No fact changes.]

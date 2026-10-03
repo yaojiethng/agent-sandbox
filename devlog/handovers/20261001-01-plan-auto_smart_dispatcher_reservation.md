@@ -13,11 +13,11 @@ Change `/auto` from the sequential autopilot into a reserved smart dispatcher an
 
 - `devlog/roadmap.md` - seed M3.2.3; move the `/auto` primitive-generalization consideration into M3.2.3 as a resolved follow-on; rename live dispatch references.
 - `devlog/roadmap_future.md` - M4.6 renamed to Background Work; add M4.7 `/auto` smart dispatcher and M4.8 `/goal`.
-- `workflow/coding-agent/prompts/auto.md` - replaced by a reserved smart-dispatcher stub; the sequential content moved to `sequential-work.md`.
-- `workflow/coding-agent/prompts/sequential-work.md` - the renamed sequential dispatch shape (was `auto.md`).
-- `workflow/coding-agent/prompts/parallel-work.md` - the renamed concurrent-track shape (was `parallel-auto.md`).
+- `workflow/coding-agent/drafts/auto.md` - replaced by a reserved smart-dispatcher stub; the sequential content moved to `sequential-work.md`.
+- `workflow/coding-agent/drafts/sequential-work.md` - the renamed sequential dispatch shape (was `auto.md`).
+- `workflow/coding-agent/drafts/parallel-work.md` - the renamed concurrent-track shape (was `parallel-auto.md`).
 - `docs/adr/coding_agent_loop_workflow.md` - 2026-10-01 decision entry; taxonomy table updated (`-work` family under M3.2.3; `/auto` and `/goal` under M4).
-- `docs/concepts/autonomous_agent_loop.md`, `docs/operations/iteration_policy.md`, `docs/development/prompt-authoring-conventions.md`, `src/reasoning/agent/prompts/task-queue.md`, `workflow/coding-agent/prompts/wrapup.md`, `workflow/coding-agent/audits/surface-area-report.md`, `docs/adr/task_queue_primitive.md` - live reference propagation.
+- `docs/concepts/autonomous_agent_loop.md`, `docs/operations/iteration_policy.md`, `docs/development/prompt-authoring-conventions.md`, `workflow/coding-agent/drafts/task-queue.md`, `workflow/coding-agent/prompts/wrapup.md`, `workflow/coding-agent/audits/surface-area-report.md`, `docs/adr/task_queue_primitive.md` - live reference propagation.
 - `devlog/discussions/20261001-design-settled-auto_smart_dispatch.md` - the semantics record.
 - `devlog/AGENT_FEEDBACK.md` - two entries: the roadmap-durable-record finding and the doc-wrap-gate recurrence.
 
@@ -49,15 +49,15 @@ Change `/auto` from the sequential autopilot into a reserved smart dispatcher an
 |---|---|---|
 | `devlog/roadmap.md` | M3.2.3 seeded; consideration moved as resolved follow-on; live refs renamed | done |
 | `devlog/roadmap_future.md` | M4.6 renaming; M4.7 `/auto`; M4.8 `/goal` | done |
-| `workflow/coding-agent/prompts/auto.md` | reserved smart-dispatcher stub | done |
-| `workflow/coding-agent/prompts/sequential-work.md` | renamed sequential dispatch shape | done |
-| `workflow/coding-agent/prompts/parallel-work.md` | renamed concurrent-track shape | done |
+| `workflow/coding-agent/drafts/auto.md` | reserved smart-dispatcher stub | done |
+| `workflow/coding-agent/drafts/sequential-work.md` | renamed sequential dispatch shape | done |
+| `workflow/coding-agent/drafts/parallel-work.md` | renamed concurrent-track shape | done |
 | `docs/adr/coding_agent_loop_workflow.md` | 2026-10-01 decision + taxonomy table | done |
 | `docs/adr/task_queue_primitive.md` | parallel-work naming in rationale | done |
 | `docs/concepts/autonomous_agent_loop.md` | work-loop expansions; `/auto`,`/goal` to M4 | done |
 | `docs/operations/iteration_policy.md` | links to sequential-work / parallel-work | done |
 | `docs/development/prompt-authoring-conventions.md` | work-style family named | done |
-| `src/reasoning/agent/prompts/task-queue.md` | sequential-work / parallel-work refs | done |
+| `workflow/coding-agent/drafts/task-queue.md` | sequential-work / parallel-work refs | done |
 | `workflow/coding-agent/prompts/wrapup.md` | sequential-work / parallel-work | done |
 | `workflow/coding-agent/audits/surface-area-report.md` | `/auto` row to `/sequential-work` | done |
 | `devlog/discussions/20261001-design-settled-auto_smart_dispatch.md` | semantics record | done |
@@ -73,3 +73,7 @@ Change `/auto` from the sequential autopilot into a reserved smart dispatcher an
 ## What's Next
 
 M3.2.3 is now in progress with its first task landed. The remaining M3.2.3 work is the `-work` family refinement and the suffix-removal decision at close, which depends on the M4 `/auto` final naming. The historical M3.2.1/M3 closed rows that reference the old names were left in place per the operator's fallback; the live current-semantics surface is fully updated. The next relevant audit item is the doc-wrap gate gap surfaced in AGENT_FEEDBACK.
+
+---
+
+[CORRECTION -- 2026-10-03: the moved prompt paths in this record are re-pathed to `workflow/coding-agent/drafts/` (`auto.md`, `sequential-work.md`, `parallel-work.md`, `task-queue.md`). They were under `workflow/coding-agent/prompts/` and `src/reasoning/agent/prompts/` when the record closed, and became stale when the prompt draft gate moved them. No fact changes.]

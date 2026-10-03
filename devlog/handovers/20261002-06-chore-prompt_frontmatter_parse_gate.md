@@ -33,7 +33,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`workflow/coding-agent/prompts/sequential-work.md`](../../workflow/coding-agent/prompts/sequential-work.md) | the prompt that was dropped, and the only broken block in the census |
+| [`workflow/coding-agent/drafts/sequential-work.md`](../../workflow/coding-agent/drafts/sequential-work.md) | the prompt that was dropped, and the only broken block in the census |
 | [`scripts/lint/prompt-frontmatter.mjs`](../../scripts/lint/prompt-frontmatter.mjs) | new, the parse |
 | [`scripts/check_prompt_frontmatter.sh`](../../scripts/check_prompt_frontmatter.sh) | new, the gate |
 | [`scripts/lint.sh`](../../scripts/lint.sh) | the umbrella the gate joins |
@@ -69,7 +69,7 @@ None.
 
 | File | Change |
 |---|---|
-| `workflow/coding-agent/prompts/sequential-work.md` | the description quoted, so the block parses |
+| `workflow/coding-agent/drafts/sequential-work.md` | the description quoted, so the block parses |
 | `scripts/lint/prompt-frontmatter.mjs` | new, parses every prompt and skill frontmatter with the `yaml` package pi ships |
 | `scripts/check_prompt_frontmatter.sh` | new, the blocking gate, failing closed when Node or the parser is absent |
 | `scripts/lint.sh` | the gate added as a fourth concurrent entry |
@@ -81,7 +81,7 @@ None.
 
 | File | Change planned | Status |
 |---|---|---|
-| `workflow/coding-agent/prompts/sequential-work.md` | quote the description | completed |
+| `workflow/coding-agent/drafts/sequential-work.md` | quote the description | completed |
 | `src/reasoning/providers/pi/config/agent/prompts/pi-agent.md` | parse-checked, no change needed | completed |
 | `src/reasoning/agent/skills/*/SKILL.md` | parse-checked, 54 blocks clean, no change needed | completed |
 | `/opt/workflow/agent/prompts/*.md` | parse-checked at the installed copy, one broken file, same source | completed |
@@ -104,3 +104,7 @@ M3.2.1 - Loops as Workflows, and it stays in progress. The four units of this ru
 **Conclusions from this iteration.** A prose rule that an author must notice and remember will be missed, and this one was missed with the error string written into the document. A rule whose failure is silent needs a mechanism, not a restatement. Separately, the rule was wrong in both directions at once, which is the argument for measuring the failure set rather than reasoning about it: an apostrophe in a plain scalar is legal YAML and a leading dash is not, and neither fact is obvious without running it.
 
 **Watch out.** The `yaml` resolution is tied to a global npm layout, so a change to how pi is installed turns `make lint` red with nothing in this repository having changed. The failure is loud by design, not silent, and the loudness is the whole mitigation until the dependency question is answered.
+
+---
+
+[CORRECTION -- 2026-10-03: `workflow/coding-agent/prompts/sequential-work.md` is re-pathed to `workflow/coding-agent/drafts/sequential-work.md`. The path was correct when the record closed and became stale when the prompt draft gate moved the prompt. No fact changes.]

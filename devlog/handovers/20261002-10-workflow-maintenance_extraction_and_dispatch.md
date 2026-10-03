@@ -28,7 +28,7 @@ The operator dispatched three units autonomously (entry 621): unit A, the mainte
 | `workflow/coding-agent/skills/roadmap-maintenance.md` | new runbook subsuming `roadmap-audit.skill.md` |
 | `workflow/coding-agent/skills/handover-maintenance.md` | new runbook subsuming both duplicate handover audits |
 | `workflow/coding-agent/audits/*.skill.md` | each superseded file names its replacement |
-| `workflow/coding-agent/prompts/maintenance.md` | new dispatch prompt; owns the worktree worker procedure as interim owner |
+| `workflow/coding-agent/drafts/maintenance.md` | new dispatch prompt; owns the worktree worker procedure as interim owner |
 | `workflow/coding-agent/prompts/gm.md` | the survey delegates to the runbooks instead of inlining them |
 | `workflow/coding-agent/prompts/wrapup.md` | steps B4 and B8 delegate to the runbooks |
 | `scripts/lint/prompt-frontmatter.mjs` | the gate scans `workflow/coding-agent/skills/` |
@@ -55,3 +55,7 @@ The operator dispatched three units autonomously (entry 621): unit A, the mainte
 
 - Removing the superseded audit files.
 - The `/document` convergence runs (unit C2), which became iteration `20261002-15`.
+
+---
+
+[CORRECTION -- 2026-10-03: `workflow/coding-agent/prompts/maintenance.md` is re-pathed to `workflow/coding-agent/drafts/maintenance.md`. The path was correct when the record closed and became stale when the prompt draft gate moved the prompt. No fact changes.]
