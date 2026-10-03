@@ -29,6 +29,7 @@ MR_DIR="$REPO_ROOT/tests/extensions/pi/model-refresh"
 NODE_TEST_FILES=(
   catalog.test.ts
   composition.test.ts
+  config.test.ts
   gather.test.ts
   invariants.test.ts
   load.test.ts
