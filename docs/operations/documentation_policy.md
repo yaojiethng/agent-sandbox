@@ -181,7 +181,9 @@ The repository holds zero Markdown lint findings. The gate runs `markdownlint-cl
 
 ### The lint rule set
 
-The config enables the rules that match this policy. It disables `MD013` because [`### Line wrapping`](#line-wrapping) forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Two repository rules enforce parts of this policy: `doc-ascii` (plain-ASCII prose, in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs), per [`### Character set`](#character-set)) and `doc-wrap` (one paragraph per physical line, in [`scripts/lint/doc-wrap.mjs`](../../scripts/lint/doc-wrap.mjs), per [`### Line wrapping`](#line-wrapping)). Do not silence a finding with a per-file disable; fix the text or change the config.
+The config enables the rules that match this policy. It disables `MD013` because [`### Line wrapping`](#line-wrapping) forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Three repository rules enforce parts of this policy: `doc-ascii` (plain-ASCII prose, in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs), per [`### Character set`](#character-set)), `doc-wrap` (one paragraph per physical line, in [`scripts/lint/doc-wrap.mjs`](../../scripts/lint/doc-wrap.mjs), per [`### Line wrapping`](#line-wrapping)), and `record-links` (link targets exist and fragments name a heading, in [`scripts/lint/record-links.mjs`](../../scripts/lint/record-links.mjs)). Do not silence a finding with a per-file disable; fix the text or change the config.
+
+A rule the config registers but does not enable is a defect. `config.default` is `false`, so a rule named nowhere in the config never runs and reports nothing, and the gate prints a clean verdict over an empty rule set. `record-links` sat in that state: this list named two rules, the config registered three and enabled two, and the link gate reported nothing for the life of the config. Naming a rule here and enabling it there are one obligation.
 
 ---
 

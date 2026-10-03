@@ -16,6 +16,7 @@
 #   the shellcheck tool absent  --  rc 1 (fails closed, never reports "clean")
 #   the tool exits 2      --  rc 1 (tool could not run)
 #   markdownlint absent   --  rc 1 (fails closed, never reports "clean")
+#   a registered rule enabled nowhere  --  the config is incoherent, not clean
 #
 # The exit code carries the verdict only; the finding count is printed by the
 # leaf gate and never encoded (docs/development/bash-coding-conventions.md 3.2).
@@ -543,6 +544,44 @@ test_frontmatter_gate_fails_closed_without_node() {
   assert_contains "$out" "node is not on PATH" "the missing dependency is named"
 }
 
+# Given: the repository's own .markdownlint-cli2.mjs
+# When:  the rules its customRules entries export are read against the names its
+#        config block enables
+# Then:  every exported rule is enabled
+# Asserts: the config-coherence property. config.default is false, so a rule
+# registered in customRules but named nowhere in the config never runs and
+# reports nothing: the gate prints a clean verdict over an empty rule set.
+# record-links sat in that state, and the guard in check_markdown.sh checked
+# only the opposite direction (enabled but unregistered), so it stayed silent.
+test_every_registered_rule_is_enabled() {
+  local out
+  out=$( cd "$REPO_ROOT" && node --input-type=module -e '
+    import settings from "./.markdownlint-cli2.mjs";
+    import { pathToFileURL } from "node:url";
+    import { resolve } from "node:path";
+    const cfg = settings?.config ?? {};
+    const enabled = Object.entries(cfg)
+      .filter(([k, v]) => k !== "default" && v !== false)
+      .map(([k]) => k);
+    const registered = new Set();
+    for (const ref of settings?.customRules ?? []) {
+      try {
+        const mod = await import(pathToFileURL(resolve(ref)).href);
+        for (const rule of mod.default ?? []) {
+          for (const n of rule?.names ?? []) registered.add(n);
+        }
+      } catch {
+        process.stdout.write("unloadable:" + ref);
+        process.exit(0);
+      }
+    }
+    const silent = [...registered].filter((n) => !enabled.includes(n));
+    process.stdout.write(silent.length === 0 ? "ok" : "not-enabled:" + silent.join(","));
+  ' 2>&1);
+  assert_eq "$out" "ok" "every rule registered in customRules is enabled in the config"
+}
+
+run_test test_every_registered_rule_is_enabled
 run_test test_lint_gate_set_is_complete
 run_test test_lint_forwards_gate_output
 run_test test_markdown_finding_with_zero_status_fails

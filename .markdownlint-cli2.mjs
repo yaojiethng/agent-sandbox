@@ -54,6 +54,13 @@ export default {
 
     // custom rule, enabled by name (default:false suppresses it otherwise)
     "doc-ascii": true,
+    // record-links: enabled here, and enabled with the shared recordTrees list.
+    // It was registered in customRules and enabled nowhere, and default:false
+    // suppresses a rule that is not named, so it never ran: the gate reported
+    // 800 files clean over an empty rule set. The list is passed because the
+    // rule reads its carve-out from params.config, and a bare `true` would
+    // exempt nothing and report every closed record.
+    "record-links": { recordTrees },
     // doc-wrap: one paragraph per physical line, registered as of the
     // maintenance pass that found it enabled but never registered. The record
     // trees are exempt; legacyFiles names live files not yet reflowed, exempt

@@ -93,10 +93,10 @@ A node is in one of four states:
 Milestones use a fractal numbering system that nests arbitrarily:
 
 ```text
-M{n}          — top-level milestone (e.g. M2)
-M{n}.{m}      — sub-milestone (e.g. M2.6)
-M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
-...           — extends infinitely
+M{n}          - top-level milestone (e.g. M2)
+M{n}.{m}      - sub-milestone (e.g. M2.6)
+M{n}.{m}.{o}  - sub-sub-milestone (e.g. M2.6.1)
+...           - extends infinitely
 ```
 
 **Rules:**
@@ -149,11 +149,11 @@ Changelog entries live in `devlog/changelog.md`, appended in milestone order. Ea
 ### Entry structure
 
 ```text
-## M{n} — {Title}
+## M{n} - {Title}
 
 *{One sentence: what the system can now do.}*
 
-{Two to four sentences: what was built — mechanisms, key decisions, concrete outcomes. No file lists. No future language. Capability first, mechanism second.}
+{Two to four sentences: what was built - mechanisms, key decisions, concrete outcomes. No file lists. No future language. Capability first, mechanism second.}
 
 ---
 ```
@@ -164,26 +164,6 @@ Changelog entries live in `devlog/changelog.md`, appended in milestone order. Ea
 - The body sentences describe the mechanism -- what was built to enable the capability and any key decisions made. Mention concrete components (scripts, pipeline stages, config patterns) without listing files.
 - Do not use future language (`will`, `plan`, `eventually`). The changelog describes completed work only.
 - Balance: M1/M1.1-style entries are too abstract; M1.2/M1.3-style entries from the old roadmap are too implementation-heavy. Aim for one capability sentence plus two to three mechanism sentences.
-
-### Agent snippet output
-
-When producing a changelog entry during a milestone completion pass, output the entry as a fenced block so it can be appended to `changelog.md` without reading the existing file:
-
-````text
-```changelog
-## M{n} -- {Title}
-
-*{Capability sentence.}*
-
-{Mechanism sentences.}
-
----
-```
-````
-
-The operator appends the block contents verbatim to `changelog.md`.
-
----
 
 ## Corrections to Closed Roadmap and Changelog Entries
 

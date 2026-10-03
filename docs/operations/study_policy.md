@@ -141,10 +141,7 @@ The operator may delete the document. If deleted, the operator will mark any ref
 
 ### Missing studies
 
-If a study document the agent expects to find is absent:
-
-- If its referencing link carries a `[REMOVED]` marker -- the absence is expected. No error.
-- If its referencing link has no `[REMOVED]` marker -- flag as an error and prompt the operator before proceeding.
+A missing study is handled by [`documentation_policy.md`](documentation_policy.md) `## Missing documents`: the absence is expected only when its referencing link carries a `[REMOVED]` marker, and is an error otherwise.
 
 ---
 

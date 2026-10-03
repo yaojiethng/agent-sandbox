@@ -55,13 +55,7 @@ If the directive slot is non-empty:
 
 ## Create the handover
 
-Before creating the handover:
-
-```text
-Range-read: docs/operations/iteration_policy.md [Iteration Invariants, the record-state and close invariants](iteration_policy.md#iteration-invariants).
-```
-
-Create the handover per those rules. Set Status to `Active`.
+Before creating the handover, read the iteration invariants in `iteration_policy.md`: `## Iteration Invariants`, and the record-state and close invariants under it. Create the handover per those rules. Set Status to `Active`.
 
 ---
 

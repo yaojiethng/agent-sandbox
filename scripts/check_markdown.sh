@@ -34,11 +34,15 @@ cd "$REPO_ROOT" || exit 1
 # carve-out list share one source. Prints nothing when the config carries no
 # recordTrees list: a rule that exempts nothing has no coverage line and says
 # nothing by staying quiet.
-# warn_unresolved_rules -- a rule named in the config but absent from
-# customRules never runs and reports nothing, so the gap is silent. doc-wrap sat
-# enabled and unregistered for the life of this config. The check warns and does
-# not block: an unresolved rule name is a signal, and the gate that owns the rule
-# decides. Built-in rules (MD*) resolve by name and are not checked here.
+# warn_unresolved_rules -- the config and the rule registry can disagree in two
+# directions and both are silent. A rule named in the config but absent from
+# customRules never runs: doc-wrap sat enabled and unregistered for the life of
+# this config. A rule exported by customRules but named nowhere in the config
+# also never runs, because default:false suppresses every rule not named, and no
+# count moves: record-links sat registered and unenabled, and the gate reported
+# 800 files clean over an empty rule set. Both directions warn and do not block:
+# a config disagreement is a signal, and the gate that owns the rule decides.
+# Built-in rules (MD*) resolve by name and are not checked here.
 warn_unresolved_rules() {
   if ! command -v node >/dev/null 2>&1; then
     return 0
@@ -72,6 +76,16 @@ warn_unresolved_rules() {
       process.stderr.write(
         "Markdown gate: warning: rule " + JSON.stringify(name) +
         " is enabled in the config but no customRules entry exports it; it is not running.\n"
+      );
+    }
+    for (const name of names) {
+      if (enabled.includes(name)) {
+        continue;
+      }
+      process.stderr.write(
+        "Markdown gate: warning: rule " + JSON.stringify(name) +
+        " is exported by a customRules entry but enabled nowhere in the config;" +
+        " default:false suppresses it, so it is not running.\n"
       );
     }
   ' 2>&1 | grep "^Markdown gate: warning:" >&2 || true

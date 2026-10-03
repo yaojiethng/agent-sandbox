@@ -5,7 +5,6 @@ Completed milestones extracted from `roadmap.md`. Each entry describes what the 
 New entries are appended. Format is defined in `roadmap_policy.md`.
 
 ---
----
 
 ## M1 - Barebones Agent Container
 

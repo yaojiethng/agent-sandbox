@@ -41,7 +41,7 @@ Apply [Compaction cascading](../../../docs/operations/roadmap_policy.md#compacti
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order. [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Changelog Format](../../../docs/operations/roadmap_policy.md#changelog-format) owns the entry's structure and its writing guidance; read them there. Output the entry as a fenced block so the operator can append it verbatim to `changelog.md`.
+Append the milestone's entry to `devlog/changelog.md` in milestone order. [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Changelog Format](../../../docs/operations/roadmap_policy.md#changelog-format) owns the entry's structure and its writing guidance; read them there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
 
 ## Update the records
 
