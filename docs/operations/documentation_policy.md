@@ -16,6 +16,8 @@ A statement is a rule when it imposes an obligation a document or its author mus
 
 **Canonical-owner test.** Duplicate content is a defect. When the same rule appears in two documents, one document is the canonical owner and the other links to it. The canonical owner is the document an agent reads first when it needs the rule.
 
+**Producer owns the definition.** A definition and a record of it are two objects. The document whose workflow produces the thing owns the definition; the record owns its own shape. The acceptance-criteria model is the settled case: `iteration_policy.md` owns the model, and `handover_policy.md` owns the table that records it.
+
 **No bridge documents.** A bridge document exists only to connect two documents that could reference each other directly. Bridge documents duplicate content across a third document, so they are the same defect as duplicate content. Collapse a bridge document into the more relevant destination and link the two directly.
 
 ---
