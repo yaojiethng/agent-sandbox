@@ -12,7 +12,7 @@ Read this document at the start of any iteration.
 | | **Gate 1** | select next milestone |
 | | 2. Orient to next milestone | `roadmap.md` |
 | | **Gate 2** | select sub-milestone (also entry point from roadmap maintenance when a sub-milestone closes) |
-| | 3. Open or revise stories | [`story_policy.md`](story_policy.md#when-to-open-a-story) |
+| | 3. Open or revise stories | [`discussion_policy.md`](discussion_policy.md#stories-story) |
 | | 4. Investigate or design | [`discussion_policy.md`](discussion_policy.md) |
 | | 5. Resolve stories | [`discussion_policy.md`](discussion_policy.md) -- Stories |
 | | **Gate 3** | release sub-milestone for execution |

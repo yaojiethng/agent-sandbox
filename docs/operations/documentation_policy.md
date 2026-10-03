@@ -128,6 +128,23 @@ Structure documents so agents can grep section headers and range-read only what 
 
 A document that must be read in full to extract one fact is structured wrong. If a fact is needed at a specific moment in a workflow, put it in a named section or inline it at the point of use.
 
+### Section-order templates
+
+When a policy or convention states a document's section order, present it as a fenced Markdown skeleton, with each section's purpose on the line below its heading in angle brackets, so the block doubles as a fill-in template:
+
+```markdown
+# <Title>
+**Status:** <draft | active | settled | superseded>
+
+## Context
+<what this section holds; 2-4 sentences>
+
+## Decision
+<the recommended approach and why>
+```
+
+Use this shape for every document type, in every policy. Prefer it to a table of sections and purposes: order and purpose are read together, and the block is copied directly into a new document. Use a table only when a type carries a column the skeleton cannot, such as the valid state transitions of a status table.
+
 ---
 
 ## Drafting
@@ -234,7 +251,7 @@ When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -
 | Handover | states what the iteration did | rewrite the paragraph, or reopen the record and close it again; either way a `[CORRECTION -- YYYY-MM-DD: <...>]` tag at the end of the corrected section | [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) |
 | Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
 | Changelog entry | tracks closed tasks, archived | as a roadmap entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
-| Study | states what was found | rewrite, tag | [`study_policy.md`](study_policy.md#corrections-to-closed-studies) |
+| Discussion record (story, study, design, report) | states reasoning and evidence | rewrite, tag | this section |
 | ADR, concept, architecture, policy | states what the system does | rewrite, tag | this section |
 
 ### Missing documents
