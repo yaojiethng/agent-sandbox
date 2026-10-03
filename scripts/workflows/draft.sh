@@ -506,11 +506,41 @@ _run_draft_workflow() {
   echo "Diffs applied: $DIFF_COUNT"
   [[ -n "$UC" ]] && echo "Uncommitted diff applied: $UC"
   echo ""
-  echo "Shape your commits, then confirm:"
-  echo "  git rebase -i ${SOURCE_BRANCH}"
-  echo "  make confirm TARGET_BRANCH=${SOURCE_BRANCH}"
-  echo ""
-  echo "To discard: make reject"
+  draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH"
+}
+
+# =============================================================================
+# draft_print_confirm_hint  --  print the confirm direction that applies
+#
+#   draft_print_confirm_hint <project-dir> <source-branch>
+#
+# Which route applies is decided here, not by the agent: `make confirm`
+# fast-forwards the target, so it only works when the target is an ancestor of
+# the draft tip. After a rebase inside the container it is not, and telling the
+# operator to fast-forward would send them into a failed merge.
+# =============================================================================
+draft_print_confirm_hint() {
+  local PROJECT_DIR="$1"
+  local SOURCE_BRANCH="$2"
+
+  if git -C "$PROJECT_DIR" merge-base --is-ancestor "$SOURCE_BRANCH" HEAD >/dev/null 2>&1; then
+    echo "Shape your commits, then confirm:"
+    echo "  git rebase -i ${SOURCE_BRANCH}"
+    echo "  make confirm TARGET_BRANCH=${SOURCE_BRANCH}"
+    echo ""
+    echo "To discard: make reject"
+    echo "To apply one diff without a branch: make apply DIFF=<path>"
+  else
+    echo "This bundle replaces history on ${SOURCE_BRANCH}; it cannot fast-forward."
+    echo "Create a new branch from the reviewed series instead:"
+    echo "  make confirm TARGET_BRANCH=<new-branch> NEW=1"
+    echo ""
+    echo "That leaves ${SOURCE_BRANCH} untouched and prints the two commands"
+    echo "that move it onto the series."
+    echo ""
+    echo "To discard instead: make reject"
+    echo "To apply one diff without a branch: make apply DIFF=<path>"
+  fi
 }
 
 # =============================================================================

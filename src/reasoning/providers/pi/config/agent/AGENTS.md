@@ -44,7 +44,7 @@ Before creating any new document, read [`docs/operations/discussion_policy.md`](
 
 Tools you have access to:
 
-- `/package-branch`  --  export committed changes as numbered diffs, uncommitted diff, and changed files
+- `/package-branch`  --  export the branch as numbered per-commit diffs, an uncommitted diff, and the changed-file set, taken at the branch point (merge-base of init_sha and HEAD) so a rebased history applies cleanly; the script states the branch point and reports when it moved
 - `/task-queue`  --  run a task fan-out as a fork and a join: per-task worktrees, a blocking operator join, the re-queue routes, and the bring-back
 - Standard development tools (git, bash, common CLI utilities)
 

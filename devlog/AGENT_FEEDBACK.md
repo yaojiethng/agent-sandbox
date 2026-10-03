@@ -485,3 +485,18 @@ mitigation: M3.1.2 is planned with its task list and a `Not started` status, and
 The line protects something real: a reader scanning for unchecked work at the top level should find the active milestone, and a milestone reading `Complete` while holding open rows is a status that lies. But the line as written forbids the one thing that keeps work reachable, and the practice it forbids is what the roadmap depends on. The fix is not to restore the line; it is to replace it with the invariant the practice actually relies on, which is that a milestone holding open rows is never `Complete`, and that a milestone's rows move with it.
 
 Raised by the operator during plan session `20261002-23`.
+
+### [O] 2026-10-02  --  A workflow document restated the instructions the workflow already prints
+
+state: mitigated
+scoped: T1 - Workflow + Policy Organization
+legacy: none
+mitigation: `prompt-authoring-conventions.md` carries `## A workflow document owns one step, and owns it whole`; the apply flow is recorded in `diff_packaging.md` and each step prints its own next hop.
+
+`/package-branch` carried a `How to apply` section naming `make draft`, `make confirm`, `make reject`, and the soft-reset sequence. Every one of those is printed by a host script, and the section had drifted: it described only the fast-forward route, while a rebased bundle needs `make confirm TARGET_BRANCH=<new-branch> NEW=1`. The drift was silent, because nothing compared the prompt's copy against the scripts'.
+
+Two costs, not one. The reader had no way to tell which copy was current, and the agent could not have told either: it cannot test whether the target fast-forwards, so any route it named would have been a guess from a hash. `make draft` answers it with `merge-base --is-ancestor` and now prints the matching direction.
+
+The rule that persists it: when a workflow hands off to a script, it relays that script's output and adds only what the script cannot know. An instruction the next command prints belongs to that command, and a multi-step flow belongs in the ADR that owns the pipeline rather than in the prompt that starts the first step.
+
+Raised by the operator during handover `20261002-24`.

@@ -164,13 +164,45 @@ test_real_tree_is_clean() {
   assert_rc 0 "$GATE_RC" "the current src/libs and src/build carry zero contract findings"
 }
 
+# Given: a library whose function compares an unquoted length expansion
+# When:  the gate counts braces
+# Then:  the exec guard's exit is not read as function body, so it passes
+# Asserts: a `#` inside ${#VAR} is not a comment and closes its own brace
+test_unquoted_length_expansion_does_not_break_depth() {
+  local dir="$FIXTURE_DIR/lenexp"
+  make_scan "$dir"
+  cat > "$dir/src/libs/main.sh" <<'SH'
+#!/usr/bin/env bash
+check_len() {
+  local N="${1:-}"
+  if (( ${#N} < 3 )); then
+    return 1
+  fi
+  return 0
+}
+
+# a real comment still opens a comment
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  check_len "$1"
+  [ $? -eq 2 ] && exit 0
+  exit 1
+fi
+SH
+
+  run_gate "$dir"
+  assert_rc 0 "$GATE_RC" "an unquoted length expansion keeps the brace depth balanced"
+}
+
+
 run_test test_gate_passes_clean_lib
 run_test test_function_exit_fails
 run_test test_exec_guard_exit_passes
 run_test test_quoted_exit_not_flagged
 run_test test_unguarded_read_fails
 run_test test_guarded_read_passes
+run_test test_unquoted_length_expansion_does_not_break_depth
 run_test test_missing_scan_root_fails_closed
 run_test test_real_tree_is_clean
+
 
 test_done

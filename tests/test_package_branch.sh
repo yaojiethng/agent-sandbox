@@ -771,5 +771,154 @@ run_test test_baseline_explicit_override
 run_test test_baseline_rejects_unresolvable_explicit
 run_test test_baseline_defaults_to_branch_point
 
+# ===================================================================
+# The bundle summary names a git ref  --  shape is enforced at entry
+# ===================================================================
+
+# Given: a summary holding spaces and a capital
+# When:  package_branch_validate_summary runs
+# Then:  rc 1, and the message names the snake_case rule
+test_summary_rejects_spaces_and_capitals() {
+  local OUT RC=0
+  OUT=$(package_branch_validate_summary "Rebased plan series: M3.1" 2>&1) || RC=$?
+
+  if [[ $RC -eq 1 && "$OUT" == *"lowercase snake_case"* ]]; then
+    pass "package_branch_validate_summary rejects spaces and capitals"
+  else
+    fail "spaces/capitals accepted: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a 49-character summary, one over the limit
+# When:  package_branch_validate_summary runs
+# Then:  rc 1, and the message states the bound and the length it saw
+test_summary_rejects_overlong() {
+  local LONG
+  LONG=$(printf "a%.0s" $(seq 1 49))
+  local OUT RC=0
+  OUT=$(package_branch_validate_summary "$LONG" 2>&1) || RC=$?
+
+  if [[ $RC -eq 1 && "$OUT" == *"3 to 48 characters"* && "$OUT" == *"got 49"* ]]; then
+    pass "package_branch_validate_summary rejects a 49-character summary"
+  else
+    fail "overlong accepted: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a well-formed snake_case summary inside the length bound
+# When:  package_branch_validate_summary runs
+# Then:  rc 0 and no output
+test_summary_accepts_valid_slug() {
+  local OUT RC=0
+  OUT=$(package_branch_validate_summary "add_format_patch_support" 2>&1) || RC=$?
+
+  if [[ $RC -eq 0 && -z "$OUT" ]]; then
+    pass "package_branch_validate_summary accepts a valid snake_case slug"
+  else
+    fail "valid slug rejected: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a summary that would break the draft branch name
+# When:  the value is checked, then built into the ref draft.sh constructs
+# Then:  the validator refuses it, and git confirms the reason
+test_summary_refusal_matches_git_ref_rules() {
+  local BAD="Rebased plan series: M3.1 split"
+  local RC=0
+  package_branch_validate_summary "$BAD" >/dev/null 2>&1 || RC=$?
+
+  local REPO="$FIXTURE_DIR/pb_ref_check"
+  mkdir -p "$REPO"
+  git init -q "$REPO"
+  local GITRC=0
+  git -C "$REPO" branch "draft/$BAD" >/dev/null 2>&1 || GITRC=$?
+
+  if [[ $RC -eq 1 && $GITRC -ne 0 ]]; then
+    pass "the refusals agree with git: the value breaks a ref and the validator rejects it"
+  else
+    fail "divergence: validator_rc=$RC git_rc=$GITRC for $BAD"
+  fi
+}
+
+# ===================================================================
+# The export reports a moved branch point, and records it
+# ===================================================================
+
+# Given: a sandbox whose recorded init_sha a rewrite orphaned
+# When:  package_branch runs
+# Then:  the movement block is printed above the draft command, and
+#        .branch-point records the resolved point and BASELINE_MOVED=true
+test_moved_baseline_is_reported_and_recorded() {
+  local DIR="$FIXTURE_DIR/pb_moved"
+  local OUT="$FIXTURE_DIR/pb_moved_out"
+  mkdir -p "$OUT"
+  make_sandbox_fixture "$DIR" >/dev/null
+  local BASE
+  BASE=$(git -C "$DIR" rev-parse HEAD)
+
+  commit_file "$DIR" "old.txt" "old"
+  local ORPHAN
+  ORPHAN=$(git -C "$DIR" rev-parse HEAD)
+
+  : > "$DIR/.git/SESSION_STATE"
+  echo "init_sha=$ORPHAN" >> "$DIR/.git/SESSION_STATE"
+  echo "session_ts=20260501-120000" >> "$DIR/.git/SESSION_STATE"
+
+  git -C "$DIR" reset --hard "$BASE" --quiet
+  commit_file "$DIR" "new.txt" "new"
+
+  local LOG RC=0
+  LOG=$(package_branch "$DIR" "$OUT" false "" 2>&1) || RC=$?
+
+  local OK=true
+  [[ $RC -eq 0 ]] || OK=false
+  [[ "$LOG" == *"Branch point moved"* ]] || OK=false
+  # The movement block must precede the command, so the two read together.
+  local MOVED_AT="${LOG%%To draft this bundle*}"
+  [[ "$MOVED_AT" == *"Branch point moved"* ]] || OK=false
+  [[ "$LOG" == *"NEW=1"* ]] || OK=false
+  [[ -f "$OUT/.branch-point" ]] || OK=false
+  grep -q "^BASELINE_MOVED=true$" "$OUT/.branch-point" || OK=false
+  grep -q "^BRANCH_POINT=${BASE}$" "$OUT/.branch-point" || OK=false
+  grep -q "^RECORDED_INIT_SHA=${ORPHAN}$" "$OUT/.branch-point" || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "a moved branch point is reported above the draft command and recorded in .branch-point"
+  else
+    fail "movement reporting incomplete: rc=$RC log=$LOG"
+  fi
+}
+
+# Given: a sandbox whose recorded init_sha is still an ancestor
+# When:  package_branch runs
+# Then:  no movement block, and .branch-point records BASELINE_MOVED=false
+test_unmoved_baseline_records_no_movement() {
+  local DIR="$FIXTURE_DIR/pb_unmoved"
+  local OUT="$FIXTURE_DIR/pb_unmoved_out"
+  mkdir -p "$OUT"
+  make_sandbox_with_state "$DIR" >/dev/null
+  commit_file "$DIR" "a.txt"
+
+  local LOG
+  LOG=$(package_branch "$DIR" "$OUT" false "" 2>&1)
+
+  local OK=true
+  [[ "$LOG" != *"Branch point moved"* ]] || OK=false
+  grep -q "^BASELINE_MOVED=false$" "$OUT/.branch-point" || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "a linear history records BASELINE_MOVED=false and prints no movement block"
+  else
+    fail "false movement reported: log=$LOG"
+  fi
+}
+
+run_test test_summary_rejects_spaces_and_capitals
+run_test test_summary_rejects_overlong
+run_test test_summary_accepts_valid_slug
+run_test test_summary_refusal_matches_git_ref_rules
+run_test test_moved_baseline_is_reported_and_recorded
+run_test test_unmoved_baseline_records_no_movement
+
 test_done
 

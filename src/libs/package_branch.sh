@@ -275,6 +275,56 @@ _package_preflight_check() {
 # point after a rebase. The host retains that same commit, so the exported
 # diffs apply onto it.
 # -------------------------
+# =============================================================================
+# package_branch_validate_summary  --  reject a bundle summary that cannot name
+#   a branch
+#
+# The summary becomes the draft branch name in draft.sh:
+#   draft/<session>-<summary>-<hash>
+# and git refuses a ref holding a space, a colon, or any character outside
+# [A-Za-z0-9._/-]. The export succeeds and the operator's `make draft` fails
+# later, at the far end of the loop, so the shape is checked where the value
+# enters.
+# =============================================================================
+package_branch_validate_summary() {
+  local SUMMARY="${1:-}"
+
+  if [[ -z "$SUMMARY" ]]; then
+    echo "package_branch: --bundle-summary is required and must be snake_case" >&2
+    _package_summary_usage
+    return 1
+  fi
+
+  # ${#SUMMARY} is quoted: the lib-contract gate's brace counter stops at `#`,
+  # so an unquoted length expansion opens a brace it never closes and the rest
+  # of the file reads as function body.
+  local SLEN="${#SUMMARY}"
+  if (( SLEN < 3 || SLEN > 48 )); then
+    echo "package_branch: --bundle-summary must be 3 to 48 characters; got ${SLEN}" >&2
+    _package_summary_usage
+    return 1
+  fi
+
+  if [[ ! "$SUMMARY" =~ ^[a-z0-9]+(_[a-z0-9]+)*$ ]]; then
+    echo "package_branch: --bundle-summary must be lowercase snake_case" >&2
+    echo "  Allowed: letters, digits, and single underscores between words" >&2
+    echo "  Rejected: spaces, capitals, punctuation, a leading or trailing underscore" >&2
+    _package_summary_usage
+    return 1
+  fi
+
+  return 0
+}
+
+_package_summary_usage() {
+  echo "" >&2
+  echo "  Good: --bundle-summary=fix_provisioning_metadata_agnostic" >&2
+  echo "  Good: --bundle-summary=add_format_patch_support" >&2
+  echo "  Bad:  --bundle-summary=Rebased plan series (spaces)" >&2
+  echo "  Bad:  --bundle-summary=changes (too vague to name a change set)" >&2
+  echo "" >&2
+}
+
 package_branch_baseline() {
   local SANDBOX_DIR="$1"
   local EXPLICIT="${2:-}"
@@ -363,10 +413,39 @@ package_branch() {
   _export_ts=$(date -u +%Y%m%d-%H%M%S)
   _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$INIT_SHA"
 
-  echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
+  # 6. Baseline provenance. After a rebase the merge-base is not the recorded
+  #    init_sha, and the operator must apply the bundle at the branch point
+  #    rather than at init_sha. The movement is stated here, beside the command
+  #    that carries the point, so the two cannot be read apart.
+  local RECORDED_INIT
+  RECORDED_INIT=$(session_state_read "$SANDBOX_DIR" "init_sha" 2>/dev/null || true)
+  local BASELINE_MOVED=false
+  if [[ -n "$RECORDED_INIT" && "$INIT_SHA" != "$RECORDED_INIT" ]]; then
+    BASELINE_MOVED=true
+  fi
 
   local bundle_name
   bundle_name=$(basename "$OUTPUT_DIR")
+
+  # The machine-readable copy of the block below. A host tool or a later
+  # session reads the facts without parsing chat or this file's stderr.
+  {
+    echo "BUNDLE=${bundle_name}"
+    echo "BRANCH_POINT=${INIT_SHA}"
+    echo "BASELINE_MOVED=${BASELINE_MOVED}"
+    echo "RECORDED_INIT_SHA=${RECORDED_INIT}"
+  } > "${OUTPUT_DIR}/.branch-point"
+
+  echo "package_branch: artefacts written to ${OUTPUT_DIR}" >&2
+
+  if [[ "$BASELINE_MOVED" == true ]]; then
+    echo "" >&2
+    echo "Branch point moved: history was rewritten since init_sha ${RECORDED_INIT:0:7}." >&2
+    echo "  Export taken at ${INIT_SHA:0:7}. Apply the bundle there, not at init_sha." >&2
+    echo "  A rewritten history cannot fast-forward; confirm with:" >&2
+    echo "    make confirm TARGET_BRANCH=<new-branch> NEW=1" >&2
+  fi
+
   echo "To draft this bundle on host, run:" >&2
   echo "  make draft FROM=bundles BUNDLE=${bundle_name} BRANCH_SUMMARY=${BUNDLE_SUMMARY:-$bundle_name} BRANCH_FROM=${INIT_SHA}" >&2
 }
@@ -402,20 +481,14 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     exit 1
   fi
 
-  # --bundle-summary is required (same class as --to)
-  if [[ -z "$BUNDLE_SUMMARY_ARG" ]]; then
-    echo "Error: --bundle-summary is required. Provide a concise snake_case label." >&2
-    echo "" >&2
-    echo "  Good: --bundle-summary=fix_provisioning_metadata_agnostic" >&2
-    echo "  Good: --bundle-summary=add_format_patch_support" >&2
-    echo "  Bad:  --bundle-summary=changes" >&2
-    echo "  Bad:  --bundle-summary=snapshot" >&2
-    echo "  Bad:  --bundle-summary=misc" >&2
-    echo "" >&2
-    echo "Usage: package_branch.sh --to=<dir> --bundle-summary=<text>" >&2
+  # --bundle-summary shape (same class as --to). The value names the bundle
+  # directory and, through BRANCH_SUMMARY, the draft branch; a value git cannot
+  # put in a ref is refused here rather than at the operator make draft.
+  if ! package_branch_validate_summary "$BUNDLE_SUMMARY_ARG"; then
+    echo "Usage: package_branch.sh --to=<dir> --bundle-summary=<slug>" >&2
     echo "" >&2
     echo "  --to=<dir>           Required. Base output directory." >&2
-    echo "  --bundle-summary     Required. Snake_case label for the bundle directory." >&2
+    echo "  --bundle-summary     Required. 3 to 48 chars, lowercase snake_case." >&2
     exit 1
   fi
   BUNDLE_SUMMARY="$BUNDLE_SUMMARY_ARG"
@@ -423,13 +496,9 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   # Auto-resolve SESSION_ID from SESSION_STATE
   SESSION_ID=$(session_state_read "$SANDBOX_DIR" "session_id" 2>/dev/null || true)
 
-  # Construct output directory via export_path. LABEL (BUNDLE_SUMMARY)
-  # is optional  --  when empty, path is bundles/<EXPORT_TIME>-<SESSION_ID>/.
-  if [[ -n "$BUNDLE_SUMMARY" ]]; then
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
-  else
-    OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID")
-  fi
+  # Construct output directory via export_path. The summary is validated
+  # above, so the label half is always present on this path.
+  OUTPUT_DIR=$(export_path "$TO_ARG" "bundles" "$SESSION_ID" "$BUNDLE_SUMMARY")
   mkdir -p "$OUTPUT_DIR"
 
   package_branch "$SANDBOX_DIR" "$OUTPUT_DIR" "$NO_RENAMES_ARG" "$BASELINE_ARG"

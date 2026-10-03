@@ -1191,4 +1191,63 @@ run_test test_resolve_filename_subject_trim_underscores
 run_test test_resolve_fallback_no_subject
 run_test test_resolve_msg_file_preferred_over_filename
 
+# Given: a project whose source branch is an ancestor of the draft tip
+# When:  the confirm hint prints
+# Then:  it names the rebase and fast-forward route
+# Asserts: the hint matches what `make confirm` can actually do
+test_draft_hint_routes_to_fast_forward_when_ancestor() {
+  make_draft_fixture draft_ffroute 1
+  local SRC
+  SRC=$(git -C "$P" rev-parse --abbrev-ref HEAD)
+
+  local OUT
+  OUT=$(draft_print_confirm_hint "$P" "$SRC" 2>&1)
+
+  local OK=true
+  [[ "$OUT" == *"git rebase -i"* ]] || OK=false
+  [[ "$OUT" == *"make confirm TARGET_BRANCH=$SRC"* ]] || OK=false
+  [[ "$OUT" != *"NEW=1"* ]] || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "draft names the fast-forward route when the source branch is an ancestor"
+  else
+    fail "hint did not route to fast-forward: $OUT"
+  fi
+}
+
+# Given: a project whose source branch tip is not an ancestor of the draft tip
+# When:  the confirm hint prints
+# Then:  it names the soft-reset route and never the fast-forward one
+# Asserts: the state a container-side rebase leaves the host in
+test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
+  make_draft_fixture draft_softreset 1
+
+  # A parentless fork of the same tree: the state a rewritten history leaves
+  # behind, and not an ancestor of HEAD.
+  local TREE
+  TREE=$(git -C "$P" rev-parse "HEAD^{tree}")
+  local FORKED
+  FORKED=$(git -C "$P" commit-tree "$TREE" -m "rewritten history")
+  local SRC="rewritten-source"
+  git -C "$P" branch -f "$SRC" "$FORKED"
+
+  local OUT
+  OUT=$(draft_print_confirm_hint "$P" "$SRC" 2>&1)
+
+  local OK=true
+  [[ "$OUT" == *"cannot fast-forward"* ]] || OK=false
+  [[ "$OUT" == *"NEW=1"* ]] || OK=false
+  [[ "$OUT" != *"git rebase -i"* ]] || OK=false
+  # The untouched-branch fact is what no other host step prints.
+  [[ "$OUT" == *"untouched"* ]] || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "draft names the soft-reset route when the source branch cannot fast-forward"
+  else
+    fail "hint did not route to soft-reset: $OUT"
+  fi
+}
+run_test test_draft_hint_routes_to_fast_forward_when_ancestor
+run_test test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable
+
 test_done

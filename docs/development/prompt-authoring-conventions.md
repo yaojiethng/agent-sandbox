@@ -108,6 +108,26 @@ Construct defensively against two decay modes:
 
 `documentation-pass.md` is the diagnostic register for these checks. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); `documentation-pass.md` lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
 
+## A workflow document owns one step, and owns it whole
+
+A workflow document's subject is one step of a larger workflow. Taking that step means owning it end to end: its inputs, its outputs, the decisions it can make, the directions the operator receives from it, and the evidence that it ran. A document that describes a step it does not own is out of scope, whether or not the description is accurate.
+
+The test is ownership, not duplication. Ask what the document is responsible for, then check whether its content serves that responsibility.
+
+1. **Does it own the step it describes?** If the document formalizes step *n*, it holds everything step *n* owes: the command it runs, the output it relays, the fields it adds, and the state it leaves behind. Anything a later step owes is not its business.
+2. **Does describing another step make it look like it owns that one?** A document that has to explain step *n+1* in order for step *n* to make sense is carrying another step's responsibility in prose, and it cannot keep it current. Take the step over, or let the flow be documented where the flow lives.
+3. **A top-down view of the whole flow is a different artefact.** The sequence across every step, and why the steps are in that order, is a concept document when a reader needs to understand how the system works, and an ADR when it records a decision and its alternatives. That document names the steps; it does not replace them. See `diff_packaging.md` for a worked case: the export, draft, and confirm sequence is recorded there as a decision, each step prints its own next hop, and `/package-branch` carries none of them.
+
+The failure this rule catches is a document that is locally accurate and globally unreliable: every sentence is true of the moment it was written, and nothing compares it against the steps it describes. A step that changes leaves the copy behind with no signal.
+
+## A prompt names a record, it does not link it
+
+A prompt runs where the prompt is seeded: `~/.pi/agent/`, bind-mounted from `src/reasoning/agent/`. The `docs/` tree is not seeded there, so a link from a prompt into `docs/adr/` -- or into any `docs/` path -- has no target at runtime. The record-links gate does not scan `src/`, so nothing catches it: the link passes every gate and fails the reader.
+
+A prompt may name a record in plain text. It may not link one. When the content behind the reference matters to the agent working in the container, it belongs in the prompt or in a seeded file, and the record is the place the decision is argued -- not the place the running agent is sent.
+
+The same rule covers the inverse: a rule whose only home is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
+
 ## Naming
 
 A workflow document's name states its subject, not its mechanism. Prefer a noun phrase that names the work (`task-queue`, `milestone-close`) or a gerund that names the activity (`documentation-pass`). Avoid vague names (`helper`, `utils`) and names that restate the loading mechanism.

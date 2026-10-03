@@ -58,17 +58,24 @@ check_file() {
     # ${...} expansions and quoted content (awk programs, echo strings) never
     # move the depth. Quote state carries across records (b_dq, b_sq) so a
     # multi-line quoted span, like an embedded awk program, stays inert.
-    function brace_delta(s,    i, c, n) {
+    # A `#` opens a comment only at the start of a word. In bash that is the
+    # first character of the line or one following whitespace. A `#` that
+    # follows any other character is not a comment: `${#VAR}` is a length
+    # expansion, and counting it as a comment opened a brace the rest of the
+    # line never closed, so every line after it read as function body.
+    function brace_delta(s,    i, c, n, prev) {
       n = 0
+      prev = " "
       for (i = 1; i <= length(s); i++) {
         c = substr(s, i, 1)
-        if (b_dq) { if (c == "\"") b_dq = 0; continue }
-        if (b_sq) { if (c == "'"'"'") b_sq = 0; continue }
-        if (c == "\"") { b_dq = 1; continue }
-        if (c == "'"'"'") { b_sq = 1; continue }
-        if (c == "#") break
+        if (b_dq) { if (c == "\"") b_dq = 0; prev = c; continue }
+        if (b_sq) { if (c == "'"'"'") b_sq = 0; prev = c; continue }
+        if (c == "\"") { b_dq = 1; prev = c; continue }
+        if (c == "'"'"'") { b_sq = 1; prev = c; continue }
+        if (c == "#" && prev ~ /[ \t]/) break
         if (c == "{") n++
         else if (c == "}") n--
+        prev = c
       }
       return n
     }

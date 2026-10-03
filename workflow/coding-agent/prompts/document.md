@@ -49,7 +49,7 @@ Exit condition: the target's type is named in the handover `## Scope` section, w
 
 ### Step 3 -- Align the rewrite requirements
 
-When a rewrite changes what an existing document means to the sessions that read it, settle the requirements before any prose is written. Use the `grill-me` skill for this interview. The interview resolves each branch of the decision tree: what the document must say after the session, what it must stop saying, and which readers depend on the part that changes.
+When a rewrite changes what an existing document means to the sessions that read it, settle the requirements before any prose is written. Pass the session context -- the recorded goal and problem, the gathered context, and the confirmed scope -- to the `grill-me` skill for this interview. The interview resolves each branch of the decision tree: what the document must say after the session, what it must stop saying, and which readers depend on the part that changes.
 
 Record the settled requirements where the work lives, per the record-state rules in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `## Iteration Invariants`. A meaning change to a settled design is an ADR, per [`adr_policy.md`](../../../docs/operations/adr_policy.md).
 
@@ -98,7 +98,7 @@ Exit condition: each produced document has been read against its governing stand
 
 Dispatch a fresh review subagent when either trigger fires. The first is a rule other sessions depend on - the produced document is a policy, concept, or workflow document that downstream work reads. The second is a meaning change - Step 3 moved what an existing document says.
 
-Build the brief per [`prompt-authoring-conventions.md`](../../../docs/development/prompt-authoring-conventions.md) `## Runbook versus advisor versus skill`. Name the document, the question the reviewer answers, and the brief's length. Run the subagent per the provider-layer [`AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) `## Fresh Subagent Invocation`, with the role tag read from the project-level model recommendations. The reviewer returns findings; it does not edit. Triage each finding through the ordinary iteration discipline and record its disposition.
+Build the brief per [`prompt-authoring-conventions.md`](../../../docs/development/prompt-authoring-conventions.md) `## Runbook versus advisor versus skill`. Name the document, the question the reviewer answers, and the brief's length. Run the subagent per the provider-layer [`AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) `## Fresh Subagent Invocation`, with the role tag read from the project-level model recommendations. The reviewer returns findings; it does not edit. Triage each finding through the ordinary iteration discipline and record its disposition. A finding that names a defect in what this session produced is fixed here, not filed: [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `### Close invariants` `Defect resolution` says so, and the deferred rule does not apply to it.
 
 When neither trigger fires, say so in one line and skip the dispatch.
 

@@ -1,6 +1,26 @@
 # Diff Packaging
 
-**Current:** 2026-09-24
+**Current:** 2026-10-02
+
+## 2026-10-02 -- The end-to-end apply flow is recorded here, not in the prompt that starts it
+
+**Decision:** The sequence an operator follows from a container export to a merged host worktree is owned by this ADR, and each step prints its own next hop at the moment the step is taken:
+
+| Step | Prints |
+|---|---|
+| `package_branch.sh` | the bundle path, a movement notice when the branch point moved from `init_sha`, then `make draft FROM=bundles BUNDLE=<b> BRANCH_SUMMARY=<slug> BRANCH_FROM=<sha>` |
+| `make draft` | the draft worktree, then the linear direction when the source worktree is an ancestor of the draft tip, or the `NEW=1` direction when it is not; both conditional branches also name `make reject` and `make apply DIFF=<path>` |
+| `make confirm ... NEW=1` | `git switch <source>` and `git reset --soft <new-branch>` |
+
+The bundle summary is validated at entry against `^[a-z0-9]+(_[a-z0-9]+)*$`, 3 to 48 characters, enforced by `package_branch.sh` in `package_branch_validate_summary`. The value names the bundle directory and, through `BRANCH_SUMMARY`, the draft worktree `draft/<session>-<slug>-<hash>`, and git refuses a ref holding a space or a colon. An unvalidated value exports cleanly and fails at the operator's `make draft` instead.
+
+`/package-branch` carries none of these instructions, and its former `How to apply` section was removed rather than trimmed. That section restated the `make draft`, `make confirm`, `make reject`, and soft-reset commands, and it had drifted: it described only the fast-forward route, so a reader following it on a rebased bundle was sent to a `make confirm` that cannot fast-forward. The prompt now runs the export, relays the script's block verbatim, and prints the change description and the host-only verification. `prompt-authoring-conventions.md` `## A workflow document owns one step, and owns it whole` is the rule that keeps the section out. The single prompt that exported a rebased branch, `/package-rebase`, is folded into it: the branch point is computed the same way in both cases, so the case is a runtime fact, not a routing decision.
+
+**Rationale:** The flow spans a container script, a host workflow, and a host confirm step. Held in a prompt, it was a second copy of what three scripts print, and it drifted: the prompt described only the fast-forward route while the soft-reset route existed and was needed after every rebase. A flow that is correct only when the author remembers which route applies is not a flow. Routing on `merge-base --is-ancestor` moves the decision to the only place that can answer it, and it also covers a host that advanced independently of the recorded `init_sha`.
+
+**Rejected alternatives:** *Keep both prompts* -- the split made the rebased case a separate invocation for a difference the script already detects. *Keep the apply instructions in the prompt as a fallback* -- a fallback nobody reads until the primary fails is a second source of truth. *Have the agent choose the route and print the direction* -- the agent cannot test fast-forwardability; it would guess from a hash.
+
+**Edge cases / drivers:** `merge apply` is recovery-only and takes an arbitrary diff path, which `make draft` does not; both are named in the `make draft` hint. A target that diverged for a reason other than a container rebase also fails `--is-ancestor` and correctly receives the `NEW=1` direction.
 
 ## 2026-09-24 -- The export baseline is the branch point; a rewritten target applies by soft reset
 

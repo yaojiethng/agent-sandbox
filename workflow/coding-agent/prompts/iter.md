@@ -186,6 +186,8 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 A sub-milestone follows the sequence `active -> pre-close -> close`. In pre-close, run the sub-milestone cleanup: compaction, changelog drafting, escalation clearance, and the review gate. At close, no new decisions are made.
 
+**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. Shipping the change and filing the repair is how a known break reaches the next reader. The deferred-resolution rule covers work the iteration did not set out to do; it does not cover a break the iteration introduced or exposed. See [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `### Close invariants` `Defect resolution`.
+
 **Pre-close review gate.** Surface to the operator: open `devlog/AGENT_FEEDBACK.md` entries (including operator-raised `[O]`) and any pending sweeps; and entries under probation for a `dismiss` / `maintain` / `escalate` decision. For probation entries, the operator decides: **dismiss** (the fix held, delete it), **maintain** (fix not stress-tested, extend), **escalate** (problem resurfaced, re-scope). Escalation of far-reaching correctness work defers the close; low-urgency escalation files as a task at the top of the next sub-milestone.
 
 ---
