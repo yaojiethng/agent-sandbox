@@ -1,7 +1,7 @@
 ---
 date: 2026-10-02
 milestone: T1 - Workflow + Policy Organization
-type: Docs
+type: Documentation
 status: Closed
 ---
 
@@ -67,3 +67,6 @@ The design proposed a check that a landed row names the handover that landed it.
 ## Completed
 
 The runbook's checks and schedule, both superseded files removed, the B11 gap closed, the three records corrected, and 29 dead links in the prompt and document surface fixed. The design record is deleted; its decisions are the Decisions table above.
+
+---
+[AMENDMENT -- 2026-10-03: `type` read `Docs`, which is not a member of the type enum. It is set to `Documentation`, the type whose deliverable is project documentation; the iteration's dominant activity was the runbook that carries it. No other content changed.]

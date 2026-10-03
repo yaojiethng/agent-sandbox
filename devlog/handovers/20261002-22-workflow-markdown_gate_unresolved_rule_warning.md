@@ -1,7 +1,7 @@
 ---
 date: 2026-10-02
 milestone: T1 - Workflow + Policy Organization
-type: Impl
+type: Implementation
 status: Closed
 ---
 
@@ -47,3 +47,6 @@ Warn when a rule is enabled in `.markdownlint-cli2.mjs` but no `customRules` ent
 ## Completed
 
 The warning, its label, and the coverage line's wording.
+
+---
+[AMENDMENT -- 2026-10-03: `type` read `Impl`, which is not a member of the type enum. It is set to `Implementation`. No other content changed: the iteration changed a gate script, which the Implementation type names.]

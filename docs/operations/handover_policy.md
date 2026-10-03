@@ -153,6 +153,17 @@ The handover has no Deferred items, Carried forward, or What's Next section. Eac
 
 ---
 
+## The Format Window
+
+The format above is enforced on every handover dated **2026-10-01 or later**, and `scripts/check_handover_format.sh` enforces it as a blocking gate. A record dated before that date is exempt, and stays exempt when it is amended: a correction to an old record does not pull it into the window.
+
+Two properties bound what the window reaches, and both are properties of the tree rather than of the rule:
+
+- **A record with no frontmatter block is unreachable.** The scanner reads the block to find the date, so a record carrying the pre-YAML bold header is skipped whatever the window says. Naming the file on the command line enforces it regardless of date, and is the only way to reach such a record.
+- **The window is a floor, not a migration.** A record inside the window that does not conform is a gate finding, and the window amends it onto the format. A record outside it is not a defect and is not amended; its non-conformance is left to the day the window moves past it.
+
+---
+
 ## Canonical Null Markers
 
 When a section has nothing to record, write the canonical marker and nothing else. Do not explain why the section is empty -- if a decision was made that affects the section, record it in the Decisions table or the relevant document. The agent must not leave a nullable section blank and must not explain why it is empty.

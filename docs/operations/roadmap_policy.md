@@ -138,6 +138,8 @@ M{n}.{m}.{o}  - sub-sub-milestone (e.g. M2.6.1)
 
 **Roadmap task placement** -- a deferred item escalated to the roadmap lands as a named task entry nested under the current sub-milestone's task list unless directed otherwise. Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`; name it, do not duplicate it. Whether an item escalates to the roadmap or is re-deferred is the finding write-back decision, owned by the `iteration_policy.md` [carry-forward-resolution close invariant](iteration_policy.md#iteration-invariants) and applied by [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) and [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md); this policy owns only where the entry lands.
 
+**Single-edit record defects** -- a defect in the record layer that one edit fixes, found by a gate or a survey, is corrected in place and named in the iteration's handover. It does not become a roadmap row: a row is warranted when the work needs a design decision, spans iterations, or closes a policy gap. A sweep that finds several such defects produces one commit and one handover, not one row each.
+
 **Ordering** -- tasks may be ordered: a task can be sequenced after another task, or after a session that must run first. A task is *blocked* while something ordered before it has not completed. The roadmap carries no blocked marker: ordering is read from the rows at the moment a task is chosen, which is what `/gm` does when it recommends a starting task.
 
 ---

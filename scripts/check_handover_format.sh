@@ -27,7 +27,7 @@ SECONDS=0
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCAN_SCRIPT="$REPO_ROOT/scripts/lint/handover-format.mjs"
 SCAN_ROOT="${HANDOVER_FORMAT_SCAN_ROOT:-$REPO_ROOT}"
-CUTOVER="${HANDOVER_FORMAT_CUTOVER:-20261003}"
+CUTOVER="${HANDOVER_FORMAT_CUTOVER:-20261001}"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Handover format gate: node is not on PATH; cannot parse frontmatter." >&2

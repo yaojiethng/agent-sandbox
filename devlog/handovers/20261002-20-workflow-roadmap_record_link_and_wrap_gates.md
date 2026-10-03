@@ -1,7 +1,7 @@
 ---
 date: 2026-10-02
 milestone: T1 - Workflow + Policy Organization
-type: Impl
+type: Implementation
 status: Closed
 ---
 
@@ -61,3 +61,6 @@ The link gate resolves relative targets and heading fragments across `devlog/roa
 ## Completed
 
 The rule, the gate, the config, the wiring, five tests over them, and 29 dead links in prompts, skills and documents that the rule reported.
+
+---
+[AMENDMENT -- 2026-10-03: `type` read `Impl`, which is not a member of the type enum. It is set to `Implementation`. No other content changed: this record is dated inside the window the format gate enforces, and the window reaches it.]

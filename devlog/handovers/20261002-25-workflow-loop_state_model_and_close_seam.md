@@ -80,6 +80,16 @@ ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
 
 ## Hot files
 
+| File | Why in scope |
+|---|---|
+| `docs/adr/coding_agent_loop_workflow.md` | carries the state diagram this iteration redraws |
+| `workflow/coding-agent/prompts/iter.md` | loses the milestone-grain work the model moves out |
+| `workflow/coding-agent/prompts/wrapup.md` | loses the milestone close and the compaction step |
+| `workflow/coding-agent/prompts/milestone-close.md` | gains the close-boundary section and the compaction step |
+| `docs/operations/roadmap_policy.md` | names the compaction caller, which moves |
+
+## Completed
+
 | File | Change |
 |---|---|
 | `docs/adr/coding_agent_loop_workflow.md` | diagram redrawn to the agreed state model: one workflow per arrow, gates as states |
@@ -109,6 +119,5 @@ None. The `milestone_policy.md` ownership ruling is deferred, not settled: this 
 
 None.
 
-## Deferred
-
-None.
+---
+[AMENDMENT -- 2026-10-03: the record carried a `## Deferred` section holding `None.`, which the format gate forbids, and no `## Completed`. The forbidden section is removed and `## Completed` is split out of `## Hot files`, which the format now states separately. Handover `20261003-02` recorded the decision to leave this section as history, on a cutover of `20261003`; the window is now `20261001`, so the section is inside it and that decision no longer holds.]

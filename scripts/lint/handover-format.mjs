@@ -20,7 +20,7 @@ import { loadYaml } from "./yaml-loader.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const DEFAULT_CUTOVER = "20261003";
+const DEFAULT_CUTOVER = "20261001";
 
 /** The frontmatter type vocabulary, from handover_policy.md `## Types`. */
 const TYPES = [
