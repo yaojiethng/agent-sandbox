@@ -89,12 +89,27 @@ export function fillMissing(entry: ModelDefinition, fallback: ModelDefinition): 
 }
 
 /**
- * Union two entry lists by id, first-wins per field.
+ * The identity pi keys a model on: its type and its id.
  *
- * An id the accumulator already holds keeps every field it supplies and takes
- * only the fields it leaves undefined from the incoming list; an unknown id is
- * appended. A union removes nothing, so an id one source supplies stays served
- * even when no later source lists it.
+ * `getModelType` in pi-ai treats a missing type as `chat`, and pi's
+ * `mergeModels` in `dist/core/remote-catalog-provider.js` keys on `type + id`,
+ * so a same-id pair of different types is two models to pi and stays two here.
+ * Every site that decides identity uses this key, or a source would collapse a
+ * pair at one fold and keep it at the next.
+ */
+export function modelKey(model: Pick<ModelDefinition, "id" | "type">): string {
+	return `${model.type ?? "chat"}\u0000${model.id}`;
+}
+
+/**
+ * Union two entry lists by `modelKey`, first-wins per field.
+ *
+ * An entry the accumulator already holds keeps every field it supplies and
+ * takes only the fields it leaves undefined from the incoming list; an entry
+ * with a new key is appended. A union removes nothing, so an entry one source
+ * supplies stays served even when no later source lists it. The key is the
+ * type and the id together, not the id alone, because an image entry and a
+ * chat entry may share an id.
  */
 export function unionFirstWins(acc: readonly ModelDefinition[], next: readonly ModelDefinition[]): ModelDefinition[] {
 	const merged: ModelDefinition[] = [];
@@ -103,9 +118,10 @@ export function unionFirstWins(acc: readonly ModelDefinition[], next: readonly M
 		if (typeof model?.id !== "string" || model.id.length === 0) {
 			continue;
 		}
-		const position = index.get(model.id);
+		const key = modelKey(model);
+		const position = index.get(key);
 		if (position === undefined) {
-			index.set(model.id, merged.length);
+			index.set(key, merged.length);
 			merged.push(model);
 			continue;
 		}
@@ -260,8 +276,8 @@ function entriesFor(kind: UnionInput["decl"]["sources"][number]["kind"], input: 
  */
 function overlayPreservingOrder(acc: readonly ModelDefinition[], next: readonly ModelDefinition[]): ModelDefinition[] {
 	const merged = unionFirstWins(next, acc);
-	const position = new Map(acc.map((model, index) => [model.id, index]));
-	return [...merged].sort((a, b) => (position.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (position.get(b.id) ?? Number.MAX_SAFE_INTEGER));
+	const position = new Map(acc.map((model, index) => [modelKey(model), index]));
+	return [...merged].sort((a, b) => (position.get(modelKey(a)) ?? Number.MAX_SAFE_INTEGER) - (position.get(modelKey(b)) ?? Number.MAX_SAFE_INTEGER));
 }
 
 /**
@@ -292,9 +308,9 @@ export function buildUnion(input: UnionInput): ModelDefinition[] {
 		served = overlayPreservingOrder(served, entriesFor(source.kind, input));
 	}
 	for (const source of metadataSources) {
-		const supplied = new Map(entriesFor(source.kind, input, served.map((model) => model.id)).map((entry) => [entry.id, entry]));
+		const supplied = new Map(entriesFor(source.kind, input, served.map((model) => model.id)).map((entry) => [modelKey(entry), entry]));
 		served = served.map((model) => {
-			const metadata = supplied.get(model.id);
+			const metadata = supplied.get(modelKey(model));
 			return metadata ? fillMissing(model, metadata) : model;
 		});
 	}

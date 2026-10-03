@@ -120,6 +120,12 @@ export function buildCatalog(): InvariantCase[] {
 			source: `${RECORD} Assumption A11; the differential case drives pi's withRemoteCatalog, whose getModels calls pi's mergeModels`,
 		},
 		{
+			id: "G2",
+			name: "keeps a same-id pair of different types apart",
+			statement: "a chat entry and an image entry that share an id stay two entries, as pi's own merge keeps them",
+			source: `${RECORD} the source model; pi's mergeModels in dist/core/remote-catalog-provider.js`,
+		},
+		{
 			id: "G3",
 			name: "provider scope",
 			statement: "only the extension's own provider's stored entries reach the union",
@@ -137,6 +143,24 @@ export function buildCatalog(): InvariantCase[] {
 			name: "a malformed source removes nothing",
 			statement: "a source that returns the wrong shape contributes nothing and takes nothing away",
 			source: `${RECORD} the failure contract; the failure paths`,
+		},
+		{
+			id: "L3",
+			name: "the refresh precedes the session",
+			statement: "the provider refresh runs and returns the catalog before any UI exists, so nothing it does can render yet",
+			source: `${RECORD} the output sink and Assumption A14; the registration's refreshModels and session_start handlers`,
+		},
+		{
+			id: "L4",
+			name: "the report holds until a UI exists",
+			statement: "a report recorded before a UI is attached is held and rendered on attach, and nothing renders while no UI exists",
+			source: `${RECORD} the output sink and Assumption A13; report.ts`,
+		},
+		{
+			id: "L5",
+			name: "a failed live source narrows rather than empties",
+			statement: "a live source that fails contributes nothing and takes nothing away, so the served catalog stays the offline union rather than an empty list",
+			source: `${RECORD} the failure contract; gatherAndBuild with a failing fetcher`,
 		},
 		// --- the composition contract ---------------------------------------
 		{
@@ -241,6 +265,166 @@ export function buildCatalog(): InvariantCase[] {
 		});
 	}
 	return cases;
+}
+
+/** What an invariant constrains, per the statechart classification. */
+export type InvariantKind = "state" | "transition" | "guard";
+
+/** The states of the catalog component, from the enumeration in the record. */
+export const STATES = ["S0", "S1"] as const;
+
+/** Edges outside the catalog machine, named so a case can point at them. */
+export const EXTERNAL_EDGES = ["WIRE", "DECL", "HARNESS"] as const;
+
+/**
+ * One transition of the machine, as the record draws it.
+ *
+ * `event` and `from` are what the skill's rule 6 needs: no state has two
+ * transitions on one event whose guards both hold. `guard` is the guard that
+ * admits this firing, and it is required exactly when another transition shares
+ * this one's event and source state, because then the guards must be distinct.
+ *
+ * `noCaseReason` is the required note for a transition no invariant case names;
+ * the skill's rule 1 allows a transition with no invariant only when the record
+ * says why.
+ */
+export interface Transition {
+	id: string;
+	label: string;
+	event: string;
+	from: readonly string[];
+	guard?: string;
+	ignored?: true;
+	noCaseReason?: string;
+}
+
+export const TRANSITIONS: readonly Transition[] = [
+	{ id: "X1", label: "received(store payload), guard closed / none (internal)", event: "received(store)", from: ["S0", "S1"], guard: "the store is not newer than the baked data" },
+	{ id: "X2", label: "received(store payload), guard open / union", event: "received(store)", from: ["S0"], guard: "the store is newer than the baked data" },
+	{ id: "X3", label: "received(endpoint or pi.dev payload) / union", event: "received(id-source)", from: ["S0", "S1"] },
+	{ id: "X4", label: "received(models.dev payload) / fill missing (internal)", event: "received(metadata)", from: ["S1"] },
+	{ id: "X5", label: "received(override payload) / fold reverse (internal)", event: "received(override)", from: ["S1"] },
+	{ id: "X6", label: "failed(reason) / none (internal)", event: "failed", from: ["S0", "S1"] },
+	{ id: "X7", label: "absent", event: "absent", from: ["S0", "S1"], ignored: true, noCaseReason: "an ignored event: no transition accepts it, so no case holds it" },
+	{ id: "X8", label: "unchanged and no failure / nothing", event: "outcome", from: ["S1"], guard: "unchanged and no failure", noCaseReason: "the output emitter is unit B's rewrite" },
+	{ id: "X9", label: "changed / notify the delta", event: "outcome", from: ["S1"], guard: "changed", noCaseReason: "the output emitter is unit B's rewrite" },
+	{ id: "X10", label: "failed / notify the failure", event: "outcome", from: ["S1"], guard: "failed", noCaseReason: "the output emitter is unit B's rewrite" },
+	{ id: "X11", label: "pre-session refresh", event: "session", from: ["S0"], guard: "the session has not started" },
+	{ id: "X12", label: "failing-source narrowing", event: "live failure", from: ["S0", "S1"] },
+	{ id: "X13", label: "pre-UI report hold", event: "report", from: ["S0"], guard: "no UI exists yet" },
+];
+
+/** One catalog case's class and the state, transition or external edge it belongs to. */
+export interface Classification {
+	id: string;
+	name: string;
+	kind: InvariantKind;
+	edges: readonly string[];
+}
+
+export const CLASSIFICATION: readonly Classification[] = [
+	{ id: "M1", name: "non-empty", kind: "state", edges: ["S0"] },
+	{ id: "M3", name: "provenance", kind: "state", edges: ["S1"] },
+	{ id: "U4", name: "metadata silence", kind: "transition", edges: ["X4"] },
+	{ id: "U1", name: "first-wins per field", kind: "transition", edges: ["X3"] },
+	{ id: "U2", name: "the override fold order", kind: "transition", edges: ["X5"] },
+	{ id: "U3", name: "the served order", kind: "transition", edges: ["X5"] },
+	{ id: "M4", name: "unique ids", kind: "state", edges: ["S1"] },
+	{ id: "M5", name: "a valid model", kind: "state", edges: ["S1"] },
+	{ id: "M7", name: "a usable entry", kind: "state", edges: ["S1"] },
+	{ id: "M8", name: "the transport follows pi and the metadata", kind: "state", edges: ["S1"] },
+	{ id: "M6", name: "purity", kind: "transition", edges: ["X3"] },
+	{ id: "G1", name: "the exact gate", kind: "guard", edges: ["X1", "X2"] },
+	{ id: "G2", name: "the store's fields win", kind: "transition", edges: ["X2"] },
+	{ id: "G2", name: "agrees with pi", kind: "transition", edges: ["X2"] },
+	{ id: "G2", name: "keeps a same-id pair of different types apart", kind: "transition", edges: ["X3"] },
+	{ id: "G3", name: "provider scope", kind: "guard", edges: ["X2"] },
+	{ id: "L1", name: "the baked catalog always survives", kind: "state", edges: ["S1"] },
+	{ id: "L2", name: "a malformed source removes nothing", kind: "transition", edges: ["X6"] },
+	{ id: "L3", name: "the refresh precedes the session", kind: "transition", edges: ["X11"] },
+	{ id: "L4", name: "the report holds until a UI exists", kind: "transition", edges: ["X13"] },
+	{ id: "L5", name: "a failed live source narrows rather than empties", kind: "transition", edges: ["X12"] },
+	{ id: "C1", name: "registration never shrinks the catalog", kind: "state", edges: ["S1"] },
+	{ id: "C2", name: "no silent fallback", kind: "state", edges: ["S1"] },
+	{ id: "C3", name: "user overrides win", kind: "guard", edges: ["X5"] },
+	{ id: "T1", name: "derived levels", kind: "state", edges: ["S1"] },
+	{ id: "T2", name: "off is the endpoint's disabled state", kind: "state", edges: ["S1"] },
+	{ id: "T3", name: "the map follows the endpoint", kind: "state", edges: ["S1"] },
+	{ id: "T3", name: "the family keeps its compat", kind: "state", edges: ["S1"] },
+	{ id: "W1", name: "the wire shape follows the map", kind: "transition", edges: ["WIRE"] },
+	{ id: "D1", name: "determinism", kind: "transition", edges: ["X3"] },
+	{ id: "C4", name: "the registration names the provider", kind: "state", edges: ["S0"] },
+	{ id: "N1", name: "the declaration validates", kind: "state", edges: ["DECL"] },
+	{ id: "N2", name: "the folder owns every input", kind: "state", edges: ["DECL"] },
+	{ id: "R1", name: "one catalog case, one test", kind: "state", edges: ["HARNESS"] },
+];
+
+/** The derived cases, whose class and edge do not vary with the subject. */
+const DERIVED_CLASSIFICATION: readonly Classification[] = [
+	{ id: "M2", name: "monotone in ", kind: "transition", edges: ["X2", "X3", "X4", "X5"] },
+	{ id: "T4", name: "level ", kind: "transition", edges: ["WIRE"] },
+];
+
+const key = (c: { id: string; name: string }): string => `${c.id}\u0000${c.name}`;
+
+/**
+ * The machine-run totality check. Returns the findings; an empty list is a pass.
+ *
+ * It asserts the four things the enumeration's completeness rests on: every
+ * catalog case is classified, no classification is stale, every state and
+ * transition the record names is held by a case or carries a reason, and every
+ * edge a case names exists. It then applies the skill's rule 6: no state has two
+ * transitions on one event whose guards both hold, which here means the guards
+ * on a shared event are distinct.
+ */
+export function checkTotality(cases: readonly InvariantCase[]): string[] {
+	const findings: string[] = [];
+	const declared = CLASSIFICATION;
+
+	const classificationFor = (c: InvariantCase): Classification | undefined =>
+		declared.find((entry) => entry.id === c.id && c.name === entry.name) ??
+		DERIVED_CLASSIFICATION.find((entry) => entry.id === c.id && c.name.startsWith(entry.name));
+
+	for (const c of cases) {
+		if (!classificationFor(c)) findings.push(`no classification for ${c.id} ${c.name}`);
+	}
+	for (const entry of declared) {
+		if (cases.some((c) => c.id === entry.id && c.name === entry.name)) continue;
+		findings.push(`classification for a case that does not exist: ${entry.id} ${entry.name}`);
+	}
+
+	const validEdges = new Set<string>([...STATES, ...TRANSITIONS.map((t) => t.id), ...EXTERNAL_EDGES]);
+	for (const c of cases) {
+		const entry = classificationFor(c);
+		if (!entry) continue;
+		if (entry.edges.length === 0) findings.push(`${c.id} ${c.name} names no edge`);
+		for (const edge of entry.edges) {
+			if (!validEdges.has(edge)) findings.push(`${c.id} ${c.name} names an unknown edge ${edge}`);
+		}
+	}
+	for (const state of STATES) {
+		if (!cases.some((c) => classificationFor(c)?.edges.includes(state))) findings.push(`no case names state ${state}`);
+	}
+
+	const fired = (id: string): boolean => cases.some((c) => classificationFor(c)?.edges.includes(id));
+	for (const t of TRANSITIONS) {
+		if (!fired(t.id) && !t.noCaseReason) findings.push(`transition ${t.id} has no case and no reason`);
+	}
+
+	for (const a of TRANSITIONS) {
+		for (const b of TRANSITIONS) {
+			if (a.id >= b.id) continue;
+			const shared = a.event === b.event && a.from.some((s) => b.from.includes(s));
+			if (!shared) continue;
+			if (!a.guard || !b.guard) {
+				findings.push(`${a.id} and ${b.id} share event ${a.event} from a shared state with no distinguishing guard`);
+			} else if (a.guard === b.guard) {
+				findings.push(`${a.id} and ${b.id} share event ${a.event} with the same guard`);
+			}
+		}
+	}
+
+	return findings;
 }
 
 export type Outcome = "pass" | "fail" | "skip";

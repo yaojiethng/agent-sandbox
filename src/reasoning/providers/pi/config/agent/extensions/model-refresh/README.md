@@ -34,72 +34,86 @@ The union in `catalog.ts` is the fix. It takes the three sources and returns one
 
 ## The update and catalog state machine
 
-The refresh path is three separate systems, not one. Separating them makes "nothing happened" and "something happened but was not applied" different observations, which is what the reporting defect turned on.
+The refresh path is three roles, not one: a **producer** that consults the declared sources and raises events, a **component** that holds the catalog state and applies them, and an **output** that turns state changes into what the user sees. Keeping the roles separate makes "nothing happened" and "something happened but was not applied" different observations, which is what the reporting defect turned on.
+
+The vocabulary is the statechart one. A **state** is a named condition the component holds while no event is applied. An **event** is an input that can fire a transition. A **transition** is an edge from a source state to a target state. A **guard** is the condition on a transition that decides whether it may fire. An **effect** is what a transition does besides change the state. An **internal transition** fires without leaving its source state. An **ignored event** is an event no transition accepts where it arrives. A guard is not a gate: a guard decides one transition, while a gate is a pass-or-fail check over the test suite.
 
 ```text
                           SESSION START   or   /model
                                    |
                                    v
    ===========================================================================
-   SYSTEM 1 - THE FETCH DEVICE                                    (effectful)
+   SYSTEM 1 - THE PRODUCER (THE FETCH DEVICE)                     (effectful)
    ===========================================================================
 
      the provider's declared sources, consulted in order:
 
-       baked       -> the seed, never an Update
-       endpoint    -> Update | Update(failed) | absent
-       models.dev  -> Update | Update(failed) | absent
-       store       -> Update(payload, lastModified = REMOTE PUBLISH time)
-                      | absent
+       baked       -> the seed, never an event
+       endpoint    -> received | failed | absent
+       models.dev  -> received | failed | absent
+       store       -> received(payload, lastModified = REMOTE PUBLISH time)
+                      | failed | absent
 
-       Update :=  absent                       (not consulted)
-                | failed(reason)               (consulted, no answer)
-                | received(payload)            (consulted, answered)
+       event :=  absent               (not consulted; an ignored event)
+               | failed(reason)       (consulted, no answer)
+               | received(payload)    (consulted, answered)
 
                       (provider-generic: source kind + payload + provenance,
                        no provider-specific fields)
                                    |
                                    v
    ===========================================================================
-   SYSTEM 2 - THE CATALOG STATE MACHINE                              (pure)
+   SYSTEM 2 - THE COMPONENT (THE CATALOG STATE)                      (pure)
    ===========================================================================
 
-                          s0 = baked seed
-                                   |
-                                   v
-        +---> [ received(payload) ]
-        |              |
-        |      application policies decide, in order:
-        |        - store admission    : admitted while the store's REMOTE PUBLISH
-        |                               time > baked generatedAt   <-- THE GATE
-        |                               (mirrors pi; says nothing about fetching)
-        |        - source order       : first-wins per field
-        |        - overrides          : folded in reverse
-        |              |
-        |              +---> applied  : s' = union(s, payload)
-        |              +---> declined : s' = s
+     states:  S0  seeded    the baked seed, no source event applied (initial)
+              S1  serving   the served catalog, built so far
+
+     fold one declared source at a time, in order:
+
+        S0,S1 -- X1  received(store payload)
+        |            [isStoreNewerThanBaked false]
+        |            / none                                     (internal)
         |
-        +--- next source, repeat per source
+        S0   -- X2  received(store payload) [isStoreNewerThanBaked true]
+        |            / union, first-wins per field                -->  S1
+        |
+        S0,S1 -- X3 received(endpoint | pi.dev payload)
+        |            / union, first-wins per field; a new id appended  -->  S1
+        |
+        S1   -- X4  received(models.dev payload)
+        |            / fill only the fields the served entry leaves undefined
+        |                                                       (internal)
+        |
+        S1   -- X5  received(override payload)
+        |            / fold in reverse declaration order, served order preserved
+        |                                                       (internal)
+        |
+        S0,S1 -- X6  failed(reason)
+        |            / none; the source contributes nothing     (internal)
+        |
+        S0,S1 -- X7  absent
+                   / none                                       (ignored event)
+
+        X2 guard: the store's REMOTE PUBLISH time is later than the installed
+                  build's baked generatedAt                    <-- THE GATE
                                    |
                                    v
-                        s_final = the served catalog
+                        S_final = the served catalog
                                    |
-                 transition event := (s_before, s_after, outcome)
-                                   |
-                                   v
    ===========================================================================
-   SYSTEM 3 - THE ACTION EMITTER                                     (pure)
+   SYSTEM 3 - THE OUTPUT (THE ACTION EMITTER)                        (pure)
    ===========================================================================
 
-     event (s_before, s_after, outcome)
+     event := (S_before, S_after, outcome)
         |
-        +-- s_after == s_before, no failed outcome --> nothing
+        +-- X8  unchanged and no failure  -----------> nothing
         |
-        +-- s_after != s_before  --> "updated catalog: +n / -n, m revised"
-        |                            (+n/-n = id adds/removes by entry state,
-        |                             m = same-id field revisions)
+        +-- X9  changed                    ----------> "updated catalog: +n / -n, m revised"
+        |                              (+n/-n = id adds/removes by entry state,
+        |                               m = same-id field revisions)
         |
-        +-- outcome == failed    --> "<source> failed: <reason>"
+        +-- X10 failed(reason)             ----------> "<source> failed: <reason>"
                                    |
                                    v
                     UI present?  -- yes --> ctx.ui.notify(line)
@@ -109,13 +123,15 @@ The refresh path is three separate systems, not one. Separating them makes "noth
                                    +-- no  --> console line (print/json/rpc modes)
 ```
 
-**The update is provider-generic.** It carries a source kind, a payload and provenance; no field is specific to `opencode-go`. The order sources are consulted in is the declaration's, not a constant here.
+The three lifecycle transitions sit outside the source fold and carry ids of their own. `X11` is the pre-session refresh: pi calls `refreshModels` once per provider before the session and before any UI exists (A14). `X12` is the failing-source narrowing: the live phase fails and the offline union stands rather than an empty catalog, which is X6's effect at the gather layer. `X13` is the pre-UI report hold: a report recorded before a UI exists is held and rendered at `session_start` (A13).
 
-**The gate is an application policy.** `isStoreNewerThanBaked` decides whether the persisted catalog is admitted to the union and nothing else. Its timestamp is the publish time pi.dev serves in `Last-Modified`, compared against the installed build's baked `generatedAt`, so it opens and closes on two clocks neither party controls jointly. It mirrors pi's own gate in `dist/core/remote-catalog-provider.js`, and the `agrees with pi` case holds that agreement.
+**The event is provider-generic.** It carries a source kind, a payload and provenance; no field is specific to `opencode-go`. The order sources are consulted in is the declaration's, not a constant here.
 
-**The announcement is a function of the served catalog's before/after state, never of the gate.** A refresh that changes the catalog announces while the gate is closed; a gate that moves without a catalog change announces nothing. Emitting the line from a source-count report instead is the defect this section exists to make unrepresentable.
+**The gate is a guard.** `isStoreNewerThanBaked` is the guard on X2 and nothing else. Its timestamp is the publish time pi.dev serves in `Last-Modified`, compared against the installed build's baked `generatedAt`, so it opens and closes on two clocks neither party controls jointly. It mirrors pi's own gate in `dist/core/remote-catalog-provider.js`, and the `agrees with pi` case holds that agreement.
 
-**An update the catalog declines is not a failure.** `applied` and `declined` are both ordinary transitions. Only a `failed` source outcome announces as a failure, because a payload that was received and then declined is a policy decision, and a fetch that never answered is not.
+**The announcement is a function of the served catalog's before/after state, never of the guard.** A refresh that changes the catalog announces while the guard is closed; a guard that moves without a catalog change announces nothing. Emitting the line from a source-count report instead is the defect this section exists to make unrepresentable.
+
+**An event the component declines is not a failure.** X1 and X2 are both ordinary transitions, and the guard alone decides between them. Only a `failed` event announces as a failure, because a payload that was received and then declined is a guard decision, and a source that never answered is not.
 
 **`catalog-change` is the full entry-state delta.** `+n` and `-n` count ids added and removed, and same-id field revisions are reported separately, because the defect this extension was built to repair - `space-bunny-free` served with `kimi-k2.6`'s context window, output limit and pricing - is a same-id revision with no id change at all.
 
@@ -188,7 +204,7 @@ Every row was checked on the date given. Each names the method that produced it 
 | A4 | An absent map key is supported; only `null` is unsupported, except that `xhigh` and `max` need an explicit mapping | 2026-10-03 | `getSupportedThinkingLevels` in `pi-ai/dist/models.js`, read from the installed package; the level map handed to pi's request builder, read back off the built payload; `thinking.test.ts` and `wire.test.ts` | the level-selection code in pi's bundle |
 | A5 | An unsupported level is clamped to the nearest supported one, searching upward first and then downward | 2026-10-03 | `clampThinkingLevel` in `pi-ai/dist/models.js`; the built payload for a null off mapping, which carries `reasoning_effort: "minimal"`; reproduced live as `off` becoming `low`. Re-checked against 1.0.0, where the function is byte-identical to 0.99.2's | the same level-selection code |
 | A6 | `supportsReasoningEffort: false` drops `reasoning_effort` at every level but keeps the deepseek toggle | 2026-10-03 | the built payload for a baked compat block, which carries `thinking: {type: "enabled"}` and no effort; re-checked against 1.0.0 across every `thinkingFormat` | the request builder in `pi-ai/dist/api/openai-completions.js` |
-| A7 | `reasoning_effort: "none"` is accepted by some models and rejected by others, on both products | 2026-10-03 | live probes; `knowledge_opencode_gateway_matrix.sh`. `space-bunny-free` returns 400 on both, `longcat-2.5-preview-free` accepts it on opencode-go; the 1.0.0 run split the same way, and the split is a gateway property, not a pi one | the gateway, or the probe test turning red |
+| A7 | `reasoning_effort: "none"` is accepted by some models and rejected by others, on both products, for a request format that emits an effort at all | 2026-10-03 | live probes; `knowledge_opencode_gateway_matrix.sh`. `space-bunny-free` returns 400 on both, `longcat-2.5-preview-free` accepts it on opencode-go; the 1.0.0 run split the same way, and the split is a gateway property, not a pi one. A format that emits no effort, such as the `deepseek` toggle, is outside this assumption's domain rather than a gap in it | the gateway, or the probe test turning red |
 | A8 | ~~The Zen free tier answers 403 to any client that is not the OpenCode client, so a Zen free model cannot be probed from pi~~ **MOVED 2026-10-03.** The gateway no longer enforces the client check. pi still sends `x-opencode-client: pi` (`provider-attribution.js`, byte-identical to 0.99.2's), and a Zen free model answers 200 and completes a request. | 2026-10-03 | live probe of `space-bunny-free` on `opencode.ai/zen/v1`: 200 with the key, with pi's own client header, and with `x-opencode-client: opencode`; pi 1.0.0 answered `PONG` on the same model, and a bogus key still returns 401 | the gateway re-tightening the check |
 | A9 | ~~The persisted pi.dev entry is newer than the baked data, so the store gate opens~~ **MOVED 2026-10-03, RE-MEASURED 2026-10-04.** The gate compares two clocks neither party controls jointly: `remoteModels` admits the persisted catalog only while its `lastModified` - the `Last-Modified` header pi.dev serves - is later than the installed build's baked `generatedAt`. It opens and closes as either side moves, so it is not a property of a pi version. | 2026-10-04 | the 1.0.0 baked manifest `generatedAt` is `2026-10-01T18:57:11.882Z`; on 2026-10-03 every store `lastModified` was older, so the probe took 0 overlay entries; on 2026-10-04 `~/.pi/agent/models-store.json` carries `lastModified` of `2026-10-03T16:16:56Z` to `2026-10-03T16:17:46Z` over openrouter, opencode-go, opencode and deepseek, all later than the build, so the gate is open for all four; a `lastModified` of `2026-12-01` restores them while it is closed | pi.dev republishing its catalog after the installed build reopens the gate, and a build newer than pi.dev's last publish closes it; the trigger is either party's clock, not a pi release |
 | A10 | ~~`space-bunny-free` is absent from pi's baked `opencode-go` catalog and present in the persisted pi.dev entry~~ **MOVED 2026-10-03.** Both halves were already stale: the baked `opencode_go_default` in 0.99.2 and 1.0.0 both carry the model, and the store copy overlays it only while A9's gate is open. The store copy is redundant rather than wrong. | 2026-10-03 | the baked catalog holds 29 chat ids including `chat:space-bunny-free`; an offline `--list-models` with an empty agent dir lists it, and a mutated store `maxTokens` changes nothing under the real timestamps | a pi release that drops the model from the baked catalog |
@@ -246,8 +262,8 @@ Two of the files are knowledge tests under the Test Placement rule, because the 
 | `report.test.ts` | the reconciliation wording, the pre-UI hold, and the assertion that the reporter writes nothing to the terminal |
 | `wire.test.ts` | knowledge: the built request payload per thinking level and compat block |
 | `fixtures.ts` | the shared model, store and models.dev builders the invariant cases draw on |
-| `invariants.ts` | the invariant catalog: one named statement per invariant, with the per-source and per-level cases derived rather than listed |
-| `invariants.test.ts` | one case per catalog entry, over the real product surface, printing the invariant report |
+| `invariants.ts` | the invariant catalog: one named statement per invariant, the state/transition/guard classification, the transition table, the totality check, and the per-source and per-level cases derived rather than listed |
+| `invariants.test.ts` | one case per catalog entry, over the real product surface, plus the machine-run totality check, printing the invariant report |
 | `mutation/catalog.ts` | one row per deliberate break of the extension, each naming the invariant it attacks |
 | `mutation/runner.ts` | the replay engine: a temp mirror per row, one child process, the six verdicts |
 | `mutation.test.ts` | the gate: a control row, an attribution check, and a `proven` verdict per row |
@@ -257,13 +273,25 @@ Two of the files are knowledge tests under the Test Placement rule, because the 
 
 `invariants.ts` names what must hold, and `invariants.test.ts` holds each one with a case; the report prints one line per case and a red line reads as an invariant id. `mutation/catalog.ts` then asks the other question, whether a green suite is evidence: each row is a defect the design rejects, and the gate fails unless the suite turns red against it. The gate is what turned up the two survivors a green suite once hid, a served entry with a zero context window and an empty baked catalog that dropped the persisted store.
 
+Every invariant is one of three classes, and the class states what the invariant constrains. A **state invariant** holds whenever the component is at rest. A **transition invariant** holds of one firing of a transition. A **guard invariant** holds of one guard. An invariant that fits none of the three is not an invariant, and is rewritten or dropped.
+
+| Class | Invariants |
+|---|---|
+| state | M1, M3, M4, M5, M7, M8, L1, C1, C2, C4, T1, T2, T3 (both cases), N1, N2, R1 |
+| transition | U1, U2, U3, U4, G2 (all three cases), M2, M6, L2, L3, L4, L5, T4, W1, D1 |
+| guard | G1, G3, C3 |
+
+`invariants.ts` carries that classification as data, in `CLASSIFICATION`, and carries the machine itself in `STATES` and `TRANSITIONS`, one entry per named transition with its event, its source states and its guard. A machine-run totality check then asserts what the enumeration's completeness rests on: every catalog case is classified, no classification is stale, every state and transition the record names is held by a case or carries a reason, and every edge a case names exists. It also applies the sixth rule, that no state has two transitions on one event whose guards both hold, which for a shared event means the guards are distinct. A case may point outside the catalog machine, at the declaration parser (`DECL`), the built request payload (`WIRE`) or the suite's own bijection (`HARNESS`); those edges are named in `EXTERNAL_EDGES`.
+
 Two properties of the gate matter when reading its verdicts. A mirror the suite cannot run green in would make every row `proven`, so a control row replays an unmutated mirror and must return `survived`. A row that passes because something other than its invariant failed proves nothing, so the gate requires a failing case to name the row's invariant, and rejects a row whose only failure is a crash.
+
+Every invariant holds a row in that catalog except R1. R1 is the bijection between the catalog and the test file, so a mutation of it mutates the gate: the row would change the structure that decides the verdict rather than a product line the suite could catch. The exemption is recorded here rather than paid for with a row that would prove nothing.
 
 The transport tables in `catalog.ts` are held to pi's baked catalog by invariant M8. Reconciling them on 2026-09-30 removed four ids the tables claimed (`minimax-m2.7`, `qwen3.6-plus`, `qwen3.7-max`, `qwen3.7-plus`), which pi carries as `openai-completions`. The tables only decide anything for an id pi does not carry, and where pi carries the id pi's entry wins.
 
 That reconciliation leaves one risk open, stated here because no case can watch it. Of the four removed ids, only `qwen3.6-plus` is carried by pi's `opencode` catalog at all, and it is carried there as `anthropic-messages`; `minimax-m2.7` is `openai-completions` on that product and `qwen3.7-max` and `qwen3.7-plus` appear on neither. So if a future pi release drops `qwen3.6-plus` from `opencode-go` and no fresher persisted entry supplies it, the extension would serve it on `openai-completions` against the adapter the other product uses. Nothing in the suite notices, because the live layer only builds an entry for an id the earlier sources do not have, and pi has the id. The fix is a live probe of that id against both adapters, which needs a key and is not yet done.
 
-The folder is not wired into `make test` yet. The roadmap row owns that, and it also owns adding the knowledge script to the `bash -n` smoke check, which currently covers only `tests/knowledge/`, `tests/integration/`, and `tests/eval/`.
+The folder is wired into `make test` through `tests/test_model_refresh.sh`, which runs the node suite in one process and guards the file list: a new node test file that the wrapper does not name fails the guard. The extension's knowledge script is syntax-checked by `scripts/check_test_smoke.sh`, which now reaches `tests/extensions/**/knowledge/` in addition to `tests/knowledge/`, `tests/integration/` and `tests/eval/`.
 
 ## Local overrides
 

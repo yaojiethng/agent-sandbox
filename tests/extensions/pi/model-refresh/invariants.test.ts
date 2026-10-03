@@ -31,10 +31,11 @@ import {
 } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
 import { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts";
 import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
+import { createReporter } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts";
 import { THINKING_LEVELS, levelMapFor, offSendsAnEffort, thinkingLevelMapFromEfforts } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ThinkingLevelMap } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
-import { UNION_SOURCES, buildCatalog, renderReport, type CaseResult } from "./invariants.ts";
+import { UNION_SOURCES, buildCatalog, checkTotality, renderReport, type CaseResult } from "./invariants.ts";
 import { PROVIDER_ID, TEST_DECL, V1_BASE as V1, ANTHROPIC_BASE as ANTHROPIC, bakedModel, anthropicBakedModel, captureThinkingPayload, effortList, makeRng, modelsDevEntry, pick, someModels, storedCatalog, storedEntry } from "./fixtures.ts";
 
 const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
@@ -144,6 +145,39 @@ async function loadRegistration(): Promise<{ id: string; config: Record<string, 
 		on: () => () => {},
 	});
 	return registered;
+}
+
+/** The registration and the `session_start` handler the module installs. */
+interface ExtensionRegistration {
+	registered: { id: string; config: Record<string, unknown> }[];
+	handlers: Map<string, (event: unknown, ctx: unknown) => Promise<void>>;
+}
+
+async function loadExtension(): Promise<ExtensionRegistration> {
+	const requireFromPi = createRequire(PI_PACKAGE_ENTRY);
+	const { createJiti } = (await import(path.join(PI_PACKAGE_GLOBAL, "node_modules", "jiti", "lib", "jiti.cjs"))) as {
+		createJiti: (entry: string, options: { alias: Record<string, string> }) => { import: (entry: string) => Promise<{ default: (pi: unknown) => void }> };
+	};
+	const jiti = createJiti(EXTENSION_ENTRY, {
+		alias: {
+			"@earendil-works/pi-coding-agent": PI_PACKAGE_ENTRY,
+			"@earendil-works/pi-ai": `${PI_AI}/dist/index.js`,
+			"@earendil-works/pi-ai/providers/all": `${PI_AI}/dist/providers/all.js`,
+			typebox: requireFromPi.resolve("typebox"),
+			"@sinclair/typebox": requireFromPi.resolve("typebox"),
+		},
+	});
+	const registered: ExtensionRegistration["registered"] = [];
+	const handlers: ExtensionRegistration["handlers"] = new Map();
+	const module = await jiti.import(EXTENSION_ENTRY);
+	module.default({
+		registerProvider: (id: string, config: Record<string, unknown>) => registered.push({ id, config }),
+		on: (event: string, handler: (event: unknown, ctx: unknown) => Promise<void>) => {
+			handlers.set(event, handler);
+			return () => {};
+		},
+	});
+	return { registered, handlers };
 }
 
 // --- the report ------------------------------------------------------------
@@ -378,6 +412,26 @@ describe("invariant report", () => {
 		assert.equal(ours.find((m) => m.id === "baked-a")?.contextWindow, piServed.find((m) => m.id === "baked-a")?.contextWindow, "and the same value for the replaced entry");
 	});
 
+	itCase("G2", "keeps a same-id pair of different types apart", async () => {
+		if (!fs.existsSync(REMOTE_CATALOG_ENTRY)) return;
+		const { withRemoteCatalog } = await loadPiModule<{ withRemoteCatalog: (p: unknown, url: string | undefined, at: number | undefined) => { refreshModels: (c: unknown) => Promise<void>; getModels: () => ModelDefinition[]; getAllModels: () => ModelDefinition[] } }>(REMOTE_CATALOG_ENTRY);
+		const baseline = [{ ...BAKED_A, id: "shared" }];
+		const provider = { id: PROVIDER_ID, name: "b", auth: {}, getModels: () => baseline, getAllModels: () => baseline };
+		const wrapped = withRemoteCatalog(provider, "http://localhost", GENERATED_AT);
+		const stored = storedCatalog(PROVIDER_ID, [storedEntry(PROVIDER_ID, "shared", { type: "image" })], GENERATED_AT + 1);
+		const publish = async (payload: { update?: () => void }) => {
+			payload.update?.();
+			return true;
+		};
+		await wrapped.refreshModels({ stored, publish, allowNetwork: false, signal: new AbortController().signal });
+		const piServed = wrapped.getAllModels();
+		const ours = union({ baked: baseline, stored });
+		const typeOf = (model: ModelDefinition): string => model.type ?? "chat";
+		assert.equal(ours.length, 2, "the extension serves the chat entry and the image entry");
+		assert.equal(piServed.length, 2, "pi's own overlay serves both");
+		assert.deepEqual(ours.map(typeOf).sort(), piServed.map((model) => typeOf(model as ModelDefinition)).sort(), "and the same types as pi's own overlay");
+	});
+
 	itCase("G3", "provider scope", () => {
 		const stored: StoredCatalog = { models: [storedEntry(PROVIDER_ID, "mine"), storedEntry("somebody-else", "theirs")] as StoredCatalog["models"], lastModified: GENERATED_AT + 1 };
 		assert.deepEqual(ids(storeEntriesFor(stored, PROVIDER_ID)), ["mine"]);
@@ -416,12 +470,58 @@ describe("invariant report", () => {
 			// cannot mask the id check here, so the shape is what rejects it.
 			{ models: [{ name: "no id", provider: PROVIDER_ID }], lastModified: GENERATED_AT + 1 },
 			{ models: [{ id: 42, provider: PROVIDER_ID }], lastModified: GENERATED_AT + 1 },
+			// A store whose gate opens but whose model list is not an array: the gate
+			// hands it to the entry filter, which is the shape check under test.
+			{ models: "no", lastModified: GENERATED_AT + 1 },
 		];
 		for (const shape of shapes) {
 			const served = union({ stored: shape as StoredCatalog, endpointIds: shape as string[], modelsDev: shape as Record<string, ModelsDevModel> });
 			for (const model of BAKED) assert.ok(ids(served).includes(model.id), `${model.id} survives the shape ${JSON.stringify(shape)}`);
 			for (const model of served) assertValidModel(model);
 		}
+	});
+
+	itCase("L3", "the refresh precedes the session", async () => {
+		const { registered: registrations, handlers } = await loadExtension();
+		const calls: string[] = [];
+		const ui = { setStatus: () => calls.push("setStatus"), setWorkingMessage: () => calls.push("setWorkingMessage"), notify: () => calls.push("notify") };
+		const entry = registrations.find((r) => r.id === PROVIDER_ID);
+		assert.ok(entry, `the extension registers ${PROVIDER_ID}`);
+		const refresh = entry!.config.refreshModels as (context: unknown) => Promise<unknown>;
+		const served = await refresh({ signal: new AbortController().signal, allowNetwork: false, stored: undefined });
+		assert.ok(Array.isArray(served) && served.length > 0, "the refresh returns the catalog before any session exists");
+		assert.deepEqual(calls, [], "the refresh renders nothing: no UI exists yet");
+		const onStart = handlers.get("session_start");
+		assert.ok(onStart, "the module registers a session_start handler");
+		await onStart!({}, { mode: "tui", ui });
+		assert.ok(calls.length > 0, "the session_start handler is the first place a UI is reached");
+	});
+
+	itCase("L4", "the report holds until a UI exists", () => {
+		const reporter = createReporter();
+		const calls: string[] = [];
+		const ui = { setStatus: () => calls.push("setStatus"), setWorkingMessage: () => calls.push("setWorkingMessage"), notify: () => calls.push("notify") };
+		const report = { providerId: PROVIDER_ID, baked: BAKED.length, stored: 0, served: BAKED.length, failures: [] };
+		reporter.record(report);
+		assert.deepEqual(calls, [], "nothing renders while no UI exists");
+		reporter.attach(ui);
+		assert.ok(calls.length > 0, "the held report renders when a UI attaches");
+	});
+
+	itCase("L5", "a failed live source narrows rather than empties", async () => {
+		const served = await gatherAndBuild({
+			providerId: PROVIDER_ID,
+			decl: TEST_DECL,
+			signal: new AbortController().signal,
+			allowNetwork: true,
+			stored: undefined,
+			generatedAt: GENERATED_AT,
+			baked: BAKED,
+			fetcher: async () => {
+				throw new Error("offline");
+			},
+		});
+		for (const model of BAKED) assert.ok(ids(served).includes(model.id), `${model.id} survives a failing live source`);
 	});
 
 	// --- the composition contract ---------------------------------------
@@ -451,12 +551,20 @@ describe("invariant report", () => {
 	});
 
 	itCase("C3", "user overrides win", async () => {
-		if (!fs.existsSync(COMPOSER_ENTRY)) return;
-		const { composeModelProvider } = await loadPiModule<{ composeModelProvider: (id: string, base: unknown, config: unknown, ext: unknown) => { getModels: () => ModelDefinition[] } }>(COMPOSER_ENTRY);
-		const base = { id: PROVIDER_ID, name: "b", auth: { apiKey: {} }, getModels: () => [...BAKED] };
-		const config = { getProvider: () => ({ modelOverrides: { "baked-a": { contextWindow: 42 } } }), getProviderIds: () => [PROVIDER_ID] };
-		const composed = composeModelProvider(PROVIDER_ID, base, config, undefined);
-		assert.equal(composed.getModels().find((m) => m.id === "baked-a")?.contextWindow, 42, "models.json is the top layer");
+		if (!fs.existsSync(COMPOSER_ENTRY) || !fs.existsSync(BAKED_CATALOG)) return;
+		const { getBuiltinModels } = await loadPiModule<{ getBuiltinModels: (id: string) => ModelDefinition[] }>(BAKED_CATALOG);
+		const baked = getBuiltinModels(PROVIDER_ID) as unknown as ModelDefinition[];
+		const target = baked[0];
+		assert.ok(target, `pi bakes at least one model for ${PROVIDER_ID}`);
+		const { registered } = await loadExtension();
+		const entry = registered.find((r) => r.id === PROVIDER_ID);
+		assert.ok(entry, `the extension registers ${PROVIDER_ID}`);
+		const { composeModelProvider } = await loadPiModule<{ composeModelProvider: (id: string, base: unknown, config: unknown, ext: unknown) => { getModels: () => ModelDefinition[]; refreshModels?: (c: unknown) => Promise<void> } }>(COMPOSER_ENTRY);
+		const base = { id: PROVIDER_ID, name: "b", auth: { apiKey: {} }, getModels: () => [...baked] };
+		const config = { getProvider: () => ({ modelOverrides: { [target.id]: { contextWindow: 42 } } }), getProviderIds: () => [PROVIDER_ID] };
+		const composed = composeModelProvider(PROVIDER_ID, base, config, entry!.config);
+		await composed.refreshModels?.({ stored: undefined, publish: async (payload: { update?: () => void }) => { payload.update?.(); return true; }, allowNetwork: false, signal: new AbortController().signal });
+		assert.equal(composed.getModels().find((m) => m.id === target.id)?.contextWindow, 42, "models.json is the top layer");
 	});
 
 	// --- thinking levels ------------------------------------------------
@@ -589,3 +697,12 @@ function grow(row: Partial<SourceState> & { baked?: readonly ModelDefinition[] }
 			return { ...row, modelsDev: { ...(row.modelsDev ?? {}), [extra]: { name: extra } } };
 	}
 }
+
+// --- the machine-run totality check ----------------------------------------
+
+describe("totality", () => {
+	it("every transition, state and case the record names is accounted for", () => {
+		const findings = checkTotality(buildCatalog());
+		assert.deepEqual(findings, [], findings.join("; "));
+	});
+});

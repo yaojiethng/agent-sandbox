@@ -64,6 +64,13 @@ export type SourceDeclarations = Record<string, ProviderDecl>;
 /** One model definition, as pi's legacy registration form accepts it. */
 export interface ModelDefinition {
 	id: string;
+	/**
+	 * The model's kind. Pi reads it through `getModelType`, where an absent type
+	 * is `chat`, and keys model identity on `type + id`. A stored entry may carry
+	 * an `image` or `classifier` type, so the union keeps the field rather than
+	 * dropping it and collapsing a same-id pair pi would keep apart.
+	 */
+	type?: string;
 	name?: string;
 	api: Api;
 	baseUrl: string;
