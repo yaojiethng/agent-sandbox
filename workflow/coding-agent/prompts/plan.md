@@ -59,4 +59,4 @@ A plan is complete when the operator confirms the written plan. Stop and wait fo
 
 ## Close
 
-After the operator confirms the written plan, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the close steps -- roadmap write-back, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- applied to a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit. Land the plan single commit per `git_policy.md`.
+After the operator confirms the written plan, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the close steps -- roadmap write-back, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- applied to a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit. Land the plan as a single commit per `git_policy.md`.

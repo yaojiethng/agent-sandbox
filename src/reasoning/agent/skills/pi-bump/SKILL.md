@@ -23,8 +23,6 @@ Bump the pin instead: source the latest version from the version-check API (step
 | `src/reasoning/providers/pi/base.dockerfile` | `RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@<NEW>` |
 | `src/reasoning/providers/pi/config/agent/settings.json` | `"lastChangelogVersion": "<NEW>"` |
 
-A bump does not edit `devlog/roadmap_future.md`. The M7 -> Dependency Security note names the bump unit, not a version literal.
-
 ## Steps
 
 ### 1. Source the latest version from the API

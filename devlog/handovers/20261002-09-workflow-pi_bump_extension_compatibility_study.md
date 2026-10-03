@@ -1,5 +1,7 @@
 # Agent Handover
 
+[CORRECTION -- 2026-10-04: the pi-bump compatibility study `20261002-study-pi_bump_extension_compatibility.md` was removed at the operator's direction, and its three links in this record carry the `[REMOVED]` marker. The text below is unchanged otherwise. The finding it raised was routed to `devlog/roadmap.md` T1, and the remedy, closing the study, was removal rather than a status fix.]
+
 **Date:** 2026-10-02
 **Milestone:** M3.2.1 - Loops as Workflows
 **Type:** Workflow
@@ -37,7 +39,7 @@ None.
 |---|---|
 | [`src/reasoning/agent/skills/pi-bump/SKILL.md`](../../src/reasoning/agent/skills/pi-bump/SKILL.md) | the procedure this unit makes sound |
 | [`scripts/lint/pi-extension-compat.mjs`](../../scripts/lint/pi-extension-compat.mjs) | new, the probe the procedure runs |
-| [`devlog/discussions/20261002-study-pi_bump_extension_compatibility.md`](../discussions/20261002-study-pi_bump_extension_compatibility.md) | the study behind the procedure |
+| `devlog/discussions/20261002-study-pi_bump_extension_compatibility.md` `[REMOVED]` | the study behind the procedure |
 
 ## The run: 0.87.1 to 0.99.2
 
@@ -97,7 +99,7 @@ Steps 1 to 4 of the amended skill, executed, stopping where the skill says to st
 |---|---|
 | `src/reasoning/agent/skills/pi-bump/SKILL.md` | rewritten into seven steps: read the changelog, probe the extensions, report, stop, then edit, verify and commit on a release. The two defective checks replaced |
 | `scripts/lint/pi-extension-compat.mjs` | new, the probe |
-| `devlog/discussions/20261002-study-pi_bump_extension_compatibility.md` | new, the study behind the procedure, with a recommendation |
+| `devlog/discussions/20261002-study-pi_bump_extension_compatibility.md` `[REMOVED]` | new, the study behind the procedure, with a recommendation |
 | `devlog/roadmap.md` | the three-unit row, the row recording that 0.99.2 does not close the default-model report, and the checker-placement row |
 
 ## Propagation replay
@@ -113,7 +115,7 @@ Steps 1 to 4 of the amended skill, executed, stopping where the skill says to st
 | `SKILL.md` step 7 | commit | completed, unchanged |
 | `SKILL.md` the "Files to edit" table | unchanged, still the three files | completed, no change needed |
 | `scripts/lint/pi-extension-compat.mjs` | new | completed |
-| `devlog/discussions/20261002-study-pi_bump_extension_compatibility.md` | new | completed |
+| `devlog/discussions/20261002-study-pi_bump_extension_compatibility.md` `[REMOVED]` | new | completed |
 | `devlog/roadmap.md` | three rows | completed |
 | the twelve unverified assumption rows | walk them against 0.99.2 | not started, follow-on unit one |
 | `src/reasoning/providers/pi/base.dockerfile` and the other two files | move the pin to 0.99.2 | not started, follow-on unit two |
