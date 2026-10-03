@@ -15,7 +15,7 @@ argument-hint: "[track list - a roadmap task set, a row list, or a named track p
 
 The primary holds the plan, the worktrees, the briefs, the dispatch, the verification of every return, the records, and the merge. A track subagent holds one track's work inside its own worktree. Nothing crosses between a track subagent and the primary's tree except a return, a brief, and a merge.
 
-The measured results behind this template - wall clocks, defect counts, the reproduced record conflict, the two-track load ceiling - are in [`20260927-design-draft-parallel_auto_experiment.md`](../../../devlog/discussions/20260927-design-draft-parallel_auto_experiment.md).
+The measured results behind this template - wall clocks, defect counts, the reproduced record conflict, the two-track load ceiling - are in [`20260927-design-draft-parallel_auto_experiment.md`](../../../devlog/discussions/archive/20260927-design-draft-parallel_auto_experiment.md).
 
 ## When to run this way
 

@@ -8,7 +8,7 @@ Entries are point-in-time records. The **A/O tag** names who raised the entry: `
 
 Catalogue a recurrence on its existing entry. Before writing a new entry, grep the file for an entry on the same topic. If one exists, record the recurrence on it instead of creating a new one: set `state` to `open`, note the prior fix in `legacy:` (or, if already present, add to the resurfacing evidence), and fold the new failure mode into the entry. A recurrence re-opens and extends its entry. This keeps the count of recurrences rising on one entry so the operator can see the pattern and scope a durable fix. Do not open a sibling entry for the same topic.
 
-This file is tied into the session's Findings section for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
+This file is tied into the session's Findings section for recording and into the sub-milestone pre-close review gate for reconciliation. See the finalized-workflow artifact `devlog/discussions/archive/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`.
 
 ---
 
@@ -78,7 +78,7 @@ Attribution is operator-owned. The agent proposes a class and the operator confi
 
 ## Consolidated (M3 cleanup 2026-09-21)
 
-Frame the merged entries below; each replaces the member entries that shared its roadmap solution. Members were consolidated per the cleanup-pass policy in `devlog/discussions/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`; their originating handovers carry a `[CORRECTION]` note.
+Frame the merged entries below; each replaces the member entries that shared its roadmap solution. Members were consolidated per the cleanup-pass policy in `devlog/discussions/archive/20260809-design-settled-agent_feedback_and_gotchas_workflow.md`; their originating handovers carry a `[CORRECTION]` note.
 
 ### [A] 2026-09-21  --  Review-pass framing: directive wording (T1)
 
@@ -553,7 +553,7 @@ The first dispatch of the parallel-track trial produced a unit that changed `scr
 
 Two sub-cases from the same trial. A per-unit file list invents a boundary that does not exist: a repair subagent found a defect in a file its own track already owned, declined to fix it because that unit's list omitted the file, and reported it instead - the right call under the brief it was given, and a wasted dispatch under a track-level one. And a subagent working in a worktree outside the canonical sandbox directory needs the brief to remap the boundary rule explicitly, because the provider-layer instruction not to modify files outside the sandbox is a contradiction until the brief says which directory is the project root.
 
-Scope: brief construction for every dispatched subagent, not only the parallel case. Cross-reference: the trial's design record [`20260927-design-draft-parallel_auto_experiment.md`](discussions/20260927-design-draft-parallel_auto_experiment.md), findings F3 and F4; the unit and brief contract in [`auto.md`](../workflow/coding-agent/drafts/auto.md).
+Scope: brief construction for every dispatched subagent, not only the parallel case. Cross-reference: the trial's design record [`20260927-design-draft-parallel_auto_experiment.md`](discussions/archive/20260927-design-draft-parallel_auto_experiment.md), findings F3 and F4; the unit and brief contract in [`auto.md`](../workflow/coding-agent/drafts/auto.md).
 
 ### [O] 2026-10-02  --  The policy forbids task lists in non-active milestones, and the roadmap contradicts it every day
 

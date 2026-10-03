@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/test_providers_pi_preflight.sh
 # Unit tests for src/reasoning/providers/pi/preflight.sh
-# Pins cite: devlog/discussions/20260512-design-settled-provider_config_ownership_and_loading.md (warning surface).
+# Pins cite: devlog/discussions/archive/20260512-design-settled-provider_config_ownership_and_loading.md (warning surface).
 
 #
 # Tests:

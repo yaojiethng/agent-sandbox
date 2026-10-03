@@ -4,7 +4,7 @@
 
 Find refactor and rewrite targets by change frequency. A churn number alone never justifies a rewrite. The signal is the join: a file that changes often and carries read-through findings in its sector is the priority; a file that changes often with no findings is stable-but-evolving and needs no action.
 
-This brief is the companion to [`read-through-run.md`](read-through-run.md). The read-through produces the findings register and measures whether the tests pin behaviour; this pass produces the change-frequency ranking and measures where the tree moves. Join the two before you propose any rewrite. The register this pass joins against lives in [`20260927-report-settled-test_suite_readthrough.md`](../../../devlog/discussions/20260927-report-settled-test_suite_readthrough.md); reach for the register version that is current at run time, because row numbers are stable and the file grows.
+This brief is the companion to [`read-through-run.md`](read-through-run.md). The read-through produces the findings register and measures whether the tests pin behaviour; this pass produces the change-frequency ranking and measures where the tree moves. Join the two before you propose any rewrite. The register this pass joins against lives in [`20260927-report-settled-test_suite_readthrough.md`](../../../devlog/discussions/archive/20260927-report-settled-test_suite_readthrough.md); reach for the register version that is current at run time, because row numbers are stable and the file grows.
 
 ## The pinned measurement
 
@@ -57,7 +57,7 @@ The pinned command run against this repository on the 679 commits reachable from
 
 ```text
 293	devlog/roadmap.md
-134	devlog/handovers/20260701-03-impl-m2_6_2_persistence.md
+134	devlog/handovers/archive/20260701-03-impl-m2_6_2_persistence.md
 88	scripts/start_agent.sh
 66	scripts/agent-sandbox.sh
 62	docs/architecture/tool_interface.md
@@ -78,7 +78,7 @@ Applying the two-sweep rule above gives the ranked table for the top fifteen fil
 | File | Total | Mechanical | Functional | Register rows (sectors) |
 |---|---|---|---|---|
 | `devlog/roadmap.md` | 293 | 8 | 285 | none |
-| `devlog/handovers/20260701-03-impl-m2_6_2_persistence.md` | 134 | 7 | 127 | none |
+| `devlog/handovers/archive/20260701-03-impl-m2_6_2_persistence.md` | 134 | 7 | 127 | none |
 | `scripts/start_agent.sh` | 88 | 4 | 84 | 43, 120, 165-171, 173, 265, 266 (A, C, F, H, I, J) |
 | `scripts/agent-sandbox.sh` | 66 | 2 | 64 | 7, 48, 136, 199-201, 203-207, 266, 283 (A, C, G, H, I, J) |
 | `docs/architecture/tool_interface.md` | 62 | 2 | 60 | 91, 299 (C, F) |

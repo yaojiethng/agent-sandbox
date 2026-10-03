@@ -6,12 +6,13 @@
 # Enforces docs/operations/handover_policy.md `## Format`: the frontmatter
 # fields and the section set. The scanner is scripts/lint/handover-format.mjs.
 #
-# Scope: only handovers dated on or after the cutover, so every record written
-# before the rule is grandfathered and a correction to one stays exempt. A file
-# named on the command line is enforced regardless of date, which is the
-# on-demand audit mode handover-maintenance.md uses. `--staged` enforces the
-# handovers staged for commit but keeps the cutover, so a commit correcting an
-# old record is not blocked.
+# Scope: the default scan reads the live handover folder, which the archive
+# keeps free of every record written before the frontmatter rule. A live record
+# that lacks the block is a finding. A file named on the command line is
+# enforced regardless of date, which is the on-demand audit mode
+# handover-maintenance.md uses. `--staged` enforces the handovers staged for
+# commit but keeps the cutover, so a commit correcting an old record is not
+# blocked.
 #
 # Test seam: HANDOVER_FORMAT_SCAN_ROOT points the scan at a fixture root, and
 # HANDOVER_FORMAT_CUTOVER moves the cutover the default scan applies.

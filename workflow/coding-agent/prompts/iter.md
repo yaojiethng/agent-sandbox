@@ -57,6 +57,8 @@ If the directive slot is non-empty:
 
 Before creating the handover, read the iteration invariants in `iteration_policy.md`: `## Iteration Invariants`, and the record-state and close invariants under it. Create the handover per those rules. Set Status to `Active`.
 
+The record opens with a YAML frontmatter block, per `handover_policy.md ## Format`. It carries four keys: `date` (`YYYY-MM-DD`), `milestone`, `type` (one of the vocabulary), and `status`. Do not write the fields as bold header lines.
+
 ---
 
 ## Step 2  --  Define the task scope

@@ -4,11 +4,12 @@
 // frontmatter fields (date, milestone, type, status) and the section set (the
 // required sections present, the forbidden ones absent).
 //
-// Scope: only handovers dated on or after the cutover are enforced, so every
-// record written before the rule is grandfathered and a correction to one
-// stays exempt. `--force` drops the cutover for the file list it is given,
-// which is the on-demand audit mode handover-maintenance.md uses; without it a
-// file list (the `--staged` mode) still honours the cutover.
+// Scope: the default scan reads the live handover folder, which the archive
+// keeps free of every record written before the cutover; a record there that
+// lacks the frontmatter block is a finding. A file list without `--force` (the
+// `--staged` mode) still honours the cutover, so a correction to a record in
+// the archive is not blocked. `--force` drops the cutover for the file list it
+// is given, which is the on-demand audit mode handover-maintenance.md uses.
 //
 // Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 // finding count is printed, never encoded in the exit code.
@@ -50,6 +51,10 @@ const cutover = (argValue(args, "cutover") || DEFAULT_CUTOVER).replace(/-/g, "")
 const root = argValue(args, "root") ? resolve(argValue(args, "root")) : REPO_ROOT;
 const named = args.filter((a) => !a.startsWith("--"));
 const force = args.includes("--force");
+// The default scan reads the live handover folder, which the archive keeps free
+// of every record written before the frontmatter rule, so an absent block there
+// is a finding rather than history. A named file list keeps the cutover.
+const defaultScan = named.length === 0;
 
 const { parse } = loadYaml("Handover format gate");
 
@@ -108,9 +113,11 @@ for (const file of files) {
   const rel = display(file);
 
   if (block === null) {
-    // An absent block is the old bold-header form: history in the cutover
-    // modes, a finding when the operator forces the file.
-    if (force) {
+    // An absent block is the old bold-header form. The default scan reads the
+    // live folder, where the archive boundary leaves only records that must
+    // carry the block, so its absence is a finding; a named file list keeps the
+    // cutover, so a correction to a record in the archive is not blocked.
+    if (force || defaultScan) {
       checked += 1;
       findings.push({ rel, line: 1, msg: "no YAML frontmatter block; the header fields must be frontmatter" });
     }

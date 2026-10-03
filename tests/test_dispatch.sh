@@ -2,7 +2,7 @@
 # tests/test_dispatch.sh  (exec-based dispatch oracle)
 #
 # Pins cite: roadmap "CLI surface" (l.94);
-#             devlog/discussions/20260530-design-settled-dispatch_cleanup_and_help_system.md.
+#             devlog/discussions/archive/20260530-design-settled-dispatch_cleanup_and_help_system.md.
 
 # Dispatch oracle tests for the exec-based dispatch model. Asserts that
 # agent-sandbox.sh main() routes flags and subcommands to the correct

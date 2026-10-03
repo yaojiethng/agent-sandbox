@@ -4,7 +4,7 @@
 
 ## 2026-10-01 -- The dispatch work-loop expansions move to M3.2.3; `/auto` and `/goal` become M4
 
-**Decision:** The autonomous dispatch shapes, previously the `/iter` work-loop expansions `(/auto`, `/parallel-auto)`, change ownership and semantics. M3.2.3 assumes ownership of the `/iter` work-loop expansions from hereon and renders them as a curated dispatch-command surface with a temporary `-work` suffix: `/sequential-work` (was `/auto`) and `/parallel-work` (was `/parallel-auto`). The `-work` suffix is placeholder-pending-final-naming and is removed when the feature lands. The `/auto` keyword is reserved for the new M4 smart dispatcher (Option A): given a roadmap task list, it resolves execution order, picks a dispatch shape, and orchestrates. `/goal` (Option B, loose-goal decomposition) is also M4's, reworked from the removed external extension. The loop taxonomy proper (the four loops) stays M3.2.1's. Semantics record: [`20261001-design-settled-auto_smart_dispatch.md`](../../devlog/discussions/20261001-design-settled-auto_smart_dispatch.md).
+**Decision:** The autonomous dispatch shapes, previously the `/iter` work-loop expansions `(/auto`, `/parallel-auto)`, change ownership and semantics. M3.2.3 assumes ownership of the `/iter` work-loop expansions from hereon and renders them as a curated dispatch-command surface with a temporary `-work` suffix: `/sequential-work` (was `/auto`) and `/parallel-work` (was `/parallel-auto`). The `-work` suffix is placeholder-pending-final-naming and is removed when the feature lands. The `/auto` keyword is reserved for the new M4 smart dispatcher (Option A): given a roadmap task list, it resolves execution order, picks a dispatch shape, and orchestrates. `/goal` (Option B, loose-goal decomposition) is also M4's, reworked from the removed external extension. The loop taxonomy proper (the four loops) stays M3.2.1's. Semantics record: [`20261001-design-settled-auto_smart_dispatch.md`](../../devlog/discussions/archive/20261001-design-settled-auto_smart_dispatch.md).
 
 **Rationale:** The old `/auto` (sequential autopilot) and the new `/auto` (smart dispatcher) are different things, so they cannot share a keyword. Freeing the keyword for the M4 smart dispatcher requires renaming the sequential shape at once, and M3.2.3 is the home where the dispatch shapes are refined and curated. The smart dispatcher is not an `/iter` work-loop expansion; it is a distinct M4 capability. The temporary `-work` suffix marks the family as pending final naming and gives the rename a defined completion condition at M3.2.3's close.
 
@@ -72,7 +72,7 @@ The explanatory loop content moves to `docs/concepts/autonomous_agent_loop.md`: 
 
 ## References
 
-- Design record: [`20260928-design-settled-loop_workflows_migration.md`](../../devlog/discussions/20260928-design-settled-loop_workflows_migration.md)
+- Design record: [`20260928-design-settled-loop_workflows_migration.md`](../../devlog/discussions/archive/20260928-design-settled-loop_workflows_migration.md)
 - Planning handover: `20260928-04`
 - Separation rule: [`policy_declarative_framing.md`](policy_declarative_framing.md)
 - Framework loop workflow: `docs/concepts/autonomous_agent_loop.md`

@@ -4,7 +4,7 @@
 # Bind-mounted at /dry_run_reasoning.sh via the dry-run compose overlay.
 #
 # Responsibility (bearer): assert the reasoning container is complete/ready per
-# the readiness model (design devlog/discussions/20260828-design-settled-dry_run_phase_split.md),
+# the readiness model (design devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md),
 # then write a per-container diagnostics record to the output mount for
 # orchestration to validate (correct-container check). Checks are listed in
 # readiness-layer order: docker_image -> workspace_mounts -> session_state ->

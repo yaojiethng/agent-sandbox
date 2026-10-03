@@ -4,7 +4,7 @@
 # Operator-run host cleanup: remove docker volumes whose session record is
 # gone, after listing them and confirming. Manual counterpart of prune Rule 2
 # (scripts/prune.sh), which cannot see these volumes today (see
-# devlog/discussions/20260926-study-active-prune_rule2_orphan_visibility.md).
+# devlog/discussions/archive/20260926-study-active-prune_rule2_orphan_visibility.md).
 #
 # A volume is an orphan when both hold:
 #   - it carries the agent-sandbox.sandbox-dir label (this project's volume)

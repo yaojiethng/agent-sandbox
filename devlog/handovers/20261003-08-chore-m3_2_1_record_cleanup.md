@@ -46,10 +46,10 @@ The M3.2.1 `Docs and ADR consolidation` and `Prompt/AGENTS.md conventions` group
 | File | Why in scope |
 |---|---|
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | the M3.2.1 task list, the T1 and T7 destinations, and the M3.2.2 row |
-| [`devlog/handovers/20261001-01-plan-auto_smart_dispatcher_reservation.md`](../../devlog/handovers/20261001-01-plan-auto_smart_dispatcher_reservation.md) | stale draft-gate paths, re-pathed |
-| [`devlog/handovers/20261001-03-workflow-backlog_triage_prompt.md`](../../devlog/handovers/20261001-03-workflow-backlog_triage_prompt.md) | stale draft-gate paths, re-pathed |
-| [`devlog/handovers/20261002-06-chore-prompt_frontmatter_parse_gate.md`](../../devlog/handovers/20261002-06-chore-prompt_frontmatter_parse_gate.md) | stale draft-gate path, re-pathed |
-| [`devlog/handovers/20261002-10-workflow-maintenance_extraction_and_dispatch.md`](../../devlog/handovers/20261002-10-workflow-maintenance_extraction_and_dispatch.md) | stale draft-gate path, re-pathed |
+| [`devlog/handovers/archive/20261001-01-plan-auto_smart_dispatcher_reservation.md`](../../devlog/handovers/archive/20261001-01-plan-auto_smart_dispatcher_reservation.md) | stale draft-gate paths, re-pathed |
+| [`devlog/handovers/archive/20261001-03-workflow-backlog_triage_prompt.md`](../../devlog/handovers/archive/20261001-03-workflow-backlog_triage_prompt.md) | stale draft-gate paths, re-pathed |
+| [`devlog/handovers/archive/20261002-06-chore-prompt_frontmatter_parse_gate.md`](../../devlog/handovers/archive/20261002-06-chore-prompt_frontmatter_parse_gate.md) | stale draft-gate path, re-pathed |
+| [`devlog/handovers/archive/20261002-10-workflow-maintenance_extraction_and_dispatch.md`](../../devlog/handovers/archive/20261002-10-workflow-maintenance_extraction_and_dispatch.md) | stale draft-gate path, re-pathed |
 
 ## Decisions
 

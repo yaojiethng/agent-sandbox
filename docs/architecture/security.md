@@ -33,7 +33,7 @@ The system includes the following explicit trust boundaries, which hold in every
 
 ### Principle
 
-The sandbox adds no security beyond what the host provides -- it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design -- Mount Model](../../devlog/discussions/20260730-design-settled-mount_model.md) and the delivery-model concept docs: [copy_delivery.md](../concepts/copy_delivery.md), [mount_delivery.md](../concepts/mount_delivery.md).
+The sandbox adds no security beyond what the host provides -- it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design -- Mount Model](../../devlog/discussions/archive/20260730-design-settled-mount_model.md) and the delivery-model concept docs: [copy_delivery.md](../concepts/copy_delivery.md), [mount_delivery.md](../concepts/mount_delivery.md).
 
 ### Mount modes
 
@@ -43,7 +43,7 @@ The sandbox adds no security beyond what the host provides -- it only restricts 
 | **Mount** (M2.6.6, runnable) | Bind-mounted live from host | Materialized by the harness from the project on first run: full history by default (native `.git` copy), or `--flatten` for a fresh baseline. Recorded in worktree config (`agent-sandbox.flatten`). Harness does not otherwise mediate git operations. | Live view: mid-session host changes (incl. accidentally introduced secrets) visible without review; user-error surface; git risk is user-owned |
 | *Raw project dir* (not offered) | Operator's own checkout | Operator's own `.git` | -- see [Non-goals](#non-goals) |
 
-Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope -- see [ADR -- Sandbox Delivery Model](../../docs/adr/sandbox_delivery_model.md) and the [full investigation](../../devlog/discussions/20260730-study-settled-worktree_rejection.md).
+Worktree backing (agent commits landing in the host object store via `git worktree add`) is out of scope -- see [ADR -- Sandbox Delivery Model](../../docs/adr/sandbox_delivery_model.md) and the [full investigation](../../devlog/discussions/archive/20260730-study-settled-worktree_rejection.md).
 
 **Invariants (all modes):**
 

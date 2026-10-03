@@ -5,7 +5,7 @@
 # probes (dry_run_capability.sh / dry_run_reasoning.sh) write to the output
 # mount. Orchestration consumes these records (not probe stdout) to assert
 # that the correct container was started, per the readiness model in
-# devlog/discussions/20260828-design-settled-dry_run_phase_split.md.
+# devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md.
 #
 # Record format (key=value lines, one per line):
 #   container=<identity echo-back injected via DRY_RUN_IDENTITY>

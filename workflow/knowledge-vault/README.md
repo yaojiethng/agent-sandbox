@@ -38,14 +38,14 @@ This is the primary operator reference. Start here.
 |---|---|
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | Main harness roadmap -- M2.1 is the next milestone affecting this workflow |
 | [`docs/concepts/two_layer_model.md`](../../docs/concepts/two_layer_model.md) | Why M2.1 looks the way it does -- reasoning vs capability layer separation |
-| [`docs/development/20260312-study-settled-mcp_server.md`](../../devlog/discussions/20260312-study-settled-mcp_server.md) | MCP server investigation: architecture, candidates, two-workspace model |
+| [`docs/development/20260312-study-settled-mcp_server.md`](../../devlog/discussions/archive/20260312-study-settled-mcp_server.md) | MCP server investigation: architecture, candidates, two-workspace model |
 
 ### Historical record (completed work)
 
 | Document | Purpose |
 |---|---|
 | [`changelog.md`](changelog.md) | KV1-KV4 completion record and milestone summary |
-| [`docs/discussions/20260311-story-superseded-obsidian_vault_onboarding.md`](../../devlog/discussions/20260311-story-superseded-obsidian_vault_onboarding.md) | Original investigation story -- reasoning record. Superseded; kept for reference. |
+| [`docs/discussions/archive/20260311-story-superseded-obsidian_vault_onboarding.md`](../../devlog/discussions/archive/20260311-story-superseded-obsidian_vault_onboarding.md) | Original investigation story -- reasoning record. Superseded; kept for reference. |
 
 ---
 

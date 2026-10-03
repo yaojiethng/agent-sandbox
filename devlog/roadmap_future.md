@@ -21,7 +21,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 **Tasks:**
 
 - [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`20260312-study-settled-mcp_server.md`](discussions/20260312-study-settled-mcp_server.md) candidates table)
+- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`20260312-study-settled-mcp_server.md`](discussions/archive/20260312-study-settled-mcp_server.md) candidates table)
 - [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
 - [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
 - [ ] Validate binary file handling (vault attachments) under selected MCP server
@@ -193,7 +193,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 - Version bump policy agreed and documented
 - Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
 
-**Design reference:** [`devlog/discussions/20260522-study-superseded-harness_sig_requirements.md`](./discussions/20260522-study-superseded-harness_sig_requirements.md)
+**Design reference:** [`devlog/discussions/archive/20260522-study-superseded-harness_sig_requirements.md`](./discussions/archive/20260522-study-superseded-harness_sig_requirements.md)
 
 ---
 
@@ -205,11 +205,11 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ### Copy-Model Seeding -- Host-Side Volume Seed (M2.6.5 follow-up, complete)
 
-The volume is seeded host-side before the sandbox container starts, so the entrypoint mounts no snapshot directory: the compose template carries no `SNAPSHOT_DIR` mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir` environment and session-state writes are retired repo-wide. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md); design record [`20260730-design-settled-mount_model.md`](./discussions/20260730-design-settled-mount_model.md). Handovers `20260818-02` (the copy-in decision) and `20260901-14` (the implementation). The entrypoint branch inversion (`if ! -d .git` then init, else resume bookkeeping) belongs to the M2.6.6 delivery scope and is not filed here.
+The volume is seeded host-side before the sandbox container starts, so the entrypoint mounts no snapshot directory: the compose template carries no `SNAPSHOT_DIR` mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir` environment and session-state writes are retired repo-wide. Model: [`docs/concepts/copy_delivery.md`](../docs/concepts/copy_delivery.md); design record [`20260730-design-settled-mount_model.md`](./discussions/archive/20260730-design-settled-mount_model.md). Handovers `20260818-02` (the copy-in decision) and `20260901-14` (the implementation). The entrypoint branch inversion (`if ! -d .git` then init, else resume bookkeeping) belongs to the M2.6.6 delivery scope and is not filed here.
 
 ### M2.6.7 -- Interface Contract Compatibility (complete)
 
-One version constant, one image label, one warn-only preflight check, and a hard stop on a container-to-container mismatch; a missing record key still warns, which is the upgrade path. Interface concept doc `docs/concepts/sandbox_host_interface.md`, lifecycle architecture doc `docs/architecture/sandbox_lifecycle.md`, ADR `docs/adr/interface_contract_compatibility.md`. Handovers `20260919-03` (design), `20260919-04` (implementation) and `20260919-05` (documentation); design record [`20260919-design-settled-interface_contract_compatibility.md`](./discussions/20260919-design-settled-interface_contract_compatibility.md). The `container-sig` mechanism this sub-milestone superseded was retired at `20260919-08`.
+One version constant, one image label, one warn-only preflight check, and a hard stop on a container-to-container mismatch; a missing record key still warns, which is the upgrade path. Interface concept doc `docs/concepts/sandbox_host_interface.md`, lifecycle architecture doc `docs/architecture/sandbox_lifecycle.md`, ADR `docs/adr/interface_contract_compatibility.md`. Handovers `20260919-03` (design), `20260919-04` (implementation) and `20260919-05` (documentation); design record [`20260919-design-settled-interface_contract_compatibility.md`](./discussions/archive/20260919-design-settled-interface_contract_compatibility.md). The `container-sig` mechanism this sub-milestone superseded was retired at `20260919-08`.
 
 ### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
 

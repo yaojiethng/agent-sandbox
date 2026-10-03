@@ -1,5 +1,7 @@
 # default model provider resolution bug report
 
+**Status:** draft
+
 Environment: `@earendil-works/pi-coding-agent` 0.87.1, Linux x64, Node 22.22.3. All measurements below were taken against that build by driving pi's own `findInitialModel` and `resolveModelScopeFromModels` with an injected catalog and an injected auth set, so the numbers come from the shipped resolver and not from a re-implementation of it.
 
 The summary: a user who configures a model scope has their saved default model silently discarded, with no message, on every start. `defaultProvider` and `defaultModel` are not weakened settings in that case. They are never read. The scope list wins because it is consulted first and returns unconditionally, and because the setting that would have overridden the choice is only reached on the branch the scope did not take. The user sees a model they did not ask for, believes their setting is being ignored for some reason they cannot name, and has no output to search for.

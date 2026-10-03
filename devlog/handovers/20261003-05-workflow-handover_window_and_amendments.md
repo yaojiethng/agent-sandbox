@@ -40,11 +40,11 @@ The gate's cutover was `20261003`, which exempted every record written before th
 | [`scripts/lint/handover-format.mjs`](../../scripts/lint/handover-format.mjs) | the default cutover moves |
 | [`scripts/check_handover_format.sh`](../../scripts/check_handover_format.sh) | the shell default moves with it |
 | [`docs/operations/handover_policy.md`](../../docs/operations/handover_policy.md) | the window and its exemption are stated |
-| [`devlog/handovers/20261002-19-workflow-prompt_draft_gate.md`](../../devlog/handovers/20261002-19-workflow-prompt_draft_gate.md) | unified onto the current format |
-| [`devlog/handovers/20261002-20-workflow-roadmap_record_link_and_wrap_gates.md`](../../devlog/handovers/20261002-20-workflow-roadmap_record_link_and_wrap_gates.md) | `type` set to an enum member |
-| [`devlog/handovers/20261002-21-workflow-maintenance_skill_completion_and_record_corrections.md`](../../devlog/handovers/20261002-21-workflow-maintenance_skill_completion_and_record_corrections.md) | `type` set to an enum member |
-| [`devlog/handovers/20261002-22-workflow-markdown_gate_unresolved_rule_warning.md`](../../devlog/handovers/20261002-22-workflow-markdown_gate_unresolved_rule_warning.md) | `type` set to an enum member |
-| [`devlog/handovers/20261002-25-workflow-loop_state_model_and_close_seam.md`](../../devlog/handovers/20261002-25-workflow-loop_state_model_and_close_seam.md) | the forbidden section removed, `## Completed` added |
+| [`devlog/handovers/archive/20261002-19-workflow-prompt_draft_gate.md`](../../devlog/handovers/archive/20261002-19-workflow-prompt_draft_gate.md) | unified onto the current format |
+| [`devlog/handovers/archive/20261002-20-workflow-roadmap_record_link_and_wrap_gates.md`](../../devlog/handovers/archive/20261002-20-workflow-roadmap_record_link_and_wrap_gates.md) | `type` set to an enum member |
+| [`devlog/handovers/archive/20261002-21-workflow-maintenance_skill_completion_and_record_corrections.md`](../../devlog/handovers/archive/20261002-21-workflow-maintenance_skill_completion_and_record_corrections.md) | `type` set to an enum member |
+| [`devlog/handovers/archive/20261002-22-workflow-markdown_gate_unresolved_rule_warning.md`](../../devlog/handovers/archive/20261002-22-workflow-markdown_gate_unresolved_rule_warning.md) | `type` set to an enum member |
+| [`devlog/handovers/archive/20261002-25-workflow-loop_state_model_and_close_seam.md`](../../devlog/handovers/archive/20261002-25-workflow-loop_state_model_and_close_seam.md) | the forbidden section removed, `## Completed` added |
 
 ## Decisions
 
@@ -79,7 +79,7 @@ None.
 | `scripts/check_handover_format.sh` | the shell default moved to `20261001` |
 | `docs/operations/handover_policy.md` | `## Format` states the window, its reach, and the exemption below it |
 | `docs/operations/roadmap_policy.md` | `### Filing rules` gains the single-edit record-defect rule |
-| `devlog/handovers/20261002-19-workflow-prompt_draft_gate.md` | YAML frontmatter, `## Scope`, `## Hot files`, `## Decisions pending`, and `## Changes` renamed `## Completed` |
-| `devlog/handovers/20261002-20-...`, `20261002-21-...`, `20261002-22-...` | `type` set to `Implementation`, `Documentation` and `Implementation` |
-| `devlog/handovers/20261002-25-...` | `## Deferred` removed, `## Hot files` and `## Completed` split |
+| `devlog/handovers/archive/20261002-19-workflow-prompt_draft_gate.md` | YAML frontmatter, `## Scope`, `## Hot files`, `## Decisions pending`, and `## Changes` renamed `## Completed` |
+| `devlog/handovers/archive/20261002-20-...`, `20261002-21-...`, `20261002-22-...` | `type` set to `Implementation`, `Documentation` and `Implementation` |
+| `devlog/handovers/archive/20261002-25-...` | `## Deferred` removed, `## Hot files` and `## Completed` split |
 | `devlog/roadmap.md` | the handover format window row, and a closed row for the one-off housekeeping edits, which absorbs the four pairing and completion rows and the closed unpaired-handover row |
