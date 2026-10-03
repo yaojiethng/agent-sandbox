@@ -1,12 +1,8 @@
 # Roadmap Policy
 
-Policy rules for `devlog/roadmap.md`, `devlog/roadmap_future.md`, and `devlog/changelog.md`.
+**Description.** Owns the roadmap record and the milestone grain: when the roadmap is touched, how updates are normalized, what the record must look like, and how records retire.
 
-**Role of this file.** This file owns the roadmap update invariants and record shape. It answers, in order: when the roadmap is touched (invocation moments), how updates are normalized (roadmap maintenance, promotion), what the record must look like (structure and filing rules), and how records retire (changelog, corrections). Other documents link here; they do not restate these rules.
-
-**Decoupling principle.** The runbook and the invariants are independent layers. The runbook is expected to evolve as the model improves. The invariant set below should be insensitive to runbook changes: a change to a runbook should never *require* a change here. Improving the invariant set is welcome and autonomous; what signals coupling is not that it was edited, but *why* -- an edit forced by a runbook rename or renumber is entanglement, while an edit stating a better durable rule is healthy evolution.
-
-**Two forms of rule.** Policy may state an invariant (a property of the state, holding at every commit gate) or a canonical procedure (a deterministic code-block guaranteed to satisfy an invariant). A loose procedure -- one with a large agent-decision space where the shape is not canonical -- is not stated here; it lives in the runbook that owns the moment and references these invariants rather than restating them.
+**Scope.** Governs `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md`, and the runbooks that write them: `/milestone-close`, `/wrapup` and `/gm`. Other documents link here; they do not restate these rules.
 
 ---
 
@@ -67,6 +63,27 @@ The milestones' promotion moments are owned by the runbooks. [`/milestone-start`
 
 ---
 
+## Milestone States
+
+A milestone is a node in the roadmap's tree, not a workflow with a record of its own. Tasks are grouped by functional area, and a group is what gets shaped into a sub-milestone. The fractal numbering above applies at every level of that nesting.
+
+A node is in one of four states:
+
+| State | Meaning |
+|---|---|
+| `shaped` | the milestone exists, is titled, and holds filed tasks; it is not active |
+| `active` | the milestone is the one iterations run against |
+| `closing` | every row is `[x]`; the close is running |
+| `closed` | the close landed; the detail moved to the changelog |
+
+**The milestone workflow does not begin before the prior top-level milestone is closed in the changelog.**
+
+**At close, no new decisions are made, and no substantive work occurs.**
+
+**Escalation of far-reaching correctness work defers the close.** The node stays `active` until the escalated work completes. There is no separate `close-blocked` state: a deferred close is an `active` node whose close has not run.
+
+---
+
 ## Structure and Filing Rules
 
 ### Fractal Milestone Numbering
@@ -95,6 +112,10 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 
 **Non-active sub-milestones** -- carry an objective and scope paragraph, and their task rows may be written in advance of the milestone becoming active, because a milestone whose work exists only in prose is unreachable work. A milestone holding an open row is never `Complete`, whatever its status column says. Deferred work from prior sub-milestones is filed in `roadmap_future.md`, not accumulated in the scope paragraph. The line this replaces is recorded as a finding in [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) (operator, 2026-10-02).
 
+**Objective** -- a milestone's objective is stated in one sentence. The scope paragraph beneath it carries the rest of the framing.
+
+**Dependencies** -- a sub-milestone names the prior sub-milestones it depends on, explicitly.
+
 **Task granularity** -- identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
 
 **Summary table format** -- the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors, roadmap_future.md anchors or changelog.md section anchors), never to file roots. A link names the whole heading of its target, so a heading that carries a suffix yields a longer fragment; a status or a removal note belongs in the entry body, not in the heading.
@@ -107,11 +128,13 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 
 **Decisions** -- design decisions made during an iteration are recorded in the roadmap under the active sub-milestone entry. Format: short decision statement, rationale, and a link to the full record in the relevant architecture or discussion document. The roadmap is the accumulated decision log for the milestone; iteration handovers log which decisions were made per iteration.
 
-**Open questions** -- open design questions live in the design document, not the roadmap. The roadmap carries a single task entry referencing the design document (e.g. "Resolve open design questions -- see [design doc]"). When questions are resolved, the decision is recorded in the design document (not as Q&A -- as a named decision with rationale). The roadmap task is checked off. Design documents must not contain Q&A-style sections ("Q: ... A: ..." or numbered question/answer pairs).
+**Open questions and under-specified work** -- open design questions live in the discussion document, not the roadmap. The roadmap carries a single task entry referencing that document. A story-backed row is the same mechanism: an under-specified task whose specification lives in the story. The task is checked off when the document resolves.
 
 **Not in scope** -- each milestone carries a `#### Not in scope` sub-section nested under its milestone header, listing items indefinitely deferred or explicitly excluded from that milestone's scope, in point form. One sentence per item with a link to the relevant discussion or architecture document if context is needed. This replaces the former `## Known Limitations` global section -- limitations are scoped to the milestone that produced them, not accumulated in a catch-all. At milestone close, deferred items carry forward to `roadmap_future.md` or to the next active milestone's Not in scope section.
 
 **Roadmap task placement** -- a deferred item escalated to the roadmap lands as a named task entry nested under the current sub-milestone's task list unless directed otherwise. Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`; name it, do not duplicate it. Whether an item escalates to the roadmap or is re-deferred is the finding write-back decision, owned by the `iteration_policy.md` [carry-forward-resolution close invariant](iteration_policy.md#iteration-invariants) and applied by [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md) and [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md); this policy owns only where the entry lands.
+
+**Ordering** -- tasks may be ordered: a task can be sequenced after another task, or after a session that must run first. A task is *blocked* while something ordered before it has not completed. The roadmap carries no blocked marker: ordering is read from the rows at the moment a task is chosen, which is what `/gm` does when it recommends a starting task.
 
 ---
 

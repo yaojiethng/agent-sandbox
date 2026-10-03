@@ -1,8 +1,10 @@
 # Iteration Policy
 
-The authoritative workflow for the iteration in agent-sandbox. The iteration is the unit of work that turns a scoped sub-milestone into delivered code and a closed handover; the milestone workflow that plans it is in [`milestone_policy.md`](milestone_policy.md). The loop model is in [`autonomous_agent_loop.md`](../concepts/autonomous_agent_loop.md). Principles here are stable; the child documents that govern each subprocess will evolve as the project matures.
+**Description.** Owns the iteration grain: the invariants the runbooks must not break, the two gates, the acceptance-criteria model, and the close rules. This document states the rules; [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs the procedure.
 
-Read this document at the start of any iteration. Read the relevant child document before performing that subprocess.
+**Scope.** Governs the iteration workflow and the runbooks that drive it -- `/iter`, `/wrapup`, and the plan and document sessions that share the close. Milestones are nodes in the roadmap's tree, so their structure and states are [`roadmap_policy.md`](roadmap_policy.md#milestone-states)'s, and the loop model is in [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md).
+
+Read this document at the start of any iteration.
 
 | Phase | Step | Governing document |
 |---|---|---|
@@ -53,7 +55,7 @@ Principles owned by other layers and echoed here:
 
 ## The autonomous agent loop
 
-The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../concepts/autonomous_agent_loop.md). The milestone phase is governed by [`milestone_policy.md`](milestone_policy.md). The iteration phase is governed by this policy.
+The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../concepts/autonomous_agent_loop.md). The milestone phase takes its rules from [`roadmap_policy.md`](roadmap_policy.md#milestone-states)  -  a milestone is a node in the roadmap's tree  -  and its procedure from `/milestone-start`, `/plan` and `/milestone-close`. The iteration phase is governed by this policy.
 
 ---
 
@@ -61,9 +63,7 @@ The agent operates as one loop with a milestone phase and an iteration phase. Th
 
 The iteration runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). The prompt owns the procedure: the step sequence, the entry and exit conditions, and the templates. This section holds the invariants the procedure must not break -- the state the repository must be in at every point a commit lands. It is organized by invariant, not by procedure step: the procedure in `/iter` may evolve, and the invariant set below should not change when the runbook changes, only when the system is redesigned.
 
-**Decoupling principle.** The runbook and the invariants are independent layers. The runbook is expected to evolve as the model improves. The invariant set below should be insensitive to runbook changes: a change to `/iter` should never *require* a change here. Improving the invariant set is welcome and autonomous; what signals coupling is not that it was edited, but *why* -- an edit forced by a runbook rename or renumber is entanglement, while an edit stating a better durable rule is healthy evolution.
-
-**Two forms of rule.** Policy may state an invariant (a property of the state, holding at every commit gate) or a canonical procedure (a deterministic code-block guaranteed to satisfy an invariant). A loose procedure -- one with a large agent-decision space where the shape is not canonical -- is not stated here; it lives in `/iter` and references these invariants rather than restating them.
+The principle behind this shape -- a policy's invariants must not couple to its runbook, and a loose procedure belongs in the runbook -- is [`policy_declarative_framing.md`](../adr/policy_declarative_framing.md)'s. This policy states its invariants and does not restate it.
 
 ### Unit and scope invariants
 
@@ -84,15 +84,22 @@ The iteration runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). 
 
 ### Acceptance-criteria invariants
 
-- **Acceptance criteria describe a delta.** An AC is an observable change -- verified by running the system, never by reading source alone. See Principles.
+The iteration derives the acceptance criteria; the handover records them. What makes one well-formed is stated here. The table that holds them, its columns, and its canonical markers are [`handover_policy.md`](handover_policy.md)'s.
+
+- **An acceptance criterion describes a delta.** It is an observable change -- verified by running the system, never by reading source alone.
 - **Universal preconditions are not ACs.** Universal preconditions (`make test passes clean`, `bash -n passes`) gate every iteration equally and add no iteration-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
-- **Criteria the agent cannot verify** -- manual review, head -N, operator-only access -- are marked `Operator`; criteria with a runnable command are marked `Agent [x]` (pass) or `Agent [ ]` (fail, expected in pre-state).
-- **The `Not yet defined.` marker is replaced before implementation.** The handover is the canonical location for acceptance criteria; a criterion left as `Not yet defined.` when the scope gate releases is not confirmed.
+- **Every criterion is traceable.** For a bugfix the delta is implicit, and the original error log is the anchor. For a feature or rework the delta traces to a story pain point, a requirement, or a design decision. A criterion that traces to nothing concrete is likely not needed.
+- **Verify at the weakest sufficient level.** Preference order: unit test, then integration test, then manual script, then an operator-run command with documented expected output. Use the minimal level that reliably asserts the delta.
+- **A rename or delete carries a paired negative check.** The positive check asserts the new path exists; the negative asserts the old one does not. Both are required.
+- **A rename checks its companion files.** After the criteria are written, grep for tests, knowledge tests and fixtures matching the old path pattern, and include or defer each explicitly.
+- **A recurring bug class gets one generic guard.** A bug representing a class -- a bash trap, a common mis-pattern, something review often misses -- gets one repo-wide check, not a per-file test. A one-off logic error does not need one.
+- **A criterion is marked `Operator` when the agent cannot verify it** -- manual review, `head -N`, operator-only access -- and `Agent [x]` (pass) or `Agent [ ]` (fail, expected in pre-state) when it has a runnable command.
+- **The `Not yet defined.` marker is replaced before implementation.** The marker is [`handover_policy.md`](handover_policy.md)'s; the rule here is that a criterion still carrying it when the scope gate releases is not confirmed.
 
 ### Record-state invariants
 
 - **Record decisions live.** A decision is recorded in the handover's Decisions table as it is made, with the document where it was recorded. If a decision is only in chat, it does not exist for the next iteration.
-- **Write Findings immediately.** A bug, contradiction, design gap, blocker, or new file entering scope goes to Findings at once -- not accumulated.
+- **Write Findings immediately.** A bug, contradiction, design gap, obstacle, or new file entering scope goes to Findings at once -- not accumulated.
 - **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when the exchange resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes the record is provisional; commit it as `wip:` per [`git_policy.md`](git_policy.md#transient-commits-fold-into-the-delivery-commit).
 - **Verify record writes landed.** When announcing a record write (a finding row, a decision, a task, a roadmap row), grep the row key or content claimed. A claimed record that is not verified to exist is a record defect: the write is not done until the grep finds it.
 - **Record a document-relevant change when you make it.** Record a change to an invariant, interface, or contract when you make it, not at iteration close. If the record waits for close, a stale document governs the work in the meantime.
@@ -104,7 +111,7 @@ The iteration runs from [`/iter`](../../workflow/coding-agent/prompts/iter.md). 
 - **Scope reconciliation.** Compare the confirmed scope against the Completed table. Every item that was in scope but is not in Completed must be resolved by the deferred-resolution rule. There must be no unaccounted items.
 - **Defect resolution.** A finding that names a defect in the surface this iteration changed is fixed in this iteration. It is not an incomplete item, and the deferred-resolution rule does not apply to it: a defect reached by review is work the iteration now owns, because shipping the change and filing the repair is how a known break reaches the next reader. Fix it, re-run the gate, and record what was fixed. A finding that names a defect outside the changed surface is new work: file it as an open roadmap row with its reason, or rule it out of scope with one Scope sentence. The distinction is whether the iteration made it reachable.
 - **Deferred resolution.** Every item in scope but not completed is written back to the roadmap as an open row with its reason, or ruled out of scope with one Scope sentence. No item is left in the handover itself; the handover carries no deferred-item section.
-- **Findings review/publish.** Route each Findings entry to its destination: the Decisions table, `roadmap.md` (via a named task entry), or [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, blockers, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed.
+- **Findings review/publish.** Route each Findings entry to its destination: the Decisions table, `roadmap.md` (via a named task entry), or [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md). Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, obstacles, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's. The Findings section must be empty or contain only entries with a `Triaged to:` annotation before the handover can be closed.
 - **Propagation replay.** When the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears", a row-by-row replay is required: `file | change planned | status`. Every row carries `completed`, `deferred`, or `not started`; every row must be accounted for before the release gate releases: `completed`, or `deferred`/`not started` with the row in Deferred items. When a replay is not required, the summary still covers what was built, tests produced, AC status per criterion, and recommended manual checks.
 - **Scope amendment.** If any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
 - **Unconditional write-back.** The close writes back exactly one roadmap row event per iteration: the iteration's own task marked with its landing note, or a newly raised subtask row under the owning parent when the task had none. A handover commit with no paired write-back is a violation the close self-check catches.
@@ -125,39 +132,12 @@ A clean committed range uses the same fold; `/wrapup` runs the squash where the 
 
 ### Sub-milestone close
 
-A sub-milestone follows the sequence `active -> pre-close -> close`. The close procedure runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md).
+The milestone's structure, states and close rules are [`roadmap_policy.md`](roadmap_policy.md#milestone-states)'s; the close procedure runs from [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md). This policy does not restate them.
 
-- A sub-milestone is `active` while substantive work is in progress.
-- A sub-milestone is `pre-close` when its implementation is complete.
-- A sub-milestone is `close` when its close completes. At close, no new decisions are made. Substantive work does not occur after close.
-
-**Probation decisions are operator-owned.** For an entry under `probation` in `devlog/AGENT_FEEDBACK.md`, the operator decides dismiss / maintain / escalate. The agent does not decide a probation entry. Escalation of far-reaching correctness work defers the sub-milestone close until the escalated work is complete. Low-urgency escalation is filed as a named task at the top of the next sub-milestone. There is no dedicated `close-blocked` state; a deferred close keeps the sub-milestone `active` until pre-close passes.
+**Probation decisions are operator-owned.** For an entry under `probation` in `devlog/AGENT_FEEDBACK.md`, the operator decides dismiss / maintain / escalate. The agent does not decide a probation entry.
 
 ---
 
 ## File Tracking
 
 There is no document registry. The docs tree itself is the authoritative file list. The iteration-scoped list is the active handover's Hot files section, governed by [`handover_policy.md`](handover_policy.md).
-
----
-
-## Child Documents
-
-| Document | Governs |
-|---|---|
-| [`milestone_policy.md`](milestone_policy.md) | Milestone workflow: milestone planning, story and investigation process |
-| [`discussion_policy.md`](discussion_policy.md) | Discussion document lifecycle: naming, types, statuses |
-| [`story_policy.md`](story_policy.md) | Story lifecycle: format, graduation, closure |
-| [`study_policy.md`](study_policy.md) | Study lifecycle: format, recommendation, closure (formerly `investigation_policy.md`) |
-| [`adr_policy.md`](adr_policy.md) | ADR lifecycle: creation trigger, content requirements, supersede protocol |
-| [`handover_policy.md`](handover_policy.md) | Handover content rules: valid field states, null markers, format conventions, correction procedure |
-
----
-
-## References
-
-| Document | Purpose |
-|---|---|
-| [`documentation_policy.md`](documentation_policy.md) | Document structure and folder ownership rules |
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update sequence, milestone promotion, changelog format |
-| [`skills/handover-maintenance.md`](../../workflow/coding-agent/skills/handover-maintenance.md) | Operator-invoked handover chain maintenance -- deferred chain integrity, structural completeness, dangling references |

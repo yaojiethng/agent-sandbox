@@ -6,7 +6,7 @@ Governs the creation, lifecycle, and closure of user story documents. Stories ar
 
 ## Purpose
 
-A story exists when a sub-milestone objective is understood but the approach is not. It frames the problem, surfaces constraints, and defines the investigation space. The output of a story is either a resolved design decision (graduated to a roadmap entry) or an explicit deferral (flagged for the relevant iteration).
+A story exists when the work is understood but the approach is not. It frames the problem, surfaces constraints, and defines the investigation space. The output of a story is either a resolved design decision (graduated to a roadmap entry) or an explicit deferral (flagged for the relevant iteration).
 
 A story that is never closed is a planning failure. A story that is closed without a Resolution section is not closed.
 
@@ -74,11 +74,10 @@ A story graduates to a roadmap entry when:
 
 When a story graduates:
 
-1. Write the sub-milestone roadmap entry (objective, rationale, task list) in `roadmap_future.md` or `roadmap.md` per `roadmap_policy.md`
+1. Write the roadmap task row that carries the work, referencing this story, per [`roadmap_policy.md`](roadmap_policy.md#filing-rules)
 2. Close the story (see Closure below)
-3. Remove the story from the roadmap User Stories list -- the story document is the permanent record
 
-Tasks are not duplicated back into the story. The roadmap entry is the task record. The story is the reasoning record.
+Tasks are not duplicated back into the story. The task row is the task record; the story is the specification and the reasoning record.
 
 ---
 
@@ -92,7 +91,6 @@ When closing a story:
    - Why -- the rationale that made this the chosen approach
 2. Update the Status line to `Resolved` or `Superseded`
 3. If superseded by a broader decision, add a blockquote redirect immediately after the Status line pointing to the superseding document
-4. Remove the story from the roadmap User Stories list
 
 A closed story is a reasoning record, reference-durable for the course of the implementation it describes. The approaches considered and the knowledge tested surface in summary in the ADR, the durable home of record. After the implementation, a story may be cleaned up or subsumed when it overlaps another record, holds more stale than current content, or conflicts in name.
 
@@ -108,7 +106,7 @@ See [`study_policy.md`](study_policy.md) for study format and lifecycle.
 
 ## Roadmap Reference
 
-Open stories are listed in the roadmap under a `## User Stories` section with a single line and a short description. Closed stories are removed from this list. The story document itself is the permanent record.
+A story has no list of its own in the roadmap. A story-backed task row references the story, the same mechanism a design-backed row uses: the row is an under-specified task whose specification lives in the story. See [`roadmap_policy.md`](roadmap_policy.md#filing-rules). The story document itself is the permanent record.
 
 ---
 
@@ -116,7 +114,6 @@ Open stories are listed in the roadmap under a `## User Stories` section with a 
 
 | Document | Purpose |
 |---|---|
-| [`milestone_policy.md`](milestone_policy.md) | Milestone workflow -- when stories are opened and closed |
 | [`study_policy.md`](study_policy.md) | Study format and lifecycle |
 | [`iteration_policy.md`](iteration_policy.md) | Iteration -- where deferred stories resurface |
-| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap update rules -- User Stories section |
+| [`roadmap_policy.md`](roadmap_policy.md) | Roadmap record rules -- where a story-backed task row lands |

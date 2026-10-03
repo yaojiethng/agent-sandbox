@@ -38,7 +38,7 @@ Studies follow a fixed section order. The fixed order makes grep-based section n
 
 | Section | When added | Purpose |
 |---|---|---|
-| **Status line** | At creation | One line immediately after the title: current state and key blocker or outcome |
+| **Status line** | At creation | One line immediately after the title: current state and key obstacle or outcome |
 | **Direction + Parent story** | At creation | Which study direction this belongs to; link to parent story |
 | **Required reading** | At creation | Prerequisite documents; links only, no prose |
 | **Summary** | At creation | What this candidate is and how it works; 2-4 sentences |
@@ -98,7 +98,7 @@ A study is commissioned by and subordinate to a parent story. The story owns the
 When all studies for a story are closed:
 
 - The story's Study Findings section summarises each candidate's recommendation
-- The story is ready to resolve: choose the approach, write the Resolution section, graduate to a roadmap entry
+- The story is ready to resolve: choose the approach, write the Resolution section, and open the roadmap task row that carries the work
 
 If a single study produces a clear enough recommendation that further studies are unnecessary, the remaining study stubs may be closed as `Superseded` with a redirect to the adopted approach.
 
@@ -153,5 +153,4 @@ If a study document the agent expects to find is absent:
 | Document | Purpose |
 |---|---|
 | [`story_policy.md`](story_policy.md) | Parent story format, lifecycle, and graduation |
-| [`milestone_policy.md`](milestone_policy.md) | Milestone workflow -- when studies are commissioned |
 | [`iteration_policy.md`](iteration_policy.md) | Iteration -- where deferred studies may resume |
