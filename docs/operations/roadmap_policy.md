@@ -174,6 +174,8 @@ A closed roadmap entry or changelog entry does not change. It keeps its text, ga
 - `[SUPERSEDED in MX.X]` -- the row is closed and a later milestone carries the correction. The row stays.
 - `[REMOVED in MX.X]` -- the row is closed and the content it claimed is gone from the active system description. The row stays.
 
+**Marker order.** When more than one correction lands on a closed row, the markers read newest first, oldest last, the way an ADR orders its dated entries. The newest marker governs; a reader acts on it. A row never carries two markers for the same correction.
+
 **The anchor** names the milestone that carries the correction, open or closed. A correction landing inside the current milestone is marked `[SUPERSEDED in M3]`. Work belonging to no milestone is marked with its iteration: `[SUPERSEDED in 20260927-06]`.
 
 **The successor entry** is written where the roadmap puts new work, under the current sub-milestone, in the row form the milestone requires. Do not rewrite the marked row, and do not delete it.

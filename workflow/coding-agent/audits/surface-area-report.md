@@ -19,9 +19,9 @@ The envisioned future state: a targeted workflow file for each current use case,
 | `drafts/refactor-mv-rename-file.skill.md` | In-iteration: atomic file move/rename procedure | Current | Keep; complements the AGENTS.md rename rule |
 | `drafts/recovery.skill.md` | State repair: recover committed artifacts after a reset or policy violation | Current | Keep |
 | `drafts/roadmap-management.skill.md` | State maintenance: mutate `roadmap.md`/`changelog.md` per policy | Current | Keep; natural pair with `roadmap-audit` -- management mutates, audit verifies |
-| [`audits/audit.skill.md`](audit.skill.md) | Audit: closed-handover review -- deferred chains, close sequences, dangling references | Current, formalized | Merge with `handover-audit.skill.md` into one canonical handover audit |
+| `audits/audit.skill.md` (removed) | Audit: closed-handover review -- deferred chains, close sequences, dangling references | Removed | Merged into [`skills/handover-maintenance.md`](../skills/handover-maintenance.md) Track B by handover `20261003-02` |
 | [`audits/test-quality-campaign.md`](test-quality-campaign.md) | Audit: test suite vs `testing_policy.md` and `testing-conventions.md` -- fix + report campaign, run by a fresh subagent | Current, canonical | Keep |
-| [`audits/handover-audit.skill.md`](handover-audit.skill.md) | Audit: handover content-quality rules (procedural, migrated out of `handover_policy.md`) | Current use case, draft form | Merge into the handover-audit pair above |
+| `audits/handover-audit.skill.md` (removed) | Audit: handover content-quality rules (procedural, migrated out of `handover_policy.md`) | Removed | Merged into [`skills/handover-maintenance.md`](../skills/handover-maintenance.md) Track A by handover `20261003-02` |
 | [`audits/bash-audit.skill.md`](bash-audit.skill.md) | Audit: bash code vs `bash-coding-conventions.md`, read-only one-shot | Current, canonical | Keep; absorb the useful checks from `kelsey-code-reviewer.skill.md` |
 | [`audits/kelsey-code-reviewer.skill.md`](kelsey-code-reviewer.skill.md) | Audit: bash/Dockerfile review against production-shell standards | Non-current -- Claude-format import | Port useful checks into `bash-audit.skill.md`, then drop |
 | [`skills/roadmap-maintenance.md`](../skills/roadmap-maintenance.md) | Audit and maintenance: roadmap compliance with `roadmap_policy.md`, compaction prep and correction | Current, canonical -- merged from `audits/roadmap-audit.skill.md`, which this row pointed at after that file was deleted | Keep |
@@ -36,7 +36,6 @@ Two generations coexist. Pi-native skills are markdown with `# Skill --` headers
 
 ## Naming inconsistencies
 
-- `audit.skill.md` is titled "Handover Audit" inside, and `handover-audit.skill.md` covers the same use case in draft form. Two files, one use case. The M3 merge picks one canonical name.
 - `dhh-code-audit.skill.md` carries frontmatter `name: dhh-code-reviewer`; filename and internal name disagree. Moot if the file is dropped.
 
 ## Entry point map

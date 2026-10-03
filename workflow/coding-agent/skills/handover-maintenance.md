@@ -5,7 +5,7 @@ description: "Maintains handovers and leaves them correct. Use when the operator
 
 # handover-maintenance
 
-<!-- Merge provenance: Track A (the three content checks and their run conditions) is the substance of workflow/coding-agent/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of workflow/coding-agent/audits/audit.skill.md. Both files are superseded by this skill, and the operator's roadmap task removes them. -->
+<!-- Merge provenance: Track A (the three content checks and their run conditions) is the substance of workflow/coding-agent/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of workflow/coding-agent/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. -->
 
 ## Purpose
 
@@ -84,20 +84,22 @@ Completion criterion: the set is named, and each member has a reason for being i
 
 #### Step 5 - Structural scan
 
-For each handover in scope, run:
+For each handover in scope, run the format gate on it directly:
 
 ```bash
-grep "^## " path/to/handover.md
+bash scripts/check_handover_format.sh path/to/handover.md
 ```
 
-Confirm every required section is present and every header matches canonical casing. The required sections are Objective, Scope, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, and Completed. An empty section carries a null marker. `Decisions pending` applies from handover `20261001-03` forward, so a handover closed before that date is not flagged for its absence.
+The gate checks the frontmatter fields and the section set over the named file, whatever its date, so the maintenance pass and the commit-time gate share one rule. It reports every required section that is missing and every forbidden section present, and it treats a header whose casing differs from the canonical form as that section missing.
 
-An anomaly falls into one of two categories:
+The required sections are Objective, Scope, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, and Completed. An empty section carries a null marker. `Decisions pending` applies from handover `20261001-03` forward, so a handover closed before that date is not flagged for its absence. The forbidden sections are `Deferred`, `Carried forward` and `What's Next`; a deferred item goes to the roadmap instead.
+
+An anomaly the gate reports as a missing section falls into one of two categories:
 
 - **Replaceable one to one.** The header has a canonical equivalent that differs only in casing. Replace it and record a `[CORRECTION]` block.
 - **Not replaceable one to one.** The header carries custom content with no canonical equivalent. Add an `[AMENDMENT]` block and leave the content unchanged.
 
-Completion criterion: every handover in scope has every required section for its date, and every anomaly is classified as replaceable or not.
+Completion criterion: every handover in scope passes the gate, every anomaly is classified as replaceable or not, and every empty section carries a null marker.
 
 #### Step 6 - Deferred chain
 

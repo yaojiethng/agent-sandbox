@@ -3,7 +3,8 @@
 # Umbrella static-check gate. Runs the ShellCheck gate (check_shell.sh), the
 # sourced-library contract gate (check_lib_contract.sh), the Markdown gate
 # (check_markdown.sh), the prompt frontmatter gate
-# (check_prompt_frontmatter.sh), the legacy wrap gate (check_doc_wrap_legacy.sh);
+# (check_prompt_frontmatter.sh), the handover format gate
+# (check_handover_format.sh), the legacy wrap gate (check_doc_wrap_legacy.sh);
 # the Markdown gate carries the doc-wrap and record-links rules. BLOCKING: exits 1 when any gate reports
 # findings or cannot run.
 #
@@ -20,7 +21,7 @@ SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_prompt_frontmatter.sh check_doc_wrap_legacy.sh)
+GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_prompt_frontmatter.sh check_handover_format.sh check_doc_wrap_legacy.sh)
 
 OUT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX") || exit 1
 trap 'rm -rf "$OUT_DIR"' EXIT

@@ -80,13 +80,14 @@ A handover has three states:
 ## Format
 
 ```markdown
-# Agent Handover
+---
+date: YYYY-MM-DD
+milestone: <sub-milestone ID and name -- e.g. M2.1 -- General Capability Layer Prototype>
+type: <Implementation | Discussion | Design | Plan | Documentation | Workflow | Housekeeping | Audit>
+status: <Open | Active | Closed>
+---
 
-**Date:** YYYY-MM-DD
-**Milestone:** <sub-milestone ID and name -- e.g. M2.1 -- General Capability Layer Prototype>
-**Type:** <Implementation | Discussion | Design | Plan | Documentation | Workflow | Housekeeping | Audit>
-<Story | Study | Spec> (deprecated -- historical handovers only)
-**Status:** <Active | Closed>
+# Handover - <the concrete subject>
 
 ## Objective
 <One sentence: what this iteration achieves. Scoped to the iteration, not the sub-milestone.>

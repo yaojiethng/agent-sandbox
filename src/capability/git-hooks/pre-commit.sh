@@ -72,6 +72,22 @@ if ((${#STAGED_SH[@]} > 0)); then
   fi
 fi
 
+# ---------------------------------------------------------------------------
+# Handover format gate
+# ---------------------------------------------------------------------------
+
+STAGED_HANDOVERS=()
+while IFS= read -r -d '' FILE; do
+  STAGED_HANDOVERS+=("$FILE")
+done < <(git diff --cached --name-only --diff-filter=ACMR -z -- 'devlog/handovers/*.md')
+
+if ((${#STAGED_HANDOVERS[@]} > 0)); then
+  if ! bash "$REPO_ROOT/scripts/check_handover_format.sh" --staged; then
+    echo "pre-commit: handover format findings in the staged handovers above." >&2
+    HAD_FINDINGS=1
+  fi
+fi
+
 if (( HAD_FINDINGS )); then
   echo "" >&2
   echo "pre-commit: fix the findings, or commit with: git commit --no-verify" >&2

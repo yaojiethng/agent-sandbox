@@ -14,11 +14,10 @@
 // Exit codes: 0 = every block parsed, 1 = a block failed to parse or the gate
 // could not run. The finding count is printed, never encoded in the exit code.
 
-import { readFileSync, readdirSync, statSync, existsSync, realpathSync } from "fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
-import { execFileSync } from "child_process";
-import { createRequire } from "module";
 import { fileURLToPath } from "url";
+import { loadYaml } from "./yaml-loader.mjs";
 
 const REPO_ROOT = process.env.PROMPT_FRONTMATTER_SCAN_ROOT
   ? resolve(process.env.PROMPT_FRONTMATTER_SCAN_ROOT)
@@ -33,38 +32,6 @@ const ROOTS = [
   "src/reasoning/agent/skills",
   "src/reasoning/providers/pi/config/agent/skills",
 ];
-
-/**
- * The `yaml` package pi ships. It is not a dependency of this repository, so
- * it is resolved from pi's own install tree, which this repository pins. The
- * path is derived from the `pi` on PATH rather than hardcoded, so a moved
- * install does not silently skip the gate.
- */
-function loadYaml() {
-  const attempts = [];
-  try {
-    return createRequire(import.meta.url)("yaml");
-  } catch (error) {
-    attempts.push("repository node_modules");
-  }
-  try {
-    const bin = execFileSync("sh", ["-c", "command -v pi"], { encoding: "utf8" }).trim();
-    // `pi` on PATH is a symlink into the package; the walk has to start at the
-    // real file or it never reaches the node_modules that holds the package.
-    let dir = dirname(realpathSync(bin));
-    for (let hop = 0; hop < 8; hop++) {
-      const candidate = join(dir, "node_modules", "yaml", "package.json");
-      if (existsSync(candidate)) return createRequire(candidate)("yaml");
-      dir = dirname(dir);
-    }
-    attempts.push("pi install tree");
-  } catch {
-    attempts.push("pi on PATH");
-  }
-  console.error("Frontmatter gate: the yaml parser was not found (tried " + attempts.join(", ") + ").");
-  console.error("Cannot run the gate. Install pi, or add yaml to the repository.");
-  process.exit(1);
-}
 
 /** Every markdown file under a root, or nothing when the root is absent. */
 function collect(root) {
@@ -91,7 +58,7 @@ function frontmatterOf(text) {
   return { body: text.slice(4, end), offset: text.slice(0, 4).split("\n").length - 1 };
 }
 
-const { parse } = loadYaml();
+const { parse } = loadYaml("Frontmatter gate");
 const files = ROOTS.flatMap((root) => collect(join(REPO_ROOT, root)));
 const findings = [];
 
