@@ -32,6 +32,95 @@ With `--thinking xhigh` the level was clamped to `high` and the run was billed a
 
 The union in `catalog.ts` is the fix. It takes the three sources and returns one list, in the order pi itself would apply them, and no single source can remove what another supplied.
 
+## The update and catalog state machine
+
+The refresh path is three separate systems, not one. Separating them makes "nothing happened" and "something happened but was not applied" different observations, which is what the reporting defect turned on.
+
+```text
+                          SESSION START   or   /model
+                                   |
+                                   v
+   ===========================================================================
+   SYSTEM 1 - THE FETCH DEVICE                                    (effectful)
+   ===========================================================================
+
+     the provider's declared sources, consulted in order:
+
+       baked       -> the seed, never an Update
+       endpoint    -> Update | Update(failed) | absent
+       models.dev  -> Update | Update(failed) | absent
+       store       -> Update(payload, lastModified = REMOTE PUBLISH time)
+                      | absent
+
+       Update :=  absent                       (not consulted)
+                | failed(reason)               (consulted, no answer)
+                | received(payload)            (consulted, answered)
+
+                      (provider-generic: source kind + payload + provenance,
+                       no provider-specific fields)
+                                   |
+                                   v
+   ===========================================================================
+   SYSTEM 2 - THE CATALOG STATE MACHINE                              (pure)
+   ===========================================================================
+
+                          s0 = baked seed
+                                   |
+                                   v
+        +---> [ received(payload) ]
+        |              |
+        |      application policies decide, in order:
+        |        - store admission    : admitted while the store's REMOTE PUBLISH
+        |                               time > baked generatedAt   <-- THE GATE
+        |                               (mirrors pi; says nothing about fetching)
+        |        - source order       : first-wins per field
+        |        - overrides          : folded in reverse
+        |              |
+        |              +---> applied  : s' = union(s, payload)
+        |              +---> declined : s' = s
+        |
+        +--- next source, repeat per source
+                                   |
+                                   v
+                        s_final = the served catalog
+                                   |
+                 transition event := (s_before, s_after, outcome)
+                                   |
+                                   v
+   ===========================================================================
+   SYSTEM 3 - THE ACTION EMITTER                                     (pure)
+   ===========================================================================
+
+     event (s_before, s_after, outcome)
+        |
+        +-- s_after == s_before, no failed outcome --> nothing
+        |
+        +-- s_after != s_before  --> "updated catalog: +n / -n, m revised"
+        |                            (+n/-n = id adds/removes by entry state,
+        |                             m = same-id field revisions)
+        |
+        +-- outcome == failed    --> "<source> failed: <reason>"
+                                   |
+                                   v
+                    UI present?  -- yes --> ctx.ui.notify(line)
+                                   |          startup refresh: held to session_start
+                                   |          later refresh: emitted on completion
+                                   |
+                                   +-- no  --> console line (print/json/rpc modes)
+```
+
+**The update is provider-generic.** It carries a source kind, a payload and provenance; no field is specific to `opencode-go`. The order sources are consulted in is the declaration's, not a constant here.
+
+**The gate is an application policy.** `isStoreNewerThanBaked` decides whether the persisted catalog is admitted to the union and nothing else. Its timestamp is the publish time pi.dev serves in `Last-Modified`, compared against the installed build's baked `generatedAt`, so it opens and closes on two clocks neither party controls jointly. It mirrors pi's own gate in `dist/core/remote-catalog-provider.js`, and the `agrees with pi` case holds that agreement.
+
+**The announcement is a function of the served catalog's before/after state, never of the gate.** A refresh that changes the catalog announces while the gate is closed; a gate that moves without a catalog change announces nothing. Emitting the line from a source-count report instead is the defect this section exists to make unrepresentable.
+
+**An update the catalog declines is not a failure.** `applied` and `declined` are both ordinary transitions. Only a `failed` source outcome announces as a failure, because a payload that was received and then declined is a policy decision, and a fetch that never answered is not.
+
+**`catalog-change` is the full entry-state delta.** `+n` and `-n` count ids added and removed, and same-id field revisions are reported separately, because the defect this extension was built to repair - `space-bunny-free` served with `kimi-k2.6`'s context window, output limit and pricing - is a same-id revision with no id change at all.
+
+**Nothing here is displayed permanently.** The reconciliation is relevant at catalog-update time, so the emitter is a one-shot `notify` and there is no persistent footer row. In `print`, `json` and `rpc` mode the console is the sink.
+
 ## Why the live fetch is written but rarely reached
 
 Pi never calls a provider's `refreshModels` with `allowNetwork: true` outside `pi update --models`, and that command builds its own model runtime without loading extensions. `ModelRuntime.create` in `dist/core/model-runtime.js` computes `refreshFromNetwork = this.modelNetworkEnabled && options.allowModelNetwork === true`, and no call site in `dist/` passes `allowModelNetwork: true`; the two `allowNetwork: true` refresh sites in the bundle are `pi update --models` (`refreshModelCatalogs2`) and the llama.cpp `/llama` refresh.
@@ -101,8 +190,8 @@ Every row was checked on the date given. Each names the method that produced it 
 | A6 | `supportsReasoningEffort: false` drops `reasoning_effort` at every level but keeps the deepseek toggle | 2026-10-03 | the built payload for a baked compat block, which carries `thinking: {type: "enabled"}` and no effort; re-checked against 1.0.0 across every `thinkingFormat` | the request builder in `pi-ai/dist/api/openai-completions.js` |
 | A7 | `reasoning_effort: "none"` is accepted by some models and rejected by others, on both products | 2026-10-03 | live probes; `knowledge_opencode_gateway_matrix.sh`. `space-bunny-free` returns 400 on both, `longcat-2.5-preview-free` accepts it on opencode-go; the 1.0.0 run split the same way, and the split is a gateway property, not a pi one | the gateway, or the probe test turning red |
 | A8 | ~~The Zen free tier answers 403 to any client that is not the OpenCode client, so a Zen free model cannot be probed from pi~~ **MOVED 2026-10-03.** The gateway no longer enforces the client check. pi still sends `x-opencode-client: pi` (`provider-attribution.js`, byte-identical to 0.99.2's), and a Zen free model answers 200 and completes a request. | 2026-10-03 | live probe of `space-bunny-free` on `opencode.ai/zen/v1`: 200 with the key, with pi's own client header, and with `x-opencode-client: opencode`; pi 1.0.0 answered `PONG` on the same model, and a bogus key still returns 401 | the gateway re-tightening the check |
-| A9 | ~~The persisted pi.dev entry is newer than the baked data, so the store gate opens~~ **MOVED 2026-10-03.** Under 1.0.0 the comparison inverts, so `remoteModels` returns `[]` and the store overlay is dropped for all four providers. | 2026-10-03 | the 1.0.0 baked manifest `generatedAt` is `2026-10-01T18:57:11.882Z`, later than every store `lastModified`; a live probe of `ModelRuntime` takes 20 overlay entries on 0.99.2 and 0 on 1.0.0, and a `lastModified` of `2026-12-01` restores them | a pi release whose baked data predates the store again, which reopens the gate by design |
-| A10 | ~~`space-bunny-free` is absent from pi's baked `opencode-go` catalog and present in the persisted pi.dev entry~~ **MOVED 2026-10-03.** Both halves were already stale: the baked `opencode_go_default` in 0.99.2 and 1.0.0 both carry the model, and under 1.0.0 the persisted entry no longer overlays it (A9). The store copy is redundant rather than wrong. | 2026-10-03 | the baked catalog holds 29 chat ids including `chat:space-bunny-free`; an offline `--list-models` with an empty agent dir lists it, and a mutated store `maxTokens` changes nothing under the real timestamps | a pi release that drops the model from the baked catalog |
+| A9 | ~~The persisted pi.dev entry is newer than the baked data, so the store gate opens~~ **MOVED 2026-10-03, RE-MEASURED 2026-10-04.** The gate compares two clocks neither party controls jointly: `remoteModels` admits the persisted catalog only while its `lastModified` - the `Last-Modified` header pi.dev serves - is later than the installed build's baked `generatedAt`. It opens and closes as either side moves, so it is not a property of a pi version. | 2026-10-04 | the 1.0.0 baked manifest `generatedAt` is `2026-10-01T18:57:11.882Z`; on 2026-10-03 every store `lastModified` was older, so the probe took 0 overlay entries; on 2026-10-04 `~/.pi/agent/models-store.json` carries `lastModified` of `2026-10-03T16:16:56Z` to `2026-10-03T16:17:46Z` over openrouter, opencode-go, opencode and deepseek, all later than the build, so the gate is open for all four; a `lastModified` of `2026-12-01` restores them while it is closed | pi.dev republishing its catalog after the installed build reopens the gate, and a build newer than pi.dev's last publish closes it; the trigger is either party's clock, not a pi release |
+| A10 | ~~`space-bunny-free` is absent from pi's baked `opencode-go` catalog and present in the persisted pi.dev entry~~ **MOVED 2026-10-03.** Both halves were already stale: the baked `opencode_go_default` in 0.99.2 and 1.0.0 both carry the model, and the store copy overlays it only while A9's gate is open. The store copy is redundant rather than wrong. | 2026-10-03 | the baked catalog holds 29 chat ids including `chat:space-bunny-free`; an offline `--list-models` with an empty agent dir lists it, and a mutated store `maxTokens` changes nothing under the real timestamps | a pi release that drops the model from the baked catalog |
 | A11 | pi's `mergeModels` overlays by whole-entry replacement, which is the semantics `mergeCatalogs` copies | 2026-10-03 | the G2 case `agrees with pi` drives pi's own `withRemoteCatalog`, whose `getModels` calls `mergeModels`, and compares its output entry for entry with ours over replacement, append, cross-provider and stale-gate rows. Re-checked against 1.0.0, where `remote-catalog-provider.js` is byte-identical to 0.99.2's | a pi release changing the merge, the gate or the provider filter, which that case turns red |
 | A12 | `mergeModels` is unreachable from an extension on 0.87.1, 0.99.2 and 1.0.0, so the copy is forced | 2026-10-03 | the installed 0.87.1 bundle and the 0.99.2 install under `/tmp/picheck/probe99`, and the 1.0.0 install under `/tmp/pi-1.0.0`: in all three the function is a module-local in `dist/core/remote-catalog-provider.js` with no `export` keyword, the 1.0.0 package entry names 156 exports with no `mergeModels`, and `package.json` publishes no subpath that reaches it | a pi release that exports `mergeModels` from a published subpath or from a package entry |
 | A13 | A TUI session reaches an extension's `session_start` handler with a usable `ctx.ui`, and `ctx.mode` reads `tui` there | 2026-10-03 | `ExtensionHandler` and the `session_start` overload in pi's `dist/core/extensions/types.d.ts`, which type the handler's second argument as `ExtensionContext` carrying `ui: ExtensionUIContext` and `mode: ExtensionMode`; re-checked against a live 1.0.0 TUI under a pty, where the handler saw `mode: "tui"`, `hasUI: true`, and mounted a dialog | pi dropping `ui` from `ExtensionContext`, or `session_start` firing before the interactive TUI mounts |
@@ -118,11 +207,28 @@ The rendering happens on `session_start`, because that is the first event carryi
 
 In `print`, `json` and `rpc` mode there is no frame to corrupt, so the console stays the sink there. `ctx.mode` is the discriminator, not a guess.
 
+## The default model and the scope order
+
+`enabledModels` in `settings.json` is a list of glob patterns, and `resolveModelScopeFromModels` walks it in order, appending matches and deduplicating as it goes. The first entry therefore becomes `scopedModels[0]`, which is the model a session starts on when the scope outranks the saved default, and the first model the cycle key moves to. The order is load-bearing, and neither pi's settings schema nor `/scoped-models` says so.
+
+A non-empty scope also outranks the saved default. `findInitialModel` in `dist/core/model-resolver.js` returns `scopedModels[0]` on any non-empty scope without consulting `defaultProvider` or `defaultModel`, and sets `fallbackMessage: undefined` on that path, so the field that exists to report a discarded preference is silent exactly where a preference is discarded. The shipped `settings.json` therefore puts the configured default's provider and id at the head of `enabledModels`; that is a mitigation, and `tests/knowledge/knowledge_pi_config_cycle.sh` fails when the head stops naming it. The defect is reported upstream in [`20261002-report-draft-default_model_resolution_bug.md`](../../../../../../../../devlog/discussions/20261002-report-draft-default_model_resolution_bug.md).
+
+The extension does not correct the selection. It supplies the catalog the resolver reads, and at `session_start` it can compare `ctx.model` against the saved default the scope resolved and announce a discard; it does not call `ctx.setModel`, because that would put pi's resolution ladder inside an extension and would disturb a resumed session's model, a `--model` override and the cycle key alike.
+
+## Wanted from pi
+
+Two surfaces would let this extension put its state where the operator looks, and neither is reachable from an extension today. Both are pi feature requests, recorded here so they are not re-derived.
+
+- **A provider-supplied refresh status line.** `ModelSelectorComponent` renders `Refreshing model catalogs...`, `Model catalogs refreshed.` and `Could not refresh model catalogs: <error>` from private literals. `RefreshModelsContext` carries `credential`, `stored`, `publish`, `allowNetwork`, `force` and `signal` with no status channel, and `ModelsRefreshResult` carries only `aborted` and `errors`, so a provider can influence that line only by throwing, which would turn a reconciliation detail into a refresh failure.
+- **A per-model display badge.** A picker row renders the model `id`, a `[provider]` badge and an optional `default` badge. A model's `name` appears only in the `Model name:` detail line, and neither `Model` nor `ProviderModelConfig` carries a badge, tag or suffix field, so a provider cannot mark one of its own models in the list. Decorating the `name` reaches the detail line only, and decorating the `id` changes identity, which search, resolution, scoping, `enabledModels` and `defaultModelPerProvider` all match on.
+
 ## Open, not established
 
-Whether an accepted `reasoning_effort: "none"` actually stops reasoning. The gateway's reasoning-token counts are too noisy to decide it: `longcat-2.5-preview-free` reported 307 tokens at the baked off setting and 166 at `none`, and `glm-5.3-flash` reported 45 at `none` against 44 at `low`. A null `none` reading is as good a guess as a positive one, so the extension does not rely on `none` doing anything, and neither should an override that has not been measured on its own model.
+Three probes need a key or a quota the workspace does not have. Each is a deferred knowledge test: it is resolved by the next reader who can run it, and none of them blocks a decision here.
 
-`kimi-k2.6` is unreachable with this key on both products, answering 403 `Model access is disabled`. Its defect class therefore rests on the built payload for its exact baked compat block, not on a live response. The same limit applies to every other model the account cannot reach, which is most of the Zen catalog: only `space-bunny-free` was reachable there.
+- **`kimi-k2.6` is unreachable with this key on both products**, answering 403 `Model access is disabled`. Its defect class therefore rests on the built payload for its exact baked compat block, not on a live response. The same limit applies to every other model the account cannot reach, which is most of the Zen catalog: only `space-bunny-free` was reachable there.
+- **A7's `glm-5.3-flash` case is quota-blocked.** A7 claims some models accept `reasoning_effort: "none"` and others reject it; `space-bunny-free` returns 400 on both products and `longcat-2.5-preview-free` accepts it on `opencode-go`, so the split is real but its second data point is unmeasured. A format that emits no effort at all, such as the deepseek toggle, is outside A7's domain rather than a gap in it.
+- **`qwen3.6-plus` needs a live probe against both adapters.** If a future pi release drops it from `opencode-go` and no fresher persisted entry supplies it, the extension would serve it on `openai-completions` against the adapter the other product uses, and nothing in the suite notices. The probe is one request to each surface; see `## Invariants`.
 
 ## Tests
 
