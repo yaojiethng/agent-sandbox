@@ -96,7 +96,6 @@ export default {
         "src/reasoning/agent/skills/caveman/SKILL.md",
         "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
         "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",
-        "src/reasoning/agent/skills/pi-bump/SKILL.md",
         "src/reasoning/agent/skills/thermo-nuclear-code-quality-review/SKILL.md",
         "src/reasoning/providers/hermes/quickstart.md",
         "src/reasoning/providers/opencode/quickstart.md",

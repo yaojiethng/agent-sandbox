@@ -16,6 +16,19 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-03  --  A heavy test file's own deadline fails it under parallel load
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: when a full-suite run reports only tests/test_runner_contract.sh as failed, re-run before treating it as a defect; the file takes about 7s alone against a declared 10s deadline.
+```
+
+`tests/test_runner_contract.sh` carries `# TEST_DEADLINE: 10` and takes about 7 seconds alone. Two full-suite runs on a loaded container timed it out; a third run passed at 97 seconds. The runner counts a deadline expiry as a failed file, so a load spike reads as a red run.
+
+---
+
 ## [A] 2026-10-02  --  A capacity claim was stated as a fact with no signal behind it
 
 ```text
