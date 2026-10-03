@@ -1,8 +1,11 @@
+---
+description: "Owns the roadmap record and the milestone grain: when the roadmap is touched, how updates are normalized, what the record must look like, and how records retire."
+scope: ["devlog/roadmap.md", "devlog/roadmap_future.md", "devlog/changelog.md", "/milestone-close", "/wrapup", "/gm"]
+---
+
 # Roadmap Policy
 
-**Description.** Owns the roadmap record and the milestone grain: when the roadmap is touched, how updates are normalized, what the record must look like, and how records retire.
-
-**Scope.** Governs `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md`, and the runbooks that write them: `/milestone-close`, `/wrapup` and `/gm`. Other documents link here; they do not restate these rules.
+Other documents link here; they do not restate these rules.
 
 **One record.** The three files are one record: a milestone title, a status, or an anchor that disagrees across them is one defect, whichever side of the boundary it sits on. `roadmap.md` carries the active and upcoming milestones, `roadmap_future.md` the milestones staged for promotion, and `changelog.md` the milestones already closed.
 

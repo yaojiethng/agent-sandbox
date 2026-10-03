@@ -97,8 +97,6 @@ export default {
         "docs/development/bash-coding-conventions.md",
         "docs/development/interface-conventions.md",
         "docs/development/testing-conventions.md",
-        "docs/development/testing_policy.md",
-        "docs/operations/handover_policy.md",
         "src/reasoning/agent/skills/caveman/SKILL.md",
         "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
         "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",

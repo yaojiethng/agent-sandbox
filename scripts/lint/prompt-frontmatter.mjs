@@ -1,4 +1,4 @@
-// Frontmatter parse gate for prompts and skills.
+// Frontmatter parse gate for prompts, skills and policy files.
 //
 // Enforces docs/development/prompt-authoring-conventions.md
 // `## Structure of a workflow document`: "The frontmatter is YAML, so a
@@ -6,6 +6,11 @@
 // parse is dropped by pi at load time with no message in the session, so the
 // prompt simply never appears. The authoring rule existed before this gate
 // and was still missed, so the rule is enforced here rather than restated.
+//
+// Policy files (docs/**/*_policy.md) carry a description and a scope in their
+// frontmatter too, per docs/operations/documentation_policy.md `### Document
+// header format`. Nothing consumes their values at runtime, so the block's
+// parse is the one thing a reader cannot check by eye; this gate is it.
 //
 // A file with no frontmatter block is skipped, not flagged. A prompt draft
 // that opens on its title is a separate, tracked defect; only a block that
@@ -33,15 +38,19 @@ const ROOTS = [
   "src/reasoning/providers/pi/config/agent/skills",
 ];
 
+/** Root holding the policy files, and the name suffix that marks one. */
+const POLICY_ROOT = "docs";
+const POLICY_SUFFIX = "_policy.md";
+
 /** Every markdown file under a root, or nothing when the root is absent. */
-function collect(root) {
+function collect(root, suffix = ".md") {
   const out = [];
   const walk = (dir) => {
     for (const entry of readdirSync(dir)) {
       const full = join(dir, entry);
       if (statSync(full).isDirectory()) {
         walk(full);
-      } else if (entry.endsWith(".md")) {
+      } else if (entry.endsWith(suffix)) {
         out.push(full);
       }
     }
@@ -59,7 +68,10 @@ function frontmatterOf(text) {
 }
 
 const { parse } = loadYaml("Frontmatter gate");
-const files = ROOTS.flatMap((root) => collect(join(REPO_ROOT, root)));
+const files = [
+  ...ROOTS.flatMap((root) => collect(join(REPO_ROOT, root))),
+  ...collect(join(REPO_ROOT, POLICY_ROOT), POLICY_SUFFIX),
+];
 const findings = [];
 
 for (const file of files) {
@@ -85,7 +97,7 @@ for (const f of findings) {
 }
 
 if (findings.length === 0) {
-  console.log("Frontmatter gate: clean across " + files.length + " prompt and skill files");
+  console.log("Frontmatter gate: clean across " + files.length + " prompt, skill and policy files");
 } else {
   console.error(
     "Blocking gate: " + findings.length + " of " + files.length + " frontmatter blocks do not parse. " +

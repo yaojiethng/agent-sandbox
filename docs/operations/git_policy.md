@@ -1,8 +1,9 @@
-# Git Policy
-
-Policy for commit messages and branch naming in agent-sandbox. Commit types are aligned with the iteration types defined in [`handover_policy.md`](handover_policy.md) so that the git log and iteration history tell the same story.
-
 ---
+description: "Owns commit-message and branch-naming rules. Commit types align with the iteration types defined in `handover_policy.md`, so the git log and iteration history tell the same story."
+scope: ["commit messages", "branches"]
+---
+
+# Git Policy
 
 ## Commit Message Format
 

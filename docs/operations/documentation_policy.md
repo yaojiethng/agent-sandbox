@@ -1,6 +1,9 @@
-# Documentation Policy
+---
+description: "Owns the documentation rules: rule authority, folder placement, the document header and format rules, the concept-document and ADR obligations, and the lint gate over `docs/`."
+scope: ["docs/", "devlog/"]
+---
 
-Documentation describes the **current system reality**. It must stay concise, readable, and specific to its purpose. Future work belongs in `roadmap.md`.
+# Documentation Policy
 
 Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../concepts/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
 
@@ -19,6 +22,8 @@ A statement is a rule when it imposes an obligation a document or its author mus
 **Producer owns the definition.** A definition and a record of it are two objects. The document whose workflow produces the thing owns the definition; the record owns its own shape. The acceptance-criteria model is the settled case: `iteration_policy.md` owns the model, and `handover_policy.md` owns the table that records it.
 
 **No bridge documents.** A bridge document exists only to connect two documents that could reference each other directly. Bridge documents duplicate content across a third document, so they are the same defect as duplicate content. Collapse a bridge document into the more relevant destination and link the two directly.
+
+**Policy membership.** The policy set is every `docs/**/*_policy.md` file, in any folder. Each member carries the policy frontmatter and canonically owns at least one rule. A file that owns no rule is misnamed: fold its content into its canonical owner, give it the name of its kind, or delete it. Membership is a property of the rule set, never a count.
 
 ---
 
@@ -92,6 +97,7 @@ Rules:
 - Architecture, concepts, and policy documents carry no status line -- the layer-freeze table in `system_overview.md` governs them.
 - ADR headers and entry structure are defined in [`adr_policy.md`](adr_policy.md), not here.
 - Top-level sections use `##`; subsections use `###`. Use `####` only inside long task lists where grouping is genuinely needed -- not for general document structure.
+- Policy files (`docs/**/*_policy.md`) open with YAML frontmatter holding a `description` and a `scope`, then a blank line, then the `# <Title>` heading. `description` is one quoted line naming the rules the file owns. `scope` is a single-line flow list of the records and runbooks the file governs.
 
 ### Character set
 

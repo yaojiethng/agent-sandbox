@@ -526,7 +526,7 @@ test_frontmatter_gate_skips_a_prompt_with_no_block() {
   root=$(make_frontmatter_fixture '# Fan-Out Run' '' '## Purpose')
   out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a prompt with no frontmatter block is skipped, not flagged"
-  assert_contains "$out" "clean across 1 prompt and skill files" "the file is collected and its block skipped"
+  assert_contains "$out" "clean across 1 prompt, skill and policy files" "the file is collected and its block skipped"
 }
 
 # Given: a PATH with no node on it
@@ -542,6 +542,22 @@ test_frontmatter_gate_fails_closed_without_node() {
   out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "no node on PATH fails the gate"
   assert_contains "$out" "node is not on PATH" "the missing dependency is named"
+}
+
+# Given: a fixture root holding a policy file whose frontmatter does not parse
+# When:  check_prompt_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding names the policy file
+# Asserts: the policy scan root is live. A policy block is never loaded at
+# runtime, so a malformed one has no other symptom; the gate is the only check.
+test_frontmatter_gate_scans_policy_files() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_policy_$$_$RANDOM"
+  mkdir -p "$root/docs/operations"
+  printf '%s\n' '---' 'description: Owns a rule: unquoted colon' '---' '' '# X Policy' \
+    > "$root/docs/operations/x_policy.md"
+  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a malformed policy block fails the gate"
+  assert_contains "$out" "x_policy.md" "the finding names the policy file"
 }
 
 # Given: the repository's own .markdownlint-cli2.mjs
@@ -590,5 +606,6 @@ run_test test_frontmatter_gate_passes_on_a_parsing_block
 run_test test_frontmatter_gate_names_the_offending_line
 run_test test_frontmatter_gate_skips_a_prompt_with_no_block
 run_test test_frontmatter_gate_fails_closed_without_node
+run_test test_frontmatter_gate_scans_policy_files
 
 test_done

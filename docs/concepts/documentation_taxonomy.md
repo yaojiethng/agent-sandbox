@@ -6,7 +6,7 @@ This document is the index and view of the documentation ecosystem. It states no
 
 | Document | What it is | Durability | Governed by |
 |---|---|---|---|
-| Policy document (`docs/operations/`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | per-file; the rules of rule-hood are in [`policy_declarative_framing`](../adr/policy_declarative_framing.md) |
+| Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | per-file; the rules of rule-hood are in [`policy_declarative_framing`](../adr/policy_declarative_framing.md) |
 | ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | [`adr_policy.md`](../operations/adr_policy.md) |
 | Concept document (`docs/concepts/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | [`documentation_policy.md`](../operations/documentation_policy.md) -- Concept document obligations |
 | Architecture document (`docs/architecture/`) | implementation design and decisions | durable | [`documentation_policy.md`](../operations/documentation_policy.md); the freeze rule is in [`system_overview.md`](../architecture/system_overview.md) |
@@ -17,6 +17,8 @@ This document is the index and view of the documentation ecosystem. It states no
 | Handover (`devlog/handovers/`) | one session's record of the work done | transient | [`handover_policy.md`](../operations/handover_policy.md) |
 | Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | [`discussion_policy.md`](../operations/discussion_policy.md) |
 
+The policy set is every `docs/**/*_policy.md` file, in any folder. `docs/operations/` also holds guides and procedures that state no rules.
+
 ## Folder taxonomy
 
 A document lives in exactly one `docs/` folder or in `devlog/`. Each folder holds one concern:
@@ -25,7 +27,7 @@ A document lives in exactly one `docs/` folder or in `devlog/`. Each folder hold
 |---|---|
 | `architecture/` | implementation design and decisions |
 | `concepts/` | conceptual models: abstract state transitions, multi-component interactions, principles of interaction. The *what* at the conceptual level. |
-| `operations/` | how to run the system: the policy rules |
+| `operations/` | how to run the system: the policy rules, plus the onboarding guides and the SOPs |
 | `development/` | contributor workflow and development conventions |
 | `adr/` | the rationale behind standing principles, interface shapes, and contracts; superseded or awaiting-review ADRs live in `adr/archive/` |
 | `devlog/` | the session-facing records: the roadmap, the changelog, handovers, and discussion documents |

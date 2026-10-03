@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # scripts/check_prompt_frontmatter.sh
-# Frontmatter parse gate over every prompt and skill in the tree.
+# Frontmatter parse gate over every prompt, skill and policy in the tree.
 #
 # Enforces docs/development/prompt-authoring-conventions.md
 # `## Structure of a workflow document`: a prompt's frontmatter is YAML, and a
@@ -8,6 +8,10 @@
 # at load time without a message in the session, so it simply never appears in
 # the command list. The authoring rule was written before this gate and missed
 # anyway, so the rule is enforced here instead of restated.
+#
+# The scan also covers every policy file (docs/**/*_policy.md), whose
+# frontmatter holds a description and a scope per docs/operations/
+# documentation_policy.md `### Document header format`.
 #
 # The parse itself is Node's, in scripts/lint/prompt-frontmatter.mjs, because
 # the `yaml` package is not a dependency of this repository and the repository
@@ -45,5 +49,5 @@ if PROMPT_FRONTMATTER_SCAN_ROOT="$SCAN_ROOT" node "$SCAN_SCRIPT"; then
   exit 0
 fi
 
-echo "Blocking gate: fix the frontmatter above (see docs/development/prompt-authoring-conventions.md)." >&2
+echo "Blocking gate: fix the frontmatter above (see docs/development/prompt-authoring-conventions.md and docs/operations/documentation_policy.md)." >&2
 exit 1

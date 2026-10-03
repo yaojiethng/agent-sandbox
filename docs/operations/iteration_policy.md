@@ -1,8 +1,11 @@
+---
+description: "Owns the iteration grain: the invariants the runbooks must not break, the two gates, the acceptance-criteria model, and the close rules. This document states the rules; `/iter` runs the procedure."
+scope: ["/iter", "/wrapup", "/plan", "/document"]
+---
+
 # Iteration Policy
 
-**Description.** Owns the iteration grain: the invariants the runbooks must not break, the two gates, the acceptance-criteria model, and the close rules. This document states the rules; [`/iter`](../../workflow/coding-agent/prompts/iter.md) runs the procedure.
-
-**Scope.** Governs the iteration workflow and the runbooks that drive it -- `/iter`, `/wrapup`, and the plan and document sessions that share the close. Milestones are nodes in the roadmap's tree, so their structure and states are [`roadmap_policy.md`](roadmap_policy.md#milestone-states)'s, and the loop model is in [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md).
+Milestones are nodes in the roadmap's tree, so their structure and states are [`roadmap_policy.md`](roadmap_policy.md#milestone-states)'s, and the loop model is in [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md).
 
 Read this document at the start of any iteration.
 

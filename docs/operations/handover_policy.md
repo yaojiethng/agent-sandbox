@@ -1,8 +1,11 @@
+---
+description: "Owns handover content rules: valid field states, null markers, the section format, and the correction procedure."
+scope: ["devlog/handovers/", "/iter", "/plan", "/document", "/wrapup", "/milestone-close"]
+---
+
 # Handover Policy
 
-**Description.** Owns handover content rules: valid field states, null markers, the section format, and the correction procedure.
-
-**Scope.** Governs the handover files under `devlog/handovers/`, and the runbooks that write them: `/iter`, `/plan`, `/document`, `/wrapup` and `/milestone-close`. For the operational workflow -- when to populate each field, step sequencing, and the gates -- see [`iteration_policy.md`](iteration_policy.md).
+For the operational workflow -- when to populate each field, step sequencing, and the gates -- see [`iteration_policy.md`](iteration_policy.md).
 
 A handover is a log describing the work done in the iteration: what was done and what comes next, with enough fidelity that a new agent can continue without reconstructing state from the iteration history.
 
@@ -46,8 +49,7 @@ Stored in the `devlog/handovers/` directory. One file per iteration. Do not over
 
 ## Types
 
-Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at the scope gate, before the work is known in detail; the commit type at close disambiguates the subclass.
-Each iteration type must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types.
+Each iteration has a type that reflects the category of what it produces. The type appears in the handover header and in the filename shortform. It is set at the scope gate, before the work is known in detail; the commit type at close disambiguates the subclass. Each iteration type must declare its scope independently. Do not inherit objectives, acceptance criteria, or task completion status from prior iterations of different types.
 
 | Type | Shortform | Deliverable -- what the iteration produces | Commit mapping |
 |---|---|---|---|

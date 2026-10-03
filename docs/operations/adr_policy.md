@@ -1,14 +1,9 @@
+---
+description: "Owns the ADR record: an ADR captures the reasoning behind a standing principle -- a pattern, an interface shape, a design philosophy, an invariant, or a user-interaction contract -- including the rejected alternatives and their reasons, and links to the documentation that describes the implementation it justifies."
+scope: ["docs/adr/", "docs/adr/archive/"]
+---
+
 # ADR Policy
-
-Governs files in `docs/adr/`.
-
-## Purpose
-
-An ADR records the reasoning behind standing principles, such as: a pattern, an interface shape, a design philosophy, an invariant, or a user-interaction contract.
-
-An ADR includes rejected alternatives and their reasons. Such reasons could include discovered edge cases and new requirements discovered during development. It is the durable place to retrieve the justification when iterating or extending a feature.
-
-An ADR is not meant to replace documentation. An ADR links to the documentation (in `docs/concepts` or `docs/architecture`) that describes the implementation the ADR justifies.
 
 ## Relationship to other records
 

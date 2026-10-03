@@ -1,6 +1,11 @@
+---
+description: "Owns the discussion record: the four types (story, study, design, report), their naming, their statuses, their section order, and their lifecycle."
+scope: ["devlog/discussions/"]
+---
+
 # Discussion Policy
 
-Governs files in `devlog/discussions/`. For ADRs, see `adr_policy.md`.
+For ADRs, see [`adr_policy.md`](adr_policy.md).
 
 ## Naming
 

@@ -1,6 +1,9 @@
-# Testing Policy - agent-sandbox
+---
+description: "Owns the testing standards for the agent-sandbox test suite: test isolation, fixture handling, test placement, and the anti-patterns the suite rejects."
+scope: ["tests/"]
+---
 
-This document defines the testing standards, patterns, and anti-patterns for the agent-sandbox test suite. It is designed to ensure test reliability, isolation, and maintainability.
+# Testing Policy - agent-sandbox
 
 **When to write tests:** any function with meaningful branching, error handling, or external dependencies gets tests. Tests are produced alongside implementation, not deferred.
 
@@ -156,8 +159,7 @@ Knowledge tests and integration tests are **not** run by `make test`. The runner
 
 ### The file and the unit
 
-A test file is named for its subject, and holds that subject's units: `tests/test_A.sh` tests `A.sh`, and the file name is the lookup for where that subject is covered.
-Do not keep a roster of which file covers what: it goes stale as soon as a subject moves, and it is one more thing to keep true.
+A test file is named for its subject, and holds that subject's units: `tests/test_A.sh` tests `A.sh`, and the file name is the lookup for where that subject is covered. Do not keep a roster of which file covers what: it goes stale as soon as a subject moves, and it is one more thing to keep true.
 
 ### Promotions over time
 
