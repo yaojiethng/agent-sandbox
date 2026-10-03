@@ -45,7 +45,7 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 | `/goal` | **M4 loose-goal decomposition (Option B), not an `/iter` work-loop expansion** | M4 |
 | `/sequential-work` | curated dispatch shape (was `/auto`), `/iter` work-loop expansion owned by M3.2.3 | `workflow/coding-agent/drafts/sequential-work.md` (draft) |
 | `/parallel-work` | curated dispatch shape (was `/parallel-auto`), `/iter` work-loop expansion owned by M3.2.3 | `workflow/coding-agent/drafts/parallel-work.md` (draft) |
-| `/backlog-triage` | pre-dispatch classifier: sorts open roadmap rows into runnable and parked; drives no transition, owned by M3.2.3 | `workflow/coding-agent/prompts/backlog-triage.md` |
+| `/backlog-triage` | pre-dispatch classifier: sorts open roadmap rows into runnable and parked; labels the workflow-assisted operator decision at the iteration close, owned by M3.2.3 | `workflow/coding-agent/prompts/backlog-triage.md` |
 | `/milestone-start` | opens a milestone | `workflow/coding-agent/prompts/milestone-start.md` |
 | `/milestone-close` | closes a milestone or sub-milestone | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | milestone planning | `workflow/coding-agent/prompts/plan.md` |
@@ -54,25 +54,52 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 
 ## State diagram
 
-The autonomous agent loop, drawn as the invariant the workflow prompts and policy must together satisfy.
+The autonomous agent loop, drawn as the invariant the workflow prompts and policy must together satisfy. One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision.
 
 ```text
-milestone workflow:  milestone brainstorm ──▶ scoping ──▶ story / investigation
-                 │                                    │
-                 │                                    ▼
-                 │                          roadmap entry created
-                 │                                    │
-                 ▼                                    ▼
-            iteration handoff ◀───────────  plan / iter dispatch
-                 │
-                 ▼
-           pre-close verification
-                 │
-                 ▼
-      milestone-close (records the close)
+MILESTONE GRAIN
+
+  [ms:none]                                  no active milestone
+      |
+      |  "milestone to promote?"              workflow-assisted operator decision
+      |    no  -> /milestone-start shapes one     (/milestone-start presents the shapes)
+      |    yes -> the operator picks one
+      v
+  [ms:active]  ----------  iterations run against this milestone
+      |
+      |  /milestone-close                     workflow-implemented
+      v
+  [ms:close-gate]                            compaction, changelog, boundary presented
+      |
+      |  operator release                     operator decision
+      v
+  [ms:successor?]                            handwaved: one milestone is modelled
+      |
+      |  yes -> promote                       workflow-assisted operator decision
+      |  no  -> shape one                    (edge to ms:none above)
+      v
+  [ms:active]  (the successor)
+
+ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
+
+  [it:open] --/iter--> [it:scope-gate] --operator decision--> [it:implementing]
+                                                                    |
+                                                             /iter Step 7
+                                                                    v
+  [it:closed] <--operator decision-- [it:acceptance-gate] --/wrapup--> (Part B)
+      |
+      |  all tasks complete? /wrapup recommends
+      +-- yes --> ms:close-gate
+      +-- no  --> [it:open]   (operator picks the next task)
 ```
 
-The iteration repeats inside the handoff: `/iter` runs one iteration, and routes back to the handoff for the next iteration until the milestone's roadmap section is all checked.
+Three edge types: **workflow-implemented** (a prompt performs the transition), **operator decision** (the operator releases the gate), and **workflow-assisted operator decision** (a workflow or skill narrows the choice, and the operator picks). `/backlog-triage` and `/milestone-start` are labels of the third type, not types of their own.
+
+Three gate states, each an arrow's source rather than a resting place for closing work: `it:scope-gate`, `it:acceptance-gate`, `ms:close-gate`. Closing is the work that follows the acceptance decision, not a state.
+
+One milestone is modelled, the active one. Its successors are handwaved behind `ms:successor?`, so a per-milestone state set does not appear, and several milestones may be shaped at once without the diagram growing. The autonomous-run prompts -- `/auto`, `/goal`, `/sequential-work`, `/parallel-work` -- are out of this diagram until the milestone that lands them; the drafts tree holds them, and `/backlog-triage` drives no transition of its own.
+
+`/iter` runs one iteration and stops at the acceptance gate; `/wrapup` takes it from there, lands the commit and closes the handover. The next iteration opens only after the operator picks a task, and when the milestone has no open row left the operator calls `/milestone-close` instead.
 
 ## Concept offload map
 

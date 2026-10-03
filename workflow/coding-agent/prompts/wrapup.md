@@ -7,7 +7,7 @@ argument-hint: "[optional: a commit range to audit]"
 
 # /wrapup - The Consolidated Close
 
-**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, run compaction, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it: milestone-close owns the milestone-record close, and the work runs substitute an autonomous review for the operator gate.
+**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it: milestone-close owns the milestone-record close, and the work runs substitute an autonomous review for the operator gate.
 
 ## Mandate
 
@@ -91,9 +91,9 @@ Run the propagation-replay invariant in [`iteration_policy.md`](../../../docs/op
 
 Run the scope-reconciliation invariant in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed is resolved by the deferred-resolution rule; no unaccounted items.
 
-### B4. Roadmap write-back and compaction
+### B4. Roadmap write-back
 
-Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`, note the exact row change per task touched, and the completed rows the change supersedes or invalidates. Then run the [`roadmap-maintenance`](../skills/roadmap-maintenance.md) skill over the roadmap: it owns the compaction pass, the summary table update, and the top-level milestone close when one applies. The write-back rides the delivery commit; it never forms its own commit.
+Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`, note the exact row change per task touched, and the completed rows the change supersedes or invalidates. The write-back rides the delivery commit; it never forms its own commit. The compaction pass, the summary table update, and any top-level milestone close are milestone-grain and belong to [`/milestone-close`](milestone-close.md), not to this runbook.
 
 ### B5. Carry-forward resolution
 

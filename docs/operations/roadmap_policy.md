@@ -14,7 +14,7 @@ Policy rules for `devlog/roadmap.md`, `devlog/roadmap_future.md`, and `devlog/ch
 
 The roadmap is not updated continuously during an iteration. It is touched at defined moments in the iteration and at milestone-workflow close. Do not update it outside these moments.
 
-**Roadmap-update timing invariant:** the roadmap is the sole task list. A task is marked `- [x]` in the same iteration its resolving handover closes -- the handover's Closed state is the trigger, not a later cleanup pass. When an iteration generates a named task, it lands on the roadmap at iteration end, never in the handover alone: a task without a roadmap destination can fall through. If the operator rejects a completion claim, the marker reverts to `- [ ]` before the close.
+**Roadmap-update timing invariant:** the roadmap is the sole task list. A task is marked `- [x]` in the same iteration its resolving handover closes -- the handover's Closed state is the trigger, not a later cleanup pass. When an iteration generates a named task, it lands on the roadmap at iteration end, never in the handover alone: a task without a roadmap destination can fall through. If the operator rejects a completion claim, the marker reverts to `- [ ]` before the close. The marker obeys the nesting: a parent row is marked `- [x]` only when every row beneath it is `- [x]`. A parent with an open child stays `- [ ]`, however complete its own text reads.
 
 The runbooks execute the moments; this policy states the invariants they satisfy. Every roadmap edit is a targeted change, not a full-file rewrite.
 
@@ -22,11 +22,11 @@ The runbooks execute the moments; this policy states the invariants they satisfy
 
 ## Roadmap maintenance
 
-Roadmap maintenance is a mechanical normalization step, not an event or a gate. It always runs after an iteration close and after a milestone close, on every node in the fractal tree whose children were modified. The canonical procedures below are deterministic, so they stay here as the single source; multiple runbooks invoke them and do not restate them.
+Roadmap maintenance is a mechanical normalization step, not an event or a gate. It runs on every node in the fractal tree whose children were modified. The task write-back runs after an iteration close; the compaction pass runs after a milestone close. The canonical procedures below are deterministic, so they stay here as the single source; multiple runbooks invoke them and do not restate them.
 
 ### Compaction cascading
 
-Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md) and [`/wrapup`](../../workflow/coding-agent/prompts/wrapup.md); neither restates it. For each node whose direct children are all complete:
+Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md); the runbook does not restate it. For each node whose direct children are all complete:
 
 1. **Compact the node** -- replace each child's checklist with a `- [x]` outcome summary (1-3 sentences describing what was built). Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them). Flip the node's heading status to `Complete` when one is shown.
 2. **Check the node's own parent** -- if all siblings of this node are also compacted, compact the parent node (its sibling list becomes a single `- [x]` entry).
@@ -35,7 +35,7 @@ Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-cl
 
 ### Top-level milestone close
 
-Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md) and the cascade it closes; the runbook does not restate it. When roadmap maintenance determines that all direct children of a top-level milestone are complete:
+Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md) and the cascade it closes; no runbook restates it. When roadmap maintenance determines that all direct children of a top-level milestone are complete:
 
 1. **Write the changelog entry** -- produce the entry for the completed milestone using [Changelog Format](#changelog-format). Output as a fenced block so the operator can append it verbatim to `changelog.md`.
 2. **Remove the milestone section** -- delete the completed milestone's detail section from `roadmap.md` Upcoming Milestones. The detailed task breakdown is now in the changelog.

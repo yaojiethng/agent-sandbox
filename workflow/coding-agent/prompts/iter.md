@@ -173,7 +173,7 @@ This is the common acceptance gate the operator-involved workflows share. The ac
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
-After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back and compaction, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B9 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](../../../docs/operations/git_policy.md).
+After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B9 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](../../../docs/operations/git_policy.md).
 
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
@@ -182,13 +182,11 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 ---
 
-## Sub-milestone close
+## The acceptance gate
 
-A sub-milestone follows the sequence `active -> pre-close -> close`. In pre-close, run the sub-milestone cleanup: compaction, changelog drafting, escalation clearance, and the review gate. At close, no new decisions are made.
+`/iter` stops at the acceptance gate. It presents the AC table, the roadmap write-back, the propagation replay, and the commit message; the operator releases; [`/wrapup`](wrapup.md) picks the iteration up from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
 **Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. Shipping the change and filing the repair is how a known break reaches the next reader. The deferred-resolution rule covers work the iteration did not set out to do; it does not cover a break the iteration introduced or exposed. See [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `### Close invariants` `Defect resolution`.
-
-**Pre-close review gate.** Surface to the operator: open `devlog/AGENT_FEEDBACK.md` entries (including operator-raised `[O]`) and any pending sweeps; and entries under probation for a `dismiss` / `maintain` / `escalate` decision. For probation entries, the operator decides: **dismiss** (the fix held, delete it), **maintain** (fix not stress-tested, extend), **escalate** (problem resurfaced, re-scope). Escalation of far-reaching correctness work defers the close; low-urgency escalation files as a task at the top of the next sub-milestone.
 
 ---
 

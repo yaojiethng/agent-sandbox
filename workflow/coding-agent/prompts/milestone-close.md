@@ -33,14 +33,11 @@ Reconcile the feedback per the operator's decisions. Do not decide a probation e
 
 ## Compact the task list
 
-Replace the named milestone's task checklist with `- [x]` outcome summaries, one to three sentences describing what was built. Keep design-document links and the `Not in scope` / deferred tags. Remove task breakdowns, file lists, and implementation notes -- the handovers retain them. Follow Compaction cascading and the Changelog Format in [roadmap_policy.md](../../../docs/operations/roadmap_policy.md).
+Run the [`roadmap-maintenance`](../skills/roadmap-maintenance.md) skill over `devlog/roadmap.md`. It owns the compaction pass and the summary table update, and it follows [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) and the [Changelog Format](../../../docs/operations/roadmap_policy.md#changelog-format). This prompt supplies the milestone name; the skill supplies the procedure.
 
 ## Stop at the close boundary
 
-The close boundary tells how far the cascade goes:
-
-- A sub-milestone whose siblings are incomplete does not cascade upward. The parent milestone keeps its task list and its `In progress` status.
-- A full milestone whose direct children are all complete cascades to the [Top-level milestone close](../../../docs/operations/roadmap_policy.md#top-level-milestone-close) sequence.
+Apply [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) to decide how far the close reaches; the policy owns the rule and this prompt does not restate it. The boundary decides which nodes this close touches, not how far the cascade travels next.
 
 ## Write the changelog entry
 
