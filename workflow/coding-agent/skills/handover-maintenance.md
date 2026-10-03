@@ -103,13 +103,13 @@ Completion criterion: every handover in scope passes the gate, every anomaly is 
 
 #### Step 6 - Deferred chain
 
-Handovers carry no deferred items: an item deferred with a destination is written back to the roadmap as an open row, and an item ruled out is a Scope sentence. For each handover in scope, confirm the pairing instead.
+Handovers carry no deferred items: an item deferred with a destination is written back to the roadmap as an open row, and an item ruled out is a Scope sentence. For each handover in scope, confirm the landed claim and the write-back outcome instead.
 
-1. Confirm the handover's commit pairs with exactly one roadmap write-back: its own task row, or the subtask row raised for it.
+1. Where the handover claims a task landed, confirm that task's roadmap row reflects it. A handover with no roadmap row of its own is not a defect: the write-back step is mandatory and its value may be None, so an iteration that changed no task has nothing to pair.
 2. For items the handover ruled out of scope, confirm the Scope sentence carries the reason.
 3. For deferred items recorded before the sections were removed (older handovers), trace them through the roadmap rows they were written back to; an item that vanished without a roadmap row or a resolution is a dropped item.
 
-Completion criterion: every handover in scope has its write-back pairing, and every older deferred item is resolved by a roadmap row, flagged as dropped, or flagged for escalation.
+Completion criterion: every landed task the handovers in scope claim is reflected in its roadmap row, and every older deferred item is resolved by a roadmap row, flagged as dropped, or flagged for escalation.
 
 #### Step 7 - Status
 

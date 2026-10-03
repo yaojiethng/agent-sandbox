@@ -144,7 +144,7 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 ### 3.14 The write-back pairing is not this run's to state
 
-Not a check. A landed row naming the handover that landed it is not a rule in any policy; `iteration_policy.md` `### Close invariants` (Unconditional write-back) and `handover-maintenance.md` Step 6 own the pairing, and they run commit-to-row. A row that repeats a handover id states a link `git log` already holds, so a run that reports one as a missing rule is reporting the wrong direction. When the pairing has failed, the finding belongs to the close that let it through.
+Not a check. A landed row naming the handover that landed it is not a rule in any policy; `iteration_policy.md` `### Close invariants` owns the write-back step, and `handover-maintenance.md` Step 6 tests the landed claim against the row. A row that repeats a handover id states a link `git log` already holds, so a run that reports one as a missing rule is reporting the wrong direction. When a landed claim is not reflected in its row, the finding belongs to the close that let it through.
 
 ### 3.15 The changelog section map is unambiguous
 

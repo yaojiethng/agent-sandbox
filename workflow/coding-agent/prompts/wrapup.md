@@ -93,7 +93,7 @@ Run the scope-reconciliation invariant in [`iteration_policy.md`](../../../docs/
 
 ### B4. Roadmap write-back
 
-Apply the roadmap write-back per `roadmap_policy.md`: mark completed tasks `[x]`, note the exact row change per task touched, and the completed rows the change supersedes or invalidates. The write-back rides the delivery commit; it never forms its own commit. The compaction pass, the summary table update, and any top-level milestone close are milestone-grain and belong to [`/milestone-close`](milestone-close.md), not to this runbook.
+Run the write-back step and state its outcome. When the iteration completed or rescoped a roadmap task, mark it `[x]` per `roadmap_policy.md`, note the exact row change per task touched, and note the completed rows the change supersedes or invalidates. An iteration that changed no roadmap task writes back nothing, and records that outcome. The step is mandatory; its value may be None. The write-back rides the delivery commit; it never forms its own commit. The compaction pass, the summary table update, and any top-level milestone close are milestone-grain and belong to [`/milestone-close`](milestone-close.md), not to this runbook.
 
 ### B5. Carry-forward resolution
 
@@ -115,7 +115,7 @@ When a `docs/adr/` or `devlog/discussions/` document's work landed this session,
 
 ### B9. Prepare all files for the commit
 
-Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Update Hot files. Set `Status: Closed`. Confirm the roadmap write-back from B4 is staged: the write-back is unconditional, one row per handover, so the delivery commit pairs with exactly one write-back -- when the session's task has no pre-existing roadmap row, raise and resolve a subtask row under the owning parent so the pairing holds.
+Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Update Hot files. Set `Status: Closed`. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
 
 ### B10. Land the single commit
 
