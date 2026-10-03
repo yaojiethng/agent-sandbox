@@ -1,0 +1,37 @@
+{
+  "opencode-go": {
+    "endpoint": "https://opencode.ai/zen/go/v1/models",
+    "baseUrls": {
+      "openai-completions": "https://opencode.ai/zen/go/v1",
+      "openai-responses": "https://opencode.ai/zen/go/v1",
+      "anthropic-messages": "https://opencode.ai/zen/go"
+    },
+    "transports": {
+      "openai-completions": ["minimax-m2.7"],
+      "anthropic-messages": ["minimax-m2.5"]
+    },
+    "thinking": {
+      "offEffort": "none",
+      "fallbackEfforts": { "low": "low", "high": "high" }
+    },
+    "compat": {
+      "default": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "maxTokensField": "max_tokens"
+      },
+      "byPrefix": {
+        "deepseek": {
+          "thinkingFormat": "deepseek",
+          "requiresReasoningContentOnAssistantMessages": true
+        }
+      }
+    },
+    "sources": [
+      { "kind": "baked" },
+      { "kind": "models-dev", "metadata": true },
+      { "kind": "endpoint", "override": true },
+      { "kind": "pi-dev", "override": true }
+    ]
+  }
+}

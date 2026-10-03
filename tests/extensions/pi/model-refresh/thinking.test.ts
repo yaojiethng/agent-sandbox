@@ -19,7 +19,8 @@ import {
 	thinkingLevelMapFromEfforts,
 	THINKING_LEVELS,
 } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
-import { liveOnlyModelConfig } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
+import { metadataEntry, sourceEntry } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
+import { TEST_DECL, V1_BASE as V1 } from "./fixtures.ts";
 
 describe("thinkingLevelMapFromEfforts", () => {
 	it("spells out every level pi knows, so an absent key is never ambiguous", () => {
@@ -76,43 +77,53 @@ describe("offSendsAnEffort", () => {
 
 describe("levelMapFor", () => {
 	it("uses the advertised list when there is one", () => {
-		assert.equal(levelMapFor(["low", "high"], true).medium, null);
+		assert.equal(levelMapFor(["low", "high"]).medium, null);
 	});
 
 	it("falls back to a usable range when the advertised list is empty or absent", () => {
-		assert.equal(levelMapFor([], true).high, "high");
-		assert.equal(levelMapFor(undefined, true).max, null, "the fallback range stops at high, so max is not advertised");
-		assert.equal(levelMapFor(undefined, true).off, null);
+		assert.equal(levelMapFor([]).high, "high");
+		assert.equal(levelMapFor(undefined).max, null, "the fallback range stops at high, so max is not advertised");
+		assert.equal(levelMapFor(undefined).off, null);
+	});
+
+	it("takes the disabled-effort name and the fallback ladder from the declaration", () => {
+		assert.equal(levelMapFor(["none", "low"], { offEffort: "none" }).off, "none", "the provider names its disabled state none");
+		assert.equal(levelMapFor(undefined, { fallbackEfforts: { low: "low" } }).high, null, "a declared ladder is used instead of the built-in one");
+		assert.equal(levelMapFor(undefined, { fallbackEfforts: { low: "low" } }).low, "low");
 	});
 });
 
-describe("liveOnlyModelConfig", () => {
+describe("metadataEntry", () => {
 	it("omits supportsReasoningEffort so pi auto-detects it from the endpoint", () => {
-		const model = liveOnlyModelConfig("some-new-model", { reasoning_options: [{ type: "effort", values: ["low", "high"] }] });
+		const model = metadataEntry(TEST_DECL, "some-new-model", { reasoning_options: [{ type: "effort", values: ["low", "high"] }] });
 		assert.ok(model.compat, "compat is present");
 		assert.equal("supportsReasoningEffort" in (model.compat as object), false, "the flag is not set: it would suppress every level");
 	});
 
 	it("leaves thinkingFormat off the default path so a disabled level sends an effort", () => {
-		const model = liveOnlyModelConfig("some-new-model", { reasoning_options: [{ type: "effort", values: ["none", "low"] }] });
+		const model = metadataEntry(TEST_DECL, "some-new-model", { reasoning_options: [{ type: "effort", values: ["none", "low"] }] });
 		assert.equal((model.compat as { thinkingFormat?: string }).thinkingFormat, undefined, "not deepseek: off must not become thinking.disabled");
 		assert.equal(model.thinkingLevelMap?.off, "none");
 	});
 
 	it("keeps the deepseek transport for a deepseek-family id with no advertised efforts", () => {
-		const model = liveOnlyModelConfig("deepseek-v9-flash", undefined);
+		const model = metadataEntry(TEST_DECL, "deepseek-v9-flash", undefined);
 		assert.equal((model.compat as { thinkingFormat?: string }).thinkingFormat, "deepseek");
 		assert.equal(model.api, "openai-completions");
-		assert.equal(model.baseUrl, "https://opencode.ai/zen/go/v1");
+		assert.equal(model.baseUrl, V1);
 	});
 
 	it("stays reasoning-capable and usable when no catalog describes the model", () => {
-		const model = liveOnlyModelConfig("unheard-of", undefined);
+		const model = metadataEntry(TEST_DECL, "unheard-of", undefined);
 		assert.equal(model.reasoning, true, "reasoning defaults on: a null would hide the level picker");
 		assert.equal(model.name, "unheard-of");
 		assert.equal(model.contextWindow, 1_000_000);
 		assert.equal(model.maxTokens, 131_072);
 		assert.deepEqual(model.cost, { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
 		assert.equal(model.thinkingLevelMap?.high, "high", "a usable level range survives");
+	});
+
+	it("sourceEntry supplies the transport and nothing else", () => {
+		assert.deepEqual(sourceEntry(TEST_DECL, "deepseek-v9-flash"), { id: "deepseek-v9-flash", api: "openai-completions", baseUrl: V1 });
 	});
 });

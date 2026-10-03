@@ -42,10 +42,10 @@ export interface ReportUi {
  */
 export function summarize(report: CatalogReport): string {
 	const parts = [
-		`${report.served} served`,
+		`${report.providerId}: ${report.served} served`,
 		`baked ${report.baked}`,
 		`store ${report.stored}`,
-		`live ${report.liveIds ?? "skipped"}`,
+		`endpoint ${report.endpoint ?? "skipped"}`,
 		`models.dev ${report.modelsDev ?? "skipped"}`,
 	];
 	const line = parts.join(", ");
@@ -66,7 +66,7 @@ export function completion(report: CatalogReport): { message: string; type: "inf
  * footer rows, and the newer report is the one that describes the catalog in
  * use.
  */
-export function createReporter() {
+export function createReporter(statusKey: string = STATUS_KEY) {
 	let latest: CatalogReport | undefined;
 	let ui: ReportUi | undefined;
 
@@ -74,7 +74,7 @@ export function createReporter() {
 	// the two preconditions themselves, so a guard here would be a branch no case
 	// can reach and therefore no case can test.
 	function render(): void {
-		ui.setStatus(STATUS_KEY, summarize(latest));
+		ui.setStatus(statusKey, summarize(latest));
 		const done = completion(latest);
 		ui.notify(done.message, done.type);
 	}

@@ -1,14 +1,18 @@
 /**
- * The catalog union, as pure functions over arrays.
+ * The source union, as pure functions over arrays.
  *
- * Nothing here performs I/O. `buildUnion` takes the three inputs the extension
- * gathers -- pi's baked catalog, pi's persisted pi.dev catalog, and whatever
- * the provider's live endpoint advertises -- and returns the list the
- * extension serves. Keeping it pure is what lets the tests cover every error
- * case without a network call or an API key.
+ * Nothing here performs I/O. `buildUnion` takes the sources a declared provider
+ * names and returns the list the extension serves. Keeping it pure is what lets
+ * the tests cover every error case without a network call or an API key.
+ *
+ * The model: pi's baked catalog and pi's persisted pi.dev overlay are pi's
+ * primary sources. A provider's own `/models` endpoint is a secondary source
+ * with override authority for that provider, and models.dev is a secondary
+ * metadata source without it. Sources are declared in `sources.json`, in one
+ * ordered list per provider, and the union is one primitive applied to them.
  */
 
-import type { ModelDefinition, ModelsDevModel, StoredCatalog } from "./types.ts";
+import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "./types.ts";
 import { levelMapFor } from "./thinking.ts";
 
 /** Fallbacks for a model no catalog has described yet. */
@@ -30,26 +34,6 @@ export const DEEPSEEK_COMPAT = {
 	requiresReasoningContentOnAssistantMessages: true,
 } as const;
 
-/** The transport each endpoint speaks. */
-export const V1_BASE = "https://opencode.ai/zen/go/v1";
-export const ANTHROPIC_BASE = "https://opencode.ai/zen/go";
-
-/**
- * Live-only models that route through the Anthropic Messages adapter.
- *
- * An id appears here only when pi's baked catalog does not carry it, because
- * the live layer builds an entry only for an id the earlier sources do not
- * have. The lists were reconciled against pi's baked catalog on 2026-09-30:
- * four ids this table once claimed (`minimax-m2.7`, `qwen3.6-plus`,
- * `qwen3.7-max`, `qwen3.7-plus`) are carried by pi as `openai-completions`,
- * and the entries were removed rather than kept as a second opinion. The
- * invariant M8 holds the two in step.
- */
-export const ANTHROPIC_TRANSPORT = new Set(["minimax-m2.5", "minimax-m3", "qwen3.5-plus"]);
-
-/** Live-only models that route through the OpenAI Responses adapter. */
-export const RESPONSES_TRANSPORT = new Set(["gpt-6-luna", "grok-4.5", "grok-4.7"]);
-
 /** Keep only the input modalities pi's model type accepts. */
 export function normalizeInput(modalities: readonly string[] | undefined): ("text" | "image")[] {
 	const filtered = (modalities ?? []).filter(
@@ -62,7 +46,7 @@ export function normalizeInput(modalities: readonly string[] | undefined): ("tex
  * Whether pi's persisted catalog is newer than the baked data it would replace.
  *
  * This mirrors pi's own gate in `dist/core/remote-catalog-provider.js`
- * (`remoteModels`), so the extension applies the store under exactly the
+ * (`remoteModels`), so the extension reproduces the primary under exactly the
  * condition pi would. When the baked generation timestamp is unknown, pi
  * applies the store; this matches that rather than guessing the other way.
  */
@@ -93,98 +77,116 @@ export function storeEntriesFor(stored: StoredCatalog | undefined, providerId: s
 	);
 }
 
-/**
- * Overlay one list onto another: an entry with a matching id replaces the
- * earlier one in place, an unknown id is appended.
- *
- * This is pi's own `mergeModels` semantics. Matching them is deliberate: the
- * extension must serve what pi serves when no extension is registered, so a
- * fresher pi.dev entry replaces a stale baked one whole rather than being
- * second-guessed field by field. `models.json` `modelOverrides` remain the top
- * layer for local corrections, applied by pi after this list.
- *
- * The copy is forced on the pi release this extension runs against. On 0.87.1
- * `mergeModels` in pi's `dist/core/remote-catalog-provider.js` was declared
- * without `export`, and the package's `exports` map publishes no subpath under
- * `dist/`, so a bare
- * `@earendil-works/pi-coding-agent/dist/core/remote-catalog-provider` import
- * failed to resolve. By 0.99.1 pi exports it from that module; the package
- * entry still does not re-export it, so a third-party extension still cannot
- * reach it. Re-check this comment on a pi upgrade: if `dist/index.js` gains a
- * re-export, delete the copy and call the real one.
- *
- * The drift that a copy invites is closed rather than documented. pi's
- * `withRemoteCatalog` is exported, and its `getModels` is
- * `mergeModels(provider.getModels(), dynamicModels)` behind the same freshness
- * gate and provider filter this file applies. The G2 case `agrees with pi`
- * drives it and compares entry for entry, so a pi release that changes the
- * merge, the gate or the filter turns this suite red instead of diverging
- * quietly. Assumption A11 records the agreement.
- */
-export function mergeCatalogs(base: readonly ModelDefinition[], overlay: readonly ModelDefinition[]): ModelDefinition[] {
-	const merged = [...base];
-	for (const model of overlay) {
-		const index = merged.findIndex((entry) => entry.id === model.id);
-		if (index >= 0) {
-			merged[index] = model;
-		} else {
-			merged.push(model);
+/** An entry with every field `entry` leaves undefined taken from `fallback`. */
+export function fillMissing(entry: ModelDefinition, fallback: ModelDefinition): ModelDefinition {
+	const filled: Record<string, unknown> = { ...fallback };
+	for (const [key, value] of Object.entries(entry)) {
+		if (value !== undefined) {
+			filled[key] = value;
 		}
+	}
+	return filled as unknown as ModelDefinition;
+}
+
+/**
+ * Union two entry lists by id, first-wins per field.
+ *
+ * An id the accumulator already holds keeps every field it supplies and takes
+ * only the fields it leaves undefined from the incoming list; an unknown id is
+ * appended. A union removes nothing, so an id one source supplies stays served
+ * even when no later source lists it.
+ */
+export function unionFirstWins(acc: readonly ModelDefinition[], next: readonly ModelDefinition[]): ModelDefinition[] {
+	const merged: ModelDefinition[] = [];
+	const index = new Map<string, number>();
+	for (const model of [...acc, ...next]) {
+		if (typeof model?.id !== "string" || model.id.length === 0) {
+			continue;
+		}
+		const position = index.get(model.id);
+		if (position === undefined) {
+			index.set(model.id, merged.length);
+			merged.push(model);
+			continue;
+		}
+		merged[position] = fillMissing(merged[position] as ModelDefinition, model);
 	}
 	return merged;
 }
 
 /**
- * Refresh a baked model's variable metadata from models.dev, leaving pi's
- * curated transport, compat, name, reasoning flag, and thinking-level map
- * untouched. Without this the baked entry wins every field and a corrected
- * context window or price never lands.
+ * The transport an id is served over.
+ *
+ * A declaration entry wins, then the metadata's provider SDK: models.dev names
+ * `@ai-sdk/openai` for the same ids pi bakes with the responses adapter, and
+ * `@ai-sdk/anthropic` for the ids pi bakes with the messages adapter. An id no
+ * source classifies falls to the gateway's completions surface.
  */
-export function overlayBakedMetadata(model: ModelDefinition, metadata: ModelsDevModel | undefined): ModelDefinition {
-	if (!metadata) {
-		return model;
+export function derivedTransport(decl: ProviderDecl, id: string, npm?: string): ModelDefinition["api"] {
+	for (const [api, ids] of Object.entries(decl.transports ?? {})) {
+		if (ids.includes(id)) {
+			return api as ModelDefinition["api"];
+		}
 	}
-	const input = normalizeInput(metadata.modalities?.input);
-	return {
-		...model,
-		contextWindow: metadata.limit?.context ?? model.contextWindow,
-		maxTokens: metadata.limit?.output ?? model.maxTokens,
-		input,
-		cost: metadata.cost
-			? {
-					input: metadata.cost.input ?? model.cost?.input ?? DEFAULT_COST.input,
-					output: metadata.cost.output ?? model.cost?.output ?? DEFAULT_COST.output,
-					cacheRead: metadata.cost.cache_read ?? model.cost?.cacheRead ?? DEFAULT_COST.cacheRead,
-					cacheWrite: metadata.cost.cache_write ?? model.cost?.cacheWrite ?? DEFAULT_COST.cacheWrite,
-				}
-			: model.cost,
-	};
+	if (npm === "@ai-sdk/openai") {
+		return "openai-responses";
+	}
+	if (npm === "@ai-sdk/anthropic") {
+		return "anthropic-messages";
+	}
+	return "openai-completions";
 }
 
-/** The endpoint a live-only id is served over, and the compat that goes with it. */
-export function transportFor(id: string): { api: ModelDefinition["api"]; baseUrl: string } {
-	if (ANTHROPIC_TRANSPORT.has(id)) {
-		return { api: "anthropic-messages", baseUrl: ANTHROPIC_BASE };
-	}
-	if (RESPONSES_TRANSPORT.has(id)) {
-		return { api: "openai-responses", baseUrl: V1_BASE };
-	}
-	return { api: "openai-completions", baseUrl: V1_BASE };
+/** The transport a declared provider serves an id over, and the base url that goes with it. */
+export function transportFor(decl: ProviderDecl, id: string, npm?: string): { api: ModelDefinition["api"]; baseUrl: string } {
+	const api = derivedTransport(decl, id, npm);
+	return { api, baseUrl: decl.baseUrls[api] ?? "" };
 }
 
 /**
- * Build the definition for a model the baked catalog has never heard of.
+ * The entry a provider endpoint contributes for one id.
  *
- * The compat block omits `supportsReasoningEffort` on purpose: pi auto-detects
- * it from the endpoint, and the baked catalogs show the opencode.ai endpoints
- * are detected as supporting it. Setting the flag suppresses `reasoning_effort`
- * for every level and silently disables thinking-level selection.
+ * The endpoint advertises ids and no model fields, so this supplies only the
+ * transport facts the provider's declaration states. Metadata arrives from
+ * models.dev through the union, and pi's curated `compat` and thinking map, for
+ * an id the primary already carries, arrive the same way: an override source
+ * wins the fields it carries, not the ones it does not.
  */
-export function liveOnlyModelConfig(id: string, metadata: ModelsDevModel | undefined): ModelDefinition {
-	const { api, baseUrl } = transportFor(id);
+export function sourceEntry(decl: ProviderDecl, id: string, npm?: string): ModelDefinition {
+	const { api, baseUrl } = transportFor(decl, id, npm);
+	return { id, api, baseUrl };
+}
+
+/**
+ * The compat block a secondary source builds for an id.
+ *
+ * The declaration's default block applies, and an id-prefix rule overrides it.
+ * The prefix rule exists for the deepseek family, whose gateway needs its
+ * reasoning content on assistant turns and a `thinking` object rather than a
+ * bare `reasoning_effort`; getting that key wrong is what the extension was
+ * first written to fix.
+ */
+export function compatFor(decl: ProviderDecl, id: string): Record<string, unknown> {
+	const base = { ...(decl.compat?.default ?? CHAT_COMPAT) };
+	for (const [prefix, override] of Object.entries(decl.compat?.byPrefix ?? {})) {
+		if (id.startsWith(prefix)) {
+			return { ...base, ...override };
+		}
+	}
+	return base;
+}
+
+/**
+ * The entry models.dev contributes for one id.
+ *
+ * models.dev is a metadata source: it carries names, limits, prices, the
+ * advertised thinking efforts and the provider SDK, and no transport of its own.
+ * An id the primary already carries takes its curated compat and thinking map
+ * from the primary instead, since `models-dev` is declared after `baked`.
+ */
+export function metadataEntry(decl: ProviderDecl, id: string, metadata: ModelsDevModel | undefined): ModelDefinition {
+	const { api, baseUrl } = transportFor(decl, id, metadata?.provider?.npm);
 	const efforts = metadata?.reasoning_options?.find((option) => option.type === "effort")?.values;
-	const isDeepseekFamily = id.startsWith("deepseek");
-	const compat = api === "anthropic-messages" || (efforts?.length && !isDeepseekFamily) ? CHAT_COMPAT : DEEPSEEK_COMPAT;
 	return {
 		id,
 		name: metadata?.name ?? id,
@@ -199,65 +201,102 @@ export function liveOnlyModelConfig(id: string, metadata: ModelsDevModel | undef
 					cacheRead: metadata.cost.cache_read ?? 0,
 					cacheWrite: metadata.cost.cache_write ?? 0,
 				}
-			: DEFAULT_COST,
+			: { ...DEFAULT_COST },
 		contextWindow: metadata?.limit?.context ?? DEFAULT_CONTEXT_WINDOW,
 		maxTokens: metadata?.limit?.output ?? DEFAULT_MAX_TOKENS,
-		thinkingLevelMap: levelMapFor(efforts, true),
-		compat: compat as unknown as Record<string, unknown>,
+		thinkingLevelMap: levelMapFor(efforts, decl.thinking),
+		compat: compatFor(decl, id),
 	};
 }
 
 export interface UnionInput {
+	providerId: string;
+	decl: ProviderDecl;
 	/** Pi's baked catalog for the provider. */
 	baked: readonly ModelDefinition[];
 	/** Pi's persisted pi.dev catalog entry, as handed to `refreshModels`. */
 	stored: StoredCatalog | undefined;
 	/** The baked data's generation timestamp, from pi's providers module. */
 	generatedAt: number | undefined;
-	/** Ids the provider's live endpoint advertises, or undefined when the fetch failed. */
-	liveIds: readonly string[] | undefined;
-	/** The models.dev blob for the provider, or undefined when the fetch failed. */
+	/** Ids the provider's endpoint advertises, or undefined when it was not reached. */
+	endpointIds: readonly string[] | undefined;
+	/** The models.dev blob for the provider, or undefined when it was not reached. */
 	modelsDev: Record<string, ModelsDevModel> | undefined;
-	providerId: string;
+}
+
+/** The entries one declared source contributes. A source that was not reached contributes none. */
+function entriesFor(kind: UnionInput["decl"]["sources"][number]["kind"], input: UnionInput, ids?: readonly string[]): ModelDefinition[] {
+	switch (kind) {
+		case "baked":
+			return [...input.baked];
+		case "pi-dev":
+			return isStoreNewerThanBaked(input.stored, input.generatedAt) ? storeEntriesFor(input.stored, input.providerId) : [];
+		case "models-dev": {
+			// A metadata source adds no id of its own, so it is enumerated over the
+			// ids the id sources settled rather than over its own blob. An id it does
+			// not describe still gets an entry, so that id receives its transport and
+			// defaults rather than staying a bare client-supplied id.
+			const wanted = ids ?? Object.keys(input.modelsDev ?? {});
+			return [...wanted].map((id) => metadataEntry(input.decl, id, input.modelsDev?.[id]));
+		}
+		case "endpoint":
+			return Array.isArray(input.endpointIds)
+				? input.endpointIds
+						.filter((id): id is string => typeof id === "string" && id.length > 0)
+						.map((id) => sourceEntry(input.decl, id, input.modelsDev?.[id]?.provider?.npm))
+				: [];
+	}
 }
 
 /**
- * The list the extension serves.
+ * Apply an override source: its fields win where it carries them, and the
+ * accumulator's order stands.
  *
- * Three sources, in the order pi itself would apply them:
+ * `unionFirstWins` puts its first argument's ids first, so passing the override
+ * source first would also move every id it lists to the front of the served
+ * list and push the accumulator's own ids behind them. The served order is the
+ * primary catalog's, and the model picker reads it, so the order is restored
+ * after the fields are merged; an id only the override lists is appended.
+ */
+function overlayPreservingOrder(acc: readonly ModelDefinition[], next: readonly ModelDefinition[]): ModelDefinition[] {
+	const merged = unionFirstWins(next, acc);
+	const position = new Map(acc.map((model, index) => [model.id, index]));
+	return [...merged].sort((a, b) => (position.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (position.get(b.id) ?? Number.MAX_SAFE_INTEGER));
+}
+
+/**
+ * The list the extension serves, built from the declared sources.
  *
- *  1. the baked catalog, with variable metadata refreshed from models.dev;
- *  2. pi's persisted pi.dev catalog, when it is newer than the baked data --
- *     this is the layer the previous revision of this extension dropped, and
- *     dropping it is why `space-bunny-free` vanished from the catalog;
- *  3. ids only the live endpoint advertises, built from models.dev where it
- *     has them.
+ * One union primitive, first-wins per field. The non-override id sources fold
+ * in list order, earlier winning. The override id sources fold in reverse list
+ * order, so the first-listed override is the strongest; reverse is what makes
+ * first-wins produce override semantics without a second rule, and each one
+ * restores the accumulator's order.
  *
- * Every source is optional. A failed or absent source narrows the result; none
- * of them can remove a model another source supplied.
+ * A source declared `metadata` contributes no id of its own, so it runs after
+ * the ids and the order are settled, as a fill pass over the served list. That
+ * placement is what keeps an id an override source introduces from entering the
+ * catalog ahead of the source that introduced it, and it is what keeps a
+ * metadata source from overriding a value another source already supplied.
  */
 export function buildUnion(input: UnionInput): ModelDefinition[] {
-	const { baked, stored, generatedAt, liveIds, modelsDev, providerId } = input;
+	const declared = input.decl.sources;
+	const idSources = declared.filter((source) => source.metadata !== true);
+	const metadataSources = declared.filter((source) => source.metadata === true);
 
-	const refreshedBaked = baked.map((model) => overlayBakedMetadata(model, modelsDev?.[model.id]));
-
-	const remote = isStoreNewerThanBaked(stored, generatedAt) ? storeEntriesFor(stored, providerId) : [];
-	const withRemote = mergeCatalogs(refreshedBaked, remote);
-
-	// The live list is a parsed response body, so it is checked before it is
-	// trusted: a shape the parser could not type contributes nothing.
-	if (!Array.isArray(liveIds)) {
-		return withRemote;
+	let served: ModelDefinition[] = [];
+	for (const source of idSources.filter((source) => source.override !== true)) {
+		served = unionFirstWins(served, entriesFor(source.kind, input));
 	}
-
-	const known = new Set(withRemote.map((model) => model.id));
-	const liveOnly: ModelDefinition[] = [];
-	for (const id of liveIds) {
-		if (typeof id !== "string" || known.has(id)) {
-			continue;
-		}
-		known.add(id);
-		liveOnly.push(liveOnlyModelConfig(id, modelsDev?.[id]));
+	for (const source of idSources.filter((source) => source.override === true).reverse()) {
+		served = overlayPreservingOrder(served, entriesFor(source.kind, input));
 	}
-	return [...withRemote, ...liveOnly];
+	for (const source of metadataSources) {
+		const supplied = new Map(entriesFor(source.kind, input, served.map((model) => model.id)).map((entry) => [entry.id, entry]));
+		served = served.map((model) => {
+			const metadata = supplied.get(model.id);
+			return metadata ? fillMissing(model, metadata) : model;
+		});
+	}
+	return served;
 }

@@ -11,8 +11,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
-import { V1_BASE } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
 import type { FetchJson, ModelDefinition, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { PROVIDER_ID, TEST_DECL, V1_BASE } from "./fixtures.ts";
 
 const GENERATED_AT = 1_000_000;
 
@@ -43,6 +43,8 @@ function okFetcher(calls: string[] = []): FetchJson {
 
 const gather = (over: Partial<Parameters<typeof gatherAndBuild>[0]> = {}) =>
 	gatherAndBuild({
+		providerId: PROVIDER_ID,
+		decl: TEST_DECL,
 		signal: new AbortController().signal,
 		allowNetwork: true,
 		stored: STORE,
@@ -58,6 +60,8 @@ describe("the offline phase", () => {
 	it("never calls the fetcher", async () => {
 		const calls: string[] = [];
 		await gatherAndBuild({
+			providerId: PROVIDER_ID,
+			decl: TEST_DECL,
 			signal: new AbortController().signal,
 			allowNetwork: false,
 			stored: STORE,

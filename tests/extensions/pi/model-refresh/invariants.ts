@@ -1,39 +1,3 @@
-/**
- * The invariant report's catalog and renderer: a naming layer over the
- * conformance suite, with no test logic of its own.
- *
- * The suite proves the invariants one deep case at a time. That is the right
- * depth, and it leaves one gap: a failure names a test, not an invariant, so
- * the operator reads a red line and has to remember which invariant that test
- * was written for. This module is the index. Every invariant the extension
- * claims has one named case here, each case names the record that states it,
- * and the renderer prints the index with a verdict per invariant, so a red
- * line reads `M2` and the operator knows which review-finding class to look
- * at.
- *
- * Two things here are derived, never listed, and the reason is the same one
- * the task-queue report gives: a list written here is a second list to drift.
- *
- * The per-source cases are derived from `UNION_SOURCES`. A fourth source added
- * to the union adds a case here, and the M5 provenance case then fails on any
- * entry the new source contributed but the catalog does not name. Provenance
- * is what keeps this list honest: a source that appears in `buildUnion`
- * without appearing here puts entries in the output that no declared source
- * can account for.
- *
- * The thinking cases are derived from `THINKING_LEVELS`, the extension's own
- * vocabulary. A level the extension adds is a level this report asserts.
- *
- * The two mutations that survived a green suite during the investigation are
- * the reason this file exists. Both were unpinned because nobody had written
- * the invariant down: a catalog with a zero context window passed every case,
- * and an empty baked catalog dropped the store's models without a red line.
- * Each is a case below, and each has a row in the mutation catalog.
- *
- * The record that states these invariants is the extension README, which holds
- * the dated finding and assumption table.
- */
-
 import { THINKING_LEVELS } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 
 /** One named case of one invariant. */
@@ -49,16 +13,18 @@ export interface InvariantCase {
 }
 
 /**
- * The sources `buildUnion` consults, in application order. The per-source
- * monotonicity cases are derived from this list.
+ * The source kinds the declaration may name, in the order the shipped
+ * declaration lists them. The per-source monotonicity cases are derived from
+ * this list.
  */
-export const UNION_SOURCES = ["baked", "store", "live"] as const;
+export const UNION_SOURCES = ["baked", "pi-dev", "models-dev", "endpoint"] as const;
 
 /** What each source contributes, for a statement that names it. */
 const SOURCE_CONTRIBUTION: Record<(typeof UNION_SOURCES)[number], string> = {
-	baked: "the baked catalog, with its variable metadata refreshed from models.dev",
-	store: "pi's persisted pi.dev catalog, when that catalog is newer than the baked data",
-	live: "the ids only the live endpoint advertises, built from models.dev where it has them",
+	baked: "pi's baked catalog",
+	"pi-dev": "pi's persisted pi.dev catalog, when it is newer than the baked data",
+	"models-dev": "the models.dev metadata blob, restricted to the ids another source lists",
+	endpoint: "the ids only the provider's own endpoint advertises",
 };
 
 /** The record that states the invariants this report indexes. */
@@ -72,25 +38,43 @@ export function buildCatalog(): InvariantCase[] {
 			id: "M1",
 			name: "non-empty",
 			statement: "the union is never empty while the baked catalog has a model, and no optional source can empty a union the baked catalog fills",
-			source: `${RECORD} Findings; buildUnion over every source combination`,
+			source: `${RECORD} the source model; buildUnion over every source combination`,
 		},
 		{
 			id: "M3",
 			name: "provenance",
-			statement: "every entry in the union is an entry a declared source supplied, whole or under the documented metadata overlay",
-			source: `${RECORD} Findings; the union's three sources`,
+			statement: "every entry in the union is an entry a declared source supplied, whole or under the documented metadata fill",
+			source: `${RECORD} the source model; the union's declared sources`,
 		},
 		{
-			id: "M3",
-			name: "overlay silence",
-			statement: "the overlay changes only the fields models.dev states, and a field it is silent about keeps the baked value",
-			source: `${RECORD} Findings; overlayBakedMetadata, and the mutation row for its silent-field fallback`,
+			id: "U4",
+			name: "metadata silence",
+			statement: "a metadata source adds no id and overrides no field: it fills only the fields the served entry leaves undefined, and an id no id source lists is not served",
+			source: `${RECORD} the source model; the metadata fill pass in buildUnion, and the mutation row for its restriction`,
+		},
+		{
+			id: "U1",
+			name: "first-wins per field",
+			statement: "an entry carried by several sources takes each field from the first source in the fold that supplies it, so no later source overwrites a value a source already stated",
+			source: `${RECORD} the source model; unionFirstWins and fillMissing`,
+		},
+		{
+			id: "U2",
+			name: "the override fold order",
+			statement: "the override sources fold in reverse declaration order, so the first-listed override is the strongest and a later-listed one cannot overwrite it",
+			source: `${RECORD} the source model; the override pass in buildUnion`,
+		},
+		{
+			id: "U3",
+			name: "the served order",
+			statement: "the served list keeps the primary catalog's order, an id an override source introduces is appended, and no fold moves an id another source placed",
+			source: `${RECORD} the source model; overlayPreservingOrder`,
 		},
 		{
 			id: "M4",
 			name: "unique ids",
-			statement: "the union carries each model id once, whichever sources supplied it",
-			source: `${RECORD} Findings; mergeCatalogs`,
+			statement: "the union carries each model id once, whichever sources supplied it and however often a source repeats it",
+			source: `${RECORD} the source model; unionFirstWins`,
 		},
 		{
 			id: "M5",
@@ -102,76 +86,76 @@ export function buildCatalog(): InvariantCase[] {
 			id: "M7",
 			name: "a usable entry",
 			statement: "every entry the union serves carries an id pi can key on, and a stored entry that cannot is dropped before it reaches the union",
-			source: `${RECORD} Findings; storeEntriesFor, and pi's parseCatalog in dist/core/remote-catalog-provider.js`,
+			source: `${RECORD} storeEntriesFor, and pi's parseCatalog in dist/core/remote-catalog-provider.js`,
 		},
 		{
 			id: "M8",
-			name: "the transport does not contradict pi",
-			statement: "an id in a transport table that pi's baked catalog also carries keeps the adapter pi encodes for it, so the table can never override what pi serves",
-			source: `${RECORD} Findings; transportFor, and the baked catalog in pi-ai dist/providers/data/opencode-go.json`,
+			name: "the transport follows pi and the metadata",
+			statement: "an id pi's baked catalog carries keeps the adapter pi encodes for it, a declared transport entry wins over the metadata, and an id the metadata labels @ai-sdk/openai or @ai-sdk/anthropic gets that adapter",
+			source: `${RECORD} the source model; derivedTransport, and pi's baked catalog in pi-ai dist/providers/all.js`,
 		},
 		{
 			id: "M6",
 			name: "purity",
 			statement: "the union returns a fresh list and mutates none of its inputs",
-			source: `${RECORD} Findings; the pure-function rule`,
+			source: `${RECORD} the pure-function rule`,
 		},
 		// --- the store gate -------------------------------------------------
 		{
 			id: "G1",
 			name: "the exact gate",
 			statement: "the persisted catalog applies if and only if it is newer than the baked data it would replace",
-			source: `${RECORD} Finding 2; pi's gate in dist/core/remote-catalog-provider.js`,
+			source: `${RECORD} the store gate; pi's gate in dist/core/remote-catalog-provider.js`,
 		},
 		{
 			id: "G2",
-			name: "whole replacement",
-			statement: "a stored entry replaces the same-id baked entry whole, as pi's own mergeModels does, and the two are not blended field by field",
-			source: `${RECORD} Finding 1; pi's mergeModels in dist/core/remote-catalog-provider.js`,
+			name: "the store's fields win",
+			statement: "a stored entry supplies the fields it carries, in the baked entry's position, and a field it omits keeps the baked value",
+			source: `${RECORD} the store gate; the persisted pi.dev overlay`,
 		},
 		{
 			id: "G2",
 			name: "agrees with pi",
-			statement: "the extension's merge returns what pi's own merge returns for the same two lists, over replacement, append, cross-provider and stale-gate cases alike",
+			statement: "for the complete entries pi writes, the extension's persisted overlay returns what pi's own merge returns, over replacement, append, cross-provider and stale-gate cases alike",
 			source: `${RECORD} Assumption A11; the differential case drives pi's withRemoteCatalog, whose getModels calls pi's mergeModels`,
 		},
 		{
 			id: "G3",
 			name: "provider scope",
 			statement: "only the extension's own provider's stored entries reach the union",
-			source: `${RECORD} Findings; storeEntriesFor`,
+			source: `${RECORD} storeEntriesFor`,
 		},
 		// --- failure narrowing ----------------------------------------------
 		{
 			id: "L1",
 			name: "the baked catalog always survives",
 			statement: "no combination of source failures removes a model the baked catalog supplied",
-			source: `${RECORD} Finding 2; the union over every subset of the optional sources`,
+			source: `${RECORD} the failure contract; the union over every subset of the optional sources`,
 		},
 		{
 			id: "L2",
 			name: "a malformed source removes nothing",
 			statement: "a source that returns the wrong shape contributes nothing and takes nothing away",
-			source: `${RECORD} Findings; the failure paths`,
+			source: `${RECORD} the failure contract; the failure paths`,
 		},
 		// --- the composition contract ---------------------------------------
 		{
 			id: "C1",
 			name: "registration never shrinks the catalog",
 			statement: "registering the extension never removes a model pi can serve",
-			source: `${RECORD} Finding 1; pi's composeModelProvider in dist/core/provider-composer.js, and storeEntriesFor`,
+			source: `${RECORD} the registration constraint; pi's composeModelProvider in dist/core/provider-composer.js, and storeEntriesFor`,
 		},
 		{
 			id: "C2",
 			name: "no silent fallback",
 			statement: "a model id any source knows resolves to that model's own limits, never to pi's fallback clone of another model",
-			source: `${RECORD} Finding 3; pi's buildFallbackModel in dist/core/model-resolver.js`,
+			source: `${RECORD} the registration constraint; pi's buildFallbackModel in dist/core/model-resolver.js`,
 		},
 		{
 			id: "C3",
 			name: "user overrides win",
 			statement: "a models.json modelOverride still takes precedence over the union",
-			source: `${RECORD} Finding 5; pi's applyModelOverride in dist/core/provider-composer.js`,
+			source: `${RECORD} the registration constraint; pi's applyModelOverride in dist/core/provider-composer.js`,
 		},
 		// --- thinking levels ------------------------------------------------
 		{
@@ -183,8 +167,8 @@ export function buildCatalog(): InvariantCase[] {
 		{
 			id: "T2",
 			name: "off is the endpoint's disabled state",
-			statement: "the off level maps to the endpoint's disabled effort when it names one, and is marked unsupported when it does not",
-			source: `${RECORD} Assumption A7; thinkingLevelMapFromEfforts`,
+			statement: "the off level maps to the declared disabled-effort name when the endpoint advertises one, and is marked unsupported when it does not",
+			source: `${RECORD} Assumption A7; thinkingLevelMapFromEfforts and the declaration's offEffort`,
 		},
 		{
 			id: "T3",
@@ -194,9 +178,9 @@ export function buildCatalog(): InvariantCase[] {
 		},
 		{
 			id: "T3",
-			name: "the family keeps its transport",
-			statement: "a deepseek-family id keeps the deepseek transport whether or not the endpoint advertises efforts",
-			source: `${RECORD} Assumption A8; liveOnlyModelConfig, and pi-ai dist/api/openai-completions.js`,
+			name: "the family keeps its compat",
+			statement: "an id the declaration's prefix rule names keeps the compat block that rule states, over the declaration's default block",
+			source: `${RECORD} the thinking-level defect; compatFor`,
 		},
 		// --- the wire, and determinism --------------------------------------
 		{
@@ -209,13 +193,26 @@ export function buildCatalog(): InvariantCase[] {
 			id: "D1",
 			name: "determinism",
 			statement: "the same inputs yield the same union, on every call and in any order",
-			source: `${RECORD} Findings; the pure-function rule`,
+			source: `${RECORD} the pure-function rule`,
 		},
 		{
-			id: "C1",
+			id: "C4",
 			name: "the registration names the provider",
-			statement: "the provider id the extension registers is the provider the union is built for",
-			source: `${RECORD} Findings; index.ts, and PROVIDER_ID in refresh.ts`,
+			statement: "the extension registers one provider per declaration key, and each union is built for the provider whose declaration it reads",
+			source: `${RECORD} index.ts; loadDeclarations and the declaration key`,
+		},
+		// --- the declaration itself -----------------------------------------
+		{
+			id: "N1",
+			name: "the declaration validates",
+			statement: "a declaration is read through a validator that drops an unknown provider, an unknown source kind and a malformed field rather than throwing at startup",
+			source: `${RECORD} the source model; parseDeclarations`,
+		},
+		{
+			id: "N2",
+			name: "the folder owns every input",
+			statement: "the declaration sits beside the extension, so no host file has to carry an extension-specific key",
+			source: `${RECORD} the source model; DECLARATIONS_PATH`,
 		},
 		// --- the test layer over itself --------------------------------------
 		{
@@ -231,7 +228,7 @@ export function buildCatalog(): InvariantCase[] {
 			id: "M2",
 			name: `monotone in ${source}`,
 			statement: `adding a model to ${SOURCE_CONTRIBUTION[source]} removes no model from the union`,
-			source: `${RECORD} Finding 1; buildUnion with that source grown`,
+			source: `${RECORD} the source model; buildUnion with that source grown`,
 		});
 	}
 	// One sendability case per thinking level, derived from the extension's vocabulary.

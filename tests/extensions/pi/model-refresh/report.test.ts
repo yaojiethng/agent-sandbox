@@ -35,7 +35,8 @@ function fakeUi() {
 }
 
 const FULL: CatalogReport = {
-	liveIds: 43,
+	providerId: "opencode-go",
+	endpoint: 43,
 	modelsDev: 33,
 	baked: 29,
 	stored: 30,
@@ -44,39 +45,39 @@ const FULL: CatalogReport = {
 };
 
 test("a full reconciliation reads as one line naming every source", () => {
-	assert.equal(summarize(FULL), "47 served, baked 29, store 30, live 43, models.dev 33");
+	assert.equal(summarize(FULL), "opencode-go: 47 served, baked 29, store 30, endpoint 43, models.dev 33");
 });
 
 test("a source that was not reached is named skipped, not zero", () => {
-	const partial: CatalogReport = { ...FULL, liveIds: undefined, modelsDev: undefined };
+	const partial: CatalogReport = { ...FULL, endpoint: undefined, modelsDev: undefined };
 	assert.equal(
 		summarize(partial),
-		"47 served, baked 29, store 30, live skipped, models.dev skipped",
+		"opencode-go: 47 served, baked 29, store 30, endpoint skipped, models.dev skipped",
 	);
 });
 
 test("a failed source is counted on the summary line", () => {
-	const degraded: CatalogReport = { ...FULL, liveIds: undefined, failures: ["live /models fetch failed (HTTP 503)"] };
+	const degraded: CatalogReport = { ...FULL, endpoint: undefined, failures: ["endpoint fetch failed (HTTP 503)"] };
 	assert.equal(
 		summarize(degraded),
-		"47 served, baked 29, store 30, live skipped, models.dev 33 (1 source(s) failed)",
+		"opencode-go: 47 served, baked 29, store 30, endpoint skipped, models.dev 33 (1 source(s) failed)",
 	);
 });
 
 test("a clean completion notifies as info and repeats the summary", () => {
 	assert.deepEqual(completion(FULL), {
-		message: "Model catalogs refreshed. 47 served, baked 29, store 30, live 43, models.dev 33",
+		message: "Model catalogs refreshed. opencode-go: 47 served, baked 29, store 30, endpoint 43, models.dev 33",
 		type: "info",
 	});
 });
 
 test("a degraded completion notifies as warning and carries the reason", () => {
-	const done = completion({ ...FULL, liveIds: undefined, failures: ["live /models fetch failed (HTTP 503)"] });
+	const done = completion({ ...FULL, endpoint: undefined, failures: ["endpoint fetch failed (HTTP 503)"] });
 	assert.equal(done.type, "warning");
 	assert.equal(
 		done.message,
-		"Model catalogs refreshed. 47 served, baked 29, store 30, live skipped, models.dev 33 " +
-			"(1 source(s) failed). live /models fetch failed (HTTP 503)",
+		"Model catalogs refreshed. opencode-go: 47 served, baked 29, store 30, endpoint skipped, models.dev 33 " +
+			"(1 source(s) failed). endpoint fetch failed (HTTP 503)",
 	);
 });
 
@@ -89,8 +90,8 @@ test("a report recorded before any UI is held, not dropped", () => {
 
 	reporter.attach(ui);
 	assert.deepEqual(ui.calls, [
-		{ method: "setStatus", args: [STATUS_KEY, "47 served, baked 29, store 30, live 43, models.dev 33"] },
-		{ method: "notify", args: ["Model catalogs refreshed. 47 served, baked 29, store 30, live 43, models.dev 33", "info"] },
+		{ method: "setStatus", args: [STATUS_KEY, "opencode-go: 47 served, baked 29, store 30, endpoint 43, models.dev 33"] },
+		{ method: "notify", args: ["Model catalogs refreshed. opencode-go: 47 served, baked 29, store 30, endpoint 43, models.dev 33", "info"] },
 	]);
 });
 
@@ -110,10 +111,10 @@ test("a second refresh replaces the row rather than stacking one", () => {
 	reporter.attach(ui);
 	reporter.record(FULL);
 	ui.calls.length = 0;
-	reporter.record({ ...FULL, served: 48, liveIds: 44 });
+	reporter.record({ ...FULL, served: 48, endpoint: 44 });
 	assert.deepEqual(ui.calls[0], {
 		method: "setStatus",
-		args: [STATUS_KEY, "48 served, baked 29, store 30, live 44, models.dev 33"],
+		args: [STATUS_KEY, "opencode-go: 48 served, baked 29, store 30, endpoint 44, models.dev 33"],
 	});
 });
 
@@ -152,7 +153,7 @@ test("the reporter never writes to the console", () => {
 	try {
 		const reporter = createReporter();
 		const ui = fakeUi();
-		reporter.record({ ...FULL, liveIds: undefined, failures: ["live /models fetch failed (HTTP 503)"] });
+		reporter.record({ ...FULL, endpoint: undefined, failures: ["endpoint fetch failed (HTTP 503)"] });
 		reporter.begin();
 		reporter.attach(ui);
 		reporter.record(FULL);

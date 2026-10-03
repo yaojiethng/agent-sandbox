@@ -1,5 +1,5 @@
 /**
- * Gathering the live sources and building the union.
+ * Gathering the secondary sources and building the union.
  *
  * This module performs the network work and nothing else. It imports no pi
  * package at runtime -- pi's baked catalog and its data timestamp arrive as
@@ -7,17 +7,15 @@
  * fetcher, no network and no API key. `index.ts` is the thin registration that
  * supplies them.
  *
- * A live source that fails yields `undefined`, never an empty list. An empty
- * list is indistinguishable from a successful answer that advertises nothing,
- * and treating it as one would let a transient outage look like a provider
- * that dropped every model.
+ * A source that fails yields `undefined`, never an empty list. An empty list is
+ * indistinguishable from a successful answer that advertises nothing, and
+ * treating it as one would let a transient outage look like a provider that
+ * dropped every model.
  */
 
-import { buildUnion, V1_BASE } from "./catalog.ts";
-import type { CatalogReport, FetchJson, ModelDefinition, ModelsDevModel, StoredCatalog } from "./types.ts";
+import { buildUnion } from "./catalog.ts";
+import type { CatalogReport, FetchJson, ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "./types.ts";
 
-export const PROVIDER_ID = "opencode-go";
-export const LIVE_MODELS_URL = `${V1_BASE}/models`;
 export const MODELS_DEV_URL = "https://models.dev/api.json";
 export const FETCH_TIMEOUT_MS = 15_000;
 
@@ -32,6 +30,8 @@ export const fetchJson: FetchJson = async <T>(url: string, signal: AbortSignal):
 };
 
 export interface GatherInput {
+	providerId: string;
+	decl: ProviderDecl;
 	signal: AbortSignal;
 	allowNetwork: boolean;
 	/** Pi's persisted catalog entry, as handed to `refreshModels`. */
@@ -41,7 +41,6 @@ export interface GatherInput {
 	/** Pi's baked catalog for the provider. */
 	baked: readonly ModelDefinition[];
 	fetcher: FetchJson;
-	providerId?: string;
 	log?: (message: string) => void;
 	/**
 	 * Receives the per-source counts once the union is built. Additive, so a
@@ -50,17 +49,18 @@ export interface GatherInput {
 	onReport?: (report: CatalogReport) => void;
 }
 
-/** The list the extension serves, from whatever sources are available. */
+/** The list the extension serves, from whatever sources are declared and available. */
 export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinition[]> {
-	const { signal, allowNetwork, stored, generatedAt, baked, fetcher, log, onReport } = input;
-	const providerId = input.providerId ?? PROVIDER_ID;
+	const { providerId, decl, signal, allowNetwork, stored, generatedAt, baked, fetcher, log, onReport } = input;
 	const note = log ?? (() => {});
 	const failures: string[] = [];
+	const unionInput = { providerId, decl, baked, stored, generatedAt };
 
 	if (!allowNetwork) {
-		const models = buildUnion({ baked, stored, generatedAt, liveIds: undefined, modelsDev: undefined, providerId });
+		const models = buildUnion({ ...unionInput, endpointIds: undefined, modelsDev: undefined });
 		onReport?.({
-			liveIds: undefined,
+			providerId,
+			endpoint: undefined,
 			modelsDev: undefined,
 			baked: baked.length,
 			stored: stored?.models?.length ?? 0,
@@ -70,17 +70,17 @@ export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinitio
 		return models;
 	}
 
-	let liveIds: string[] | undefined;
-	try {
-		const payload = await fetcher<{ data?: { id?: string }[] }>(LIVE_MODELS_URL, signal);
-		liveIds = (payload?.data ?? [])
-			.map((entry) => entry?.id)
-			.filter((id): id is string => !!id);
-		note(`live model list: ${liveIds.length} models from ${LIVE_MODELS_URL}`);
-	} catch (error) {
-		const reason = `live /models fetch failed (${(error as Error)?.message}); serving the baked and persisted catalogs`;
-		failures.push(reason);
-		note(reason);
+	let endpointIds: string[] | undefined;
+	if (decl.endpoint) {
+		try {
+			const payload = await fetcher<{ data?: { id?: string }[] }>(decl.endpoint, signal);
+			endpointIds = (payload?.data ?? []).map((entry) => entry?.id).filter((id): id is string => !!id);
+			note(`endpoint model list: ${endpointIds.length} models from ${decl.endpoint}`);
+		} catch (error) {
+			const reason = `endpoint fetch failed (${(error as Error)?.message}); serving the sources that answered`;
+			failures.push(reason);
+			note(reason);
+		}
 	}
 
 	let modelsDev: Record<string, ModelsDevModel> | undefined;
@@ -94,10 +94,11 @@ export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinitio
 		note(reason);
 	}
 
-	const models = buildUnion({ baked, stored, generatedAt, liveIds, modelsDev, providerId });
+	const models = buildUnion({ ...unionInput, endpointIds, modelsDev });
 	if (onReport) {
 		onReport({
-			liveIds: liveIds?.length,
+			providerId,
+			endpoint: endpointIds?.length,
 			modelsDev: modelsDev ? Object.keys(modelsDev).length : undefined,
 			baked: baked.length,
 			stored: stored?.models?.length ?? 0,

@@ -5,9 +5,43 @@
  * product rather than on a helper of its own.
  */
 
-import { ANTHROPIC_BASE, V1_BASE } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
-import { PROVIDER_ID } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
-import type { ModelDefinition, ModelsDevModel, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts";
+import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+
+/** The provider the suite drives. */
+export const PROVIDER_ID = "opencode-go";
+
+/**
+ * The declaration the suite drives, built here rather than read from
+ * `sources.json`, so a case reads a fixture and a change to the shipped
+ * declaration cannot silently move a case's subject.
+ */
+export const TEST_DECLARATIONS = parseDeclarations({
+	[PROVIDER_ID]: {
+		endpoint: "https://endpoint.test/models",
+		baseUrls: {
+			"openai-completions": "https://gateway.test/v1",
+			"openai-responses": "https://gateway.test/v1",
+			"anthropic-messages": "https://gateway.test",
+		},
+		transports: { "anthropic-messages": ["messages-only"], "openai-completions": ["minimax-m2.7"] },
+		thinking: { offEffort: "none", fallbackEfforts: { low: "low", high: "high" } },
+		compat: {
+			default: { supportsStore: false, supportsDeveloperRole: false, maxTokensField: "max_tokens" },
+			byPrefix: { deepseek: { thinkingFormat: "deepseek", requiresReasoningContentOnAssistantMessages: true } },
+		},
+		sources: [
+			{ kind: "baked" },
+			{ kind: "models-dev", metadata: true },
+			{ kind: "endpoint", override: true },
+			{ kind: "pi-dev", override: true },
+		],
+	},
+});
+
+export const TEST_DECL = TEST_DECLARATIONS[PROVIDER_ID] as ProviderDecl;
+export const V1_BASE = TEST_DECL.baseUrls["openai-completions"] as string;
+export const ANTHROPIC_BASE = TEST_DECL.baseUrls["anthropic-messages"] as string;
 
 const PI_AI_ROOT = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai";
 

@@ -59,6 +59,34 @@ Which of these bite depends on the model's baked entry, and the two products dif
 
 `liveOnlyModelConfig` therefore omits `supportsReasoningEffort` entirely, which lets pi auto-detect it from the endpoint, and marks every level the provider does not advertise as `null`.
 
+### Where this defect lives, and how to re-validate it
+
+**Point-in-time finding, pi 1.0.0, 2026-10-03.** The defect sits at two levels at once, and neither is the family. pi's baked catalog carries `compat` and `thinkingLevelMap` per model entry, and the same model shape is duplicated under `opencode-go` and under `deepseek`; there is no provider-level compat block to fix. What differs between those two providers is the gateway, and the gateway is a property of the provider. `opencode-go` needs the disabled state as `reasoning_effort: "none"`, the default format's off value. The `deepseek` provider's own API needs the `deepseek` toggle. So the broken data is per model, the requirement that makes it broken is per provider, and the correction is a per-model override under the provider whose gateway needs it.
+
+Two shapes break the disabled state on `opencode-go`, both in the baked map:
+
+| Baked entry | pi builds, at `off` | Why it is wrong |
+|---|---|---|
+| no `off` key (`deepseek-v4-flash`, `-v4-flash-vision-exp`, `-v4-pro`) | `thinking: {type: "disabled"}` | an absent key counts as supported, so `off` survives and the deepseek toggle carries a disable signal this gateway ignores |
+| `off: null` (`deepseek-v4.1-flash`) | `thinking: {type: "enabled"}` and `reasoning_effort: "low"` | `null` marks the level unsupported, so `off` clamps upward to `low` and turns thinking on |
+
+The correction in force is the `opencode-go` `modelOverrides` block in `models.json`: it sets `compat.thinkingFormat: "openai"` and an explicit `off: "none"`, so pi sends `reasoning_effort: "none"`. `models.json` applies after any extension list, so it stays the top layer.
+
+**To re-validate against a new pi**, build the payload locally; no network and no key are required. Drive the completions adapter with a stub `fetch` that refuses, and read the payload through `onPayload` at `reasoning: "off"`:
+
+```js
+const fields = ["thinking", "reasoning_effort", "reasoning", "enable_thinking"];
+// A corrected model carries reasoning_effort: "none" and no thinking: {type: "enabled"}.
+```
+
+A fresh contributor validates in three steps: list the `opencode-go` ids whose baked `compat.thinkingFormat` is `deepseek`; build each at `off` and record which field carries the disable signal; then confirm each is covered by a `models.json` override that yields `reasoning_effort: "none"`. A model that yields `thinking: {type: "enabled"}` at `off` is a live defect, and the same probe says whether a new pi fixed the baked entry and the override can be dropped.
+
+### `minimax-m2.7`: pinned to pi's baked value, untested
+
+**Point-in-time note, 2026-10-03.** pi bakes `minimax-m2.7` over `openai-completions`, and models.dev names `@ai-sdk/anthropic` for it, so the transport derivation would move it to `anthropic-messages`. The difference could not be tested: the workspace's Go monthly quota is exhausted, every Go model answers `429 GoUsageLimitError` on both surfaces before the request body is read, and the free tier does not carry this model. Both surfaces route it, so neither is ruled out.
+
+`transports` therefore pins the id to pi's baked value, `openai-completions`. Remove the pin once the quota resets and the surfaces can be compared: send one request to `/zen/go/v1/chat/completions` and one to `/zen/go/v1/messages`, each with the `x-opencode-session` header, and keep the surface that answers.
+
 ## Verified assumptions
 
 Every row was checked on the date given. Each names the method that produced it and the code that would falsify it, so a reader can tell when a row has gone stale. The operator's expectation is that some of these stop being true when pi fixes the underlying behaviour; the point of the table is to make that visible rather than silent. The rows were last walked against pi 1.0.0 on 2026-10-03; a row that moved is marked `MOVED` with its original claim struck through.

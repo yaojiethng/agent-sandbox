@@ -1,36 +1,39 @@
 /**
- * The catalog union, as pure functions over arrays.
+ * The source union, as pure functions over arrays.
  *
- * Every case here is an error case found in the previous revision of this
- * extension, which returned the baked catalog on every path and so deleted
- * pi's persisted pi.dev catalog. The tests are behavioural against
- * `buildUnion`: no network, no API key, no model runtime.
+ * Every case here is an error case the extension has hit or a rule the
+ * declaration depends on. The tests are behavioural against `buildUnion`: no
+ * network, no API key, no model runtime.
  */
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
 	buildUnion,
+	compatFor,
+	derivedTransport,
+	fillMissing,
 	isStoreNewerThanBaked,
-	liveOnlyModelConfig,
-	mergeCatalogs,
+	metadataEntry,
 	normalizeInput,
-	overlayBakedMetadata,
+	sourceEntry,
 	storeEntriesFor,
 	transportFor,
-	ANTHROPIC_BASE,
-	V1_BASE,
+	unionFirstWins,
 } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
 import type { ModelDefinition, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { PROVIDER_ID, TEST_DECL } from "./fixtures.ts";
 
 const GENERATED_AT = 1_000_000;
+const V1 = TEST_DECL.baseUrls["openai-completions"] as string;
+const ANTHROPIC = TEST_DECL.baseUrls["anthropic-messages"] as string;
 
 function baked(id: string, extra: Partial<ModelDefinition> = {}): ModelDefinition {
 	return {
 		id,
 		name: id,
 		api: "openai-completions",
-		baseUrl: V1_BASE,
+		baseUrl: V1,
 		reasoning: true,
 		input: ["text"],
 		cost: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0 },
@@ -40,28 +43,25 @@ function baked(id: string, extra: Partial<ModelDefinition> = {}): ModelDefinitio
 	};
 }
 
-function storeEntry(models: ModelDefinition[]): StoredCatalog["models"] {
-	return models.map((model) => ({ ...model, provider: "opencode-go" })) as StoredCatalog["models"];
+function stored(models: ModelDefinition[], lastModified: number | undefined): StoredCatalog {
+	return {
+		models: models.map((model) => ({ ...model, provider: PROVIDER_ID })) as StoredCatalog["models"],
+		lastModified,
+		checkedAt: lastModified === undefined ? undefined : lastModified + 1,
+	};
 }
 
-/** A store pi would apply: its lastModified is newer than the baked data. */
-function stored(models: ModelDefinition[], lastModified: number): StoredCatalog {
-	return { models: storeEntry(models), lastModified, checkedAt: lastModified + 1 };
-}
-
-/** A store carrying no freshness timestamp at all. */
-function undatedStore(models: ModelDefinition[]): StoredCatalog {
-	return { models: storeEntry(models), checkedAt: GENERATED_AT + 1 };
-}
+const undatedStore = (models: ModelDefinition[]): StoredCatalog => stored(models, undefined);
 
 const union = (over: Partial<Parameters<typeof buildUnion>[0]> = {}) =>
 	buildUnion({
+		providerId: PROVIDER_ID,
+		decl: TEST_DECL,
 		baked: [baked("alpha"), baked("beta")],
 		stored: undefined,
 		generatedAt: GENERATED_AT,
-		liveIds: undefined,
+		endpointIds: undefined,
 		modelsDev: undefined,
-		providerId: "opencode-go",
 		...over,
 	});
 
@@ -96,210 +96,79 @@ describe("storeEntriesFor", () => {
 	it("keeps only the entries belonging to the provider", () => {
 		const entry = stored([baked("mine"), baked("theirs")], GENERATED_AT + 1);
 		(entry.models as { provider?: string }[])[1].provider = "somebody-else";
-		assert.deepEqual(ids(storeEntriesFor(entry, "opencode-go")), ["mine"]);
+		assert.deepEqual(ids(storeEntriesFor(entry, PROVIDER_ID)), ["mine"]);
 	});
 
 	it("returns nothing for an absent store rather than throwing", () => {
-		assert.deepEqual(storeEntriesFor(undefined, "opencode-go"), []);
-		assert.deepEqual(storeEntriesFor({}, "opencode-go"), []);
+		assert.deepEqual(storeEntriesFor(undefined, PROVIDER_ID), []);
+		assert.deepEqual(storeEntriesFor({}, PROVIDER_ID), []);
 	});
 });
 
-describe("mergeCatalogs", () => {
-	it("replaces a matching id in place, keeping the base order", () => {
-		const merged = mergeCatalogs([baked("a"), baked("b"), baked("c")], [baked("b", { name: "new-b" })]);
+describe("unionFirstWins: one rule, first-wins per field", () => {
+	it("keeps the accumulator's field and takes only the ones it leaves undefined", () => {
+		const merged = unionFirstWins([baked("a", { name: "earlier", reasoning: undefined })], [baked("a", { name: "later", reasoning: false })]);
+		assert.equal(merged[0].name, "earlier", "the earlier source wins the field it supplies");
+		assert.equal(merged[0].reasoning, false, "the later source fills the field the earlier one leaves undefined");
+	});
+
+	it("replaces in place, keeping the order", () => {
+		const merged = unionFirstWins([baked("a"), baked("b"), baked("c")], [baked("b", { name: "filled" })]);
 		assert.deepEqual(ids(merged), ["a", "b", "c"]);
-		assert.equal(merged[1].name, "new-b");
 	});
 
-	it("appends an unknown id at the end", () => {
-		assert.deepEqual(ids(mergeCatalogs([baked("a")], [baked("z")])), ["a", "z"]);
+	it("appends an unknown id", () => {
+		assert.deepEqual(ids(unionFirstWins([baked("a")], [baked("z")])), ["a", "z"]);
 	});
 
-	it("returns the base untouched for an empty overlay", () => {
-		assert.deepEqual(ids(mergeCatalogs([baked("a")], [])), ["a"]);
-	});
-});
-
-describe("buildUnion: the persisted pi.dev catalog survives", () => {
-	it("serves a model only the store knows", () => {
-		const result = union({ stored: stored([baked("alpha"), baked("space-bunny-free")], GENERATED_AT + 1) });
-		assert.ok(ids(result).includes("space-bunny-free"), "the store-only model is served");
+	it("removes nothing: an id one list supplies stays", () => {
+		assert.deepEqual(ids(unionFirstWins([baked("a")], [])), ["a"]);
 	});
 
-	it("carries the store's metadata, not the baked fallback's", () => {
-		const entry = baked("space-bunny-free", {
-			name: "Space Bunny Free",
-			contextWindow: 1_048_576,
-			maxTokens: 524_288,
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-			input: ["text", "image"],
-		});
-		const served = union({ stored: stored([entry], GENERATED_AT + 1) }).find((model) => model.id === "space-bunny-free");
-		assert.equal(served?.name, "Space Bunny Free");
-		assert.equal(served?.contextWindow, 1_048_576);
-		assert.equal(served?.maxTokens, 524_288);
-		assert.equal(served?.cost?.input, 0, "a free model is not billed at the fallback model's rate");
-		assert.deepEqual(served?.input, ["text", "image"]);
+	it("ignores an entry with no usable id", () => {
+		assert.deepEqual(ids(unionFirstWins([baked("a")], [{ ...baked("x"), id: "" } as ModelDefinition])), ["a"]);
 	});
 
-	it("keeps the store's thinking-level map, so a level the store advertises is offered", () => {
-		const entry = baked("space-bunny-free", {
-			thinkingLevelMap: { off: null, minimal: null, low: "low", medium: "medium", high: "high", xhigh: "xhigh", max: "max" },
-		});
-		const served = union({ stored: stored([entry], GENERATED_AT + 1) }).find((model) => model.id === "space-bunny-free");
-		assert.equal(served?.thinkingLevelMap?.xhigh, "xhigh");
-		assert.equal(served?.thinkingLevelMap?.off, null);
-	});
-
-	it("serves the store in the offline phase, with no live ids at all", () => {
-		const result = union({ stored: stored([baked("space-bunny-free")], GENERATED_AT + 1), liveIds: undefined });
-		assert.ok(ids(result).includes("space-bunny-free"), "an absent live source cannot remove a store model");
-	});
-
-	it("serves the store when the live fetch failed", () => {
-		const result = union({ stored: stored([baked("space-bunny-free")], GENERATED_AT + 1), liveIds: undefined, modelsDev: undefined });
-		assert.deepEqual(ids(result), ["alpha", "beta", "space-bunny-free"]);
-	});
-
-	it("lets a fresher store entry replace a stale baked entry whole", () => {
-		const result = union({
-			baked: [baked("alpha", { name: "stale", contextWindow: 1 })],
-			stored: stored([baked("alpha", { name: "fresh", contextWindow: 2 })], GENERATED_AT + 1),
-		});
-		const served = result.find((model) => model.id === "alpha");
-		assert.equal(served?.name, "fresh", "the persisted catalog wins, as it does with no extension registered");
-		assert.deepEqual(ids(result), ["alpha"], "a replacement is not a second entry");
+	it("fillMissing is the field rule on its own", () => {
+		const filled = fillMissing({ ...baked("a", { name: "kept", maxTokens: undefined }) }, baked("a", { name: "ignored", maxTokens: 5 }));
+		assert.equal(filled.name, "kept");
+		assert.equal(filled.maxTokens, 5);
 	});
 });
 
-describe("buildUnion: an absent or stale source narrows, it never removes", () => {
-	it("serves the baked catalog alone when there is no store and no live source", () => {
-		assert.deepEqual(ids(union()), ["alpha", "beta"]);
+describe("derivedTransport: the metadata names the adapter", () => {
+	it("routes an @ai-sdk/openai id over the responses adapter, as pi bakes it", () => {
+		assert.equal(derivedTransport(TEST_DECL, "gpt-6-luna", "@ai-sdk/openai"), "openai-responses");
 	});
 
-	it("ignores a store that is not newer than the baked data", () => {
-		const result = union({ stored: stored([baked("stale-only")], GENERATED_AT - 1) });
-		assert.deepEqual(ids(result), ["alpha", "beta"]);
+	it("routes an @ai-sdk/anthropic id over the messages adapter", () => {
+		assert.equal(derivedTransport(TEST_DECL, "minimax-m3", "@ai-sdk/anthropic"), "anthropic-messages");
 	});
 
-	it("ignores a store with no timestamp", () => {
-		const result = union({ stored: undatedStore([baked("undated")]) });
-		assert.deepEqual(ids(result), ["alpha", "beta"]);
+	it("falls back to the gateway's completions surface", () => {
+		assert.equal(derivedTransport(TEST_DECL, "anything-else", undefined), "openai-completions");
 	});
 
-	it("ignores store entries belonging to another provider", () => {
-		const entry = stored([baked("foreign")], GENERATED_AT + 1);
-		(entry.models as { provider?: string }[])[0].provider = "opencode";
-		assert.deepEqual(ids(union({ stored: entry })), ["alpha", "beta"]);
+	it("lets a declared id win over the metadata", () => {
+		assert.equal(derivedTransport(TEST_DECL, "messages-only", "@ai-sdk/openai"), "anthropic-messages");
 	});
 
-	// The store here carries no freshness stamp, so the gate closes and the union
-	// never reads the shape: this case states that a store the gate rejects
-	// changes nothing, not that the union survives a corrupt one. The shape
-	// check is held by the L2 and M7 invariant cases.
-	it("keeps every baked model when the store carries no freshness stamp", () => {
-		const result = union({ stored: { models: "not-an-array" } as unknown as StoredCatalog });
-		assert.deepEqual(ids(result), ["alpha", "beta"]);
+	it("pairs the api with its base url, and an unclassified api with an empty one", () => {
+		assert.deepEqual(transportFor(TEST_DECL, "minimax-m3", "@ai-sdk/anthropic"), { api: "anthropic-messages", baseUrl: ANTHROPIC });
+		assert.deepEqual(transportFor(TEST_DECL, "anything-else", undefined), { api: "openai-completions", baseUrl: V1 });
 	});
 });
 
-describe("buildUnion: the live source", () => {
-	it("adds a live-only id the other sources do not carry", () => {
-		const result = union({ liveIds: ["alpha", "brand-new"] });
-		assert.deepEqual(ids(result), ["alpha", "beta", "brand-new"]);
+describe("compatFor: a default block plus id-prefix rules", () => {
+	it("applies the default to an id no rule names", () => {
+		assert.deepEqual(compatFor(TEST_DECL, "glm-5.3"), { supportsStore: false, supportsDeveloperRole: false, maxTokensField: "max_tokens" });
 	});
 
-	it("does not duplicate an id the baked catalog already carries", () => {
-		const result = union({ liveIds: ["alpha", "beta"] });
-		assert.deepEqual(ids(result), ["alpha", "beta"]);
-	});
-
-	it("does not duplicate an id the store already carries", () => {
-		const result = union({ stored: stored([baked("alpha"), baked("from-store")], GENERATED_AT + 1), liveIds: ["from-store", "live-only"] });
-		assert.deepEqual(ids(result), ["alpha", "beta", "from-store", "live-only"]);
-	});
-
-	it("de-duplicates repeats inside the live list itself", () => {
-		assert.deepEqual(ids(union({ liveIds: ["twice", "twice"] })), ["alpha", "beta", "twice"]);
-	});
-
-	it("builds a live-only model from models.dev metadata when it has some", () => {
-		const result = union({
-			liveIds: ["live-only"],
-			modelsDev: { "live-only": { name: "Live Only", limit: { context: 500_000, output: 32_000 }, reasoning_options: [{ type: "effort", values: ["low", "high"] }] } },
-		});
-		const served = result.find((model) => model.id === "live-only");
-		assert.equal(served?.name, "Live Only");
-		assert.equal(served?.contextWindow, 500_000);
-		assert.equal(served?.maxTokens, 32_000);
-		assert.equal(served?.thinkingLevelMap?.low, "low");
-		assert.equal(served?.thinkingLevelMap?.off, null);
-	});
-
-	it("keeps the baked metadata when models.dev is unavailable", () => {
-		const result = union({ baked: [baked("alpha", { contextWindow: 123_456 })], liveIds: ["live-only"], modelsDev: undefined });
-		assert.equal(result.find((model) => model.id === "alpha")?.contextWindow, 123_456);
-		assert.equal(result.find((model) => model.id === "live-only")?.name, "live-only", "defaults, not a crash");
-	});
-
-	it("reads an empty live list as the provider advertising nothing new", () => {
-		assert.deepEqual(ids(union({ liveIds: [] })), ["alpha", "beta"]);
-	});
-});
-
-describe("overlayBakedMetadata", () => {
-	it("refreshes context, output limit, cost, and input from models.dev", () => {
-		const model = overlayBakedMetadata(baked("m", { name: "keep-me" }), {
-			limit: { context: 9, output: 8 },
-			cost: { input: 1, output: 2, cache_read: 3, cache_write: 4 },
-			modalities: { input: ["text", "image"] },
-		});
-		assert.equal(model.contextWindow, 9);
-		assert.equal(model.maxTokens, 8);
-		assert.deepEqual(model.cost, { input: 1, output: 2, cacheRead: 3, cacheWrite: 4 });
-		assert.deepEqual(model.input, ["text", "image"]);
-	});
-
-	it("leaves the curated fields alone", () => {
-		const original = baked("m", {
-			name: "curated",
-			api: "anthropic-messages",
-			baseUrl: ANTHROPIC_BASE,
-			reasoning: true,
-			thinkingLevelMap: { high: "high" },
-			compat: { thinkingFormat: "anthropic" },
-		});
-		const model = overlayBakedMetadata(original, { limit: { context: 9 } });
-		assert.equal(model.name, "curated");
-		assert.equal(model.api, "anthropic-messages");
-		assert.equal(model.baseUrl, ANTHROPIC_BASE);
-		assert.deepEqual(model.thinkingLevelMap, { high: "high" });
-		assert.deepEqual(model.compat, { thinkingFormat: "anthropic" });
-	});
-
-	it("returns the model untouched when models.dev has no entry", () => {
-		const original = baked("m");
-		assert.equal(overlayBakedMetadata(original, undefined), original);
-	});
-
-	it("fills a missing cost field from the baked cost rather than zeroing it", () => {
-		const model = overlayBakedMetadata(baked("m", { cost: { input: 7, output: 8, cacheRead: 9, cacheWrite: 10 } }), { cost: { output: 2 } });
-		assert.deepEqual(model.cost, { input: 7, output: 2, cacheRead: 9, cacheWrite: 10 });
-	});
-});
-
-describe("transportFor", () => {
-	it("routes the anthropic-transport ids at the anthropic base url", () => {
-		assert.deepEqual(transportFor("minimax-m3"), { api: "anthropic-messages", baseUrl: ANTHROPIC_BASE });
-	});
-
-	it("routes the responses-transport ids at the v1 base url", () => {
-		assert.deepEqual(transportFor("gpt-6-luna"), { api: "openai-responses", baseUrl: V1_BASE });
-	});
-
-	it("routes everything else over chat completions", () => {
-		assert.deepEqual(transportFor("anything-else"), { api: "openai-completions", baseUrl: V1_BASE });
+	it("adds the prefix rule's fields for an id it names", () => {
+		const compat = compatFor(TEST_DECL, "deepseek-v9-flash");
+		assert.equal(compat.thinkingFormat, "deepseek");
+		assert.equal(compat.requiresReasoningContentOnAssistantMessages, true);
+		assert.equal(compat.maxTokensField, "max_tokens", "the default is carried under the rule, not replaced");
 	});
 });
 
@@ -315,8 +184,122 @@ describe("normalizeInput", () => {
 	});
 });
 
-describe("liveOnlyModelConfig", () => {
+describe("buildUnion: the persisted pi.dev catalog survives", () => {
+	it("serves a model only the store knows", () => {
+		const result = union({ stored: stored([baked("alpha"), baked("space-bunny-free")], GENERATED_AT + 1) });
+		assert.ok(ids(result).includes("space-bunny-free"), "the store-only model is served");
+	});
+
+	it("lets a fresher store entry fill a baked entry rather than vanish", () => {
+		const result = union({ baked: [baked("alpha", { name: undefined })], stored: stored([baked("alpha", { name: "from-store" })], GENERATED_AT + 1) });
+		assert.equal(result.find((model) => model.id === "alpha")?.name, "from-store");
+		assert.deepEqual(ids(result), ["alpha"], "a fill is not a second entry");
+	});
+
+	it("keeps a baked field the store does not supply", () => {
+		const result = union({ baked: [baked("alpha", { contextWindow: 7 })], stored: stored([baked("alpha", { contextWindow: undefined })], GENERATED_AT + 1) });
+		assert.equal(result.find((model) => model.id === "alpha")?.contextWindow, 7, "first-wins leaves the baked value in place");
+	});
+
+	it("serves the store when no live source answered", () => {
+		const result = union({ stored: stored([baked("space-bunny-free")], GENERATED_AT + 1), endpointIds: undefined, modelsDev: undefined });
+		assert.deepEqual(ids(result), ["alpha", "beta", "space-bunny-free"]);
+	});
+});
+
+describe("buildUnion: an absent or stale source narrows, it never removes", () => {
+	it("serves the baked catalog alone when nothing else answered", () => {
+		assert.deepEqual(ids(union()), ["alpha", "beta"]);
+	});
+
+	it("ignores a store that is not newer than the baked data", () => {
+		assert.deepEqual(ids(union({ stored: stored([baked("stale-only")], GENERATED_AT - 1) })), ["alpha", "beta"]);
+	});
+
+	it("ignores a store with no timestamp", () => {
+		assert.deepEqual(ids(union({ stored: undatedStore([baked("undated")]) })), ["alpha", "beta"]);
+	});
+
+	it("ignores store entries belonging to another provider", () => {
+		const entry = stored([baked("foreign")], GENERATED_AT + 1);
+		(entry.models as { provider?: string }[])[0].provider = "opencode";
+		assert.deepEqual(ids(union({ stored: entry })), ["alpha", "beta"]);
+	});
+
+	it("keeps every baked model when the store carries no freshness stamp", () => {
+		assert.deepEqual(ids(union({ stored: { models: "not-an-array" } as unknown as StoredCatalog })), ["alpha", "beta"]);
+	});
+});
+
+describe("buildUnion: the endpoint adds ids and overrides the fields it carries", () => {
+	it("adds an endpoint-only id", () => {
+		assert.deepEqual(ids(union({ endpointIds: ["alpha", "brand-new"] })), ["alpha", "beta", "brand-new"]);
+	});
+
+	it("does not duplicate an id another source carries", () => {
+		assert.deepEqual(ids(union({ endpointIds: ["alpha", "beta"] })), ["alpha", "beta"]);
+	});
+
+	it("de-duplicates repeats inside the endpoint list itself", () => {
+		assert.deepEqual(ids(union({ endpointIds: ["twice", "twice"] })), ["alpha", "beta", "twice"]);
+	});
+
+	it("lets the endpoint's derived transport win over the baked entry's", () => {
+		const served = union({ endpointIds: ["messages-only"] }).find((model) => model.id === "messages-only");
+		assert.equal(served?.api, "anthropic-messages");
+		assert.equal(served?.baseUrl, ANTHROPIC);
+	});
+
+	it("leaves a field the endpoint does not carry to the baked entry", () => {
+		const served = union({ baked: [baked("alpha", { compat: { thinkingFormat: "curated" } })], endpointIds: ["alpha"] }).find((model) => model.id === "alpha");
+		assert.deepEqual(served?.compat, { thinkingFormat: "curated" }, "the endpoint carries no compat, so it cannot override one");
+	});
+
+	it("reads an empty endpoint list as the provider advertising nothing new", () => {
+		assert.deepEqual(ids(union({ endpointIds: [] })), ["alpha", "beta"]);
+	});
+});
+
+describe("buildUnion: models.dev supplies fields and no ids", () => {
+	it("does not serve an id only models.dev carries", () => {
+		const result = union({ modelsDev: { "dev-only": { name: "Dev Only", limit: { context: 500_000 } } } });
+		assert.deepEqual(ids(result), ["alpha", "beta"], "a metadata source invents no model");
+	});
+
+	it("fills an endpoint-only id's fields from models.dev", () => {
+		const result = union({
+			endpointIds: ["live-only"],
+			modelsDev: { "live-only": { name: "Live Only", limit: { context: 500_000, output: 32_000 }, reasoning_options: [{ type: "effort", values: ["low", "high"] }] } },
+		});
+		const served = result.find((model) => model.id === "live-only");
+		assert.equal(served?.name, "Live Only");
+		assert.equal(served?.contextWindow, 500_000);
+		assert.equal(served?.maxTokens, 32_000);
+		assert.equal(served?.thinkingLevelMap?.low, "low");
+		assert.equal(served?.thinkingLevelMap?.off, null);
+	});
+
+	it("leaves a baked field alone even when models.dev carries a value", () => {
+		const result = union({
+			baked: [baked("alpha", { name: "curated", contextWindow: 7 })],
+			modelsDev: { alpha: { name: "dev", limit: { context: 999 } } },
+		});
+		const served = result.find((model) => model.id === "alpha");
+		assert.equal(served?.name, "curated", "models.dev does not override");
+		assert.equal(served?.contextWindow, 7);
+	});
+});
+
+describe("metadataEntry and sourceEntry build the fallback entries", () => {
 	it("names a model after its id when no catalog has a name", () => {
-		assert.equal(liveOnlyModelConfig("x", undefined).name, "x");
+		assert.equal(metadataEntry(TEST_DECL, "x", undefined).name, "x");
+		assert.deepEqual(sourceEntry(TEST_DECL, "x"), { id: "x", api: "openai-completions", baseUrl: V1 });
+	});
+
+	it("carries the declared thinking names into the level map", () => {
+		const entry = metadataEntry(TEST_DECL, "x", { reasoning_options: [{ type: "effort", values: ["none", "low"] }] });
+		assert.equal(entry.thinkingLevelMap?.off, "none", "the provider's name for off maps onto off");
+		assert.equal(entry.thinkingLevelMap?.low, "low");
+		assert.equal(entry.thinkingLevelMap?.high, null);
 	});
 });
