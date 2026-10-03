@@ -51,6 +51,7 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 | `/milestone-start` | opens a milestone | `workflow/coding-agent/prompts/milestone-start.md` |
 | `/milestone-close` | closes a milestone or sub-milestone | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | milestone planning | `workflow/coding-agent/prompts/plan.md` |
+| `/sidequest` | operator-directed interruption of an open iteration | `workflow/coding-agent/prompts/sidequest.md` |
 
 `/wrapup` is a shared close runbook, not a workflow prompt: the active-operator prompts (`/iter`, `/plan`, `/document`) invoke its Part B close rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
 

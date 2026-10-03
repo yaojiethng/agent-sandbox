@@ -26,11 +26,24 @@ Read this document at the start of any iteration.
 The workflows run as invocable runbooks under `workflow/coding-agent/prompts/` (each runbook is a workflow prompt). The procedure lives in the runbooks; this policy holds the invariants the runbooks must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram. A runbook may evolve freely as the model improves; the invariants here are the durable half.
 
 - `/iter` -- the iteration workflow: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
+- `/sidequest` -- the operator-directed interruption of an open iteration: [`sidequest.md`](../../workflow/coding-agent/prompts/sidequest.md).
 - `/sequential-work` and `/parallel-work` -- the `/iter` work-loop expansions, owned by M3.2.3: [`sequential-work.md`](../../workflow/coding-agent/drafts/sequential-work.md) and [`parallel-work.md`](../../workflow/coding-agent/drafts/parallel-work.md), both in draft status pending operator review. `/auto` (smart dispatcher) and `/goal` (loose-goal decomposition) are M4's.
 - `/milestone-start` -- opens a milestone: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
 - `/milestone-close` -- closes a milestone or sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md).
 - `/plan` -- milestone planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
 - `/wrapup` -- the consolidated close for the active-operator prompts: [`wrapup.md`](../../workflow/coding-agent/prompts/wrapup.md).
+
+---
+
+## Sidequests
+
+A sidequest is an operator-directed work item raised while an iteration is open. The operator invokes [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md), and the open iteration pauses until the sidequest closes. A sidequest runs the standard lifecycle at its own grain: one handover, one scope gate, one delivery commit, one close.
+
+- **Operator-directed.** The operator names the work. The agent does not open a sidequest on its own.
+- **The open iteration pauses; it does not close.** The sidequest's Scope opens with a continuation line naming the interrupted handover. That handover keeps its `Active` status and records the interruption in its Findings. [`/iter`](../../workflow/coding-agent/prompts/iter.md) resumes the named handover after the sidequest closes.
+- **One outcome, one commit.** A sidequest is one vertical slice, landed as one typed commit with one handover, like any iteration.
+- **Outside the interrupted scope.** A task inside the open iteration's scope stays that iteration's work; it is a scope amendment, not a sidequest.
+- **Roadmap write-back.** A sidequest whose outcome is durable work writes back a roadmap row and marks it at close. A sidequest whose outcome is a fix, check or record with no roadmap home states that in its close, per the write-back invariant.
 
 ---
 

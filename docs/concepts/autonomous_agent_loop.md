@@ -56,6 +56,7 @@ Each workflow enforces one group of state transitions in the loop.
 | `/milestone-start` | shapes and opens a milestone |
 | `/plan` | scopes a milestone; commissions stories and investigations; produces the roadmap entry |
 | `/iter` | runs one iteration: scope, design, implementation, documentation, handover |
+| `/sidequest` | pauses an open iteration for operator-directed work, then returns to the handover it interrupted |
 | `/wrapup` | lands the delivery commit and closes the handover; the shared close runbook |
 | `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, owned and refined by M3.2.3 |
 | `/milestone-close` | records a milestone or sub-milestone close: compaction, the changelog, the close boundary |
