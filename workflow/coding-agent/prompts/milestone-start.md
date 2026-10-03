@@ -19,11 +19,7 @@ Determine the finish state: a caller can finish at any nesting level. A finish t
 
 The task pool is the remaining open tasks in the roadmap at and below the current lineage. Read the current milestone's open tasks and its child sub-milestones; do not cross into unrelated milestones.
 
-Group the tasks in the pool into task categories, and grade the categories by the following decision axes:
-
-- **Size** -- small, medium, large.
-- **Progress** -- closes the active sub-milestone / gates others / urgent housekeeping / write-back / deferred, no pickup date.
-- **Impact** -- core goal / recurring pain / risk-bearing / cosmetic.
+Group the tasks in the pool into task categories, and grade the categories on the decision axes [`gm.md`](gm.md) defines: Size, Progress and Impact. That prompt owns the axes and their value sets; read them there rather than restating them here.
 
 Present the task categories and their grades to the operator in a table.
 
@@ -61,4 +57,4 @@ When several milestones exist, select one as next active with the operator. Upda
 - The milestone's section -- add the full task checklist to the active one; non-active milestones carry an objective paragraph only.
 - `roadmap.md` frontmatter `active-milestone` -- set it to the active major milestone.
 
-Follow the Record shape section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) when writing the summary row and the checklist/objective split. Confirm with the operator that the milestone is open before stopping.
+Follow the Record shape section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.

@@ -54,7 +54,7 @@ Each iteration type must declare its scope independently. Do not inherit objecti
 | Implementation | `impl` | Behaviour work: a new capability, a fix, or a restructure. The commit type (`feat`/`fix`/`refactor`/`test`/`build`) disambiguates the subclass at close. | `feat`, `fix`, `refactor`, `test`, `build` |
 | Discussion | `discussion` | An in-flight discussion document that has not yet resolved to a decision. | `docs` |
 | Design | `design` | Decision and evaluation work: ADRs, running investigations, option evaluation, maintaining ADRs while evaluating multiple candidates. Jump-right-in, often interleaved with `impl` commits. | `docs` |
-| Plan | `plan` | Milestone scoping: a large task list and assigning work to iterations. | `plan` |
+| Plan | `plan` | Planning at any grain: a milestone's scope and its task list, or one task scoped to its unit. | `plan` |
 | Documentation | `docs` | Project documentation under `docs/` -- descriptive prose that is not a decision record. | `docs` |
 | Workflow | `workflow` | Policy, governance, AGENTS.md, prompts, and `workflow/` agent-behaviour contract files. | `workflow` |
 | Housekeeping | `chore` | Small administrative or cosmetic maintenance: stale links, linting, index cleanup, roadmap bookkeeping. | `chore` |

@@ -59,6 +59,8 @@ General communication guidelines for all agent prose. Full policy: `docs/operati
 - Numbering: a number holds only where it appears. Present one indexable axis per exchange; if sets must co-exist, name each axis.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
+- That rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when it is marked as an inference.
+- No capacity claim without a signal. Stopping work early is a decision, and like any other it needs a reason the reader can check. Do not report being out of room, budget or context unless a signal in the environment says so; with no signal, name the claim as an inference or do not make it.
 - Place the defined noun phrase before the imperative command: the reader must know exactly what object is being discussed before being told what to do with it. If the sentence uses a term the reader has not met, define it first, in its own clause, then apply it. Avoid thin subjects that rely on a trailing dash clause for definition; the main clause must not depend on its afterthought.
 - One paragraph per physical line, however long the line. Never break inside a paragraph -- not at sentence boundaries, not at a column limit. Hard breaks separate blocks only.
 - Plain ASCII punctuation. Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. No non-ASCII symbols, no checkmark or cross emoji.

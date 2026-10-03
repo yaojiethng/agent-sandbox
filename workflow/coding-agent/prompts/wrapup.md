@@ -1,5 +1,5 @@
 ---
-description: "Close an active-operator session: consolidate the close into one shared runbook that /iter, /plan and /document invoke, landing the single delivery commit, writing back the roadmap task, running compaction, closing ADRs and discussion docs whose work landed, and seeding the next iteration. Also run the commit-discipline checkpoint after each committed task group -- confirm the accumulated commits read as one delivery commit and one open handover, squash any pile of wip checkpoints and typed intermediates, and surface the missing-record signal before it reaches the operator."
+description: "Close an active-operator session: consolidate the close into one shared runbook that /iter, /plan and /document invoke, landing the single delivery commit, writing back the roadmap task, closing ADRs and discussion docs whose work landed, and seeding the next iteration. Also run the commit-discipline checkpoint after each committed task group -- confirm the accumulated commits read as one delivery commit and one open handover, squash any pile of wip checkpoints and typed intermediates, and surface the missing-record signal before it reaches the operator."
 argument-hint: "[optional: a commit range to audit]"
 ---
 

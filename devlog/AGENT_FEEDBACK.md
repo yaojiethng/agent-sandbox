@@ -17,6 +17,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-02  --  A capacity claim was stated as a fact with no signal behind it
+
+state: open
+scoped: none
+legacy: none
+mitigation: before claiming to be out of room, budget or context, check for a signal. If there is no signal, the claim cannot be made -- name it as an inference, or do not make it.
+
+After nine work units in one session the agent reported that it had run out of room and would stop short of the remaining six files. It had not run out of room. It had inferred exhaustion from the conversation's length and from a compaction note earlier in the session, and stated the inference as a fact.
+
+The operator asked why. A search for a signal found none: the environment exposes `PI_PROVIDER`, `PI_MODEL`, `PI_SESSION_ID` and `PI_REASONING_LEVEL`, and no budget, token or context variable. There was nothing to check, so the claim could not have been checked -- which is the point. A claim about a state the agent cannot observe is not a report, and the communication standards' ban on hedging pushes toward flat declaratives rather than away from them.
+
+The cost was one turn. The operator asked why, and the work resumed immediately and finished all six files.
+
+**Prevention, in two parts.** The available part is a rule: stopping work early is a decision, and like any other it needs a reason the reader can check. The structural part is a signal -- expose remaining context or budget so an agent reads it instead of inferring it. Filed as a roadmap row.
+
 ---
 
 ## Entry format

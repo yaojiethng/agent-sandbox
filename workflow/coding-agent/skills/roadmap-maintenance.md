@@ -52,7 +52,7 @@ Completion criterion: no unconverted marker remains, no sub-item sits inside pro
 
 ### 1.4 A closed item carries no open work
 
-**Rule.** An item marked `- [x]` holds no `- [ ]` child. A parent whose children are not all complete is itself `- [ ]`; the marker on the parent states the parent's own outcome, not its children's.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `## When the Roadmap Is Touched` owns the marker-nesting invariant. This check applies it.
 
 **Check.** Walk every `- [x]` item and read its indented children. Report any open child and the parent that carries it.
 
@@ -66,13 +66,13 @@ Completion criterion: 1.1 through 1.4 hold, and no `- [x]` item carries an open 
 
 Run this step over each item in the active sub-milestone.
 
-**2.1 Completion-state compaction.** A task group whose sub-items are all `- [x]` becomes a 1 to 3 sentence outcome summary. It does not keep an expanded checklist. Compact a fully completed group that still carries one.
+**2.1 Completion-state compaction.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the procedure and is its single source. This check verifies its result: compact a fully completed group that still carries an expanded checklist.
 
 **2.2 Outcome summary marker.** The `- [x]` marker survives the compaction. A compacted item without the marker is a defect.
 
-**2.3 Survival table.** For each compacted task group, verify component by component.
+**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) step 1, component by component.
 
-| Component | Rule | Check |
+| Component | Expected | Check |
 |---|---|---|
 | Design document links | Survive | Present when the item had one |
 | Not-in-scope and deferred tags | Survive | Present when the item had them |
@@ -84,9 +84,9 @@ Run this step over each item in the active sub-milestone.
 
 A component that should survive and is gone, or one that should be removed and is present, is a defect in either direction.
 
-**2.4 Multi-level compaction depth.** When every sub-group of a parent item is compacted, the parent becomes a single task-level summary. It does not retain the child summaries. Compact a parent whose children are all done.
+**2.4 Multi-level compaction depth.** Step 2 of [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the upward pass. Compact a parent whose children are all done.
 
-**2.5 Nested sub-group compaction.** A fully completed sub-group inside an incomplete parent becomes an outcome summary. Compact an expanded sub-group inside a partially complete item.
+**2.5 Nested sub-group compaction.** The same step, read at sub-group grain. Compact an expanded sub-group inside a partially complete item.
 
 Completion criterion: no expanded checklist survives under a fully completed group, and every compaction satisfies the survival table.
 
@@ -114,7 +114,7 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 ### 3.11 The summary table agrees with the sections it names
 
-**Rule.** Every row of the Milestone Summary table resolves against what it names: the milestone's title is the section heading's title, its status matches the state of that section's task list, and its link target exists -- a heading in the file it points at, whether that is `roadmap.md`, `roadmap_future.md` or `changelog.md`. A heading that carries a suffix has that suffix in its fragment, so a summary link names the whole heading and nothing else.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Summary table update` owns it; the check below applies it.
 
 **Check.** For each row, read the linked heading and the status it declares. A row that says `Complete` whose section still carries open tasks is a finding; a row whose fragment matches no heading is a finding; two records naming one milestone differently are a finding.
 
@@ -124,13 +124,13 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 ### 3.12 No item is restated across the records
 
-**Rule.** An item that exists in one roadmap file is named, not restated, in the other; one file owns it. The owning file is named in the other, so a reader can find it without searching.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Filing rules` owns it. This check adds the record-layer case that rule does not name.
 
 **Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate, keep one, and make the other name it.
 
 **Correction.** Keep the copy that sits under the milestone whose blurb claims the work, and reduce the other to a named pointer. Two rows that share an owner, a bar and a subject merge into one parent carrying both as subtasks.
 
-**Why this exists.** `roadmap_policy.md` `### Filing rules` already requires it: "Do not re-list an item that already exists in `roadmap.md` or `roadmap_future.md`; name it, do not duplicate it." This check enforces that rule and adds the record-layer case the rule does not name -- a copy in `changelog.md` of a row still open in a roadmap file.
+**Why this exists.** A copy in `changelog.md` of a row still open in a roadmap file slips past a check that reads only the two roadmap files.
 
 ### 3.13 A row states no fact the tree can falsify
 
@@ -148,7 +148,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.15 The changelog section map is unambiguous
 
-**Rule.** A milestone entry is the only level-2 heading in its section. A correction block closes the section it corrects, at level 3, carrying the date. Two forms are in use and both are accepted: the changelog's own `### [CORRECTION - YYYY-MM-DD] Title`, and the handover form `[CORRECTION -- YYYY-MM-DD: one to three lines]`. What the form must carry is the date and the change; which form it uses follows the file it appears in. A summary link resolves to a milestone entry, never to a correction.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Entry structure` and `## Corrections to Closed Roadmap and Changelog Entries` own the heading levels and the correction forms, including the two accepted forms and what each must carry.
 
 **Check.** Read the `##` headings of `changelog.md` in order. Any `##` that is not `## M{n}` is a finding. Any summary link whose fragment names a correction block is a finding.
 
@@ -156,7 +156,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.16 A new entry states whether its capability still stands
 
-**Rule.** The section a close has just written says whether the capability still stands, and its summary row agrees. A capability removed in a later milestone carries the removal as a statement inside its entry, not as a suffix on the heading and not as a sentence inside a correction block.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Writing guidance` and `## Corrections to Closed Roadmap and Changelog Entries` own it.
 
 **Check.** For each entry written or amended in this run, read the summary row that links it. A row reading `Complete` for an entry that records removal is a finding.
 
@@ -166,7 +166,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.17 A new entry carries no fact the tree can falsify
 
-**Rule.** The section a close has just written carries no file path, version literal, line number, or file list. A closed entry describes what the system could do and the mechanism that enabled it; the mechanism's file names live in the handovers and the ADRs.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Writing guidance` owns it.
 
 **Check.** For the section this run wrote, search for paths, version strings and line numbers.
 
@@ -176,7 +176,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.18 A superseded entry says so where a reader will see it
 
-**Rule.** Supersession is a statement in the entry, under its own heading, carrying the milestone that superseded it. It is not a bracketed suffix on the milestone heading, because a suffix changes that heading's anchor and breaks every inbound summary link.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `## Corrections to Closed Roadmap and Changelog Entries` owns it. The anchor consequence is why the rule exists.
 
 **Check.** For each entry whose capability a later milestone removed, read the entry's opening. A suffix on the milestone heading, or a supersession sentence with no date, is a finding.
 
@@ -204,7 +204,7 @@ Four rules bound what a run may write.
 
 **A High finding carries its evidence.** Report the tree read that produced it -- the path, the grep, the count -- so the operator can check the claim without re-running the pass. A claim about the state of a record is a hypothesis until a command confirms it, and a reviewer's claim is a hypothesis until the command confirms it too. Disagreement resolves by command, not by another round.
 
-**A correction is the smallest edit that clears the check.** A rewrite is proposed, never applied. When the check is satisfied by moving a row or flipping a marker, the run moves or flips and does not restate the row's prose, and it does not drop a row where a compaction is the correct correction: a deletion loses the design links the survival table in Step 2.3 requires.
+**A correction is the smallest edit that clears the check.** A rewrite is proposed, never applied: [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) requires a targeted change, not a full-file rewrite. When the check is satisfied by moving a row or flipping a marker, the run moves or flips and does not restate the row's prose, and it does not drop a row where a compaction is the correct correction: a deletion loses the design links the survival table in Step 2.3 requires.
 
 **A correction never rewrites a claim the run has not re-read.** Every path, id, count and version a correction writes is read from the tree in the same run that writes it. Where the tree and the record disagree, the record is corrected and the finding says which one was wrong.
 

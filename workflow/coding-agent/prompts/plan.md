@@ -1,13 +1,15 @@
 ---
-description: Milestone planning workflow. Runs a plan session for planning and design work in place of `/iter` - opens the session, records the goal and problem, aligns scope, interviews, and routes the outcome to its write-back target. Deliverable is documents. Use when a plan or design needs shaping and iteration is not required.
+description: Planning and design workflow. Runs a plan session in place of `/iter`, at whatever grain the input names - a milestone scope, or a single task needing decisions before it can be worked - and states the grain it inferred so the operator can correct it. Opens the session, records the goal and problem, aligns scope, interviews, and routes the outcome to its write-back target. Deliverable is documents. Use when a plan or design needs shaping and iteration is not required.
 argument-hint: "[goal or scope to plan - required]"
 ---
 
 > $@
 
-# Plan - Milestone Planning
+# Plan - Planning and Design
 
 Run a plan session for planning and design work. Run `/iter` for feature work.
+
+**State the grain.** `/plan` is one workflow at two grains: a milestone scope, or a single task that needs decisions before it can be worked. Infer the grain from the invocation argument and from the material gathered below, then state it when the scope is presented, so the operator can correct it. The grain is inferred and stated, never passed as a parameter -- a caller forced to know the grain before it can invoke `/plan` has been given the wrong interface.
 
 ## Orient
 
@@ -51,10 +53,10 @@ Route the interview result to a write-back target. Choose one: a written report 
 
 ## Write back
 
-Write the plan to the confirmed target: the roadmap entry, the scoped sub-milestone, decisions, and ADRs. Apply the binding rules in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) [Iteration Invariants](../../../docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md), and [`adr_policy.md`](../../../docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
+Write the plan to the confirmed target: the roadmap entry, the scoped unit at its stated grain, decisions, and ADRs. Apply the binding rules in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) [Iteration Invariants](../../../docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md), and [`adr_policy.md`](../../../docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
 
 ## Close
 
-After the operator confirms the written plan, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the close steps -- roadmap write-back and compaction, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- applied to a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit. Land the plan single commit per `git_policy.md`.
+After the operator confirms the written plan, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the close steps -- roadmap write-back, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- applied to a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit. Land the plan single commit per `git_policy.md`.

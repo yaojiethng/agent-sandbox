@@ -17,7 +17,7 @@ The milestone name always comes from the operator. Never infer it from the branc
 
 ## Verify completeness
 
-Read the named milestone's section in `devlog/roadmap.md`. Confirm every task row is `[x]`. An open row means the milestone is not ready to close: report it and stop.
+Read the named milestone's section in `devlog/roadmap.md`. Confirm every task row is `[x]`; [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Record shape` owns the invariant that a milestone holding an open row is never `Complete`, and this step applies it. An open row means the milestone is not ready to close: report it and stop.
 
 Confirm the operator will take the review-gate decisions before you execute the close.
 
@@ -41,7 +41,7 @@ Apply [Compaction cascading](../../../docs/operations/roadmap_policy.md#compacti
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order per [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) Changelog Format. The italic sentence names the capability. The body states what was built and the decisions that shaped it. No file lists. No future language. Output the entry as a fenced block so the operator can append it verbatim to `changelog.md`.
+Append the milestone's entry to `devlog/changelog.md` in milestone order. [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Changelog Format](../../../docs/operations/roadmap_policy.md#changelog-format) owns the entry's structure and its writing guidance; read them there. Output the entry as a fenced block so the operator can append it verbatim to `changelog.md`.
 
 ## Update the records
 
@@ -49,7 +49,7 @@ In `devlog/roadmap.md`:
 
 1. **Summary table:** flip the milestone's row to `Complete` with a changelog link. Leave the parent `In progress` unless all its direct children are complete.
 2. **Frontmatter:** set `active-milestone` to the parent milestone when a sub-milestone closes; set it to the next milestone at a full top-level close.
-3. **Top-level close (full milestone only):** remove the completed milestone's detail section from `roadmap.md`, and promote the next incomplete milestone from `roadmap_future.md` into `roadmap.md` per [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) Milestone Promotion.
+3. **Top-level close (full milestone only):** remove the completed milestone's detail section from `roadmap.md`, and promote the next incomplete milestone from `roadmap_future.md` into `roadmap.md`. Steps 2 and 4 of [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Top-level milestone close](../../../docs/operations/roadmap_policy.md#top-level-milestone-close) own them.
 
 ## Escalate deferred work
 

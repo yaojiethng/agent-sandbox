@@ -71,6 +71,11 @@ None.
 | The producer-owns-the-definition rule surfaced but was filed rather than adopted, because adopting a governance rule mid-sweep is how a sweep acquires rules it never examined | steering | roadmap. Triaged to: roadmap.md -- *Record the producer-owns-the-definition rule*. |
 | The interview reframed the work twice -- from one rule map to two maps plus an analysis, and from a four-way distribution to a fold. Both were the operator's, and both narrowed the change | scope change | this iteration. |
 
+| A capacity claim -- "I have run out of room" -- was stated as a fact with no signal behind it. The environment exposes no budget, token or context variable, so the claim could not have been checked. It cost one operator turn | agent experience | next iteration. Triaged to: `devlog/AGENT_FEEDBACK.md` as `[A] 2026-10-02`. |
+
+---
+[CORRECTION -- 2026-10-02: Findings gained one entry, the agent's own capacity claim, at the operator's direction. The handover was Closed when it surfaced, and the entry routes to the feedback record.]
+
 ## Completed
 
 | File | Change |
@@ -84,4 +89,8 @@ None.
 | `docs/concepts/agent_workflow.md` | the milestone-planning row repointed |
 | `workflow/coding-agent/prompts/iter.md` | `blocker` renamed `obstacle` |
 | `workflow/coding-agent/prompts/plan.md` | the `milestone_policy.md` binding rule removed |
+| `src/reasoning/providers/pi/config/agent/AGENTS.md` | the Communication Standards gain the capacity-claim rule the iteration's own finding called for: a capacity claim needs a signal |
 | `devlog/roadmap.md` | the `## User Stories` section retired for a task-row reference; four rows closed, three filed |
+
+---
+[CORRECTION -- 2026-10-02: Completed gained the `AGENTS.md` row. The capacity-claim standard was written after the close, at the operator direction, and rides the same delivery commit.]

@@ -14,7 +14,7 @@ The survey reads state; it does not repair it. Apply the repo's read discipline:
 
 Delegate the record maintenance. Run [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md) over [`devlog/roadmap.md`](../../../devlog/roadmap.md) and [`handover-maintenance.md`](../skills/handover-maintenance.md) over the handover chain. Between them the two skills own the record checks, the corrections each may apply, and the defects each reports. Every finding they return becomes an inventory row or a finding, never a silent correction.
 
-Cosmetic record-bug fixes (the class named above) are applied immediately and aggregated into a single `chore:` commit; every other discrepancy is surfaced as a row and waits.
+Every other discrepancy is surfaced as an inventory row and waits; the cosmetic class above and its single `chore:` commit are the opening paragraph's rule.
 
 ## State summary
 
@@ -32,6 +32,8 @@ One row per open work item. The sample row below is illustrative, not a live ite
 | `<work item>` -- `<roadmap entry, handover, or feedback entry that names it>` | chore | small | deferred, no pickup date | cosmetic | offline `make test` |
 
 Field meanings:
+
+The axes below are this prompt's to define. `/milestone-start` grades its audited pool on the same three, and reads them here.
 
 - Item -- the work, plus the record that names it (roadmap entry, handover, feedback entry).
 - Type -- impl (build or fix code), design, chore (housekeeping), investigation, doc.

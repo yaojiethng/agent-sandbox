@@ -41,7 +41,7 @@ Apply the test from [`sequential-work.md`](../drafts/sequential-work.md) Step 1 
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
-Use the commit types from [`git_policy.md`](../../../docs/operations/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. The types the operator usually asks to see split are: `feat`, `fix`, `test`, `docs`, `chore`, `refactor`, `workflow`, `build`, and `plan`.
+Use the commit types from [`git_policy.md`](../../../docs/operations/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
 
 Two rows that cannot be separated by the records alone are one row. Merge them and say so in the verdict, rather than guessing where the boundary falls.
 

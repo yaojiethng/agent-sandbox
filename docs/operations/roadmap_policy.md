@@ -4,6 +4,8 @@
 
 **Scope.** Governs `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md`, and the runbooks that write them: `/milestone-close`, `/wrapup` and `/gm`. Other documents link here; they do not restate these rules.
 
+**One record.** The three files are one record: a milestone title, a status, or an anchor that disagrees across them is one defect, whichever side of the boundary it sits on. `roadmap.md` carries the active and upcoming milestones, `roadmap_future.md` the milestones staged for promotion, and `changelog.md` the milestones already closed.
+
 ---
 
 ## When the Roadmap Is Touched
@@ -24,7 +26,7 @@ Roadmap maintenance is a mechanical normalization step, not an event or a gate. 
 
 Invoked by [`/milestone-close`](../../workflow/coding-agent/prompts/milestone-close.md); the runbook does not restate it. For each node whose direct children are all complete:
 
-1. **Compact the node** -- replace each child's checklist with a `- [x]` outcome summary (1-3 sentences describing what was built). Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them). Flip the node's heading status to `Complete` when one is shown.
+1. **Compact the node** -- replace each child's checklist with a `- [x]` outcome summary (1-3 sentences describing what was built). The `- [x]` marker survives the compaction; a compacted row without it reads as open. Keep design document links and "Not in scope" / deferred tags. Remove task breakdowns, file lists, and implementation notes (the handover retains them). Flip the node's heading status to `Complete` when one is shown.
 2. **Check the node's own parent** -- if all siblings of this node are also compacted, compact the parent node (its sibling list becomes a single `- [x]` entry).
 3. **Repeat upward** until reaching a node whose siblings are not all complete, or the top-level milestone is reached.
 4. If compaction reaches the top-level milestone (all direct sub-milestones complete), run **Top-level milestone close** (see below).
@@ -121,6 +123,8 @@ M{n}.{m}.{o}  — sub-sub-milestone (e.g. M2.6.1)
 **Summary table format** -- the Milestone Summary table uses indentation to show parent-child nesting via the fractal numbering scheme. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap.md anchors, roadmap_future.md anchors or changelog.md section anchors), never to file roots. A link names the whole heading of its target, so a heading that carries a suffix yields a longer fragment; a status or a removal note belongs in the entry body, not in the heading.
 
 **Persistent sections** -- Milestone Summary table, Upcoming Milestones, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
+
+**Frontmatter** -- `active-milestone` names the milestone work is currently scoped to. A sub-milestone close sets it to the parent; a full top-level close sets it to the milestone the close promoted.
 
 **Empty sections** -- remove immediately.
 

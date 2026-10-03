@@ -30,6 +30,8 @@ Verify the roadmap reflects the state the prior handover claims. If the roadmap 
 
 Read the prior handover's Objective and Findings for context before evaluating the directive. The prior handover carries no continuation scope: the roadmap is the sole task list, and a missing directive is an unmet scope-gate precondition, not something the agent derives.
 
+The types are [`handover_policy.md`](../../../docs/operations/handover_policy.md)'s Type table; this table is the directive word a caller may write.
+
 | Type | Shortform |
 |---|---|
 | Design | `design` |
@@ -69,7 +71,7 @@ Derive scope from the argument, the prior handover, and the roadmap. Read any ad
 
 If scope cannot be confidently derived, ask the operator one question at a time to define the task scope. Do not guess. Only when scope is clear do you continue to the design step below.
 
-**One iteration, one unit.** One iteration is one roadmap task, scoped as one vertical slice, landed as one commit with one handover. Propose no split by default; a slice that cannot deliver the outcome in one unit names the handling method (split or consolidate).
+**One iteration, one unit.** The unit rule is the policy's: one roadmap task, one vertical slice, one commit, one handover. Apply it here; do not restate it.
 
 **Purpose reconciliation.** Before presenting the scope, check the iteration's expressed purpose against the current tree. A purpose already silently resolved by landed work becomes recording or retiring that resolution, not re-implementing it.
 
@@ -106,9 +108,9 @@ Define the acceptance criteria in a four-column table:
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
 
-Universal preconditions (`make test passes clean`, `bash -n passes`) are preconditions, not acceptance criteria. Omit them from the AC table; verify them as prerequisites before pre-close. Each criterion must describe an observable delta  --  the operator verifies by running a command, not by reading source alone. A criterion may be one line if it is specific. Every iteration that touches architecture must include: *"Architecture documents in scope describe the system as built."*
+The authoring standards are [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `### Acceptance-criteria invariants`: what qualifies as a criterion, the delta and traceability rules, the three-way `Operator` / `Agent [x]` / `Agent [ ]` marking, and the `Not yet defined.` gate. Apply them here; this step adds only what the scope-gate presentation needs beyond them. Every iteration that touches architecture includes *"Architecture documents in scope describe the system as built."*, and a criterion may be one line when it is specific.
 
-**Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`. Mark the Verified by column: `Agent [x]` (pass), `Agent [ ]` (fail, expected in pre-state). Criteria the agent cannot verify are marked `Operator`.
+**Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`.
 
 **When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs  --  they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see `testing_policy.md`).
 
@@ -142,8 +144,6 @@ The handover write-back fires at three moments in the runbook's operation:
 - **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row.
 
 **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently.
-
-- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row.
 
 ## Step 7  --  Pre-close verification
 
@@ -186,7 +186,7 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 `/iter` stops at the acceptance gate. It presents the AC table, the roadmap write-back, the propagation replay, and the commit message; the operator releases; [`/wrapup`](wrapup.md) picks the iteration up from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
-**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. Shipping the change and filing the repair is how a known break reaches the next reader. The deferred-resolution rule covers work the iteration did not set out to do; it does not cover a break the iteration introduced or exposed. See [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `### Close invariants` `Defect resolution`.
+**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 
 ---
 
