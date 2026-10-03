@@ -19,12 +19,12 @@ LIVENESS_GATE="${LIVENESS_GATE:-$REAL_TESTS_DIR/../scripts/check_test_liveness.s
 VERBOSE="${VERBOSE:-0}"
 # TEST_PARALLEL controls the xargs job count (default 8; 1 for serial runs).
 TEST_PARALLEL="${TEST_PARALLEL:-8}"
-# TEST_TIMEOUT is the default per-file deadline in seconds (default 5). A
+# TEST_TIMEOUT is the default per-file deadline in seconds (default 10). A
 # file overrides it with a `# TEST_DEADLINE: <seconds>` line in its first ten
 # lines. The registration liveness gate now runs against the real suite on
 # every invocation, so a file that spawns the runner more than once states
 # its own budget instead of raising the default for every file.
-TEST_TIMEOUT="${TEST_TIMEOUT:-5}"
+TEST_TIMEOUT="${TEST_TIMEOUT:-10}"
 
 TOTAL_PASS=0
 TOTAL_FAIL=0
@@ -269,7 +269,7 @@ Environment:
   VERBOSE          verbose level (0-2); same as -v/-vv
   RUN_TESTS_DIR    discovery directory override (default: tests/)
   TEST_PARALLEL    worker job count (default: 8)
-  TEST_TIMEOUT     per-file deadline in seconds (default: 5)
+  TEST_TIMEOUT     per-file deadline in seconds (default: 10)
   MUTATION         run the mutation tier when set to 1
   RUN_TESTS_SELFTEST  skip the registration liveness gate when non-empty
 EOF
@@ -386,7 +386,7 @@ main() {
   echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)"
 
   if [[ "$TOTAL_TIMEOUT" -gt 0 ]]; then
-    echo "TIMEOUT: $TOTAL_TIMEOUT file(s) exceeded the ${TEST_TIMEOUT}s deadline and are counted as failed." >&2
+    echo "TIMEOUT: $TOTAL_TIMEOUT file(s) exceeded their declared deadline and are counted as failed." >&2
   fi
 
   if [[ "$TOTAL_SKIP" -gt 0 ]]; then

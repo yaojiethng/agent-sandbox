@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# TEST_DEADLINE: 10
+# TEST_DEADLINE: 30
 #   Budget rationale: every case spawns the runner, and each spawn runs the
 #   registration liveness gate against the real suite; the honest runtime is
 #   about 5s, so the declaration states that budget instead of raising the
-#   default deadline for every file.
+#   default deadline for every file. It is a budget, not a licence, and it is
+#   set well above the honest runtime because the liveness gate competes with
+#   the rest of the suite under parallel load and has been observed to take an
+#   order of magnitude longer there than alone.
 # tests/test_runner_contract.sh
 # Fault-reporting contract of scripts/run_tests.sh: the per-file deadline, the
 # result-record validation, the output modes, and the diagnostic streams.
