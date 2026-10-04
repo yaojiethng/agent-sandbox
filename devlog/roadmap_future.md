@@ -148,14 +148,6 @@ Part of M7 -- supply-chain hardening for provider runtime dependencies.
 
 ---
 
-### M8 -- Skills / Templates
-
-- [ ] Introduce `.skills/` directory
-- [ ] Provide templates or skill definitions for agent
-- [ ] Integrate skills into agent workflow
-
----
-
 ### M9 -- Governance Hardening
 
 Progressive enforcement maturity for the documentation and architecture governance model. Each level builds on the previous.
