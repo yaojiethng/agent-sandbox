@@ -1,21 +1,21 @@
 ---
 name: roadmap-maintenance
-description: "Maintains devlog/roadmap.md and leaves it correct. Use when the operator asks to check the roadmap against policy, verify compaction state, or prepare a compaction pass."
+description: "Checks devlog/roadmap.md, devlog/roadmap_future.md and devlog/changelog.md against roadmap_policy.md and reports the violations. Use when the operator asks to check the roadmap against policy or verify compaction state. Writes nothing."
 ---
 
 # roadmap-maintenance
 
-<!-- Source: this skill subsumed workflow/coding-agent/audits/roadmap-audit.skill.md, now removed. Steps 1 to 4 carry that file's checks A to D unchanged; Step 5 carries the correction pass it deliberately lacked. -->
+<!-- Source: this skill subsumed workflow/coding-agent/audits/roadmap-audit.skill.md, now removed. Steps 1 to 4 carry that file's checks A to D unchanged, and Step 5 reports the run. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
 
 ## Purpose
 
-Maintains the three roadmap records: `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md`. The run finds each defect, corrects it, and records what it changed, so the records are correct when the run ends. An audit only reports and leaves the defect in place. This runbook therefore corrects what it finds and holds back only what needs the operator's judgement.
+Checks the three roadmap records -- `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md` -- and reports the violations of [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
 
-The three files are one record: a milestone title, a status, or an anchor that disagrees across them is the same defect whichever side of the boundary it sits on. `devlog/roadmap.md` carries the active and upcoming milestones, `devlog/roadmap_future.md` the milestones staged for promotion, and `devlog/changelog.md` the milestones already closed.
+The three files are one record: a milestone title, a status, or an anchor that disagrees across them is the same violation whichever side of the boundary it sits on. `devlog/roadmap.md` carries the active and upcoming milestones, `devlog/roadmap_future.md` the milestones staged for promotion, and `devlog/changelog.md` the milestones already closed.
 
-The transition procedures live in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) -- the compaction cascade and the top-level close -- and the milestone prompts invoke them. This runbook owns the coherence checks and the schedule that runs them; the policy owns the invariants those checks protect. A check stated here restates no rule the policy carries, and a rule the policy carries is never restated here.
+The transition procedures live in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) -- the compaction cascade and the top-level close. This runbook owns the checks and the schedule that runs them; the policy owns the invariants those checks protect. A check stated here restates no rule the policy carries, and a rule the policy carries is never restated here.
 
-The handover is not the subject. Handover content and handover chain maintenance belong to [`handover-maintenance.md`](handover-maintenance.md).
+The handover is not the subject. Handover content and handover chain checks belong to [`handover-maintenance.md`](handover-maintenance.md).
 
 ## When to run
 
@@ -31,10 +31,10 @@ The operator may also trigger a read of `devlog/roadmap_future.md` and `devlog/c
 
 Also run it:
 
-- Before a compaction pass, to confirm the pass is safe (Step 4).
+- Before a compaction pass, to report whether the pass is safe (Step 4).
 - When the operator asks to check the records against `roadmap_policy.md`.
 
-Do not run it as a closed-history sweep over the records. A compacted roadmap has, by design, dropped the detail this runbook checks, and a closed changelog entry is a historical claim about what was true when its milestone closed.
+Do not run it as a closed-history sweep over the records. A compacted roadmap has, by design, dropped the detail this runbook checks, and a closed changelog entry is a historical claim about what was true when its milestone closed. That exclusion is an exception clause: report it as a skip with the clause named, never as a finding.
 
 ## Procedure
 
@@ -42,21 +42,19 @@ Do not run it as a closed-history sweep over the records. A compacted roadmap ha
 
 Run through every task entry in the active sub-milestone.
 
-**1.1 Marker format.** Every item uses markdown task list syntax (`- [x]` or `- [ ]`), not an emoji checkmark and not a bold header alone. Convert an unconverted item.
+**1.1 Marker format.** Every item uses markdown task list syntax (`- [x]` or `- [ ]`), not an emoji checkmark and not a bold header alone. Report an unconverted item.
 
-**1.2 Nesting format.** Sub-items are indented `- [x]` and `- [ ]` bullets, not embedded in a prose paragraph. Restructure a prose-wrapped sub-item into bullets.
+**1.2 Nesting format.** Sub-items are indented `- [x]` and `- [ ]` bullets, not embedded in a prose paragraph. Report a prose-wrapped sub-item.
 
-**1.3 Partial completion format.** For an item that has both done and pending sub-items, the parent item uses `- [ ]` and describes what is complete, the completed sub-items use `- [x]` indented under the parent, and the pending sub-items use `- [ ]` indented under the parent. An item is a defect when a done sub-item lacks its `- [x]` marker, or when the parent carries no completion context.
+**1.3 Partial completion format.** For an item that has both done and pending sub-items, the parent item uses `- [ ]` and describes what is complete, the completed sub-items use `- [x]` indented under the parent, and the pending sub-items use `- [ ]` indented under the parent. An item is a violation when a done sub-item lacks its `- [x]` marker, or when the parent carries no completion context.
 
-Completion criterion: no unconverted marker remains, no sub-item sits inside prose, and every partially complete parent describes what is complete.
+Completion criterion: no unconverted marker was found, no sub-item sits inside prose, and every partially complete parent describes what is complete.
 
 ### 1.4 A closed item carries no open work
 
 **Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `## When the Roadmap Is Touched` owns the marker-nesting invariant. This check applies it.
 
-**Check.** Walk every `- [x]` item and read its indented children. Report any open child and the parent that carries it.
-
-**Correction.** Flip the parent to `- [ ]` and write the completion context the parent is missing, so a reader scanning task level sees what is still open.
+**Check.** Walk every `- [x]` item and read its indented children. Report any open child and the parent that carries it, naming the completion context the parent is missing.
 
 **Why this exists.** The task list is scanned for `- [ ]` at the parent level, so a closed parent holding open work reads as done.
 
@@ -66,9 +64,9 @@ Completion criterion: 1.1 through 1.4 hold, and no `- [x]` item carries an open 
 
 Run this step over each item in the active sub-milestone.
 
-**2.1 Completion-state compaction.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the procedure and is its single source. This check verifies its result: compact a fully completed group that still carries an expanded checklist.
+**2.1 Completion-state compaction.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the procedure and is its single source. This check verifies its result: a fully completed group that still carries an expanded checklist is uncompacted, and is reported.
 
-**2.2 Outcome summary marker.** The `- [x]` marker survives the compaction. A compacted item without the marker is a defect.
+**2.2 Outcome summary marker.** The `- [x]` marker survives the compaction. A compacted item without the marker is reported.
 
 **2.3 Survival table.** Verify each compacted task group against the keep and remove lists in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) step 1, component by component.
 
@@ -82,35 +80,35 @@ Run this step over each item in the active sub-milestone.
 | "Depends on" pointing at a now-completed item | Removed | Absent from the summary |
 | "Prerequisite for" | Removed | Absent from the summary |
 
-A component that should survive and is gone, or one that should be removed and is present, is a defect in either direction.
+A component that should survive and is gone, or one that should be removed and is present, is a violation in either direction. A compaction reported under 2.1 names this table as the form the edit must take.
 
-**2.4 Multi-level compaction depth.** Step 2 of [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the upward pass. Compact a parent whose children are all done.
+**2.4 Multi-level compaction depth.** Step 2 of [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the upward pass. A parent whose children are all done and that is not compacted is reported.
 
-**2.5 Nested sub-group compaction.** The same step, read at sub-group grain. Compact an expanded sub-group inside a partially complete item.
+**2.5 Nested sub-group compaction.** The same step, read at sub-group grain. An expanded sub-group inside a partially complete item is reported.
 
 Completion criterion: no expanded checklist survives under a fully completed group, and every compaction satisfies the survival table.
 
 ### Step 3 - Structural integrity
 
-**3.1 Floating prose summaries.** Remove a manual summary such as "Prior completed items" that repeats the task list.
+**3.1 Floating prose summaries.** Report a manual summary such as "Prior completed items" that repeats the task list.
 
-**3.2 Superseded items.** Remove an item that later work superseded.
+**3.2 Superseded items.** Report an item that later work superseded and that still stands.
 
-**3.3 Empty sections.** Remove a section that Step 3.2 or Step 2 emptied. `roadmap_policy.md` requires removal rather than an empty heading.
+**3.3 Empty sections.** Report a section that Step 3.2 or Step 2 emptied. `roadmap_policy.md` requires removal rather than an empty heading.
 
-**3.4 Redundant ordering blocks.** Remove a standalone "Implementation order" block that repeats information already carried by "Depends on" lines.
+**3.4 Redundant ordering blocks.** Report a standalone "Implementation order" block that repeats information already carried by "Depends on" lines.
 
-**3.5 Dangling dependencies.** Remove a "Depends on" line on an active item that points at a removed or compacted item, or repoint it at the surviving item.
+**3.5 Dangling dependencies.** Report a "Depends on" line on an active item that points at a removed or compacted item.
 
-**3.6 Landed narrative in a closed row.** Reduce a closed row to one line of what landed plus a handover link. The implementation narrative and the counts are in the handover, which already records them. A number in a closed row is true exactly once, so a suite count or a version literal recorded there goes stale at the next change.
+**3.6 Landed narrative in a closed row.** Report a closed row that has not been reduced to one line of what landed plus a handover link. The implementation narrative and the counts are in the handover, which already records them. A number in a closed row is true exactly once, so a suite count or a version literal recorded there goes stale at the next change.
 
-**3.7 Related rows that are one task.** Merge rows that share an owner, a bar and a subject into one parent carrying them as subtasks, keeping each subtask's handover link. Two tell-tales: the same work described in different words, and one subject split across several rows with no owner distinguishing them.
+**3.7 Related rows that are one task.** Report rows that share an owner, a bar and a subject, keeping each subtask's handover link. Two tell-tales: the same work described in different words, and one subject split across several rows with no owner distinguishing them.
 
-**3.8 A row that restates a known entry.** Move it to the record that already holds the problem and keep only the delta. A row whose first half is already recorded elsewhere earns nothing unless it names what is new.
+**3.8 A row that restates a known entry.** Report a row whose first half is already recorded elsewhere, unless it names what is new.
 
-**3.9 A row bundling unrelated defects.** Split it. A row carrying its own priority order in its own text is a bucket, not a task.
+**3.9 A row bundling unrelated defects.** Report a row carrying its own priority order in its own text -- a bucket, not a task.
 
-**3.10 Mis-filed rows.** A row belongs in the milestone whose section blurb claims the work. If a blurb claims it and it sits elsewhere, move it. If no blurb claims it, the milestone scope is wrong, and that is an operator call, not a move.
+**3.10 Mis-filed rows.** A row belongs in the milestone whose section blurb claims the work. Report a row that sits elsewhere while a blurb claims it. When no blurb claims it, the milestone scope is wrong, and that is an operator call: report it as an escalation, not a move.
 
 ### 3.11 The summary table agrees with the sections it names
 
@@ -118,17 +116,13 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 **Check.** For each row, read the linked heading and the status it declares. A row that says `Complete` whose section still carries open tasks is a finding; a row whose fragment matches no heading is a finding; two records naming one milestone differently are a finding.
 
-**Correction.** Repoint the link, align the title, and set the status from the section. A milestone staged in `roadmap_future.md` takes its row there; a closed one takes a changelog link.
-
 **Why this exists.** The table is what a reader consults instead of the sections, so a row that disagrees with its section is worse than no table.
 
 ### 3.12 No item is restated across the records
 
 **Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Filing rules` owns it. This check adds the record-layer case that rule does not name.
 
-**Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate, keep one, and make the other name it.
-
-**Correction.** Keep the copy that sits under the milestone whose blurb claims the work, and reduce the other to a named pointer. Two rows that share an owner, a bar and a subject merge into one parent carrying both as subtasks.
+**Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate and name the copy that sits under the milestone whose blurb claims the work.
 
 **Why this exists.** A copy in `changelog.md` of a row still open in a roadmap file slips past a check that reads only the two roadmap files.
 
@@ -138,29 +132,23 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 **Check.** Search each row for `\d+`, a `line \d+` or `row \d+` form, a version string, and a path that no longer exists. A row pointing at a sibling record by position rather than by name is a finding, because the position moves with every edit above it.
 
-**Correction.** Replace the positional or literal reference with the record's name or path, and put the number in the record it describes. When the row's subject is a value that must be readable at a glance, say where the authoritative value lives.
-
 **Why this exists.** A number in a record is true exactly once, and the pass that found these had two open rows pointing at roadmap rows that no longer held the work they named.
 
 ### 3.14 The write-back pairing is not this run's to state
 
-Not a check. A landed row naming the handover that landed it is not a rule in any policy; `iteration_policy.md` `### Close invariants` owns the write-back step, and `handover-maintenance.md` Step 6 tests the landed claim against the row. A row that repeats a handover id states a link `git log` already holds, so a run that reports one as a missing rule is reporting the wrong direction. When a landed claim is not reflected in its row, the finding belongs to the close that let it through.
+Not a check. A landed row naming the handover that landed it is not a rule in any policy; `iteration_policy.md` `### Close invariants` owns the write-back step. When a landed claim is not reflected in its row, the finding belongs to the close that let it through.
 
 ### 3.15 The changelog section map is unambiguous
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Entry structure` and `## Corrections to Closed Roadmap and Changelog Entries` own the heading levels and the correction forms, including the two accepted forms and what each must carry.
+**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Entry structure` and `## Corrections to Closed Roadmap and Changelog Entries` own the heading levels and the correction forms.
 
 **Check.** Read the `##` headings of `changelog.md` in order. Any `##` that is not `## M{n}` is a finding. Any summary link whose fragment names a correction block is a finding.
-
-**Correction.** Move the correction block to the end of the section it corrects and demote it one level, keeping its date and its content.
 
 ### 3.16 A new entry states whether its capability still stands
 
 **Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Writing guidance` and `## Corrections to Closed Roadmap and Changelog Entries` own it.
 
 **Check.** For each entry written or amended in this run, read the summary row that links it. A row reading `Complete` for an entry that records removal is a finding.
-
-**Correction.** Add the removal statement to the entry, and make the row name it.
 
 **Scope.** Only the section this run wrote or amended. Entries closed earlier are historical claims about what was true when they closed, and this check does not reach them.
 
@@ -170,8 +158,6 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 **Check.** For the section this run wrote, search for paths, version strings and line numbers.
 
-**Correction.** Cut the path list and name the record that holds it.
-
 **Scope.** Only the section this run wrote. An older entry that names a path which no longer exists is true history, and correcting it rewrites the past into the present tense.
 
 ### 3.18 A superseded entry says so where a reader will see it
@@ -180,61 +166,55 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 **Check.** For each entry whose capability a later milestone removed, read the entry's opening. A suffix on the milestone heading, or a supersession sentence with no date, is a finding.
 
-**Correction.** Move the suffix into the entry as a `### Superseded` block naming the milestone and the date.
+**Why this exists.** The marker is what a reader consults, so a supersession recorded only in prose is invisible at the milestone heading.
 
-Completion criterion: no floating prose summary, superseded item, empty section, redundant ordering block, or dangling dependency remains in the active sub-milestone; every row passes 3.6 through 3.13; and every entry this run wrote passes 3.15 through 3.18.
+Completion criterion: every violation of 3.1 through 3.13 and 3.15 through 3.18 is reported, and no report restates a rule the policy carries.
 
 ### Step 4 - Pre-compaction readiness
 
-This step changes nothing. It decides whether a compaction pass is safe to propose.
+This step reports whether a compaction pass is safe to propose.
 
 1. Every task in a group that is a compaction candidate is `- [x]`, not `- [ ]`.
-2. No task was marked `- [x]` before the operator verified it. Check the handover for its Step 7 acceptance-criteria status.
+2. No task was marked `- [x]` before the operator verified it. Read the handover's Step 7 acceptance-criteria status.
 3. The compaction proposal text is drafted and ready for operator review.
 
-Completion criterion: all three hold, or the run stops with the failing condition named. A premature `- [x]` blocks the pass until the operator resolves it.
+Completion criterion: all three hold, or the report names the failing condition. A premature `- [x]` blocks the pass until the operator resolves it, and is reported as an escalation.
 
-### Step 5 - Record the run
+### Step 5 - Report the run
 
-Report the changes per `roadmap_policy.md`. A correction that is purely mechanical is applied and reported. A correction that changes what a record asserts needs the operator's release first. Report it, mark it High severity, and stop.
+Write the report as JSONL at the path the dispatcher set, in the schema [`workflow/coding-agent/skills/check-in/report-schema.md`](check-in/report-schema.md) owns. One line per finding; one line per check that produced no finding, with `result` and `reason`.
 
-Four rules bound what a run may write.
+Four rules bound what a run may report.
 
-**Permission follows the trigger.** The trigger that started the run sets its ceiling. Operator approval of one correction never widens it: work past the ceiling is an inventory row, and the operator picks it as the next unit.
+**A finding is the smallest statement that clears the check.** Name the locus, the rule, and what the record asserts against what the tree or the policy shows. Do not restate the record's prose, and do not propose the whole rewrite: the dispatcher reads the policy rule for the form, and a compaction is reported against the survival table rather than as replacement text.
 
-**A High finding carries its evidence.** Report the tree read that produced it -- the path, the grep, the count -- so the operator can check the claim without re-running the pass. A claim about the state of a record is a hypothesis until a command confirms it, and a reviewer's claim is a hypothesis until the command confirms it too. Disagreement resolves by command, not by another round.
+**A finding carries its evidence.** Report the tree read that produced it -- the path, the grep, the count -- so the operator can check the claim without re-running the pass. A claim about the state of a record is a hypothesis until a command confirms it, and a reviewer's claim is a hypothesis until the command confirms it too. Disagreement resolves by command, not by another round.
 
-**A correction is the smallest edit that clears the check.** A rewrite is proposed, never applied: [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) requires a targeted change, not a full-file rewrite. When the check is satisfied by moving a row or flipping a marker, the run moves or flips and does not restate the row's prose, and it does not drop a row where a compaction is the correct correction: a deletion loses the design links the survival table in Step 2.3 requires.
+**A finding names only facts this run re-read.** Every path, id, count and version in a report is read from the tree in the same run that reports it. Where the tree and the record disagree, the finding says which one is wrong.
 
-**A correction never rewrites a claim the run has not re-read.** Every path, id, count and version a correction writes is read from the tree in the same run that writes it. Where the tree and the record disagree, the record is corrected and the finding says which one was wrong.
+**The recommendation follows the check, not the size of the edit.** A violation whose correct form the policy determines is fixable now, however many rows it touches. A violation that falls under a broader roadmap unit already in flight names that unit and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is one no record settles. The schema passed with this dispatch carries the values and their conditions.
+
+Report the checks that produced no finding as skips. A check that did not run is reported as a skip with that reason: silence reads as a clean record.
 
 ## Output shape
 
-The report is one table, one row per correction or per defect left for the operator.
+The report is the JSONL file described in [`workflow/coding-agent/skills/check-in/report-schema.md`](check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed.
 
-| Section / item | Change applied or held | Category | Severity |
-|---|---|---|---|
-| M2.7 pre-flight checks | Compacted a fully completed group that still carried a checklist | 2.1 | Medium |
-| M2.7 summary line | Held a floating prose summary for operator release | 3.1 | High |
-
-The report closes with the counts by category and the state of the Step 4 gate.
-
-Severity routes the correction:
-
-- **High** -- the defect is a policy violation that blocks a clean compaction, or it would make the next agent misread roadmap state. Hold it for the operator.
-- **Medium** -- the defect is a format deviation that does not change what the roadmap asserts. Apply it.
-- **Low** -- the defect is cosmetic or a legacy artifact. Apply it.
+Print a one-line summary to stdout when the run ends: the findings count, the skip count, and the path. A finding count of zero is reported as zero, never as silence.
 
 ## Non-goals
 
-- Does not check closed handovers or the handover chain. That is [`handover-maintenance.md`](handover-maintenance.md).
+- Does not write a record, apply a correction, or commit. The dispatcher applies the report.
+- Does not check handovers or the handover chain. That is [`handover-maintenance.md`](handover-maintenance.md).
 - Does not write policy. A check that no policy text covers is a gap to report, not a rule to add here.
 - Does not open, re-scope, or close an iteration.
-- Does not change a milestone's task set. Adding or removing a task is a roadmap decision, not a maintenance correction.
+- Does not change a milestone's task set. Adding or removing a task is a roadmap decision, not a maintenance finding.
+- Does not choose a commit shape, a message, or a fold. The report carries no field for one.
 
 ## Failure modes
 
-- **A premature `- [x]` looks like a finished group.** Step 2 then compacts an unverified claim and the loss is permanent. Step 4 exists to catch it; when Step 4 fails, stop rather than compact.
-- **Over-compaction drops surviving detail.** A compaction that removes a design link or a deferred tag loses information the policy keeps. Check the survival table before writing a summary.
-- **Scope creep into task content.** Adding a task to make a format check pass turns maintenance into a roadmap decision. Report the need instead.
-- **Interpretation of a policy gap.** When a finding needs a reading of `roadmap_policy.md` that the document does not settle, state the reading and ask for confirmation before flagging or fixing.
+- **A passed check reported as silence.** A run that reports no skip for a check it did not run reads as a clean record. Report the skip.
+- **A premature `- [x]` reads as a finished group.** Step 4 reports it as an escalation; a compaction proposal resting on it is unsafe until the operator resolves it.
+- **A finding that drops surviving detail.** A compaction reported without the survival table loses the guard the policy keeps. Name the table.
+- **Scope creep into task content.** A finding that would add a task turns maintenance into a roadmap decision. Report the need as an escalation instead.
+- **Interpretation of a policy gap.** When a finding needs a reading of `roadmap_policy.md` that the document does not settle, state the reading and report it as an escalation rather than choosing for the operator.

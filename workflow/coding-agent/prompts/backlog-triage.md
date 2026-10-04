@@ -21,6 +21,8 @@ This prompt is not a plan, a dispatch, or a survey. It does not sequence the run
 
 Run this when the operator asks which work can proceed without them, before releasing an unattended run, or before pointing a large or cheap model at the backlog. The answer is the same question each time, and it is cheap to answer from the records that already exist.
 
+A check-in whose recommended direction is an unattended run rather than a supervised iteration reaches triage here: run triage on the inventory before opening the run. The check-in answers what is open; this prompt answers which of it runs without the operator.
+
 Routing:
 
 - A specific multi-unit plan the operator has already released is [`sequential-work.md`](../drafts/sequential-work.md). That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.

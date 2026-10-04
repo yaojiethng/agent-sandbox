@@ -69,7 +69,7 @@ The `/auto` smart dispatcher and `/goal` loose-goal decomposition are M4's. They
 
 ## Skills
 
-A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](../../workflow/coding-agent/skills/roadmap-maintenance.md) and [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance.md) own the record checks, the corrections each may apply, and the defects each reports: `/gm` runs both over the roadmap and the handover chain, `/milestone-close` runs `roadmap-maintenance` for the compaction pass, and `/wrapup` runs `handover-maintenance` to close a landed record. `/plan` and `/document` pass their session context to the `grill-me` skill for the interview. A skill owns its procedure; the workflow owns the transition that invokes it.
+A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](../../workflow/coding-agent/skills/roadmap-maintenance.md) and [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance.md) own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. `/gm` runs both when the operator asks for an exhaustive check, `/milestone-close` runs `roadmap-maintenance` for the compaction pass, and `/wrapup` runs `handover-maintenance` to close a landed record. `/plan` and `/document` pass their session context to the `grill-me` skill for the interview. A skill owns its procedure; the workflow owns the transition that invokes it.
 
 ## Responsibilities
 

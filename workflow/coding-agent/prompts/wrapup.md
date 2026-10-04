@@ -111,7 +111,7 @@ A row left open here is a question the operator meets twice, which is the cost t
 
 ### B8. Close ADRs and discussion docs whose work landed
 
-When a `docs/adr/` or `devlog/discussions/` document's work landed this session, close or fold it by running the [`handover-maintenance`](../skills/handover-maintenance.md) skill against it. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
+When a `docs/adr/` or `devlog/discussions/` document's work landed this session, run the `handover-maintenance` skill (`workflow/coding-agent/skills/handover-maintenance.md`, from the repository root) against it, and apply its report. The skill writes nothing: it reports the `[CORRECTION]` or `[AMENDMENT]` form each finding needs, and this prompt writes the block. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
 
 ### B9. Prepare all files for the commit
 

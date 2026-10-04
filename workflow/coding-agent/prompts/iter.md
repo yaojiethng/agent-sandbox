@@ -22,7 +22,7 @@ No other files are needed at this stage.
 
 Run before creating the handover.
 
-Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, run roadmap maintenance after creating this handover but before presenting the scope proposal at the scope gate. Record the maintenance execution in this handover's Completed table. Present the maintained roadmap state as part of the scope proposal.
+Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, run the `roadmap-maintenance` skill (`workflow/coding-agent/skills/roadmap-maintenance.md`, from the repository root) over `devlog/roadmap.md` and apply its report after creating this handover but before presenting the scope proposal at the scope gate. The skill writes nothing, so the row edits are this prompt's. Record the maintenance execution in this handover's Completed table. Present the maintained roadmap state as part of the scope proposal.
 
 ---
 
