@@ -55,6 +55,6 @@ When several milestones exist, select one as next active with the operator. Upda
 
 - `roadmap.md` Milestone Summary table row -- set the active milestone to `In progress`.
 - The milestone's section -- add the full task checklist to the active one; non-active milestones carry an objective paragraph only.
-- `roadmap.md` frontmatter `active-milestone` -- set it to the active major milestone.
+- `roadmap.md` frontmatter `active-milestone` -- set it to the active milestone, at the level the operator selected.
 
 Follow the Record shape section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.

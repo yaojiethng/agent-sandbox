@@ -127,7 +127,7 @@ M{n}.{m}.{o}  - sub-sub-milestone (e.g. M2.6.1)
 
 **Persistent sections** -- Milestone Summary table, Upcoming Milestones, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed.
 
-**Frontmatter** -- `active-milestone` names the milestone work is currently scoped to. A sub-milestone close sets it to the parent; a full top-level close sets it to the milestone the close promoted.
+**Frontmatter** -- `active-milestone` names the milestone work is scoped to, at the level it sits at. A start sets it to the milestone the start promoted. A sub-milestone close sets it to the parent; a full top-level close sets it to the milestone the close promoted.
 
 **Empty sections** -- remove immediately.
 
