@@ -285,7 +285,7 @@ Three probes need a key or a quota the workspace does not have. Each is a deferr
 
 `tests/extensions/pi/model-refresh/` holds the suite. The node tests need no network, no API key, and no model runtime: they take an injected fetcher, and where a request shape matters they read pi's built payload through the `onPayload` hook and hand the request to a `fetch` stub that refuses.
 
-Two of the files are knowledge tests under the Test Placement rule, because the seam is external. `wire.test.ts` probes pi-ai's request builder, a library this repository does not maintain. `knowledge/knowledge_opencode_gateway_matrix.sh` probes the gateway, and needs a key and spends requests.
+Two of the files are knowledge tests under the Test Placement rule, because the seam is external. `wire.test.ts` probes pi-ai's request builder, a library this repository does not maintain. `knowledge/knowledge_opencode_gateway_matrix.sh` probes the gateway, and needs a key and spends requests. `knowledge/knowledge_model_refresh_real_load.sh` loads the extension in a real pi session under a pseudo-terminal, because the unit suite's hand-built contexts can encode the extension's assumption about pi instead of pi's API.
 
 | File | Covers |
 |---|---|
@@ -304,6 +304,7 @@ Two of the files are knowledge tests under the Test Placement rule, because the 
 | `mutation/runner.ts` | the replay engine: a temp mirror per row, one child process, the six verdicts |
 | `mutation.test.ts` | the gate: a control row, an attribution check, and a `proven` verdict per row |
 | `knowledge/knowledge_opencode_gateway_matrix.sh` | knowledge, live: per-model acceptance of the disabled effort; needs a key |
+| `knowledge/knowledge_model_refresh_real_load.sh` | knowledge, live: the extension loads and its TUI branch runs in a real pi session; needs a key |
 
 ## Invariants
 
