@@ -116,7 +116,7 @@ Foundation work made autosave and session-save reliable (EXIT-trap export with r
 
 ### Container Identity & Lifecycle (Track A)
 
-Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. [SUPERSEDED in M2.6 -- the session-identity prefactor fold replaced the two-stage derivation with a single canonical `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.] Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
+Session identity moved from raw timestamps to a content-addressed hash model. `SANDBOX_ID` (8 hex chars) identifies a sandbox instance at a specific host commit; `RUN_ID` (6 hex chars) identifies a single session run. Both are derived deterministically: `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]`, `RUN_ID = sha256(SESSION_TS:SANDBOX_ID)[:6]`. Image names are project-only (no SANDBOX_ID suffix) -- provenance is carried by Docker labels, not image tags. Container names use `RUN_ID`: `sandbox-<project>-<RUN_ID>`, `<provider>-<project>-<RUN_ID>`. `SESSION_STATE` records `host_head_sha`. `make stop` filters by `project-name` + `sandbox-dir` labels with optional `--run-id` and `--prune`. `make prune` provides age-thresholded cleanup (`PRUNE_AGE_DAYS=3`). Artefact paths embed `RUN_ID`.
 
 ### Build Pipeline & Staleness Detection (Track B)
 
@@ -134,6 +134,14 @@ Generic pre-flight in shared entrypoint: all 7 lib files checked, AGENT_HOME val
 
 - Harness-sig -- self-contained binary with semantic versioning for runtime drift detection. See `roadmap_future.md`.
 - Autosave/session-save reliability -- moved to M2.6.
+
+### Not in scope
+
+- Process improvements (fast-track criteria, decision recording, stale skill reference) -- not milestone-scoped.
+
+### Superseded
+
+The two-stage derivation in `## Container Identity & Lifecycle` and the `RUN_ID` rename below were both superseded in M2.6, on 2026-08-31. The session-identity fold replaced them with a single canonical `SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`; `SANDBOX_ID` retired. See `docs/adr/session_identifier.md`.
 
 ### [CORRECTION - 2026-08-19] Session identity token renamed: RUN_ID -> SESSION_ID
 
@@ -161,8 +169,6 @@ Three issues corrected in the pre-flight check block added in M2.7:
 3. **set -e regression:** The initial stderr capture pattern (`_err=$(cmd 2>&1 >/dev/null)`) propagated non-zero exit through command substitution, causing `set -e` to kill the shell immediately. Fixed by using `if _err=$(cmd 2>&1 >/dev/null); then` so errexit is suppressed by the `if` clause.
 
 A diagnostic test (`tests/knowledge/diagnose_preflight.sh`) was added to verify all three fixes and prevent future regressions.
-
-- Process improvements (fast-track criteria, decision recording, stale skill reference) -- not milestone-scoped.
 
 ---
 

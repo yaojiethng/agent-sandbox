@@ -33,7 +33,12 @@ A milestone-start session. The pool was audited across T1, T7, T8 and the future
 | File | Why in scope |
 |---|---|
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | the Milestone Summary rows, the M3.3 section and its two sub-milestones, and the rows removed from T1, T7 and T8 |
-| [`devlog/roadmap_future.md`](roadmap_future.md) | the deleted M8 section |
+| [`devlog/roadmap_future.md`](../../devlog/roadmap_future.md) | the deleted M8 section |
+
+---
+[CORRECTION -- 2026-10-04: the Hot files link to `roadmap_future.md` resolved inside `devlog/handovers/`, where no such file exists. The path now matches the sibling row and the Completed table.]
+
+---
 
 ## Decisions
 
