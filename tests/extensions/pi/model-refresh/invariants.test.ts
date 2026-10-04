@@ -15,6 +15,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { createRequire } from "node:module";
 
@@ -33,6 +34,7 @@ import { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "../../..
 import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
 import { createReporter } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts";
 import { discardedDefault } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/default-model.ts";
+import { CACHE_VERSION, parseCache, readCache, writeCache } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/cache.ts";
 import { THINKING_LEVELS, levelMapFor, offSendsAnEffort, thinkingLevelMapFromEfforts } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ThinkingLevelMap } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
@@ -62,6 +64,7 @@ interface SourceState {
 	stored: StoredCatalog | undefined;
 	endpointIds: readonly string[] | undefined;
 	modelsDev: Record<string, ModelsDevModel> | undefined;
+	cache?: readonly ModelDefinition[];
 }
 
 const BAKED_A = anthropicBakedModel("baked-a", { name: "Curated A", compat: { thinkingFormat: "anthropic", maxTokensField: "max_tokens" }, thinkingLevelMap: { high: "high" }, contextWindow: 111_000, maxTokens: 11_000 });
@@ -701,6 +704,143 @@ describe("invariant report", () => {
 		}
 	});
 
+	// --- the cache device ------------------------------------------------
+	const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "model-refresh-cache-"));
+	after(() => fs.rmSync(cacheDir, { recursive: true, force: true }));
+	const cacheFile = (name: string): string => path.join(cacheDir, name);
+	const CACHE_ENDPOINT = TEST_DECL.endpoint as string;
+
+	itCase("E1", "empty predicts absent", () => {
+		assert.equal(parseCache(undefined, CACHE_ENDPOINT), undefined, "a missing document has no record");
+		assert.equal(readCache(cacheFile("missing.json"), CACHE_ENDPOINT), undefined, "a missing file reads as absent");
+		assert.deepEqual(parseCache({ version: CACHE_VERSION, writtenAt: "x", endpoints: {} }, CACHE_ENDPOINT), undefined, "an empty endpoints map is absent");
+	});
+
+	itCase("E2", "loaded predicts content", () => {
+		const file = cacheFile("loaded.json");
+		assert.deepEqual(writeCache(file, CACHE_ENDPOINT, [bakedModel("cache-a"), bakedModel("cache-b")], new Date(0)), { ok: true }, "the write lands");
+		assert.deepEqual(ids(readCache(file, CACHE_ENDPOINT) ?? []), ["cache-a", "cache-b"], "the record reads back its entries");
+	});
+
+	itCase("E3", "invalid predicts absent", () => {
+		assert.equal(parseCache("not an object", CACHE_ENDPOINT), undefined, "a non-object is absent");
+		assert.equal(parseCache({ version: 999, writtenAt: "x", endpoints: { [CACHE_ENDPOINT]: { retrievedAt: "x", entries: [] } } }, CACHE_ENDPOINT), undefined, "another version is absent");
+		assert.equal(parseCache({ version: CACHE_VERSION, writtenAt: "x", endpoints: { "https://other/models": { retrievedAt: "x", entries: [] } } }, CACHE_ENDPOINT), undefined, "another endpoint's record is absent");
+	});
+
+	itCase("E4", "nothing usable reads absent", () => {
+		const file = cacheFile("unusable.json");
+		fs.writeFileSync(file, "{ not json", "utf-8");
+		assert.equal(readCache(file, CACHE_ENDPOINT), undefined, "unparseable content is absent, not a throw");
+		assert.equal(readCache(cacheDir, CACHE_ENDPOINT), undefined, "a directory read is absent, not a throw");
+	});
+
+	itCase("E5", "content reads the stored entries", () => {
+		const file = cacheFile("exact.json");
+		writeCache(file, CACHE_ENDPOINT, [bakedModel("only-a", { contextWindow: 42 })], new Date(0));
+		const read = readCache(file, CACHE_ENDPOINT);
+		assert.deepEqual(ids(read ?? []), ["only-a"], "the read carries the stored entries");
+		assert.equal(read?.[0]?.contextWindow, 42, "the entry's fields are the stored ones");
+	});
+
+	itCase("E6", "a write round-trips", () => {
+		const file = cacheFile("roundtrip.json");
+		const stamp = new Date(1_700_000_000_000);
+		assert.deepEqual(writeCache(file, CACHE_ENDPOINT, [bakedModel("rt-a"), bakedModel("rt-b", { contextWindow: 77 })], stamp), { ok: true }, "the write lands");
+		const read = readCache(file, CACHE_ENDPOINT) ?? [];
+		assert.deepEqual(ids(read), ["rt-a", "rt-b"], "the round-trip keeps the ids");
+		assert.equal(read[1]?.contextWindow, 77, "the round-trip keeps the fields");
+		const envelope = JSON.parse(fs.readFileSync(file, "utf-8")) as { writtenAt: string; endpoints: Record<string, { retrievedAt: string }> };
+		assert.equal(envelope.writtenAt, stamp.toISOString(), "the write stamps the file");
+		assert.equal(envelope.endpoints[CACHE_ENDPOINT]?.retrievedAt, stamp.toISOString(), "the record stamps the endpoint");
+	});
+
+	itCase("E7", "a failed write leaves the file", () => {
+		const file = cacheFile("failed.json");
+		writeCache(file, CACHE_ENDPOINT, [bakedModel("keep-me")], new Date(0));
+		const blocked = path.join(file, "child.json");
+		assert.equal(writeCache(blocked, CACHE_ENDPOINT, [bakedModel("never")], new Date(0)).ok, false, "the blocked write reports a failure");
+		assert.deepEqual(ids(readCache(file, CACHE_ENDPOINT) ?? []), ["keep-me"], "the original file is unchanged");
+	});
+
+	itCase("E8", "the write mirrors the endpoint", async () => {
+		const file = cacheFile("mirror.json");
+		await gatherAndBuild({
+			providerId: PROVIDER_ID,
+			decl: TEST_DECL,
+			signal: new AbortController().signal,
+			allowNetwork: true,
+			stored: undefined,
+			generatedAt: GENERATED_AT,
+			baked: BAKED,
+			fetcher: (async (url: string) => (String(url).includes("models.dev") ? {} : { data: [{ id: "baked-a" }, { id: "fresh-only" }] })) as never,
+			writeCache: (entries) => writeCache(file, CACHE_ENDPOINT, entries, new Date(0)),
+		});
+		assert.deepEqual(ids(readCache(file, CACHE_ENDPOINT) ?? []).sort(), ["baked-a", "fresh-only"], "the file holds exactly the endpoint's returned ids and no id only another source carries");
+	});
+
+	itCase("E9", "the write needs the endpoint", async () => {
+		const file = cacheFile("no-endpoint.json");
+		await gatherAndBuild({
+			providerId: PROVIDER_ID,
+			decl: TEST_DECL,
+			signal: new AbortController().signal,
+			allowNetwork: true,
+			stored: undefined,
+			generatedAt: GENERATED_AT,
+			baked: BAKED,
+			fetcher: (async () => {
+				throw new Error("offline");
+			}) as never,
+			writeCache: (entries) => writeCache(file, CACHE_ENDPOINT, entries, new Date(0)),
+		});
+		assert.ok(!fs.existsSync(file), "no file is written when the endpoint fails");
+	});
+
+	itCase("E10", "the cache is additive", () => {
+		const served = union({ cache: [bakedModel("baked-a", { contextWindow: 1 }), bakedModel("cache-only")] });
+		assert.equal(served.find((m) => m.id === "baked-a")?.contextWindow, BAKED_A.contextWindow, "a cached copy of a served key does not change its fields");
+		assert.ok(ids(served).includes("cache-only"), "a cache-only id is added");
+	});
+
+	itCase("E11", "the read precedes the endpoint", async () => {
+		const file = cacheFile("offline.json");
+		writeCache(file, CACHE_ENDPOINT, [bakedModel("cached-only")], new Date(0));
+		let fetched = false;
+		const models = await gatherAndBuild({
+			providerId: PROVIDER_ID,
+			decl: TEST_DECL,
+			signal: new AbortController().signal,
+			allowNetwork: false,
+			stored: undefined,
+			generatedAt: GENERATED_AT,
+			baked: BAKED,
+			cache: readCache(file, CACHE_ENDPOINT),
+			fetcher: (async () => {
+				fetched = true;
+				throw new Error("no network");
+			}) as never,
+		});
+		assert.equal(fetched, false, "the offline phase does not consult the endpoint");
+		assert.ok(ids(models).includes("cached-only"), "an offline start serves the cached id");
+	});
+
+	itCase("E12", "the file decides", () => {
+		const document = { version: CACHE_VERSION, writtenAt: "old", endpoints: { [CACHE_ENDPOINT]: { retrievedAt: "old", entries: [bakedModel("x")] } } };
+		assert.ok(parseCache(document, CACHE_ENDPOINT), "the same file reads as content whatever the prior state");
+		assert.equal(parseCache(document, "https://other/models"), undefined, "the declared endpoint, not the prior state, decides");
+	});
+
+	itCase("E13", "an unusable file is K2", () => {
+		assert.equal(parseCache({ version: CACHE_VERSION, writtenAt: "x", endpoints: { [CACHE_ENDPOINT]: { retrievedAt: "x" } } }, CACHE_ENDPOINT), undefined, "a record with no entries array is unusable");
+		assert.equal(parseCache({ version: CACHE_VERSION, writtenAt: "x" }, CACHE_ENDPOINT), undefined, "a file with no endpoints map is unusable");
+	});
+
+	itCase("E14", "age does not matter", () => {
+		const ancient = { version: CACHE_VERSION, writtenAt: "1970-01-01T00:00:00.000Z", endpoints: { [CACHE_ENDPOINT]: { retrievedAt: "1970-01-01T00:00:00.000Z", entries: [bakedModel("ancient")] } } };
+		assert.deepEqual(ids(parseCache(ancient, CACHE_ENDPOINT) ?? []), ["ancient"], "an ancient cache is still read");
+	});
+
 	itCase("R1", "one catalog case, one test", () => {
 		const declared = catalog.map((entry) => `${entry.id} ${entry.name}`).sort();
 		assert.deepEqual([...new Set(registered)].sort(), declared, "every catalog case has a test and every test names a case");
@@ -749,6 +889,8 @@ function grow(row: Partial<SourceState> & { baked?: readonly ModelDefinition[] }
 			return { ...row, endpointIds: [...(row.endpointIds ?? []), extra] };
 		case "models-dev":
 			return { ...row, modelsDev: { ...(row.modelsDev ?? {}), [extra]: { name: extra } } };
+		case "cache":
+			return { ...row, cache: [...(row.cache ?? []), bakedModel(extra)] };
 	}
 }
 

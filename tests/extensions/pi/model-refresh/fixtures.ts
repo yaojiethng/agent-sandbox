@@ -32,6 +32,7 @@ export const TEST_DECLARATIONS = parseDeclarations({
 		},
 		sources: [
 			{ kind: "baked" },
+			{ kind: "cache" },
 			{ kind: "models-dev", metadata: true },
 			{ kind: "endpoint", override: true },
 			{ kind: "pi-dev", override: true },

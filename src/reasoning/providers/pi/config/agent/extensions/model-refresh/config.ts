@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import type { CompatDecl, ProviderDecl, SourceDecl, SourceDeclarations, SourceKind, ThinkingNames } from "./types.ts";
 
 /** The source kinds the union can read. */
-export const SOURCE_KINDS: readonly SourceKind[] = ["baked", "pi-dev", "models-dev", "endpoint"];
+export const SOURCE_KINDS: readonly SourceKind[] = ["baked", "pi-dev", "models-dev", "endpoint", "cache"];
 
 /** The declaration path, resolved beside this module so it travels with the extension. */
 export const DECLARATIONS_PATH = fileURLToPath(new URL("./sources.json", import.meta.url));

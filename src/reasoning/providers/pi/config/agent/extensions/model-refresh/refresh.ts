@@ -40,6 +40,10 @@ export interface GatherInput {
 	generatedAt: number | undefined;
 	/** Pi's baked catalog for the provider. */
 	baked: readonly ModelDefinition[];
+	/** The extension's own cache entries, read in the offline phase. */
+	cache?: readonly ModelDefinition[];
+	/** Replaces the declared endpoint's cache record after a successful answer. */
+	writeCache?: (entries: readonly ModelDefinition[]) => { ok: true } | { ok: false; reason: string };
 	/**
 	 * The served catalog before this refresh. The first refresh passes nothing,
 	 * so the before state is the offline union - the catalog the extension serves
@@ -58,10 +62,10 @@ export interface GatherInput {
 
 /** The list the extension serves, from whatever sources are declared and available. */
 export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinition[]> {
-	const { providerId, decl, signal, allowNetwork, stored, generatedAt, baked, previous, fetcher, log, onReport } = input;
+	const { providerId, decl, signal, allowNetwork, stored, generatedAt, baked, previous, cache, writeCache, fetcher, log, onReport } = input;
 	const note = log ?? (() => {});
 	const failures: string[] = [];
-	const unionInput = { providerId, decl, baked, stored, generatedAt };
+	const unionInput = { providerId, decl, baked, stored, generatedAt, cache };
 
 	/** The catalog the extension serves with no live source: the baseline for a first refresh. */
 	const offlineUnion = (): ModelDefinition[] => buildUnion({ ...unionInput, endpointIds: undefined, modelsDev: undefined });
@@ -104,6 +108,18 @@ export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinitio
 	}
 
 	const models = buildUnion({ ...unionInput, endpointIds, modelsDev });
+	if (endpointIds && writeCache) {
+		// The write-back mirrors the endpoint's own answer: the entries the served
+		// catalog holds for the ids that answer carried, and no other id, so the
+		// file never claims provenance the endpoint did not supply.
+		const returned = new Set(endpointIds);
+		const written = writeCache(models.filter((model) => returned.has(model.id) && (model.type ?? "chat") === "chat"));
+		if (!written.ok) {
+			const reason = `cache write failed (${written.reason})`;
+			failures.push(reason);
+			note(reason);
+		}
+	}
 	if (onReport) {
 		onReport(reportFor(models));
 	}

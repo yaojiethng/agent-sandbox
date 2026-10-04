@@ -26,6 +26,7 @@
 import type { ExtensionAPI, ProviderConfig } from "@earendil-works/pi-coding-agent";
 import { getBuiltinModels, getBuiltinModelDataGeneratedAt } from "@earendil-works/pi-ai/providers/all";
 import { loadDeclarations } from "./config.ts";
+import { CACHE_PATH, cachePath, readCache, writeCache } from "./cache.ts";
 import { discardedDefault } from "./default-model.ts";
 import { fetchJson, gatherAndBuild } from "./refresh.ts";
 import { createReporter, notices } from "./report.ts";
@@ -35,6 +36,7 @@ export { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "./config
 export { discardedDefault } from "./default-model.ts";
 export { gatherAndBuild, fetchJson, MODELS_DEV_URL } from "./refresh.ts";
 export { createReporter, deltaLine, notices } from "./report.ts";
+export { CACHE_PATH, cachePath, parseCache, readCache, serializeCache, writeCache } from "./cache.ts";
 export { buildUnion, diffCatalogs, unionFirstWins, fillMissing } from "./catalog.ts";
 
 const iso = (timestamp: number | undefined): string => (timestamp === undefined ? "unknown" : new Date(timestamp).toISOString());
@@ -49,6 +51,7 @@ export default function modelRefresh(pi: ExtensionAPI) {
 		const reporter = createReporter();
 		reporters.set(providerId, reporter);
 		const baked = () => getBuiltinModels(providerId) as unknown as ModelDefinition[];
+		const endpoint = decl.endpoint;
 
 		// The config carries no `models`, so pi keeps the baked catalog and adds
 		// only the `refreshModels` hook. Its return value is the whole catalog, so
@@ -63,6 +66,10 @@ export default function modelRefresh(pi: ExtensionAPI) {
 					stored: context.stored as StoredCatalog | undefined,
 					generatedAt: getBuiltinModelDataGeneratedAt(),
 					baked: baked(),
+					// The cache is read here, in the offline phase, so its entries are
+					// available before any network source is consulted.
+					cache: readCache(cachePath(), endpoint),
+					writeCache: endpoint ? (entries) => writeCache(cachePath(), endpoint, entries) : undefined,
 					// The first refresh diffs against the offline union, which is what the
 					// extension serves with no live source; a later one diffs against the
 					// union the last refresh returned.

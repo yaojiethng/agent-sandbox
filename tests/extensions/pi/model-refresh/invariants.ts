@@ -17,7 +17,7 @@ export interface InvariantCase {
  * declaration lists them. The per-source monotonicity cases are derived from
  * this list.
  */
-export const UNION_SOURCES = ["baked", "pi-dev", "models-dev", "endpoint"] as const;
+export const UNION_SOURCES = ["baked", "pi-dev", "models-dev", "endpoint", "cache"] as const;
 
 /** What each source contributes, for a statement that names it. */
 const SOURCE_CONTRIBUTION: Record<(typeof UNION_SOURCES)[number], string> = {
@@ -25,6 +25,7 @@ const SOURCE_CONTRIBUTION: Record<(typeof UNION_SOURCES)[number], string> = {
 	"pi-dev": "pi's persisted pi.dev catalog, when it is newer than the baked data",
 	"models-dev": "the models.dev metadata blob, restricted to the ids another source lists",
 	endpoint: "the ids only the provider's own endpoint advertises",
+	cache: "the extension's own cache file, read in the offline phase",
 };
 
 /** The record that states the invariants this report indexes. */
@@ -270,6 +271,91 @@ export function buildCatalog(): InvariantCase[] {
 			statement: "every case the catalog names has a test, and every test names a case, so an added case cannot go unrun and a stale case cannot read as covered",
 			source: "the check helper's lookup, over buildCatalog()",
 		},
+		// --- the cache device ------------------------------------------------
+		{
+			id: "E1",
+			name: "empty predicts absent",
+			statement: "in K0 the device holds no content, and the next seedRead emits absent",
+			source: `${RECORD} the cache device; cache.ts readCache`,
+		},
+		{
+			id: "E2",
+			name: "loaded predicts content",
+			statement: "in K1 the device holds servable entries, and the next seedRead emits received(cache payload)",
+			source: `${RECORD} the cache device; cache.ts readCache`,
+		},
+		{
+			id: "E3",
+			name: "invalid predicts absent",
+			statement: "in K2 the file is unusable, and the next seedRead emits absent without throwing",
+			source: `${RECORD} the cache device; cache.ts parseCache`,
+		},
+		{
+			id: "E4",
+			name: "nothing usable reads absent",
+			statement: "a read that finds nothing usable emits absent and never throws",
+			source: `${RECORD} the cache device; cache.ts readCache`,
+		},
+		{
+			id: "E5",
+			name: "content reads the stored entries",
+			statement: "a read that finds content emits received(cache payload) carrying exactly the stored entries",
+			source: `${RECORD} the cache device; cache.ts parseCache`,
+		},
+		{
+			id: "E6",
+			name: "a write round-trips",
+			statement: "a successful write lands in K1, so the next read returns exactly what was written",
+			source: `${RECORD} the cache device; cache.ts writeCache and readCache`,
+		},
+		{
+			id: "E7",
+			name: "a failed write leaves the file",
+			statement: "a failed write emits write-failed(reason) and leaves the file and the state unchanged",
+			source: `${RECORD} the cache device; cache.ts writeCache`,
+		},
+		{
+			id: "E8",
+			name: "the write mirrors the endpoint",
+			statement: "the write stores the entries for the endpoint's returned ids, and nothing else",
+			source: `${RECORD} the cache device; the write-back in refresh.ts`,
+		},
+		{
+			id: "E9",
+			name: "the write needs the endpoint",
+			statement: "the write runs only when the endpoint answered; a failed or absent endpoint writes nothing",
+			source: `${RECORD} the cache device; the write-back in refresh.ts`,
+		},
+		{
+			id: "E10",
+			name: "the cache is additive",
+			statement: "a served key keeps its fields, and a cached id adds only a key no earlier source supplied",
+			source: `${RECORD} the source model; buildUnion's cache case`,
+		},
+		{
+			id: "E11",
+			name: "the read precedes the endpoint",
+			statement: "the seed read runs before the endpoint is consulted, so an offline start serves the cache",
+			source: `${RECORD} the cache device; the offline path in refresh.ts`,
+		},
+		{
+			id: "E12",
+			name: "the file decides",
+			statement: "the read's outcome is decided by the file's content, version and endpoint map, not by the source state",
+			source: `${RECORD} the cache device; cache.ts parseCache`,
+		},
+		{
+			id: "E13",
+			name: "an unusable file is K2",
+			statement: "a file that does not parse, carries an unknown version, or lacks the declared endpoint key is K2, never content",
+			source: `${RECORD} the cache device; cache.ts parseCache`,
+		},
+		{
+			id: "E14",
+			name: "age does not matter",
+			statement: "the read never gates on writtenAt or retrievedAt",
+			source: `${RECORD} the cache device; cache.ts parseCache`,
+		},
 	];
 	// One monotonicity case per source, derived from the union's own list.
 	for (const source of UNION_SOURCES) {
@@ -297,6 +383,9 @@ export type InvariantKind = "state" | "transition" | "guard";
 
 /** The states of the catalog component, from the enumeration in the record. */
 export const STATES = ["S0", "S1"] as const;
+
+/** The states of the cache device: a separate machine, nested below the catalog machine. */
+export const CACHE_STATES = ["K0", "K1", "K2"] as const;
 
 /** Edges outside the catalog machine, named so a case can point at them. */
 export const EXTERNAL_EDGES = ["WIRE", "DECL", "HARNESS"] as const;
@@ -338,6 +427,16 @@ export const TRANSITIONS: readonly Transition[] = [
 	{ id: "X12", label: "failing-source narrowing", event: "live failure", from: ["S0", "S1"] },
 	{ id: "X13", label: "pre-UI report hold", event: "report", from: ["S0"], guard: "no UI exists yet" },
 	{ id: "X14", label: "saved default discarded by the scope / notify", event: "session", from: ["S0"], guard: "the scope is non-empty, the default is applicable, and it is not selected" },
+	{ id: "X15", label: "endpoint answered / write the cache wholesale", event: "received(endpoint)", from: ["S1"], guard: "the endpoint answered" },
+];
+
+/** The cache machine's transitions, nested below the catalog machine. */
+export const CACHE_TRANSITIONS: readonly Transition[] = [
+	{ id: "Z1", label: "seedRead [absent or empty] / emit absent", event: "seedRead", from: ["K0", "K1", "K2"], guard: "the file is absent or empty" },
+	{ id: "Z2", label: "seedRead [content] / emit received(cache)", event: "seedRead", from: ["K0", "K1", "K2"], guard: "the file parses and names the declared endpoint" },
+	{ id: "Z3", label: "seedRead [unusable] / emit absent", event: "seedRead", from: ["K0", "K1", "K2"], guard: "the file does not parse, carries another version, or lacks the endpoint key" },
+	{ id: "Z4", label: "writeBack [write ok] / emit ok", event: "writeBack", from: ["K0", "K1", "K2"], guard: "the write lands" },
+	{ id: "Z5", label: "writeBack [write fails] / emit write-failed", event: "writeBack", from: ["K0", "K1", "K2"], guard: "the write fails" },
 ];
 
 /** One catalog case's class and the state, transition or external edge it belongs to. */
@@ -387,6 +486,20 @@ export const CLASSIFICATION: readonly Classification[] = [
 	{ id: "N1", name: "the declaration validates", kind: "state", edges: ["DECL"] },
 	{ id: "N2", name: "the folder owns every input", kind: "state", edges: ["DECL"] },
 	{ id: "R1", name: "one catalog case, one test", kind: "state", edges: ["HARNESS"] },
+	{ id: "E1", name: "empty predicts absent", kind: "state", edges: ["K0"] },
+	{ id: "E2", name: "loaded predicts content", kind: "state", edges: ["K1"] },
+	{ id: "E3", name: "invalid predicts absent", kind: "state", edges: ["K2"] },
+	{ id: "E4", name: "nothing usable reads absent", kind: "transition", edges: ["Z1", "Z3"] },
+	{ id: "E5", name: "content reads the stored entries", kind: "transition", edges: ["Z2"] },
+	{ id: "E6", name: "a write round-trips", kind: "transition", edges: ["Z4"] },
+	{ id: "E7", name: "a failed write leaves the file", kind: "transition", edges: ["Z5"] },
+	{ id: "E8", name: "the write mirrors the endpoint", kind: "transition", edges: ["X15"] },
+	{ id: "E9", name: "the write needs the endpoint", kind: "transition", edges: ["X15"] },
+	{ id: "E10", name: "the cache is additive", kind: "transition", edges: ["X3"] },
+	{ id: "E11", name: "the read precedes the endpoint", kind: "transition", edges: ["X3"] },
+	{ id: "E12", name: "the file decides", kind: "guard", edges: ["Z1", "Z2", "Z3"] },
+	{ id: "E13", name: "an unusable file is K2", kind: "guard", edges: ["Z3"] },
+	{ id: "E14", name: "age does not matter", kind: "transition", edges: ["Z1", "Z2", "Z3"] },
 ];
 
 /** The derived cases, whose class and edge do not vary with the subject. */
@@ -423,7 +536,8 @@ export function checkTotality(cases: readonly InvariantCase[]): string[] {
 		findings.push(`classification for a case that does not exist: ${entry.id} ${entry.name}`);
 	}
 
-	const validEdges = new Set<string>([...STATES, ...TRANSITIONS.map((t) => t.id), ...EXTERNAL_EDGES]);
+	const allTransitions: readonly Transition[] = [...TRANSITIONS, ...CACHE_TRANSITIONS];
+	const validEdges = new Set<string>([...STATES, ...CACHE_STATES, ...allTransitions.map((t) => t.id), ...EXTERNAL_EDGES]);
 	for (const c of cases) {
 		const entry = classificationFor(c);
 		if (!entry) continue;
@@ -432,17 +546,17 @@ export function checkTotality(cases: readonly InvariantCase[]): string[] {
 			if (!validEdges.has(edge)) findings.push(`${c.id} ${c.name} names an unknown edge ${edge}`);
 		}
 	}
-	for (const state of STATES) {
+	for (const state of [...STATES, ...CACHE_STATES]) {
 		if (!cases.some((c) => classificationFor(c)?.edges.includes(state))) findings.push(`no case names state ${state}`);
 	}
 
 	const fired = (id: string): boolean => cases.some((c) => classificationFor(c)?.edges.includes(id));
-	for (const t of TRANSITIONS) {
+	for (const t of allTransitions) {
 		if (!fired(t.id) && !t.noCaseReason) findings.push(`transition ${t.id} has no case and no reason`);
 	}
 
-	for (const a of TRANSITIONS) {
-		for (const b of TRANSITIONS) {
+	for (const a of allTransitions) {
+		for (const b of allTransitions) {
 			if (a.id >= b.id) continue;
 			const shared = a.event === b.event && a.from.some((s) => b.from.includes(s));
 			if (!shared) continue;

@@ -49,7 +49,9 @@ The vocabulary is the statechart one. A **state** is a named condition the compo
      the provider's declared sources, consulted in order:
 
        baked       -> the seed, never an event
+       cache       -> received | absent      (read in the offline phase)
        endpoint    -> received | failed | absent
+                      on received: write the cache wholesale (X15)
        models.dev  -> received | failed | absent
        store       -> received(payload, lastModified = REMOTE PUBLISH time)
                       | failed | absent
@@ -78,7 +80,7 @@ The vocabulary is the statechart one. A **state** is a named condition the compo
         S0   -- X2  received(store payload) [isStoreNewerThanBaked true]
         |            / union, first-wins per field                -->  S1
         |
-        S0,S1 -- X3 received(endpoint | pi.dev payload)
+        S0,S1 -- X3 received(id-source payload: endpoint | pi.dev | cache)
         |            / union, first-wins per field; a new id appended  -->  S1
         |
         S1   -- X4  received(models.dev payload)
@@ -124,6 +126,33 @@ The vocabulary is the statechart one. A **state** is a named condition the compo
 ```
 
 The three lifecycle transitions sit outside the source fold and carry ids of their own. `X11` is the pre-session refresh: pi calls `refreshModels` once per provider before the session and before any UI exists (A14). `X12` is the failing-source narrowing: the live phase fails and the offline union stands rather than an empty catalog, which is X6's effect at the gather layer. `X13` is the pre-UI report hold: a report recorded before a UI exists is held and rendered at `session_start` (A13).
+
+**The cache device.** The extension keeps its own cache file, so endpoint-sourced ids survive an offline start, before pi's network refresh, which no extension can reorder. The cache is an event-emitting device with two calls, not a submachine. It holds no state a caller can observe except what the next call returns, so the model records the calls and their outcomes and no cache state.
+
+- `seedRead()` runs in the offline phase, before any network source. It emits `received(cache payload)` when the file holds entries and `absent` when it is missing or malformed. A read error is `absent`, never a throw.
+- `writeBack(entries)` runs after the endpoint has answered. It rewrites the file wholesale and emits `ok`, or `write-failed(reason)` when the file cannot be written.
+
+The read is an ordinary id-source event, so it folds through the same transition as the endpoint and pi.dev (`X3`); its only distinction is that it is consulted first. The write-back is one effect on the endpoint's successful consultation (`X15`), and a failed write joins the failure event (`X6`). The cache contributes ids, never fields: it is a non-override id source, declared after `baked` so a baked entry keeps every field it states, and before the metadata pass so an id the cache alone carries still receives its metadata fill. The write-back replaces the declared endpoint's record wholesale with the entries the served catalog holds for the ids that endpoint's valid response carried, and stores nothing else, so the file never claims an id the endpoint did not return; the entries are the enriched ones, so an offline start serves a usable entry rather than a bare id. The file is `{ version, writtenAt, endpoints }`, where each entry in `endpoints` maps an endpoint URL to its `{ retrievedAt, entries }` record: `writtenAt` is the one write date, `retrievedAt` is one per endpoint, and `entries` holds that endpoint's entries. The declared endpoint must appear as a key in `endpoints` for the file to be read, so re-pointing the declaration discards the old cache rather than serving another endpoint's entries under the new name. The dates are bookkeeping: they drive no transition, and there is no TTL, so the cache is last-known-good until the next successful fetch. A wholesale rewrite is what lets a model the endpoint dropped disappear, which the union's remove-nothing property would otherwise keep forever.
+
+**The cache device's internal machine.** This is a separate machine, below the serving machine, and it models the cache's own state so the cache can be unit-tested on its own. The outer model still treats the device as two calls; this machine explains what each call returns.
+
+```text
+     states:  K0 empty    no file, or an empty one (initial)
+              K1 loaded   the file holds entries the device can serve
+              K2 invalid  the file exists but cannot be used: it does not
+                          parse, its version is unknown, or its `endpoints`
+                          map does not name the declared endpoint
+
+        any   -- Z1 seedRead [absent or empty] / emit absent          --> K0
+        any   -- Z2 seedRead [content]        / emit received(cache) --> K1
+        any   -- Z3 seedRead [malformed]      / emit absent          --> K2
+        any   -- Z4 writeBack [write ok]      / emit ok              --> K1
+        any   -- Z5 writeBack [write fails]   / emit write-failed(reason)
+                                                          (internal; the state
+                                                           is unchanged)
+```
+
+The read is a total function of the file, so each `seedRead` transition is guarded by the file's condition and the source state does not matter. `K0` and `K2` both emit `absent`; they are distinct because the reason differs, and a test can tell a missing file from a corrupt one. The write is atomic - a temporary file then a rename - so a failed write leaves the old content and the state unchanged, and a successful write always lands in `K1`.
 
 **The event is provider-generic.** It carries a source kind, a payload and provenance; no field is specific to `opencode-go`. The order sources are consulted in is the declaration's, not a constant here.
 
@@ -287,6 +316,25 @@ Every invariant is one of three classes, and the class states what the invariant
 | state | M1, M3, M4, M5, M7, M8, L1, C1, C2, C4, T1, T2, T3 (both cases), N1, N2, R1 |
 | transition | U1, U2, U3, U4, G2 (all three cases), M2, M6, L2, L3, L4, L5, T4, W1, D1 |
 | guard | G1, G3, C3 |
+
+The cache device's invariants are a separate family, in `invariants.ts` alongside the catalog's. Its machine is in `## The update and catalog state machine`, with states `K0`-`K2` and transitions `Z1`-`Z5`.
+
+| Id | Class | Holds |
+|---|---|---|
+| E1 | state | in `K0`, the device holds no content, and the next `seedRead` emits `absent` |
+| E2 | state | in `K1`, the device holds servable entries, and the next `seedRead` emits `received(cache payload)` |
+| E3 | state | in `K2`, the file is unusable, and the next `seedRead` emits `absent` without throwing |
+| E4 | transition | a read that finds nothing usable emits `absent` and never throws |
+| E5 | transition | a read that finds content emits `received(cache payload)` carrying exactly the stored entries |
+| E6 | transition | a successful write lands in `K1`, so the next read returns exactly what was written |
+| E7 | transition | a failed write emits `write-failed(reason)` and leaves the file and the state unchanged |
+| E8 | transition | the write stores the answering endpoint's returned ids' entries, and nothing else |
+| E9 | transition | the write runs only when the endpoint answered; a failed or absent endpoint writes nothing |
+| E10 | transition | the cache is additive: a served key keeps its fields, and a cached id adds only a key no earlier source supplied |
+| E11 | transition | the seed read runs before the endpoint is consulted |
+| E12 | guard | the read's outcome is decided by the file's content, version and endpoint map, not the source state |
+| E13 | guard | a file that does not parse, carries an unknown version, or lacks the declared endpoint key is `K2`, never content |
+| E14 | transition | the read never gates on `writtenAt` or `retrievedAt` |
 
 `invariants.ts` carries that classification as data, in `CLASSIFICATION`, and carries the machine itself in `STATES` and `TRANSITIONS`, one entry per named transition with its event, its source states and its guard. A machine-run totality check then asserts what the enumeration's completeness rests on: every catalog case is classified, no classification is stale, every state and transition the record names is held by a case or carries a reason, and every edge a case names exists. It also applies the sixth rule, that no state has two transitions on one event whose guards both hold, which for a shared event means the guards are distinct. A case may point outside the catalog machine, at the declaration parser (`DECL`), the built request payload (`WIRE`) or the suite's own bijection (`HARNESS`); those edges are named in `EXTERNAL_EDGES`.
 

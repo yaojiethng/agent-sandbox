@@ -45,9 +45,14 @@ NODE_TEST_FILES=(
 #   failing suite is one failing unit with the node output attached, so the
 #   failure names its file in the subtest list.
 test_model_refresh_node_suite() {
-  local out rc pass fail skipped
-  out="$(cd "$REPO_ROOT" && node --test "$MR_DIR"/*.test.ts 2>&1)"
+  local out rc pass fail skipped cache_file
+  # The extension writes its cache beside itself; point it at a temp file so the
+  # suite never writes into the repository tree.
+  cache_file="$(mktemp -t model-refresh-cache.XXXXXX)"
+  rm -f "$cache_file"
+  out="$(cd "$REPO_ROOT" && MODEL_REFRESH_CACHE="$cache_file" node --test "$MR_DIR"/*.test.ts 2>&1)"
   rc=$?
+  rm -f "$cache_file"
   pass="$(printf '%s\n' "$out" | sed -n 's/^# pass \([0-9][0-9]*\)$/\1/p' | tail -1)"
   fail="$(printf '%s\n' "$out" | sed -n 's/^# fail \([0-9][0-9]*\)$/\1/p' | tail -1)"
   skipped="$(printf '%s\n' "$out" | sed -n 's/^# skipped \([0-9][0-9]*\)$/\1/p' | tail -1)"

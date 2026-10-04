@@ -2,6 +2,12 @@
 
 Implementation changes to the model-refresh extension, newest first. One heading per change, dated by the day the change landed in the tree.
 
+## [0.6.0] - 2026-10-04
+
+- The extension keeps its own cache file, so endpoint-sourced ids survive an offline start. It is a new declared source, read in the offline phase, and additive: a cached id adds a model and never changes a field the served catalog already states. The file is `{ version, writtenAt, endpoints }`, each endpoint keyed to a `{ retrievedAt, entries }` record.
+- A successful endpoint fetch replaces the declared endpoint's record wholesale with the entries for the ids that answer carried, so a model the endpoint dropped disappears and the file never claims an id the endpoint did not return. A failed or absent endpoint leaves the file. The write is atomic, and a failed write is announced.
+- The cache device has its own machine (`K0`-`K2`, transitions `Z1`-`Z5`) and its own invariant family (`E1`-`E14`), each held by a case and, for the transitions, a mutation row.
+
 ## [0.5.0] - 2026-10-04
 
 - The announcement fires on the catalog transition rather than the source counts. `refreshModels` records what the served catalog gained, lost and revised, and `report.ts` renders one `notify` carrying `updated catalog: +n / -n, m revised` when the catalog changed, one warning per failed source, and nothing when neither happened. The persistent `setStatus` footer and the working-message calls are removed.

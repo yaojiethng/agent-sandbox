@@ -238,6 +238,8 @@ export interface UnionInput {
 	endpointIds: readonly string[] | undefined;
 	/** The models.dev blob for the provider, or undefined when it was not reached. */
 	modelsDev: Record<string, ModelsDevModel> | undefined;
+	/** The extension's own cache entries, or undefined when no cache is present. */
+	cache?: readonly ModelDefinition[];
 }
 
 /** The entry-state delta between two served catalogs. */
@@ -265,6 +267,8 @@ function entriesFor(kind: UnionInput["decl"]["sources"][number]["kind"], input: 
 			const wanted = ids ?? Object.keys(input.modelsDev ?? {});
 			return [...wanted].map((id) => metadataEntry(input.decl, id, input.modelsDev?.[id]));
 		}
+		case "cache":
+			return [...(input.cache ?? [])];
 		case "endpoint":
 			return Array.isArray(input.endpointIds)
 				? input.endpointIds

@@ -92,6 +92,9 @@ export function expectedVerdict(row: Mutation): Verdict {
 function childEnv(): NodeJS.ProcessEnv {
 	const env = { ...process.env };
 	delete env.NODE_TEST_CONTEXT;
+	// Each mirror carries its own cache beside its copy of the extension, so the
+	// override the wrapper sets for the outer suite must not reach a replay.
+	delete env.MODEL_REFRESH_CACHE;
 	return env;
 }
 

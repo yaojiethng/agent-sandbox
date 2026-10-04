@@ -10,7 +10,7 @@
 import type { Api } from "@earendil-works/pi-ai";
 
 /** The sources a provider's model catalog may draw on. */
-export type SourceKind = "baked" | "pi-dev" | "models-dev" | "endpoint";
+export type SourceKind = "baked" | "pi-dev" | "models-dev" | "endpoint" | "cache";
 
 /**
  * One declared source. A source without `override` is applied in list order,
