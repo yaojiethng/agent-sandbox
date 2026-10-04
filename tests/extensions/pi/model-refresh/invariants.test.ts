@@ -180,6 +180,7 @@ async function loadExtension(): Promise<ExtensionRegistration> {
 			handlers.set(event, handler);
 			return () => {};
 		},
+		getSettings: () => ({ defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" }),
 	});
 	return { registered, handlers };
 }
@@ -509,7 +510,7 @@ describe("invariant report", () => {
 		assert.deepEqual(calls, [], "the refresh renders nothing: no UI exists yet");
 		const onStart = handlers.get("session_start");
 		assert.ok(onStart, "the module registers a session_start handler");
-		await onStart!({}, { mode: "tui", ui, getSettings: () => ({}), scopedModels: [], model: undefined, modelRegistry: { find: () => undefined, hasConfiguredAuth: () => false } });
+		await onStart!({}, { mode: "tui", ui, scopedModels: [], model: undefined, modelRegistry: { find: () => undefined, hasConfiguredAuth: () => false } });
 		assert.ok(calls.length > 0, "the session_start handler is the first place a UI is reached");
 	});
 
@@ -555,7 +556,7 @@ describe("invariant report", () => {
 		const base = {
 			model: { provider: "opencode-go", id: "space-bunny-free" },
 			scopedModels: [{}],
-			getSettings: () => ({ defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" }),
+			settings: { defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" },
 			modelRegistry: { find: () => ({ provider: "openrouter", id: "z-ai/glm-4.5" }), hasConfiguredAuth: () => true },
 		};
 		assert.equal(discardedDefault(base), "saved default openrouter/z-ai/glm-4.5 is outside the model scope; started on opencode-go/space-bunny-free");

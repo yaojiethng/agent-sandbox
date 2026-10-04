@@ -58,6 +58,7 @@ async function loadAndRegister() {
 		// first event that carries a UI, so the stub answers the event rather
 		// than letting the call fail.
 		on: (event: string, handler: (event: unknown, ctx: unknown) => void) => registeredHandlers.push({ event, handler }),
+		getSettings: () => ({ defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" }),
 	});
 	return registrations;
 }
@@ -78,7 +79,6 @@ function sessionStartCtx(
 			ui: {
 				notify: (message: string, type?: string) => shown.push({ method: "notify", args: [message, type] }),
 			},
-			getSettings: () => ({ defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" }),
 			scopedModels: over.scopedModels ?? [{}],
 			model: over.model ?? { provider: "opencode-go", id: "space-bunny-free" },
 			modelRegistry: {

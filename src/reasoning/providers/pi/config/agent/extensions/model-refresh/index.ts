@@ -104,7 +104,12 @@ export default function modelRefresh(pi: ExtensionAPI) {
 		for (const reporter of reporters.values()) {
 			reporter.attach(ctx.ui);
 		}
-		const discarded = discardedDefault(ctx);
+		const discarded = discardedDefault({
+			model: ctx.model,
+			scopedModels: ctx.scopedModels,
+			settings: pi.getSettings(),
+			modelRegistry: ctx.modelRegistry,
+		});
 		if (discarded !== undefined) {
 			ctx.ui.notify(discarded, "info");
 		}

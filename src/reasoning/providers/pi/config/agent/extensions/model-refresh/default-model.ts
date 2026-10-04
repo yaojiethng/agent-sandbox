@@ -13,13 +13,19 @@
  * With an empty scope the resolver consults the default, so there is nothing to
  * announce; with an absent or unauthenticated default there is nothing pi would
  * have honoured either.
+ *
+ * The settings arrive from `pi.getSettings()`, not from the event context: pi's
+ * `ExtensionContext` has no settings accessor, and `getSettings` lives on the
+ * `ExtensionAPI` the factory receives. The caller reads them once and passes
+ * them in, so this module stays a pure function of its argument.
  */
 
 /** The part of pi's `ExtensionContext` this module reads. */
 export interface DefaultModelContext {
 	model: { provider: string; id: string } | undefined;
 	scopedModels: readonly unknown[];
-	getSettings(): { defaultProvider?: string; defaultModel?: string };
+	/** The effective settings, from `pi.getSettings()`; the context carries no settings accessor. */
+	settings: { defaultProvider?: string; defaultModel?: string };
 	modelRegistry: {
 		find(provider: string, modelId: string): unknown;
 		hasConfiguredAuth(model: unknown): boolean;
@@ -34,7 +40,7 @@ export interface DefaultModelContext {
  * to an authenticated model.
  */
 export function discardedDefault(ctx: DefaultModelContext): string | undefined {
-	const { defaultProvider, defaultModel } = ctx.getSettings();
+	const { defaultProvider, defaultModel } = ctx.settings;
 	if (!defaultProvider || !defaultModel) {
 		return undefined;
 	}

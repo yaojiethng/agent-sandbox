@@ -31,7 +31,7 @@ function ctx(options: CtxOptions = {}) {
 	return {
 		model: options.noModel === true ? undefined : options.model ?? SELECTED,
 		scopedModels: options.scopedModels ?? [{}],
-		getSettings: () => ({ defaultProvider: options.defaultProvider ?? DEFAULT.provider, defaultModel: options.defaultModel ?? DEFAULT.id }),
+		settings: { defaultProvider: options.defaultProvider ?? DEFAULT.provider, defaultModel: options.defaultModel ?? DEFAULT.id },
 		modelRegistry: {
 			find: () => (options.missing === true ? undefined : options.found ?? { ...DEFAULT }),
 			hasConfiguredAuth: () => options.authed ?? true,

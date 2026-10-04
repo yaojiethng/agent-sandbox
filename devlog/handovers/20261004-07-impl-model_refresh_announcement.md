@@ -71,6 +71,8 @@ Continues the `model-refresh improvements` parent row from the plan handover [`2
 
 None.
 
+[CORRECTION -- 2026-10-04: `default-model.ts` read the saved default with `ctx.getSettings()`, but pi's `ExtensionContext` (`dist/core/extensions/types.d.ts`) carries no settings accessor; `getSettings()` is on the `ExtensionAPI` (`pi.getSettings()`). The real `session_start` reported `ctx.getSettings is not a function`, so the announcement never ran and the extension errored on every start. `index.ts` now reads `settings` from `pi.getSettings()` and passes them into the pure `discardedDefault`, and the test stubs model the real context: settings on `pi`, none on `ctx`. The wrong-receiver contract was invisible because the `load.test.ts` and `L3` stubs supplied `ctx.getSettings`, encoding the extension's own assumption instead of pi's API. Correction commit `fix: read the saved default from pi.getSettings()`.]
+
 ## Findings
 
 | Finding | Type | Impact | Triaged to |
