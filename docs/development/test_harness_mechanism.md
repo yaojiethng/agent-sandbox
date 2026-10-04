@@ -22,7 +22,7 @@ Dispatch runs every file through a child copy of the runner: `printf '%s\n' "$TE
 
 The deadline is pure bash: `run_with_deadline DEADLINE OUT FILE` backgrounds the file, polls it at 0.1 second, kills it on expiry with SIGTERM, and returns 124. No external `timeout` binary is needed, which keeps the runner safe on the GNU and BSD `sleep` variants. The deadline is `TEST_TIMEOUT` (default 10 seconds), and a file may declare its own with a `# TEST_DEADLINE: <seconds>` line in its first ten lines; the declaration overrides the default for that file only, so a heavy harness file states its own budget instead of raising the deadline for every file. The declaration is a budget, not a licence: the file must stay near the cost it declares.
 
-The parent summarizes the workers' records, prints the aggregate line, and exits 1 when any unit failed or timed out.
+The parent summarizes the workers' records, prints the aggregate line, lists the failing test names in one `Failed tests:` block, and exits 1 when any unit failed or timed out.
 
 ## The unit contract (`tests/libs/test_common.sh`)
 

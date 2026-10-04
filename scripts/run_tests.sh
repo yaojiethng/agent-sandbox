@@ -189,6 +189,17 @@ worker() {
   # it strictly, so a shape drift is a loud failure, not a silent misparse.
   printf 'pass=%s fail=%s skip=%s rc=%s\n' "$FILE_PASS" "$FILE_FAIL" "$FILE_SKIP" "$RC" > "$RECORD"
 
+  # The parent prints one final list of failing tests, so each file records its
+  # own failing names (and any special reason, such as a crash) beside its
+  # counts. The file is always written, empty on a green run, so the parent can
+  # read it unconditionally.
+  {
+    grep "^  FAIL:" "$TMPFILE" 2>/dev/null | sed 's/^  FAIL: //' || true
+    if [[ -n "$special" ]]; then
+      printf '%s\n' "$special"
+    fi
+  } > "$RESULTS_DIR/$BASENAME.failures"
+
   if [[ -n "$special" ]]; then
     echo "$special" >&2
   elif [[ "$FILE_SKIP" -gt 0 ]]; then
@@ -341,6 +352,7 @@ main() {
   # Aggregate the workers' records. One record per dispatched file; a missing
   # record means the worker died, which is a failure.
   local RECORD BASENAME RECLINE
+  local -a FAILING_TESTS=()
   while IFS= read -r FILE; do
     [[ -n "$FILE" ]] || continue
     BASENAME="$(basename "$FILE")"
@@ -348,6 +360,7 @@ main() {
     if [[ ! -f "$RECORD" ]]; then
       echo "FAIL $BASENAME (worker produced no record)" >&2
       ANY_FAILED=1
+      FAILING_TESTS+=("$BASENAME (worker produced no record)")
       FILE_COUNT=$((FILE_COUNT + 1))
       continue
     fi
@@ -371,10 +384,20 @@ main() {
       fi
       if [[ "$R_RC" -ne 0 || "$R_FAIL" -gt 0 ]]; then
         ANY_FAILED=1
+        local FAILFILE="$RESULTS_DIR/$BASENAME.failures"
+        if [[ -f "$FAILFILE" ]]; then
+          local FAILLINE
+          while IFS= read -r FAILLINE; do
+            [[ -n "$FAILLINE" ]] && FAILING_TESTS+=("$BASENAME: $FAILLINE")
+          done < "$FAILFILE"
+        else
+          FAILING_TESTS+=("$BASENAME (no per-test failure names recorded)")
+        fi
       fi
     else
       echo "FAIL $BASENAME (worker wrote a malformed record)" >&2
       ANY_FAILED=1
+      FAILING_TESTS+=("$BASENAME (worker wrote a malformed record)")
       FILE_COUNT=$((FILE_COUNT + 1))
     fi
   done <<< "$TEST_FILES"
@@ -391,6 +414,17 @@ main() {
 
   if [[ "$TOTAL_SKIP" -gt 0 ]]; then
     echo "WARN: $TOTAL_SKIP test(s) skipped -- a temporary absence (unstubbed or missing subject); resolve the cause so skips trend back to zero." >&2
+  fi
+
+  # The failing test names, in one block, so a reader never has to scroll the
+  # interleaved parallel output to learn which test failed.
+  if [[ ${#FAILING_TESTS[@]} -gt 0 ]]; then
+    echo "" >&2
+    echo "Failed tests:" >&2
+    local FT
+    for FT in "${FAILING_TESTS[@]}"; do
+      echo "  - $FT" >&2
+    done
   fi
 
   # MUTATION=1 layers the mutation tier on top of the standard run: the

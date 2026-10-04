@@ -69,6 +69,25 @@ exit 1'
 }
 
 # ---------------------------------------------------------------
+# Case 2b: a failing test is named in one final block, so a reader does
+# not have to scroll the interleaved parallel output to find it
+# ---------------------------------------------------------------
+test_runner_failing_test_names() {
+  local dir="$FIXTURE_DIR/fail_names_dir"
+  mkdir -p "$dir"
+  write_test "$dir/test_named.sh" "#!/usr/bin/env bash
+source \"$REPO_ROOT/tests/libs/test_common.sh\"
+test_setup
+my_case() { fail \"the expected thing\"; }
+run_test my_case
+test_done"
+  run_runner "$dir"
+  assert_ne "0" "$RC" "runner: a named failing test exits non-zero"
+  assert_contains "$OUT" "Failed tests:" "runner: failing tests get a final named block"
+  assert_contains "$OUT" "test_named.sh: my_case" "runner: the failing test name and its file are printed"
+}
+
+# ---------------------------------------------------------------
 # Case 3: non-zero exit without markers -> failure detected
 # (the silent-zombie class: crash before any assertion)
 # ---------------------------------------------------------------
@@ -589,6 +608,7 @@ test_skip_counts_as_skipped_unit() {
 
 run_test test_runner_passing_file
 run_test test_runner_failing_file
+run_test test_runner_failing_test_names
 run_test test_runner_crash_no_markers
 run_test test_runner_missing_report_rc0
 run_test test_runner_skip_is_warning
