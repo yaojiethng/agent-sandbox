@@ -12,6 +12,7 @@ import {
 	buildUnion,
 	compatFor,
 	derivedTransport,
+	diffCatalogs,
 	fillMissing,
 	isStoreNewerThanBaked,
 	metadataEntry,
@@ -301,5 +302,42 @@ describe("metadataEntry and sourceEntry build the fallback entries", () => {
 		assert.equal(entry.thinkingLevelMap?.off, "none", "the provider's name for off maps onto off");
 		assert.equal(entry.thinkingLevelMap?.low, "low");
 		assert.equal(entry.thinkingLevelMap?.high, null);
+	});
+});
+
+describe("diffCatalogs: the catalog transition, as counts", () => {
+	it("is a zero delta when nothing moved", () => {
+		assert.deepEqual(diffCatalogs([baked("a"), baked("b")], [baked("a"), baked("b")]), { added: 0, removed: 0, revised: 0 });
+	});
+
+	it("counts an added id once", () => {
+		assert.deepEqual(diffCatalogs([baked("a")], [baked("a"), baked("b")]), { added: 1, removed: 0, revised: 0 });
+	});
+
+	it("counts a removed id once", () => {
+		assert.deepEqual(diffCatalogs([baked("a"), baked("b")], [baked("a")]), { added: 0, removed: 1, revised: 0 });
+	});
+
+	it("counts a same-id field change as a revision, not an add", () => {
+		const delta = diffCatalogs([baked("a", { contextWindow: 100 })], [baked("a", { contextWindow: 200 })]);
+		assert.deepEqual(delta, { added: 0, removed: 0, revised: 1 }, "the class the extension was built to repair: an id set unchanged, a field changed");
+	});
+
+	it("keeps a same-id pair of different types apart, so neither revises the other", () => {
+		const chat = baked("shared");
+		const image = baked("shared", { type: "image" });
+		assert.deepEqual(diffCatalogs([chat], [chat, image]), { added: 1, removed: 0, revised: 0 });
+		assert.deepEqual(diffCatalogs([chat, image], [image, chat]), { added: 0, removed: 0, revised: 0 }, "the order of the two lists does not decide the delta");
+	});
+
+	it("reads both sides, so a swap is a remove and an add", () => {
+		assert.deepEqual(diffCatalogs([baked("a")], [baked("b")]), { added: 1, removed: 1, revised: 0 });
+	});
+
+	it("does not read a field re-order as a revision", () => {
+		const original = baked("a");
+		const reordered = Object.fromEntries(Object.entries(original).reverse()) as ModelDefinition;
+		assert.notEqual(JSON.stringify(original), JSON.stringify(reordered), "the raw serializations differ, so the case is real");
+		assert.deepEqual(diffCatalogs([original], [reordered]), { added: 0, removed: 0, revised: 0 }, "the same fields in a different order are not a revision");
 	});
 });

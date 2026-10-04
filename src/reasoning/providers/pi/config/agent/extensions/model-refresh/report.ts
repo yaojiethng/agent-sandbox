@@ -1,82 +1,69 @@
 /**
- * Where the catalog reconciliation is shown.
+ * Where the catalog transition is announced.
  *
- * The extension used to write its progress to `console.warn`. The TUI owns the
+ * The extension used to log its progress to `console.warn`. The TUI owns the
  * terminal, so a line written behind its back lands inside the rendered frame
  * and every line after it is drawn against the wrong frame. The fix is not a
  * different string; it is a different sink.
  *
- * `refreshModels` runs while the model runtime is being built, which is before
- * any extension UI exists, so the reconciliation is recorded as data and
- * rendered later, on `session_start`, which is the first event carrying a UI.
- * A refresh that happens after that point renders immediately, so a later
- * `/model` or a reload shows the same surfaces.
+ * The announcement is a function of the catalog transition, not of the update:
+ * `refreshModels` records what the served catalog gained, lost and revised, and
+ * this module renders that delta. A run that changed nothing and failed nothing
+ * announces nothing, which is the correct rendering of a transition that did
+ * not move.
  *
- * In a mode with no TUI there is no frame to corrupt, so the console stays the
- * sink there. `ctx.mode` is the discriminator, not a guess.
+ * `refreshModels` runs while the model runtime is being built, before any
+ * extension UI exists, so a startup report is held and rendered on
+ * `session_start`, the first event carrying a UI. A refresh after that point
+ * renders on completion. In a mode with no TUI there is no frame to corrupt, so
+ * the console stays the sink there.
  */
 
 import type { CatalogReport } from "./types.ts";
 
-/** The footer row the persistent summary occupies. */
-export const STATUS_KEY = "model-refresh";
-
-/** The working message shown while a refresh is in flight. */
-export const WORKING_MESSAGE = "Refreshing model catalogs...";
-
-/** The line shown when a refresh completes. */
-export const COMPLETION_PREFIX = "Model catalogs refreshed.";
-
 /** The subset of pi's `ExtensionUIContext` this module uses. */
 export interface ReportUi {
-	setStatus(key: string, text: string | undefined): void;
-	setWorkingMessage(message?: string): void;
 	notify(message: string, type?: "info" | "warning" | "error"): void;
 }
 
-/**
- * The one-line reconciliation, attributed per source.
- *
- * A source that was not reached is named as skipped rather than counted as
- * zero, so a line never reads as a source that answered with nothing.
- */
-export function summarize(report: CatalogReport): string {
-	const parts = [
-		`${report.providerId}: ${report.served} served`,
-		`baked ${report.baked}`,
-		`store ${report.stored}`,
-		`endpoint ${report.endpoint ?? "skipped"}`,
-		`models.dev ${report.modelsDev ?? "skipped"}`,
-	];
-	const line = parts.join(", ");
-	return report.failures.length === 0 ? line : `${line} (${report.failures.length} source(s) failed)`;
+/** The one-line delta a catalog change announces. */
+export function deltaLine(report: CatalogReport): string {
+	return `updated catalog: +${report.added} / -${report.removed}, ${report.revised} revised`;
 }
 
-/** The notice shown on completion, carrying the failures when there are any. */
-export function completion(report: CatalogReport): { message: string; type: "info" | "warning" } {
-	const type = report.failures.length === 0 ? "info" : "warning";
-	const head = `${COMPLETION_PREFIX} ${summarize(report)}`;
-	return { message: report.failures.length === 0 ? head : `${head}. ${report.failures.join(". ")}`, type };
+/**
+ * What one report renders: the delta line when the catalog changed, then one
+ * warning per source that failed. An unchanged, failure-free report renders
+ * nothing at all.
+ */
+export function notices(report: CatalogReport): { message: string; type: "info" | "warning" }[] {
+	const out: { message: string; type: "info" | "warning" }[] = [];
+	if (report.changed) {
+		out.push({ message: deltaLine(report), type: "info" });
+	}
+	for (const failure of report.failures) {
+		out.push({ message: failure, type: "warning" });
+	}
+	return out;
 }
 
 /**
  * Holds the latest reconciliation and renders it into pi's UI.
  *
- * Only the latest is kept. A startup that refreshes twice must not leave two
- * footer rows, and the newer report is the one that describes the catalog in
- * use.
+ * Only the latest is kept. A startup that refreshes twice must not announce
+ * twice, and the newer report is the one that describes the catalog in use.
  */
-export function createReporter(statusKey: string = STATUS_KEY) {
+export function createReporter() {
 	let latest: CatalogReport | undefined;
 	let ui: ReportUi | undefined;
 
 	// Internal on purpose, and unguarded on purpose: both call sites below check
-	// the two preconditions themselves, so a guard here would be a branch no case
+	// the one precondition themselves, so a guard here would be a branch no case
 	// can reach and therefore no case can test.
 	function render(): void {
-		ui.setStatus(statusKey, summarize(latest));
-		const done = completion(latest);
-		ui.notify(done.message, done.type);
+		for (const notice of notices(latest)) {
+			ui.notify(notice.message, notice.type);
+		}
 	}
 
 	return {
@@ -90,15 +77,7 @@ export function createReporter(statusKey: string = STATUS_KEY) {
 			latest = report;
 			if (ui !== undefined) render();
 		},
-		/** Announce that a refresh is starting. No-op with no UI, by design. */
-		begin(): void {
-			ui?.setWorkingMessage(WORKING_MESSAGE);
-		},
-		/** Restore pi's default working message. */
-		end(): void {
-			ui?.setWorkingMessage();
-		},
-		/** The report held, for a caller that wants the counts itself. */
+		/** The report held, for the console sink and for a caller that wants it. */
 		current(): CatalogReport | undefined {
 			return latest;
 		},

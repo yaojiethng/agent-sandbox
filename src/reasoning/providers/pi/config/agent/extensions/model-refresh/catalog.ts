@@ -240,6 +240,16 @@ export interface UnionInput {
 	modelsDev: Record<string, ModelsDevModel> | undefined;
 }
 
+/** The entry-state delta between two served catalogs. */
+export interface CatalogDelta {
+	/** Keys the after catalog holds that the before catalog did not. */
+	added: number;
+	/** Keys the before catalog held that the after catalog does not. */
+	removed: number;
+	/** Keys on both sides whose fields differ. */
+	revised: number;
+}
+
 /** The entries one declared source contributes. A source that was not reached contributes none. */
 function entriesFor(kind: UnionInput["decl"]["sources"][number]["kind"], input: UnionInput, ids?: readonly string[]): ModelDefinition[] {
 	switch (kind) {
@@ -315,4 +325,52 @@ export function buildUnion(input: UnionInput): ModelDefinition[] {
 		});
 	}
 	return served;
+}
+
+/**
+ * The entry-state delta between two served catalogs, keyed on `modelKey`.
+ *
+ * A `revised` entry is one present on both sides whose fields differ, so a
+ * same-id field change - the class this extension was built to repair - counts
+ * even though no id moved. The comparison covers the whole entry, so a change
+ * to any field counts once. The key is the type and the id together, so a
+ * same-id pair of different types is two entries on both sides and is never a
+ * revision of itself.
+ */
+export function diffCatalogs(before: readonly ModelDefinition[], after: readonly ModelDefinition[]): CatalogDelta {
+	const beforeByKey = new Map(before.map((model) => [modelKey(model), model]));
+	const afterByKey = new Map(after.map((model) => [modelKey(model), model]));
+	let added = 0;
+	let removed = 0;
+	let revised = 0;
+	for (const [key, entry] of afterByKey) {
+		const previous = beforeByKey.get(key);
+		if (previous === undefined) {
+			added += 1;
+		} else if (stableSerialize(previous) !== stableSerialize(entry)) {
+			revised += 1;
+		}
+	}
+	for (const key of beforeByKey.keys()) {
+		if (!afterByKey.has(key)) {
+			removed += 1;
+		}
+	}
+	return { added, removed, revised };
+}
+
+/**
+ * A stable serialization for the revision test.
+ *
+ * `JSON.stringify` is key-order sensitive, and the union builds a fresh entry
+ * through `fillMissing` when a metadata source runs, so two entries with the
+ * same fields can serialize differently. A field re-order is not a revision, so
+ * the keys are sorted before comparison.
+ */
+function stableSerialize(value: unknown): string {
+	return JSON.stringify(value, (_key, entry) =>
+		entry && typeof entry === "object" && !Array.isArray(entry)
+			? Object.fromEntries(Object.entries(entry as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+			: entry,
+	);
 }

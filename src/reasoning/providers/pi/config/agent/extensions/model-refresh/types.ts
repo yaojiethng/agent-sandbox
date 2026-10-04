@@ -121,24 +121,25 @@ export interface ModelsDevModel {
 export type FetchJson = <T>(url: string, signal: AbortSignal) => Promise<T>;
 
 /**
- * What each source contributed to the served catalog, and what failed.
+ * What one refresh changed in the served catalog, and what failed.
  *
- * The extension used to log this as prose on the console. Prose is unreadable
- * without a parse, so the counts travel as data and `report.ts` renders them.
+ * The report is the catalog transition's before/after state as counts. The
+ * message is a function of what the served catalog was before the refresh and
+ * what it is after, never of how many entries a source held, so a run that
+ * changed nothing carries a zero delta and the emitter stays silent rather than
+ * reporting a source count the gate may not have admitted.
  */
 export interface CatalogReport {
 	/** The provider whose catalog this report describes. */
 	providerId: string;
-	/** Ids the provider endpoint advertised, or undefined when it was not reached. */
-	endpoint: number | undefined;
-	/** Entries models.dev held for the provider, or undefined when unreachable. */
-	modelsDev: number | undefined;
-	/** Ids in pi's baked catalog. */
-	baked: number;
-	/** Ids in pi's persisted pi.dev catalog, or 0 when there was none. */
-	stored: number;
-	/** Ids in the catalog the extension actually served. */
-	served: number;
+	/** True when the served catalog differs from the state before this refresh. */
+	changed: boolean;
+	/** Keys the served catalog gained. */
+	added: number;
+	/** Keys the served catalog lost. */
+	removed: number;
+	/** Keys on both sides whose fields changed. */
+	revised: number;
 	/** One line per live source that failed, with the reason. */
 	failures: string[];
 }

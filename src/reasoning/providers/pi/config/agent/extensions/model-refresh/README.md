@@ -131,6 +131,8 @@ The three lifecycle transitions sit outside the source fold and carry ids of the
 
 **The announcement is a function of the served catalog's before/after state, never of the guard.** A refresh that changes the catalog announces while the guard is closed; a guard that moves without a catalog change announces nothing. Emitting the line from a source-count report instead is the defect this section exists to make unrepresentable.
 
+**The before state is the last served catalog.** The first refresh of a session has none, so its before state is the offline union - the catalog the extension serves with no live source. The metadata pass enriches a baked entry on every build, so a before state of raw baked data would read that constant enrichment as a revision on every start and announce a change that did not happen.
+
 **An event the component declines is not a failure.** X1 and X2 are both ordinary transitions, and the guard alone decides between them. Only a `failed` event announces as a failure, because a payload that was received and then declined is a guard decision, and a source that never answered is not.
 
 **`catalog-change` is the full entry-state delta.** `+n` and `-n` count ids added and removed, and same-id field revisions are reported separately, because the defect this extension was built to repair - `space-bunny-free` served with `kimi-k2.6`'s context window, output limit and pricing - is a same-id revision with no id change at all.
@@ -217,9 +219,13 @@ Every row was checked on the date given. Each names the method that produced it 
 
 The extension writes nothing to the console in TUI mode. The TUI owns the terminal, and a line written behind its back lands inside the rendered frame; the operator reported exactly that, with every line after the extension's own output drawn against the wrong frame.
 
-`refreshModels` records the per-source counts as data (`CatalogReport`) and `report.ts` renders them into pi's UI: a persistent `setStatus` footer row carrying the one-line reconciliation, and a `notify` on completion that carries the same line plus any source failure. A source that was not reached is named `skipped` rather than `0`, so a line never reads as a source that answered with nothing.
+`refreshModels` records what the served catalog gained, lost and revised as data (`CatalogReport`), and `report.ts` renders the delta into pi's UI with one `ctx.ui.notify` per notice. A catalog change renders `updated catalog: +n / -n, m revised`, where `+n` and `-n` count keys added and removed and `m` counts keys present on both sides whose fields changed. A source that failed renders its own warning. A run that changed nothing and failed nothing renders nothing: the message is a function of the catalog transition, so silence is the correct rendering of a transition that did not move.
 
-The rendering happens on `session_start`, because that is the first event carrying a UI. A consequence worth stating: the "Refreshing model catalogs..." working message cannot be shown for the startup refresh, which completes before the TUI mounts (A14). It is shown for a refresh that happens later, such as a `/model` change or a reload. Closing that gap needs pi to surface a pre-TUI notification, not an extension change.
+The report is the served catalog's before/after state, not a source count. The first refresh of a session diffs against the offline union - the catalog the extension serves with no live source - so the first report carries the live contribution; a later refresh diffs against the union the last refresh returned. The source-count form is what produced a `store 469` line beside a served catalog that admitted no store entries: `refresh.ts` counted the persisted catalog's raw size while the gate at `catalog.ts` decided admission, so the two numbers described different things. The delta has no such field; the mismatch is gone by construction.
+
+The rendering happens on `session_start`, because that is the first event carrying a UI. A refresh that happens after that point renders on completion. The "Refreshing model catalogs..." working message is pi's own picker status rather than an extension surface, and it cannot be shown for the startup refresh, which completes before the TUI mounts (A14). Closing that gap needs pi to surface a pre-TUI notification, not an extension change.
+
+The same `notify` surface announces a saved default the model scope discarded; the rule is in `## The default model and the scope order`.
 
 In `print`, `json` and `rpc` mode there is no frame to corrupt, so the console stays the sink there. `ctx.mode` is the discriminator, not a guess.
 
@@ -229,7 +235,7 @@ In `print`, `json` and `rpc` mode there is no frame to corrupt, so the console s
 
 A non-empty scope also outranks the saved default. `findInitialModel` in `dist/core/model-resolver.js` returns `scopedModels[0]` on any non-empty scope without consulting `defaultProvider` or `defaultModel`, and sets `fallbackMessage: undefined` on that path, so the field that exists to report a discarded preference is silent exactly where a preference is discarded. The shipped `settings.json` therefore puts the configured default's provider and id at the head of `enabledModels`; that is a mitigation, and `tests/knowledge/knowledge_pi_config_cycle.sh` fails when the head stops naming it. The defect is reported upstream in [`20261002-report-draft-default_model_resolution_bug.md`](../../../../../../../../devlog/discussions/20261002-report-draft-default_model_resolution_bug.md).
 
-The extension does not correct the selection. It supplies the catalog the resolver reads, and at `session_start` it can compare `ctx.model` against the saved default the scope resolved and announce a discard; it does not call `ctx.setModel`, because that would put pi's resolution ladder inside an extension and would disturb a resumed session's model, a `--model` override and the cycle key alike.
+The extension does not correct the selection. It supplies the catalog the resolver reads, and at `session_start` it announces a saved default the scope discarded. The guard is the resolver's own step-3 test: the announcement fires only when `defaultProvider` and `defaultModel` are set, `ctx.scopedModels` is non-empty, `ctx.modelRegistry.find(defaultProvider, defaultModel)` returns a model whose provider has configured auth, and `ctx.model` is not that model. The notice names both models: `saved default <provider>/<id> is outside the model scope; started on <provider>/<id>`. It does not call `ctx.setModel`, because that would put pi's resolution ladder inside an extension and would disturb a resumed session's model, a `--model` override and the cycle key alike. An empty scope discards nothing, because the resolver consults the default there; a default that is absent or unauthenticated is one pi would not have honoured either, so the extension stays silent rather than reporting a discard that did not happen.
 
 ## Wanted from pi
 
@@ -259,7 +265,8 @@ Two of the files are knowledge tests under the Test Placement rule, because the 
 | `gather.test.ts` | the fetch paths: the offline phase never calls the fetcher, a failed source narrows |
 | `composition.test.ts` | the defect itself, driven through pi's composer, with the old registration as the control |
 | `load.test.ts` | the module graph, the registration shape under jiti, and the `session_start` routing per run mode |
-| `report.test.ts` | the reconciliation wording, the pre-UI hold, and the assertion that the reporter writes nothing to the terminal |
+| `report.test.ts` | the delta line, the silence on no change, the failure lines, the pre-UI hold, and the assertion that the reporter writes nothing to the terminal |
+| `default-model.test.ts` | the saved-default announcement guard: the four silent cases and the one that speaks |
 | `wire.test.ts` | knowledge: the built request payload per thinking level and compat block |
 | `fixtures.ts` | the shared model, store and models.dev builders the invariant cases draw on |
 | `invariants.ts` | the invariant catalog: one named statement per invariant, the state/transition/guard classification, the transition table, the totality check, and the per-source and per-level cases derived rather than listed |

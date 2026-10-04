@@ -13,7 +13,7 @@
  * dropped every model.
  */
 
-import { buildUnion } from "./catalog.ts";
+import { buildUnion, diffCatalogs } from "./catalog.ts";
 import type { CatalogReport, FetchJson, ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "./types.ts";
 
 export const MODELS_DEV_URL = "https://models.dev/api.json";
@@ -40,33 +40,42 @@ export interface GatherInput {
 	generatedAt: number | undefined;
 	/** Pi's baked catalog for the provider. */
 	baked: readonly ModelDefinition[];
+	/**
+	 * The served catalog before this refresh. The first refresh passes nothing,
+	 * so the before state is the offline union - the catalog the extension serves
+	 * with no live source - which makes the first report the live contribution and
+	 * a later report the change since the last refresh.
+	 */
+	previous?: readonly ModelDefinition[];
 	fetcher: FetchJson;
 	log?: (message: string) => void;
 	/**
-	 * Receives the per-source counts once the union is built. Additive, so a
-	 * caller that only wants the list passes nothing and is unaffected.
+	 * Receives the catalog delta once the union is built. Additive, so a caller
+	 * that only wants the list passes nothing and is unaffected.
 	 */
 	onReport?: (report: CatalogReport) => void;
 }
 
 /** The list the extension serves, from whatever sources are declared and available. */
 export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinition[]> {
-	const { providerId, decl, signal, allowNetwork, stored, generatedAt, baked, fetcher, log, onReport } = input;
+	const { providerId, decl, signal, allowNetwork, stored, generatedAt, baked, previous, fetcher, log, onReport } = input;
 	const note = log ?? (() => {});
 	const failures: string[] = [];
 	const unionInput = { providerId, decl, baked, stored, generatedAt };
 
+	/** The catalog the extension serves with no live source: the baseline for a first refresh. */
+	const offlineUnion = (): ModelDefinition[] => buildUnion({ ...unionInput, endpointIds: undefined, modelsDev: undefined });
+	const before = previous ?? offlineUnion();
+
+	/** The catalog transition this refresh produced, as a report. */
+	const reportFor = (models: readonly ModelDefinition[]): CatalogReport => {
+		const delta = diffCatalogs(before, models);
+		return { providerId, changed: delta.added + delta.removed + delta.revised > 0, ...delta, failures: [...failures] };
+	};
+
 	if (!allowNetwork) {
-		const models = buildUnion({ ...unionInput, endpointIds: undefined, modelsDev: undefined });
-		onReport?.({
-			providerId,
-			endpoint: undefined,
-			modelsDev: undefined,
-			baked: baked.length,
-			stored: stored?.models?.length ?? 0,
-			served: models.length,
-			failures: [...failures],
-		});
+		const models = offlineUnion();
+		onReport?.(reportFor(models));
 		return models;
 	}
 
@@ -96,15 +105,7 @@ export async function gatherAndBuild(input: GatherInput): Promise<ModelDefinitio
 
 	const models = buildUnion({ ...unionInput, endpointIds, modelsDev });
 	if (onReport) {
-		onReport({
-			providerId,
-			endpoint: endpointIds?.length,
-			modelsDev: modelsDev ? Object.keys(modelsDev).length : undefined,
-			baked: baked.length,
-			stored: stored?.models?.length ?? 0,
-			served: models.length,
-			failures: [...failures],
-		});
+		onReport(reportFor(models));
 	}
 	return models;
 }

@@ -16,32 +16,37 @@
  *
  * On where the output goes: nothing in this extension writes to the console in
  * TUI mode. The TUI owns the terminal, and a line written behind its back
- * corrupts every line drawn after it. `refreshModels` records the per-source
- * counts and `report.ts` renders them into pi's UI on `session_start`, the
- * first event that carries one. In `print`, `json` and `rpc` mode there is no
- * frame to corrupt, so the console remains the sink there.
+ * corrupts every line drawn after it. `refreshModels` records what the served
+ * catalog gained, lost and revised, and `report.ts` renders that delta into
+ * pi's UI on `session_start`, the first event that carries one. In `print`,
+ * `json` and `rpc` mode there is no frame to corrupt, so the console remains
+ * the sink there.
  */
 
 import type { ExtensionAPI, ProviderConfig } from "@earendil-works/pi-coding-agent";
 import { getBuiltinModels, getBuiltinModelDataGeneratedAt } from "@earendil-works/pi-ai/providers/all";
 import { loadDeclarations } from "./config.ts";
+import { discardedDefault } from "./default-model.ts";
 import { fetchJson, gatherAndBuild } from "./refresh.ts";
-import { createReporter, STATUS_KEY, summarize } from "./report.ts";
+import { createReporter, notices } from "./report.ts";
 import type { ModelDefinition, StoredCatalog } from "./types.ts";
 
 export { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "./config.ts";
+export { discardedDefault } from "./default-model.ts";
 export { gatherAndBuild, fetchJson, MODELS_DEV_URL } from "./refresh.ts";
-export { createReporter, summarize, completion } from "./report.ts";
-export { buildUnion, unionFirstWins, fillMissing } from "./catalog.ts";
+export { createReporter, deltaLine, notices } from "./report.ts";
+export { buildUnion, diffCatalogs, unionFirstWins, fillMissing } from "./catalog.ts";
 
 const iso = (timestamp: number | undefined): string => (timestamp === undefined ? "unknown" : new Date(timestamp).toISOString());
 
 export default function modelRefresh(pi: ExtensionAPI) {
 	const declarations = loadDeclarations();
 	const reporters = new Map<string, ReturnType<typeof createReporter>>();
+	/** The catalog each provider is serving, so the next refresh diffs against it. */
+	const served = new Map<string, readonly ModelDefinition[]>();
 
 	for (const [providerId, decl] of Object.entries(declarations)) {
-		const reporter = createReporter(`${STATUS_KEY}:${providerId}`);
+		const reporter = createReporter();
 		reporters.set(providerId, reporter);
 		const baked = () => getBuiltinModels(providerId) as unknown as ModelDefinition[];
 
@@ -50,7 +55,7 @@ export default function modelRefresh(pi: ExtensionAPI) {
 		// it must be the union -- see the module comment.
 		const config: ProviderConfig = {
 			async refreshModels(context) {
-				return gatherAndBuild({
+				const models = await gatherAndBuild({
 					providerId,
 					decl,
 					signal: context.signal,
@@ -58,12 +63,18 @@ export default function modelRefresh(pi: ExtensionAPI) {
 					stored: context.stored as StoredCatalog | undefined,
 					generatedAt: getBuiltinModelDataGeneratedAt(),
 					baked: baked(),
+					// The first refresh diffs against the offline union, which is what the
+					// extension serves with no live source; a later one diffs against the
+					// union the last refresh returned.
+					previous: served.get(providerId),
 					fetcher: fetchJson,
 					// No `log`. The console is the sink only in a mode with no TUI, and
 					// the decision belongs to the session_start handler below, which is
 					// the first place a run mode is known.
 					onReport: (report) => reporter.record(report),
 				});
+				served.set(providerId, models);
+				return models;
 			},
 		};
 		pi.registerProvider(providerId, config);
@@ -76,13 +87,19 @@ export default function modelRefresh(pi: ExtensionAPI) {
 				console.warn(`[model-refresh] registered ${providerId} (baked base: ${getBuiltinModels(providerId).length} models, baked data generated ${iso(generatedAt)})`);
 				const report = reporter.current();
 				if (report) {
-					console.warn(`[model-refresh] ${summarize(report)}`);
+					for (const notice of notices(report)) {
+						console.warn(`[model-refresh] ${notice.message}`);
+					}
 				}
 			}
 			return;
 		}
 		for (const reporter of reporters.values()) {
 			reporter.attach(ctx.ui);
+		}
+		const discarded = discardedDefault(ctx);
+		if (discarded !== undefined) {
+			ctx.ui.notify(discarded, "info");
 		}
 	});
 }

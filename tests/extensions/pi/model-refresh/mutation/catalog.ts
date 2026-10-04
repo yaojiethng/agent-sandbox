@@ -278,7 +278,7 @@ export const MUTATIONS: readonly Mutation[] = [
 		id: "refresh:offline-startup-drops-the-store",
 		invariant: "C1",
 		subject: `${EXTENSION_DIR}/refresh.ts`,
-		old: "\t\tconst models = buildUnion({ ...unionInput, endpointIds: undefined, modelsDev: undefined });",
+		old: "\t\tconst models = offlineUnion();",
 		next: "\t\tconst models = buildUnion({ ...unionInput, stored: undefined, endpointIds: undefined, modelsDev: undefined });",
 		breaks: "the offline startup path drops the persisted store, which is the original defect on the path pi actually takes: the registration then serves fewer models than pi would serve with no extension at all",
 	},
@@ -454,5 +454,39 @@ export const MUTATIONS: readonly Mutation[] = [
 		old: "\tconst models = buildUnion({ ...unionInput, endpointIds, modelsDev });",
 		next: "\tconst models = buildUnion({ ...unionInput, baked: failures.length > 0 ? [] : baked, endpointIds, modelsDev });",
 		breaks: "a failed live source drops the baked catalog too, so a network failure empties the served catalog instead of narrowing it",
+	},
+
+	// --- the output: O1 to O4 ----------------------------------------
+	{
+		id: "report:notices-always-emits",
+		invariant: "O1",
+		subject: `${EXTENSION_DIR}/report.ts`,
+		old: "\tif (report.changed) {\n\t\tout.push({ message: deltaLine(report), type: \"info\" });\n\t}",
+		next: "\t{\n\t\tout.push({ message: deltaLine(report), type: \"info\" });\n\t}",
+		breaks: "a report that changed nothing still renders the delta, so a transition that did not move announces itself",
+	},
+	{
+		id: "report:delta-line-loses-the-counts",
+		invariant: "O2",
+		subject: `${EXTENSION_DIR}/report.ts`,
+		old: "\treturn `updated catalog: +${report.added} / -${report.removed}, ${report.revised} revised`;",
+		next: "\treturn \"updated catalog: changed\";",
+		breaks: "the delta line stops naming what moved, so a reader cannot tell an add from a revision",
+	},
+	{
+		id: "report:failures-not-rendered",
+		invariant: "O3",
+		subject: `${EXTENSION_DIR}/report.ts`,
+		old: "\tfor (const failure of report.failures) {\n\t\tout.push({ message: failure, type: \"warning\" });\n\t}",
+		next: "\tvoid report.failures;",
+		breaks: "a failed source is recorded but never announced, so a degraded refresh reads as a clean one",
+	},
+	{
+		id: "default-model:selected-is-always-discarded",
+		invariant: "O4",
+		subject: `${EXTENSION_DIR}/default-model.ts`,
+		old: "\tif (selected.provider === defaultProvider && selected.id === defaultModel) {\n\t\treturn undefined;\n\t}",
+		next: "\tif (false) {\n\t\treturn undefined;\n\t}",
+		breaks: "the guard stops recognising the selected model as the default, so a session that started on its saved default is told the default was discarded",
 	},
 ];

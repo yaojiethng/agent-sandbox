@@ -32,6 +32,7 @@ import {
 import { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts";
 import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
 import { createReporter } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts";
+import { discardedDefault } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/default-model.ts";
 import { THINKING_LEVELS, levelMapFor, offSendsAnEffort, thinkingLevelMapFromEfforts } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ThinkingLevelMap } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
@@ -484,28 +485,81 @@ describe("invariant report", () => {
 	itCase("L3", "the refresh precedes the session", async () => {
 		const { registered: registrations, handlers } = await loadExtension();
 		const calls: string[] = [];
-		const ui = { setStatus: () => calls.push("setStatus"), setWorkingMessage: () => calls.push("setWorkingMessage"), notify: () => calls.push("notify") };
+		const ui = { notify: () => calls.push("notify") };
 		const entry = registrations.find((r) => r.id === PROVIDER_ID);
 		assert.ok(entry, `the extension registers ${PROVIDER_ID}`);
 		const refresh = entry!.config.refreshModels as (context: unknown) => Promise<unknown>;
-		const served = await refresh({ signal: new AbortController().signal, allowNetwork: false, stored: undefined });
-		assert.ok(Array.isArray(served) && served.length > 0, "the refresh returns the catalog before any session exists");
+		// A changed catalog is what makes the session_start render observable, so
+		// the live phase is driven through a stub fetch and adds one id.
+		const realFetch = globalThis.fetch;
+		globalThis.fetch = (async (url: string) => ({
+			ok: true,
+			json: async () => (String(url).includes("models.dev") ? { [PROVIDER_ID]: { models: {} } } : { data: [{ id: "inv-l3-live-only" }] }),
+		})) as unknown as typeof fetch;
+		let served: unknown;
+		try {
+			served = await refresh({ signal: new AbortController().signal, allowNetwork: true, stored: undefined });
+		} finally {
+			globalThis.fetch = realFetch;
+		}
+		assert.ok(Array.isArray(served) && (served as unknown[]).length > 0, "the refresh returns the catalog before any session exists");
 		assert.deepEqual(calls, [], "the refresh renders nothing: no UI exists yet");
 		const onStart = handlers.get("session_start");
 		assert.ok(onStart, "the module registers a session_start handler");
-		await onStart!({}, { mode: "tui", ui });
+		await onStart!({}, { mode: "tui", ui, getSettings: () => ({}), scopedModels: [], model: undefined, modelRegistry: { find: () => undefined, hasConfiguredAuth: () => false } });
 		assert.ok(calls.length > 0, "the session_start handler is the first place a UI is reached");
 	});
 
 	itCase("L4", "the report holds until a UI exists", () => {
 		const reporter = createReporter();
 		const calls: string[] = [];
-		const ui = { setStatus: () => calls.push("setStatus"), setWorkingMessage: () => calls.push("setWorkingMessage"), notify: () => calls.push("notify") };
-		const report = { providerId: PROVIDER_ID, baked: BAKED.length, stored: 0, served: BAKED.length, failures: [] };
+		const ui = { notify: () => calls.push("notify") };
+		const report = { providerId: PROVIDER_ID, changed: true, added: 1, removed: 0, revised: 0, failures: [] };
 		reporter.record(report);
 		assert.deepEqual(calls, [], "nothing renders while no UI exists");
 		reporter.attach(ui);
 		assert.ok(calls.length > 0, "the held report renders when a UI attaches");
+	});
+
+	itCase("O1", "silence on no change", () => {
+		const reporter = createReporter();
+		const calls: string[] = [];
+		const ui = { notify: () => calls.push("notify") };
+		reporter.attach(ui);
+		reporter.record({ providerId: PROVIDER_ID, changed: false, added: 0, removed: 0, revised: 0, failures: [] });
+		assert.deepEqual(calls, [], "a transition that did not move announces nothing");
+	});
+
+	itCase("O2", "the delta on change", () => {
+		const reporter = createReporter();
+		const calls: string[] = [];
+		const ui = { notify: (message: string, type?: string) => calls.push(`${type}:${message}`) };
+		reporter.attach(ui);
+		reporter.record({ providerId: PROVIDER_ID, changed: true, added: 2, removed: 1, revised: 3, failures: [] });
+		assert.deepEqual(calls, ["info:updated catalog: +2 / -1, 3 revised"]);
+	});
+
+	itCase("O3", "the failure line", () => {
+		const reporter = createReporter();
+		const calls: string[] = [];
+		const ui = { notify: (message: string, type?: string) => calls.push(`${type}:${message}`) };
+		reporter.attach(ui);
+		reporter.record({ providerId: PROVIDER_ID, changed: false, added: 0, removed: 0, revised: 0, failures: ["endpoint fetch failed (HTTP 503)"] });
+		assert.deepEqual(calls, ["warning:endpoint fetch failed (HTTP 503)"], "a failure announces whether or not the catalog changed");
+	});
+
+	itCase("O4", "the discarded default is announced", () => {
+		const base = {
+			model: { provider: "opencode-go", id: "space-bunny-free" },
+			scopedModels: [{}],
+			getSettings: () => ({ defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" }),
+			modelRegistry: { find: () => ({ provider: "openrouter", id: "z-ai/glm-4.5" }), hasConfiguredAuth: () => true },
+		};
+		assert.equal(discardedDefault(base), "saved default openrouter/z-ai/glm-4.5 is outside the model scope; started on opencode-go/space-bunny-free");
+		assert.equal(discardedDefault({ ...base, model: { provider: "openrouter", id: "z-ai/glm-4.5" } }), undefined, "no announcement when the default is selected");
+		assert.equal(discardedDefault({ ...base, scopedModels: [] }), undefined, "no announcement with an empty scope");
+		assert.equal(discardedDefault({ ...base, modelRegistry: { find: () => undefined, hasConfiguredAuth: () => true } }), undefined, "no announcement for a default not in the catalog");
+		assert.equal(discardedDefault({ ...base, modelRegistry: { find: () => ({}), hasConfiguredAuth: () => false } }), undefined, "no announcement for an unauthenticated default");
 	});
 
 	itCase("L5", "a failed live source narrows rather than empties", async () => {

@@ -11,7 +11,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
-import type { FetchJson, ModelDefinition, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import type { CatalogReport, FetchJson, ModelDefinition, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
 import { PROVIDER_ID, TEST_DECL, V1_BASE } from "./fixtures.ts";
 
 const GENERATED_AT = 1_000_000;
@@ -153,5 +153,39 @@ describe("a failing live source narrows the catalog, it does not empty it", () =
 		const models = await gather({ fetcher: failing, log: (message) => logged.push(message) });
 		assert.equal(models.length, 2, "the catalog is still served");
 		assert.ok(logged.some((message) => message.includes("network down")), `the failure is logged, got ${JSON.stringify(logged)}`);
+	});
+});
+
+describe("the report is the catalog transition, not the source counts", () => {
+	const reportOf = async (over: Partial<Parameters<typeof gatherAndBuild>[0]> = {}): Promise<CatalogReport> => {
+		let report: CatalogReport | undefined;
+		await gather({ ...over, onReport: (next) => { report = next; } });
+		assert.ok(report, "the report is emitted");
+		return report;
+	};
+
+	it("reports no change when only the offline catalog is served", async () => {
+		const report = await reportOf({ allowNetwork: false });
+		assert.deepEqual(report, { providerId: PROVIDER_ID, changed: false, added: 0, removed: 0, revised: 0, failures: [] });
+	});
+
+	it("reports what the live sources added on the first refresh", async () => {
+		const report = await reportOf();
+		assert.deepEqual(report, { providerId: PROVIDER_ID, changed: true, added: 1, removed: 0, revised: 0, failures: [] });
+	});
+
+	it("is a zero delta when a later refresh serves the same catalog", async () => {
+		const first = await gather();
+		const report = await reportOf({ previous: first });
+		assert.deepEqual(report, { providerId: PROVIDER_ID, changed: false, added: 0, removed: 0, revised: 0, failures: [] });
+	});
+
+	it("carries the failure even when the catalog did not change", async () => {
+		const failing: FetchJson = async (): Promise<never> => {
+			throw new Error("network down");
+		};
+		const report = await reportOf({ fetcher: failing });
+		assert.equal(report.changed, false, "the failed live phase falls back to the offline union, so the catalog did not move");
+		assert.equal(report.failures.length, 2, "one line per failed live source");
 	});
 });

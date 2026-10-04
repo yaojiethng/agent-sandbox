@@ -66,16 +66,24 @@ async function loadAndRegister() {
 const registeredHandlers: { event: string; handler: (event: unknown, ctx: unknown) => void }[] = [];
 
 /** A stand-in for the part of `ExtensionContext` the handler reads. */
-function sessionStartCtx(mode: "tui" | "print") {
+function sessionStartCtx(
+	mode: "tui" | "print",
+	over: { scopedModels?: readonly unknown[]; model?: { provider: string; id: string }; authed?: boolean } = {},
+) {
 	const shown: { method: string; args: unknown[] }[] = [];
 	return {
 		shown,
 		ctx: {
 			mode,
 			ui: {
-				setStatus: (key: string, text: string | undefined) => shown.push({ method: "setStatus", args: [key, text] }),
-				setWorkingMessage: (message?: string) => shown.push({ method: "setWorkingMessage", args: [message] }),
 				notify: (message: string, type?: string) => shown.push({ method: "notify", args: [message, type] }),
+			},
+			getSettings: () => ({ defaultProvider: "openrouter", defaultModel: "z-ai/glm-4.5" }),
+			scopedModels: over.scopedModels ?? [{}],
+			model: over.model ?? { provider: "opencode-go", id: "space-bunny-free" },
+			modelRegistry: {
+				find: () => ({ provider: "openrouter", id: "z-ai/glm-4.5" }),
+				hasConfiguredAuth: () => over.authed ?? true,
 			},
 		},
 	};
@@ -141,5 +149,43 @@ describe("extension load under jiti", { skip: skip() }, () => {
 		// come from the installed pi and move with every release, so the case
 		// pins their shape rather than their value.
 		assert.match(written[0], /^\[model-refresh\] registered opencode-go \(baked base: [1-9][0-9]* models, baked data generated [^)]+\)$/);
+	});
+
+	it("announces a saved default the scope discarded, at session_start in tui mode", async () => {
+		await loadAndRegister();
+		const start = registeredHandlers.find((h) => h.event === "session_start");
+		assert.ok(start);
+		const { shown, ctx } = sessionStartCtx("tui");
+		await start.handler({ type: "session_start", reason: "startup" }, ctx);
+		assert.deepEqual(shown, [
+			{ method: "notify", args: ["saved default openrouter/z-ai/glm-4.5 is outside the model scope; started on opencode-go/space-bunny-free", "info"] },
+		]);
+	});
+
+	it("stays silent when the scope is empty", async () => {
+		await loadAndRegister();
+		const start = registeredHandlers.find((h) => h.event === "session_start");
+		assert.ok(start);
+		const { shown, ctx } = sessionStartCtx("tui", { scopedModels: [] });
+		await start.handler({ type: "session_start", reason: "startup" }, ctx);
+		assert.deepEqual(shown, [], "an empty scope discards no default, so nothing is announced");
+	});
+
+	it("stays silent when the selected model is the saved default", async () => {
+		await loadAndRegister();
+		const start = registeredHandlers.find((h) => h.event === "session_start");
+		assert.ok(start);
+		const { shown, ctx } = sessionStartCtx("tui", { model: { provider: "openrouter", id: "z-ai/glm-4.5" } });
+		await start.handler({ type: "session_start", reason: "startup" }, ctx);
+		assert.deepEqual(shown, []);
+	});
+
+	it("stays silent when the saved default has no configured auth", async () => {
+		await loadAndRegister();
+		const start = registeredHandlers.find((h) => h.event === "session_start");
+		assert.ok(start);
+		const { shown, ctx } = sessionStartCtx("tui", { authed: false });
+		await start.handler({ type: "session_start", reason: "startup" }, ctx);
+		assert.deepEqual(shown, [], "a default pi would not have honoured is not a discard to announce");
 	});
 });

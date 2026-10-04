@@ -162,6 +162,31 @@ export function buildCatalog(): InvariantCase[] {
 			statement: "a live source that fails contributes nothing and takes nothing away, so the served catalog stays the offline union rather than an empty list",
 			source: `${RECORD} the failure contract; gatherAndBuild with a failing fetcher`,
 		},
+		// --- the output -----------------------------------------------------
+		{
+			id: "O1",
+			name: "silence on no change",
+			statement: "a refresh that changed no entry and failed no source announces nothing",
+			source: `${RECORD} the output sink; report.ts`,
+		},
+		{
+			id: "O2",
+			name: "the delta on change",
+			statement: "a refresh whose served catalog changed renders one line naming the ids added, the ids removed and the field revisions",
+			source: `${RECORD} the output sink; report.ts`,
+		},
+		{
+			id: "O3",
+			name: "the failure line",
+			statement: "a source that failed renders one warning naming the source and the reason, whether or not the catalog changed",
+			source: `${RECORD} the output sink; report.ts`,
+		},
+		{
+			id: "O4",
+			name: "the discarded default is announced",
+			statement: "a saved default the scope discarded is announced once at session_start, and nothing is announced when the default is selected, the scope is empty, or the default is absent or unauthenticated",
+			source: `${RECORD} the default-model rule in ## The default model and the scope order; default-model.ts`,
+		},
 		// --- the composition contract ---------------------------------------
 		{
 			id: "C1",
@@ -306,12 +331,13 @@ export const TRANSITIONS: readonly Transition[] = [
 	{ id: "X5", label: "received(override payload) / fold reverse (internal)", event: "received(override)", from: ["S1"] },
 	{ id: "X6", label: "failed(reason) / none (internal)", event: "failed", from: ["S0", "S1"] },
 	{ id: "X7", label: "absent", event: "absent", from: ["S0", "S1"], ignored: true, noCaseReason: "an ignored event: no transition accepts it, so no case holds it" },
-	{ id: "X8", label: "unchanged and no failure / nothing", event: "outcome", from: ["S1"], guard: "unchanged and no failure", noCaseReason: "the output emitter is unit B's rewrite" },
-	{ id: "X9", label: "changed / notify the delta", event: "outcome", from: ["S1"], guard: "changed", noCaseReason: "the output emitter is unit B's rewrite" },
-	{ id: "X10", label: "failed / notify the failure", event: "outcome", from: ["S1"], guard: "failed", noCaseReason: "the output emitter is unit B's rewrite" },
+	{ id: "X8", label: "unchanged and no failure / nothing", event: "outcome", from: ["S1"], guard: "unchanged and no failure" },
+	{ id: "X9", label: "changed / notify the delta", event: "outcome", from: ["S1"], guard: "changed" },
+	{ id: "X10", label: "failed / notify the failure", event: "outcome", from: ["S1"], guard: "failed" },
 	{ id: "X11", label: "pre-session refresh", event: "session", from: ["S0"], guard: "the session has not started" },
 	{ id: "X12", label: "failing-source narrowing", event: "live failure", from: ["S0", "S1"] },
 	{ id: "X13", label: "pre-UI report hold", event: "report", from: ["S0"], guard: "no UI exists yet" },
+	{ id: "X14", label: "saved default discarded by the scope / notify", event: "session", from: ["S0"], guard: "the scope is non-empty, the default is applicable, and it is not selected" },
 ];
 
 /** One catalog case's class and the state, transition or external edge it belongs to. */
@@ -344,6 +370,10 @@ export const CLASSIFICATION: readonly Classification[] = [
 	{ id: "L3", name: "the refresh precedes the session", kind: "transition", edges: ["X11"] },
 	{ id: "L4", name: "the report holds until a UI exists", kind: "transition", edges: ["X13"] },
 	{ id: "L5", name: "a failed live source narrows rather than empties", kind: "transition", edges: ["X12"] },
+	{ id: "O1", name: "silence on no change", kind: "transition", edges: ["X8"] },
+	{ id: "O2", name: "the delta on change", kind: "transition", edges: ["X9"] },
+	{ id: "O3", name: "the failure line", kind: "transition", edges: ["X10"] },
+	{ id: "O4", name: "the discarded default is announced", kind: "transition", edges: ["X14"] },
 	{ id: "C1", name: "registration never shrinks the catalog", kind: "state", edges: ["S1"] },
 	{ id: "C2", name: "no silent fallback", kind: "state", edges: ["S1"] },
 	{ id: "C3", name: "user overrides win", kind: "guard", edges: ["X5"] },
