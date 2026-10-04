@@ -5,6 +5,7 @@
   "defaultModel": "space-bunny-free",
   "defaultThinkingLevel": "low",
   "followUpMode": "all",
+  "tuiMode": "regular",
   "enablePromptCommands": true,
   "compaction": {
     "enabled": true,
