@@ -349,6 +349,8 @@ mitigation: a perl one-liner intended to count matches in a test file was writte
 
 Two additions for this failure mode. A replacement that is not a literal constant -- a shell-quoted heredoc, a path, a value from a variable -- goes through a function replacer (`text.replace(re, () => to)`) or a tool that treats it literally; the pattern characters are only honoured in a plain string. And the count check is not enough on its own: compare the output's line count or size against the input's after every transform, because a transform can succeed at the wrong edit rather than fail at the right one.
 
+**A second occurrence, the same day.** A fixture-builder script was patched with a chain of unguarded `String.replace` calls. The patch applied partly and produced two fixtures that differed in the wrong places, which the eval run would then have reported as a null result about the instruction set rather than a broken fixture. The guard belongs in the builder: assert the fixture's facts at the end of the build, and let the build fail loudly.
+
 ### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
 
 ```text
