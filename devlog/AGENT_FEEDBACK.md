@@ -297,6 +297,19 @@ Scope: any test or script that starts a background process or scans for one. Cro
 
 Resolved at the source: the script that caused the stall stood up a loopback capture server to read a request body, and pi already exposes `onPayload` plus an injectable `fetch` for exactly that. Rewritten to use the hook, the background process is gone, and the class of incident goes with it. The entry is probation because the redirect and explicit-stop prescriptions were not adopted as rules; the process-scan discipline is the recorded part.
 
+### [A] 2026-10-05  --  An apostrophe inside a `${VAR:-default}` opens a quote, so the whole script is a syntax error
+
+```text
+state: open
+scoped: M3.3.1 -- the eval harness under the module skill
+legacy: none
+mitigation: keep the default free of apostrophes, or assign the default on its own line and expand the variable where it is used. The failure is loud but mislocated: bash reports `unexpected EOF while looking for matching` at the file's last line, whatever line holds the apostrophe.
+```
+
+`PROMPT="${EVAL_PROMPT:-The working tree holds this iteration's work.}"` is a syntax error. Inside `${...}` a single quote starts a quoted string, so the apostrophe in `iteration's` opens a quote that never closes. `bash -n` reports the EOF at the end of the file, so the line to fix has to be found by counting quotes rather than by reading the message.
+
+The measured check is cheap. `grep -c "'" file` against the file gives an odd count, and the offending lines are the ones that hold exactly one. Cross-reference: `docs/development/bash-coding-conventions.md`.
+
 ## Node
 
 ### [A] 2026-09-29  --  A nested `node --test` inherits `NODE_TEST_CONTEXT` and exits 0 without running anything

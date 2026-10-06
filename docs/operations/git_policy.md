@@ -15,9 +15,9 @@ Lower-case type prefix, colon, space, imperative summary. No scope field for now
 
 The short description completes the sentence "this commit will..." -- e.g. `feat: add snapshot validation gate`, not `feat: added snapshot validation gate`.
 
-Body and footer are optional. Use a body when the "why" is not obvious from the summary. The body carries the reason for the change, not a restatement of the diff; the diff already says what changed. Remove a body sentence that restates the diff. The body does not repeat the handover; the handover is the iteration record, and duplicating it in the commit body creates a second copy that rots when the record moves. Use a footer only for references that earn their place. A reference names a file, a record, or a decision a reader would otherwise have to hunt for. Drop a reference added for completeness, or a reference to a transient identifier such as a session id.
+Body and footer are optional. Use a body when the "why" is not obvious from the summary. Use a footer only for references that earn their place. A reference names a file, a record, or a decision a reader would otherwise have to hunt for. Drop a reference added for completeness, or a reference to a transient identifier such as a session id.
 
-The budget: aim for a subject of 50 characters or fewer. A body is separated from the subject by a blank line, wraps at about 72 characters, and carries at most 280 characters. A reason longer than the budget does not fit the body: it lives in the handover or the ADR, and the body points there.
+Keep the subject at 50 characters or fewer. The body states the reason in one sentence, after a blank line, and does not exceed 280 characters. A longer reason lives in the handover or the ADR, and the body points there.
 
 The short description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the description -- that is the diff's job.
 
