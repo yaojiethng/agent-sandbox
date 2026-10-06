@@ -27,7 +27,7 @@ Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `d
 
 This session paid for it: the first link gate was a bash wrapper around markdownlint-cli2, and its results disagreed between a single-file invocation and a tree run because the tool merges `--config` with whatever it discovers from the working directory. The wrapper was deleted. The markdownlint rule that replaced it has no such surface.
 
-*Open for M3.1.2:* the bash gates (`check_shell.sh`, `check_lib_contract.sh`, `check_prompt_frontmatter.sh`) still shell out. Is a rule the right form for them too, or is the line between a gate that owns a tool and a gate that drives one worth stating?
+*Open for M3.1.2:* the bash gates (`check_shell.sh`, `check_lib_contract.sh`, `check_frontmatter.sh`) still shell out. Is a rule the right form for them too, or is the line between a gate that owns a tool and a gate that drives one worth stating?
 
 ### 2.2 Legacy state in a gate is declared data with an expiry
 

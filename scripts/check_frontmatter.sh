@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check_prompt_frontmatter.sh
+# scripts/check_frontmatter.sh
 # Frontmatter parse gate over every prompt, skill and policy in the tree.
 #
 # Enforces docs/development/prompt-authoring-conventions.md
@@ -13,12 +13,12 @@
 # frontmatter holds a description and a scope per docs/operations/
 # documentation_policy.md `### Document header format`.
 #
-# The parse itself is Node's, in scripts/lint/prompt-frontmatter.mjs, because
+# The parse itself is Node's, in scripts/lint/frontmatter.mjs, because
 # the `yaml` package is not a dependency of this repository and the repository
 # has no YAML reader of its own. The gate fails rather than skips when Node or
 # the parser is missing, so an absent dependency is never read as a pass.
 #
-# Test seam: PROMPT_FRONTMATTER_SCAN_ROOT points the scan at a fixture root
+# Test seam: FRONTMATTER_SCAN_ROOT points the scan at a fixture root
 # that mirrors the real layout, so the gate's branches are exercised without
 # touching the real tree.
 #
@@ -31,8 +31,8 @@ set -uo pipefail
 SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCAN_SCRIPT="$REPO_ROOT/scripts/lint/prompt-frontmatter.mjs"
-SCAN_ROOT="${PROMPT_FRONTMATTER_SCAN_ROOT:-$REPO_ROOT}"
+SCAN_SCRIPT="$REPO_ROOT/scripts/lint/frontmatter.mjs"
+SCAN_ROOT="${FRONTMATTER_SCAN_ROOT:-$REPO_ROOT}"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Frontmatter gate: node is not on PATH; cannot parse frontmatter." >&2
@@ -44,7 +44,7 @@ if [[ ! -f "$SCAN_SCRIPT" ]]; then
   exit 1
 fi
 
-if PROMPT_FRONTMATTER_SCAN_ROOT="$SCAN_ROOT" node "$SCAN_SCRIPT"; then
+if FRONTMATTER_SCAN_ROOT="$SCAN_ROOT" node "$SCAN_SCRIPT"; then
   echo "Clean (${SECONDS}s)"
   exit 0
 fi

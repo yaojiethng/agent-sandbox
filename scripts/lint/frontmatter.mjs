@@ -24,8 +24,8 @@ import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { loadYaml } from "./yaml-loader.mjs";
 
-const REPO_ROOT = process.env.PROMPT_FRONTMATTER_SCAN_ROOT
-  ? resolve(process.env.PROMPT_FRONTMATTER_SCAN_ROOT)
+const REPO_ROOT = process.env.FRONTMATTER_SCAN_ROOT
+  ? resolve(process.env.FRONTMATTER_SCAN_ROOT)
   : resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** Roots holding a prompt or a skill. A missing root is skipped. */

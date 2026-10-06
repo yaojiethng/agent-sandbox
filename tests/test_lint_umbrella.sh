@@ -487,27 +487,27 @@ EOF
 }
 
 # Given: a fixture root whose only prompt has frontmatter that parses
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 0
 # Asserts: the clean verdict, so a passing gate is not a gate that never fires.
 test_frontmatter_gate_passes_on_a_parsing_block() {
   local root out rc=0
   root=$(make_frontmatter_fixture '---' 'description: "Draft: a quoted value"' '---' '' '# Sequential Work')
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a parsing block passes the gate"
   assert_contains "$out" "Clean" "the clean verdict reaches the operator"
 }
 
 # Given: a fixture root holding a prompt whose unquoted description contains a
 # colon followed by a space
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 1 and the finding names the file, the line, and the offending text
 # Asserts: the silent drop is reported at the line an author has to edit. A gate
 # that only printed a count would leave the author hunting for it.
 test_frontmatter_gate_names_the_offending_line() {
   local root out rc=0
   root=$(make_frontmatter_fixture '---' 'description: Draft - the shape: run a plan' '---' '' '# Sequential Work')
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "an unquoted colon-space fails the gate"
   assert_contains "$out" "broken.md" "the finding names the file"
   assert_contains "$out" "offending line: description: Draft - the shape: run a plan" \
@@ -516,7 +516,7 @@ test_frontmatter_gate_names_the_offending_line() {
 
 # Given: a fixture root holding a prompt that opens on its title, with no
 # frontmatter block at all
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 0
 # Asserts: the gate scopes itself to a block that fails to parse. A prompt draft
 # with no block is a separate, tracked defect; failing every known open item
@@ -524,13 +524,13 @@ test_frontmatter_gate_names_the_offending_line() {
 test_frontmatter_gate_skips_a_prompt_with_no_block() {
   local root out rc=0
   root=$(make_frontmatter_fixture '# Fan-Out Run' '' '## Purpose')
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a prompt with no frontmatter block is skipped, not flagged"
   assert_contains "$out" "clean across 1 prompt, skill and policy files" "the file is collected and its block skipped"
 }
 
 # Given: a PATH with no node on it
-# When:  check_prompt_frontmatter.sh runs
+# When:  check_frontmatter.sh runs
 # Then:  rc is 1
 # Asserts: the gate fails closed. A missing parser must never read as a pass.
 test_frontmatter_gate_fails_closed_without_node() {
@@ -539,13 +539,13 @@ test_frontmatter_gate_fails_closed_without_node() {
   mkdir -p "$bin"
   ln -sf "$(command -v dirname)" "$bin/dirname"
   ln -sf "$(command -v bash)" "$bin/bash"
-  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "no node on PATH fails the gate"
   assert_contains "$out" "node is not on PATH" "the missing dependency is named"
 }
 
 # Given: a fixture root holding a policy file whose frontmatter does not parse
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 1 and the finding names the policy file
 # Asserts: the policy scan root is live. A policy block is never loaded at
 # runtime, so a malformed one has no other symptom; the gate is the only check.
@@ -555,7 +555,7 @@ test_frontmatter_gate_scans_policy_files() {
   mkdir -p "$root/docs/operations"
   printf '%s\n' '---' 'description: Owns a rule: unquoted colon' '---' '' '# X Policy' \
     > "$root/docs/operations/x_policy.md"
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed policy block fails the gate"
   assert_contains "$out" "x_policy.md" "the finding names the policy file"
 }

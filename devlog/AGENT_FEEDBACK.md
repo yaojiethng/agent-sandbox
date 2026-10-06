@@ -57,6 +57,8 @@ mitigation: when a full-suite run reports only tests/test_runner_contract.sh as 
 
 `tests/test_runner_contract.sh` carries `# TEST_DEADLINE: 10` and takes about 7 seconds alone. Two full-suite runs on a loaded container timed it out; a third run passed at 97 seconds. The runner counts a deadline expiry as a failed file, so a load spike reads as a red run.
 
+**Recurrence, 2026-10-05.** Two consecutive full-suite runs each reported exactly one failure, and each named a different file: `tests/test_start_agent.sh` (`test_wizard_picker_abort`) in the first, `tests/test_resume.sh` (`test_interactive_shows_current_branch_hint`) in the second. Both files pass alone, 32 of 32 in the first case, and a third full run was green. The moving name is the diagnostic: a defect does not migrate between files, and a load-dependent one does. Both files drive an interactive picker, so the shared exposure is a wait on a prompt under parallel scheduling rather than a deadline the file declares.
+
 ---
 
 ## [A] 2026-10-02  --  A capacity claim was stated as a fact with no signal behind it
