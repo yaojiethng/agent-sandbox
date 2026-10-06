@@ -6,7 +6,8 @@
     { "provider": "pi", "source": "src/reasoning/providers/pi/preflight.sh", "destination": "/opt/sandbox/bin/provider-preflight.sh" },
     { "provider": "pi", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
     { "provider": "pi", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
-    { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
+    { "provider": "pi", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
     { "provider": "pi", "source": "src/reasoning/providers/pi/config/", "destination": "/opt/workflow/agent/config/" },
     { "provider": "pi", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
     { "provider": "pi", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
@@ -16,7 +17,8 @@
     { "provider": "hermes", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
     { "provider": "hermes", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
     { "provider": "hermes", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
-    { "provider": "hermes", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "hermes", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
+    { "provider": "hermes", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
     { "provider": "hermes", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
     { "provider": "hermes", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
     { "provider": "hermes", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" },
@@ -25,7 +27,8 @@
     { "provider": "opencode", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
     { "provider": "opencode", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
     { "provider": "opencode", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
-    { "provider": "opencode", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "opencode", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
+    { "provider": "opencode", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
     { "provider": "opencode", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
     { "provider": "opencode", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
     { "provider": "opencode", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" }
@@ -57,7 +60,7 @@
     { "path": "/home/agentuser/workspace/input/", "holds": "the operator's handover files, read-only" },
     { "path": "/home/agentuser/workspace/output/", "holds": "where the agent writes its result" },
     { "path": "/home/agentuser/workspace/session-diffs/", "holds": "the session diff output" },
-    { "path": "/opt/workflow/agent/prompts/", "holds": "the merged prompt root" },
+    { "path": "/opt/workflow/agent/prompts/", "holds": "the harness prompt root" },
     { "path": "/opt/workflow/agent/skills/", "holds": "the harness skill root" },
     { "path": "/opt/sandbox/docs/architecture/", "holds": "the harness architecture documents" },
     { "path": "/opt/sandbox/docs/concepts/", "holds": "the harness concept documents" },
@@ -68,12 +71,9 @@
   ],
   "cells": [
     {
-      "sources": ["src/reasoning/agent/prompts/", "workflow/coding-agent/prompts/"],
+      "sources": ["src/reasoning/agent/prompts/"],
       "runtime_path": "/opt/workflow/agent/prompts/",
-      "loader": "the running provider's config lists this path as a prompt root, and the agent offers each Markdown file here as a command",
-      "reachable": [
-        { "path": "workflow/coding-agent/skills/", "holds": "the coding-agent skills a prompt reads", "condition": "the reader has the repository tree" }
-      ]
+      "loader": "the running provider's config lists this path as a prompt root, and the agent offers each Markdown file here as a command"
     },
     {
       "sources": ["src/reasoning/agent/skills/"],
@@ -81,6 +81,22 @@
       "loader": "the running provider's config lists this path as a skill root, and the agent loads a skill's SKILL.md and any sibling file that skill names",
       "reachable": [
         { "path": "src/reasoning/providers/", "holds": "the harness's provider sources, one folder per provider", "condition": "the reader has the repository tree" }
+      ]
+    },
+    {
+      "sources": ["workflow/coding-agent/prompts/"],
+      "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
+      "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command",
+      "reachable": [
+        { "path": "devlog/", "holds": "the records the workflow prompts read and write", "condition": "the reader has the repository tree" }
+      ]
+    },
+    {
+      "sources": ["workflow/coding-agent/skills/"],
+      "runtime_path": "/opt/workflow/agent/modules/coding-agent/skills/",
+      "loader": "the running provider's config enables the module's package directory, whose skills folder contributes a skill per directory holding SKILL.md",
+      "reachable": [
+        { "path": "devlog/", "holds": "the roadmap and the handover chain the maintenance skills read", "condition": "the reader has the repository tree" }
       ]
     },
     {
@@ -112,14 +128,6 @@
         { "path": "/opt/workflow/agent/config/", "holds": "the config template this folder is seeded from at every start", "condition": "pi delivery" },
         { "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/", "holds": "the pi install, its changelog and its documentation", "condition": "pi delivery" },
         { "path": "src/reasoning/providers/pi/", "holds": "the harness's pi provider sources, which the bump skill edits", "condition": "the reader has the repository tree" }
-      ]
-    },
-    {
-      "sources": ["workflow/coding-agent/skills/"],
-      "runtime_path": "none",
-      "loader": "a prompt names a file here by its repository-relative path, and the reader has the repository tree; the image carries this folder nowhere and skill discovery does not reach it",
-      "reachable": [
-        { "path": "devlog/", "holds": "the roadmap and the handover chain a check-in reads", "condition": "the reader has the repository tree" }
       ]
     }
   ]

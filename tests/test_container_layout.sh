@@ -28,6 +28,10 @@
 #   a `none` cell naming an image path       --  rc 1; the path is named
 #   a providerless cell naming a provider    --  rc 1; the provider is named
 #   a cell with no loader                    --  rc 1; the field is named
+#   a module root named by a package entry   --  rc 0 (the entry enables it)
+#   a module root with no package entry      --  rc 1; the record is named
+#   two prompt roots holding one file name   --  rc 1; both roots are named
+#   two skill roots holding one skill name   --  rc 1; both roots are named
 #   the `pairs` CLI                          --  the image rows and the
 #                                                provisioning row, the latter
 #                                                resolved through AGENT_HOME
@@ -60,7 +64,7 @@ write_settings() {
   mkdir -p "$(dirname "$path")"
   cat > "$path" <<'EOF'
 {
-  "packages": ["/opt/workflow/agent"],
+  "packages": ["/opt/workflow/agent", "/opt/workflow/agent/modules/coding-agent"],
   "skills": ["/opt/workflow/agent/skills"],
   "prompts": ["/opt/workflow/agent/prompts"]
 }
@@ -93,7 +97,8 @@ write_manifest() {
   "image": [
     { "provider": "pi", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
     { "provider": "pi", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
-    { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
+    { "provider": "pi", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
     { "provider": "pi", "source": "src/reasoning/providers/pi/config/", "destination": "/opt/workflow/agent/config/" }
   ],
   "provision": [
@@ -113,17 +118,27 @@ write_manifest() {
   ],
   "cells": [
     {
-      "sources": ["src/reasoning/agent/prompts/", "workflow/coding-agent/prompts/"],
+      "sources": ["src/reasoning/agent/prompts/"],
       "runtime_path": "/opt/workflow/agent/prompts/",
       "loader": "the running provider's config lists this path as a prompt root",
       "reachable": [
-        { "path": "workflow/coding-agent/skills/", "holds": "the coding-agent skills", "condition": "the reader has the repository tree" }
+        { "path": "docs/operations/", "holds": "the policies a prompt reads", "condition": "the reader has the repository tree" }
       ]
     },
     {
       "sources": ["src/reasoning/agent/skills/"],
       "runtime_path": "/opt/workflow/agent/skills/",
       "loader": "the running provider's config lists this path as a skill root"
+    },
+    {
+      "sources": ["workflow/coding-agent/prompts/"],
+      "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
+      "loader": "the running provider's config enables the module's package directory"
+    },
+    {
+      "sources": ["workflow/coding-agent/skills/"],
+      "runtime_path": "/opt/workflow/agent/modules/coding-agent/skills/",
+      "loader": "the running provider's config enables the module's package directory"
     },
     {
       "sources": ["src/reasoning/providers/pi/config/"],
@@ -135,7 +150,7 @@ write_manifest() {
       ]
     },
     {
-      "sources": ["workflow/coding-agent/skills/"],
+      "sources": [".agents/skills/"],
       "runtime_path": "none",
       "loader": "a prompt names a file here by its repository-relative path"
     }
@@ -154,7 +169,8 @@ write_default_tree() {
   write_provider_dockerfile "$root" pi \
     'COPY src/reasoning/agent/skills/                     /opt/workflow/agent/skills/' \
     'COPY src/reasoning/agent/prompts/                    /opt/workflow/agent/prompts/' \
-    'COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts/' \
+    'COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/modules/coding-agent/prompts/' \
+    'COPY workflow/coding-agent/skills/                   /opt/workflow/agent/modules/coding-agent/skills/' \
     'COPY src/reasoning/providers/pi/config/              /opt/workflow/agent/config/' \
     'ENV AGENT_HOME=/home/agentuser/.pi'
   mkdir -p "$root/src/reasoning"
@@ -436,6 +452,43 @@ test_session_cli_emits_the_paths() {
   assert_contains "$MODULE_OUT" '/opt/sandbox/lib/' 'the library root is emitted'
 }
 
+test_module_root_with_no_package_entry_flagged() {
+  local root="$FIXTURE_DIR/nopackage"
+  write_default_tree "$root"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const settings = JSON.parse(fs.readFileSync(p, "utf8"));
+    settings.packages = ["/opt/workflow/agent"];
+    fs.writeFileSync(p, JSON.stringify(settings, null, 2));
+  ' "$root/src/reasoning/providers/pi/config/agent/settings.json"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a module root no package entry enables fails'
+  assert_contains "$GATE_OUT" "/opt/workflow/agent/modules/coding-agent/prompts/' is not a root in" 'the record is named'
+}
+
+test_prompt_name_in_two_roots_flagged() {
+  local root="$FIXTURE_DIR/promptname"
+  write_default_tree "$root"
+  mkdir -p "$root/src/reasoning/agent/prompts" "$root/workflow/coding-agent/prompts"
+  printf -- '---\ndescription: probe\n---\n' > "$root/src/reasoning/agent/prompts/plan.md"
+  printf -- '---\ndescription: probe\n---\n' > "$root/workflow/coding-agent/prompts/plan.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'one prompt name in two roots fails'
+  assert_contains "$GATE_OUT" "prompts: 'plan.md' is held by" 'both roots are named'
+}
+
+test_skill_name_in_two_roots_flagged() {
+  local root="$FIXTURE_DIR/skillname"
+  write_default_tree "$root"
+  mkdir -p "$root/src/reasoning/agent/skills/check-in" "$root/workflow/coding-agent/skills/check-in"
+  printf -- '---\nname: check-in\ndescription: probe\n---\n' > "$root/src/reasoning/agent/skills/check-in/SKILL.md"
+  printf -- '---\nname: check-in\ndescription: probe\n---\n' > "$root/workflow/coding-agent/skills/check-in/SKILL.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'one skill name in two roots fails'
+  assert_contains "$GATE_OUT" "skills: 'check-in' is held by" 'both roots are named'
+}
+
 run_test test_conforming_tree_passes
 run_test test_manifest_row_with_no_copy_line_flagged
 run_test test_copy_line_with_no_manifest_row_flagged
@@ -454,6 +507,9 @@ run_test test_two_cells_claiming_one_folder_flagged
 run_test test_none_cell_naming_an_image_path_flagged
 run_test test_providerless_cell_naming_a_provider_flagged
 run_test test_cell_without_a_loader_flagged
+run_test test_module_root_with_no_package_entry_flagged
+run_test test_prompt_name_in_two_roots_flagged
+run_test test_skill_name_in_two_roots_flagged
 run_test test_pairs_cli_emits_both_layers
 run_test test_session_cli_emits_the_paths
 

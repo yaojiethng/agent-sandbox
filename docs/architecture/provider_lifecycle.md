@@ -109,7 +109,7 @@ The provider config reaches a session from two sources:
 
 Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in the repo) are loaded through a different path than provider-layer or user-layer content:
 
-- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the `"skills"` and `"prompts"` keys in `settings.json`, so a key pi does not preserve costs that layer for the rest of the session. The next session starts from the image's `settings.json`, which carries them again.
+- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the `"skills"` and `"prompts"` keys in `settings.json`, so a key pi does not preserve costs that layer for the rest of the session. A workflow module's payload is image-baked beside it at `/opt/workflow/agent/modules/<module>/skills|prompts`, and the `"packages"` key enables the module by naming its directory, whose conventional subdirectories pi loads as roots. The next session starts from the image's `settings.json`, which carries them again.
 - **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from that directory.
 - **User layer** -- files the operator places in `$AGENT_HOME/agent/skills|prompts/`, which the mounts carry. Loaded by pi's discovery from the same directories.
 

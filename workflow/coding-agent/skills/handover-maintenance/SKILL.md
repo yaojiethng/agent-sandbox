@@ -9,11 +9,11 @@ description: "Checks handover content and the closed handover chain against hand
 
 ## Purpose
 
-Checks handover documents and reports the violations of [`handover_policy.md`](../../../docs/operations/handover_policy.md) and [`documentation_policy.md`](../../../docs/operations/documentation_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
+Checks handover documents and reports the violations of [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
 
 This runbook carries two tracks over one subject. Track A checks the content quality of the handover the current iteration is writing. Track B checks the chain of handovers already closed, which is where deferred items, status values, and stale references live.
 
-The rules live in [`handover_policy.md`](../../../docs/operations/handover_policy.md) and [`documentation_policy.md`](../../../docs/operations/documentation_policy.md). This runbook is a convenience copy of the checks. Read the two policy documents before acting. Where this runbook and a policy disagree, the policy wins.
+The rules live in [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md). This runbook is a convenience copy of the checks. Read the two policy documents before acting. Where this runbook and a policy disagree, the policy wins.
 
 ## When to run
 
@@ -127,7 +127,7 @@ Completion criterion: every named file and symbol either exists or is reported.
 
 #### Step 9 - The correction form
 
-Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. Read step 2 and step 3 of [`handover_policy.md`](../../../docs/operations/handover_policy.md) `## Corrections to Closed Handovers`:
+Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. Read step 2 and step 3 of [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md) `## Corrections to Closed Handovers`:
 
 - A **misrecording** gets the paragraph rewritten in place and the tag moved to a `[CORRECTION -- YYYY-MM-DD: ...]` block at the end of the corrected section.
 - A non-standard format or a policy violation that cannot be corrected cleanly gets an `[AMENDMENT -- YYYY-MM-DD: ...]` block, leaving the content unchanged.
@@ -139,13 +139,13 @@ Completion criterion: every finding from Steps 5 to 8 that lands on a closed rec
 
 #### Step 10 - Report
 
-Write the report as JSONL at the path the dispatcher set, in the schema [`workflow/coding-agent/skills/check-in/report-schema.md`](check-in/report-schema.md) owns.
+Write the report as JSONL at the path the dispatcher set, in the schema [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md) owns.
 
 Completion criterion: the report covers every handover in scope and every finding, and every check that produced no finding has a skip line.
 
 ## Output shape
 
-The report is the JSONL file described in [`workflow/coding-agent/skills/check-in/report-schema.md`](check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed.
+The report is the JSONL file described in [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed.
 
 Print a one-line summary to stdout when the run ends: the findings count, the skip count, and the path.
 
@@ -155,7 +155,7 @@ A Track A finding is reported through the same schema as any other, with the rec
 
 - Does not write a record, apply a correction, or commit. The dispatcher applies the report.
 - Does not close an iteration. Track B reports what is already closed and what needs escalation.
-- Does not check the roadmap. That is [`roadmap-maintenance.md`](roadmap-maintenance.md).
+- Does not check the roadmap. That is [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md).
 - Does not write policy. A finding that no policy text covers is a gap to report, not a rule to add here.
 - Does not audit handovers outside the scope set from Step 4. A wider sweep is a separate run with its own scope.
 - Does not choose a commit shape, a message, or a fold. The report carries no field for one.

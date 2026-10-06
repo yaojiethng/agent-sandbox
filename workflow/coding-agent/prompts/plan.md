@@ -45,7 +45,7 @@ Present the gathered context and the session goal. Set the session's scope and d
 
 ## Interview
 
-Pass the session context -- the recorded goal and problem, the gathered context, and the confirmed scope -- to the [`grill-me`](../skills/grill-me/SKILL.md) skill for the interview. The skill resolves each branch of the decision tree. Treat its resolved branches as the interview result.
+Pass the session context -- the recorded goal and problem, the gathered context, and the confirmed scope -- to the [`grill-me`](/opt/workflow/agent/skills/grill-me/SKILL.md) skill for the interview. The skill resolves each branch of the decision tree. Treat its resolved branches as the interview result.
 
 ## Decide the outcome
 

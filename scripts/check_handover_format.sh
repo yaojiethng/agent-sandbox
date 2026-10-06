@@ -10,7 +10,7 @@
 # keeps free of every record written before the frontmatter rule. A live record
 # that lacks the block is a finding. A file named on the command line is
 # enforced regardless of date, which is the on-demand audit mode
-# handover-maintenance.md uses. `--staged` enforces the handovers staged for
+# handover-maintenance uses. `--staged` enforces the handovers staged for
 # commit but keeps the cutover, so a commit correcting an old record is not
 # blocked.
 #

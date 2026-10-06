@@ -29,7 +29,7 @@
 // A missing or unparseable manifest, and a missing dockerfile, are findings
 // rather than empty results, so a broken input never reads as a clean run.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const MANIFEST_REL = "src/build/container-interface.json";
@@ -192,7 +192,8 @@ function check_cells(root, manifest, providers, findings) {
   const cells = manifest_rows(manifest, "cells");
   const images = manifest_rows(manifest, "image");
   const provisions = manifest_rows(manifest, "provision");
-  const roots = settings_roots(root);
+  const root_keys = settings_root_keys(root);
+  const roots = root_keys === null ? null : SETTINGS_ROOTS.flatMap((key) => root_keys[key]);
 
   if (cells.length === 0) {
     findings.push("cells: the manifest declares no instruction surface");
@@ -270,6 +271,8 @@ function check_cells(root, manifest, providers, findings) {
       );
     }
   }
+
+  check_names(root, manifest, root_keys, findings);
 }
 
 // check_reachable WHERE CELL FINDINGS -- the rows the cell adds to the session
@@ -386,15 +389,100 @@ function strings_of(value) {
   return [];
 }
 
-// settings_roots ROOT -- the prompt and skill roots the provider's settings
-// record lists, or null when the record is absent or does not parse. A missing
-// record is a finding, not an empty list, so it never reads as agreement.
-function settings_roots(root) {
+// settings_root_keys ROOT -- the prompt and skill roots the provider's settings
+// enables, by key, or null when the record is absent or does not parse. A root
+// is enabled either by the key's own list or by a package entry whose
+// conventional subdirectory it is: that is how a module's payload reaches the
+// settings without the settings naming each of its folders. A missing record is
+// a finding, not an empty list, so it never reads as agreement.
+export function settings_root_keys(root) {
+  let settings;
   try {
-    const settings = JSON.parse(readFileSync(join(root, SETTINGS_REL), "utf8"));
-    return SETTINGS_ROOTS.flatMap((key) => (Array.isArray(settings[key]) ? settings[key] : []));
+    settings = JSON.parse(readFileSync(join(root, SETTINGS_REL), "utf8"));
   } catch {
     return null;
+  }
+  const packages = (Array.isArray(settings.packages) ? settings.packages : [])
+    .filter((entry) => typeof entry === "string" && entry.startsWith("/"))
+    .map(strip_dir);
+  const out = {};
+  for (const key of SETTINGS_ROOTS) {
+    const named = (Array.isArray(settings[key]) ? settings[key] : []).map(strip_dir);
+    const conventional = packages.map((entry) => entry + "/" + key);
+    out[key] = [...new Set([...named, ...conventional])];
+  }
+  return out;
+}
+
+// strip_dir PATH -- a root as the settings record writes it, with no trailing
+// slash, which is the form a cell's runtime path is compared against.
+function strip_dir(path) {
+  return path.replace(/\/+$/, "");
+}
+
+// settings_roots ROOT -- the same roots as one list, which is what a cell is
+// checked against.
+function settings_roots(root) {
+  const keys = settings_root_keys(root);
+  return keys === null ? null : SETTINGS_ROOTS.flatMap((key) => keys[key]);
+}
+
+// entry_names DIR KIND -- the names a root holds. A prompt is a Markdown file
+// and a skill is a directory holding `SKILL.md`, read from the source folder the
+// image copies, so the check sees what the loader will see.
+function entry_names(dir, kind) {
+  const names = [];
+  const walk = (current) => {
+    let entries;
+    try {
+      entries = readdirSync(current);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(current, entry);
+      let stat;
+      try {
+        stat = statSync(full);
+      } catch {
+        continue;
+      }
+      if (stat.isDirectory()) {
+        if (kind === "skills" && existsSync(join(full, "SKILL.md"))) names.push(entry);
+        walk(full);
+      } else if (kind === "prompts" && entry.endsWith(".md")) {
+        names.push(entry);
+      }
+    }
+  };
+  walk(dir);
+  return names;
+}
+
+// check_names ROOT MANIFEST KEYS FINDINGS -- no two roots under one settings key
+// may hold the same name. The loader resolves one of the two and ignores the
+// other, and nothing reports the loser. A module enabled beside the harness
+// payload is where that happens, and the failure carries no signal of its own.
+function check_names(root, manifest, keys, findings) {
+  if (keys === null) return;
+  const cells = manifest_rows(manifest, "cells");
+  for (const key of SETTINGS_ROOTS) {
+    const seen = new Map();
+    for (const runtime of keys[key]) {
+      const cell = cells.find((row) => normalize_dir(row.runtime_path) === normalize_dir(runtime));
+      if (!cell) continue;
+      for (const source of cell.sources) {
+        for (const name of entry_names(join(root, source), key)) {
+          if (seen.has(name)) {
+            findings.push(
+              `${key}: '${name}' is held by '${seen.get(name)}' and by '${cell.runtime_path}'; one shadows the other`,
+            );
+          } else {
+            seen.set(name, cell.runtime_path);
+          }
+        }
+      }
+    }
   }
 }
 

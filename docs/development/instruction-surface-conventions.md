@@ -10,17 +10,17 @@ A cell answers three questions about a surface:
 2. **Where it runs** -- the runtime path, or `none` when no image carries the folder.
 3. **Loaded when** -- the condition under which the agent can load a file from it.
 
-A runtime path is the subject rather than a source folder, because two source folders can land on one. `src/reasoning/agent/prompts/` and `workflow/coding-agent/prompts/` both land on `/opt/workflow/agent/prompts/`, so one cell names both. Two cells on one path would overwrite each other in the image, and the gate fails on that.
+A runtime path is the subject rather than a source folder, because two source folders can land on one, and then one cell names both. What the gate refuses is two cells on one path, because they would overwrite each other in the image. A module's payload does not merge into the harness roots: `workflow/<module>/prompts/` lands on `/opt/workflow/agent/modules/<module>/prompts/`, its own root. A merge loses which module a file came from, and it lets one module's file shadow another's with nothing reported. That shadowing is checked instead: no two roots under one settings key may hold a file, or a skill directory, of the same name.
 
 ## The shape
 
 ```json
 {
-  "sources": ["src/reasoning/agent/prompts/", "workflow/coding-agent/prompts/"],
-  "runtime_path": "/opt/workflow/agent/prompts/",
-  "loader": "the running provider's config lists this path as a prompt root",
+  "sources": ["workflow/coding-agent/prompts/"],
+  "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
+  "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command",
   "reachable": [
-    { "path": "workflow/coding-agent/skills/", "holds": "the coding-agent skills a prompt reads", "condition": "the reader has the repository tree" }
+    { "path": "devlog/", "holds": "the records the workflow prompts read and write", "condition": "the reader has the repository tree" }
   ]
 }
 ```
@@ -52,6 +52,12 @@ A surface with a runtime path ships in an image, and its files are read by an ag
 
 Two surfaces declare one provider's config home: the home itself, which carries the agent `AGENTS.md` and the settings record, and the prompt and skill folders inside it.
 
+## A module's payload
+
+`workflow/<module>/` is a toggle unit. Its `prompts/` and `skills/` folders are its payload, and each ships to its own root under `/opt/workflow/agent/modules/<module>/`. A module is enabled by naming its directory as a package: pi's `settings.json` carries `/opt/workflow/agent/modules/coding-agent` in its `packages` key, and the package convention contributes that directory's `prompts` and `skills` subdirectories as roots, so one entry enables both. The gate derives those roots from the same entry, and a module root that no entry enables is a finding.
+
+The repository keeps the two kinds apart because a prompt root reads files into commands and a skill root reads directories holding `SKILL.md`. A module's `prompts/` folder ships whole, and its `drafts/` and `audits/` folders do not ship at all, which is why the dockerfiles name the payload folders rather than the module directory.
+
 ## The layers
 
 The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table for the container paths it covers; the project layer, `AGENTS.md`, holds one for the working tree the session runs in. Each table names runtime paths and nothing else.
@@ -62,7 +68,7 @@ The two tables split the `session` rows between them, and every row belongs to e
 
 Two gates read the declaration, both through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader.
 
-[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY` and `ENV` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a malformed row, and two cells claiming one folder or one runtime path.
+[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY` and `ENV` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
 
 [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, and the loop inventory against the policy's `scope`.
 

@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: none
+mitigation: write the body to `git_policy.md`'s budget before committing -- a subject of 50 characters or fewer, a body under 280 characters, no path list, and a pointer to the handover or the ADR rather than its reasoning -- and measure it, with `git log -1 --format=%b | wc -c`, because nothing else does.
+```
+
+Three of five delivery commits across two sessions exceeded the 280-character body budget: 324, 880 and 1248 characters. The longest repeated its handover's argument, which the policy forbids twice over -- the body does not repeat the handover, and a reason longer than the budget lives in the handover or the ADR with the body pointing there. The bodies also carried file paths, which the paragraph after the budget forbids.
+
+The habit is the cause, not the size of the changes: a commit body reads like a place to record the reason, and the longer the iteration, the more there is to record. No gate reads a commit message, and the operator caught the third by reading the log. The failure is loud to that reader and silent to every check, so it stays a discipline: the review gate already reads the series, and the only part written down as enforced is the type prefix. All three messages were rewritten to the budget in the fold recorded by handover `20261005-08`.
+
+---
+
 ## [A] 2026-10-05  --  A roadmap row filed under a subject track instead of the active sub-milestone
 
 ```text

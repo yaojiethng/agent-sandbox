@@ -19,10 +19,10 @@ The authoritative rules stay in the policy documents. The payloads are convenien
 
 ## When to run
 
-- The operator asks to check the roadmap against `roadmap_policy.md`, or to fix a roadmap defect. That is [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md).
-- The operator asks whether a compaction pass is safe, or wants the roadmap prepared for one. That is [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md), Step 4.
-- The operator asks about the content quality of the handover the current iteration is writing. That is [`handover-maintenance.md`](../skills/handover-maintenance.md), Track A.
-- The operator asks to audit the closed handover chain, or to trace one deferred item across iterations. That is [`handover-maintenance.md`](../skills/handover-maintenance.md), Track B.
+- The operator asks to check the roadmap against `roadmap_policy.md`, or to fix a roadmap defect. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md).
+- The operator asks whether a compaction pass is safe, or wants the roadmap prepared for one. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md), Step 4.
+- The operator asks about the content quality of the handover the current iteration is writing. That is [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track A.
+- The operator asks to audit the closed handover chain, or to trace one deferred item across iterations. That is [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track B.
 - The operator asks for any of the above to run in its own worktree, isolated from this session's tree. That is Step 5 of the procedure below, which carries the whole dispatch loop.
 
 ## When not to run, and what replaces it
@@ -41,9 +41,9 @@ Take the argument when the operator gave one and the request when they did not. 
 
 | The job | Payload |
 |---|---|
-| Roadmap markers, nesting, compaction, structure, or pre-compaction readiness | [`roadmap-maintenance.md`](../skills/roadmap-maintenance.md) |
-| Handover content quality on the active handover | [`handover-maintenance.md`](../skills/handover-maintenance.md), Track A |
-| Handover chain structure, deferred chain, status, or dangling references | [`handover-maintenance.md`](../skills/handover-maintenance.md), Track B |
+| Roadmap markers, nesting, compaction, structure, or pre-compaction readiness | [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md) |
+| Handover content quality on the active handover | [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track A |
+| Handover chain structure, deferred chain, status, or dangling references | [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track B |
 
 A job that names both subjects runs both payloads, roadmap first, and reports each separately. Never merge their findings into one table; the two have different severities and different policy owners.
 

@@ -33,7 +33,7 @@ Reconcile the feedback per the operator's decisions. Do not decide a probation e
 
 ## Compact the task list
 
-Run the `roadmap-maintenance` skill (`workflow/coding-agent/skills/roadmap-maintenance.md`, from the repository root) over `devlog/roadmap.md`, and apply its report. The skill checks the compaction pass and the summary table update, and it follows [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) and the [Changelog Format](/opt/sandbox/docs/operations/roadmap_policy.md#changelog-format). It writes nothing, so this prompt applies each `fix-now` finding and carries an escalated one into the close. This prompt supplies the milestone name; the skill supplies the checks.
+Run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md`, and apply its report. The skill checks the compaction pass and the summary table update, and it follows [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) and the [Changelog Format](/opt/sandbox/docs/operations/roadmap_policy.md#changelog-format). It writes nothing, so this prompt applies each `fix-now` finding and carries an escalated one into the close. This prompt supplies the milestone name; the skill supplies the checks.
 
 ## Stop at the close boundary
 

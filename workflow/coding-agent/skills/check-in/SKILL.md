@@ -17,8 +17,8 @@ The prompt `/gm` owns the command name and parses its arguments. This skill owns
 Run this when the operator wants to know what is open and where to start. Four cases it is not for, and what replaces it:
 
 - **One task, already chosen.** Open the iteration with `/iter`. A check-in named the task in an earlier turn.
-- **A record audit on its own.** Dispatch [`roadmap-maintenance`](../roadmap-maintenance.md) or [`handover-maintenance`](../handover-maintenance.md) directly. This skill runs both only on the thoroughness argument.
-- **Which work runs without the operator.** [`/backlog-triage.md`](../../prompts/backlog-triage.md) answers that narrower question. This skill reports what is open, not what is dispatchable.
+- **A record audit on its own.** Dispatch [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) or [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) directly. This skill runs both only on the thoroughness argument.
+- **Which work runs without the operator.** [`/backlog-triage`](/opt/workflow/agent/modules/coding-agent/prompts/backlog-triage.md) answers that narrower question. This skill reports what is open, not what is dispatchable.
 - **A milestone boundary.** `/milestone-start` and `/milestone-close` own those.
 
 ## Scope
@@ -91,7 +91,7 @@ The auditor recommends; this skill disposes. The report names no commit, no mess
 | `defer` | determinable, and an existing roadmap unit already names the broader task this belongs to | nothing. The named unit owns it; clearing it ahead of that pass is premature. A `defer` entry with no named unit is rejected. |
 | `escalate` | two sources disagree, or a value cannot be re-derived | present it as a point below the table, never as a row |
 
-A compaction carries the survival table [`roadmap_policy.md`](../../../../docs/operations/roadmap_policy.md#compaction-cascading) names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
+A compaction carries the survival table [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
 
 This skill makes the one `chore:` commit, in the main tree, after the auditors return -- never a subagent, and never one commit per finding. Neither auditor is told to commit.
 

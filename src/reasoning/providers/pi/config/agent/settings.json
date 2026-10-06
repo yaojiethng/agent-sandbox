@@ -26,7 +26,8 @@
     }
   },
   "packages": [
-    "/opt/workflow/agent"
+    "/opt/workflow/agent",
+    "/opt/workflow/agent/modules/coding-agent"
   ],
   "enabledModels": [
     "opencode-go/step-5-preview-free",

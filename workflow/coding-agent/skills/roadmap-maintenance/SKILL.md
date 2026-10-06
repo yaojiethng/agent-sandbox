@@ -9,13 +9,13 @@ description: "Checks devlog/roadmap.md, devlog/roadmap_future.md and devlog/chan
 
 ## Purpose
 
-Checks the three roadmap records -- `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md` -- and reports the violations of [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
+Checks the three roadmap records -- `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md` -- and reports the violations of [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
 
 The three files are one record: a milestone title, a status, or an anchor that disagrees across them is the same violation whichever side of the boundary it sits on. `devlog/roadmap.md` carries the active and upcoming milestones, `devlog/roadmap_future.md` the milestones staged for promotion, and `devlog/changelog.md` the milestones already closed.
 
-The transition procedures live in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) -- the compaction cascade and the top-level close. This runbook owns the checks and the schedule that runs them; the policy owns the invariants those checks protect. A check stated here restates no rule the policy carries, and a rule the policy carries is never restated here.
+The transition procedures live in [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) -- the compaction cascade and the top-level close. This runbook owns the checks and the schedule that runs them; the policy owns the invariants those checks protect. A check stated here restates no rule the policy carries, and a rule the policy carries is never restated here.
 
-The handover is not the subject. Handover content and handover chain checks belong to [`handover-maintenance.md`](handover-maintenance.md).
+The handover is not the subject. Handover content and handover chain checks belong to [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md).
 
 ## When to run
 
@@ -52,7 +52,7 @@ Completion criterion: no unconverted marker was found, no sub-item sits inside p
 
 ### 1.4 A closed item carries no open work
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `## When the Roadmap Is Touched` owns the marker-nesting invariant. This check applies it.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `## When the Roadmap Is Touched` owns the marker-nesting invariant. This check applies it.
 
 **Check.** Walk every `- [x]` item and read its indented children. Report any open child and the parent that carries it, naming the completion context the parent is missing.
 
@@ -64,11 +64,11 @@ Completion criterion: 1.1 through 1.4 hold, and no `- [x]` item carries an open 
 
 Run this step over each item in the active sub-milestone.
 
-**2.1 Completion-state compaction.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the procedure and is its single source. This check verifies its result: a fully completed group that still carries an expanded checklist is uncompacted, and is reported.
+**2.1 Completion-state compaction.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) owns the procedure and is its single source. This check verifies its result: a fully completed group that still carries an expanded checklist is uncompacted, and is reported.
 
 **2.2 Outcome summary marker.** The `- [x]` marker survives the compaction. A compacted item without the marker is reported.
 
-**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) step 1, component by component.
+**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) step 1, component by component.
 
 | Component | Expected | Check |
 |---|---|---|
@@ -82,7 +82,7 @@ Run this step over each item in the active sub-milestone.
 
 A component that should survive and is gone, or one that should be removed and is present, is a violation in either direction. A compaction reported under 2.1 names this table as the form the edit must take.
 
-**2.4 Multi-level compaction depth.** Step 2 of [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) owns the upward pass. A parent whose children are all done and that is not compacted is reported.
+**2.4 Multi-level compaction depth.** Step 2 of [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) owns the upward pass. A parent whose children are all done and that is not compacted is reported.
 
 **2.5 Nested sub-group compaction.** The same step, read at sub-group grain. An expanded sub-group inside a partially complete item is reported.
 
@@ -112,7 +112,7 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 ### 3.11 The summary table agrees with the sections it names
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Summary table update` owns it; the check below applies it.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Summary table update` owns it; the check below applies it.
 
 **Check.** For each row, read the linked heading and the status it declares. A row that says `Complete` whose section still carries open tasks is a finding; a row whose fragment matches no heading is a finding; two records naming one milestone differently are a finding.
 
@@ -120,7 +120,7 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 ### 3.12 No item is restated across the records
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Filing rules` owns it. This check adds the record-layer case that rule does not name.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Filing rules` owns it. This check adds the record-layer case that rule does not name.
 
 **Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate and name the copy that sits under the milestone whose blurb claims the work.
 
@@ -140,13 +140,13 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.15 The changelog section map is unambiguous
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Entry structure` and `## Corrections to Closed Roadmap and Changelog Entries` own the heading levels and the correction forms.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Entry structure` and `## Corrections to Closed Roadmap and Changelog Entries` own the heading levels and the correction forms.
 
 **Check.** Read the `##` headings of `changelog.md` in order. Any `##` that is not `## M{n}` is a finding. Any summary link whose fragment names a correction block is a finding.
 
 ### 3.16 A new entry states whether its capability still stands
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Writing guidance` and `## Corrections to Closed Roadmap and Changelog Entries` own it.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Writing guidance` and `## Corrections to Closed Roadmap and Changelog Entries` own it.
 
 **Check.** For each entry written or amended in this run, read the summary row that links it. A row reading `Complete` for an entry that records removal is a finding.
 
@@ -154,7 +154,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.17 A new entry carries no fact the tree can falsify
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Writing guidance` owns it.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Writing guidance` owns it.
 
 **Check.** For the section this run wrote, search for paths, version strings and line numbers.
 
@@ -162,7 +162,7 @@ Not a check. A landed row naming the handover that landed it is not a rule in an
 
 ### 3.18 A superseded entry says so where a reader will see it
 
-**Rule.** [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `## Corrections to Closed Roadmap and Changelog Entries` owns it. The anchor consequence is why the rule exists.
+**Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `## Corrections to Closed Roadmap and Changelog Entries` owns it. The anchor consequence is why the rule exists.
 
 **Check.** For each entry whose capability a later milestone removed, read the entry's opening. A suffix on the milestone heading, or a supersession sentence with no date, is a finding.
 
@@ -182,7 +182,7 @@ Completion criterion: all three hold, or the report names the failing condition.
 
 ### Step 5 - Report the run
 
-Write the report as JSONL at the path the dispatcher set, in the schema [`workflow/coding-agent/skills/check-in/report-schema.md`](check-in/report-schema.md) owns. One line per finding; one line per check that produced no finding, with `result` and `reason`.
+Write the report as JSONL at the path the dispatcher set, in the schema [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md) owns. One line per finding; one line per check that produced no finding, with `result` and `reason`.
 
 Four rules bound what a run may report.
 
@@ -198,14 +198,14 @@ Report the checks that produced no finding as skips. A check that did not run is
 
 ## Output shape
 
-The report is the JSONL file described in [`workflow/coding-agent/skills/check-in/report-schema.md`](check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed.
+The report is the JSONL file described in [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed.
 
 Print a one-line summary to stdout when the run ends: the findings count, the skip count, and the path. A finding count of zero is reported as zero, never as silence.
 
 ## Non-goals
 
 - Does not write a record, apply a correction, or commit. The dispatcher applies the report.
-- Does not check handovers or the handover chain. That is [`handover-maintenance.md`](handover-maintenance.md).
+- Does not check handovers or the handover chain. That is [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md).
 - Does not write policy. A check that no policy text covers is a gap to report, not a rule to add here.
 - Does not open, re-scope, or close an iteration.
 - Does not change a milestone's task set. Adding or removing a task is a roadmap decision, not a maintenance finding.

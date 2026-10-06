@@ -9,7 +9,9 @@
 #      `skills` and `prompts` name the image-baked /opt/workflow/agent paths.
 #      That file is image-owned: entrypoint.sh seeds AGENT_HOME from the config
 #      template at every start, so those keys come back each session even if a
-#      session rewrites the file.
+#      session rewrites the file. The `packages` key also names the coding-agent
+#      module directory, whose conventional `prompts` and `skills`
+#      subdirectories pi loads as roots; one entry enables the module.
 #   b) The scope head names the configured default. Pi's `findInitialModel`
 #      selects `scopedModels[0]` and reaches `defaultProvider`/`defaultModel`
 #      only when the scope is empty, so the first `enabledModels` entry decides
@@ -67,7 +69,7 @@ test_shipped_settings_names_harness_roots() {
   fi
 
   local key value expected
-  for pair in "packages:/opt/workflow/agent" "skills:/opt/workflow/agent/skills" "prompts:/opt/workflow/agent/prompts"; do
+  for pair in "packages:/opt/workflow/agent" "packages:/opt/workflow/agent/modules/coding-agent" "skills:/opt/workflow/agent/skills" "prompts:/opt/workflow/agent/prompts"; do
     key="${pair%%:*}"
     expected="${pair#*:}"
     value="$(jq -r --arg key "$key" '.[$key] // [] | join(",")' "$SETTINGS")"
