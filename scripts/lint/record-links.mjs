@@ -15,10 +15,10 @@
 //     heading carrying a suffix carries that suffix in its fragment.
 //   - a link in a file that ships into the agent image resolves in the image's
 //     path space, not the repository's. The prompt that ships runs at its image
-//     path, so its link must reach a path that exists there. The pairs come from
-//     `scripts/lint/image-map.mjs`, which reads the image manifest and the
-//     provisioning chain it declares; an image path is checked by mapping it
-//     back to the repository source that populates it.
+//     path, so its link must reach a path that exists there. The pairs and the
+//     instruction surfaces come from `src/build/container-interface.mjs`, which
+//     reads the interface manifest; an image path is checked by mapping it back
+//     to the repository source that populates it.
 //
 // What it skips: external targets (http, https, mailto, tel), links inside
 // fenced code blocks, and whatever the config exempts.
@@ -34,36 +34,46 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { pairs } from "./image-map.mjs";
+import { load_manifest, manifest_rows, pairs } from "../../src/build/container-interface.mjs";
 
-// Repository directory to image destination, trailing slash on both. The map is
-// declared once in `scripts/lint/image-map.json` and read here through
-// `image-map.mjs`, so a new `COPY` line reaches this rule with no edit to it:
-// `scripts/check_image_map.sh` holds the manifest equal to the dockerfiles.
-// The provider config is declared twice on purpose -- the image copies it to
-// `/opt/workflow/agent/config/`, and the entrypoint seeds `$AGENT_HOME/` from
-// that template -- so a file beneath it has two valid destinations.
+// Repository directory to image destination, trailing slash on both. The
+// interface is declared once in `src/build/container-interface.json` and read
+// here through `container-interface.mjs`, so a new `COPY` line reaches this
+// rule with no edit to it: `scripts/check_container_layout.sh` holds the
+// manifest equal to the dockerfiles. The provider config is declared twice on
+// purpose -- the image copies it to `/opt/workflow/agent/config/`, and the
+// entrypoint seeds `$AGENT_HOME/` from that template -- so a file beneath it
+// has two valid destinations.
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const manifest = load_manifest(repoRoot) || {};
 const imageMap = pairs(repoRoot).map((row) => [row.source, row.destination]);
 
 if (imageMap.length === 0) {
   throw new Error(
-    "record-links: scripts/lint/image-map.json declares no pair; a shipped file's links cannot be resolved",
+    "record-links: src/build/container-interface.json declares no pair; a shipped file's links cannot be resolved",
   );
 }
 
-// The instruction surfaces: the roots a prompt, a skill or the provider's
+// The instruction surfaces: the roots a prompt, a skill or a provider's
 // `AGENTS.md` runs from. Their links are written for the agent that reads them
 // in a container, so they resolve in the image's path space. A bundled document
 // outside these roots is read by a repository reader first, and keeps the
 // repository-space check, or its links to an ADR or a roadmap would demand that
 // every record ship as well.
-const instructionRoots = [
-  "src/reasoning/agent/skills/",
-  "src/reasoning/agent/prompts/",
-  "workflow/coding-agent/prompts/",
-  "src/reasoning/providers/pi/config/agent/",
-];
+//
+// The roots are the folder sets the manifest's `cells` declare, so a surface
+// added to the declaration is covered here with no edit to the rule. A cell
+// whose runtime path is `none` is read from the repository rather than from an
+// image, and keeps the repository-space check.
+const instructionRoots = manifest_rows(manifest, "cells")
+  .filter((cell) => cell.runtime_path !== "none")
+  .flatMap((cell) => (Array.isArray(cell.sources) ? cell.sources : []));
+
+if (instructionRoots.length === 0) {
+  throw new Error(
+    "record-links: src/build/container-interface.json declares no shipping cell; a shipped file's links cannot be resolved",
+  );
+}
 
 // image_path_of REPO_RELATIVE -- the path the file has in the image, or empty
 // when the file does not ship.

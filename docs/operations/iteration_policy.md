@@ -25,7 +25,7 @@ Read this document at the start of any iteration.
 
 The workflows run as invocable runbooks under `workflow/coding-agent/prompts/` (each runbook is a workflow prompt). The procedure lives in the runbooks; this policy holds the invariants the runbooks must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram. A runbook may evolve freely as the model improves; the invariants here are the durable half.
 
-The `scope` field above names the runbooks this policy governs. That list is the single declaration of them: the project layer `AGENTS.md` carries the inventory an agent reads at session start, and [`scripts/check_instruction_context.sh`](../../scripts/check_instruction_context.sh) fails when the two disagree.
+The `scope` field above names the runbooks this policy governs. That list is the single declaration of them: the project layer `AGENTS.md` carries the inventory an agent reads at session start, and [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) fails when the two disagree.
 
 ---
 

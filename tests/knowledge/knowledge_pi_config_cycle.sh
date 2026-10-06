@@ -32,7 +32,7 @@
 # Reference:
 #  - src/reasoning/providers/pi/config/agent/settings.json (the image template)
 #  - src/reasoning/entrypoint.sh (_provision_agent_home)
-#  - scripts/lint/image-map.json (the template's source and image path)
+#  - src/build/container-interface.json (the template's source and image path)
 #  - docs/architecture/provider_lifecycle.md ("Config Flow and Fragility Notes")
 #  - docs/development/testing_policy.md (knowledge test format)
 #

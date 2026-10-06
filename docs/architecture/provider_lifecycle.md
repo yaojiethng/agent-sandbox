@@ -69,7 +69,7 @@ The consequence is visible in what a session can lose. A session that edits `set
 
 `providers/<n>/config/` is a template directory committed to the repo. It carries the provider's default config stubs -- not secrets, and not a complete configuration.
 
-Two consumers read it. The image bakes it -- a `COPY` line in the provider's `provider.dockerfile` sends it to `/opt/workflow/agent/config/`, and `scripts/lint/image-map.json` declares that pair with a `provision` row -- and `provider-entrypoint.sh` seeds `AGENT_HOME` from the baked copy at every start. `agent-sandbox onboard` seeds the same tree into `$SANDBOX_DIR/.<provider>/` on the host, renames `env.stub` to `.env` there, and pre-creates the subdirectories the provider overlay mounts.
+Two consumers read it. The image bakes it -- a `COPY` line in the provider's `provider.dockerfile` sends it to `/opt/workflow/agent/config/`, and `src/build/container-interface.json` declares that pair with a `provision` row -- and `provider-entrypoint.sh` seeds `AGENT_HOME` from the baked copy at every start. `agent-sandbox onboard` seeds the same tree into `$SANDBOX_DIR/.<provider>/` on the host, renames `env.stub` to `.env` there, and pre-creates the subdirectories the provider overlay mounts.
 
 The operator fills in secrets in `$SANDBOX_DIR/.<provider>/.env` before the first run. Those values reach the container as environment variables; no secret reaches an image.
 
