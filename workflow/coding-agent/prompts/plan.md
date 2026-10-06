@@ -53,7 +53,7 @@ Route the interview result to a write-back target. Choose one: a written report 
 
 ## Write back
 
-Write the plan to the confirmed target: the roadmap entry, the scoped unit at its stated grain, decisions, and ADRs. Apply the binding rules in [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md) [Iteration Invariants](/opt/sandbox/docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md), and [`adr_policy.md`](/opt/sandbox/docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](propagation-check.md).
+Write the plan to the confirmed target: the roadmap entry, the scoped unit at its stated grain, decisions, and ADRs. Apply the binding rules in [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md) [Iteration Invariants](/opt/sandbox/docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md), and [`adr_policy.md`](/opt/sandbox/docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check`](/opt/workflow/agent/skills/propagation-check/SKILL.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
 

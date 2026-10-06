@@ -66,32 +66,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 ## Propagation Discipline
 
-When a task requires applying a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- use a propagation checklist to track coverage.
-
-**Before writing any file**, produce a checklist in chat:
-
-```text
-Propagation checklist -- <change description>
-
-| File | Change | Status |
-|---|---|---|
-| path/to/file.sh | rename FOO_VAR to BAR_VAR | pending |
-| path/to/other.sh | rename FOO_VAR to BAR_VAR | pending |
-| docs/architecture/file.md | update reference to BAR_VAR | pending |
-```
-
-Update the checklist:
-
-- When a file is completed -- mark it `done` before moving to the next file.
-- **When the task scope expands** -- add new rows for the new scope before producing any output for it.
-
-**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this iteration must be flagged explicitly with a reason. Do not summarise coverage -- show the table.
-
-**Renaming is one kind of propagation task.** When renaming a file or directory, search the repo for references to the old name (`grep -rn "<old name>" .`), update them all, use `git mv` for tracked files or `mv` + `git add` for untracked, and confirm zero stale references remain before committing.
-
-**The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
-
-**Output contract changes require a propagation checklist regardless of task language.** A change that alters an output format, file layout, API surface, or any contract consumed by other code or documented in `docs/` must be accompanied by a checklist covering all consumers -- tests, docs, downstream scripts, fixtures, and knowledge tests -- even if the task is phrased as a single-file edit.
+When a task applies a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- produce a propagation checklist before writing the first file, show it in chat, and confirm every row before declaring the task complete. The trigger list, the format, and the audit that verifies coverage are in the [`propagation-check`](src/reasoning/agent/skills/propagation-check/SKILL.md) skill.
 
 ---
 

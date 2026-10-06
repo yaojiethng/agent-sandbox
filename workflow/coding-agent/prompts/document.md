@@ -77,7 +77,7 @@ Exit condition: the operator released the gate, the handover holds the confirmed
 
 Write the documents against the confirmed scope. A prompt or a skill takes the authoring rules in `prompt-authoring-conventions.md`. That document owns the two kinds [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md) disclaims when it states that skill files and prompt templates are not documentation. A policy, concept, architecture, or record document takes the writing standards in [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md) `## Communication Standards`.
 
-When the session applies a naming or structural change across more than two files, or uses "all", "every", "throughout", or "wherever X appears", produce the propagation checklist the project `AGENTS.md` `## Propagation Discipline` requires, before the first file is written. Record every row as you complete it.
+When the session applies a naming or structural change across more than two files, or uses "all", "every", "throughout", or "wherever X appears", produce the propagation checklist the [`propagation-check`](/opt/workflow/agent/skills/propagation-check/SKILL.md) skill requires, before the first file is written. Record every row as you complete it.
 
 Correct the policy and concept documents the moment the work makes them wrong, per [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md) `## Principles`.
 
