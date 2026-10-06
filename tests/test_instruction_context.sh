@@ -23,13 +23,14 @@
 #   a 'none' for a copied tree   --  rc 1
 #   an /opt path outside the pi settings roots  --  rc 1
 #   a provisioned path with no copied parent     --  rc 1
-#   provider dockerfiles that disagree on the destination --  rc 1
-#   no provider dockerfile at all  --  rc 1 (fails closed)
+#   two destinations for one source               --  rc 1; the source is named
+#   no manifest at all  --  rc 1 (fails closed)
 #   a missing settings.json        --  rc 1 (fails closed)
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with INSTRUCTION_CONTEXT_SCAN_ROOT, so the repository's own
-# instruction directories are never the subject.
+# instruction directories are never the subject. Each fixture carries its own
+# image manifest, which is the gate's truth for the runtime paths.
 #
 # Run:   bash tests/test_instruction_context.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -72,6 +73,36 @@ write_provider_dockerfile() {
   } > "$path"
 }
 
+# write_manifest ROOT  --  the image manifest the default map's dockerfile
+# declares, as scripts/lint/image-map.mjs reads it. The gate and the manifest
+# both come from the fixture root, so the fixture is the whole subject.
+write_manifest() {
+  local root="$1"
+  local path="$root/scripts/lint/image-map.json"
+  mkdir -p "$(dirname "$path")"
+  cat > "$path" <<'EOF'
+{
+  "image": [
+    { "provider": "pi", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
+    { "provider": "pi", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "pi", "source": "src/reasoning/providers/pi/config/", "destination": "/opt/workflow/agent/config/" }
+  ],
+  "provision": [
+    {
+      "provider": "pi",
+      "source": "src/reasoning/providers/pi/config/",
+      "template": "/opt/workflow/agent/config/",
+      "home": "$AGENT_HOME/"
+    }
+  ],
+  "env": [
+    { "provider": "pi", "name": "AGENT_HOME", "value": "/home/agentuser/.pi" }
+  ]
+}
+EOF
+}
+
 # The default image map: the two prompt directories merge, the skill directory
 # ships, the pi config tree is copied for provisioning, and the coding-agent
 # skills are not copied.
@@ -82,6 +113,7 @@ write_default_image_map() {
     'COPY src/reasoning/agent/prompts/                    /opt/workflow/agent/prompts/' \
     'COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts/' \
     'COPY src/reasoning/providers/pi/config/              /opt/workflow/agent/config/'
+  write_manifest "$root"
 }
 
 # write_context ROOT DIR SOURCE_DIRS RUNTIME_PATH  --  a conforming CONTEXT.md
@@ -285,7 +317,7 @@ test_runtime_path_without_copy_flagged() {
   sed -i 's#`none`#`/opt/workflow/agent/skills/`#' "$file"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'an /opt path no dockerfile copies fails'
-  assert_contains "$GATE_OUT" 'while no dockerfile copies the directory' 'the missing copy is named'
+  assert_contains "$GATE_OUT" 'the image manifest declares no destination for the directory' 'the missing destination is named'
 }
 
 test_none_for_copied_directory_flagged() {
@@ -295,7 +327,7 @@ test_none_for_copied_directory_flagged() {
   sed -i 's#`/opt/workflow/agent/skills/`#`none`#' "$file"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" "a 'none' for a copied directory fails"
-  assert_contains "$GATE_OUT" "Runtime path reads 'none' while the image copies" 'the copy is named'
+  assert_contains "$GATE_OUT" "Runtime path reads 'none' while the image manifest sends" 'the destination is named'
 }
 
 test_path_outside_settings_roots_flagged() {
@@ -312,10 +344,15 @@ test_path_outside_settings_roots_flagged() {
 test_provisioned_path_without_parent_copy_flagged() {
   local root="$FIXTURE_DIR/noparent"
   write_settings "$root"
-  write_provider_dockerfile "$root" pi \
-    'COPY src/reasoning/agent/skills/                     /opt/workflow/agent/skills/' \
-    'COPY src/reasoning/agent/prompts/                    /opt/workflow/agent/prompts/' \
-    'COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts/'
+  write_default_image_map "$root"
+  node -e '
+    const fs = require("fs");
+    const file = process.argv[1];
+    const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+    manifest.image = manifest.image.filter((row) => !row.source.startsWith("src/reasoning/providers/pi/config/"));
+    delete manifest.provision;
+    fs.writeFileSync(file, JSON.stringify(manifest, null, 2));
+  ' "$root/scripts/lint/image-map.json"
   write_context "$root" "src/reasoning/agent/prompts" \
     "src/reasoning/agent/prompts/, workflow/coding-agent/prompts/" "/opt/workflow/agent/prompts/"
   write_context "$root" "src/reasoning/agent/skills" \
@@ -328,27 +365,32 @@ test_provisioned_path_without_parent_copy_flagged() {
     "workflow/coding-agent/skills/" "none"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a provisioned path with no copied parent fails'
-  assert_contains "$GATE_OUT" 'no dockerfile copies a parent of the directory' 'the missing parent is named'
+  assert_contains "$GATE_OUT" 'the manifest declares no copied parent of the directory' 'the missing parent is named'
 }
 
-test_disagreeing_providers_flagged() {
+test_disagreeing_destinations_flagged() {
   local root="$FIXTURE_DIR/disagree"
   write_conforming_tree "$root"
-  write_provider_dockerfile "$root" hermes \
-    'COPY src/reasoning/agent/skills/                     /opt/other/skills/' \
-    'COPY src/reasoning/agent/prompts/                    /opt/workflow/agent/prompts/' \
-    'COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts/'
+  node -e '
+    const fs = require("fs");
+    const file = process.argv[1];
+    const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+    manifest.image.push({ provider: "hermes", source: "src/reasoning/agent/skills/", destination: "/opt/other/skills/" });
+    fs.writeFileSync(file, JSON.stringify(manifest, null, 2));
+  ' "$root/scripts/lint/image-map.json"
   run_gate "$root"
-  assert_rc 1 "$GATE_RC" 'provider disagreement fails'
-  assert_contains "$GATE_OUT" 'disagree on the runtime path' 'the disagreement is named'
+  assert_rc 1 "$GATE_RC" 'two destinations for one source fail'
+  assert_contains "$GATE_OUT" 'gives this runtime path two destinations' 'the disagreement is named'
 }
 
-test_missing_provider_dockerfile_fails_closed() {
-  local root="$FIXTURE_DIR/nodockerfile"
+test_missing_manifest_fails_closed() {
+  local root="$FIXTURE_DIR/nomanifest"
   write_settings "$root"
+  write_provider_dockerfile "$root" pi \
+    'COPY src/reasoning/agent/skills/                     /opt/workflow/agent/skills/'
   run_gate "$root"
-  assert_rc 1 "$GATE_RC" 'no provider dockerfile fails closed'
-  assert_contains "$GATE_OUT" 'no provider dockerfile' 'the missing input is named'
+  assert_rc 1 "$GATE_RC" 'no manifest fails closed'
+  assert_contains "$GATE_OUT" 'image-map.json is missing' 'the missing input is named'
 }
 
 test_missing_settings_fails_closed() {
@@ -427,8 +469,8 @@ run_test test_runtime_path_without_copy_flagged
 run_test test_none_for_copied_directory_flagged
 run_test test_path_outside_settings_roots_flagged
 run_test test_provisioned_path_without_parent_copy_flagged
-run_test test_disagreeing_providers_flagged
-run_test test_missing_provider_dockerfile_fails_closed
+run_test test_disagreeing_destinations_flagged
+run_test test_missing_manifest_fails_closed
 run_test test_missing_settings_fails_closed
 run_test test_layer_scope_row_outside_the_always_set_flagged
 run_test test_uncovered_always_row_flagged

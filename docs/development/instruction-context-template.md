@@ -90,7 +90,7 @@ The two tables are a view over the `## Reachable` rows above, not a second sourc
 
 ## The gate
 
-[`scripts/check_instruction_context.sh`](../../scripts/check_instruction_context.sh) reads the provider dockerfiles and the pi `settings.json`, and asserts each `CONTEXT.md` against them. It fails on a missing file, a missing heading, a runtime path the image does not produce, a `none` for a copied folder, a source folder the file leaves unlisted, a folder the image copies whose path carries no file, two files claiming one runtime path, a provider name in a provider-neutral file, and an `always` row that differs between files.
+[`scripts/check_instruction_context.sh`](../../scripts/check_instruction_context.sh) reads the image manifest through [`scripts/lint/image-map.mjs`](../../scripts/lint/image-map.mjs) and the pi `settings.json`, and asserts each `CONTEXT.md` against them. It fails on a missing file, a missing heading, a runtime path the image does not produce, a `none` for a copied folder, a source folder the file leaves unlisted, a folder the image copies whose path carries no file, two files claiming one runtime path, a provider name in a provider-neutral file, and an `always` row that differs between files.
 
 It checks the two layer tables in the same pass: a layer with no `## Scope` table, a row naming a path outside the `always` set, an `always` row no layer covers, and an `always` row two layers cover all fail.
 

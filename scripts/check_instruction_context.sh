@@ -10,11 +10,14 @@
 # against the pi settings roots.
 #
 # Every claim is checkable against two artefacts, so the gate checks them
-# instead of trusting the prose: the provider dockerfiles decide which
-# directory lands where, and the pi settings.json decides whether a landed path
-# is a prompt root, a skill root or a package. A COPY line added or removed
-# breaks the file that described the old map, which is the failure this gate
-# exists to catch: a stale instruction is worse than a missing one.
+# instead of trusting the prose: the image manifest decides which directory
+# lands where, and the pi settings.json decides whether a landed path is a
+# prompt root, a skill root or a package. The manifest is declared once in
+# `scripts/lint/image-map.json` and read through `scripts/lint/image-map.mjs`;
+# `scripts/check_image_map.sh` holds it equal to the provider dockerfiles. A
+# `COPY` line added or removed breaks the file that described the old map,
+# which is the failure this gate exists to catch: a stale instruction is worse
+# than a missing one.
 #
 # The two AGENTS.md layers are the same claim one level up: the provider layer
 # covers the container, the project layer the working tree, and the folder files
@@ -45,8 +48,9 @@ INSTRUCTION_DIRS=(
   "workflow/coding-agent/skills"
 )
 
-PROVIDER_GLOB="src/reasoning/providers/*/provider.dockerfile"
 SETTINGS_REL="src/reasoning/providers/pi/config/agent/settings.json"
+IMAGE_MAP_REL="scripts/lint/image-map.mjs"
+IMAGE_MANIFEST_REL="scripts/lint/image-map.json"
 
 REQUIRED_HEADINGS=(
   "## Runtime identity"
@@ -89,9 +93,34 @@ finding() {
   FINDINGS=$((FINDINGS + 1))
 }
 
-mapfile -t dockerfiles < <(compgen -G "$SCAN_ROOT/$PROVIDER_GLOB" || true)
-if (( ${#dockerfiles[@]} == 0 )); then
-  echo "Instruction-context gate: no provider dockerfile under $SCAN_ROOT/$PROVIDER_GLOB; cannot check the image map." >&2
+if ! command -v node >/dev/null 2>&1; then
+  echo "Instruction-context gate: node is not on PATH; cannot read the image manifest." >&2
+  exit 1
+fi
+
+image_map_module="$REPO_ROOT/$IMAGE_MAP_REL"
+if [[ ! -f "$image_map_module" ]]; then
+  echo "Instruction-context gate: $IMAGE_MAP_REL is missing; cannot read the image map." >&2
+  exit 1
+fi
+
+if [[ ! -f "$SCAN_ROOT/$IMAGE_MANIFEST_REL" ]]; then
+  echo "Instruction-context gate: $IMAGE_MANIFEST_REL is missing; the layout is undeclared." >&2
+  exit 1
+fi
+
+# The `image` pairs the manifest declares, as `source<TAB>destination`. The
+# provisioning pairs are excluded: they say where a copied tree is seeded at
+# start, not where the image puts it.
+IMAGE_PAIRS=()
+while IFS=$'\t' read -r layer _provider source destination; do
+  [[ "$layer" == "image" ]] || continue
+  [[ -z "$source" ]] && continue
+  IMAGE_PAIRS+=("$source"$'\t'"$destination")
+done < <(node "$image_map_module" pairs --root "$SCAN_ROOT")
+
+if (( ${#IMAGE_PAIRS[@]} == 0 )); then
+  echo "Instruction-context gate: the image manifest declares no pair; cannot check the runtime paths." >&2
   exit 1
 fi
 
@@ -190,33 +219,32 @@ inventory_prompts() {
   ' "$1" | sort
 }
 
-# copy_dests DIR  --  sets COPY_DESTS to one destination per dockerfile COPY
-# line whose source is DIR.
+# copy_dests DIR  --  sets COPY_DESTS to one destination per image-map pair whose
+# source is DIR. The pairs come from scripts/lint/image-map.mjs, which reads the
+# image manifest; the manifest and the dockerfiles are held equal by
+# scripts/check_image_map.sh, so this gate reads one declaration instead of
+# parsing `COPY` lines itself.
 COPY_DESTS=()
 copy_dests() {
-  local dir="$1" file src dest
+  local dir="$1" pair src
   COPY_DESTS=()
-  for file in "${dockerfiles[@]}"; do
-    while read -r src dest; do
-      [[ -z "$src" ]] && continue
-      if [[ "${src%/}" == "$dir" ]]; then
-        COPY_DESTS+=("$dest")
-      fi
-    done < <(awk '$1 == "COPY" { print $2, $3 }' "$file")
+  for pair in ${IMAGE_PAIRS[@]+"${IMAGE_PAIRS[@]}"}; do
+    src="${pair%%$'\t'*}"
+    if [[ "${src%/}" == "${dir%/}" ]]; then
+      COPY_DESTS+=("${pair#*$'\t'}")
+    fi
   done
 }
 
-# copied_parent DIR  --  true when a COPY line names a parent of DIR, so DIR
-# arrives inside a copied tree rather than by its own line.
+# copied_parent DIR  --  true when an image-map pair names a parent of DIR, so
+# DIR arrives inside a copied tree rather than by its own line.
 copied_parent() {
-  local dir="$1" file src
-  for file in "${dockerfiles[@]}"; do
-    while read -r src _; do
-      [[ -z "$src" ]] && continue
-      if [[ "$dir" == "${src%/}/"* ]]; then
-        return 0
-      fi
-    done < <(awk '$1 == "COPY" { print $2, $3 }' "$file")
+  local dir="$1" pair src
+  for pair in ${IMAGE_PAIRS[@]+"${IMAGE_PAIRS[@]}"}; do
+    src="${pair%%$'\t'*}"
+    if [[ "$dir" == "${src%/}/"* ]]; then
+      return 0
+    fi
   done
   return 1
 }
@@ -270,7 +298,7 @@ for dir in "${INSTRUCTION_DIRS[@]}"; do
   if (( ${#COPY_DESTS[@]} > 1 )); then
     unique=$(printf '%s\n' "${COPY_DESTS[@]}" | sort -u | wc -l)
     if (( unique > 1 )); then
-      finding "$dir/CONTEXT.md" "provider dockerfiles disagree on the runtime path: ${COPY_DESTS[*]}"
+      finding "$dir/CONTEXT.md" "the image manifest gives this runtime path two destinations: ${COPY_DESTS[*]}"
     fi
   fi
 done
@@ -368,16 +396,16 @@ for dir in "${INSTRUCTION_DIRS[@]}"; do
   case "$runtime_path" in
     none)
       if [[ "$runtime_true" != "none" ]]; then
-        finding "$rel" "Runtime path reads 'none' while the image copies the directory to '${COPY_DESTS[0]}'"
+        finding "$rel" "Runtime path reads 'none' while the image manifest sends the directory to '${COPY_DESTS[0]}'"
       fi
       ;;
     /opt/*)
       if [[ "$runtime_true" == "none" ]]; then
-        finding "$rel" "Runtime path reads '$runtime_path' while no dockerfile copies the directory"
+        finding "$rel" "Runtime path reads '$runtime_path' while the image manifest declares no destination for the directory"
       elif [[ "$runtime_true" == "declared" ]]; then
-        finding "$rel" "Runtime path reads '$runtime_path' while the image copies the directory only inside a copied parent"
+        finding "$rel" "Runtime path reads '$runtime_path' while the manifest declares it only inside a copied parent"
       elif [[ "$runtime_path" != "$runtime_true" ]]; then
-        finding "$rel" "Runtime path reads '$runtime_path', the image copies to '$runtime_true'"
+        finding "$rel" "Runtime path reads '$runtime_path', the image manifest sends it to '$runtime_true'"
       fi
       settings_key="${runtime_path%/}"
       if ! grep -qF "\"$settings_key\"" "$settings"; then
@@ -386,7 +414,7 @@ for dir in "${INSTRUCTION_DIRS[@]}"; do
       ;;
     '$AGENT_HOME/'*)
       if [[ "$runtime_true" != "declared" ]]; then
-        finding "$rel" "Runtime path reads '$runtime_path' while no dockerfile copies a parent of the directory"
+        finding "$rel" "Runtime path reads '$runtime_path' while the manifest declares no copied parent of the directory"
       fi
       ;;
     '')

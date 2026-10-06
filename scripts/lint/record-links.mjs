@@ -15,9 +15,10 @@
 //     heading carrying a suffix carries that suffix in its fragment.
 //   - a link in a file that ships into the agent image resolves in the image's
 //     path space, not the repository's. The prompt that ships runs at its image
-//     path, so its link must reach a path that exists there. `imageMap` holds
-//     the pairs the provider dockerfiles declare with `COPY`; an image path is
-//     checked by mapping it back to the repository source that populates it.
+//     path, so its link must reach a path that exists there. The pairs come from
+//     `scripts/lint/image-map.mjs`, which reads the image manifest and the
+//     provisioning chain it declares; an image path is checked by mapping it
+//     back to the repository source that populates it.
 //
 // What it skips: external targets (http, https, mailto, tel), links inside
 // fenced code blocks, and whatever the config exempts.
@@ -31,22 +32,25 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Repository directory to image destination, trailing slash on both, as the
-// provider dockerfiles declare the pairs. `docs/architecture/` and
-// `docs/concepts/` ship beside the operations policy; the two prompt roots
-// merge into one image directory, so a link between them is a sibling link at
-// runtime. Deriving this map from the `COPY` lines, instead of repeating it per
-// gate, is an open roadmap row.
-const imageMap = [
-  ["src/reasoning/agent/skills/", "/opt/workflow/agent/skills/"],
-  ["src/reasoning/agent/prompts/", "/opt/workflow/agent/prompts/"],
-  ["workflow/coding-agent/prompts/", "/opt/workflow/agent/prompts/"],
-  ["src/reasoning/providers/pi/config/agent/", "/home/agentuser/.pi/agent/"],
-  ["docs/architecture/", "/opt/sandbox/docs/architecture/"],
-  ["docs/concepts/", "/opt/sandbox/docs/concepts/"],
-  ["docs/operations/", "/opt/sandbox/docs/operations/"],
-];
+import { pairs } from "./image-map.mjs";
+
+// Repository directory to image destination, trailing slash on both. The map is
+// declared once in `scripts/lint/image-map.json` and read here through
+// `image-map.mjs`, so a new `COPY` line reaches this rule with no edit to it:
+// `scripts/check_image_map.sh` holds the manifest equal to the dockerfiles.
+// The provider config is declared twice on purpose -- the image copies it to
+// `/opt/workflow/agent/config/`, and the entrypoint seeds `$AGENT_HOME/` from
+// that template -- so a file beneath it has two valid destinations.
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const imageMap = pairs(repoRoot).map((row) => [row.source, row.destination]);
+
+if (imageMap.length === 0) {
+  throw new Error(
+    "record-links: scripts/lint/image-map.json declares no pair; a shipped file's links cannot be resolved",
+  );
+}
 
 // The instruction surfaces: the roots a prompt, a skill or the provider's
 // `AGENTS.md` runs from. Their links are written for the agent that reads them

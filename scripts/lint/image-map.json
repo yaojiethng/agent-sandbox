@@ -1,0 +1,55 @@
+{
+  "note": "The container layout, declared once. scripts/lint/image-map.mjs is the only reader, and scripts/check_image_map.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. The `mount` layer is not here: the compose files declare it host-side, and this container cannot read them.",
+  "image": [
+    { "provider": "pi", "source": "src/libs/", "destination": "/opt/sandbox/lib/" },
+    { "provider": "pi", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
+    { "provider": "pi", "source": "src/reasoning/providers/pi/preflight.sh", "destination": "/opt/sandbox/bin/provider-preflight.sh" },
+    { "provider": "pi", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
+    { "provider": "pi", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "pi", "source": "src/reasoning/providers/pi/config/", "destination": "/opt/workflow/agent/config/" },
+    { "provider": "pi", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
+    { "provider": "pi", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
+    { "provider": "pi", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" },
+
+    { "provider": "hermes", "source": "src/libs/", "destination": "/opt/sandbox/lib/" },
+    { "provider": "hermes", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
+    { "provider": "hermes", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
+    { "provider": "hermes", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "hermes", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "hermes", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
+    { "provider": "hermes", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
+    { "provider": "hermes", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" },
+
+    { "provider": "opencode", "source": "src/libs/", "destination": "/opt/sandbox/lib/" },
+    { "provider": "opencode", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
+    { "provider": "opencode", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
+    { "provider": "opencode", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "opencode", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
+    { "provider": "opencode", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
+    { "provider": "opencode", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
+    { "provider": "opencode", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" }
+  ],
+  "provision": [
+    {
+      "provider": "pi",
+      "source": "src/reasoning/providers/pi/config/",
+      "template": "/opt/workflow/agent/config/",
+      "home": "$AGENT_HOME/"
+    }
+  ],
+  "env": [
+    { "provider": "pi", "name": "AGENT_HOME", "value": "/home/agentuser/.pi" },
+    { "provider": "pi", "name": "PROVIDER_NAME", "value": "pi" },
+    { "provider": "pi", "name": "WORKSPACE_DIR", "value": "/home/agentuser/workspace" },
+    { "provider": "pi", "name": "PATH", "value": "/opt/sandbox/bin:$PATH" },
+
+    { "provider": "hermes", "name": "AGENT_HOME", "value": "/home/agentuser/.hermes" },
+    { "provider": "hermes", "name": "PROVIDER_NAME", "value": "hermes" },
+    { "provider": "hermes", "name": "PATH", "value": "/opt/sandbox/bin:$PATH" },
+
+    { "provider": "opencode", "name": "AGENT_HOME", "value": "/home/agentuser/.opencode" },
+    { "provider": "opencode", "name": "PROVIDER_NAME", "value": "opencode" },
+    { "provider": "opencode", "name": "PATH", "value": "/opt/sandbox/bin:$PATH" }
+  ]
+}

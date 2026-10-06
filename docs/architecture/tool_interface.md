@@ -288,6 +288,8 @@ See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboar
 
 The reasoning layer builds in three tiers. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. Each provider's `base.dockerfile` builds `<provider>-base` on top of it, and its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
 
+A `provider.dockerfile` sends a repository directory to an image directory with `COPY`, and sets the image's environment with `ENV`. That layout is declared once in [`scripts/lint/image-map.json`](../../scripts/lint/image-map.json), and [`scripts/check_image_map.sh`](../../scripts/check_image_map.sh) holds the declaration equal to the dockerfiles in both directions. So a new `COPY` or `ENV` line needs a manifest row in the same change, and the checks that need the layout read the manifest through [`scripts/lint/image-map.mjs`](../../scripts/lint/image-map.mjs) instead of parsing the dockerfiles themselves.
+
 ---
 
 ## Dry-Run Guarantees
