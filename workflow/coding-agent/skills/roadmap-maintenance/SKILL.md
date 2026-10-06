@@ -108,7 +108,7 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 **3.9 A row bundling unrelated defects.** Report a row carrying its own priority order in its own text -- a bucket, not a task.
 
-**3.10 Mis-filed rows.** A row belongs in the milestone whose section blurb claims the work. Report a row that sits elsewhere while a blurb claims it. When no blurb claims it, the milestone scope is wrong, and that is an operator call: report it as an escalation, not a move.
+**3.10 Mis-filed rows.** A row lands in the active sub-milestone's task list unless the operator directs otherwise. [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Filing rules` `**Roadmap task placement**` owns the default. Report a row that sits elsewhere, and report the operator direction when one exists; a track's blurb is not a direction, and the subject of a track claims no row.
 
 ### 3.11 The summary table agrees with the sections it names
 
@@ -122,7 +122,7 @@ Completion criterion: no expanded checklist survives under a fully completed gro
 
 **Rule.** [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Filing rules` owns it. This check adds the record-layer case that rule does not name.
 
-**Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate and name the copy that sits under the milestone whose blurb claims the work.
+**Check.** For each open row and each closed row in the active milestone, search the other file for the same subject. Two rows describing one piece of work, in different words or with different boundaries, are one finding: name the duplicate and name the copy that the placement default does not claim.
 
 **Why this exists.** A copy in `changelog.md` of a row still open in a roadmap file slips past a check that reads only the two roadmap files.
 
