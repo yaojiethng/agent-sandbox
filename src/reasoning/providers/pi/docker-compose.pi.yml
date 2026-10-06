@@ -21,7 +21,7 @@ services:
       # Provider config: selective bind mounts for persistent subdirs
       # Only prompts/, sessions/, skills/ are RW bind-mounted from the host.
       # Config files (settings.json, auth.json, models.json, AGENTS.md) are
-      # copy-in from the baked image template at startup  --  avoids utime/EPERM
+      # seeded from the baked image template at startup  --  avoids utime/EPERM
       # on cross-filesystem mounts (macOS virtiofs, Windows 9p).
       - type: bind
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts

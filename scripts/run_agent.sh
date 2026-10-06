@@ -13,12 +13,11 @@
 #   headless    --  reserved, not yet implemented
 #
 # Provider config lifecycle (all modes except dry-run):
-#   copy-in:  provider-entrypoint.sh copies $SANDBOX_DIR/.<provider>/ (mounted
-#             at /opt/provider-config/) into AGENT_HOME before the agent starts.
-#   copy-out: provider-entrypoint.sh EXIT trap copies AGENT_HOME back to
-#             /opt/provider-config/ on container exit. Since /opt/provider-config/
-#             is bind-mounted from $SANDBOX_DIR/.<provider>/, state is persisted
-#             to the host automatically  --  no move step required here.
+#   provision: provider-entrypoint.sh copies the image's config template
+#              (/opt/workflow/agent/config/) into AGENT_HOME before the agent
+#              starts. Nothing is copied out; the state that persists lives in
+#              the subdirectories the provider overlay bind-mounts from
+#              $SANDBOX_DIR/.<provider>/agent/.
 #
 # Host identity for UID mapping
 # Compose file assembly follows deterministic conventions:
@@ -196,7 +195,7 @@ fi
 # -------------------------
 # Ensure provider config dir exists with correct ownership before Docker mounts it.
 # Docker creates missing bind mount sources as root-owned; pre-creating avoids
-# permission failures in provider-entrypoint.sh copy-out.
+# permission failures when the entrypoint seeds AGENT_HOME.
 mkdir -p "$SANDBOX_DIR/.$PROVIDER_NAME"
 
 # -------------------------
@@ -442,8 +441,8 @@ if [[ "$MODE" == "serve" ]]; then
   echo "Interactive web running on http://127.0.0.1:${SERVE_PORT}"
 
   # Wait for the agent container to exit (triggered by make stop / docker stop).
-  # Keeps run_agent.sh alive so teardown runs after the provider-entrypoint
-  # EXIT trap has fired and copy-out to /opt/provider-config/ is complete.
+  # Keeps run_agent.sh alive so teardown runs after the provider entrypoint has
+  # finished.
   # The container's exit code on make stop is SIGTERM/SIGKILL (137/143)  --  not
   # a session result  --  so it is swallowed here and serve exits 0 (teardown is
   # handled by run_agent.sh's own EXIT trap, _session_cleanup).

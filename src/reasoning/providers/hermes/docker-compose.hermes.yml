@@ -2,8 +2,10 @@
 # Provider overlay for the Hermes provider. Applied in all modes (standard and serve).
 # Merged by scripts/run_agent.sh before the mode overlay.
 #
-# Provider config (config.yaml, .env) is seeded into AGENT_HOME by
-# provider-entrypoint.sh at container start  --  not mounted. See sandbox_lifecycle.md.
+# Provider config: the build ships no config file for hermes. `config/config.yaml`
+# is not copied into the image and no mount names it, so the container starts on
+# hermes's own defaults. Whether it should ship is an open roadmap row under
+# M3.3.1. See docs/architecture/provider_lifecycle.md.
 
 services:
   agent:

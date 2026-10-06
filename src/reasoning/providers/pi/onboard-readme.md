@@ -28,7 +28,7 @@ output); each provider overlays its own config mounts.
 ## Ephemeral vs Mounted
 
 Only **`prompts/`**, **`sessions/`**, and **`skills/`** are RW bind-mounted from the host.
-Everything else is ephemeral (copy-in from image template at startup)  --  including
+Everything else is ephemeral (seeded from the image template at startup)  --  including
 `settings.json`, `auth.json`, `models.json`, and `AGENTS.md`.
 
 This avoids `utime()`/`EPERM` on cross-filesystem mounts (macOS virtiofs, Windows 9p)

@@ -2,7 +2,7 @@
 
 This document describes the structure of a single agent run: the directory layout, how the harness is invoked, how compose configuration is generated, how the two containers are mounted and wired together, and their start and stop sequences.
 
-Capability layer session arc (fork, work, join) is in [`sandbox_lifecycle.md`](sandbox_lifecycle.md). Reasoning layer session arc (copy-in, work, copy-out) is in [`provider_lifecycle.md`](provider_lifecycle.md). The external contract -- image naming, mount shape guarantees, execution modes -- is in [`tool_interface.md`](tool_interface.md).
+Capability layer session arc (fork, work, join) is in [`sandbox_lifecycle.md`](sandbox_lifecycle.md). Reasoning layer session arc (provision, work, persist) is in [`provider_lifecycle.md`](provider_lifecycle.md). The external contract -- image naming, mount shape guarantees, execution modes -- is in [`tool_interface.md`](tool_interface.md).
 
 ---
 
@@ -47,10 +47,10 @@ Reasoning layer container (CWD: /home/agentuser/)
     │   ├── sessions/          ← RW bind mount: session history (persists)
     │   ├── skills/            ← RW bind mount: provider-layer skills (persists)
     │   ├── bin/               ← overlayfs: container-local, same fs as /tmp/ (mv safe)
-    │   ├── settings.json     ← ephemeral: copy-in from image template at startup
-    │   ├── auth.json          ← ephemeral: copy-in from image template at startup
-    │   ├── models.json        ← ephemeral: copy-in from image template at startup
-    │   └── AGENTS.md          ← ephemeral: copy-in from image template at startup
+    │   ├── settings.json     ← ephemeral: seeded from the image template at startup
+    │   ├── auth.json          ← ephemeral: seeded from the image template at startup
+    │   ├── models.json        ← ephemeral: seeded from the image template at startup
+    │   └── AGENTS.md          ← ephemeral: seeded from the image template at startup
     └── .env                   ← host-provided: API keys (never committed)
 ```
 
@@ -137,9 +137,9 @@ The volume is the agent's working content, seeded once before the sandbox contai
 
 `output/` is the reasoning layer's persistent output channel to the host. Restricting it to text and serialised data limits the attack surface -- a compromised agent cannot write executable files that the operator might inadvertently run on the host.
 
-### Why provider config uses a bind mount via `/opt/provider-config/`
+### Why the config files are seeded rather than mounted
 
-Provider config cannot be bind-mounted directly as `AGENT_HOME` because agents may perform filesystem operations (cross-device moves from `/tmp`, binary writes) that fail on host-mounted paths, particularly on Windows. Mounting at `/opt/provider-config/` and having `provider-entrypoint.sh` copy into `AGENT_HOME` gives the agent full ownership of its working directory while keeping the host sync path clean.
+Provider config cannot be bind-mounted whole as `AGENT_HOME`, because agents may perform filesystem operations (cross-device moves from `/tmp`, binary writes) that fail on host-mounted paths, particularly on Windows. The image bakes the config template at `/opt/workflow/agent/config/`, and `provider-entrypoint.sh` copies it into `AGENT_HOME` at every start. The provider overlay mounts only the subdirectories that carry state, so the agent keeps the host's session history and the image keeps the config files.
 
 ### Why `--volumes-from` rather than a named volume for the agent's `sandbox/` view
 
@@ -163,7 +163,7 @@ This is the as-expected record of what lives where across a session, so future c
 | Agent state `.pi/{prompts,sessions,skills}` | bind-mounted to `$SANDBOX_DIR/.pi/...` | [x] yes (host) |
 | Harness workspace `.workspace/{session-diffs,input,output}` | bind-mounted to `$SANDBOX_DIR/.workspace/...` | [x] yes (host) |
 | Seed content (shared dispatcher delivery) | streamed via rsync into the volume with `cp -a .git` (full) or a fresh baseline (flatten) | n/a (one-shot transfer) |
-| Config files `.pi/settings.json`, `auth.json`, `models.json`, `AGENTS.md`, `bin/` | container writable layer, copy-in from baked image at startup | [ ] regenerated on start |
+| Config files `.pi/settings.json`, `auth.json`, `models.json`, `AGENTS.md`, `bin/` | container writable layer, seeded from the baked image at startup | [ ] regenerated on start |
 | Caches `~/.npm`, `~/.cache` | container writable layer | [ ] disposable |
 
 Consequence: `make stop` and session teardown remove the containers (and the per-session network) and keep the named volume. Resume comes from the volume, not from stopped containers. If a future feature lets the agent do persistent environment setup, that state must be persisted to the named volume (or a bind mount), not left in the container writable layer, to keep the contract intact.
@@ -231,11 +231,11 @@ flowchart TD
 
     subgraph RSN [Reasoning Layer]
         PE["<b>provider-entrypoint.sh</b>"]
-        CI["copy-in config"]
+        CI["seed config from the image"]
         ET["register EXIT trap"]
         EX["exec agent command"]
         RDY["ready for user input"]
-        AE["<b>agent exits</b><br/>copy-out to config"]
+        AE["<b>agent exits</b><br/>container ends, nothing copied out"]
     end
 
     %% Logic Flow

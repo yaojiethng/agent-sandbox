@@ -32,7 +32,6 @@ This is the shipped prompt root: the harness prompts, which ask about agent-sand
 
 - `devlog/` at any image path. `/opt` does not hold it, and the project tree at `/home/agentuser/sandbox/` holds it only when the project under work is agent-sandbox. `docs/operations/` is the exception: it ships at `/opt/sandbox/docs/operations/`.
 - A repository-relative link from a file in this folder into `docs/` or `devlog/`. Six levels up from `/opt/workflow/agent/prompts/` is `/`, so the link resolves to nothing. The link check reads a link in this folder in the image's path space and reports one.
-- `/opt/provider-config/`. The compose path table documents it as the provider config mount, and no running container has the directory.
 
 ## Assumptions
 

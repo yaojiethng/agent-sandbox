@@ -227,4 +227,4 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 | [`session_identifier.md`](../adr/session_identifier.md) | Project/session identity |
 | [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
-| [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config copy-in at session start |
+| [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config provisioning at session start |

@@ -8,9 +8,9 @@
 #
 # Provider contract (harness interface):
 #   AGENT_HOME     --  where Hermes writes config, sessions, and memories
-#   PROVIDER_NAME  --  used by provider-entrypoint.sh for copy-out target naming
-#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command; seeds config
-#                   and registers copy-out trap before exec-ing hermes
+#   PROVIDER_NAME  --  the provider identifier the entrypoint reads
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command and seeds
+#                   AGENT_HOME from the image config template before it runs
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
 

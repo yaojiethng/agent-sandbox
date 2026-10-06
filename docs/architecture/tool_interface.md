@@ -193,7 +193,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | `$CHANGES_DIR` (derived: `$SANDBOX_DIR/.workspace/session-diffs`) | `/home/agentuser/workspace/session-diffs/` | -- | RW | Harness -- diff pipeline output |
 | `$INPUT_DIR` | -- | `/home/agentuser/workspace/input/` | RO | Operator -- populated before a run |
 | `$OUTPUT_DIR` | -- | `/home/agentuser/workspace/output/` | RW | Agent -- written during a run |
-| `$SANDBOX_DIR/.<provider>/` | -- | `/opt/provider-config/` | RW | Harness -- provider config; seed and persist via entrypoint |
+| `$SANDBOX_DIR/.<provider>/agent/{prompts,sessions,skills}` | -- | `/home/agentuser/.<provider>/agent/{prompts,sessions,skills}` | RW | Harness -- provider-layer state; mounted by the provider overlay, beside the config files the image seeds |
 | SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker -- owned by capability layer; shared via `--volumes-from`; persists across `compose down` |
 
 `PROJECT_DIR` is never mounted. `sandbox/` is a named volume filled by the seeder at session start; it survives `docker compose down` (named volumes are kept) so session state supports resume, and is removed by `down -v` or prune Rule 2. The reasoning layer can only access it while the capability layer is running.
@@ -276,13 +276,13 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 | `base.dockerfile` | Yes | The agent install only, inheriting `agent-base` (Node, Python, uv, CLI tools, lint gates); tagged `<provider>-base` |
 | `provider.dockerfile` | Yes | Provider layer inheriting from `<provider>-base`; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
-| `config/` | Optional | Onboarding template -- copied to `$SANDBOX_DIR/.<provider>/` by `agent-sandbox onboard`, with `env.stub` renamed to `.env` there; the operator fills in secrets, and nothing is baked into the image |
+| `config/` | Optional | Onboarding and image template. `agent-sandbox onboard` seeds it into `$SANDBOX_DIR/.<provider>/` and renames `env.stub` to `.env` there; the provider's `provider.dockerfile` also copies it to `/opt/workflow/agent/config/`, from which the entrypoint seeds `AGENT_HOME` at every start. The operator fills in secrets on the host, and no secret reaches an image. |
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
 **Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See [`../operations/provider_onboarding_guide.md -- Step 7`](../operations/provider_onboarding_guide.md#step-7-optional----setupsh).
 
-Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `libs/provider-entrypoint.sh` is injected into every provider image by the harness via the build context -- providers do not author it.
+Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh`, baked as `/opt/sandbox/bin/provider-entrypoint.sh`, is injected into every provider image by the harness via the build context -- providers do not author it.
 
 See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 

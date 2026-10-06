@@ -8,9 +8,9 @@
 #
 # Provider contract (harness interface):
 #   AGENT_HOME     --  where OpenCode writes config and state
-#   PROVIDER_NAME  --  used by provider-entrypoint.sh for copy-out target naming
-#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command; seeds config
-#                   and registers copy-out trap before exec-ing opencode
+#   PROVIDER_NAME  --  the provider identifier the entrypoint reads
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command and seeds
+#                   AGENT_HOME from the image config template before it runs
 ARG BASE_IMAGE=opencode-base
 FROM ${BASE_IMAGE}
 
@@ -76,7 +76,7 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# provider-entrypoint.sh seeds config and registers copy-out trap,
+# provider-entrypoint.sh seeds config from the image template,
 # then execs opencode. Subcommand and args passed via compose:
 #   standard: no override  --  runs as `opencode` with no args
 #   serve:    docker-compose.serve.yml sets command: ["serve", ...]

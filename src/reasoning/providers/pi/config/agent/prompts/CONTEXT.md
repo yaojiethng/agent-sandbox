@@ -33,7 +33,6 @@ This folder holds one prompt, `pi-agent.md`, which asks about pi itself. It is t
 
 - Every agent-sandbox record and policy tree except the operations policy, which ships at `/opt/sandbox/docs/operations/`. This folder belongs to the pi provider layer, which serves any mounted project.
 - Anything left at `/opt/workflow/agent/config/` after startup. The provisioning copy runs at every start and overwrites the agent home.
-- `/opt/provider-config/`. The compose path table documents it as the provider config mount, and no running container has the directory.
 
 ## Assumptions
 

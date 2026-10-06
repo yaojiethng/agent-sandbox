@@ -3,7 +3,7 @@
 
 echo "Running Pi provider onboard hook..."
 
-# Pre-create the host-side config directory so copy-out has a landing target
+# Pre-create the host-side subdirectories so the provider overlay has a mount
 # on the first session (before any prior state exists in SANDBOX_DIR).
 mkdir -p "$SANDBOX_DIR/.pi/agent/sessions"
 mkdir -p "$SANDBOX_DIR/.pi/agent/prompts"

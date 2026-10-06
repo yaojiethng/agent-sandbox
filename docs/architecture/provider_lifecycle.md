@@ -1,6 +1,6 @@
 # Provider Lifecycle
 
-This document describes the full arc of a reasoning layer session: how provider config enters the container, how the agent works, and how state is returned to the host.
+This document describes the full arc of a reasoning layer session: how provider config enters the container, how the agent works, and what persists between runs.
 
 The capability layer lifecycle -- snapshot, diff pipeline -- is in [`sandbox_lifecycle.md`](sandbox_lifecycle.md). How the two layers are wired together -- mount shape, compose generation, start/stop sequencing -- is in [`execution_model.md`](execution_model.md).
 
@@ -10,27 +10,32 @@ The capability layer lifecycle -- snapshot, diff pipeline -- is in [`sandbox_lif
 
 A provider session has three phases:
 
-1. **Copy-in** -- provider config is copied from the host into `AGENT_HOME` before the agent command runs.
+1. **Provisioning** -- `provider-entrypoint.sh` copies the provider config baked into the image into `AGENT_HOME` before the agent command runs.
 2. **Work** -- the agent operates, reading input channels and writing to `AGENT_HOME` and `workspace/output/`.
-3. **Copy-out** -- `AGENT_HOME` is copied back to the host on container exit, persisting session state for the next run.
+3. **Persistence** -- the subdirectories the provider overlay mounts from the host survive the session. Nothing is copied out.
 
-Provider config flows through `$SANDBOX_DIR/.<provider>/` on the host and `/opt/provider-config/` inside the container. These are the same directory via bind mount. The agent never touches this mount directly -- `provider-entrypoint.sh` mediates all access.
+The transport splits in two, and the split is the design:
 
-### provider config cannot be directly mounted
+- **Config files** (`settings.json`, `auth.json`, `models.json`, `AGENTS.md`) come from the image template at `/opt/workflow/agent/config/` on every start. The image owns them, so a session's write to one lasts for that session.
+- **State** (`prompts/`, `sessions/`, `skills/`) lives on the host under `$SANDBOX_DIR/.<provider>/agent/` and is mounted read-write over the provisioned tree.
 
-Provider config directories (e.g. `.hermes/`) cannot be bind-mounted as directories because agents may write binaries or perform filesystem operations (cross-device moves from `/tmp`) that fail on Windows-mounted paths. Individual file mounts fail when agents replace files via `mv` rather than in-place writes. The copy-in/copy-out mechanism avoids these issues: the agent has full ownership of its config directory inside the container, and files are synchronised to `SANDBOX_DIR` when the container terminates.
+An agent cannot tell the two apart while it works. The difference appears at the next start: the config files come back from the image, and the mounted subdirectories come back from the host.
+
+### Why the config files are seeded rather than mounted
+
+A provider config directory cannot be mounted whole, and a single-file mount fails in two ways on a host filesystem: an agent that writes a binary or moves a file from `/tmp` trips a cross-device error on Windows-mounted paths, and an agent that replaces a file with `mv` breaks a file bind mount. So the image bakes the config files, the entrypoint seeds them, and the overlay mounts only the directories that carry state.
 
 ---
 
-## Phase 1 -- Copy-in
+## Phase 1 -- Provisioning
 
-`libs/provider-entrypoint.sh` runs before the agent command. It copies the contents of `/opt/provider-config/` (bind-mounted from `$SANDBOX_DIR/.<provider>/`) into `AGENT_HOME`.
+`src/reasoning/entrypoint.sh` runs before the agent command. When the image carries the config template at `/opt/workflow/agent/config/`, the script copies it into `AGENT_HOME` with `cp -RT --no-preserve=all`. The copy runs at every start and overwrites, so the image's config files always win.
 
-**First run:** `$SANDBOX_DIR/.<provider>/` contains the onboarding templates populated by `agent-sandbox onboard` (see [Onboarding](#onboarding)). The agent starts from those.
+The provider overlay mounts the persistent subdirectories, and Docker places those mounts before the entrypoint runs. The copy therefore writes into the mounted tree: a template file lands beside the host's files, and the host's content is what the agent finds afterward.
 
-**Subsequent runs:** `$SANDBOX_DIR/.<provider>/` contains the state persisted by the prior session's copy-out. The agent resumes from that state.
+`agent-sandbox onboard` seeds the host side -- the config template into `$SANDBOX_DIR/.<provider>/`, and the mounted subdirectories as empty directories -- so the overlay has a source on the first run. See [Onboarding](#onboarding).
 
-If `$SANDBOX_DIR/.<provider>/` is empty or absent, copy-in is a no-op and the agent starts with no config. This is an operator error -- the provider config directory must be populated before the first run.
+When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The hermes and opencode images are in that state.
 
 ---
 
@@ -52,70 +57,61 @@ Input channel lifecycle:
 
 ---
 
-## Phase 3 -- Copy-out
+## Phase 3 -- Persistence
 
-An EXIT trap in `libs/provider-entrypoint.sh` fires on all exits -- normal completion, interrupt, or `docker stop`. It copies the contents of `AGENT_HOME` back to `/opt/provider-config/` (which is `$SANDBOX_DIR/.<provider>/` via bind mount).
+Nothing is copied out. The container ends, its writable layer goes with it, and the next session starts from the same two sources: the image's config template and the host's mounted subdirectories.
 
-If `AGENT_HOME` is empty or absent at exit (e.g. the agent crashed before writing any state), copy-out is a no-op. `$SANDBOX_DIR/.<provider>/` retains its prior state.
+The consequence is visible in what a session can lose. A session that edits `settings.json` keeps that edit until the container ends, and the next session starts from the image's copy. A session that writes a skill under `$AGENT_HOME/agent/skills/` keeps it, because the host carries that directory.
 
 ---
 
 ## Onboarding
 
-`providers/<n>/config/` is a template directory committed to the repo. It contains default config stubs for the provider -- not secrets, not complete configuration.
+`providers/<n>/config/` is a template directory committed to the repo. It carries the provider's default config stubs -- not secrets, and not a complete configuration.
 
-`agent-sandbox onboard` copies `providers/<n>/config/` to `$SANDBOX_DIR/.<provider>/` during project setup. If `env.stub` is present, it is renamed to `.env` at this point -- `env.stub` is the committed name used to avoid `.gitignore` matches in the repo; `.env` is what the agent expects.
+Two consumers read it. The image bakes it -- a `COPY` line in the provider's `provider.dockerfile` sends it to `/opt/workflow/agent/config/`, and `scripts/lint/image-map.json` declares that pair with a `provision` row -- and `provider-entrypoint.sh` seeds `AGENT_HOME` from the baked copy at every start. `agent-sandbox onboard` seeds the same tree into `$SANDBOX_DIR/.<provider>/` on the host, renames `env.stub` to `.env` there, and pre-creates the subdirectories the provider overlay mounts.
 
-The operator fills in secrets and provider-specific values in `$SANDBOX_DIR/.<provider>/` before the first run. These files are never baked into provider images.
-
-`providers/<n>/config/` is included in the build by repo-relative COPY instructions in the provider's `provider.dockerfile`. It is never baked into images directly -- it is copied into the image at Docker build time.
+The operator fills in secrets in `$SANDBOX_DIR/.<provider>/.env` before the first run. Those values reach the container as environment variables; no secret reaches an image.
 
 ---
 
 ## Config Flow and Fragility Notes
 
-The provider config cycle can be visualised as:
+The provider config reaches a session from two sources:
 
 ```text
-   Onboard source  ──┬──> Bind mount ──┬──copy-in──> AGENT_HOME ──> pi reads
-   (providers/       │                 │                                     │
-    <n>/config/)     │                 │                                     │
-                     │                 │                           pi writes │
-                     │                 │                                     │
-                     │                 ◄──────copy-out───────────────────────┘
-                     │
-   User files ───────┘
-   (skills/prompts
-    placed by operator)
+   Image template      ──COPY──> /opt/workflow/agent/config/ ──seed──> AGENT_HOME
+   (providers/<n>/config/)                                        │
+                                                                  ├──> the agent reads it
+                                                                  │
+   Host state          ──bind mount──> AGENT_HOME/agent/{prompts,sessions,skills}
+   ($SANDBOX_DIR/.<n>/agent/)                                     │
+                                                                  └──> survives the session
 ```
 
-### Ownership collision: settings.json
+### Ownership split: settings.json
 
-`settings.json` has two simultaneous owners:
+`settings.json` is a config file, so the image owns it. The harness seeds the keys that point at the harness's own roots (`skills`, `prompts` under `/opt/workflow/`), pi reads and rewrites them during the session, and the next session starts from the image's copy. A key pi drops lasts only for that session.
 
-- **Agent (pi).** Pi reads, modifies, and writes `settings.json`. When pi saves, it writes only keys it manages (model, provider, theme, compaction, etc.).
-- **Agent-sandbox.** The harness seeds `settings.json` with additional keys (`skills`, `prompts`) that reference image-baked paths at `/opt/workflow/`. These keys tell pi where to find sandbox-layer workflow files.
+### What the mounted subdirectories carry
 
-Both owners share a single file, but only pi writes it back. The harness-owned keys survive only if pi preserves them across its own save cycle. If pi drops them, the next copy-out propagates the stripped file to the bind-mount, and every subsequent session copies-in the stripped version.
-
-**What happened in practice:** The `settings.json` at the bind-mount was stripped of its `skills`/`prompts` keys by a prior session's copy-out. Subsequent sessions lost access to the sandbox-layer skills and prompts even though the files existed in the image at `/opt/workflow/`. Recovery required manually re-seeding the bind-mount from the onboard source.
+`prompts/`, `sessions/` and `skills/` are the provider-layer content the operator and the agent add: prompt files the provider loads by discovery, session history, and skills. They are mounted read-write, so they persist, and nothing in the harness copies them.
 
 ### Fragility summary
 
 | Issue | Mechanism | Impact |
 |---|---|---|
-| **Ownership collision** | settings.json written by both pi and agent-sandbox; only pi's write path is active | Custom keys (`skills`, `prompts`) silently lost on pi save |
-| **Copy-out overwrites seed** | `cp -r` is lossless but writes pi's runtime state over the canonical seed | Corrupted bind-mount is permanent until manually re-seeded |
-| **No recovery mechanism** | No check "does bind-mount differ from onboard source?" at session start | Silent drift -- operator notices only when features stop working |
-| **Onboard template is a snapshot** | `providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | Default values drift between onboard template and runtime pi version |
+| **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
+| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts with no config file; true of hermes and opencode today |
+| **Onboard template is a snapshot** | `providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 
-### How the three-layer skills/prompts model interacts with this cycle
+### How the three-layer skills/prompts model interacts with this split
 
 Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in the repo) are loaded through a different path than provider-layer or user-layer content:
 
-- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded exclusively via the `"skills"` and `"prompts"` keys in `settings.json`. **Single point of failure**: if those keys are stripped, the entire sandbox layer vanishes.
-- **Provider layer** -- config-seeded into `~/.pi/agent/prompts/pi-agent.md`. Loaded via pi's auto-discovery from `~/.pi/agent/prompts/`. Survives independently of settings.json keys.
-- **User layer** -- operator-provided files in `~/.pi/agent/skills|prompts/`. Loaded via pi's auto-discovery from these default global directories. Survives independently of settings.json keys.
+- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the `"skills"` and `"prompts"` keys in `settings.json`, so a key pi does not preserve costs that layer for the rest of the session. The next session starts from the image's `settings.json`, which carries them again.
+- **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from that directory.
+- **User layer** -- files the operator places in `$AGENT_HOME/agent/skills|prompts/`, which the mounts carry. Loaded by pi's discovery from the same directories.
 
 The three-layer model is defined in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#skills-and-prompts-layer-model).
 
