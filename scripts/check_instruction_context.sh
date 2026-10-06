@@ -16,6 +16,12 @@
 # breaks the file that described the old map, which is the failure this gate
 # exists to catch: a stale instruction is worse than a missing one.
 #
+# The two AGENTS.md layers are the same claim one level up: the provider layer
+# covers the container, the project layer the working tree, and the folder files
+# own the always-reachable set. So the gate checks each layer's `## Scope` table
+# against that set -- a named path must be one of its rows or sit inside one --
+# and checks that the two layers cover every row exactly once.
+#
 # Test seam: INSTRUCTION_CONTEXT_SCAN_ROOT points the scan at a fixture root
 # that mirrors the repository layout, so the gate's branches run without
 # touching the real tree.
@@ -62,6 +68,13 @@ NEUTRAL_DIRS=(
 )
 
 PROVIDER_MARKERS=( "/home/agentuser/.pi" "/home/agentuser/.hermes" "/home/agentuser/.opencode" "pi-coding-agent" "@earendil-works" ".hermes/" ".opencode/" )
+
+# The two AGENTS.md layers, provider first. Each names the runtime paths it
+# covers in a `## Scope` table.
+LAYER_FILES=(
+  "provider:src/reasoning/providers/pi/config/agent/AGENTS.md"
+  "project:AGENTS.md"
+)
 
 FINDINGS=0
 finding() {
@@ -122,6 +135,31 @@ reachable_paths() {
       if (path != "") print path
     }
   ' "$1" | sort
+}
+
+# layer_paths FILE  --  the path keys of the `## Scope` table, one per line,
+# backticks stripped and unique. The two AGENTS.md layers use this shape.
+layer_paths() {
+  awk -F'|' '
+    /^## Scope$/ { inside = 1; next }
+    inside && /^## / { exit }
+    inside && $2 ~ /^[[:space:]]*`/ {
+      path = $2
+      gsub(/[`[:space:]]/, "", path)
+      if (path != "") print path
+    }
+  ' "$1" | sort -u
+}
+
+# layers_relate ROW PATH  --  true when ROW and PATH name the same runtime
+# location, or one contains the other. A layer may name a parent of a reachable
+# path or a path inside one, and both count as covering it.
+layers_relate() {
+  local row="$1" path="$2"
+  [[ "$row" == "$path" ]] && return 0
+  [[ "$path" == */ && "$row" == "$path"* ]] && return 0
+  [[ "$row" == */ && "$path" == "$row"* ]] && return 0
+  return 1
 }
 
 # copy_dests DIR  --  sets COPY_DESTS to one destination per dockerfile COPY
@@ -347,6 +385,77 @@ if (( ${#reachable_files[@]} > 1 )); then
   done
 fi
 
+# The two AGENTS.md layers split the container between them. Each one's
+# `## Scope` table names the runtime paths it covers; the folder files own the
+# always-reachable set, so a named path is checked against that set rather than
+# against the other layer. Then every always row is checked to belong to
+# exactly one layer, which is what makes the split exhaustive.
+ALWAYS_FILE="$REACHABLE_DIR/.always"
+cat "${reachable_files[@]}" > "$ALWAYS_FILE"
+sort -u "$ALWAYS_FILE" -o "$ALWAYS_FILE"
+
+for entry in "${LAYER_FILES[@]}"; do
+  layer="${entry%%:*}"
+  layer_rel="${entry#*:}"
+  layer_file="$SCAN_ROOT/$layer_rel"
+
+  if [[ ! -f "$layer_file" ]]; then
+    finding "$layer_rel" "the $layer layer is missing; cannot check what it covers"
+    continue
+  fi
+  if ! grep -qxF '## Scope' "$layer_file"; then
+    finding "$layer_rel" "missing heading '## Scope'"
+    continue
+  fi
+  if ! section_has_content "$layer_file" "## Scope"; then
+    finding "$layer_rel" "the 'Scope' section holds no table row"
+  fi
+
+  mapfile -t layer_paths_list < <(layer_paths "$layer_file")
+  if (( ${#layer_paths_list[@]} == 0 )); then
+    finding "$layer_rel" "the 'Scope' table names no runtime path"
+    continue
+  fi
+
+  for path in "${layer_paths_list[@]}"; do
+    known=0
+    while read -r row; do
+      [[ -z "$row" ]] && continue
+      if layers_relate "$row" "$path"; then
+        known=1
+        break
+      fi
+    done < "$ALWAYS_FILE"
+    if (( known == 0 )); then
+      finding "$layer_rel" "the Scope table names '$path', which no CONTEXT.md declares always reachable"
+    fi
+  done
+
+  printf '%s\n' "${layer_paths_list[@]}" > "$REACHABLE_DIR/.layer_$layer"
+done
+
+while read -r row; do
+  [[ -z "$row" ]] && continue
+  claimers=()
+  for entry in "${LAYER_FILES[@]}"; do
+    layer="${entry%%:*}"
+    layer_source="$REACHABLE_DIR/.layer_$layer"
+    [[ -f "$layer_source" ]] || continue
+    while read -r path; do
+      [[ -z "$path" ]] && continue
+      if layers_relate "$row" "$path"; then
+        claimers+=("$layer")
+        break
+      fi
+    done < "$layer_source"
+  done
+  case "${#claimers[@]}" in
+    0) finding "AGENTS.md layers" "no layer covers '$row', which the CONTEXT.md files declare always reachable" ;;
+    1) ;;
+    *) finding "AGENTS.md layers" "more than one layer covers '$row': $(printf '%s ' "${claimers[@]}")" ;;
+  esac
+done < "$ALWAYS_FILE"
+
 if (( FINDINGS == 0 )); then
   echo "Instruction-context gate: clean across $checked file(s)"
   echo "Clean (${SECONDS}s)"
@@ -354,5 +463,5 @@ if (( FINDINGS == 0 )); then
 fi
 
 echo "Instruction-context gate: $FINDINGS finding(s) across $checked file(s)" >&2
-echo "Blocking gate: align the CONTEXT.md with the image map (see docs/development/instruction-context-template.md)." >&2
+echo "Blocking gate: align the CONTEXT.md files and the two AGENTS.md layer tables with the image map (see docs/development/instruction-context-template.md)." >&2
 exit 1

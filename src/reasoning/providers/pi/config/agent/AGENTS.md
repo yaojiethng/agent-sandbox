@@ -1,8 +1,28 @@
 # Agent Context Brief  --  Pi-Specific Behavior (global)
 
-This file is loaded by pi on every session start as the first AGENTS.md layer, via its CWD-walk discovery mechanism (~/.pi/agent/AGENTS.md). It describes pi-specific behavior that applies regardless of the project being worked on.
+This file is loaded by pi on every session start as the first AGENTS.md layer, via its CWD-walk discovery mechanism (`$AGENT_HOME/agent/AGENTS.md`). It describes pi-specific behavior that applies regardless of the project being worked on.
 
 Project-specific context lives in `sandbox/AGENTS.md` (loaded second, concatenated after this file). See that file for project conventions, commands, and architecture.
+
+---
+
+## Scope
+
+The paths this layer covers. Each is part of the container, so a reference to one of them resolves for any install of this image. The project layer covers the working tree the session runs in.
+
+| Path | What is there |
+|---|---|
+| `$AGENT_HOME/` | the running provider's config home: this file at `$AGENT_HOME/agent/AGENTS.md`, and the settings the provider reads |
+| `/opt/workflow/agent/prompts/` | the harness prompts and the coding-agent workflow prompts, merged into one root |
+| `/opt/workflow/agent/skills/` | the skill root |
+| `/opt/sandbox/docs/architecture/` | the harness architecture documents |
+| `/opt/sandbox/docs/concepts/` | the harness concept documents |
+| `/opt/sandbox/docs/operations/` | the operations policies |
+| `/opt/sandbox/lib/` | the harness libraries |
+| `/opt/sandbox/bin/` | the entrypoint and preflight scripts |
+| `/home/agentuser/workspace/input/` | the operator's handover files, read-only |
+| `/home/agentuser/workspace/output/` | where the session writes its result |
+| `/home/agentuser/workspace/session-diffs/` | the session diff output |
 
 ---
 
@@ -16,15 +36,14 @@ Every session runs two containers. You are inside the **reasoning** (agent runti
 
 Key behavioral rules:
 
-- Do not modify files outside `sandbox/`.
-- The changes in each iteration (represented by the task list of a single handover) must correspond to a single commit at iteration end with a type prefix per [`docs/operations/git_policy.md`](../../../../../../docs/operations/git_policy.md). `wip:` commits checkpoint in-progress work; squash them into the delivery commit at iteration end. A correction to a closed iteration's work, at the operator's direction, folds into that iteration's commit rather than starting a new one, and carries its record amendments in the same fold. The principles are in [`docs/adr/closed_record_corrections.md`](../../../../../../docs/adr/closed_record_corrections.md) and the record forms in the type policies. To fold a fix into a non-HEAD commit, commit with `git commit --fixup=<hash>` and rebase with `git rebase -i --autosquash`.
+- Do not modify files outside `sandbox/`, with one exception: `$AGENT_HOME/`, the config home this layer owns.
 - Changes are ported from the container to a draft branch on host; the operator reviews the merge before applying.
 
 ## Write Discipline
 
 Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs  --  fragmented or half-applied changes across iterations create review burden.
 
-Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](../../../../../../docs/operations/documentation_policy.md) `### Line wrapping`.
+Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md) `### Line wrapping`.
 
 When writing code, always take into account the following:
 
@@ -40,7 +59,7 @@ Run throwaway verification in `/tmp`, never in the repo tree. The repository is 
 
 Prefer the `edit` tool for in-place text changes. The `edit` tool reports a miss when its `oldText` does not match; a `sed` one-liner run through the `bash` tool with a missing file operand silently writes nothing. After a `sed` change, verify the write landed.
 
-Before creating any new document, read [`docs/operations/discussion_policy.md`](../../../../../../docs/operations/discussion_policy.md) and [`docs/operations/adr_policy.md`](../../../../../../docs/operations/adr_policy.md).
+Before creating any new document, check the project layer for the policy that governs the document type.
 
 Tools you have access to:
 

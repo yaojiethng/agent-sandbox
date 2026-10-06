@@ -1,5 +1,13 @@
 # AGENTS.md - agent-sandbox
 
+## Scope
+
+This file is the project layer: the second context file pi loads, after the provider layer at `$AGENT_HOME/agent/AGENTS.md`. The provider layer covers the harness and the container paths. This file adds the project itself, which is the working tree the session runs in.
+
+| Path | What is there |
+|---|---|
+| `/home/agentuser/sandbox/` | the project working tree: `docs/`, `devlog/`, `scripts/`, `tests/`, `src/`, `workflow/`, and this file |
+
 ## System
 
 **agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute and commit inside containers, output is exported as a draft branch, and a human operator reviews and merges. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.

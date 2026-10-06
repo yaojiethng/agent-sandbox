@@ -22,6 +22,9 @@
 #                                 a populated repository source
 #   a repository path, from a shipped file -- flagged: the file runs in the image
 #   a target that ships nowhere -- flagged, from an instruction root
+#   the provider config root    -- its links resolve in the image too: the
+#                                 repository-relative form fails, the image path
+#                                 passes, so the root is a registered root
 #   a repository path, from a bundled document -- clean: only the instruction
 #                                 roots resolve in the image's path space
 #
@@ -264,6 +267,24 @@ test_sibling_instruction_root_link_is_clean() {
   assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a link between instruction roots resolves in the image'
 }
 
+test_provider_config_root_resolves_in_the_image() {
+  local dir cfg out
+  dir="$(shipped_root provider_root)"
+  mkdir -p "$dir/src/reasoning/providers/pi/config/agent"
+  local file="$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
+  printf '# Layer\n' > "$file"
+
+  printf '[policy](../../../../../../docs/operations/iteration_policy.md)\n' >> "$file"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_contains "$out" 'does not exist in the image' 'the repository form fails from the provider config root'
+
+  printf '# Layer\n' > "$file"
+  printf '[policy](/opt/sandbox/docs/operations/iteration_policy.md)\n' >> "$file"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'the image path passes from the provider config root'
+}
+
 run_test test_existing_target_is_clean
 run_test test_directory_target_is_clean
 run_test test_same_file_fragment_resolves
@@ -280,5 +301,6 @@ run_test test_image_path_missing_from_the_image_is_flagged
 run_test test_repository_path_from_a_shipped_file_is_flagged
 run_test test_repository_path_from_a_bundled_document_is_clean
 run_test test_sibling_instruction_root_link_is_clean
+run_test test_provider_config_root_resolves_in_the_image
 
 test_done

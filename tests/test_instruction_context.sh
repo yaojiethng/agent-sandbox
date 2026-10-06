@@ -13,6 +13,10 @@
 #   an empty Loaded when         --  rc 1
 #   a provider name in a provider-neutral folder  --  rc 1; the marker is named
 #   an always row that drifts between files       --  rc 1; the paths are named
+#   a layer scope row outside the always set      --  rc 1; the path is named
+#   an always row no layer covers                  --  rc 1; the path is named
+#   an always row two layers cover                 --  rc 1; both layers are named
+#   a layer with no Scope heading                  --  rc 1; the heading is named
 #   an /opt path no COPY makes   --  rc 1
 #   a 'none' for a copied tree   --  rc 1
 #   an /opt path outside the pi settings roots  --  rc 1
@@ -115,12 +119,38 @@ A folder of instructions.
 EOF
 }
 
+# write_layers ROOT  --  the two AGENTS.md layers, each with a `## Scope` table
+# covering its half of the always set the contexts declare.
+write_layers() {
+  local root="$1"
+  mkdir -p "$root/src/reasoning/providers/pi/config/agent"
+  cat > "$root/src/reasoning/providers/pi/config/agent/AGENTS.md" <<'EOF'
+# Provider layer
+
+## Scope
+
+| Path | What is there |
+|---|---|
+| `/opt/workflow/agent/` | the agent tree |
+EOF
+  cat > "$root/AGENTS.md" <<'EOF'
+# Project layer
+
+## Scope
+
+| Path | What is there |
+|---|---|
+| `/home/agentuser/sandbox/` | the project tree |
+EOF
+}
+
 # write_conforming_tree ROOT  --  four runtime paths, the image map and the
 # settings record, all agreeing. The merged prompt root carries one file.
 write_conforming_tree() {
   local root="$1"
   write_settings "$root"
   write_default_image_map "$root"
+  write_layers "$root"
   write_context "$root" "src/reasoning/agent/prompts" \
     "src/reasoning/agent/prompts/, workflow/coding-agent/prompts/" "/opt/workflow/agent/prompts/"
   write_context "$root" "src/reasoning/agent/skills" \
@@ -309,6 +339,43 @@ test_missing_settings_fails_closed() {
   assert_contains "$GATE_OUT" 'settings.json is missing' 'the missing input is named'
 }
 
+test_layer_scope_row_outside_the_always_set_flagged() {
+  local root="$FIXTURE_DIR/layerextra"
+  write_conforming_tree "$root"
+  sed -i 's#| `/opt/workflow/agent/` | the agent tree |#| `/opt/workflow/agent/` | the agent tree |\n| `/opt/elsewhere/` | another tree |#' \
+    "$root/src/reasoning/providers/pi/config/agent/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a layer path outside the always set fails'
+  assert_contains "$GATE_OUT" 'which no CONTEXT.md declares always reachable' 'the path is named'
+}
+
+test_uncovered_always_row_flagged() {
+  local root="$FIXTURE_DIR/uncovered"
+  write_conforming_tree "$root"
+  sed -i 's#| `/home/agentuser/sandbox/` | the project tree |#| `/home/agentuser/elsewhere/` | the project tree |#' "$root/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'an always row no layer covers fails'
+  assert_contains "$GATE_OUT" 'no layer covers' 'the uncovered row is named'
+}
+
+test_always_row_covered_twice_flagged() {
+  local root="$FIXTURE_DIR/doublecover"
+  write_conforming_tree "$root"
+  sed -i 's#| `/home/agentuser/sandbox/` | the project tree |#| `/opt/workflow/agent/` | the agent tree again |#' "$root/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'an always row two layers cover fails'
+  assert_contains "$GATE_OUT" 'more than one layer covers' 'the collision is named'
+}
+
+test_layer_without_scope_heading_flagged() {
+  local root="$FIXTURE_DIR/noheading"
+  write_conforming_tree "$root"
+  sed -i 's/^## Scope$/## Not the scope/' "$root/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a layer with no Scope heading fails'
+  assert_contains "$GATE_OUT" "missing heading '## Scope'" 'the heading is named'
+}
+
 run_test test_conforming_tree_passes
 run_test test_runtime_path_without_file_flagged
 run_test test_two_files_on_one_path_flagged
@@ -325,5 +392,9 @@ run_test test_provisioned_path_without_parent_copy_flagged
 run_test test_disagreeing_providers_flagged
 run_test test_missing_provider_dockerfile_fails_closed
 run_test test_missing_settings_fails_closed
+run_test test_layer_scope_row_outside_the_always_set_flagged
+run_test test_uncovered_always_row_flagged
+run_test test_always_row_covered_twice_flagged
+run_test test_layer_without_scope_heading_flagged
 
 test_done

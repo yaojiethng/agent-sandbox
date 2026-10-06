@@ -42,20 +42,23 @@ const imageMap = [
   ["src/reasoning/agent/skills/", "/opt/workflow/agent/skills/"],
   ["src/reasoning/agent/prompts/", "/opt/workflow/agent/prompts/"],
   ["workflow/coding-agent/prompts/", "/opt/workflow/agent/prompts/"],
+  ["src/reasoning/providers/pi/config/agent/", "/home/agentuser/.pi/agent/"],
   ["docs/architecture/", "/opt/sandbox/docs/architecture/"],
   ["docs/concepts/", "/opt/sandbox/docs/concepts/"],
   ["docs/operations/", "/opt/sandbox/docs/operations/"],
 ];
 
-// The instruction surfaces: the roots a prompt or a skill runs from. Their links
-// are written for the agent that reads them in a container, so they resolve in
-// the image's path space. A bundled document outside these roots is read by a
-// repository reader first, and keeps the repository-space check, or its links to
-// an ADR or a roadmap would demand that every record ship as well.
+// The instruction surfaces: the roots a prompt, a skill or the provider's
+// `AGENTS.md` runs from. Their links are written for the agent that reads them
+// in a container, so they resolve in the image's path space. A bundled document
+// outside these roots is read by a repository reader first, and keeps the
+// repository-space check, or its links to an ADR or a roadmap would demand that
+// every record ship as well.
 const instructionRoots = [
   "src/reasoning/agent/skills/",
   "src/reasoning/agent/prompts/",
   "workflow/coding-agent/prompts/",
+  "src/reasoning/providers/pi/config/agent/",
 ];
 
 // image_path_of REPO_RELATIVE -- the path the file has in the image, or empty

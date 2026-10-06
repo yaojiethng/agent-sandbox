@@ -217,7 +217,7 @@ Amending folds a change into the commit it corrects, so the history reads as if 
 - Never rewrite a commit that has left this container, and never rewrite published history.
 - Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
 
-What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md).
+A correction to the work of a closed iteration folds into that iteration's commit, at the operator's direction, and never opens a new one; the record amendments ride with the fold. What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md); the record forms are in [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections).
 
 ---
 

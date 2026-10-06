@@ -82,8 +82,16 @@ A provider's own folder, such as `src/reasoning/providers/pi/config/agent/prompt
 
 `$AGENT_HOME/` is the resolution for a provider's own config home. The variable is set in every provider image, so a provider-neutral folder names the variable and not the value.
 
+## The layers
+
+The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table for the container paths it covers; the project layer, `AGENTS.md`, holds one for the working tree the session runs in. Each table names runtime paths and nothing else.
+
+The two tables are a view over the `## Reachable` rows above, not a second source. A path a layer names must be one of those rows or a path inside one, and every `always` row must be covered by exactly one layer.
+
 ## The gate
 
 [`scripts/check_instruction_context.sh`](../../scripts/check_instruction_context.sh) reads the provider dockerfiles and the pi `settings.json`, and asserts each `CONTEXT.md` against them. It fails on a missing file, a missing heading, a runtime path the image does not produce, a `none` for a copied folder, a source folder the file leaves unlisted, a folder the image copies whose path carries no file, two files claiming one runtime path, a provider name in a provider-neutral file, and an `always` row that differs between files.
+
+It checks the two layer tables in the same pass: a layer with no `## Scope` table, a row naming a path outside the `always` set, an `always` row no layer covers, and an `always` row two layers cover all fail.
 
 The gate is why a stale claim cannot survive. A `COPY` line added or removed breaks the file that described the old map, and a container path that changes in one file and not the others fails as a drift.
