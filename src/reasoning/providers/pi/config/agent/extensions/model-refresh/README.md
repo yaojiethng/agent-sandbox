@@ -347,7 +347,7 @@ The transport tables in `catalog.ts` are held to pi's baked catalog by invariant
 
 That reconciliation leaves one risk open, stated here because no case can watch it. Of the four removed ids, only `qwen3.6-plus` is carried by pi's `opencode` catalog at all, and it is carried there as `anthropic-messages`; `minimax-m2.7` is `openai-completions` on that product and `qwen3.7-max` and `qwen3.7-plus` appear on neither. So if a future pi release drops `qwen3.6-plus` from `opencode-go` and no fresher persisted entry supplies it, the extension would serve it on `openai-completions` against the adapter the other product uses. Nothing in the suite notices, because the live layer only builds an entry for an id the earlier sources do not have, and pi has the id. The fix is a live probe of that id against both adapters, which needs a key and is not yet done.
 
-The folder is wired into `make test` through `tests/test_model_refresh.sh`, which runs the node suite in one process and guards the file list: a new node test file that the wrapper does not name fails the guard. The extension's knowledge script is syntax-checked by `scripts/check_test_smoke.sh`, which now reaches `tests/extensions/**/knowledge/` in addition to `tests/knowledge/`, `tests/integration/` and `tests/eval/`.
+The folder is wired into `make test` through `tests/test_model_refresh.sh`, which runs the node suite in one process and guards the file list: a new node test file that the wrapper does not name fails the guard. The extension's knowledge script is syntax-checked by `scripts/check_test_smoke.sh`, which now reaches `tests/extensions/**/knowledge/` in addition to `tests/knowledge/` and `tests/integration/`.
 
 ## Local overrides
 

@@ -133,5 +133,5 @@ The three-way eval (v1/v2/v3, session 20260522-01) exposed a structural problem 
 
 ## Working Documents
 
-- [`eval/eval_protocol.md`](../../tests/eval/eval_protocol.md) -- Draft protocol formalizing the eval process (golden dataset, code-based evaluators, variant comparison, reporting, evaluator tiers).
-- [`eval/eval_new_session.sh`](../eval/eval_new_session.sh) -- Concrete eval script for new-session prompts. Run with `bash eval/eval_new_session.sh` from repo root. Produces structured PASS/FAIL report against all 8 invariants.
+- `tests/eval/eval_protocol.md` `[REMOVED]` -- Draft protocol formalizing the eval process (golden dataset, code-based evaluators, variant comparison, reporting, evaluator tiers). Deleted by handover `20261005-09`; the process sources are the agentskills guide and the poteto-mode `eval` playbook.
+- `tests/eval/eval_new_session.sh` `[REMOVED]` -- Concrete eval script for new-session prompts. Deleted by the excluded-tests disposition (handover `20260823-06`).

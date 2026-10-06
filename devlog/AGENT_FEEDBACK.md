@@ -345,6 +345,10 @@ legacy: none
 mitigation: a perl one-liner intended to count matches in a test file was written with the `/g` modifier against a full-file slurp; it matched nothing, but the loop structure ran forever, emitting a line count that grew into the hundreds of millions before the run was aborted and the log killed. The deeper fix: a mechanical transform that prints only a summary at the end is invisible while it spins. Always (1) bound the tool with `timeout`, (2) have the transform emit a match/replacement count to stderr BEFORE any output, and (3) diff against the input to verify the change before committing. A long-running transform with no stderr progress is the signal to inspect the loop, not to wait. The standing order to run every script through `timeout` is withdrawn: a blanket timeout on a simple script maxes out the wait every run. Move to a test harness with per-test timeouts.
 ```
 
+**Recurrence, 2026-10-05.** A `node -e` transform rewrote a test file with `String.replace`, and the replacement string contained `$'`. In JavaScript that is not literal text: `$&`, `` $` ``, `$'` and `$1` are replacement patterns, and `$'` means the portion of the input *after* the match. The write therefore duplicated the file's tail, so the file held its own body twice. Both prescribed guards were skipped, and the run was quiet: the shrunken first copy still parsed, and the suite still reported results, so the doubling surfaced only when a later anchor stopped matching.
+
+Two additions for this failure mode. A replacement that is not a literal constant -- a shell-quoted heredoc, a path, a value from a variable -- goes through a function replacer (`text.replace(re, () => to)`) or a tool that treats it literally; the pattern characters are only honoured in a plain string. And the count check is not enough on its own: compare the output's line count or size against the input's after every transform, because a transform can succeed at the wrong edit rather than fail at the right one.
+
 ### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
 
 ```text

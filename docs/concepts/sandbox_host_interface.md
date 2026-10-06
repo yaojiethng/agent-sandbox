@@ -183,6 +183,7 @@ No `git am`, no `format-patch`, no git metadata headers. Works identically in bo
 |---|---|---|
 | `bash /opt/sandbox/lib/package_branch.sh --to=<dir>` | Container | Packages all artefacts (patches, uncommitted, all-changes, changed-files) into `<to>/bundles/<ts>[-<label>]-<runid>/`. |
 | `bash .../package_branch.sh --to=<dir> [--baseline=<sha>]` | Container | Packages all commits since `init_sha` as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/` under `<to>/bundles/<ts>-<label>/`. |
+| `bash /opt/sandbox/lib/package_eval_snapshot.sh --to=<dir> --snapshot-summary=<slug>` | Container | Writes an eval snapshot under `<to>/evals/<ts>-<slug>-<runid>/`: the transcript frozen at the copy, a complete repository bundle, the operator turn stream, the session facts and a credential scan. |
 
 | `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
 | `make apply DIFF=<path> [INTERACTIVE=1]` | Host | Applies an exact diff file (`--diff=<path>` required) uncommitted. `--interactive` previews the changes + asks for confirmation. |
