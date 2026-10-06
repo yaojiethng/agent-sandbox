@@ -16,6 +16,8 @@ Run a case set against two or more configurations of the same task, grade each r
 
 **Blinding** follows the poteto-mode [`eval` playbook](https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/playbooks/eval.md). Sanitize every name a run sees. Keep the prompt an organic operator message. Never let a run learn that a comparison is happening.
 
+**Sustained improvement**, rather than one answer, is the [hillclimb playbook](playbooks/hillclimb.md): one metric, one edit per batch, a paired control, and the decision log that says which edits were kept and which were reverted.
+
 ## When to use
 
 - A skill, prompt or policy is about to be relied on, and nobody has measured it.
