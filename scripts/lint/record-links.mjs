@@ -13,6 +13,11 @@
 //     or underscore, then one hyphen per space. So "M4.6 -- Background Work
 //     (parallel-work)" yields "m46----background-work-parallel-work", and a
 //     heading carrying a suffix carries that suffix in its fragment.
+//   - a link in a file that ships into the agent image resolves in the image's
+//     path space, not the repository's. The prompt that ships runs at its image
+//     path, so its link must reach a path that exists there. `imageMap` holds
+//     the pairs the provider dockerfiles declare with `COPY`; an image path is
+//     checked by mapping it back to the repository source that populates it.
 //
 // What it skips: external targets (http, https, mailto, tel), links inside
 // fenced code blocks, and whatever the config exempts.
@@ -26,6 +31,52 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
+
+// Repository directory to image destination, trailing slash on both, as the
+// provider dockerfiles declare the pairs. `docs/architecture/` and
+// `docs/concepts/` ship beside the operations policy; the two prompt roots
+// merge into one image directory, so a link between them is a sibling link at
+// runtime. Deriving this map from the `COPY` lines, instead of repeating it per
+// gate, is an open roadmap row.
+const imageMap = [
+  ["src/reasoning/agent/skills/", "/opt/workflow/agent/skills/"],
+  ["src/reasoning/agent/prompts/", "/opt/workflow/agent/prompts/"],
+  ["workflow/coding-agent/prompts/", "/opt/workflow/agent/prompts/"],
+  ["docs/architecture/", "/opt/sandbox/docs/architecture/"],
+  ["docs/concepts/", "/opt/sandbox/docs/concepts/"],
+  ["docs/operations/", "/opt/sandbox/docs/operations/"],
+];
+
+// The instruction surfaces: the roots a prompt or a skill runs from. Their links
+// are written for the agent that reads them in a container, so they resolve in
+// the image's path space. A bundled document outside these roots is read by a
+// repository reader first, and keeps the repository-space check, or its links to
+// an ADR or a roadmap would demand that every record ship as well.
+const instructionRoots = [
+  "src/reasoning/agent/skills/",
+  "src/reasoning/agent/prompts/",
+  "workflow/coding-agent/prompts/",
+];
+
+// image_path_of REPO_RELATIVE -- the path the file has in the image, or empty
+// when the file does not ship.
+function image_path_of(repoPath) {
+  for (const [source, destination] of imageMap) {
+    if (repoPath.startsWith(source)) {
+      return destination + repoPath.slice(source.length);
+    }
+  }
+  return "";
+}
+
+// sources_of IMAGE_PATH -- every repository source that populates an image path.
+// A directory can be populated from more than one source (the two prompt roots
+// share a destination), so a path is valid when any source holds it.
+function sources_of(imagePath) {
+  return imageMap
+    .filter(([, destination]) => imagePath.startsWith(destination))
+    .map(([source, destination]) => source + imagePath.slice(destination.length));
+}
 
 // anchor_of HEADING -- the fragment a link uses to reach a heading.
 function anchor_of(heading) {
@@ -70,6 +121,15 @@ export default [
         return;
       }
       const dir = dirname(params.name);
+      // A file an agent runs succeeds at its image path, so its links are
+      // resolved there: absolute targets are image paths, relative targets are
+      // resolved against the file's image directory, and both are checked by
+      // mapping the image path back to the repository source that populates it.
+      // Every other file keeps the repository-space check.
+      const imageFile = instructionRoots.some((root) => name.startsWith(root))
+        ? image_path_of(name)
+        : "";
+      const imageDir = imageFile === "" ? "" : dirname(imageFile);
       let inFence = false;
 
       params.lines.forEach((line, index) => {
@@ -88,6 +148,31 @@ export default [
           const hashAt = target.indexOf("#");
           const pathPart = hashAt === -1 ? target : target.slice(0, hashAt);
           const fragment = hashAt === -1 ? "" : target.slice(hashAt + 1);
+
+          if (imageFile !== "" || pathPart.startsWith("/opt/")) {
+            const imageTarget =
+              pathPart === ""
+                ? imageFile
+                : pathPart.startsWith("/")
+                  ? pathPart
+                  : resolve(imageDir, pathPart);
+            const source = sources_of(imageTarget).find((candidate) => existsSync(candidate));
+            if (source === undefined) {
+              onError({
+                lineNumber: index + 1,
+                detail: "link target does not exist in the image: " + target,
+              });
+              continue;
+            }
+            if (fragment !== "" && !anchors_of(source).includes(fragment)) {
+              onError({
+                lineNumber: index + 1,
+                detail: "link fragment names no heading: " + target,
+              });
+            }
+            continue;
+          }
+
           const targetFile = pathPart === "" ? params.name : resolve(dir, pathPart);
 
           if (!existsSync(targetFile)) {

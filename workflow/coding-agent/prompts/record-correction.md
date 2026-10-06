@@ -9,7 +9,7 @@ argument-hint: "[target commit hash or subject] [what the correction changes] [w
 
 You are correcting a record that has already been closed. The operator named the commit the correction belongs to. Your deliverable is that commit rewritten to carry the correction, with no other commit touched, no commit added, and no port artifact left behind.
 
-A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. This is the record correction described in [`closed_record_corrections.md`](../../../docs/adr/closed_record_corrections.md), and that document owns the policy. This prompt owns the mechanics.
+A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. This is the record correction described in `closed_record_corrections.md`, and that document owns the policy. This prompt owns the mechanics.
 
 Two rules govern the run.
 

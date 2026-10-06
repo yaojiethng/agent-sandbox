@@ -18,6 +18,17 @@
 #   no recordTrees key         --  nothing is exempt; the rule holds no list
 #   a configured carve-out      --  the named trees are exempt
 #   an unreadable target        --  flagged as a missing target, never a pass
+#   an image path, from a shipped file -- clean when the image path maps back to
+#                                 a populated repository source
+#   a repository path, from a shipped file -- flagged: the file runs in the image
+#   a target that ships nowhere -- flagged, from an instruction root
+#   a repository path, from a bundled document -- clean: only the instruction
+#                                 roots resolve in the image's path space
+#
+# The image-space cases need a fixture that looks like the repository from the
+# rule's point of view, because the rule keys on the file's repository-relative
+# path. Each one builds a fake root, changes into it, and runs markdownlint from
+# there, so `<!-- cwd -->/workflow/coding-agent/prompts/` is a shipped root.
 #
 # The rule's live whole-tree behaviour is the Markdown gate's job
 # (`check_markdown.sh`), not a fixture unit test's: see
@@ -188,6 +199,71 @@ test_unreadable_target_is_flagged() {
   assert_contains "$out" 'link fragment names no heading' 'a fragment into a headingless target is flagged'
 }
 
+# shipped_root NAME -- a fixture root shaped like the repository, with one
+# prompt in a shipped instruction root and one bundled policy document.
+shipped_root() {
+  local name="$1"
+  local dir="$FIXTURE_DIR/$name"
+  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/docs/operations"
+  printf '# Policy\n' > "$dir/docs/operations/iteration_policy.md"
+  printf '%s' "$dir"
+}
+
+test_image_path_from_a_shipped_file_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root image_path)"
+  printf '[policy](/opt/sandbox/docs/operations/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'an absolute image path that a COPY populates is clean'
+}
+
+test_image_path_missing_from_the_image_is_flagged() {
+  local dir cfg out
+  dir="$(shipped_root image_missing)"
+  printf '[policy](/opt/sandbox/docs/operations/absent_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_contains "$out" 'does not exist in the image' 'an image path nothing populates is flagged'
+}
+
+test_repository_path_from_a_shipped_file_is_flagged() {
+  local dir cfg out
+  dir="$(shipped_root repo_form)"
+  printf '[policy](../../../docs/operations/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # The target exists in the repository, and the file never runs there: the old
+  # form is the defect this rule now catches.
+  assert_contains "$out" 'does not exist in the image' 'the repository-relative form is flagged from a shipped file'
+}
+
+test_repository_path_from_a_bundled_document_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root bundled_doc)"
+  mkdir -p "$dir/docs/adr"
+  printf '# Record\n' > "$dir/docs/adr/x.md"
+  printf '[adr](../adr/x.md)\n' > "$dir/docs/operations/iteration_policy.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # A bundled document is read by a repository reader first, so its own tree's
+  # relative links stay checked in repository space.
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a bundled document keeps the repository-space check'
+}
+
+test_sibling_instruction_root_link_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root sibling_root)"
+  mkdir -p "$dir/src/reasoning/agent/prompts" "$dir/src/reasoning/agent/skills/grill-me"
+  printf '# Skill\n' > "$dir/src/reasoning/agent/skills/grill-me/SKILL.md"
+  printf '[skill](../skills/grill-me/SKILL.md)\n' > "$dir/src/reasoning/agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # The two prompt roots and the skill root meet in the image, so a link between
+  # them resolves as a sibling link rather than by source-tree depth.
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a link between instruction roots resolves in the image'
+}
+
 run_test test_existing_target_is_clean
 run_test test_directory_target_is_clean
 run_test test_same_file_fragment_resolves
@@ -199,5 +275,10 @@ run_test test_link_in_a_fenced_block_is_skipped
 run_test test_no_carve_out_exempts_nothing
 run_test test_configured_carve_out_exempts_the_named_trees
 run_test test_unreadable_target_is_flagged
+run_test test_image_path_from_a_shipped_file_is_clean
+run_test test_image_path_missing_from_the_image_is_flagged
+run_test test_repository_path_from_a_shipped_file_is_flagged
+run_test test_repository_path_from_a_bundled_document_is_clean
+run_test test_sibling_instruction_root_link_is_clean
 
 test_done

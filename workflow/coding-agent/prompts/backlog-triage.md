@@ -25,13 +25,13 @@ A check-in whose recommended direction is an unattended run rather than a superv
 
 Routing:
 
-- A specific multi-unit plan the operator has already released is [`sequential-work.md`](../drafts/sequential-work.md). That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
+- A specific multi-unit plan the operator has already released is `sequential-work.md`. That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
-- The generalized dispatcher that resolves execution order and picks a dispatch shape is [`auto.md`](../drafts/auto.md), reserved for M4. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
+- The generalized dispatcher that resolves execution order and picks a dispatch shape is `auto.md`, reserved for M4. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
 
 ## Step 1 - Build the candidate set
 
-Read [`devlog/roadmap.md`](../../../devlog/roadmap.md). Take the `active-milestone` frontmatter field and that milestone's section when the argument is empty; take the named milestone or task group when the argument names one. Also read [`devlog/roadmap_future.md`](../../../devlog/roadmap_future.md) for rows that name a destination in a future milestone, so a row is not classified as absent merely because its milestone is not active.
+Read `devlog/roadmap.md`. Take the `active-milestone` frontmatter field and that milestone's section when the argument is empty; take the named milestone or task group when the argument names one. Also read `devlog/roadmap_future.md` for rows that name a destination in a future milestone, so a row is not classified as absent merely because its milestone is not active.
 
 One candidate per open row. A row is open when its checkbox is unchecked. Record for each: the row text, the milestone it sits under, and any sibling text on the same line or in the same bullet that narrows it.
 
@@ -39,11 +39,11 @@ One candidate per open row. A row is open when its checkbox is unchecked. Record
 
 ## Step 2 - Apply the well-specifiedness test
 
-Apply the test from [`sequential-work.md`](../drafts/sequential-work.md) Step 1 to every candidate. The test is: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
+Apply the test from `sequential-work.md` Step 1 to every candidate. The test is: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
-Use the commit types from [`git_policy.md`](../../../docs/operations/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
+Use the commit types from [`git_policy.md`](/opt/sandbox/docs/operations/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
 
 Two rows that cannot be separated by the records alone are one row. Merge them and say so in the verdict, rather than guessing where the boundary falls.
 
@@ -61,7 +61,7 @@ Where the row is parked on a decision the operator already made but the agent ha
 
 ## Step 4 - Check each runnable row against the run's own rules
 
-A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_policy.md`](../../../docs/operations/iteration_policy.md): one commit, one context, one verification, disjoint files.
+A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md): one commit, one context, one verification, disjoint files.
 
 - A row that fails one commit is over-scoped. Park it with the question of which slice comes first.
 - A row that needs two contexts splits, and each half is its own candidate. Present the split as two rows.
@@ -92,9 +92,9 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 ## Non-goals
 
-- Sequencing the runnable rows into a run plan. [`sequential-work.md`](../drafts/sequential-work.md) owns the order and the unit split of a released plan.
+- Sequencing the runnable rows into a run plan. `sequential-work.md` owns the order and the unit split of a released plan.
 - Surveying the project for work that is not on the roadmap. [`gm.md`](gm.md) owns the situational survey.
-- Choosing a dispatch shape, or resolving execution order across a dependency graph. [`auto.md`](../drafts/auto.md) owns that, from M4.
+- Choosing a dispatch shape, or resolving execution order across a dependency graph. `auto.md` owns that, from M4.
 - Editing any record. A stale row becomes a finding; the record is fixed in an iteration.
 - Answering a question the operator owns. Triage surfaces it once, in a form that can be answered in a reply.
 

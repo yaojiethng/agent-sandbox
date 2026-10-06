@@ -3,7 +3,7 @@ description: Park an adjacent issue or out-of-scope item discovered mid-iteratio
 argument-hint: "<description of the issue>"
 ---
 
-Park the following as a roadmap open row per the scope discipline principle in [iteration_policy.md](../../../../docs/operations/iteration_policy.md): $@
+Park the following as a roadmap open row per the scope discipline principle in [iteration_policy.md](/opt/sandbox/docs/operations/iteration_policy.md): $@
 
 Do not fix it now. Write the item back to the roadmap as an open row  --  what the item is, why it is out of scope for this iteration, and which milestone or parent row owns it.
 

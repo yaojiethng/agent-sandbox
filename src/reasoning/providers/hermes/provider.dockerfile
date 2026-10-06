@@ -29,6 +29,7 @@ COPY src/reasoning/agent/prompts/                /opt/workflow/agent/prompts/
 COPY workflow/coding-agent/prompts/              /opt/workflow/agent/prompts/
 COPY docs/architecture/                          /opt/sandbox/docs/architecture/
 COPY docs/concepts/                              /opt/sandbox/docs/concepts/
+COPY docs/operations/                            /opt/sandbox/docs/operations/
 
 # -------------------------
 # Non-root user

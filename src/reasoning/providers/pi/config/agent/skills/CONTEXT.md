@@ -22,6 +22,7 @@ This folder holds pi's own skills: the ones whose subject is pi or the harness's
 | `/opt/workflow/agent/skills/` | the provider-neutral skill root | always |
 | `/opt/sandbox/docs/architecture/` | the harness architecture documents | always |
 | `/opt/sandbox/docs/concepts/` | the harness concept documents | always |
+| `/opt/sandbox/docs/operations/` | the operations policy corpus, bundled from `docs/operations/` | always |
 | `/opt/sandbox/lib/` | the harness libraries | always |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts | always |
 | `$AGENT_HOME/` | pi's config home, including this folder's runtime path | always |
@@ -31,7 +32,7 @@ This folder holds pi's own skills: the ones whose subject is pi or the harness's
 
 ## Not reachable
 
-- The harness's `devlog/`, `docs/operations/` and `workflow/` trees at any image path. The project tree at `/home/agentuser/sandbox/` carries them only when the project under work is agent-sandbox.
+- The harness's `devlog/` and `workflow/` trees at any image path; the operations policy is the exception and ships at `/opt/sandbox/docs/operations/`. The project tree at `/home/agentuser/sandbox/` carries them only when the project under work is agent-sandbox.
 - The other two providers' config trees. This folder is pi's, and the hermes and opencode images do not carry it.
 - `/opt/provider-config/`. The compose path table documents it as the provider config mount, and no running container has the directory.
 

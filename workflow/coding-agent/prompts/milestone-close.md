@@ -17,7 +17,7 @@ The milestone name always comes from the operator. Never infer it from the branc
 
 ## Verify completeness
 
-Read the named milestone's section in `devlog/roadmap.md`. Confirm every task row is `[x]`; [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) `### Record shape` owns the invariant that a milestone holding an open row is never `Complete`, and this step applies it. An open row means the milestone is not ready to close: report it and stop.
+Read the named milestone's section in `devlog/roadmap.md`. Confirm every task row is `[x]`; [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) `### Record shape` owns the invariant that a milestone holding an open row is never `Complete`, and this step applies it. An open row means the milestone is not ready to close: report it and stop.
 
 Confirm the operator will take the review-gate decisions before you execute the close.
 
@@ -33,15 +33,15 @@ Reconcile the feedback per the operator's decisions. Do not decide a probation e
 
 ## Compact the task list
 
-Run the `roadmap-maintenance` skill (`workflow/coding-agent/skills/roadmap-maintenance.md`, from the repository root) over `devlog/roadmap.md`, and apply its report. The skill checks the compaction pass and the summary table update, and it follows [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) and the [Changelog Format](../../../docs/operations/roadmap_policy.md#changelog-format). It writes nothing, so this prompt applies each `fix-now` finding and carries an escalated one into the close. This prompt supplies the milestone name; the skill supplies the checks.
+Run the `roadmap-maintenance` skill (`workflow/coding-agent/skills/roadmap-maintenance.md`, from the repository root) over `devlog/roadmap.md`, and apply its report. The skill checks the compaction pass and the summary table update, and it follows [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) and the [Changelog Format](/opt/sandbox/docs/operations/roadmap_policy.md#changelog-format). It writes nothing, so this prompt applies each `fix-now` finding and carries an escalated one into the close. This prompt supplies the milestone name; the skill supplies the checks.
 
 ## Stop at the close boundary
 
-Apply [Compaction cascading](../../../docs/operations/roadmap_policy.md#compaction-cascading) to decide how far the close reaches; the policy owns the rule and this prompt does not restate it. The boundary decides which nodes this close touches, not how far the cascade travels next.
+Apply [Compaction cascading](/opt/sandbox/docs/operations/roadmap_policy.md#compaction-cascading) to decide how far the close reaches; the policy owns the rule and this prompt does not restate it. The boundary decides which nodes this close touches, not how far the cascade travels next.
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order. [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Changelog Format](../../../docs/operations/roadmap_policy.md#changelog-format) owns the entry's structure and its writing guidance; read them there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
+Append the milestone's entry to `devlog/changelog.md` in milestone order. [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) [Changelog Format](/opt/sandbox/docs/operations/roadmap_policy.md#changelog-format) owns the entry's structure and its writing guidance; read them there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
 
 ## Update the records
 
@@ -49,14 +49,14 @@ In `devlog/roadmap.md`:
 
 1. **Summary table:** flip the milestone's row to `Complete` with a changelog link. Leave the parent `In progress` unless all its direct children are complete.
 2. **Frontmatter:** set `active-milestone` to the parent milestone when a sub-milestone closes; set it to the next milestone at a full top-level close.
-3. **Top-level close (full milestone only):** remove the completed milestone's detail section from `roadmap.md`, and promote the next incomplete milestone from `roadmap_future.md` into `roadmap.md`. Steps 2 and 4 of [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md) [Top-level milestone close](../../../docs/operations/roadmap_policy.md#top-level-milestone-close) own them.
+3. **Top-level close (full milestone only):** remove the completed milestone's detail section from `roadmap.md`, and promote the next incomplete milestone from `roadmap_future.md` into `roadmap.md`. Steps 2 and 4 of [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) [Top-level milestone close](/opt/sandbox/docs/operations/roadmap_policy.md#top-level-milestone-close) own them.
 
 ## Escalate deferred work
 
 Give every item the milestone leaves open a recorded home before the close:
 
-- An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md).
-- An item that will not be picked up next goes to `roadmap.md` as a named task under [roadmap-policy Roadmap task placement](../../../docs/operations/roadmap_policy.md#filing-rules); the operator names the destination milestone.
+- An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md).
+- An item that will not be picked up next goes to `roadmap.md` as a named task under [roadmap-policy Roadmap task placement](/opt/sandbox/docs/operations/roadmap_policy.md#filing-rules); the operator names the destination milestone.
 - An item already resident elsewhere in `roadmap.md` or `roadmap_future.md` is named, not duplicated.
 
 ## Close the milestone
@@ -66,9 +66,9 @@ Before the record edits and the close commit, present to the operator the compac
 Then:
 
 1. Mark every acceptance criterion accepted in the handover.
-2. Run scope reconciliation and the deferred-resolution gate at milestone grain; see [iteration_policy.md](../../../docs/operations/iteration_policy.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
+2. Run scope reconciliation and the deferred-resolution gate at milestone grain; see [iteration_policy.md](/opt/sandbox/docs/operations/iteration_policy.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
 3. Set the handover `Status: Closed` before the commit -- the commit is the close.
-4. Land one delivery commit per [git_policy.md](../../../docs/operations/git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of Active Types. The M2.7 and M3.1 closes both typed `plan`.
+4. Land one delivery commit per [git_policy.md](/opt/sandbox/docs/operations/git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of Active Types. The M2.7 and M3.1 closes both typed `plan`.
 
 After the close commit, stop: report the landed commit and the updated records. No substantive work lands after the operator's close direction.
 

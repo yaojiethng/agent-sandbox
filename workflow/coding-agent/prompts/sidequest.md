@@ -7,7 +7,7 @@ argument-hint: "<what the sidequest does - required>"
 
 # Sidequest - Operator-Directed Interruption
 
-**Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_policy.md`](../../../docs/operations/iteration_policy.md#sidequests)'s.
+**Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md#sidequests)'s.
 
 ## When to use
 
@@ -31,7 +31,7 @@ Record the parent's handle. The sidequest names it twice: in its own Scope conti
 
 ## Create the sidequest handover
 
-Create the handover per [`handover_policy.md`](../../../docs/operations/handover_policy.md), as `/iter` Create the handover does, with Status `Active`. Set the type from the work, not from the parent.
+Create the handover per [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md), as `/iter` Create the handover does, with Status `Active`. Set the type from the work, not from the parent.
 
 Two writes belong to this step, and both land before the scope gate:
 
@@ -56,7 +56,7 @@ Present the pre-close summary and wait for the release gate, per `/iter` Step 7 
 
 Run the consolidated close from [`/wrapup`](wrapup.md) Part B, as `/iter` Steps 8-9 do. The sidequest is one delivery commit.
 
-**Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md). A fix, check or record with no roadmap home states that as the write-back outcome; the step is never skipped.
+**Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md). A fix, check or record with no roadmap home states that as the write-back outcome; the step is never skipped.
 
 ## Return
 

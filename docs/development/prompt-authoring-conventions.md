@@ -120,11 +120,15 @@ The test is ownership, not duplication. Ask what the document is responsible for
 
 The failure this rule catches is a document that is locally accurate and globally unreliable: every sentence is true of the moment it was written, and nothing compares it against the steps it describes. A step that changes leaves the copy behind with no signal.
 
-## A prompt names a record, it does not link it
+## A reference resolves where the prompt runs
 
-A prompt runs where the prompt is seeded: `~/.pi/agent/`, bind-mounted from `src/reasoning/agent/`. The `docs/` tree is not seeded there, so a link from a prompt into `docs/adr/` -- or into any `docs/` path -- has no target at runtime. The record-links gate does not scan `src/`, so nothing catches it: the link passes every gate and fails the reader.
+A prompt runs at its image path: `~/.pi/agent/`, seeded from `src/reasoning/agent/`, or `/opt/workflow/agent/prompts/`, baked from `workflow/coding-agent/prompts/` and `src/reasoning/agent/prompts/`. The repository tree is not there. The link check resolves a link in an instruction file in the image's path space rather than the repository's, so a target that exists only in the repository is a finding, and a link in the old repository-relative form no longer passes.
 
-A prompt may name a record in plain text. It may not link one. When the content behind the reference matters to the agent working in the container, it belongs in the prompt or in a seeded file, and the record is the place the decision is argued -- not the place the running agent is sent.
+A prompt links a document that ships. The operations policy ships at `/opt/sandbox/docs/operations/`, and `docs/architecture/` and `docs/concepts/` ship beside it. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
+
+A prompt names a document that does not ship -- a record, a draft, an ADR, a development document -- in plain text or a code span. Name it by the path a reader can find, and do not link it: the link would pass no reader in the container and fail the check. A reference to a project file, such as the project `AGENTS.md` or `devlog/roadmap.md`, is the same case, because the project tree is the reader's working directory rather than the prompt's.
+
+When the content behind the reference matters to the agent working in the container, it belongs in the prompt or in a shipped file, and the record is the place the decision is argued -- not the place the running agent is sent.
 
 The same rule covers the inverse: a rule whose only home is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
 

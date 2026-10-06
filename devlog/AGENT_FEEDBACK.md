@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-05  --  A roadmap row filed under a subject track instead of the active sub-milestone
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: none
+mitigation: before writing a roadmap row, read `roadmap_policy.md` `### Filing rules` `**Roadmap task placement**` and apply it literally: the row lands in the current sub-milestone's task list unless the operator directs otherwise. Subject ownership decides nothing about the bin.
+```
+
+Three rows in one session were filed into a subject track rather than the active sub-milestone. The retired provider-config transport sweep went to T10, then to T10 again after the operator had already redirected it. The repository-to-image path map went to T1, on the reasoning that it unifies gates rather than settling an instruction-surface convention.
+
+The reasoning was the defect. A track's blurb reads as a claim on every row that touches its subject, so a row is filed where it "belongs" by topic. The policy default is the opposite: what the work raises lands in the sub-milestone being worked, and a track placement is a directed exception. The operator redirected all three.
+
+---
+
 ## [A] 2026-10-03  --  A heavy test file's own deadline fails it under parallel load
 
 ```text

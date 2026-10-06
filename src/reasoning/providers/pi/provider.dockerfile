@@ -18,6 +18,7 @@ COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts
 COPY src/reasoning/providers/pi/config/                 /opt/workflow/agent/config/
 COPY docs/architecture/                                 /opt/sandbox/docs/architecture/
 COPY docs/concepts/                                     /opt/sandbox/docs/concepts/
+COPY docs/operations/                                   /opt/sandbox/docs/operations/
 RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 
 # Create agentuser at the host's UID to avoid bind mount permission conflicts.

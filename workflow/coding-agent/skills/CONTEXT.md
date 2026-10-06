@@ -22,6 +22,7 @@ This folder holds the coding-agent skills: the check-in dispatcher and the two r
 | `/opt/workflow/agent/skills/` | the harness skill root | always |
 | `/opt/sandbox/docs/architecture/` | the harness architecture documents | always |
 | `/opt/sandbox/docs/concepts/` | the harness concept documents | always |
+| `/opt/sandbox/docs/operations/` | the operations policy corpus, bundled from `docs/operations/` | always |
 | `/opt/sandbox/lib/` | the harness libraries | always |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts | always |
 | `$AGENT_HOME/` | the running provider's config home, rewritten from its template at every start | always |
@@ -31,7 +32,7 @@ This folder holds the coding-agent skills: the check-in dispatcher and the two r
 
 - Any image path for this folder. `/opt/workflow/agent/skills/` holds the harness skills alone, and a link from a prompt there into this folder has no target.
 - Skill discovery. The provider loads the roots in its config, and this folder is not one of them, so a session cannot see these skills from the command surface.
-- `devlog/`, `docs/operations/` and `workflow/` through the image. The project tree at `/home/agentuser/sandbox/` carries them only when the project under work is agent-sandbox.
+- `devlog/` and `workflow/` through the image; the operations policy is the exception and ships at `/opt/sandbox/docs/operations/`. The project tree at `/home/agentuser/sandbox/` carries them only when the project under work is agent-sandbox.
 
 ## Assumptions
 

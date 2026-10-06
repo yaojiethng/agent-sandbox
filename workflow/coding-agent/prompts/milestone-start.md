@@ -32,7 +32,7 @@ Present one reorganization proposal to the operator. The proposal covers the who
 - which existing milestones are overfull and should split;
 - the nesting level each milestone sits at.
 
-Milestone numbering is fractal and nests to any depth -- M{n}, M{n}.{m}, M{n}.{m}.{o}. Numbering uses integers only; follow the Fractal Milestone Numbering section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) for the numbering rules and the Milestone Summary table's indentation.
+Milestone numbering is fractal and nests to any depth -- M{n}, M{n}.{m}, M{n}.{m}.{o}. Numbering uses integers only; follow the Fractal Milestone Numbering section of [roadmap_policy.md](/opt/sandbox/docs/operations/roadmap_policy.md) for the numbering rules and the Milestone Summary table's indentation.
 
 You may propose nested sub-milestones where the pool decomposes cleanly. If the pool cannot factor at the current level, propose the shape one nesting level up. If the shape has genuine variants, rank them (1-3) -- the operator still decides once, on one point.
 
@@ -57,4 +57,4 @@ When several milestones exist, select one as next active with the operator. Upda
 - The milestone's section -- add the full task checklist to the active one; non-active milestones carry an objective paragraph only.
 - `roadmap.md` frontmatter `active-milestone` -- set it to the active milestone, at the level the operator selected.
 
-Follow the Record shape section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
+Follow the Record shape section of [roadmap_policy.md](/opt/sandbox/docs/operations/roadmap_policy.md) when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
