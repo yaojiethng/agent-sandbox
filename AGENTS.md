@@ -188,6 +188,20 @@ The operator signalling a new iteration -- by saying "new iteration", "next iter
 
 **Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
 
+### Loop prompts
+
+The runbooks the loop runs, each seeded into the container. The list is the `scope` of [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), which holds the invariants each runbook must not break.
+
+| Prompt | Runs from |
+|---|---|
+| `/iter` | [`iter.md`](workflow/coding-agent/prompts/iter.md) |
+| `/sidequest` | [`sidequest.md`](workflow/coding-agent/prompts/sidequest.md) |
+| `/milestone-start` | [`milestone-start.md`](workflow/coding-agent/prompts/milestone-start.md) |
+| `/milestone-close` | [`milestone-close.md`](workflow/coding-agent/prompts/milestone-close.md) |
+| `/plan` | [`plan.md`](workflow/coding-agent/prompts/plan.md) |
+| `/document` | [`document.md`](workflow/coding-agent/prompts/document.md) |
+| `/wrapup` | [`wrapup.md`](workflow/coding-agent/prompts/wrapup.md) |
+
 ## Iteration Start
 
 Read these in order. Each answers a distinct question -- do not skip. Verify you have access to each before proceeding.

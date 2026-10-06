@@ -94,4 +94,6 @@ The two tables are a view over the `## Reachable` rows above, not a second sourc
 
 It checks the two layer tables in the same pass: a layer with no `## Scope` table, a row naming a path outside the `always` set, an `always` row no layer covers, and an `always` row two layers cover all fail.
 
+The loop inventory is checked here too. `iteration_policy.md`'s frontmatter `scope` names the runbooks it governs; the project layer's `### Loop prompts` table is the inventory an agent reads. A prompt the policy names and the inventory omits fails, and so does an inventory row the policy does not govern.
+
 The gate is why a stale claim cannot survive. A `COPY` line added or removed breaks the file that described the old map, and a container path that changes in one file and not the others fails as a drift.

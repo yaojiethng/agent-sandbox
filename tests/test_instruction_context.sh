@@ -17,6 +17,8 @@
 #   an always row no layer covers                  --  rc 1; the path is named
 #   an always row two layers cover                 --  rc 1; both layers are named
 #   a layer with no Scope heading                  --  rc 1; the heading is named
+#   an inventory that omits a scope prompt          --  rc 1; the prompt is named
+#   an inventory row the policy does not govern     --  rc 1; the row is named
 #   an /opt path no COPY makes   --  rc 1
 #   a 'none' for a copied tree   --  rc 1
 #   an /opt path outside the pi settings roots  --  rc 1
@@ -120,10 +122,11 @@ EOF
 }
 
 # write_layers ROOT  --  the two AGENTS.md layers, each with a `## Scope` table
-# covering its half of the always set the contexts declare.
+# covering its half of the always set the contexts declare, plus the loop
+# inventory and the policy scope it must match.
 write_layers() {
   local root="$1"
-  mkdir -p "$root/src/reasoning/providers/pi/config/agent"
+  mkdir -p "$root/src/reasoning/providers/pi/config/agent" "$root/docs/operations"
   cat > "$root/src/reasoning/providers/pi/config/agent/AGENTS.md" <<'EOF'
 # Provider layer
 
@@ -141,6 +144,23 @@ EOF
 | Path | What is there |
 |---|---|
 | `/home/agentuser/sandbox/` | the project tree |
+
+## Iteration Lifecycle
+
+### Loop prompts
+
+| Prompt | Runs from |
+|---|---|
+| `/iter` | `workflow/coding-agent/prompts/iter.md` |
+| `/wrapup` | `workflow/coding-agent/prompts/wrapup.md` |
+EOF
+  cat > "$root/docs/operations/iteration_policy.md" <<'EOF'
+---
+description: "Owns the iteration grain."
+scope: ["/iter", "/wrapup"]
+---
+
+# Iteration Policy
 EOF
 }
 
@@ -376,6 +396,24 @@ test_layer_without_scope_heading_flagged() {
   assert_contains "$GATE_OUT" "missing heading '## Scope'" 'the heading is named'
 }
 
+test_inventory_omitting_a_scope_prompt_flagged() {
+  local root="$FIXTURE_DIR/invomit"
+  write_conforming_tree "$root"
+  sed -i '/| `\/wrapup` |/d' "$root/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'an inventory that omits a scope prompt fails'
+  assert_contains "$GATE_OUT" "the inventory omits [/wrapup]" 'the omitted prompt is named'
+}
+
+test_inventory_row_outside_scope_flagged() {
+  local root="$FIXTURE_DIR/invextra"
+  write_conforming_tree "$root"
+  sed -i 's#| `/wrapup` | `workflow/coding-agent/prompts/wrapup.md` |#| `/wrapup` | `workflow/coding-agent/prompts/wrapup.md` |\n| `/gm` | `workflow/coding-agent/prompts/gm.md` |#' "$root/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'an inventory row the policy does not govern fails'
+  assert_contains "$GATE_OUT" "the inventory names [/gm]" 'the ungoverned row is named'
+}
+
 run_test test_conforming_tree_passes
 run_test test_runtime_path_without_file_flagged
 run_test test_two_files_on_one_path_flagged
@@ -396,5 +434,7 @@ run_test test_layer_scope_row_outside_the_always_set_flagged
 run_test test_uncovered_always_row_flagged
 run_test test_always_row_covered_twice_flagged
 run_test test_layer_without_scope_heading_flagged
+run_test test_inventory_omitting_a_scope_prompt_flagged
+run_test test_inventory_row_outside_scope_flagged
 
 test_done

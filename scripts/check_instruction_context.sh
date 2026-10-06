@@ -55,6 +55,13 @@ REQUIRED_HEADINGS=(
   "## Assumptions"
 )
 
+# The loop inventory. The policy's `scope` names the runbooks it governs, and
+# the project layer's inventory lists them for the agent. One declaration, two
+# readers: the check fails when they disagree.
+ITERATION_POLICY_REL="docs/operations/iteration_policy.md"
+INVENTORY_REL="AGENTS.md"
+INVENTORY_HEADING="### Loop prompts"
+
 # The four provider-neutral folders. Their images carry the same paths, so a
 # context file here may not name a provider, a provider home or a provider
 # install path: the running provider resolves $AGENT_HOME instead. A provider's
@@ -112,7 +119,7 @@ field_value() {
 section_has_content() {
   awk -v want="$2" '
     $0 == want { inside = 1; next }
-    inside && /^## / { exit }
+    inside && (/^#[^#]/ || /^##[^#]/) { exit }
     inside && NF { found = 1; exit }
     END { exit !found }
   ' "$1"
@@ -125,7 +132,7 @@ section_has_content() {
 reachable_paths() {
   awk -F'|' '
     /^## Reachable$/ { inside = 1; next }
-    inside && /^## / { exit }
+    inside && (/^#[^#]/ || /^##[^#]/) { exit }
     inside && $2 ~ /^[[:space:]]*`[$\/]/ {
       condition = $4
       gsub(/[[:space:]]/, "", condition)
@@ -142,7 +149,7 @@ reachable_paths() {
 layer_paths() {
   awk -F'|' '
     /^## Scope$/ { inside = 1; next }
-    inside && /^## / { exit }
+    inside && (/^#[^#]/ || /^##[^#]/) { exit }
     inside && $2 ~ /^[[:space:]]*`/ {
       path = $2
       gsub(/[`[:space:]]/, "", path)
@@ -160,6 +167,27 @@ layers_relate() {
   [[ "$path" == */ && "$row" == "$path"* ]] && return 0
   [[ "$row" == */ && "$path" == "$row"* ]] && return 0
   return 1
+}
+
+# policy_scope FILE  --  the prompt names in the frontmatter `scope` list, one
+# per line and sorted.
+policy_scope() {
+  sed -n 's/^scope:[[:space:]]*\[\(.*\)\][[:space:]]*$/\1/p' "$1" | head -1 \
+    | tr ',' '\n' | tr -d ' "' | sed '/^$/d' | sort
+}
+
+# inventory_prompts FILE  --  the prompt names in the layer's inventory table,
+# one per line and sorted.
+inventory_prompts() {
+  awk -F'|' -v want="$2" '
+    $0 == want { inside = 1; next }
+    inside && /^#/ { exit }
+    inside && $2 ~ /^[[:space:]]*`/ {
+      name = $2
+      gsub(/[`[:space:]]/, "", name)
+      if (name != "") print name
+    }
+  ' "$1" | sort
 }
 
 # copy_dests DIR  --  sets COPY_DESTS to one destination per dockerfile COPY
@@ -455,6 +483,40 @@ while read -r row; do
     *) finding "AGENTS.md layers" "more than one layer covers '$row': $(printf '%s ' "${claimers[@]}")" ;;
   esac
 done < "$ALWAYS_FILE"
+
+# The loop inventory. The policy's `scope` is the declaration; the layer's table
+# is the inventory an agent reads. Compare them both ways, so a runbook the
+# policy names and the layer omits fails, and so does a row the layer carries
+# that the policy does not govern.
+policy_file="$SCAN_ROOT/$ITERATION_POLICY_REL"
+inventory_file="$SCAN_ROOT/$INVENTORY_REL"
+if [[ ! -f "$policy_file" ]]; then
+  finding "$ITERATION_POLICY_REL" "missing; cannot check the loop inventory against its scope"
+else
+  policy_prompts="$REACHABLE_DIR/.policy_prompts"
+  policy_scope "$policy_file" > "$policy_prompts"
+  if [[ ! -s "$policy_prompts" ]]; then
+    finding "$ITERATION_POLICY_REL" "the frontmatter holds no scope list; the loop inventory has no source"
+  fi
+
+  if [[ ! -f "$inventory_file" ]]; then
+    finding "$INVENTORY_REL" "missing; cannot check the loop inventory"
+  elif ! grep -qxF "$INVENTORY_HEADING" "$inventory_file"; then
+    finding "$INVENTORY_REL" "missing heading '$INVENTORY_HEADING'"
+  else
+    inventory_rows="$REACHABLE_DIR/.inventory"
+    inventory_prompts "$inventory_file" "$INVENTORY_HEADING" > "$inventory_rows"
+
+    missing="$(comm -23 "$policy_prompts" "$inventory_rows" | paste -sd, -)"
+    extra="$(comm -13 "$policy_prompts" "$inventory_rows" | paste -sd, -)"
+    if [[ -n "$missing" ]]; then
+      finding "$INVENTORY_REL" "the inventory omits [${missing}], which the policy's scope names"
+    fi
+    if [[ -n "$extra" ]]; then
+      finding "$INVENTORY_REL" "the inventory names [${extra}], which the policy's scope does not govern"
+    fi
+  fi
+fi
 
 if (( FINDINGS == 0 )); then
   echo "Instruction-context gate: clean across $checked file(s)"

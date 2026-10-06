@@ -1,6 +1,6 @@
 ---
 description: "Owns the iteration grain: the invariants the runbooks must not break, the two gates, the acceptance-criteria model, and the close rules. This document states the rules; `/iter` runs the procedure."
-scope: ["/iter", "/wrapup", "/plan", "/document"]
+scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/document", "/wrapup"]
 ---
 
 # Iteration Policy
@@ -25,13 +25,7 @@ Read this document at the start of any iteration.
 
 The workflows run as invocable runbooks under `workflow/coding-agent/prompts/` (each runbook is a workflow prompt). The procedure lives in the runbooks; this policy holds the invariants the runbooks must not break. See the ADR [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) for the taxonomy and the state diagram. A runbook may evolve freely as the model improves; the invariants here are the durable half.
 
-- `/iter` -- the iteration workflow: [`iter.md`](../../workflow/coding-agent/prompts/iter.md).
-- `/sidequest` -- the operator-directed interruption of an open iteration: [`sidequest.md`](../../workflow/coding-agent/prompts/sidequest.md).
-- `/sequential-work` and `/parallel-work` -- the `/iter` work-loop expansions, owned by M3.2.3: [`sequential-work.md`](../../workflow/coding-agent/drafts/sequential-work.md) and [`parallel-work.md`](../../workflow/coding-agent/drafts/parallel-work.md), both in draft status pending operator review. `/auto` (smart dispatcher) and `/goal` (loose-goal decomposition) are M4's.
-- `/milestone-start` -- opens a milestone: [`milestone-start.md`](../../workflow/coding-agent/prompts/milestone-start.md).
-- `/milestone-close` -- closes a milestone or sub-milestone: [`milestone-close.md`](../../workflow/coding-agent/prompts/milestone-close.md).
-- `/plan` -- milestone planning: [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
-- `/wrapup` -- the consolidated close for the active-operator prompts: [`wrapup.md`](../../workflow/coding-agent/prompts/wrapup.md).
+The `scope` field above names the runbooks this policy governs. That list is the single declaration of them: the project layer `AGENTS.md` carries the inventory an agent reads at session start, and [`scripts/check_instruction_context.sh`](../../scripts/check_instruction_context.sh) fails when the two disagree.
 
 ---
 
