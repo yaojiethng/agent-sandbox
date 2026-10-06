@@ -98,37 +98,120 @@ test_measure_reports_missing_commit() {
 
 # When: run_case.sh runs one case with a stub agent that lands a compliant commit
 # Then: the summary reports one committed run at full correctness and consistency
-test_run_case_scores_a_stub_run() {
-  local work="$TMP/run_case"
+# Build a fixture workspace: a base bundle, a workload patch, a candidate directory,
+# and a stub agent at <work>/bin/pi whose body the caller supplies.
+make_stub_workspace() {
+  local work="$1" stub_body="$2"
   local base="$work/base"
-  mkdir -p "$work/bin"
+  mkdir -p "$work/bin" "$work/candidate"
   make_repo_with_base "$base"
   git -C "$base" bundle create "$work/base.bundle" --all >/dev/null 2>&1
   printf 'change\n' >>"$base/docs/operations/git_policy.md"
   git -C "$base" diff >"$work/change.patch"
   git -C "$base" checkout -q -- .
-
-  mkdir -p "$work/candidate"
   cp "$base/AGENTS.md" "$work/candidate/AGENTS.md"
   cp "$base/docs/operations/git_policy.md" "$work/candidate/git_policy.md"
+  printf '%s\n' "$stub_body" >"$work/bin/pi"
+  chmod +x "$work/bin/pi"
+}
 
-  cat >"$work/bin/pi" <<'STUB'
-#!/usr/bin/env bash
+COMMIT_STUB='#!/usr/bin/env bash
 git add -A
 git -c user.email=t@t -c user.name=t commit -q -m "docs: land the policy change" -m "Folded into the iteration it corrects."
-exit 0
-STUB
-  chmod +x "$work/bin/pi"
+exit 0'
 
+DIRTY_STUB='#!/usr/bin/env bash
+printf "not committed\n" >> git_policy.md
+exit 0'
+
+run_stub_case() {
+  local work="$1" out="$2" runs="$3"
+  shift 3
   PATH="$work/bin:$PATH" bash "$RUN_CASE" \
     --bundle="$work/base.bundle" --patch="$work/change.patch" \
-    --candidate="$work/candidate" --runs=2 --out="$work/out" --label="stub" >/dev/null 2>&1
+    --candidate="$work/candidate" --runs="$runs" --out="$out" --label="stub" "$@"
+}
+
+# When: run_case.sh runs one case with a stub agent that lands a compliant commit
+# Then: the summary reports one committed run at full correctness and consistency
+test_run_case_scores_a_stub_run() {
+  local work="$TMP/run_case"
+  make_stub_workspace "$work" "$COMMIT_STUB"
+  run_stub_case "$work" "$work/out" 2 >/dev/null 2>&1
   local summary="$work/out/measure-stub.json"
   assert_file_exists "$summary"
   assert_eq "$(jq -r '.committed' "$summary")" "2" "both runs committed"
   assert_eq "$(jq -r '.correctness' "$summary")" "1" "correctness is 1"
   assert_eq "$(jq -r '.consistency' "$summary")" "1" "consistency is 1"
   assert_eq "$(jq -r '.body_chars_max' "$summary")" "38" "the body length is measured"
+}
+
+# When: a graded case ends
+# Then: no worktree is left under the output directory, and the temp root is removed
+test_run_case_leaves_no_worktree() {
+  local work="$TMP/run_case_worktree"
+  make_stub_workspace "$work" "$COMMIT_STUB"
+  mkdir -p "$work/tmp"
+  TMPDIR="$work/tmp" run_stub_case "$work" "$work/out" 1 >/dev/null 2>&1
+  assert_eq "$(find "$work/out" -type d -name project | wc -l | tr -d ' ')" "0" "no worktree under the output directory"
+  assert_file_exists "$work/out/case-stub/run-1/measure.json" "the measure stays"
+  assert_eq "$(ls -A "$work/tmp" | wc -l | tr -d ' ')" "0" "the temp root is removed at exit"
+}
+
+# When: the operator asks for the work root to be kept
+# Then: the script prints its path and the worktree survives there
+test_run_case_keeps_the_work_root_on_request() {
+  local work="$TMP/run_case_kept"
+  make_stub_workspace "$work" "$COMMIT_STUB"
+  mkdir -p "$work/tmp"
+  TMPDIR="$work/tmp" EVAL_KEEP_WORK=1 run_stub_case "$work" "$work/out" 1 >"$work/kept.out" 2>&1
+  local kept
+  kept="$(sed -n 's/^work root kept: //p' "$work/kept.out" | head -1)"
+  assert_not_empty "$kept" "the kept work root is named"
+  assert_dir_exists "$kept" "the kept work root exists"
+  assert_file_exists "$kept/run-1/project/AGENTS.md" "the worktree survives in it"
+  rm -rf "$kept"
+}
+
+# When: a run commits its delivery
+# Then: a bundle of the delta applies to a clone of the base, and no patch is written
+test_run_case_writes_a_change_bundle() {
+  local work="$TMP/run_case_bundle"
+  make_stub_workspace "$work" "$COMMIT_STUB"
+  run_stub_case "$work" "$work/out" 1 >/dev/null 2>&1
+  local run="$work/out/case-stub/run-1"
+  assert_file_exists "$run/run.bundle" "the run's change is bundled"
+  git clone -q "$work/base.bundle" "$work/fresh"
+  local rc=0
+  git -C "$work/fresh" fetch -q "$run/run.bundle" HEAD:delivered || rc=$?
+  assert_rc 0 "$rc" "the bundle fetches onto the base"
+  assert_eq "$(git -C "$work/fresh" log -1 --format=%s delivered)" "docs: land the policy change" "the bundle carries the run's commit"
+  assert_empty "$(cat "$run/run.patch")" "a committed run leaves no patch"
+}
+
+# When: a run leaves the tree dirty without committing
+# Then: the patch of the remainder applies to the fixture, and no bundle is claimed
+test_run_case_writes_a_patch_for_a_dirty_run() {
+  local work="$TMP/run_case_patch"
+  make_stub_workspace "$work" "$DIRTY_STUB"
+  run_stub_case "$work" "$work/out" 1 >/dev/null 2>&1
+  local run="$work/out/case-stub/run-1"
+  assert_not_empty "$(cat "$run/run.patch")" "the dirty run writes a patch"
+  git clone -q "$work/base.bundle" "$work/fresh"
+  local rc=0
+  git -C "$work/fresh" apply --check "$run/run.patch" || rc=$?
+  assert_rc 0 "$rc" "the patch applies to the fixture"
+  assert_eq "$(jq -r '.committed' "$work/out/measure-stub.json")" "0" "the run committed nothing"
+  assert_eq "$(compgen -G "$run/run.bundle" | wc -l | tr -d ' ')" "0" "no bundle is written without a commit"
+}
+
+# When: --measure-only is asked for without a work root
+# Then: the script refuses, because the worktree carries the commits to measure
+test_run_case_measure_only_needs_a_work_root() {
+  local work="$TMP/run_case_measure_only"
+  make_stub_workspace "$work" "$COMMIT_STUB"
+  run_stub_case "$work" "$work/out" 1 --measure-only >/dev/null 2>&1
+  assert_rc 2 "$?" "measure-only without a work root is refused"
 }
 
 run_test test_measure_all_rules_pass
@@ -138,5 +221,10 @@ run_test test_measure_rejects_long_body
 run_test test_measure_rejects_path_list
 run_test test_measure_reports_missing_commit
 run_test test_run_case_scores_a_stub_run
+run_test test_run_case_leaves_no_worktree
+run_test test_run_case_keeps_the_work_root_on_request
+run_test test_run_case_writes_a_change_bundle
+run_test test_run_case_writes_a_patch_for_a_dirty_run
+run_test test_run_case_measure_only_needs_a_work_root
 
 test_done

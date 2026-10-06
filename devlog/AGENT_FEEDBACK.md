@@ -312,6 +312,28 @@ mitigation: keep the default free of apostrophes, or assign the default on its o
 
 The measured check is cheap. `grep -c "'" file` against the file gives an odd count, and the offending lines are the ones that hold exactly one. Cross-reference: `docs/development/bash-coding-conventions.md`.
 
+### [A] 2026-10-06  --  `name+=value` without `declare -i` concatenates, and a 0-prefixed total then fails as octal
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: declare an accumulator integer (`declare -i n=0`) or assign through `$(( ))`; after a loop, compare the iteration count against the count a dry run reported instead of trusting a per-step summary line.
+```
+
+A cleanup loop summed freed bytes with `dirbytes+=$bytes` while `dirbytes` was never declared integer, so the byte counts concatenated into one very long number. The division that formatted it then failed with `value too great for base` - a 0-prefixed integer reads as octal - and the script printed its per-directory summary for the first of four directories only. That summary was plausible, the work for the other three silently did not happen, and a second run was needed to finish it. The durable check is the count rather than the total: a loop that reports what it did should also report how many iterations it ran. Cross-reference: `docs/development/bash-coding-conventions.md`.
+
+### [A] 2026-10-06  --  `git bundle create` takes no option after its positional arguments, and an `A && B` guard hides the failure
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: put every option before the file and the revision (`git bundle create -q <file> <rev>`), and end a guard chain with `|| { echo ...; exit 1; }` when the guarded command's failure must be visible.
+```
+
+The eval harness's write-back ran `git bundle create <file> <rev> -q`, which git refused with `error: unrecognized argument: -q`; nothing was written. The call sat behind `[[ "$head" != "$base" ]] && git ...`, so the status never reached the caller, and a run that produced no bundle still looked graded and complete. The missing artefact was the one the change exists to produce, and only the new test case caught it. Cross-reference: `docs/development/bash-coding-conventions.md`.
+
 ## Node
 
 ### [A] 2026-09-29  --  A nested `node --test` inherits `NODE_TEST_CONTEXT` and exits 0 without running anything

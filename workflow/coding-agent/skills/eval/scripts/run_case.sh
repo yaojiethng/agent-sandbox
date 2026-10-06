@@ -5,12 +5,22 @@
 # git_policy.md. Every run gets its own clone of the base bundle, its own copy of
 # the candidate files, and an identical uncommitted workload.
 #
-# usage: run_case.sh --bundle=<repo.bundle> --patch=<diff> --candidate=<dir> --runs=N --out=<dir> [--label=<id>]
+# The clone is scratch and lives in a work root: a temp directory removed when the
+# script exits. EVAL_KEEP_WORK=1 keeps it, and --work=<dir> names the root and keeps
+# it. The run's change travels as a bundle of the delta from the fixture's base
+# commit, written beside the run's measure, and a run that left the tree dirty also
+# writes a patch of the remainder. The measures, logs and session files stay under
+# --out, so a graded case leaves no worktree behind.
+#
+# usage: run_case.sh --bundle=<repo.bundle> --patch=<diff> --candidate=<dir> --runs=N --out=<dir>
+#                    [--label=<id>] [--work=<dir>] [--measure-only]
+# with --measure-only, --work must name the root of the run being re-scored, because
+# that run's worktree carries the commits to measure.
 # prints a JSON summary and writes it to <out>/measure-<label>.json
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUNDLE=""; PATCH=""; CANDIDATE=""; RUNS=3; OUT=""; LABEL="candidate"; MEASURE_ONLY=false
+BUNDLE=""; PATCH=""; CANDIDATE=""; RUNS=3; OUT=""; WORK_ROOT=""; LABEL="candidate"; MEASURE_ONLY=false
 for arg in "$@"; do
   case "$arg" in
   --bundle=*) BUNDLE="${arg#*=}" ;;
@@ -18,6 +28,7 @@ for arg in "$@"; do
   --candidate=*) CANDIDATE="${arg#*=}" ;;
   --runs=*) RUNS="${arg#*=}" ;;
   --out=*) OUT="${arg#*=}" ;;
+  --work=*) WORK_ROOT="${arg#*=}" ;;
   --label=*) LABEL="${arg#*=}" ;;
   --measure-only) MEASURE_ONLY=true ;;
   *) echo "unknown argument: $arg" >&2; exit 2 ;;
@@ -30,6 +41,20 @@ if [[ "$MEASURE_ONLY" == false ]]; then
 fi
 [[ -n "$OUT" ]] || { echo "--out is required" >&2; exit 2; }
 [[ -f "$CANDIDATE/AGENTS.md" && -f "$CANDIDATE/git_policy.md" ]] || { echo "candidate needs AGENTS.md and git_policy.md: $CANDIDATE" >&2; exit 2; }
+
+WORK_KEPT=false
+if [[ -n "$WORK_ROOT" ]]; then
+  WORK_KEPT=true
+elif [[ "$MEASURE_ONLY" == true ]]; then
+  echo "--measure-only needs --work=<dir>, the work root of the run being re-scored" >&2
+  exit 2
+else
+  WORK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/eval-case-$LABEL.XXXXXX")" || { echo "cannot create a work root" >&2; exit 1; }
+  [[ "${EVAL_KEEP_WORK:-0}" == "1" ]] && WORK_KEPT=true
+  [[ "$WORK_KEPT" == true ]] || trap 'rm -rf "$WORK_ROOT"' EXIT
+fi
+mkdir -p "$WORK_ROOT"
+[[ "$WORK_KEPT" == true ]] && echo "work root kept: $WORK_ROOT"
 
 PROVIDER="${EVAL_PROVIDER:-opencode}"
 MODEL="${EVAL_MODEL:-space-bunny-free}"
@@ -46,14 +71,15 @@ START=$(date +%s)
 if [[ "$MEASURE_ONLY" == false ]]; then
 for i in $(seq 1 "$RUNS"); do
   RUN_DIR="$CASE_DIR/run-$i"
-  PROJ="$RUN_DIR/project"
-  rm -rf "$RUN_DIR"
+  PROJ="$WORK_ROOT/run-$i/project"
+  rm -rf "$RUN_DIR" "$WORK_ROOT/run-$i"
   mkdir -p "$RUN_DIR"
   git clone -q "$BUNDLE" "$PROJ" || { echo "clone failed for run $i" >&2; exit 1; }
   cp "$CANDIDATE/AGENTS.md" "$PROJ/AGENTS.md"
   cp "$CANDIDATE/git_policy.md" "$PROJ/docs/operations/git_policy.md"
   git -C "$PROJ" apply "$PATCH" || { echo "patch failed for run $i" >&2; exit 1; }
   git -C "$PROJ" rev-list --count HEAD >"$RUN_DIR/base-count"
+  git -C "$PROJ" rev-parse HEAD >"$RUN_DIR/base-sha"
   (
     cd "$PROJ" || exit 1
     timeout "$RUN_TIMEOUT" env PI_CODING_AGENT_DIR="$CONFIG_DIR" pi -p \
@@ -68,7 +94,13 @@ fi
 
 for i in $(seq 1 "$RUNS"); do
   RUN_DIR="$CASE_DIR/run-$i"
-  bash "$HERE/measure_commit.sh" "$RUN_DIR/project" "$(cat "$RUN_DIR/base-count")" >"$RUN_DIR/measure.json"
+  PROJ="$WORK_ROOT/run-$i/project"
+  bash "$HERE/measure_commit.sh" "$PROJ" "$(cat "$RUN_DIR/base-count")" >"$RUN_DIR/measure.json"
+  base="$(cat "$RUN_DIR/base-sha")"
+  head="$(git -C "$PROJ" rev-parse HEAD 2>/dev/null || echo "$base")"
+  rm -f "$RUN_DIR/run.bundle" "$RUN_DIR/run.patch"
+  [[ "$head" != "$base" ]] && { git -C "$PROJ" bundle create -q "$RUN_DIR/run.bundle" "$base..HEAD" || { echo "bundle failed for run $i" >&2; exit 1; }; }
+  git -C "$PROJ" diff HEAD >"$RUN_DIR/run.patch"
   printf '{"run":%s,"rc":%s,"measure":%s}\n' \
     "$i" "$(cat "$RUN_DIR/rc" 2>/dev/null || echo 'null')" \
     "$(cat "$RUN_DIR/measure.json")" >>"$CASE_DIR/runs.jsonl"
