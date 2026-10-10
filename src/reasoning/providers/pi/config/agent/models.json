@@ -48,12 +48,6 @@
           "compat": {
             "thinkingFormat": "openai"
           }
-        },
-        "space-bunny-free": {
-          "thinkingLevelMap": {
-            "off": null,
-            "minimal": null
-          }
         }
       }
     },
