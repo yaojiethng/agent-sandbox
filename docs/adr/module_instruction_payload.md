@@ -1,6 +1,14 @@
 # Module Instruction Payload
 
-**Current:** 2026-10-05
+**Current:** 2026-10-06
+
+## 2026-10-06 -- The package key is the harness payload's only switch
+
+**Decision:** `packages` enables the harness payload, and no `skills` or `prompts` list names a harness root. The shipped `settings.json` carries two package entries, `/opt/workflow/agent` and `/opt/workflow/agent/modules/coding-agent`, and each contributes its `prompts/` and `skills/` subdirectories as roots. The harness-key merge in `preflight.sh` re-injects both entries and leaves a user's own `skills` and `prompts` lists untouched.
+
+**Rationale:** The two switches were never equivalent. `/opt/workflow/agent` was named both ways, but the module root appeared in no list, so `packages` was the only thing that enabled it: dropping `packages` would have lost the module, while dropping the lists lost nothing. The 2026-10-05 decision rejected the list route as two entries where one will do, and this is the same argument applied to the first payload. The change also made a mismatch visible: the merge re-injected the root with two switches and not the one with a single switch, which is backwards. Both entries ride the merge now, and the module entry is the one that needs it.
+
+**Edge cases / drivers:** The layout gate reads the roots from either form, because `settings_root_keys()` unions an explicit list with each package's conventional subdirectories, so this decision does not move what the gate sees; a case pins the package-only shape. A settings record left over from an older image may still carry the two lists. They name roots the package entries already reach, so they are inert, and the merge does not remove them, because a user's own list is not the harness's to touch.
 
 ## 2026-10-05 -- A workflow module ships its payload to its own roots, enabled by one package entry
 

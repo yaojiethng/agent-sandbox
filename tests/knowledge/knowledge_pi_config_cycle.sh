@@ -5,13 +5,14 @@
 # the model scope it opens on.
 #
 # Documents the behavioural assumptions about:
-#   a) The shipped settings.json carries the harness roots: `packages`,
-#      `skills` and `prompts` name the image-baked /opt/workflow/agent paths.
-#      That file is image-owned: entrypoint.sh seeds AGENT_HOME from the config
-#      template at every start, so those keys come back each session even if a
-#      session rewrites the file. The `packages` key also names the coding-agent
-#      module directory, whose conventional `prompts` and `skills`
-#      subdirectories pi loads as roots; one entry enables the module.
+#   a) The shipped settings.json carries the harness roots in one key: `packages`
+#      names the image-baked /opt/workflow/agent, whose conventional `prompts`
+#      and `skills` subdirectories pi loads as roots, and a second entry names the
+#      coding-agent module, whose own conventional subdirectories load the same
+#      way. That file is image-owned: entrypoint.sh seeds AGENT_HOME from the
+#      config template at every start, so the key comes back each session even if
+#      a session rewrites the file. No `skills` or `prompts` list exists, because
+#      it would name those same two roots again.
 #   b) The scope head names the configured default. Pi's `findInitialModel`
 #      selects `scopedModels[0]` and reaches `defaultProvider`/`defaultModel`
 #      only when the scope is empty, so the first `enabledModels` entry decides
@@ -52,9 +53,9 @@ SETTINGS="/home/agentuser/sandbox/src/reasoning/providers/pi/config/agent/settin
 # Test 1: the shipped settings carries the harness roots
 # ---------------------------------------------------------------------------
 
-# The three keys point at the image-baked roots. The skills and prompts roots
-# are what make the sandbox-layer skills and prompts load at all, and only the
-# image template supplies them now that no merge step writes them.
+# The packages key is the switch, and each entry contributes its conventional
+# `prompts` and `skills` subdirectories as roots. No `skills` or `prompts` list
+# names a harness root, because the package route already reaches both.
 test_shipped_settings_names_harness_roots() {
   echo ""
   echo "--- Shipped settings names the harness roots ---"
@@ -69,7 +70,7 @@ test_shipped_settings_names_harness_roots() {
   fi
 
   local key value expected
-  for pair in "packages:/opt/workflow/agent" "packages:/opt/workflow/agent/modules/coding-agent" "skills:/opt/workflow/agent/skills" "prompts:/opt/workflow/agent/prompts"; do
+  for pair in "packages:/opt/workflow/agent" "packages:/opt/workflow/agent/modules/coding-agent"; do
     key="${pair%%:*}"
     expected="${pair#*:}"
     value="$(jq -r --arg key "$key" '.[$key] // [] | join(",")' "$SETTINGS")"
@@ -79,6 +80,14 @@ test_shipped_settings_names_harness_roots() {
       fail "$key reads '$value', not naming $expected"
     fi
   done
+
+  local lists
+  lists="$(jq -r '[(.skills // [])[], (.prompts // [])[]] | join(",")' "$SETTINGS")"
+  if [[ "$lists" != *"/opt/workflow/agent"* ]]; then
+    pass "no skills or prompts list names a harness root"
+  else
+    fail "a skills or prompts list names a harness root: $lists"
+  fi
 }
 
 # ---------------------------------------------------------------------------

@@ -324,6 +324,22 @@ test_none_cell_for_a_copied_folder_flagged() {
   assert_contains "$GATE_OUT" "runtime path 'none' while pi copies" 'the copy is named'
 }
 
+# When: the settings record names the harness roots only through its package entries
+# Then: the gate reads the same roots from them and the tree still passes
+test_roots_from_the_package_entries_alone_pass() {
+  local root="$FIXTURE_DIR/packages-only"
+  write_default_tree "$root"
+  cat > "$root/src/reasoning/providers/pi/config/agent/settings.json" <<'EOF'
+{
+  "packages": ["/opt/workflow/agent", "/opt/workflow/agent/modules/coding-agent"]
+}
+EOF
+  run_gate "$root"
+  assert_rc 0 "$GATE_RC" 'the package entries alone name the roots'
+}
+
+# When: an /opt path sits outside every root the settings record names
+# Then: the gate reports it and names the settings record
 test_opt_path_outside_settings_roots_flagged() {
   local root="$FIXTURE_DIR/notroot"
   write_default_tree "$root"
@@ -497,6 +513,7 @@ run_test test_template_entrypoint_disagreement_flagged
 run_test test_missing_manifest_fails_closed
 run_test test_no_provider_dockerfile_reported
 run_test test_missing_settings_reported
+run_test test_roots_from_the_package_entries_alone_pass
 run_test test_cell_source_no_image_sends_flagged
 run_test test_destination_no_cell_declares_flagged
 run_test test_none_cell_for_a_copied_folder_flagged

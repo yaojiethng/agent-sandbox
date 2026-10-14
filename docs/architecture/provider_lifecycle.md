@@ -91,7 +91,7 @@ The provider config reaches a session from two sources:
 
 ### Ownership split: settings.json
 
-`settings.json` is a config file, so the image owns it. The harness seeds the keys that point at the harness's own roots (`skills`, `prompts` under `/opt/workflow/`), pi reads and rewrites them during the session, and the next session starts from the image's copy. A key pi drops lasts only for that session.
+`settings.json` is a config file, so the image owns it. The harness seeds the key that points at the harness's own payload (`packages`, naming `/opt/workflow/agent` and the module root inside it), pi reads and rewrites the file during the session, and the next session starts from the image's copy. A key pi drops lasts only for that session.
 
 ### What the mounted subdirectories carry
 
@@ -109,7 +109,7 @@ The provider config reaches a session from two sources:
 
 Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in the repo) are loaded through a different path than provider-layer or user-layer content:
 
-- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the `"skills"` and `"prompts"` keys in `settings.json`, so a key pi does not preserve costs that layer for the rest of the session. A workflow module's payload is image-baked beside it at `/opt/workflow/agent/modules/<module>/skills|prompts`, and the `"packages"` key enables the module by naming its directory, whose conventional subdirectories pi loads as roots. The next session starts from the image's `settings.json`, which carries them again.
+- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the `"packages"` key in `settings.json`, whose entries name `/opt/workflow/agent` and the module root beside it, each contributing its `prompts/` and `skills/` subdirectories as roots; a key pi does not preserve costs that layer for the rest of the session. A workflow module's payload is image-baked at `/opt/workflow/agent/modules/<module>/skills|prompts` and reached through the same key. The next session starts from the image's `settings.json`, which carries it again.
 - **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from that directory.
 - **User layer** -- files the operator places in `$AGENT_HOME/agent/skills|prompts/`, which the mounts carry. Loaded by pi's discovery from the same directories.
 

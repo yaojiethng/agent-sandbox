@@ -38,11 +38,5 @@
     "openrouter/z-ai/*",
     "openrouter/qwen/*"
   ],
-  "hideThinkingBlock": false,
-  "skills": [
-    "/opt/workflow/agent/skills"
-  ],
-  "prompts": [
-    "/opt/workflow/agent/prompts"
-  ]
+  "hideThinkingBlock": false
 }
