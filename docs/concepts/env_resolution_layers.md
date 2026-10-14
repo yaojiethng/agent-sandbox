@@ -67,8 +67,8 @@ Four families of environment name exist today, and the model gives each one a la
 
 | Family | Example | Layer rule |
 |---|---|---|
-| `AGENT_SANDBOX_*` | `AGENT_SANDBOX_PROJECT_DIR`, `AGENT_SANDBOX_REPO` | the harness's declared source level. It competes in the ladder and is never a marker for a value another layer already resolved |
-| the bare envelope | `SANDBOX_DIR`, `SESSION_ID`, `PROVIDER_NAME`, the `DIR` family | unprefixed today by the 2026-09-30 ruling, reversed 2026-10-10: the harness's own variables take a harness-owned prefix, filed as a post-migration task under M3.4, and the prefix stays disjoint from the ladder's level |
+| `AGENT_SANDBOX_*` | `AGENT_SANDBOX_PROJECT_DIR`, `AGENT_SANDBOX_REPO` | the harness's canonical surface, read once at the entry and never written by the harness on the host; the container boundary is the single generated write |
+| the resolved envelope | `SANDBOX_DIR`, `SESSION_ID`, `PROVIDER_NAME`, the `DIR` family | argv-carried after the entry's one read, with the entry's load held in one state record; exported nowhere on the host, generated once at the container boundary |
 | provider-owned | `PI_PROVIDER`, `PI_MODEL`, `PI_SESSION_ID`, `PI_REASONING_LEVEL` | the provider rolls its own; the harness passes it through and defines none of it |
 | tool knobs | `DRY_RUN_IDENTITY`, `DOCKER_STUB_*`, `INSTALL_DIR`, `INSTALL_OS` | per-tool test and install controls; never part of the resolution ladder |
 
