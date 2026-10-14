@@ -6,7 +6,7 @@ One JSON object per line, one line per finding. The schema has one owner, this s
 
 | Field | Required | Meaning |
 |---|---|---|
-| `skill` | yes | the auditor that produced the line: `roadmap-maintenance` or `handover-maintenance` |
+| `skill` | yes | the auditor that produced the line: `roadmap-maintenance`, `handover-maintenance` or `doc-maintenance` |
 | `file` | yes | the record, as a repository-root-relative path |
 | `section` | yes on a finding | the heading, row or other locus. Never a line number: a number in a record is true once and goes stale with the next edit above it. |
 | `check` | yes on a finding | the numbered check that produced it, as the auditor numbers it |

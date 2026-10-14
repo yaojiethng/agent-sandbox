@@ -1,6 +1,8 @@
 # Documentation Audit File Effectiveness -- Comparison Against the Autonomous Staleness Sweep
 
 **Date:** 2026-09-11
+**Disposition:** Implemented. The recommended one pi-native procedure is the `doc-maintenance` skill, whose `## Procedure` carries the method below and whose `## The diagnostic register` carries the checklist. The 13 findings the report lists were re-verified and closed at handover 20261006-07. `documentation-pass.md` is removed; this report stays until the folder is dissolved.
+
 **Purpose:** Input for compiling one comprehensive documentation audit prompt (the `gm.md` pattern: one canonical file per use case). This report compares two ways the same audit was done -- an autonomous grep-driven staleness sweep, and the existing documentation-audit files -- and states what each contributes. It is the M3 consolidation input for the documentation-audit use case.
 
 ## The experiment

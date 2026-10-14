@@ -90,7 +90,7 @@ The standards check reads each produced document against the standard its type s
 - **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and its canonical-owner test. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
 - **A policy, concept, or architecture document.** Read [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) and check the folder placement, the header format, and the section map.
 - **A record document.** Check it against the record-state invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Record-state invariants`, and against the policy that owns the record type, per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md), [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md), or [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md).
-Fix the findings and re-run `bash scripts/lint.sh`.
+Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in [`doc-maintenance`](../skills/doc-maintenance/SKILL.md).
 
 Exit condition: each produced document has been read against its governing standard, every finding is fixed or recorded as a finding in the handover, and the lint gate is clean.
 
@@ -126,7 +126,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 
 ## Non-goals
 
-- **Not the document-maintenance sweep.** `documentation-pass.md` is a diagnostic register, not a procedure, and distilling it into an executable sweep is a separate roadmap task. Do not hand-run an improvised sweep inside a session and record the result as this prompt's work.
+- **Not the document-maintenance sweep.** The [doc-maintenance skill](../skills/doc-maintenance/SKILL.md) owns the review sweep and reports what it finds; this prompt owns the document it produces. Do not hand-run an improvised sweep inside a session and record the result as this prompt's work.
 - **Not runtime-behaviour work.** That belongs to [`/iter`](iter.md).
 - **Not the milestone-record close.** That belongs to [`/milestone-close`](milestone-close.md).
 - **Not the shared close procedure.** [`/wrapup`](wrapup.md) Part B owns it.

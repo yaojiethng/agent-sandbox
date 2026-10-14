@@ -8,7 +8,7 @@ reader: [agent]
 
 Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../reference/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
 
-The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md). Diagnostic checklists for compliance live in `workflow/coding-agent/audits/documentation-pass.md`.
+The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md). Diagnostic checklists for compliance live in the `doc-maintenance` skill, at `workflow/coding-agent/skills/doc-maintenance/SKILL.md`.
 
 ---
 
