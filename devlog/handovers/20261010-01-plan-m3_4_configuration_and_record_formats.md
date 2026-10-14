@@ -1,6 +1,7 @@
 ---
+
 date: 2026-10-10
-milestone: M3.4 - Configuration and Persisted Record Formats
+milestone: M3.4.1 - Configuration and Persisted Record Formats
 type: Plan
 status: Closed
 ---
@@ -53,3 +54,5 @@ None.
 | File | Change |
 |---|---|
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | the M3.4 section with objective, dependencies, acceptance criteria and first task; the summary-table row; the T10 and T11 rows replaced by pointers |
+
+[CORRECTION -- 2026-10-10: the milestone was retitled. This handover was filed under M3.4 - Configuration and Persisted Record Formats, which became M3.4 - Environment and Argument Resolution with the record work re-attributed to M3.4.1. The unit, its scope and its verdict are unchanged; only the milestone it answers to moved.]

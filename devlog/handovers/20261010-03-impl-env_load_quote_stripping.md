@@ -1,6 +1,7 @@
 ---
+
 date: 2026-10-10
-milestone: M3.4 - Configuration and Persisted Record Formats
+milestone: M3.4.1 - Configuration and Persisted Record Formats
 type: Implementation
 status: Closed
 ---
@@ -59,3 +60,5 @@ None.
 |---|---|
 | [`src/libs/env.sh`](../../src/libs/env.sh) | one layer of matching surrounding quotes stripped from the value, with the header rule updated |
 | [`tests/test_env.sh`](../../tests/test_env.sh) | three units: matching quotes with padding, unbalanced and embedded quotes, empty and export-prefixed quoted values |
+
+[CORRECTION -- 2026-10-10: the milestone was retitled. This handover was filed under M3.4 - Configuration and Persisted Record Formats, which became M3.4 - Environment and Argument Resolution with the record work re-attributed to M3.4.1. The unit, its scope and its verdict are unchanged; only the milestone it answers to moved.]

@@ -1,6 +1,7 @@
 ---
+
 date: 2026-10-10
-milestone: M3.4 - Configuration and Persisted Record Formats
+milestone: M3.4.1 - Configuration and Persisted Record Formats
 type: Implementation
 status: Closed
 ---
@@ -83,3 +84,5 @@ None.
 | [`tests/test_kv_record.sh`](../../tests/test_kv_record.sh) | new: behaviour units, delegation checks, the parser tree scan |
 | [`tests/test_dry_run_probe.sh`](../../tests/test_dry_run_probe.sh) | the `kv()` helper reads through the shipped contract |
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | M3.4 criterion 2 reworded to the achievable form; three follow-on rows filed |
+
+[CORRECTION -- 2026-10-10: the milestone was retitled. This handover was filed under M3.4 - Configuration and Persisted Record Formats, which became M3.4 - Environment and Argument Resolution with the record work re-attributed to M3.4.1. The unit, its scope and its verdict are unchanged; only the milestone it answers to moved.]
