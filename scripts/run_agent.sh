@@ -259,9 +259,10 @@ case "$MODE" in
       echo "Error: dry-run overlay not found: $DRY_RUN_OVERLAY"
       exit 1
     fi
-    export DRY_RUN_SCRIPT
+    # Call-scoped only: compose_generate's {{VAR}} substitution reads these
+    # during its invocation, and no export reaches the wider environment, so
+    # the dry-run script paths never linger as harness-written env.
     DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_reasoning.sh")"
-    export DRY_RUN_CAPABILITY_SCRIPT
     DRY_RUN_CAPABILITY_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_capability.sh")"
     COMPOSE_FILES+=("$DRY_RUN_OVERLAY")
     ;;
@@ -323,7 +324,10 @@ _session_cleanup() {
 }
 trap _session_cleanup EXIT
 
-compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILES[@]}"
+# Call-scoped handoff: the substitution inside compose_generate sees the two
+# dry-run paths for this call only. No harness-written env persists.
+DRY_RUN_SCRIPT="${DRY_RUN_SCRIPT:-}" DRY_RUN_CAPABILITY_SCRIPT="${DRY_RUN_CAPABILITY_SCRIPT:-}" \
+  compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILES[@]}"
 
 # -------------------------
 # Compose args
