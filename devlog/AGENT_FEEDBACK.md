@@ -22,7 +22,8 @@ If this file grows too long, find a durable resolution (for example, fold the re
 state: open
 scoped: none
 legacy: none
-mitigation: when a full-suite run reports only tests/test_runner_contract.sh as failed, re-run before treating it as a defect; the file takes about 7s alone against a declared 10s deadline.
+mitigation: when a full-suite run reports only deadline timeouts, re-run the named files alone before treating them as defects; every instance measured below passes alone. The class is test-side, not production code.
+recurrence 2026-10-10: `tests/test_doc_wrap_legacy_gate.sh` measures 24 seconds alone against its 45 second deadline. Profiled: the seam test's two `markdownlint-cli2` invocations cost about 22 of those seconds, each a cold node start, while the gate script it exercises runs in 0 seconds. `tests/test_lint_umbrella.sh` measures 4 seconds alone against 10 and shells to `scripts/check_shell.sh`, which measures 5 seconds alone. The runner fixes 8 jobs on 8 cores with no load awareness, and one full-suite run measured user time 8m13 against real 2m19, so the container is saturated and a deadline with under about 2.5 times headroom over its idle cost expires at random. Two fixes follow from the measurement: scale the job count by load average rather than fixing it, and drop one of the two linter invocations by asserting the enforcement-list shape instead.
 ```
 
 `tests/test_runner_contract.sh` carries `# TEST_DEADLINE: 10` and takes about 7 seconds alone. Two full-suite runs on a loaded container timed it out; a third run passed at 97 seconds. The runner counts a deadline expiry as a failed file, so a load spike reads as a red run.
