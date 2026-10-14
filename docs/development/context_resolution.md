@@ -1,3 +1,7 @@
+---
+reader: [maintainer]
+---
+
 # Context Resolution
 
 **Role:** Defines how code in the agent-sandbox project determines its runtime context -- where it's executing, how to locate its dependencies, and which conventions apply. Establishes a three-layer interface seam that works across host-side execution, container-side execution, and files that bridge both.
@@ -187,5 +191,5 @@ containers ──→ libs/shared/ only   entrypoints only source shared libs
 ## References
 
 - [`execution_model.md`](../reference/execution_model.md) -- Directory layout and mount shape
-- [`sandbox_host_interface.md`](sandbox_host_interface.md) -- Host-container operation correspondence
-- [`two_layer_model.md`](two_layer_model.md) -- Reasoning/capability layer separation
+- [`sandbox_host_interface.md`](../reference/sandbox_host_interface.md) -- Host-container operation correspondence
+- [`two_layer_model.md`](../reference/two_layer_model.md) -- Reasoning/capability layer separation

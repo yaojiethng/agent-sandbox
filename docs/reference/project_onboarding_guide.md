@@ -1,3 +1,7 @@
+---
+reader: [operator]
+---
+
 # Project Onboarding Guide
 
 How to onboard a new project into agent-sandbox. Onboarding creates `SANDBOX_DIR` and populates it with the files the harness needs to run against the project.

@@ -1,3 +1,7 @@
+---
+reader: [agent, operator]
+---
+
 # Two-Layer Architecture -- Reasoning and Capability Layers
 
 > **Context:** This document records the conceptual model. Implementation details are distributed across [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) and [`execution_model.md`](../reference/execution_model.md). The reasoning behind this decision is in [`20260312-study-settled-mcp_server.md`](../../devlog/discussions/archive/20260312-study-settled-mcp_server.md) -- Conclusion section.

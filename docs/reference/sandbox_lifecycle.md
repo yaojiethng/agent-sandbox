@@ -1,3 +1,7 @@
+---
+reader: [agent, operator]
+---
+
 # Sandbox Lifecycle
 
 This document describes the capability layer session arc: how project content enters the sandbox, how the agent works, and how changes are returned to the host.

@@ -1,3 +1,7 @@
+---
+reader: [agent]
+---
+
 # Documentation Taxonomy
 
 This document is the index and view of the documentation ecosystem. It states no obligations and defines no rules; every rule it names links to the policy document that canonically owns it. Read it to learn what documents exist, what each is for, how a record changes over time, and which document governs a question.

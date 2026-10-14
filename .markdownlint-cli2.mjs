@@ -87,7 +87,7 @@ export default {
         "docs/reference/sandbox_lifecycle.md",
         "docs/development/security.md",
         "docs/reference/tool_interface.md",
-        "docs/reference/context_resolution.md",
+        "docs/development/context_resolution.md",
         "docs/reference/sandbox_host_interface.md",
         "docs/reference/sandbox_identity.md",
         "docs/reference/terminology.md",

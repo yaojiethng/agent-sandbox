@@ -1,6 +1,7 @@
 ---
 description: "Owns the documentation rules: rule authority, folder placement, the document header and format rules, the concept-document and ADR obligations, and the lint gate over `docs/`."
 scope: ["docs/", "devlog/"]
+reader: [agent]
 ---
 
 # Documentation Policy
@@ -94,10 +95,11 @@ Rules:
 
 - `**Status:**` is the first line after the title on all discussion documents (story, study, design, report). No preamble before it.
 - Superseded and resolved documents carry a blockquote redirect immediately after the status line, naming the target document.
-- Architecture, concepts, and policy documents carry no status line -- the layer-freeze table in `system_overview.md` governs them.
+- Reference and policy documents carry no status line -- the layer-freeze table in `system_overview.md` governs them.
 - ADR headers and entry structure are defined in [`adr_policy.md`](adr_policy.md), not here.
 - Top-level sections use `##`; subsections use `###`. Use `####` only inside long task lists where grouping is genuinely needed -- not for general document structure.
-- Policy files (`docs/**/*_policy.md`) open with YAML frontmatter holding a `description` and a `scope`, then a blank line, then the `# <Title>` heading. `description` is one quoted line naming the rules the file owns. `scope` is a single-line flow list of the records and runbooks the file governs.
+- Policy files (`docs/**/*_policy.md`) open with YAML frontmatter holding a `description` and a `scope`, then a blank line, then the `# <Title>` heading. `reader` names who must read the document to do their job: one or more of `agent`, `operator` and `maintainer`. A document serving only the maintainer does not ship, so the frontmatter gate fails one that sits in a shipping folder, which is `docs/reference/` or `docs/policies/`.
+- `description` is one quoted line naming the rules the file owns. `scope` is a single-line flow list of the records and runbooks the file governs.
 
 ### Character set
 
@@ -163,7 +165,7 @@ Pick the folder category before drafting. Update only the sections the change af
 
 ### Skeleton first for record-layer documents
 
-Before writing an ADR, concept doc, or architecture doc, propose the skeleton in chat -- section list and what each section holds -- and get operator confirmation. Write prose only against the confirmed skeleton. Drafting full prose before the structure is agreed has produced full rewrites. The skeleton costs minutes; a rewrite costs more.
+Before writing an ADR or a reference document, propose the skeleton in chat -- section list and what each section holds -- and get operator confirmation. Write prose only against the confirmed skeleton. Drafting full prose before the structure is agreed has produced full rewrites. The skeleton costs minutes; a rewrite costs more.
 
 ### Records state, not session history
 
@@ -192,7 +194,7 @@ Move speculative design and TODO items to `roadmap.md`, the only task list, per 
 
 ### Stale code examples
 
-Architecture and concepts documents keep their code examples current. Every code block, variable name, path, and function signature matches the implementation as built. A document updated across several sessions collects stale examples that contradict the system as built; when you update such a document, check each example against the implementation and update the ones that changed.
+Reference documents keep their code examples current. Every code block, variable name, path, and function signature matches the implementation as built. A document updated across several sessions collects stale examples that contradict the system as built; when you update such a document, check each example against the implementation and update the ones that changed.
 
 ---
 

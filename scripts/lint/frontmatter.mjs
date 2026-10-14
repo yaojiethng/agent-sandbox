@@ -23,6 +23,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { loadYaml } from "./yaml-loader.mjs";
+import { load_manifest, manifest_rows } from "../../src/build/container-interface.mjs";
 
 const REPO_ROOT = process.env.FRONTMATTER_SCAN_ROOT
   ? resolve(process.env.FRONTMATTER_SCAN_ROOT)
@@ -91,17 +92,80 @@ for (const file of files) {
 }
 
 for (const f of findings) {
+  if (f.kind === "reader") continue;
   console.log(f.rel + ":" + f.line + " frontmatter does not parse");
   console.log("  " + f.first);
   if (f.text) console.log("  offending line: " + f.text.trim().slice(0, 100));
 }
 
+// A document that ships declares the reader it serves, because the ship set is a
+// decision rather than a property of the folder a document happens to sit in.
+// The shipping folders are the manifest's `docs/` rows. A document serving only
+// the maintainer does not ship, so such a declaration inside a shipping folder
+// is a finding: the folder set and the declaration disagree.
+const READERS = new Set(["agent", "operator", "maintainer"]);
+const shippedRoots =
+  process.env.FRONTMATTER_SHIPPED_ROOTS !== undefined
+    ? process.env.FRONTMATTER_SHIPPED_ROOTS.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [
+        ...new Set(
+          manifest_rows(load_manifest(REPO_ROOT), "image")
+            .map((row) => row.source)
+            .filter((source) => typeof source === "string" && source.startsWith("docs/")),
+        ),
+      ];
+const shippedFiles = shippedRoots.flatMap((root) => collect(join(REPO_ROOT, root)));
+for (const file of shippedFiles) {
+  const rel = file.slice(REPO_ROOT.length + 1);
+  const text = readFileSync(file, "utf8");
+  const block = frontmatterOf(text);
+  if (block === null) {
+    findings.push({ rel, kind: "reader", first: "no frontmatter; a shipping document declares its reader" });
+    continue;
+  }
+  let declared;
+  try {
+    declared = parse(block.body);
+  } catch {
+    continue; // the parse finding above already covers this file
+  }
+  const value = declared ? declared.reader : undefined;
+  const list = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  if (!list.length) {
+    findings.push({ rel, kind: "reader", first: "no reader declared; name agent, operator or maintainer" });
+    continue;
+  }
+  const unknown = list.filter((reader) => !READERS.has(reader));
+  if (unknown.length) {
+    findings.push({ rel, kind: "reader", first: "unknown reader " + unknown.join(", ") + "; use agent, operator or maintainer" });
+  }
+  if (list.every((reader) => reader === "maintainer")) {
+    findings.push({
+      rel,
+      kind: "reader",
+      first: "declares the maintainer only, so it does not ship; move it out of the shipping folder or name an in-container reader",
+    });
+  }
+}
+
+for (const f of findings) {
+  if (f.kind === "reader") {
+    console.log(f.rel + " frontmatter: " + f.first);
+  }
+}
+
 if (findings.length === 0) {
-  console.log("Frontmatter gate: clean across " + files.length + " prompt, skill and policy files");
+  console.log(
+    "Frontmatter gate: clean across " + files.length + " prompt, skill and policy files, and " +
+      shippedFiles.length + " shipping document(s) declare a reader",
+  );
 } else {
   console.error(
-    "Blocking gate: " + findings.length + " of " + files.length + " frontmatter blocks do not parse. " +
-      "Quote any value holding a colon, a leading dash, or a trailing colon.",
+    "Blocking gate: " + findings.length + " frontmatter finding(s) across " + files.length +
+      " prompt, skill and policy files and " + shippedFiles.length + " shipping document(s). " +
+      "Quote any value holding a colon, a leading dash, or a trailing colon, and declare a reader on every shipping document.",
   );
 }
 process.exit(findings.length === 0 ? 0 : 1);

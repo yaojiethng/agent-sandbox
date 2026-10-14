@@ -1,6 +1,7 @@
 ---
 description: "Owns the roadmap record and the milestone grain: when the roadmap is touched, how updates are normalized, what the record must look like, and how records retire."
 scope: ["devlog/roadmap.md", "devlog/roadmap_future.md", "devlog/changelog.md", "/milestone-close", "/wrapup", "/gm"]
+reader: [agent]
 ---
 
 # Roadmap Policy

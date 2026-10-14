@@ -1,3 +1,7 @@
+---
+reader: [agent]
+---
+
 # Agent Workflow
 
 This document describes how work gets done in agent-sandbox -- the principles the system is built on, the invariants it enforces, and the map of where each part of the workflow is governed. It is the conceptual entry point to the policy system.

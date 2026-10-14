@@ -1,3 +1,7 @@
+---
+reader: [operator]
+---
+
 # Mount Delivery (Host-Backed Sandbox)
 
 Mount delivery (M2.6.6) is the second sandbox delivery: the agent works directly on a bind-mounted host directory instead of a copied volume. Runnable end-to-end (flatten-style materialization verified live `20260912-10`; full-history materialization host-test-verified with the `--flatten` feature, `20260912-14`). Companion model: [`copy_delivery.md`](copy_delivery.md). Rationale for the delivery-model axis: [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md).

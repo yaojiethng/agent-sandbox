@@ -1,6 +1,7 @@
 ---
 description: "Owns commit-message and branch-naming rules. Commit types align with the iteration types defined in `handover_policy.md`, so the git log and iteration history tell the same story."
 scope: ["commit messages", "branches"]
+reader: [agent]
 ---
 
 # Git Policy

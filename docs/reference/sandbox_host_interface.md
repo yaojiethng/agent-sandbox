@@ -1,3 +1,7 @@
+---
+reader: [agent, operator]
+---
+
 # Sandbox and Host Interface
 
 The sandbox and host repository are never the same git repository -- they have divergent histories, different baselines, and no shared object store. Yet they must stay in correspondence: the sandbox must know what the host looks like, the host must be able to receive what the sandbox produced, and across multiple sessions these two states must remain coherent.

@@ -1,3 +1,7 @@
+---
+reader: [agent]
+---
+
 # Autonomous Agent Loop
 
 The autonomous agent loop is the continuous cycle by which the coding agent advances work: a milestone is opened, scoped, iterated, and closed, then the next milestone begins. It is one loop, not two cadences. The workflow runbooks under `workflow/coding-agent/prompts/` drive the loop's state transitions; each workflow enforces a different transition in the loop. Policy files under `docs/policies/` own the invariants those transitions must not break.

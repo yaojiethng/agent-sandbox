@@ -1,3 +1,7 @@
+---
+reader: [operator]
+---
+
 # Copy Delivery (Volume-Backed Sandbox)
 
 Copy delivery is the default sandbox delivery: the agent's working content lives in a named Docker volume, filled once at session start from the host's working tree, and changes return to the host through the diff pipeline. The delivery-model rationale (why copy or mount, why worktree backing is rejected, the seed-transport decision) is recorded in [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md). Companion model: [`mount_delivery.md`](mount_delivery.md).

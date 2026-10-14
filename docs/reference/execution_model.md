@@ -1,3 +1,7 @@
+---
+reader: [agent]
+---
+
 # Execution Model
 
 This document describes the structure of a single agent run: the directory layout, how the harness is invoked, how compose configuration is generated, how the two containers are mounted and wired together, and their start and stop sequences.

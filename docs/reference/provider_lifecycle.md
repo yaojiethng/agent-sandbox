@@ -1,3 +1,7 @@
+---
+reader: [agent]
+---
+
 # Provider Lifecycle
 
 This document describes the full arc of a reasoning layer session: how provider config enters the container, how the agent works, and what persists between runs.

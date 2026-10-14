@@ -1,6 +1,7 @@
 ---
 description: "Owns the discussion record: the four types (story, study, design, report), their naming, their statuses, their section order, and their lifecycle."
 scope: ["devlog/discussions/"]
+reader: [agent]
 ---
 
 # Discussion Policy

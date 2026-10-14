@@ -1,3 +1,7 @@
+---
+reader: [agent, operator]
+---
+
 # Terminology
 
 > Registry of reserved technical terms. Add new terms under their own header; keep each term's identity, scope, and relationships together under it.

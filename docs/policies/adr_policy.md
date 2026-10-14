@@ -1,6 +1,7 @@
 ---
 description: "Owns the ADR record: an ADR captures the reasoning behind a standing principle -- a pattern, an interface shape, a design philosophy, an invariant, or a user-interaction contract -- including the rejected alternatives and their reasons, and links to the documentation that describes the implementation it justifies."
 scope: ["docs/adr/", "docs/adr/archive/"]
+reader: [agent]
 ---
 
 # ADR Policy
@@ -32,13 +33,13 @@ Write the ADR when the principle is committed or being actively resolved. It is 
 Suggest an ADR when:
 
 - The feature introduces a primitive or model other components must reason about
-- The area has non-obvious invariants that cannot be stated concisely in the architecture doc
+- The area has non-obvious invariants that cannot be stated concisely in a reference document
 - A design doc exists for the area and is too long or branched to serve as a stable reference
 
 Distill a design doc into an ADR:
 
 1. Remove delivery-sequence framing -- "Change N", "prerequisite", "introduced in".
-2. Remove command shapes and implementation detail that belong in the architecture doc.
+2. Remove command shapes and implementation detail that belong in the reference documents.
 3. Keep primitives, invariants, design rationale, and collision or interaction tables.
 4. During active development, links to design and discussion documents are expected.
 

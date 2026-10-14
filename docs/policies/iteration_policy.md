@@ -1,6 +1,7 @@
 ---
 description: "Owns the iteration grain: the invariants the runbooks must not break, the two gates, the acceptance-criteria model, and the close rules. This document states the rules; `/iter` runs the procedure."
 scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/document", "/wrapup"]
+reader: [agent]
 ---
 
 # Iteration Policy
@@ -49,7 +50,7 @@ A sidequest is an operator-directed work item raised while an iteration is open.
 
 **Confirm the scope before writing code.** The implementation details -- files, interfaces, naming -- are confirmed by the operator before any code is produced. They are the agreement, not a starting point.
 
-**Documentation is part of the task, not a cleanup step.** Architecture and concepts documents are updated before implementation begins -- they describe the agreed design the code is written against. If implementation reveals a divergence from the agreed design, correct the document before the iteration ends; do not defer it. A sub-milestone cannot close if any in-scope architecture or concepts document contradicts the system as built.
+**Documentation is part of the task, not a cleanup step.** Reference documents are updated before implementation begins -- they describe the agreed design the code is written against. If implementation reveals a divergence from the agreed design, correct the document before the iteration ends; do not defer it. A sub-milestone cannot close if any in-scope architecture or concepts document contradicts the system as built.
 
 **Acceptance criteria describe a delta.** Every AC describes something observable that was false or absent before the iteration and true or present after it. The operator verifies by running the system -- never by reading source alone. "Not file state" prohibits criteria verifiable only by reading source; it does not prohibit operator-runnable file-existence checks (`ls path` after a rename), which are observable behaviour.
 

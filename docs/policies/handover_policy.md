@@ -1,6 +1,7 @@
 ---
 description: "Owns handover content rules: valid field states, null markers, the section format, and the correction procedure."
 scope: ["devlog/handovers/", "/iter", "/plan", "/document", "/wrapup", "/milestone-close"]
+reader: [agent]
 ---
 
 # Handover Policy

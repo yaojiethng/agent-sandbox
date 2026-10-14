@@ -1,3 +1,7 @@
+---
+reader: [operator]
+---
+
 # Tool Interface
 
 External contract between the agent-sandbox harness and onboarded projects: what the harness guarantees, what a project must provide, and the naming conventions that bind them.

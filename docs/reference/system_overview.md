@@ -1,3 +1,7 @@
+---
+reader: [agent, operator]
+---
+
 # System Overview
 
 This document describes the high-level architecture of the agent-sandbox system.
