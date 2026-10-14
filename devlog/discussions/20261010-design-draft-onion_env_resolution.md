@@ -1,6 +1,8 @@
 # Onion-style env resolution with envelope-level state
 
-**Status:** draft
+**Status:** settled
+
+The decision, the layer diagram and the prefix taxonomy are recorded in [`docs/adr/env_resolution.md`](../../docs/adr/env_resolution.md) (2026-10-10 entry) and [`docs/concepts/env_resolution_layers.md`](../../docs/concepts/env_resolution_layers.md). This document keeps the exploration that settled the shape.
 
 ## Context
 
