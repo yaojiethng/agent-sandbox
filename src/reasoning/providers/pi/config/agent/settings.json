@@ -30,6 +30,7 @@
     "/opt/workflow/agent/modules/coding-agent"
   ],
   "enabledModels": [
+    "failover/*",
     "opencode-go/*",
     "deepseek/*",
     "openrouter/z-ai/*",
