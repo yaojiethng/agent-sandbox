@@ -52,7 +52,7 @@ This produces:
 | `Makefile` | Copied from `libs/_templates/Makefile.template` | None -- paths set automatically |
 | `.env` | Written by harness; path variables derived from `--project` and `--sandbox` | Fill in `SERVE_PORT` and any provider-specific variables (see `.env` comments) |
 
-Provider-specific `.env` stubs are appended automatically from each `providers/<n>/.env.example` present in the repo at onboard time.
+Provider-specific `.env` stubs are appended automatically from each `src/reasoning/providers/<n>/config/env.stub` present in the repo at onboard time; `onboard.sh` renames the stub to `.env`.
 
 ---
 

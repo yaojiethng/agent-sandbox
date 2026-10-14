@@ -71,7 +71,7 @@ The consequence is visible in what a session can lose. A session that edits `set
 
 ## Onboarding
 
-`providers/<n>/config/` is a template directory committed to the repo. It carries the provider's default config stubs -- not secrets, and not a complete configuration.
+`src/reasoning/providers/<n>/config/` is a template directory committed to the repo. It carries the provider's default config stubs -- not secrets, and not a complete configuration.
 
 Two consumers read it. The image bakes it -- a `COPY` line in the provider's `provider.dockerfile` sends it to `/opt/workflow/agent/config/`, and `src/build/container-interface.json` declares that pair with a `provision` row -- and `provider-entrypoint.sh` seeds `AGENT_HOME` from the baked copy at every start. `agent-sandbox onboard` seeds the same tree into `$SANDBOX_DIR/.<provider>/` on the host, renames `env.stub` to `.env` there, and pre-creates the subdirectories the provider overlay mounts.
 
@@ -85,7 +85,7 @@ The provider config reaches a session from two sources:
 
 ```text
    Image template      ──COPY──> /opt/workflow/agent/config/ ──seed──> AGENT_HOME
-   (providers/<n>/config/)                                        │
+   (src/reasoning/providers/<n>/config/)                                        │
                                                                   ├──> the agent reads it
                                                                   │
    Host state          ──bind mount──> AGENT_HOME/agent/{prompts,sessions,skills}
@@ -107,7 +107,7 @@ The provider config reaches a session from two sources:
 |---|---|---|
 | **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
 | **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; hermes and opencode are shaped this way by decision, and pi carries a template |
-| **Onboard template is a snapshot** | `providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
+| **Onboard template is a snapshot** | `src/reasoning/providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 
 ### How the three-layer skills/prompts model interacts with this split
 

@@ -388,6 +388,8 @@ Two additions for this failure mode. A replacement that is not a literal constan
 
 **A second occurrence, the same day.** A fixture-builder script was patched with a chain of unguarded `String.replace` calls. The patch applied partly and produced two fixtures that differed in the wrong places, which the eval run would then have reported as a null result about the instruction set rather than a broken fixture. The guard belongs in the builder: assert the fixture's facts at the end of the build, and let the build fail loudly.
 
+**A third occurrence, 2026-10-06.** A folder rename replaced the bare word `architecture/` with `reference/` across every text file in the repository. The replacement hit `src/reasoning/agent/skills/improve-codebase-architecture/`, a skill directory whose name merely shares the word, and corrupted one lint exemption and one roadmap line. The count guard was present and its counts were correct; the pattern was the defect, because it was anchored to nothing. A replacement driven by a path rename matches a path form (`docs/architecture/`, `../architecture/`, the image path) and never the bare directory name, and the verification is a read of the diff, because the run is green either way. The damage surfaced two gates later, when the exempt file started failing.
+
 ### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
 
 ```text

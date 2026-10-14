@@ -42,7 +42,7 @@ Agents are oriented at iteration start through two sources of context, injected 
 
 ### Provider layer
 
-Each provider supplies an `AGENTS.md` at `providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
+Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
 
 Provider-layer content is narrow and environment-specific. It does not carry project workflow, iteration conventions, or collaboration principles.
 
@@ -68,7 +68,7 @@ Skills and prompt templates follow a parallel three-layer model with distinct lo
 
 | Layer | Source | Loaded via | Update mechanism |
 |---|---|---|---|
-| **Provider layer** | `providers/<n>/config/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` (config-seeded, survives image rebuild) | `onboard.sh --refresh` or edit `$SANDBOX_DIR/.<provider>/` |
+| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` (config-seeded, survives image rebuild) | `onboard.sh --refresh` or edit `$SANDBOX_DIR/.<provider>/` |
 | **Sandbox (workflow) layer** | `agent/skills/`, `agent/prompts/`, and a module's `workflow/<module>/skills&#124;prompts/` | Image-baked at `/opt/workflow/agent/skills&#124;prompts/` and `/opt/workflow/agent/modules/<module>/skills&#124;prompts/`; the `settings.json` `packages` key names both payload roots, and each entry contributes its `skills/` and `prompts/` subdirectories | Image rebuild (`make build`) -- stable baseline independent of working tree |
 | **User layer** | `$SANDBOX_DIR/.<provider>/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` | Direct filesystem placement by operator |
 

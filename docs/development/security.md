@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the threat entities, impacted assets, STRIDE categorization, and mitigation strategies for the OpenCode containerized coding agent system.
+This document summarizes the threat entities, impacted assets, STRIDE categorization, and mitigation strategies for the agent-sandbox harness.
 
 It defines trust boundaries, threat assumptions, and security invariants.
 
@@ -67,6 +67,8 @@ The following invariants hold in every configuration. Per-mode mount shapes are 
 4. Repository mutation must occur only on the host after human review.
 5. Agent-produced changes must be exported as diff artefacts (`uncommitted.diff`, `all-changes.diff`, `patches/`) before application.
 6. Gitignored files (including secrets) must never enter the agent's working tree.
+
+7. Agent nesting depth is limited to two layers (parent and child). Stated as an architectural guarantee; no operational enforcement exists yet.
 
 Validation procedures for these invariants are defined in operational documentation.
 
