@@ -29,6 +29,14 @@ _env_value() {
   ( unset "$key"; env_load "$file" >/dev/null 2>&1 || true; printf '%s' "${!key:-}" )
 }
 
+# env_file_value FILE KEY
+#   Prints the value of KEY read from FILE, empty when the file or the key is
+#   absent. The public face of the .env read: any consumer that wants one key
+#   from a .env calls this, never a second parser of its own.
+env_file_value() {
+  _env_value "$1" "$2"
+}
+
 # default_env_file RAW_ENV_REF SANDBOX_DIR
 #   Prints the .env path for the raw --env value under the single .env-path
 #   contract: an absolute RAW_ENV_REF is used as-is; a relative RAW_ENV_REF is a

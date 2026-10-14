@@ -407,6 +407,7 @@ main() {
   # Flag parsing
   # ---------------------------------------------------------------------------
   source "$REPO_ROOT/src/libs/cli.sh"
+  source "$REPO_ROOT/src/libs/env_resolve.sh"
   parse_args usage \
     --name=PROJECT_NAME \
     --project=PROJECT_DIR \
@@ -451,10 +452,11 @@ main() {
     resolve_and_validate PROJECT_DIR "--project" "$PROJECT_DIR" true
   fi
 
-  # Derive PROJECT_DIR from .env if not provided (refresh mode)
+  # Derive PROJECT_DIR from .env if not provided (refresh mode), through the
+  # one .env read path: env_resolve.sh owns the parse, this asks it for a key.
   if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
     if [[ -f "$SANDBOX_DIR/.env" ]]; then
-      PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$SANDBOX_DIR/.env" | cut -d= -f2-)
+      PROJECT_DIR="$(env_file_value "$SANDBOX_DIR/.env" PROJECT_DIR)"
     fi
   fi
 

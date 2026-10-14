@@ -17,10 +17,14 @@
 #   dry_run_record_verify <name> <expected_identity> <record>
 #       - print RECORD-VERIFY PASS/FAIL lines; return 0 iff identity matches,
 #         overall status is PASS, and every layer reported PASS.
+#
+# kv_read, the one record parser, comes from kv_record.sh, sourced here so the
+# reader is defined however this lib is loaded.
+# shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/kv_record.sh"
 
 dry_run_record_value() {
-  local record="$1" key="$2"
-  awk -F= -v k="$key" '$1==k{print $2}' "$record" 2>/dev/null
+  kv_read "$1" "$2"
 }
 
 dry_run_record_verify() {
@@ -31,7 +35,7 @@ dry_run_record_verify() {
     return 1
   fi
 
-  local container status layer st line
+  local container status layer st
   container="$(dry_run_record_value "$record" "container")"
   status="$(dry_run_record_value "$record" "status")"
 
@@ -49,16 +53,20 @@ dry_run_record_verify() {
     fails=$(( fails + 1 ))
   fi
 
-  while IFS= read -r line; do
-    [[ "$line" == layer.* ]] || continue
-    layer="${line%%=*}"; st="${line#*=}"
-    if [[ "$st" != "FAIL" ]]; then
-      echo "  RECORD-VERIFY PASS: $name $layer = $st"
+  # The layer keys are a fixed set, so each reads through the one record
+  # reader: the record's documented value is PASS or FAIL, and anything else
+  # -- an unknown value, an empty value, a missing line -- fails the gate
+  # rather than passing as "not FAIL".
+  local layer_keys=(docker_image workspace_mounts session_state session_data container_network agent_runtime)
+  for layer in "${layer_keys[@]}"; do
+    st="$(kv_read "$record" "layer.$layer")"
+    if [[ "$st" == "PASS" ]]; then
+      echo "  RECORD-VERIFY PASS: $name layer.$layer = PASS"
     else
-      echo "  RECORD-VERIFY FAIL: $name $layer = FAIL" >&2
+      echo "  RECORD-VERIFY FAIL: $name layer.$layer = ${st:-<missing>}" >&2
       fails=$(( fails + 1 ))
     fi
-  done < "$record"
+  done
 
   if [[ "$fails" -eq 0 ]]; then
     return 0

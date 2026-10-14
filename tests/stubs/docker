@@ -150,10 +150,22 @@ if [[ "$CMD" == "docker" && "${1:-}" == "compose" ]]; then
       # stubs stay record-free.
       if [[ "$compose_sub" == "up" && -n "${DRY_RUN_SCRIPT:-}" && -n "${OUTPUT_DIR:-}" ]]; then
         mkdir -p "$OUTPUT_DIR"
-        printf 'container=%s\nstatus=PASS\n' "${SANDBOX_IMAGE_NAME:-unknown}" \
-          > "$OUTPUT_DIR/dryrun.capability.record"
-        printf 'container=%s\nstatus=PASS\n' "${AGENT_IMAGE_NAME:-unknown}" \
-          > "$OUTPUT_DIR/dryrun.reasoning.record"
+        # The documented record shape: container identity, one line per
+        # readiness layer, then overall status. A record without the layer
+        # lines would pass the old vacuous verify path (an absent layer read
+        # as "not FAIL"); the stub writes the full shape so the trace
+        # exercises per-layer verification.
+        _layers="docker_image workspace_mounts session_state session_data container_network agent_runtime"
+        {
+          printf 'container=%s\n' "${SANDBOX_IMAGE_NAME:-unknown}"
+          for _l in $_layers; do printf 'layer.%s=PASS\n' "$_l"; done
+          printf 'status=PASS\n'
+        } > "$OUTPUT_DIR/dryrun.capability.record"
+        {
+          printf 'container=%s\n' "${AGENT_IMAGE_NAME:-unknown}"
+          for _l in $_layers; do printf 'layer.%s=PASS\n' "$_l"; done
+          printf 'status=PASS\n'
+        } > "$OUTPUT_DIR/dryrun.reasoning.record"
       fi
       # Failure simulation (env-gated, empty = success):
       #   DOCKER_STUB_UP_RC   — exit code for compose up to return
