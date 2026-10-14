@@ -88,8 +88,8 @@ A prompt or skill dispatches subagents for a role. This table is the single sour
 
 | Role tag | Recommendation, in order |
 |---|---|
-| `_IMPLEMENTER` | opencode/space-bunny-free at high; opencode-go/deepseek-v4-flash at medium |
-| `_REVIEWER` | opencode/space-bunny-free at xhigh; opencode-go/deepseek-v4-flash at medium |
+| `_IMPLEMENTER` | opencode-go/step-5-preview-free at high; opencode-go/deepseek-v4-flash at medium |
+| `_REVIEWER` | opencode-go/step-5-preview-free at xhigh; opencode-go/deepseek-v4-flash at medium |
 | `_ADVISOR` | opencode-go/glm-5.3-flash at high for documentation and language reviews; opencode-go/deepseek-v4-flash at xhigh for code reviews |
 
 If a prompt names a role tag that this table does not list, resolve the startup default as above. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.

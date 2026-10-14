@@ -56,8 +56,8 @@ fi
 mkdir -p "$WORK_ROOT"
 [[ "$WORK_KEPT" == true ]] && echo "work root kept: $WORK_ROOT"
 
-PROVIDER="${EVAL_PROVIDER:-opencode}"
-MODEL="${EVAL_MODEL:-space-bunny-free}"
+PROVIDER="${EVAL_PROVIDER:-opencode-go}"
+MODEL="${EVAL_MODEL:-step-5-preview-free}"
 THINKING="${EVAL_THINKING:-high}"
 RUN_TIMEOUT="${EVAL_RUN_TIMEOUT:-600}"
 CONFIG_DIR="${EVAL_CONFIG_DIR:-$HOME/.pi/agent}"
