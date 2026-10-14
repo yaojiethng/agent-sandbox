@@ -163,8 +163,10 @@ test_refresh_migrates_project_name_into_env() {
 # ---------------------------------------------------------------------------
 # Given: a completed fresh onboard
 # When:  the sandbox is compared against the provider tree
-# Then:  every provider with a non-empty config dir has its .<provider>/ directory
-# Asserts: provider config seeding reaches every provider
+# Then:  every provider with a non-empty config dir has its .<provider>/ directory,
+#        and a provider with no config directory has none
+# Asserts: provider config seeding reaches every provider, and invents nothing
+#          for a provider that ships no config (hermes and opencode)
 test_fresh_onboard_creates_provider_configs() {
   local PROJECT_DIR="$FIXTURE_DIR/provider_project"
   local SANDBOX_DIR="$FIXTURE_DIR/provider_sandbox"
@@ -190,6 +192,12 @@ test_fresh_onboard_creates_provider_configs() {
   else
     fail "no provider config dirs under src/reasoning/providers/  --  onboard had nothing to provision"
   fi
+
+  if [[ ! -d "$SANDBOX_DIR/.hermes" ]]; then
+    pass "a provider that ships no config directory seeds nothing"
+  else
+    fail "onboard created .hermes for a provider whose config directory is absent"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -210,8 +218,8 @@ test_provider_config_modes_resist_umask() {
   umask "$OLD_UMASK"
 
   local DIR_MODE FILE_MODE
-  DIR_MODE="$(stat -c '%a' "$SANDBOX_DIR/.hermes" 2>/dev/null)"
-  FILE_MODE="$(stat -c '%a' "$SANDBOX_DIR/.hermes/config.yaml" 2>/dev/null)"
+  DIR_MODE="$(stat -c '%a' "$SANDBOX_DIR/.pi/agent" 2>/dev/null)"
+  FILE_MODE="$(stat -c '%a' "$SANDBOX_DIR/.pi/agent/AGENTS.md" 2>/dev/null)"
   assert_eq "$DIR_MODE" "775" "provider config dir mode is 775 under umask 077"
   assert_eq "$FILE_MODE" "664" "provider config file mode is 664 under umask 077"
 }
@@ -468,14 +476,17 @@ test_refresh_derives_project_dir_from_env() {
 # Then:  the shipped env.stub is promoted to .env
 # Asserts: the provider secret file the summary instructs the operator to fill exists
 test_fresh_onboard_promotes_provider_env_stub() {
-  local PROJECT_DIR="$FIXTURE_DIR/stub_project"
+  local FI="$FIXTURE_DIR/stub"
   local SANDBOX_DIR="$FIXTURE_DIR/stub_sandbox"
-  run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
+  mkdir -p "$FI/src/reasoning/providers/fake/config"
+  printf 'API_KEY=\n' > "$FI/src/reasoning/providers/fake/config/env.stub"
 
-  if [[ -f "$SANDBOX_DIR/.hermes/.env" && ! -e "$SANDBOX_DIR/.hermes/env.stub" ]]; then
+  SANDBOX_DIR="$SANDBOX_DIR" bash -c 'source "'"$ONBOARD_SCRIPT"'"; REPO_ROOT="'"$FI"'"; _provision_providers' >/dev/null 2>&1
+
+  if [[ -f "$SANDBOX_DIR/.fake/.env" && ! -e "$SANDBOX_DIR/.fake/env.stub" ]]; then
     pass "fresh onboard promotes provider env.stub to .env"
   else
-    fail "fresh onboard left env.stub unpromoted: $(ls -A "$SANDBOX_DIR/.hermes" 2>/dev/null | tr '\n' ' ')"
+    fail "fresh onboard left env.stub unpromoted: $(ls -A "$SANDBOX_DIR/.fake" 2>/dev/null | tr '\n' ' ')"
   fi
 }
 

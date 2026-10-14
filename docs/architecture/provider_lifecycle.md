@@ -102,7 +102,7 @@ The provider config reaches a session from two sources:
 | Issue | Mechanism | Impact |
 |---|---|---|
 | **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
-| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts with no config file; true of hermes and opencode today |
+| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; hermes and opencode are shaped this way by decision, and pi carries a template |
 | **Onboard template is a snapshot** | `providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 
 ### How the three-layer skills/prompts model interacts with this split

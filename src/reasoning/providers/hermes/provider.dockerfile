@@ -9,8 +9,9 @@
 # Provider contract (harness interface):
 #   AGENT_HOME     --  where Hermes writes config, sessions, and memories
 #   PROVIDER_NAME  --  the provider identifier the entrypoint reads
-#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command and seeds
-#                   AGENT_HOME from the image config template before it runs
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command, and seeds
+#                   AGENT_HOME only when the image carries a config template. This
+#                   image carries none: the agent starts on its own defaults.
 ARG BASE_IMAGE=hermes-base
 FROM ${BASE_IMAGE}
 
@@ -24,10 +25,10 @@ ARG HOST_GID=1000
 COPY src/libs/                                  /opt/sandbox/lib/
 COPY src/reasoning/entrypoint.sh                /opt/sandbox/bin/provider-entrypoint.sh
 RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
-COPY src/reasoning/agent/skills/                 /opt/workflow/agent/skills/
-COPY src/reasoning/agent/prompts/                /opt/workflow/agent/prompts/
-COPY workflow/coding-agent/prompts/              /opt/workflow/agent/modules/coding-agent/prompts/
-COPY workflow/coding-agent/skills/               /opt/workflow/agent/modules/coding-agent/skills/
+# The harness payload is not copied into this image. Hermes has no config
+# transport that could load a prompt or a skill, so a payload here would ship
+# unreachable. The image carries the agent's own install and the harness's
+# documentation; the payload ships in pi's image only.
 COPY docs/architecture/                          /opt/sandbox/docs/architecture/
 COPY docs/concepts/                              /opt/sandbox/docs/concepts/
 COPY docs/operations/                            /opt/sandbox/docs/operations/

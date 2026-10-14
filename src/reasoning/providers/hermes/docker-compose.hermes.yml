@@ -2,10 +2,9 @@
 # Provider overlay for the Hermes provider. Applied in all modes (standard and serve).
 # Merged by scripts/run_agent.sh before the mode overlay.
 #
-# Provider config: the build ships no config file for hermes. `config/config.yaml`
-# is not copied into the image and no mount names it, so the container starts on
-# hermes's own defaults. Whether it should ship is an open roadmap row under
-# M3.3.1. See docs/architecture/provider_lifecycle.md.
+# Provider config: the image ships none, by decision. Hermes runs on its own
+# defaults, its own config lives under HERMES_HOME for the session, and this repo
+# seeds nothing into it. See docs/architecture/provider_lifecycle.md.
 
 services:
   agent:

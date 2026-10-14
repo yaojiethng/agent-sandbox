@@ -15,20 +15,12 @@
 
     { "provider": "hermes", "source": "src/libs/", "destination": "/opt/sandbox/lib/" },
     { "provider": "hermes", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
-    { "provider": "hermes", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
-    { "provider": "hermes", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
-    { "provider": "hermes", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
-    { "provider": "hermes", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
     { "provider": "hermes", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
     { "provider": "hermes", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
     { "provider": "hermes", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" },
 
     { "provider": "opencode", "source": "src/libs/", "destination": "/opt/sandbox/lib/" },
     { "provider": "opencode", "source": "src/reasoning/entrypoint.sh", "destination": "/opt/sandbox/bin/provider-entrypoint.sh" },
-    { "provider": "opencode", "source": "src/reasoning/agent/skills/", "destination": "/opt/workflow/agent/skills/" },
-    { "provider": "opencode", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
-    { "provider": "opencode", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
-    { "provider": "opencode", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
     { "provider": "opencode", "source": "docs/architecture/", "destination": "/opt/sandbox/docs/architecture/" },
     { "provider": "opencode", "source": "docs/concepts/", "destination": "/opt/sandbox/docs/concepts/" },
     { "provider": "opencode", "source": "docs/operations/", "destination": "/opt/sandbox/docs/operations/" }

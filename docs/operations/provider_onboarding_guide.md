@@ -78,7 +78,7 @@ src/reasoning/providers/<n>/config/
 └── env.stub     ← seeded as AGENT_HOME/.env
 ```
 
-Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/providers/pi/config/), [`hermes/config/`](../../src/reasoning/providers/hermes/config/).
+Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/providers/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
 
 ## Step 7 (optional) -- `setup.sh`
 

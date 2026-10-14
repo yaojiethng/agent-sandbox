@@ -2,6 +2,14 @@
 
 **Current:** 2026-10-06
 
+## 2026-10-06 -- The payload ships in pi's image only, and two providers start on a fresh install
+
+**Decision:** The harness payload reaches pi's image only. The hermes and opencode dockerfiles carry their agent's own install and the harness's documentation, and no prompt or skill, which supersedes the 2026-10-05 clause that gave each provider a `COPY` line per payload kind. Neither of those providers ships a provider config either: the hermes `config/config.yaml` and `config/env.stub` are deleted, so both images start on their agent's own defaults, with credentials and the iteration cap arriving as environment variables from the compose overlay.
+
+**Rationale:** A payload needs a loader, and those two harnesses have no config transport that could name one, so a payload there would sit unreachable in the image and read as support that does not exist. The same reasoning removes the config: the hermes file was that agent's own default dump, carrying a model pin this harness does not use, an iteration cap the overlay already sets, and upstream defaults for sandboxes and media the harness never touches, so nothing in it was harness policy. What the harness keeps is the transport it actually uses, environment variables the operator fills, and `onboard.sh` still seeds a provider that does ship a config directory.
+
+**Edge cases / drivers:** Wiring a second harness is that harness's own work, done when someone runs it. The container manifest drops those two providers' payload rows, and the layout gate holds the manifest and the dockerfiles equal in both directions. The `session` rows still name `/opt/workflow/agent/` paths, because they describe what a pi session reaches rather than what every image bakes.
+
 ## 2026-10-06 -- The package key is the harness payload's only switch
 
 **Decision:** `packages` enables the harness payload, and no `skills` or `prompts` list names a harness root. The shipped `settings.json` carries two package entries, `/opt/workflow/agent` and `/opt/workflow/agent/modules/coding-agent`, and each contributes its `prompts/` and `skills/` subdirectories as roots. The harness-key merge in `preflight.sh` re-injects both entries and leaves a user's own `skills` and `prompts` lists untouched.
@@ -27,4 +35,4 @@ The package route is verified rather than assumed. A bare directory listed under
 - *Keep the skills at `.agents/skills/` with no runtime path* -- rejected by the operator. That cell is for a skill specific to one repository; these three are written against the harness's convention set, so the module owns them, and the scope keeps its name for a future occupant.
 - *Copy the whole module directory* -- it would ship `drafts/` and `audits/`, which are working records rather than payload.
 
-**Edge cases / drivers:** The payload ships in all three provider images, because each dockerfile carries the two lines; only pi's config enables it today, and the hermes and opencode records name no instruction root at all, which is the row that tracks their missing config transport. A module cell belongs to no single provider, so its loader names none. The package entry takes a directory path in pi's form; an npm or git source installs elsewhere and is out of scope here.
+**Edge cases / drivers:** The payload ships in pi's image only, by the 2026-10-06 decision, and the hermes and opencode images carry no harness prompt or skill, because neither harness has a config transport that could load one. A module cell belongs to no single provider, so its loader names none. The package entry takes a directory path in pi's form; an npm or git source installs elsewhere and is out of scope here.
