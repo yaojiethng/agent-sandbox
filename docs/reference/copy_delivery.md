@@ -4,7 +4,7 @@ reader: [operator]
 
 # Copy Delivery (Volume-Backed Sandbox)
 
-Copy delivery is the default sandbox delivery: the agent's working content lives in a named Docker volume, filled once at session start from the host's working tree, and changes return to the host through the diff pipeline. The delivery-model rationale (why copy or mount, why worktree backing is rejected, the seed-transport decision) is recorded in [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md). Companion model: [`mount_delivery.md`](mount_delivery.md).
+Copy delivery is the default sandbox delivery: the agent's working content lives in a named Docker volume, filled once at session start from the host's working tree, and changes return to the host through the diff pipeline. The delivery-model rationale (why copy or mount, why worktree backing is rejected, the seed-transport decision) is recorded in `docs/adr/sandbox_delivery_model.md`. Companion model: [`mount_delivery.md`](mount_delivery.md).
 
 ## Model
 
@@ -16,7 +16,7 @@ Copy delivery is the default sandbox delivery: the agent's working content lives
 
 ## What the user relies on
 
-Copy delivery is a behavioral contract between the harness and the operator. Everything below is observable from outside the harness; the internal design that delivers it is recorded in [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md).
+Copy delivery is a behavioral contract between the harness and the operator. Everything below is observable from outside the harness; the internal design that delivers it is recorded in `docs/adr/sandbox_delivery_model.md`.
 
 - **Your ignored files stay on your machine.** What enters the sandbox is decided by git's own ignore resolution. Gitignored content is never copied into the sandbox, and never copied-and-cleaned-up-afterwards -- there is no point in the pipeline where it exists on the sandbox side.
 - **The sandbox starts as your repo.** After a fresh start, `git status` inside the sandbox is exactly what you see in your project, including which changes you had staged: your on-disk edits in the working tree, your staged changes still staged, your untracked non-ignored files present, your deletions visible.
@@ -57,8 +57,8 @@ Volume locking: a volume attached to a running session cannot start a second con
 
 | Document | Purpose |
 |---|---|
-| [`../adr/sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md) | Requirements, seed-transport decision, rejected alternatives, defect history |
+| `docs/adr/sandbox_delivery_model.md` | Requirements, seed-transport decision, rejected alternatives, defect history |
 | [`mount_delivery.md`](mount_delivery.md) | Companion delivery model |
 | [`../reference/sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Session lifecycle implementation detail |
 | [`../reference/execution_model.md`](../reference/execution_model.md) | Compose generation and container topology |
-| [`../development/security.md`](../development/security.md) | Security posture -- copy and fresh-baseline profile |
+| `docs/development/security.md` | Security posture -- copy and fresh-baseline profile |

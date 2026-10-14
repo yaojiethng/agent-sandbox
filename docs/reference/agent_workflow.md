@@ -30,7 +30,7 @@ Each agent run is reproducible via a container image version, a specific project
 
 ## System Invariants
 
-The system enforces a set of invariants by construction -- constraints that hold across all agent runs regardless of configuration. These are defined authoritatively in [`../development/security.md`](../development/security.md#security-invariants).
+The system enforces a set of invariants by construction -- constraints that hold across all agent runs regardless of configuration. These are defined authoritatively in `docs/development/security.md#security-invariants`.
 
 In summary: no unreviewed output reaches the repository; no direct mutation of the host repository occurs from inside either container; every change is traceable to an agent run; the operator initiates every run and has final authority over all outputs.
 
@@ -92,19 +92,19 @@ Policy documents live in `docs/policies/`. The reference layer is `docs/referenc
 
 ### Skill files
 
-Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it. The authoring bar for skill files is in [`prompt-authoring-conventions.md`](../development/prompt-authoring-conventions.md).
+Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
 A constraint that exists only in a skill file is not authoritative. If an operator bypasses the skill, the constraint disappears. If the policy document changes, an inlined copy may become stale -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
 ### Prompt templates
 
-Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files. The authoring bar for prompt templates is in [`prompt-authoring-conventions.md`](../development/prompt-authoring-conventions.md).
+Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
 
 Prompt templates do not contain authoritative rules.
 
 ### Persistent devlog records (interim)
 
-`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface it belongs to is scoped for trim under the [Rotate Out Stale Handovers and Discussions](../../devlog/roadmap.md#t5---archival) task. Its precise end-state form is not yet determined (exact rules TBD).
+`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface it belongs to is scoped for trim under the `devlog/roadmap.md#t5---archival` task. Its precise end-state form is not yet determined (exact rules TBD).
 
 ---
 
@@ -118,13 +118,13 @@ Maps each area of the workflow to its canonical governing document, what that do
 | Handover lifecycle | [`handover_policy.md`](../policies/handover_policy.md) | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
 | Roadmap maintenance | [`roadmap_policy.md`](../policies/roadmap_policy.md) | Roadmap update sequence, task compaction, roadmap maintenance, top-level milestone close, changelog format, milestone promotion | Handover format, iteration step definitions |
 | Milestone planning | [`roadmap_policy.md`](../policies/roadmap_policy.md) and the `/milestone-start` and `/plan` prompts | Milestone states, the record shape, scoping criteria, and the close rules | Iteration execution |
-| Agent feedback and gotchas | routing: [`iteration_policy.md`](../policies/iteration_policy.md) (close review/publish invariants); record: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
+| Agent feedback and gotchas | routing: [`iteration_policy.md`](../policies/iteration_policy.md) (close review/publish invariants); record: `devlog/AGENT_FEEDBACK.md` | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
 | Discussion record types | [`discussion_policy.md`](../policies/discussion_policy.md) | Story, study, design, and report section order, statuses, naming, and closure | Iteration sequencing, roadmap entry format, ADR authoring |
 | Documentation rules | [`documentation_policy.md`](../policies/documentation_policy.md) | Folder ownership, rule placement, linking conventions, grep navigation, policy-vs-skill separation | Workflow sequencing |
-| Security model and invariants | [`security.md`](../development/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
+| Security model and invariants | `docs/development/security.md` | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
 | Execution mechanics | [`execution_model.md`](../reference/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
 | External contract | [`tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
-| Provider AGENTS.md contract | [`provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, iteration workflow |
+| Provider AGENTS.md contract | `docs/development/provider_onboarding_guide.md` | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, iteration workflow |
 
 ### Boundary notes
 
@@ -147,9 +147,9 @@ When a rule appears to exist in two documents in this map, apply the canonical o
 | Topic | Document |
 |---|---|
 | Two-layer architectural model | [`two_layer_model.md`](two_layer_model.md) |
-| Security invariants and trust boundaries | [`../development/security.md`](../development/security.md) |
+| Security invariants and trust boundaries | `docs/development/security.md` |
 | Container lifecycle and execution mechanics | [`../reference/execution_model.md`](../reference/execution_model.md) |
 | External contract: commands, naming, guarantees | [`../reference/tool_interface.md`](../reference/tool_interface.md) |
 | Iteration workflow (authoritative) | [`../policies/iteration_policy.md`](../policies/iteration_policy.md) |
-| Provider AGENTS.md contract and reference template | [`../development/provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) |
-| Onboarding and running guide | [`../development/quickstart.md`](../development/quickstart.md) |
+| Provider AGENTS.md contract and reference template | `docs/development/provider_onboarding_guide.md` |
+| Onboarding and running guide | `docs/development/quickstart.md` |

@@ -22,6 +22,11 @@
 #                                 a populated repository source
 #   a repository path, from a shipped file -- flagged: the file runs in the image
 #   a target that ships nowhere -- flagged, from an instruction root
+#   a repository path, from a bundled document -- flagged: a bundled document
+#                                 ships too, so its links resolve in the image
+#   a link between two bundled documents -- clean: their destinations keep the
+#                                 repository's shape, so the relative link
+#                                 survives the move
 #   the provider config root    -- its links resolve in the image too: the
 #                                 repository-relative form fails, the image path
 #                                 passes, so the root is a registered root
@@ -241,7 +246,7 @@ test_repository_path_from_a_shipped_file_is_flagged() {
   assert_contains "$out" 'does not exist in the image' 'the repository-relative form is flagged from a shipped file'
 }
 
-test_repository_path_from_a_bundled_document_is_clean() {
+test_repository_path_from_a_bundled_document_is_flagged() {
   local dir cfg out
   dir="$(shipped_root bundled_doc)"
   mkdir -p "$dir/docs/adr"
@@ -249,9 +254,22 @@ test_repository_path_from_a_bundled_document_is_clean() {
   printf '[adr](../adr/x.md)\n' > "$dir/docs/policies/iteration_policy.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  # A bundled document is read by a repository reader first, so its own tree's
-  # relative links stay checked in repository space.
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a bundled document keeps the repository-space check'
+  # A bundled document ships as well, so its own tree's relative links face the
+  # same test: the ADR is absent from the image, and the link is a finding.
+  assert_contains "$out" 'does not exist in the image' 'a bundled document resolves its links in the image too'
+}
+
+test_link_between_two_bundled_documents_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root bundled_pair)"
+  mkdir -p "$dir/docs/reference"
+  printf '# Reference\n' > "$dir/docs/reference/page.md"
+  printf '[page](../reference/page.md)\n' > "$dir/docs/policies/iteration_policy.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # The two destinations keep the repository's shape, so a relative link between
+  # two bundled documents resolves in the image unchanged.
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a relative link between two bundled documents is clean'
 }
 
 test_sibling_instruction_root_link_is_clean() {
@@ -299,7 +317,8 @@ run_test test_unreadable_target_is_flagged
 run_test test_image_path_from_a_shipped_file_is_clean
 run_test test_image_path_missing_from_the_image_is_flagged
 run_test test_repository_path_from_a_shipped_file_is_flagged
-run_test test_repository_path_from_a_bundled_document_is_clean
+run_test test_repository_path_from_a_bundled_document_is_flagged
+run_test test_link_between_two_bundled_documents_is_clean
 run_test test_sibling_instruction_root_link_is_clean
 run_test test_provider_config_root_resolves_in_the_image
 

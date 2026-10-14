@@ -6,11 +6,11 @@ reader: [agent]
 
 The autonomous agent loop is the continuous cycle by which the coding agent advances work: a milestone is opened, scoped, iterated, and closed, then the next milestone begins. It is one loop, not two cadences. The workflow runbooks under `workflow/coding-agent/prompts/` drive the loop's state transitions; each workflow enforces a different transition in the loop. Policy files under `docs/policies/` own the invariants those transitions must not break.
 
-The [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md) ADR records the decisions behind the loop-and-workflow split and the rule behind each transition. This document draws the model.
+The `docs/adr/coding_agent_loop_workflow.md` ADR records the decisions behind the loop-and-workflow split and the rule behind each transition. This document draws the model.
 
 ## The loop
 
-One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The loop runs at two grains, drawn once each. The rules behind each arrow -- the three edge types and the three gate states -- are in [`coding_agent_loop_workflow.md`](../adr/coding_agent_loop_workflow.md#transitions).
+One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The loop runs at two grains, drawn once each. The rules behind each arrow -- the three edge types and the three gate states -- are in `docs/adr/coding_agent_loop_workflow.md#transitions`.
 
 ```text
 MILESTONE GRAIN
@@ -49,7 +49,7 @@ ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
       +-- no  --> [it:open]   (operator picks the next task)
 ```
 
-Closing is the work that follows a gate decision, not a state; the close-seam rules are in the [ADR](../adr/coding_agent_loop_workflow.md#transitions).
+Closing is the work that follows a gate decision, not a state; the close-seam rules are in the `docs/adr/coding_agent_loop_workflow.md#transitions`.
 
 ## Workflows
 

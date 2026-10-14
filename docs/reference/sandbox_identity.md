@@ -24,7 +24,7 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 SESSION_ID = sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]
 ```
 
-A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash -- see [session_identifier.md](../adr/session_identifier.md).
+A 6-character hex hash that identifies a single session run. Replaces `SESSION_TS` in container names and output artefact paths while `SESSION_TS` is preserved in labels for human readability. The former two-stage model (separate `SANDBOX_ID = sha256(SANDBOX_DIR:HOST_HEAD_SHA)[:8]` intermediate fed into `SESSION_ID`) was collapsed into this single canonical hash -- see `docs/adr/session_identifier.md`.
 
 `canon(SANDBOX_DIR)` is the sandbox directory resolved to its canonical absolute form (`readlink -f`/`realpath` after leading-`~` expansion), so every path spelling of one folder (absolute, `~`, relative, symlink, trailing-slash, `./`) converges to one `SESSION_ID`. An unresolvable `SANDBOX_DIR` is a hard error (start/resume fail loudly).
 
@@ -88,9 +88,9 @@ Containers are ephemeral -- they live for one session and die. All labels are ac
 
 ## Interface contract (container boundary)
 
-The interface contract governs the container boundary. Its version (`agent-sandbox.interface-contract-version`) is baked into tier-3 images at build, written into the session record, and compared at preflight and at the agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md) and ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The interface contract governs the container boundary. Its version (`agent-sandbox.interface-contract-version`) is baked into tier-3 images at build, written into the session record, and compared at preflight and at the agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md) and ADR `docs/adr/interface_contract_compatibility.md`.
 
-Further reading: the build-time signature model is a superseded principle -- the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). Image version is the image ID digest, recorded per session as `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`.
+Further reading: the build-time signature model is a superseded principle -- the standing rationale is `docs/adr/drift_state_coherence.md` (coherence by minimisation, not detection), with the per-surface version semantics in `docs/adr/harness_versioning.md`. Image version is the image ID digest, recorded per session as `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`.
 
 The interim `agent-sandbox.container-sig` source-subset hash and its preflight comparison are retired. The interface-contract version replaces the interim check as the standalone container-boundary contract.
 
@@ -125,7 +125,7 @@ Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides uniq
 
 ## Resolution Precedence
 
-The identity triple resolves per identifier in priority order: explicit CLI flag > `AGENT_SANDBOX_<KEY>` environment variable > the per-sandbox `.env` > a hard error pointing at `onboard` (no runtime default). `.env` is read from the provided sandbox dir when one is known, else from the invocation CWD. `make -C <sandbox>` runs recipes with CWD = the sandbox dir, so it resolves the sandbox's local `.env` with no identity flags. The `SANDBOX_DIR` default is applied once at onboard, not at runtime. Rationale and rejected alternatives: [env_resolution.md](../adr/env_resolution.md).
+The identity triple resolves per identifier in priority order: explicit CLI flag > `AGENT_SANDBOX_<KEY>` environment variable > the per-sandbox `.env` > a hard error pointing at `onboard` (no runtime default). `.env` is read from the provided sandbox dir when one is known, else from the invocation CWD. `make -C <sandbox>` runs recipes with CWD = the sandbox dir, so it resolves the sandbox's local `.env` with no identity flags. The `SANDBOX_DIR` default is applied once at onboard, not at runtime. Rationale and rejected alternatives: `docs/adr/env_resolution.md`.
 
 ## Where Primitives Are Consumed
 

@@ -132,6 +132,8 @@ When the content behind the reference matters to the agent working in the contai
 
 The same rule covers the inverse: a rule whose only home is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
 
+The rule holds for a bundled document too. A document under `docs/reference/` or `docs/policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between the two bundled folders resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`record-links.mjs`](../../scripts/lint/record-links.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
+
 ## Naming
 
 A workflow document's name states its subject, not its mechanism. Prefer a noun phrase that names the work (`task-queue`, `milestone-close`) or a gerund that names the activity (`documentation-pass`). Avoid vague names (`helper`, `utils`) and names that restate the loading mechanism.

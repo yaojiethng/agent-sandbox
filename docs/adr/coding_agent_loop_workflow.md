@@ -15,7 +15,7 @@
 
 ## 2026-09-28 -- Loops are workflows; policy carries the rules
 
-**Decision:** The coding agent runs the autonomous agent loop as invocable workflow prompts under `workflow/coding-agent/prompts/`. Workflow prompts own the steps and the state transitions of the loop. Policy files under `docs/operations/` own the invariants those transitions must not break. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The workflow prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
+**Decision:** The coding agent runs the autonomous agent loop as invocable workflow prompts under `workflow/coding-agent/prompts/`. Workflow prompts own the steps and the state transitions of the loop. Policy files under `docs/policies/` own the invariants those transitions must not break. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The workflow prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
 
 [CORRECTION -- 2026-10-03: the diagram's home is the concept document, not this ADR. The state diagram is drawn in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md#the-loop), and this section states the transition rules behind it. The decision above otherwise stands.]
 

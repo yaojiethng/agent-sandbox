@@ -128,5 +128,5 @@ The three-layer model is defined in [`../reference/agent_workflow.md`](../refere
 | Capability layer lifecycle | [sandbox_lifecycle.md](sandbox_lifecycle.md) |
 | Mount shape and container wiring | [execution_model.md](execution_model.md) |
 | Provider interface contract | [tool_interface.md](tool_interface.md#provider-interface) |
-| Adding a provider | [../development/provider_onboarding_guide.md](../development/provider_onboarding_guide.md) |
+| Adding a provider | `docs/development/provider_onboarding_guide.md` |
 | Project onboarding | [../reference/project_onboarding_guide.md](../reference/project_onboarding_guide.md) |

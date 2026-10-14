@@ -272,4 +272,4 @@ Docker's layer cache is the primary staleness mechanism. The repo root is used a
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | External contract | [tool_interface.md](tool_interface.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
-| Security guarantees | [../development/security.md](../development/security.md) |
+| Security guarantees | `docs/development/security.md` |

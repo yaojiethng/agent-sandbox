@@ -8,7 +8,7 @@ reader: [agent]
 
 Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../reference/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
 
-The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md). Diagnostic checklists for compliance live in [`workflow/coding-agent/audits/documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md).
+The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md). Diagnostic checklists for compliance live in `workflow/coding-agent/audits/documentation-pass.md`.
 
 ---
 
@@ -30,7 +30,7 @@ A statement is a rule when it imposes an obligation a document or its author mus
 
 ## Folder Structure
 
-Each `docs/` document belongs to **exactly one** folder: `reference/`, `reference/`, `operations/`, `development/`, or `adr/`. What each folder holds and why are in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md#folder-taxonomy). Superseded or awaiting-review ADRs live in `adr/archive/`.
+Each `docs/` document belongs to **exactly one** folder: `reference/`, `policies/`, `development/`, or `adr/`. What each folder holds and why are in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md#folder-taxonomy). Superseded or awaiting-review ADRs live in `adr/archive/`.
 
 Records outside `docs/` live in `devlog/`: the roadmap, the changelog, handovers, and discussion documents. Their placement and governance are in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md).
 
@@ -120,7 +120,9 @@ Prose is one paragraph per physical line, however long the line. Never break ins
 
 Make references with links. Link what the reader might need next; a well-linked document is a good one. Link a document the reader may need to open; otherwise write its name. Inline code (backticks) is not a substitute for a link.
 
-Prefer durable targets. Link a durable document to the durable document that records the fact, not to its evidence: documentation and policy link to an ADR, and the ADR links to the handover that evidences its decision. When a durable document must name transient evidence, write the name as plain text and do not link it.
+A link resolves where its document is read. A document under `reference/` or `policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: link a shipped document by its image path, or by the relative form the two bundled folders keep. A document that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. The `record-links` lint rule fails the gate on a link that resolves only in the repository.
+
+Prefer durable targets. Link a durable document to the durable document that records the fact, not to its evidence: documentation and policy link to an ADR, and the ADR links to the handover that evidences its decision. Where the citing document ships and the durable target does not, name the target instead of linking it. When a durable document must name transient evidence, write the name as plain text and do not link it.
 
 Place handoff links at the point of use. When a workflow document (such as `iteration_policy.md`) hands off to a subprocess governed by a child policy document, link that policy where the handoff happens -- not only in a References table -- and name the specific section. A References table is navigation, not a handoff.
 
@@ -204,11 +206,11 @@ This section holds the document lint rules and the gate that enforces them. It d
 
 ### Markdown lint gate
 
-The repository holds zero Markdown lint findings. The gate runs `markdownlint-cli2` with the repository config [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs). A finding is a defect: fix it in the same change. Run the gate with `make lint` or `bash scripts/lint.sh`.
+The repository holds zero Markdown lint findings. The gate runs `markdownlint-cli2` with the repository config `.markdownlint-cli2.mjs`. A finding is a defect: fix it in the same change. Run the gate with `make lint` or `bash scripts/lint.sh`.
 
 ### The lint rule set
 
-The config enables the rules that match this policy. It disables `MD013` because [`### Line wrapping`](#line-wrapping) forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Three repository rules enforce parts of this policy: `doc-ascii` (plain-ASCII prose, in [`scripts/lint/doc-ascii.mjs`](../../scripts/lint/doc-ascii.mjs), per [`### Character set`](#character-set)), `doc-wrap` (one paragraph per physical line, in [`scripts/lint/doc-wrap.mjs`](../../scripts/lint/doc-wrap.mjs), per [`### Line wrapping`](#line-wrapping)), and `record-links` (link targets exist and fragments name a heading, in [`scripts/lint/record-links.mjs`](../../scripts/lint/record-links.mjs)). Do not silence a finding with a per-file disable; fix the text or change the config.
+The config enables the rules that match this policy. It disables `MD013` because [`### Line wrapping`](#line-wrapping) forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Three repository rules enforce parts of this policy: `doc-ascii` (plain-ASCII prose, in `scripts/lint/doc-ascii.mjs`, per [`### Character set`](#character-set)), `doc-wrap` (one paragraph per physical line, in `scripts/lint/doc-wrap.mjs`, per [`### Line wrapping`](#line-wrapping)), and `record-links` (link targets exist and fragments name a heading, in `scripts/lint/record-links.mjs`). Do not silence a finding with a per-file disable; fix the text or change the config.
 
 A rule the config registers but does not enable is a defect. `config.default` is `false`, so a rule named nowhere in the config never runs and reports nothing, and the gate prints a clean verdict over an empty rule set. `record-links` sat in that state: this list named two rules, the config registered three and enabled two, and the link gate reported nothing for the life of the config. Naming a rule here and enabling it there are one obligation.
 
@@ -248,7 +250,7 @@ When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -
 
 - **Stop -- the correction changes the unit's scope or carries new work.** New work belongs in a new iteration.
 - **Stop -- an edit to a closed record would carry no marker.** An untraceable edit is a rewrite, not a correction.
-- **Smell -- folding the correction needs an interactive rebase with several conflict edits.** Report the smell and stop; the operator rules on it. Past that size the instrument is a port, not a correction: see [`rebase.md`](../../workflow/coding-agent/prompts/rebase.md).
+- **Smell -- folding the correction needs an interactive rebase with several conflict edits.** Report the smell and stop; the operator rules on it. Past that size the instrument is a port, not a correction: see `workflow/coding-agent/prompts/rebase.md`.
 
 **Propagation.** A correction inherits the record set of the unit it corrects. A unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its marker. A correction that leaves a closed record contradicting its successor is incomplete.
 

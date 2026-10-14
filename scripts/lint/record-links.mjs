@@ -14,11 +14,12 @@
 //     (parallel-work)" yields "m46----background-work-parallel-work", and a
 //     heading carrying a suffix carries that suffix in its fragment.
 //   - a link in a file that ships into the agent image resolves in the image's
-//     path space, not the repository's. The prompt that ships runs at its image
-//     path, so its link must reach a path that exists there. The pairs and the
-//     instruction surfaces come from `src/build/container-interface.mjs`, which
-//     reads the interface manifest; an image path is checked by mapping it back
-//     to the repository source that populates it.
+//     path space, not the repository's. The prompt or the bundled document that
+//     ships is read at its image path, so its link must reach a path that exists
+//     there: a target that exists only in the repository is a finding. The pairs
+//     come from `src/build/container-interface.mjs`, which reads the interface
+//     manifest; an image path is checked by mapping it back to the repository
+//     source that populates it.
 //
 // What it skips: external targets (http, https, mailto, tel), links inside
 // fenced code blocks, and whatever the config exempts.
@@ -34,7 +35,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { load_manifest, manifest_rows, pairs } from "../../src/build/container-interface.mjs";
+import { load_manifest, pairs } from "../../src/build/container-interface.mjs";
 
 // Repository directory to image destination, trailing slash on both. The
 // interface is declared once in `src/build/container-interface.json` and read
@@ -54,27 +55,16 @@ if (imageMap.length === 0) {
   );
 }
 
-// The instruction surfaces: the roots a prompt, a skill or a provider's
-// `AGENTS.md` runs from. Their links are written for the agent that reads them
-// in a container, so they resolve in the image's path space. A bundled document
-// outside these roots is read by a repository reader first, and keeps the
-// repository-space check, or its links to an ADR or a roadmap would demand that
+// A file that ships is read by an agent in a container, so its links resolve in
+// the image's path space. That covers every instruction surface and every
+// bundled document alike: a relative link between two bundled documents
+// survives the move only because their two destinations keep the repository's
+// shape. A file that does not ship is read in the repository and keeps the
+// repository-space check, or its links to its own neighbours would demand that
 // every record ship as well.
 //
-// The roots are the folder sets the manifest's `cells` declare, so a surface
-// added to the declaration is covered here with no edit to the rule. A cell
-// whose runtime path is `none` is read from the repository rather than from an
-// image, and keeps the repository-space check.
-const instructionRoots = manifest_rows(manifest, "cells")
-  .filter((cell) => cell.runtime_path !== "none")
-  .flatMap((cell) => (Array.isArray(cell.sources) ? cell.sources : []));
-
-if (instructionRoots.length === 0) {
-  throw new Error(
-    "record-links: src/build/container-interface.json declares no shipping cell; a shipped file's links cannot be resolved",
-  );
-}
-
+// The shipped set is the manifest's `image` rows, so a new `COPY` line reaches
+// this rule with no edit to it.
 // image_path_of REPO_RELATIVE -- the path the file has in the image, or empty
 // when the file does not ship.
 function image_path_of(repoPath) {
@@ -138,14 +128,12 @@ export default [
         return;
       }
       const dir = dirname(params.name);
-      // A file an agent runs succeeds at its image path, so its links are
-      // resolved there: absolute targets are image paths, relative targets are
-      // resolved against the file's image directory, and both are checked by
-      // mapping the image path back to the repository source that populates it.
-      // Every other file keeps the repository-space check.
-      const imageFile = instructionRoots.some((root) => name.startsWith(root))
-        ? image_path_of(name)
-        : "";
+      // A file that ships succeeds at its image path, so its links are resolved
+      // there: absolute targets are image paths, relative targets are resolved
+      // against the file's image directory, and both are checked by mapping the
+      // image path back to the repository source that populates it. Every other
+      // file keeps the repository-space check.
+      const imageFile = image_path_of(name);
       const imageDir = imageFile === "" ? "" : dirname(imageFile);
       let inFence = false;
 

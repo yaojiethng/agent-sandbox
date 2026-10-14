@@ -73,7 +73,7 @@ Always rebuilds both images from current source first (cache layers used where t
 
 Dry-run machinery self-identifies: its session id is prefixed `dryrun-`, which flows into the compose project, container, network, and volume names and the registry record filename. Use the prefix to attribute leftover resources after an abnormal exit; orphaned dry-run resources are swept by `make prune` (registry-truth Rule 2).
 
-The check set and the bearer/orchestration responsibility split are defined in [`devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md`](../../devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md).
+The check set and the bearer/orchestration responsibility split are defined in `devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md`.
 
 ---
 
@@ -274,17 +274,17 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
-**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See [`../development/provider_onboarding_guide.md -- Step 7`](../development/provider_onboarding_guide.md#step-7-optional----setupsh).
+**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See `docs/development/provider_onboarding_guide.md#step-7-optional----setupsh`.
 
 Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh`, baked as `/opt/sandbox/bin/provider-entrypoint.sh`, is injected into every provider image by the harness via the build context -- providers do not author it.
 
-See [`../development/provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
+See `docs/development/provider_onboarding_guide.md` for the full provider contract and step-by-step implementation guide.
 
 The reasoning layer builds in three tiers. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. Each provider's `base.dockerfile` builds `<provider>-base` on top of it, and its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
 
-A `provider.dockerfile` sends a repository directory to an image directory with `COPY`, and sets the image's environment with `ENV`. That layout is declared once in [`src/build/container-interface.json`](../../src/build/container-interface.json), and [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the declaration equal to the dockerfiles in both directions. So a new `COPY` or `ENV` line needs a manifest row in the same change, and the checks that need the layout read the manifest through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs) instead of parsing the dockerfiles themselves.
+A `provider.dockerfile` sends a repository directory to an image directory with `COPY`, and sets the image's environment with `ENV`. That layout is declared once in `src/build/container-interface.json`, and `scripts/check_container_layout.sh` holds the declaration equal to the dockerfiles in both directions. So a new `COPY` or `ENV` line needs a manifest row in the same change, and the checks that need the layout read the manifest through `src/build/container-interface.mjs` instead of parsing the dockerfiles themselves.
 
-The same manifest declares the instruction surfaces in its `cells` section, one row per prompt or skill folder: the source folders that land there, the runtime path, and the condition under which the agent can load a file from it. Its `session` section holds the paths a session reads whatever surface it is reading from. A workflow module's payload ships to its own root under `/opt/workflow/agent/modules/<module>/` and is enabled by a package entry in the provider's settings, so nothing merges into the harness roots. The model is in [`../adr/instruction_surface_declaration.md`](../adr/instruction_surface_declaration.md) and [`../adr/module_instruction_payload.md`](../adr/module_instruction_payload.md), and the declaration rules in [`../development/instruction-surface-conventions.md`](../development/instruction-surface-conventions.md).
+The same manifest declares the instruction surfaces in its `cells` section, one row per prompt or skill folder: the source folders that land there, the runtime path, and the condition under which the agent can load a file from it. Its `session` section holds the paths a session reads whatever surface it is reading from. A workflow module's payload ships to its own root under `/opt/workflow/agent/modules/<module>/` and is enabled by a package entry in the provider's settings, so nothing merges into the harness roots. The model is in `docs/adr/instruction_surface_declaration.md` and `docs/adr/module_instruction_payload.md`, and the declaration rules in `docs/development/instruction-surface-conventions.md`.
 
 ---
 
@@ -310,7 +310,7 @@ A dry-run does not prove agent correctness -- it proves the harness containers s
 | Topic | Document |
 |---|---|
 | Internal implementation | [execution_model.md](execution_model.md) |
-| CLI interaction conventions | [../development/interface-conventions.md](../development/interface-conventions.md) |
-| Security model | [../development/security.md](../development/security.md) |
+| CLI interaction conventions | `docs/development/interface-conventions.md` |
+| Security model | `docs/development/security.md` |
 | Onboarding a project | [../reference/project_onboarding_guide.md](../reference/project_onboarding_guide.md) |
-| Adding a provider | [../development/provider_onboarding_guide.md](../development/provider_onboarding_guide.md) |
+| Adding a provider | `docs/development/provider_onboarding_guide.md` |

@@ -4,7 +4,7 @@ reader: [agent, operator]
 
 # Two-Layer Architecture -- Reasoning and Capability Layers
 
-> **Context:** This document records the conceptual model. Implementation details are distributed across [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) and [`execution_model.md`](../reference/execution_model.md). The reasoning behind this decision is in [`20260312-study-settled-mcp_server.md`](../../devlog/discussions/archive/20260312-study-settled-mcp_server.md) -- Conclusion section.
+> **Context:** This document records the conceptual model. Implementation details are distributed across [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) and [`execution_model.md`](../reference/execution_model.md). The reasoning behind this decision is in `devlog/discussions/archive/20260312-study-settled-mcp_server.md` -- Conclusion section.
 
 ## The Model
 
@@ -34,7 +34,7 @@ The capability layer container is always present. What varies is whether an MCP 
 
 ## Why the Layers Are Separate
 
-Further reading: the rationale for the separation -- the fused single-container model as the rejected alternative, and the MCP-server investigation that surfaced it -- is recorded in [agent_sandbox_two_container_separation.md](../adr/agent_sandbox_two_container_separation.md).
+Further reading: the rationale for the separation -- the fused single-container model as the rejected alternative, and the MCP-server investigation that surfaced it -- is recorded in `docs/adr/agent_sandbox_two_container_separation.md`.
 
 The capability layer must always be isolated per project; the reasoning layer needs isolation from the host but not per-project isolation. The MCP protocol is the interface when a capability layer MCP server is present. Any MCP-compatible reasoning layer is a conforming client without custom integration work. When no MCP server is present, the interface is the volume mount alone. Either way, the reasoning layer is swappable without changing the capability layer configuration.
 
@@ -55,6 +55,6 @@ The following documents implement this conceptual model:
 | [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
 | [`execution_model.md`](../reference/execution_model.md) | Directory layout, invocation model, compose generation, container lifecycle, entrypoint sequences |
 | [`tool_interface.md`](../reference/tool_interface.md) | External contract: command shapes, naming, mount guarantees, execution modes |
-| [`security.md`](../development/security.md) | Trust boundaries and security invariants |
+| `docs/development/security.md` | Trust boundaries and security invariants |
 
 Changes to any of these documents should be checked against this conceptual model before being accepted.

@@ -12,7 +12,7 @@ The system is a sandbox and execution harness for autonomous coding agents. It p
 
 ## Core Invariants
 
-These guarantees hold across all agent runs. Defined authoritatively in [`../development/security.md`](../development/security.md#security-invariants):
+These guarantees hold across all agent runs. Defined authoritatively in `docs/development/security.md#security-invariants`:
 
 - Agents execute inside isolated containers
 - The host repository is never modified by an agent directly
@@ -63,6 +63,6 @@ The freeze status is layer-scoped (a whole layer freezes, never an individual fi
 |---|---|
 | Container lifecycle, seed pipeline, mount shape | [execution_model.md](execution_model.md) |
 | Workflow expression model and policy map | [../reference/agent_workflow.md](../reference/agent_workflow.md) |
-| Security guarantees and trust boundaries | [../development/security.md](../development/security.md) |
-| STRIDE threat analysis | [../development/threat_model_stride.md](../development/threat_model_stride.md) |
-| Standard operating procedures | [../development/standard_operating_procedures.md](../development/standard_operating_procedures.md) |
+| Security guarantees and trust boundaries | `docs/development/security.md` |
+| STRIDE threat analysis | `docs/development/threat_model_stride.md` |
+| Standard operating procedures | `docs/development/standard_operating_procedures.md` |

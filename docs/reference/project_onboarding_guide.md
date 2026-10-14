@@ -117,5 +117,5 @@ See [`../reference/sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) for
 | Document | Purpose |
 |---|---|
 | [`../reference/tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, `.env` variable reference |
-| [`../development/provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) | Adding a new reasoning layer provider |
-| [`../development/quickstart.md`](../development/quickstart.md) | Session workflow -- before, during, and after a run |
+| `docs/development/provider_onboarding_guide.md` | Adding a new reasoning layer provider |
+| `docs/development/quickstart.md` | Session workflow -- before, during, and after a run |

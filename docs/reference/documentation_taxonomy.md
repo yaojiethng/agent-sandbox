@@ -10,7 +10,7 @@ This document is the index and view of the documentation ecosystem. It states no
 
 | Document | What it is | Durability | Governed by |
 |---|---|---|---|
-| Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | per-file; the rules of rule-hood are in [`policy_declarative_framing`](../adr/policy_declarative_framing.md) |
+| Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | per-file; the rules of rule-hood are in `docs/adr/policy_declarative_framing.md` |
 | ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | [`adr_policy.md`](../policies/adr_policy.md) |
 | Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations |
 | Architecture document (`docs/reference/`) | implementation design and decisions | durable | [`documentation_policy.md`](../policies/documentation_policy.md); the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |

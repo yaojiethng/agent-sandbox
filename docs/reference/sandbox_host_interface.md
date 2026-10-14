@@ -10,7 +10,7 @@ This document is the interface contract between them. It names the contract surf
 
 The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary -- see [`tool_interface.md`](../reference/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
 
-Implementation detail and command shapes: [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../reference/tool_interface.md) (Commands). Reasoning record: [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md).
+Implementation detail and command shapes: [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../reference/tool_interface.md) (Commands). Reasoning record: `devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md`.
 
 ---
 
@@ -55,7 +55,7 @@ The interim `container-sig` source-subset hash and its preflight comparison are 
 
 Deferred (host constant vs record stamps at preflight): the record surface compares at the agent entrypoint only, not yet at preflight. This remains a candidate extension; it is not scheduled.
 
-The P0-P3 rollover and the container-sig retirement are recorded in [the design record](../../devlog/discussions/archive/20260919-design-settled-interface_contract_compatibility.md) and [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The P0-P3 rollover and the container-sig retirement are recorded in `devlog/discussions/archive/20260919-design-settled-interface_contract_compatibility.md` and `docs/adr/interface_contract_compatibility.md`.
 
 ### Relationship to MAKEFILE_VERSION
 
@@ -69,7 +69,7 @@ Git is a tool used independently inside each repo. It is not the correspondence 
 
 This separation means the harness does not depend on git history, commit SHAs, or object stores being shared or compatible across the boundary. Any tool that produces or consumes unified diffs participates in the model.
 
-Further reading: the rationale for this mechanism -- git-mediated correspondence as the rejected alternative, and its relation to the worktree rejection -- is recorded in [container_host_correspondence_mechanism.md](../adr/container_host_correspondence_mechanism.md).
+Further reading: the rationale for this mechanism -- git-mediated correspondence as the rejected alternative, and its relation to the worktree rejection -- is recorded in `docs/adr/container_host_correspondence_mechanism.md`.
 
 ---
 
@@ -82,7 +82,7 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 | **Draft branch** | `draft/<branch-name>` -- temporary branch on the host. Populated by sequential diff application + optional `uncommitted.diff`, ready for `git rebase -i`. |
 | **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge -- never lands on the target branch. |
 | **`.export-status`** | Consolidated metadata file (key=value) written by both `diff_export` and `package_branch`. Both write STATUS, TIMESTAMP, and INIT_SHA; `diff_export` also writes HEAD on success and EXIT_CODE on failure. Consumed by `draft.sh` on the host to resolve baseline and timestamp, and by `_save_baseline` in `session_save_policy.sh` to resolve the save comparison point (it falls back to `init_sha` when HEAD is absent). Replaces prior `EXPORT-TIME.txt` and `.init_sha`. |
-| **`SESSION_ID`** | 6-char hex hash: `sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`. Identifies a single session run. `SANDBOX_DIR` is canonicalized so every path spelling of one folder converges to one id. Replaces `SESSION_TS` in container names and artefact paths. The former separate `SANDBOX_ID` intermediate was removed (see [session_identifier.md](../adr/session_identifier.md)). |
+| **`SESSION_ID`** | 6-char hex hash: `sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`. Identifies a single session run. `SANDBOX_DIR` is canonicalized so every path spelling of one folder converges to one id. Replaces `SESSION_TS` in container names and artefact paths. The former separate `SANDBOX_ID` intermediate was removed (see `docs/adr/session_identifier.md`). |
 | **`HOST_HEAD_SHA`** | Full SHA of host HEAD at session start. Replaces `REPO_COMMIT`. |
 | **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/{session,autosave}/` -- `session/` holds per-export directories named `<EXPORT_TIME>-<SESSION_ID>` (exit artefacts), `autosave/` holds the single `<SESSION_ID>/` checkpoint directory, replaced on a successful autosave tick and left intact when a tick fails. |
 | **Session label set** | Docker labels set on containers at session start, baked into the generated compose file (`x-session-labels` anchor). Labels: `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`, `agent-sandbox.session-ts`, `agent-sandbox.session-id`, `agent-sandbox.agent-image-digest`, `agent-sandbox.sandbox-image-digest`, `agent-sandbox.interface-contract-version`. |
@@ -222,12 +222,12 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 
 | Document | Purpose |
 |---|---|
-| [`interface_contract_compatibility.md`](../adr/interface_contract_compatibility.md) | Interface-contract version mechanism, rollover gates |
-| [`container_host_correspondence_mechanism.md`](../adr/container_host_correspondence_mechanism.md) | Why the diff file, not git, is the mechanism |
-| [`sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md) | Delivery wiring (copy/mount) -- the wiring surface |
-| [`harness_versioning.md`](../adr/harness_versioning.md) | Per-surface version semantics (digest, HEAD, symlink) |
-| [`drift_state_coherence.md`](../adr/drift_state_coherence.md) | Coherence by minimisation, not detection |
-| [`session_identifier.md`](../adr/session_identifier.md) | Project/session identity |
-| [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
+| `docs/adr/interface_contract_compatibility.md` | Interface-contract version mechanism, rollover gates |
+| `docs/adr/container_host_correspondence_mechanism.md` | Why the diff file, not git, is the mechanism |
+| `docs/adr/sandbox_delivery_model.md` | Delivery wiring (copy/mount) -- the wiring surface |
+| `docs/adr/harness_versioning.md` | Per-surface version semantics (digest, HEAD, symlink) |
+| `docs/adr/drift_state_coherence.md` | Coherence by minimisation, not detection |
+| `docs/adr/session_identifier.md` | Project/session identity |
+| `devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md` | Full design record -- export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../reference/provider_lifecycle.md) | Provider config provisioning at session start |

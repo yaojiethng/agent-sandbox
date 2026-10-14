@@ -55,12 +55,12 @@ cp -- "$file" "$dest"
 
 ```bash
 # Right  --  emit per-line, load with mapfile, expand as array
-list_files() { printf "%s\n" "src/libs" "docs/architecture" "docs/concepts"; }
+list_files() { printf "%s\n" "src/libs" "docs/reference" "docs/policies"; }
 mapfile -t SOURCES < <(list_files)
 compute_hash "${SOURCES[@]}"
 
 # Wrong  --  string-as-list, word-splitting a command substitution (SC2046)
-echo_and_split() { echo "src/libs docs/architecture"; }
+echo_and_split() { echo "src/libs docs/reference"; }
 compute_hash $(echo_and_split)
 ```
 

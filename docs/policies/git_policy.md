@@ -95,7 +95,7 @@ When a change is not tied to a specific sub-milestone (e.g. a cross-cutting poli
 
 ### Protected branches
 
-`main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in [`standard_operating_procedures.md`](../development/standard_operating_procedures.md#5-human--operational-protocols).
+`main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in `docs/development/standard_operating_procedures.md#5-human--operational-protocols`.
 
 ---
 
@@ -214,7 +214,7 @@ Amending folds a change into the commit it corrects, so the history reads as if 
 - A change belongs to the commit of the work it corrects. Fold it there rather than stacking it after.
 - The unit of work, not the commit, is the unit of amendment. A change that alters a unit's task description, its code and its records is one amendment across all three.
 - Amend while the history is cheap to rewrite: on the same branch, and ideally within the same chat session. Beyond that the operator rules on it.
-- Report and stop when folding needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port: see [`rebase.md`](../../workflow/coding-agent/prompts/rebase.md).
+- Report and stop when folding needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port: see `workflow/coding-agent/prompts/rebase.md`.
 - Never rewrite a commit that has left this container, and never rewrite published history.
 - Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
 
@@ -311,9 +311,9 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | Document | Purpose |
 |---|---|
 | [`handover_policy.md`](handover_policy.md) | Iteration types that map to commit types |
-| [`standard_operating_procedures.md`](../development/standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
+| `docs/development/standard_operating_procedures.md#5-human--operational-protocols` | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
-| [`/merge` template](../../workflow/coding-agent/prompts/merge.md) | Draft-export merging operation |
-| [`/rebase` template](../../workflow/coding-agent/prompts/rebase.md) | Stale-branch porting operation |
+| `workflow/coding-agent/prompts/merge.md` | Draft-export merging operation |
+| `workflow/coding-agent/prompts/rebase.md` | Stale-branch porting operation |
 
 ---

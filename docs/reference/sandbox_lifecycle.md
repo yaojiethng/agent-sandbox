@@ -26,7 +26,7 @@ A capability layer session has three phases:
 
 ## Phase 1 -- Fork (Volume Seed Pipeline)
 
-The seed pipeline replicates the host repository state into the capability layer sandbox volume. The seed is the helper-container transport: a one-shot seeder service (the sandbox image) fills the volume before the sandbox container exists. Design and requirement mapping: [`docs/adr/sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md), 2026-09-04 entry.
+The seed pipeline replicates the host repository state into the capability layer sandbox volume. The seed is the helper-container transport: a one-shot seeder service (the sandbox image) fills the volume before the sandbox container exists. Design and requirement mapping: `docs/adr/sandbox_delivery_model.md`, 2026-09-04 entry.
 
 ### Host side (`scripts/run_agent.sh` seed_sandbox_volume)
 
