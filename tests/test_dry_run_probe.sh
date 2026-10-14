@@ -405,7 +405,7 @@ test_cap_failed_tempdir_precondition() {
     "the session-export precondition names the cause"
   assert_not_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "mkdir: cannot create directory" \
     "no raw mkdir error escapes from an empty fixture path"
-  assert_file_exists "${OUTPUT_DIR:-$fix/workspace/output}/dryrun.capability.record" \
+  assert_file_exists "$(kv "$state" record)" \
     "the diagnostics record is still written"
 }
 run_test test_cap_failed_tempdir_precondition
