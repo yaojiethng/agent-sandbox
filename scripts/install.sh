@@ -23,6 +23,13 @@
 
 set -uo pipefail
 
+# The one .env loader, so the INSTALL_DIR fallback reads through the sanctioned
+# path rather than a second parser (grep|cut).
+_install_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$_install_self_dir/../src/libs/env_resolve.sh"
+unset _install_self_dir
+
 # install_os -- reports the host OS. INSTALL_OS overrides for tests.
 install_os() {
   echo "${INSTALL_OS:-$(uname -s)}"
@@ -123,7 +130,7 @@ check_rsync() {
 install_dir() {
   local dir="${INSTALL_DIR:-}"
   if [[ -z "$dir" && -f "$REPO_ROOT/.env" ]]; then
-    dir="$(grep '^INSTALL_DIR=' "$REPO_ROOT/.env" | cut -d'=' -f2- | head -n1)"
+    dir="$(env_file_value "$REPO_ROOT/.env" INSTALL_DIR)"
   fi
   dir="${dir:-~/.local/bin}"
   dir="${dir/#\~/$HOME}"
