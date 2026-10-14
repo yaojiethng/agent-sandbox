@@ -205,7 +205,90 @@ test_env_load_exports_to_child_process() {
   fi
 }
 
+# Given: a .env holding a double-quoted and a single-quoted value with inner padding
+# When:  env_load runs
+# Then:  D and S hold the unquoted contents, padding intact
+# Asserts: one layer of matching quotes is stripped; padding inside quotes survives.
+test_env_load_strips_matching_quotes() {
+  local F="$FIXTURE_DIR/quoted.env"
+  printf 'D="a b"\n%s\n' "S='  keep  '" > "$F"
+  env_load "$F"
+  if [[ "${D:-unset}" == "a b" && "${S:-unset}" == "  keep  " ]]; then
+    pass "env_load strips one layer of matching quotes, padding preserved"
+  else
+    fail "quoted values mishandled: D='${D:-unset}' S='${S:-unset}'"
+  fi
+}
+
+# Given: an unbalanced quote, an embedded quote, an interior quote pair, and a lone quote
+# When:  env_load runs
+# Then:  each value loads verbatim: the ends-pairing rule never strips an interior pair
+# Asserts: only a value fully enclosed by one quote pair, with no quote inside, is stripped.
+test_env_load_keeps_unbalanced_and_embedded_quotes() {
+  local F="$FIXTURE_DIR/unbalanced.env"
+  printf 'U="abc\nE=a"b"c\nP="a" and "b"\nW="\n' > "$F"
+  env_load "$F"
+  if [[ "${U:-unset}" == '"abc' && "${E:-unset}" == 'a"b"c' \
+    && "${P:-unset}" == '"a" and "b"' && "${W:-unset}" == '"' ]]; then
+    pass "env_load keeps unbalanced, embedded, interior and lone quotes verbatim"
+  else
+    fail "quote handling wrong: U='${U:-unset}' E='${E:-unset}' P='${P:-unset}' W='${W:-unset}'"
+  fi
+}
+
+# Given: an empty quoted value and a quoted value behind an export prefix
+# When:  env_load runs
+# Then:  Z is set and empty, and Q holds the unquoted contents
+# Asserts: quote stripping applies after the export-prefix and empty-value paths.
+test_env_load_strips_quotes_on_empty_and_exported_values() {
+  local F="$FIXTURE_DIR/emptyquoted.env"
+  printf 'Z=""\nexport Q="x y"\n' > "$F"
+  env_load "$F"
+  if [[ "${Z-UNSET}" == "" && "${Q:-unset}" == "x y" ]]; then
+    pass "env_load strips quotes on empty and exported values"
+  else
+    fail "empty/exported quoted handling wrong: Z='${Z-UNSET}' Q='${Q:-unset}'"
+  fi
+}
+
+# Given: a .env whose keys are named LINE, KEY and VALUE (the loader's old scratch names)
+# When:  env_load runs
+# Then:  all three reach the caller's scope with their file values
+# Asserts: the loader's scratch names can no longer swallow a same-named key.
+test_env_load_exports_keys_named_after_former_scratch_names() {
+  local F="$FIXTURE_DIR/shadow.env"
+  printf 'LINE=one\nKEY=two\nVALUE=three\n' > "$F"
+  env_load "$F"
+  if [[ "${LINE:-unset}" == one && "${KEY:-unset}" == two && "${VALUE:-unset}" == three ]]; then
+    pass "env_load exports keys named LINE, KEY and VALUE"
+  else
+    fail "scratch-name keys dropped: LINE='${LINE:-unset}' KEY='${KEY:-unset}' VALUE='${VALUE:-unset}'"
+  fi
+}
+
+# Given: a .env key that starts with the loader's _env_ scratch prefix
+# When:  env_load runs with stderr captured
+# Then:  the key is skipped with a warning and loading continues
+# Asserts: a file cannot silently drop a variable by naming it after the parser.
+test_env_load_skips_scratch_prefixed_key_with_warning() {
+  local F="$FIXTURE_DIR/scratchprefix.env"
+  printf '_env_line=x\nAFTER=1\n' > "$F"
+  local OUT
+  OUT=$(env_load "$F" 2>&1; printf '|%s|%s' "${_env_line:-unset}" "${AFTER:-unset}")
+  if [[ "$OUT" == *"shadows the loader's scratch"* && "$OUT" == *"|unset|1" ]]; then
+    pass "env_load skips a scratch-prefixed key with a warning and continues"
+  else
+    fail "scratch-prefixed key mishandled: out='$OUT'"
+  fi
+}
+
+run_test test_env_load_exports_keys_named_after_former_scratch_names
+run_test test_env_load_skips_scratch_prefixed_key_with_warning
 run_test test_env_load_exports_valid_line
+run_test test_env_load_strips_matching_quotes
+run_test test_env_load_keeps_unbalanced_and_embedded_quotes
+run_test test_env_load_strips_quotes_on_empty_and_exported_values
+
 run_test test_env_load_skips_comments_and_blanks
 run_test test_env_load_trims_value_padding
 run_test test_env_load_strips_export_prefix
