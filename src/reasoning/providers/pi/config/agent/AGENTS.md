@@ -101,9 +101,9 @@ The subagent runs in the same container/workspace as the primary agent, with the
 
 ## Running Review Subagents
 
-State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices at the project level, never here. Read the recommendation by role tag from the project-level `AGENTS.md` (for example `_REVIEWER`); each token names the provider, model, and thinking level. When the tag is absent, resolve the model in this order:
+State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices in the operator's recommendations file, never here. Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. If the file is missing or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When the tag has no value, resolve the model in this order:
 
-1. The project-level `AGENTS.md` role recommendation.
+1. The `$AGENT_HOME/model-recommendations.md` role value.
 2. The pi default, read from `~/.pi/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`), a project-level `.pi/settings.json` override taking precedence. Confirm with the operator that this is the model to use.
 3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
 

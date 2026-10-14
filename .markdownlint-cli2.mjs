@@ -117,5 +117,7 @@ export default {
     "./scripts/lint/record-links.mjs",
   ],
   globs: ["**/*.md"],
-  ignores: ["**/node_modules/**"],
+  // Operator-owned state, never committed: the provider config home on the host
+  // holds the model recommendations and session state, not project documents.
+  ignores: ["**/node_modules/**", ".pi/**"],
 };

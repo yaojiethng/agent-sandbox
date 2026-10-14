@@ -57,10 +57,48 @@ mkdir -p "$WORK_ROOT"
 [[ "$WORK_KEPT" == true ]] && echo "work root kept: $WORK_ROOT"
 
 PROVIDER="${EVAL_PROVIDER:-opencode-go}"
-MODEL="${EVAL_MODEL:-step-5-preview-free}"
-THINKING="${EVAL_THINKING:-high}"
+THINKING="${EVAL_THINKING:-}"
 RUN_TIMEOUT="${EVAL_RUN_TIMEOUT:-600}"
 CONFIG_DIR="${EVAL_CONFIG_DIR:-$HOME/.pi/agent}"
+
+# The eval default is the _ORCHESTRATOR role from the operator-owned
+# recommendations file. No model slug is hardcoded: an unset role falls back to
+# the pi startup default in settings.json, and a missing value is an error.
+RECOMMENDATIONS_FILE="${EVAL_RECOMMENDATIONS_FILE:-$(dirname "$CONFIG_DIR")/model-recommendations.md}"
+
+# _role_value <role> <file>: the first ';'-delimited value on the role's line.
+_role_value() {
+  local role="$1" file="$2"
+  [[ -f "$file" ]] || return 0
+  awk -v role="$role" '
+    index($0, role ":") == 1 {
+      sub("^[^:]*:[[:space:]]*", "");
+      sub(/;.*/, "");
+      print; exit
+    }' "$file"
+}
+
+# _role_model <role> <file>: the provider/model token of the first value.
+_role_model() {
+  local value; value="$(_role_value "$1" "$2")"
+  [[ -n "$value" ]] || return 0
+  awk '{ for (i=1;i<=NF;i++) if ($i=="at") { print $1; exit } }' <<<"$value"
+}
+
+# _role_thinking <role> <file>: the thinking level of the first value.
+_role_thinking() {
+  local value; value="$(_role_value "$1" "$2")"
+  [[ -n "$value" ]] || return 0
+  awk '{ for (i=1;i<=NF;i++) if ($i=="at") { print $(i+1); exit } }' <<<"$value"
+}
+
+MODEL="${EVAL_MODEL:-$(_role_model _ORCHESTRATOR "$RECOMMENDATIONS_FILE")}"
+if [[ -z "$MODEL" && -f "$CONFIG_DIR/settings.json" ]]; then
+  MODEL="$(jq -r '.defaultModel // empty' "$CONFIG_DIR/settings.json" 2>/dev/null)"
+fi
+[[ -n "$MODEL" ]] || { echo "no eval model: set EVAL_MODEL or initialize $RECOMMENDATIONS_FILE" >&2; exit 2; }
+THINKING="${THINKING:-$(_role_thinking _ORCHESTRATOR "$RECOMMENDATIONS_FILE")}"
+[[ -n "$THINKING" ]] || THINKING=high
 PROMPT="${EVAL_PROMPT:-The working tree holds the pending work for this iteration. Land it as the delivery commit.}"
 
 CASE_DIR="$OUT/case-$LABEL"

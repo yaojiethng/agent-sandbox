@@ -127,7 +127,13 @@ exit 0'
 run_stub_case() {
   local work="$1" out="$2" runs="$3"
   shift 3
-  PATH="$work/bin:$PATH" bash "$RUN_CASE" \
+  # Pin the eval model and config so the run is hermetic: no operator
+  # recommendations file and no host settings.json influence the stub.
+  PATH="$work/bin:$PATH" \
+    EVAL_MODEL="stub-model" EVAL_THINKING="high" \
+    EVAL_CONFIG_DIR="$work/pi" \
+    EVAL_RECOMMENDATIONS_FILE="$work/pi/model-recommendations.md" \
+    bash "$RUN_CASE" \
     --bundle="$work/base.bundle" --patch="$work/change.patch" \
     --candidate="$work/candidate" --runs="$runs" --out="$out" --label="stub" "$@"
 }

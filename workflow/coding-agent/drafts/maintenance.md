@@ -111,7 +111,7 @@ rc=$?
 echo "rc=$rc secs=$(( $(date +%s) - start ))"
 ```
 
-Never append `&`. A worker backgrounded with `&` is killed when the tool call returns, and its work is lost with no error and a short log. To run two workers, put both inside one call and wait for both. Take the provider, model, and thinking level from the `_IMPLEMENTER` role recommendation in the project-level `AGENTS.md`.
+Never append `&`. A worker backgrounded with `&` is killed when the tool call returns, and its work is lost with no error and a short log. To run two workers, put both inside one call and wait for both. Take the provider, model, and thinking level from the `_IMPLEMENTER` role recommendation in `$AGENT_HOME/model-recommendations.md`.
 
 **Done when:** the run has exited, its exit code and elapsed seconds are recorded, and the log is at a path the review can read.
 

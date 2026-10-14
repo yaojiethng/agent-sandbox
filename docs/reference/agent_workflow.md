@@ -52,6 +52,10 @@ Each project commits an `AGENTS.md` at its repository root. This file is discove
 
 Project-layer content is stable across iterations. It is not per-iteration state -- that is carried by the handover. It is not policy -- that is carried by the policy documents in `docs/policies/`. It is the orienting layer between the two.
 
+### Model recommendations
+
+The role-to-model recommendations are operator-owned and do not travel with the project. They live at `$AGENT_HOME/model-recommendations.md`, mounted from `$SANDBOX_DIR/.<provider>/model-recommendations.md` and never committed. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and an unset role falls back to the pi startup default in `settings.json`. The home decision is recorded in the ADR `single_source_model_recommendations.md`.
+
 ### Reference template
 
 `providers/AGENTS.template.md` is a reference template for authoring provider-layer files. It is not injected, not enforced, and not universal. New providers should use it as a starting point to ensure consistent structure and baseline coverage across provider-layer files. Deviations are permitted where provider-specific behaviour warrants them.

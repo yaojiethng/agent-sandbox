@@ -12,6 +12,9 @@ output/
 .compose/
 .vault
 .scratchpad/
+# Provider config home on the host: operator-owned, never committed. Holds the
+# model recommendations and other session state.
+.pi/
 
 # === Python ===
 __pycache__/

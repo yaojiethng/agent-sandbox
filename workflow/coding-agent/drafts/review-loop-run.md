@@ -29,7 +29,7 @@ timeout 1800 pi --provider <provider> --model <model> --thinking <level> \
 echo "pi rc=$?"
 ```
 
-The invitation states: the exact range, the reviewer's bar, the required verdict, the round number, the blocker history from earlier rounds, and the model and thinking level (the reviewer cannot see its own invocation flags). Read the model and thinking level from the `_REVIEWER` role recommendation in the project-level `AGENTS.md`; use the first listed when one reviewer is needed.
+The invitation states: the exact range, the reviewer's bar, the required verdict, the round number, the blocker history from earlier rounds, and the model and thinking level (the reviewer cannot see its own invocation flags). Read the model and thinking level from the `_REVIEWER` role recommendation in `$AGENT_HOME/model-recommendations.md`; use the first listed when one reviewer is needed.
 
 Read the report from the log: `tail -30 <log>`. A review with no explicit verdict did not happen.
 

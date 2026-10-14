@@ -15,7 +15,7 @@ argument-hint: "[repo path] [scope - what is under review] [baseline]"
 
 1. **The machine gates are green and have just run.** Mutation tier and invariant report, both over the same scope. Do not start the review over a scope whose gates have not run: the whole point is that the reviewer's budget buys only what the gates could not.
 2. **The change set is committed and the tree is clean.** The reviewer reads `git diff <base>..<head>`. A dirty tree lets a reviewer mistake an unfinished attempt for landed work.
-3. **The reviewer role recommendation is read.** Provider, model and thinking level from the `_REVIEWER` row of the project-level `AGENTS.md`, first in listed order. The brief states them so the subagent calibrates depth and the report carries attribution.
+3. **The reviewer role recommendation is read.** Provider, model and thinking level from the `_REVIEWER` row of `$AGENT_HOME/model-recommendations.md`, first in listed order. The brief states them so the subagent calibrates depth and the report carries attribution.
 
 ## Step 1 - Run the gates
 

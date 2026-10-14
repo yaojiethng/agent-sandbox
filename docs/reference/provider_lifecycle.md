@@ -22,12 +22,13 @@ The transport splits in two, and the split is the design:
 
 - **Config files** (`settings.json`, `auth.json`, `models.json`, `AGENTS.md`) come from the image template at `/opt/workflow/agent/config/` on every start. The image owns them, so a session's write to one lasts for that session.
 - **State** (`prompts/`, `sessions/`, `skills/`) lives on the host under `$SANDBOX_DIR/.<provider>/agent/` and is mounted read-write over the provisioned tree.
+- **Model recommendations** (`$AGENT_HOME/model-recommendations.md`) are operator-owned. They live on the host at `$SANDBOX_DIR/.<provider>/model-recommendations.md`, are never committed, and are mounted read-write as a single file. The `setup-model-recommendations` skill populates them.
 
 An agent cannot tell the two apart while it works. The difference appears at the next start: the config files come back from the image, and the mounted subdirectories come back from the host.
 
 ### Why the config files are seeded rather than mounted
 
-A provider config directory cannot be mounted whole, and a single-file mount fails in two ways on a host filesystem: an agent that writes a binary or moves a file from `/tmp` trips a cross-device error on Windows-mounted paths, and an agent that replaces a file with `mv` breaks a file bind mount. So the image bakes the config files, the entrypoint seeds them, and the overlay mounts only the directories that carry state.
+A provider config directory cannot be mounted whole, and a single-file mount fails in two ways on a host filesystem: an agent that writes a binary or moves a file from `/tmp` trips a cross-device error on Windows-mounted paths, and an agent that replaces a file with `mv` breaks a file bind mount. So the image bakes the config files, the entrypoint seeds them, and the overlay mounts only the directories that carry state. The model recommendations file is the one deliberate exception: it is a single-file mount because it is operator-owned and must not live in the image, and every writer replaces its content in place instead of moving over it.
 
 ---
 
@@ -37,7 +38,7 @@ A provider config directory cannot be mounted whole, and a single-file mount fai
 
 The provider overlay mounts the persistent subdirectories, and Docker places those mounts before the entrypoint runs. The copy therefore writes into the mounted tree: a template file lands beside the host's files, and the host's content is what the agent finds afterward.
 
-`agent-sandbox onboard` seeds the host side -- the config template into `$SANDBOX_DIR/.<provider>/`, and the mounted subdirectories as empty directories -- so the overlay has a source on the first run. See [Onboarding](#onboarding).
+`agent-sandbox onboard` seeds the host side -- the config template into `$SANDBOX_DIR/.<provider>/`, the mounted subdirectories as empty directories, and a slug-free skeleton at `$SANDBOX_DIR/.<provider>/model-recommendations.md` -- so the overlay has a source on the first run. See [Onboarding](#onboarding).
 
 When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The hermes and opencode images are in that state.
 
@@ -108,6 +109,7 @@ The provider config reaches a session from two sources:
 | **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
 | **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; hermes and opencode are shaped this way by decision, and pi carries a template |
 | **Onboard template is a snapshot** | `src/reasoning/providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
+| **Recommendations file uninitialized** | the skeleton carries empty role lines | a dispatch falls back to the pi startup default until `setup-model-recommendations` writes values |
 
 ### How the three-layer skills/prompts model interacts with this split
 
