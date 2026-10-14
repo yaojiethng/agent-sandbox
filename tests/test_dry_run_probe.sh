@@ -92,6 +92,7 @@ _healthy_cap_env() {
   mkdir -p "$fix/workspace/input" "$fix/workspace/output" "$fix/workspace/session-diffs/autosave"
   chmod 555 "$fix/workspace/input"
   export LIBS_DIR="$STUB_LIBS" ROOT="$fix" \
+    SANDBOX_DIR="$fix/sandbox" \
     INPUT_DIR="$fix/workspace/input" \
     OUTPUT_DIR="$fix/workspace/output" \
     CHANGES_DIR="$fix/workspace/session-diffs" \
@@ -117,17 +118,6 @@ run_test test_cap_healthy_rc0_record_pass
 # Then:  rc=0, the record lands in the resolved OUTPUT_DIR, every layer PASS
 # Asserts: the shared bootstrap's dirs_resolve fallback. The compose overlay
 # always injects the paths, so nothing else exercises the fallback branch.
-test_probe_bootstrap_resolves_channels_from_root() {
-  local fix="$FIXTURE_DIR/bootstrap-defaults" state="$FIXTURE_DIR/bootstrap_defaults.state"
-  local rec="$fix/workspace/output/dryrun.capability.record"
-  ( _healthy_cap_env "$fix"
-    unset CHANGES_DIR INPUT_DIR OUTPUT_DIR
-    _run_probe "$PROBE_CAP" "$state" "$rec" )
-  assert_rc 0 "$(kv "$state" rc)" "capability probe with no channel env vars"
-  assert_eq "$(kv "$state" status)" PASS "record status when the channels resolve from ROOT"
-  assert_all_layers_pass "$state"
-}
-run_test test_probe_bootstrap_resolves_channels_from_root
 
 # Given: a well-formed but nonexistent init_sha
 # When:  the capability probe runs
@@ -201,6 +191,7 @@ _healthy_reas_env() {
   export LIBS_DIR="$STUB_LIBS" ROOT="$fix" \
     AGENT_HOME="$fix/agent-home" PROVIDER_NAME="custom" AGENT_CMD="sh" \
     INPUT_DIR="$fix/work/input" OUTPUT_DIR="$fix/work/output" \
+    SANDBOX_DIR="$fix/sandbox" \
     CHANGES_DIR="$fix/work/session-diffs" EXPECTED_MOUNT_TARGET="$fix/work/session-diffs" \
     SESSION_ID="reas-sess-01" DRY_RUN_IDENTITY="reasoning-test"
 }

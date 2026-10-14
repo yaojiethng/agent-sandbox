@@ -72,12 +72,6 @@
 # STOP
 #   make stop                          --  stop and remove all session containers and volumes
 
--include .env
-export
-
-PROJECT_NAME ?= $(error PROJECT_NAME not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>)
-PROJECT_DIR  ?= $(error PROJECT_DIR not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
-SANDBOX_DIR  ?= $(error SANDBOX_DIR not set  --  .env missing or incomplete. Run: agent-sandbox onboard --name=$(PROJECT_NAME) --project=<path> --sandbox=<path>)
 # The .env is written by onboard next to the Makefile. Under the make -C
 # contract (how the workflow is invoked: `make -C <sandbox> <target>`),
 # $(CURDIR) is the sandbox directory that holds the Makefile and the .env, so
@@ -397,7 +391,4 @@ package-branch:
 # harness update. Safe to run repeatedly  --  does not overwrite .env.
 
 refresh:
-	agent-sandbox onboard --refresh \
-	  --name=$(PROJECT_NAME) \
-	  --project=$(PROJECT_DIR) \
-	  --sandbox=$(SANDBOX_DIR)
+	agent-sandbox onboard --refresh --env=20 20ENV_FILE)

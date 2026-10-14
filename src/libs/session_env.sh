@@ -8,12 +8,13 @@
 # host-side prelude, so the entrypoints do not re-derive it in parallel.
 #
 # Provides:
-#   session_env_common_init <sandbox_dir> <project_name> <project_dir>
-#     Phase 1  --  no SESSION_ID needed. Resolves the identity triple
-#     (explicit > AGENT_SANDBOX_* > .env > error), loads the sandbox .env,
-#     validates the git repo, derives harness paths via dirs_resolve, and
-#     exports host uid/gid. The resolved identity beats a conflicting .env
-#     (flag-wins precedence, S2 of the env-precedence feature).
+#   session_env_common_init <project_name> <project_dir> <sandbox_dir>
+#     Phase 1  --  the identity triple arrives as arguments, already resolved
+#     by the chain entry (explicit > AGENT_SANDBOX_* > .env > error, once, in
+#     env_resolve_identity). This function does not resolve: it loads .env
+#     once as the runtime environment, re-asserts the identity so a
+#     conflicting .env value cannot shadow it, validates the git repo, derives
+#     harness paths via dirs_resolve, and exports host uid/gid.
 #   session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
 #     Phase 2  --  needs SESSION_ID. Derives image/container names, the sanitised
 #     host branch, and delivery vars.
@@ -27,19 +28,17 @@ source "$_self_session_dir/libs/dirs.sh"
 source "$_self_session_dir/libs/session_inventory.sh"
 
 # session_env_common_init <project_name> <project_dir> <sandbox_dir>
-#   Phase 1 (no SESSION_ID needed): resolves the identity triple
-#   (explicit > AGENT_SANDBOX_* > .env > error), loads .env, validates git,
-#   derives harness paths via dirs_resolve, exports host uid/gid. The explicit
-#   identity wins over a conflicting .env value (flag-wins). Args may be empty
-#   so the resolver falls back to the AGENT_SANDBOX_* env level then the .env.
-session_env_common_init() {
-  local arg_name="$1" arg_dir="$2" arg_sandbox="$3"
-
-  # env_resolve_identity resolves all three fields, exports PROJECT_NAME/
-  # PROJECT_DIR/SANDBOX_DIR and the normalized ENV_FILE (the single --env
-  # path contract, via default_env_file).
-  env_resolve_identity "$arg_name" "$arg_dir" "$arg_sandbox" "${ENV_REL:-}" || return 1
-  local project_name="$PROJECT_NAME" project_dir="$PROJECT_DIR" sandbox_dir="$SANDBOX_DIR"
+#   Phase 1 (no SESSION_ID needed): the identity triple arrives as arguments,
+#   already resolved once by the chain entry. This function resolves nothing:
+#   it loads .env once as the runtime environment, re-asserts the identity so
+#   a conflicting .env value cannot shadow it, validates the git repo, derives
+#   harness paths via dirs_resolve, and exports host uid/gid. ENV_FILE arrives
+#   from the same resolution (the single --env path contract, via
+#   default_env_file), so there is no second site that parses the .env.
+resolve_and_init() {
+  local project_name="${1:?session_env_common_init requires a resolved project_name}"
+  local project_dir="${2:?session_env_common_init requires a resolved project_dir}"
+  local sandbox_dir="${3:?session_env_common_init requires a resolved sandbox_dir}"
 
   # .env loading
   if [[ ! -f "$ENV_FILE" ]]; then

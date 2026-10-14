@@ -35,10 +35,10 @@ test_env_read_sites_match_the_census() {
       "scripts/install.sh 1" \
       "scripts/onboard.sh 1" \
       "scripts/resume_agent.sh 1" \
-      "scripts/templates/Makefile.template 1" \
+      "scripts/start_agent.sh 1" \
       "src/libs/env.sh 1" \
       "src/libs/env_resolve.sh 4" \
-      "src/libs/session_env.sh 2"
+      "src/libs/session_env.sh 1"
   )
   actual="$(sites | sed "s|$REPO/||")"
   assert_eq "$expected" "$actual" "the env read sites match the pinned census"
@@ -58,17 +58,19 @@ test_no_second_env_parser() {
 
 # Given: the prelude in session_env.sh
 # When:  its parse count is read
-# Then:  it carries exactly the two named sites (identity resolution and bulk
-#        load), which unit U2 collapses into one env_snapshot call
-# Asserts: the single-load boundary has one named target left here.
-test_prelude_carries_exactly_two_read_sites() {
+# Then:  it carries exactly the one named site, the bulk load. The identity
+#        resolution moved to the chain entry in unit U2, so the prelude reads
+#        the .env once and only once
+# Asserts: the single-load boundary holds: the prelude is a consumer of the
+#          resolved identity, not a second resolver.
+test_prelude_carries_exactly_one_read_site() {
   local n
-  n=$(grep -vE '^\s*#' "$REPO/src/libs/session_env.sh" | grep -cE "env_resolve_identity |env_load " || true)
-  assert_eq "2" "$n" "the prelude reads the .env twice, both sites named for U2"
+  n=$(grep -vE '^\s*#' "$REPO/src/libs/session_env.sh" | grep -cE "env_load " || true)
+  assert_eq "1" "$n" "the prelude reads the .env exactly once, for the bulk load"
 }
 
 run_test test_env_read_sites_match_the_census
 run_test test_no_second_env_parser
-run_test test_prelude_carries_exactly_two_read_sites
+run_test test_prelude_carries_exactly_one_read_site
 
 test_done test_env_read_discipline.sh

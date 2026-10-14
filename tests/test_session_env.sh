@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+X#!/usr/bin/env bash
 # tests/test_session_env.sh
 # Unit tests for src/libs/session_env.sh  --  host-side session environment
 # Pins cite: docs/architecture/tool_interface.md (naming, l.17);
@@ -7,7 +7,7 @@
 # bootstrap (.env loading, git validation, name/branch derivation).
 #
 # Covers:
-#   session_env_common_init  --  missing-.env failure, non-git and commit-less
+#   resolve_and_init  --  missing-.env failure, non-git and commit-less
 #                             project rejection, HOST_UID/GID + ENV_FILE exports,
 #                             the derived dirs_resolve paths, the SANDBOX_DIR
 #                             re-assert after .env load, and the
@@ -26,6 +26,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$TEST_DIR/libs/git_fixtures.sh"
 source "$REPO_ROOT/src/libs/session_env.sh"
+source "$REPO_ROOT/src/libs/env_resolve.sh"
 
 # make_sandbox DIR  --  onboarding-minimal sandbox skeleton (only what the lib reads)
 make_sandbox() {
@@ -34,11 +35,11 @@ make_sandbox() {
 }
 
 # =============================================================================
-# session_env_common_init  --  .env parsing
+# resolve_and_init  --  .env parsing
 # =============================================================================
 
 # Given: a sandbox dir with no .env, a committed project, and explicit name and dir args
-# When:  session_env_common_init runs
+# When:  resolve_and_init runs
 # Then:  rc is non-zero and the message says ".env not found" and names the onboard command
 # Asserts: the missing-.env failure points at the remedy (the two hint lines are redundant: either alone satisfies the unit)
 test_env_missing_file_fails_with_onboard_hint() {
@@ -46,7 +47,7 @@ test_env_missing_file_fails_with_onboard_hint() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
 
   local OUT RC=0
-  OUT=$(session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
+  OUT=$(env_resolve_identity proj "$PROJ" "$SBX" && resolve_and_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *".env not found"* && "$OUT" == *"onboard"* ]]; then
     pass "missing .env fails with onboard guidance"
@@ -56,11 +57,11 @@ test_env_missing_file_fails_with_onboard_hint() {
 }
 
 # =============================================================================
-# session_env_common_init  --  validation + derived exports
+# resolve_and_init  --  validation + derived exports
 # =============================================================================
 
 # Given: a sandbox with a .env and a project dir that is not a git repository
-# When:  session_env_common_init runs
+# When:  resolve_and_init runs
 # Then:  rc non-zero and the message says "not a git repository"
 # Asserts: the .git-is-a-directory guard (bite V4 proven)
 test_common_init_rejects_non_git_project() {
@@ -69,7 +70,7 @@ test_common_init_rejects_non_git_project() {
   printf 'A=1\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
+  OUT=$(env_resolve_identity proj "$PROJ" "$SBX" && resolve_and_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"not a git repository"* ]]; then
     pass "non-git PROJECT_DIR rejected with explicit error"
@@ -79,7 +80,7 @@ test_common_init_rejects_non_git_project() {
 }
 
 # Given: a .env and an initialised repo with no commit
-# When:  session_env_common_init runs
+# When:  resolve_and_init runs
 # Then:  rc non-zero and the message says "has no commits"
 # Asserts: the rev-parse HEAD guard (bite V5 proven)
 test_common_init_rejects_commitless_repo() {
@@ -88,7 +89,7 @@ test_common_init_rejects_commitless_repo() {
   printf 'A=1\n' > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
+  OUT=$(env_resolve_identity proj "$PROJ" "$SBX" && resolve_and_init proj "$PROJ" "$SBX" 2>&1 </dev/null) || RC=$?
 
   if [[ $RC -ne 0 && "$OUT" == *"has no commits"* ]]; then
     pass "commit-less PROJECT_DIR rejected with init guidance"
@@ -98,7 +99,7 @@ test_common_init_rejects_commitless_repo() {
 }
 
 # Given: a .env with DELIVERABLE_MODE=all
-# When:  session_env_common_init runs with an explicit name
+# When:  resolve_and_init runs with an explicit name
 # Then:  PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, ENV_FILE and HOST_UID/GID match the inputs and DELIVERABLE_MODE is loaded
 # Asserts: the phase 1 export contract (bite V15: a hardcoded HOST_UID fails it)
 test_common_init_exports_identity_and_paths() {
@@ -106,7 +107,7 @@ test_common_init_exports_identity_and_paths() {
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   printf 'DELIVERABLE_MODE=all\n' > "$SBX/.env"
 
-  if session_env_common_init myproj "$PROJ" "$SBX" >/dev/null 2>&1; then
+  if env_resolve_identity myproj "$PROJ" "$SBX" && resolve_and_init myproj "$PROJ" "$SBX" >/dev/null 2>&1; then
     if [[ "$PROJECT_NAME" == "myproj" && "$PROJECT_DIR" == "$PROJ" \
        && "$ENV_FILE" == "$SBX/.env" && -n "${HOST_UID:-}" && -n "${HOST_GID:-}" \
        && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" \
@@ -124,7 +125,7 @@ test_common_init_exports_identity_and_paths() {
 }
 
 # Given: a .env with PROJECT_NAME=envname and AGENT_SANDBOX_PROJECT_NAME=envvar
-# When:  session_env_common_init runs with the explicit name explicitName
+# When:  resolve_and_init runs with the explicit name explicitName
 # Then:  PROJECT_NAME is explicitName
 # Asserts: flag-wins at the name level (bite V1 proven)
 test_env_project_name_explicit_arg_beats_env_and_envvar() {
@@ -136,7 +137,7 @@ test_env_project_name_explicit_arg_beats_env_and_envvar() {
 
   local OUT RC=0
   OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=envvar \
-        session_env_common_init explicitName "$PROJ" "$SBX" 2>&1 </dev/null \
+        env_resolve_identity explicitName "$PROJ" "$SBX" && resolve_and_init explicitName "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "explicitName|" ]]; then
@@ -147,7 +148,7 @@ test_env_project_name_explicit_arg_beats_env_and_envvar() {
 }
 
 # Given: a .env whose PROJECT_DIR points at a second directory
-# When:  session_env_common_init runs with an explicit project dir
+# When:  resolve_and_init runs with an explicit project dir
 # Then:  PROJECT_DIR is the explicit directory
 # Asserts: flag-wins at the project dir level (bite V2 proven)
 test_env_project_dir_explicit_arg_beats_env() {
@@ -159,7 +160,7 @@ test_env_project_dir_explicit_arg_beats_env() {
   make_envfile "$SBX" envname "$ENVDIR" "$SBX"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
+  OUT=$(set -e; env_resolve_identity proj "$PROJ" "$SBX" && resolve_and_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "$PROJ|" ]]; then
@@ -170,7 +171,7 @@ test_env_project_dir_explicit_arg_beats_env() {
 }
 
 # Given: a .env whose SANDBOX_DIR points at a second directory
-# When:  session_env_common_init runs with an explicit sandbox dir
+# When:  resolve_and_init runs with an explicit sandbox dir
 # Then:  SANDBOX_DIR is the explicit directory
 # Asserts: flag-wins at the sandbox dir level, the post-.env re-assert.
 test_env_sandbox_dir_explicit_arg_beats_env() {
@@ -181,7 +182,7 @@ test_env_sandbox_dir_explicit_arg_beats_env() {
   printf 'PROJECT_NAME=envname\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$PROJ" "$ENVSBX" > "$SBX/.env"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
+  OUT=$(set -e; env_resolve_identity proj "$PROJ" "$SBX" && resolve_and_init proj "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${SANDBOX_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "$SBX|" ]]; then
@@ -192,7 +193,7 @@ test_env_sandbox_dir_explicit_arg_beats_env() {
 }
 
 # Given: a .env that declares both identity keys
-# When:  session_env_common_init runs with both explicit arguments
+# When:  resolve_and_init runs with both explicit arguments
 # Then:  both resolved values are the explicit ones
 # Asserts: no .env can shadow both explicit arguments in one call (bites V1 and V2 both fail it)
 test_env_identity_explicit_args_beat_env() {
@@ -204,7 +205,7 @@ test_env_identity_explicit_args_beat_env() {
   make_envfile "$SBX" envname "$ENVDIR" "$SBX"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init explicitName "$PROJ" "$SBX" 2>&1 </dev/null \
+  OUT=$(set -e; env_resolve_identity explicitName "$PROJ" "$SBX" && resolve_and_init explicitName "$PROJ" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${PROJECT_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "explicitName|$PROJ" ]]; then
@@ -215,7 +216,7 @@ test_env_identity_explicit_args_beat_env() {
 }
 
 # Given: a sandbox with a .env, called with empty name and dir
-# When:  session_env_common_init runs with only the sandbox dir
+# When:  resolve_and_init runs with only the sandbox dir
 # Then:  PROJECT_NAME and PROJECT_DIR come from .env
 # Asserts: the .env fallback level of the resolver
 test_env_resolves_identity_from_env_when_args_empty() {
@@ -225,7 +226,7 @@ test_env_resolves_identity_from_env_when_args_empty() {
   make_envfile "$SBX" envname "$PROJ" "$SBX"
 
   local OUT RC=0
-  OUT=$(set -e; session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
+  OUT=$(set -e; env_resolve_identity "" "" "$SBX" "${ENV_REL:-}" && resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${PROJECT_DIR:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envname|$PROJ" ]]; then
@@ -236,7 +237,7 @@ test_env_resolves_identity_from_env_when_args_empty() {
 }
 
 # Given: a .env plus AGENT_SANDBOX_PROJECT_NAME, called with empty name and dir
-# When:  session_env_common_init runs
+# When:  resolve_and_init runs
 # Then:  PROJECT_NAME is the env-var value
 # Asserts: the AGENT_SANDBOX_* level beats .env
 test_env_ag_sandbox_envvar_beats_env() {
@@ -247,7 +248,7 @@ test_env_ag_sandbox_envvar_beats_env() {
 
   local OUT RC=0
   OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=envvar \
-        session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
+        env_resolve_identity "" "" "$SBX" "${ENV_REL:-}" && resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envvar|" ]]; then
@@ -258,7 +259,7 @@ test_env_ag_sandbox_envvar_beats_env() {
 }
 
 # Given: ENV_REL is an absolute path to custom.env
-# When:  session_env_common_init runs with empty name and dir
+# When:  resolve_and_init runs with empty name and dir
 # Then:  identity resolves from that file and ENV_FILE is that absolute path
 # Asserts: env_resolve's absolute default_env_file contract, exercised through this loader
 test_env_resolves_with_absolute_env_pointer() {
@@ -273,7 +274,7 @@ test_env_resolves_with_absolute_env_pointer() {
 
   local OUT RC=0
   OUT=$(set -e; ENV_REL="$ENVDIR/custom.env" \
-        session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
+        env_resolve_identity "" "" "$SBX" "${ENV_REL:-}" && resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${ENV_FILE:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envname|$ENVDIR/custom.env" ]]; then
@@ -284,7 +285,7 @@ test_env_resolves_with_absolute_env_pointer() {
 }
 
 # Given: ENV_REL is a bare file name and <sandbox>/custom.env exists
-# When:  session_env_common_init runs with empty name and dir
+# When:  resolve_and_init runs with empty name and dir
 # Then:  identity resolves and ENV_FILE is <sandbox>/custom.env
 # Asserts: the sandbox-relative env pointer contract
 test_env_resolves_with_relative_env_pointer() {
@@ -296,7 +297,7 @@ test_env_resolves_with_relative_env_pointer() {
 
   local OUT RC=0
   OUT=$(set -e; ENV_REL=custom.env \
-        session_env_common_init "" "" "$SBX" 2>&1 </dev/null \
+        env_resolve_identity "" "" "$SBX" "${ENV_REL:-}" && resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" 2>&1 </dev/null \
         && printf '%s|%s' "${PROJECT_NAME:-unset}" "${ENV_FILE:-unset}") || RC=$?
 
   if [[ $RC -eq 0 && "$OUT" == "envname|$SBX/custom.env" ]]; then

@@ -98,28 +98,6 @@ fi
 source "$REPO_ROOT/src/libs/resume_list.sh"
 
 # -------------------------
-# PROJECT_DIR enrichment for the inventory render
-# -------------------------
-# The STATE column (commit distance) and the current-branch hint read
-# PROJECT_DIR. The dispatcher resolves resume sandbox-only (a listing is a
-# registry diagnostic; the ADR env_resolution.md). When --project was omitted,
-# read PROJECT_DIR from the sandbox .env by the canonical precedence
-# (AGENT_SANDBOX_PROJECT_DIR env var, then the .env key) so a session started
-# on the current branch shows its true commit distance. Resolution failure
-# degrades the columns ("not in tree", "(absent)") and never fails the
-# listing; the resume proper resolves again with a hard error via
-# session_env_common_init below.
-if [[ -z "$PROJECT_DIR" && -n "$SANDBOX_DIR" ]]; then
-  _env_path="$(default_env_file "$ENV_REL" "$SANDBOX_DIR")"
-  if [[ -f "$_env_path" ]]; then
-    _proj_from_env="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$_env_path" 2>/dev/null || true)"
-    [[ -n "$_proj_from_env" ]] && PROJECT_DIR="$_proj_from_env"
-    unset _proj_from_env
-  fi
-  unset _env_path
-fi
-
-# -------------------------
 # Dispatch  --  command shape (ID 07)
 # -------------------------
 # 1) --list -> list .compose records (enriched, optional provider filter).
@@ -245,7 +223,8 @@ local_flatten="${local_flatten:-false}"
 # Shared host-side prelude (phase 1 + 2)
 # -------------------------
 source "$REPO_ROOT/src/libs/session_env.sh"
-session_env_common_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
+source "$REPO_ROOT/src/libs/env_resolve.sh"
+env_resolve_identity "" "" "$SANDBOX_DIR" "${ENV_REL:-}" && resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
 
 mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 

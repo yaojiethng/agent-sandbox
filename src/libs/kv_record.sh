@@ -98,3 +98,29 @@ kv_load() {
   done
   return 0
 }
+
+# kv_update FILE KEY VALUE
+#   Upsert: replace the first existing KEY line, or append KEY=VALUE when
+#   absent. A missing parent directory is a caller error (rc 1).
+kv_update() {
+  local file="$1" key="$2" value="$3" dir tmp written=""
+  dir="$(dirname "$file")"
+  [[ -d "$dir" ]] || return 1
+  tmp="${file}.tmp.$$"
+  : > "$tmp"
+  if [[ -f "$file" ]]; then
+    local line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line="${line%$'\r'}"
+      if [[ "$line" == "$key="* ]]; then
+        [[ -n "$written" ]] && continue
+        printf '%s=%s\n' "$key" "$value" >> "$tmp"
+        written=1
+      else
+        printf '%s\n' "$line" >> "$tmp"
+      fi
+    done < "$file"
+  fi
+  [[ -n "$written" ]] || printf '%s=%s\n' "$key" "$value" >> "$tmp"
+  mv "$tmp" "$file"
+}

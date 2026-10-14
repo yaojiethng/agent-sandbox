@@ -65,15 +65,10 @@ dry_run_bootstrap() {
   ROOT="${ROOT:-/home/agentuser}"
   # shellcheck source=/dev/null
   source "$LIBS_DIR/session_state.sh"
-  SANDBOX_DIR="${SANDBOX_DIR:-$ROOT/${SANDBOX_DIR_NAME:-sandbox}}"
-  CHANGES_DIR="${CHANGES_DIR:-}"
-  INPUT_DIR="${INPUT_DIR:-}"
-  OUTPUT_DIR="${OUTPUT_DIR:-}"
-  if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
-    # shellcheck source=/dev/null
-    source "$LIBS_DIR/dirs.sh"
-    WORKSPACE_DIR_NAME=workspace dirs_resolve "$ROOT"
-  fi
+  : "${SANDBOX_DIR:?dry-run probe missing SANDBOX_DIR}"
+  : "${CHANGES_DIR:?dry-run probe missing CHANGES_DIR}"
+  : "${INPUT_DIR:?dry-run probe missing INPUT_DIR}"
+  : "${OUTPUT_DIR:?dry-run probe missing OUTPUT_DIR}"
 }
 
 # dry_run_write_record RECORD_FILE LAYERS [EXTRA_FIELDS...]
