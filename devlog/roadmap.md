@@ -39,6 +39,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;[M3.3 - Instruction Surface](#m33---instruction-surface) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract](#m331---the-prompt-skill-and-agentsmd-interaction-contract) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.2 - The skill maintenance pipeline](#m332---the-skill-maintenance-pipeline) | In progress |
+| &nbsp;&nbsp;[M3.4 - Configuration and Persisted Record Formats](#m34---configuration-and-persisted-record-formats) | In progress |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
@@ -201,6 +202,27 @@ A skill lands in the tree by hand today. Nothing records its origin, nothing sta
 - The skill and prompt eval infrastructure -- the row stays in T1.
 - The `pi-bump` and `setup-pre-commit` skills' own content -- they are instances a later run may fork, not pipeline work.
 
+### M3.4 - Configuration and Persisted Record Formats
+
+**Objective:** every configuration and persisted key-value record in the harness has one load path and one read/write pair, so a shape change fails loudly instead of drifting between readers.
+
+Nine readers resolve configuration over four record shapes, and the harness writes key-value records -- `.draft-state`, the session log, the dry-run record, the runner's report -- whose readers and writers are defined separately or not at all. `.env` is a config source and a runtime environment at once, `env_load` mis-parses two common shapes silently, and the prelude re-asserts the identity triple as tax on the bulk load. A reader and a writer that are one definition cannot disagree, and the `.draft-state` eval the immediate lane closed is the failure class this arrangement removes by construction. The pool came from the M3.1.1 suite read-through (evidence rows 17, 22, 24, 25, 39, 40, 47, 48, 50, 105, 180, 303) and from T10 and T11, which keep the rows this milestone does not carry.
+
+**Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2---reasoningcapability-layer-separation) -- the capability and reasoning library split is where the record readers and writers live. Conflicts with none of M3.1, M3.2 or M3.3: their file sets are `scripts/`, the commit gates and test harness, `workflow/coding-agent/**`, the dispatch prompts, the `task-queue` extension and the instruction surfaces; this milestone owns `src/libs/`, the capability-layer record files and their tests.
+
+**Acceptance criteria:**
+
+- Every key-value record the harness reads has one `kv_read` and one `kv_write` definition plus a multi-key load, and a test fails when a record is read through any other path.
+- A `.env` carrying the two shapes `env_load` mis-parses today loads through the single load path with no repair step, and the identity triple is asserted once.
+- `bash scripts/run_tests.sh` and `bash scripts/lint.sh` are clean offline.
+
+- [ ] **One KV read/write pair, with the environment load as the first reader** -- a `kv_read` with a `kv_write`, plus a multi-key load, behind every key-value record: the `.draft-state` reader and writer gain one definition (five of the writer's eight fields are unpinned), the session log's read stops contradicting its own docstring, and the state readers stop overlapping. First landing: `env_load` gains one load path -- the `.env` mis-parse pair is fixed, the prelude's identity re-assert is removed, and the file is either a config source or a runtime environment, not both. Moved from the T10 and T11 rows of the same names. Evidence rows 17, 22, 24, 25, 39, 40, 47, 48, 50, 105, 180, 303.
+
+#### Not in scope: M3.4
+
+- The T10 rows this milestone does not carry -- the resolution ladder, the CLI-to-leaf contract, the Makefile-to-CLI idiom, the interactive front end and the operator-facing surface -- stay in T10 and are named there.
+- The T11 structured-format rows -- JSON and the parser dependency, one timestamp format, one relative-time ladder, and Note B -- stay in T11; a later unit of this milestone may move them, and until then their track home stands.
+
 ### T - Harness Development Tracks
 
 The T tracks hold the harness's own work that no milestone blurb claims: the instruction surfaces and record rules (T1), library and language choices (T4), archival and record storage (T5), runtime cost and UI cost (T2, T6), sandbox persistence (T7), documentation (T8), session and image identity (T9), the operator-facing argument and configuration surface (T10), persisted record formats (T11), and the pi dependency and its extensions (T12). Each track is a milestone in its own right, closed by its own handover; work on a feature's outcome belongs to the milestone that names that outcome. The T3 slot was retired without a section, so the series runs T1, T2 and T4 to T12.
@@ -331,7 +353,7 @@ The identity here is a label set, not an object: a value stamped on an artifact 
 The surface through which a setting or a command enters the harness, and the surface through which the harness answers the operator. Five design problems from the read-through share it, and [`docs/adr/env_resolution.md`](../docs/adr/env_resolution.md) already fixes the requirements the first row serves.
 
 - [ ] **Resolution rule: one ladder for every setting** -- nine readers over four record shapes re-implement one ladder, `env_resolve_one`'s explicit branch is unreachable, and its failure text names the identity setting inside a generic function. Evidence rows 22, 38, 72, 78. Source: [`20260924-design-draft-resolver_contract.md`](../devlog/discussions/archive/20260924-design-draft-resolver_contract.md), the resolution half of Note A.
-- [ ] **Environment: one load path, no repaired damage** -- `.env` is a config source and a runtime environment at once, `env_load` mis-parses two common shapes silently, and the prelude re-asserts the identity triple as tax on the bulk load. Evidence rows 47, 48, 180.
+- [ ] **Environment: one load path, no repaired damage** -- moved to [M3.4](#m34---configuration-and-persisted-record-formats), whose first task carries this row's content; the entry stays open here until that unit closes.
 - [ ] **CLI-to-leaf contract: the router and its handoff** -- the subcommand set appears in four lists that already disagree, identity is resolved four different ways and forwarded in four different sets, and the `exec` handoff carries a help status no caller maps. Evidence rows 48, 130, 136, 173. Source: [`20260924-design-draft-cli_workflow_interface.md`](../devlog/discussions/archive/20260924-design-draft-cli_workflow_interface.md). **Also in scope: the `_CLI_TOLERANT` cleanup (read-through row 137).** `cli.sh` keeps a tolerant parse mode (`_CLI_TOLERANT=1` drops unknown flags) that only `scripts/prune.sh` still uses, a migration holdover from the shared-parser adoption. A destructive command should not drop unknown flags: remove the knob from `cli.sh`, make prune's parse strict (a one-line unset), and retire the leniency requirement from ADR `command_flag_parsing.md`. **Clause landed (2026-09-27):** the `_CLI_TOLERANT` knob is removed, prune parses strictly and rejects an unknown flag before pruning anything, the ADR records the removal, and strict-mode coverage replaces the two tolerant-mode tests. Ported from the parallel-track trial, unit U1. The rest of the row -- the four disagreeing subcommand lists, the four identity resolutions and the `exec` handoff's unmapped help status -- is untouched.
 - [ ] **Makefile-to-CLI contract: one invocation idiom** -- sixteen `$(if)` translators for one boolean convention, `PROVIDER=pi` beside `--provider=pi`, and a second help and error surface that must match the CLI. Evidence rows 44, 45, 46. T4 owns the separate question of whether make stays.
 - [ ] **Interactive front end: the helper hands back a command** -- the model is that the helper asks the unanswered questions and returns a fully specified command the leaf executes; today the tree returns one token or confirms a plan the leaf already built, so the printed command does not drive the run. Evidence rows 148, 166, 188, 264, 265. Source: [`20260925-design-draft-interactive_command_contract.md`](../devlog/discussions/archive/20260925-design-draft-interactive_command_contract.md).
@@ -342,7 +364,7 @@ The surface through which a setting or a command enters the harness, and the sur
 
 The shapes the harness writes and reads back: session state, the draft state, the session log, the dry-run record and the runner's report. One record family, one reader and writer pair each, and structured where structured pays.
 
-- [ ] **Record shape: one KV read/write pair** -- a `kv_read` with a `kv_write`, plus a multi-key load, behind every key-value record: the `.draft-state` reader and writer have no single definition and five of the writer's eight fields are unpinned, the session log's read contradicts its own docstring, and the state readers overlap. The `.draft-state` eval the immediate lane closed is the class this contract removes by construction. Evidence rows 17, 22, 24, 25, 39, 40, 50, 105, 303.
+- [ ] **Record shape: one KV read/write pair** -- moved to [M3.4](#m34---configuration-and-persisted-record-formats), whose first task carries this row's content; the entry stays open here until that unit closes.
 - [ ] **Structured where it helps: JSON and the parser dependency** -- which records become structured, and the dependency that costs: JSON is the easiest reach, given a willingness to take a parser rather than roll one. Row 20.
 - [ ] **One timestamp format** -- `YYYYMMDD-HHMMSS` has no definition: ten producers, three runtime readers, and three test files pinning the literal. Row 31.
 - [ ] **One relative-time ladder** -- two densities, the plural rule copied four times, and two epoch round-trips. Row 32.
