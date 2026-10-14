@@ -1,9 +1,9 @@
 {
-  "lastChangelogVersion": "1.1.0",
+  "lastChangelogVersion": "1.2.0",
   "defaultProjectTrust": "always",
-  "defaultProvider": "opencode-go",
-  "defaultModel": "step-5-preview-free",
-  "defaultThinkingLevel": "high",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-flash",
+  "defaultThinkingLevel": "low",
   "followUpMode": "all",
   "tuiMode": "regular",
   "enablePromptCommands": true,
@@ -30,11 +30,8 @@
     "/opt/workflow/agent/modules/coding-agent"
   ],
   "enabledModels": [
-    "opencode-go/step-5-preview-free",
     "opencode-go/*",
-    "opencode/*-free",
     "deepseek/*",
-    "openrouter/deepseek/*",
     "openrouter/z-ai/*",
     "openrouter/qwen/*"
   ],
