@@ -156,7 +156,7 @@ Renamed surfaces (current code/docs):
 - `--run-id` CLI flag -> `--session-id`
 - Container/volume/project naming embeds the session id
 
-This is a durable name change to reserved-term vocabulary (see [`docs/concepts/terminology.md`](../docs/concepts/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
+This is a durable name change to reserved-term vocabulary (see [`docs/reference/terminology.md`](../docs/reference/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
 
 ### [CORRECTION - 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
 

@@ -20,12 +20,12 @@ Your secondary lens is **Rich Hickey's**  --  complexity in the documented archi
 
 This project's documentation policy establishes the following rules. A finding is only a finding if it violates one of these, or if it reveals accidental complexity in the described architecture.
 
-**Documents describe current reality.** Future work belongs in `roadmap.md`. The words `will`, `plan`, `future`, `later`, `eventually`, `may support` are prohibited in `architecture/` documents.
+**Documents describe current reality.** Future work belongs in `roadmap.md`. The words `will`, `plan`, `future`, `later`, `eventually`, `may support` are prohibited in `reference/` documents.
 
 **Folder ownership is strict.** Each document belongs to exactly one category:
 
-- `architecture/`  --  implementation design and decisions
-- `concepts/`  --  conceptual model and principles
+- `reference/`  --  implementation design and decisions
+- `reference/`  --  conceptual model and principles
 - `operations/`  --  how to run the system
 - `development/`  --  contributor workflow, policy, and active planning
 - `discussions/`  --  investigation and story documents; reasoning records only, not current system description
@@ -40,7 +40,7 @@ This project's documentation policy establishes the following rules. A finding i
 
 **Header format is consistent.** Discussion documents (story, study, design, report) carry a `Status:` line immediately after the title. Superseded documents carry a blockquote redirect. Architecture and concepts documents carry neither.
 
-**TODOs and speculative content are absent from `architecture/`.** They belong in `roadmap.md`.
+**TODOs and speculative content are absent from `reference/`.** They belong in `roadmap.md`.
 
 ---
 

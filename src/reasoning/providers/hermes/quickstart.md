@@ -267,5 +267,5 @@ make dry-run PROVIDER=hermes
 
 | Document | Purpose |
 |---|---|
-| [`../../docs/operations/quickstart.md`](../../../../docs/development/quickstart.md) | First-run setup guide |
-| [`../../docs/architecture/tool_interface.md`](../../../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |
+| [`../../docs/development/quickstart.md`](../../../../docs/development/quickstart.md) | First-run setup guide |
+| [`../../docs/reference/tool_interface.md`](../../../../docs/reference/tool_interface.md) | Full command reference and `.env` variables |

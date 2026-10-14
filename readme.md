@@ -8,7 +8,7 @@ The system isolates agents inside containers, stages their changes as diffs, and
 
 ## System Invariants
 
-The following guarantees define the harness architecture. Defined authoritatively in [`docs/architecture/security.md`](docs/architecture/security.md#security-invariants):
+The following guarantees define the harness architecture. Defined authoritatively in [`docs/development/security.md`](docs/development/security.md#security-invariants):
 
 - Agents run in containers
 - Tasks produce diffs instead of direct commits
@@ -55,7 +55,7 @@ The implementation stack has three layers where lower layers must stabilize befo
 
 Two elements frame the stack without belonging to it: the **Security Model**, which is a design constraint specified before implementation and applied to all layers; and the **Human Workflow**, which is a system invariant -- the operator initiates every run and has final authority over all outputs.
 
-See [system_overview.md](docs/architecture/system_overview.md) for the full layer model.
+See [system_overview.md](docs/reference/system_overview.md) for the full layer model.
 
 ## Documentation Guide
 
@@ -64,12 +64,12 @@ Start here and follow the path in order. Architecture documents describe the sys
 | Step | Document | Purpose |
 |---|---|---|
 | 1 | [contributors.md](docs/development/contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
-| 2 | [documentation_policy.md](docs/operations/documentation_policy.md) | Documentation rules and structure (read once) |
-| 3 | [agent_workflow.md](docs/concepts/agent_workflow.md) | Workflow expression model and policy map (read once) |
-| 4 | [iteration_policy.md](docs/operations/iteration_policy.md) | Session workflow and milestone planning process (read once) |
+| 2 | [documentation_policy.md](docs/policies/documentation_policy.md) | Documentation rules and structure (read once) |
+| 3 | [agent_workflow.md](docs/reference/agent_workflow.md) | Workflow expression model and policy map (read once) |
+| 4 | [iteration_policy.md](docs/policies/iteration_policy.md) | Session workflow and milestone planning process (read once) |
 | 5 | [roadmap.md](devlog/roadmap.md) | Current tasks, open validation items, planned milestones |
 
-For architecture detail, start at [system_overview.md](docs/architecture/system_overview.md).
+For architecture detail, start at [system_overview.md](docs/reference/system_overview.md).
 
 ## Conceptual Separation
 

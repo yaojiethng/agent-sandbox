@@ -5,9 +5,9 @@ scope: ["docs/", "devlog/"]
 
 # Documentation Policy
 
-Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../concepts/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
+Skill files and prompt templates are not documentation. They reference or inline rules from policy documents. See [`agent_workflow.md`](../reference/agent_workflow.md#how-the-workflow-is-expressed) for those rules.
 
-The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md). Diagnostic checklists for compliance live in [`workflow/coding-agent/audits/documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md).
+The document taxonomy -- what document types exist, their durability, and which policy or ADR governs each -- is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md). Diagnostic checklists for compliance live in [`workflow/coding-agent/audits/documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md).
 
 ---
 
@@ -29,11 +29,11 @@ A statement is a rule when it imposes an obligation a document or its author mus
 
 ## Folder Structure
 
-Each `docs/` document belongs to **exactly one** folder: `architecture/`, `concepts/`, `operations/`, `development/`, or `adr/`. What each folder holds and why are in [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md#folder-taxonomy). Superseded or awaiting-review ADRs live in `adr/archive/`.
+Each `docs/` document belongs to **exactly one** folder: `reference/`, `reference/`, `operations/`, `development/`, or `adr/`. What each folder holds and why are in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md#folder-taxonomy). Superseded or awaiting-review ADRs live in `adr/archive/`.
 
-Records outside `docs/` live in `devlog/`: the roadmap, the changelog, handovers, and discussion documents. Their placement and governance are in [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md).
+Records outside `docs/` live in `devlog/`: the roadmap, the changelog, handovers, and discussion documents. Their placement and governance are in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md).
 
-Architecture documents must not describe things a frozen layer does not yet do. The layer model, the per-layer freeze status, and the freeze rule live in [`system_overview.md`](../architecture/system_overview.md#architecture-layer-model); `documentation_policy.md` applies them to document drafting.
+Architecture documents must not describe things a frozen layer does not yet do. The layer model, the per-layer freeze status, and the freeze rule live in [`system_overview.md`](../reference/system_overview.md#architecture-layer-model); `documentation_policy.md` applies them to document drafting.
 
 ---
 
@@ -69,7 +69,7 @@ Evaluate prose with two tests:
 
 ### Reserved terminology
 
-**Reserved technical terms** are defined in [`docs/concepts/terminology.md`](../concepts/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
+**Reserved technical terms** are defined in [`docs/reference/terminology.md`](../reference/terminology.md). When a policy, concept, or architecture document uses a reserved term in its technical sense, link to the term's section on first mention. Do not redefine a reserved term locally.
 
 ---
 
@@ -167,7 +167,7 @@ Before writing an ADR, concept doc, or architecture doc, propose the skeleton in
 
 ### Records state, not session history
 
-A durable record states the current state of its subject; the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md) classifies what endures. A durable record does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
+A durable record states the current state of its subject; the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) classifies what endures. A durable record does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
 
 A design document records the completed design, not the open-questions-and-replies transcript that produced it. When a question is answered during the design, write the answer into the body of the document at the place the answer belongs; do not keep it as a reply. Keep a short section of the designs that were considered and rejected, and why each was rejected. Put the final design at the forefront of the document.
 
@@ -175,7 +175,7 @@ A design document records the completed design, not the open-questions-and-repli
 
 ## Prohibited content
 
-### No speculative language or TODO content in `architecture/`
+### No speculative language or TODO content in `reference/`
 
 Architecture documents carry no speculative design. Do not use words that indicate speculation:
 
@@ -240,7 +240,7 @@ When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -
 
 ### Post-close document corrections
 
-**Principle.** A closed record's content does not change; whether a record is durable or transient is classified in the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md#durability). It gains the marker its type carries, and a record that tracks state also gains a successor entry. The mechanic follows what the record is for: a record that states what is true is corrected in place, and a record that tracks open and closed tasks is corrected by addition.
+**Principle.** A closed record's content does not change; whether a record is durable or transient is classified in the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md#durability). It gains the marker its type carries, and a record that tracks state also gains a successor entry. The mechanic follows what the record is for: a record that states what is true is corrected in place, and a record that tracks open and closed tasks is corrected by addition.
 
 **Direction.** A closed record is corrected at the operator's direction. The agent may notice a correction and propose it in one line, and may not apply one unasked. The agent never deletes a record; deletion is an operator action. Applying a correction is bounded by two stops and one smell:
 

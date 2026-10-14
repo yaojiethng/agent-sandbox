@@ -68,8 +68,7 @@ The codebase is organised into three deployment contexts. Each determines its id
 
 Files in the host context determine the repo root in one of two ways.
 
-**Installed CLI (`agent-sandbox.sh`):** uses a build-time macro
-`@@AGENT_SANDBOX_REPO@@` that is replaced by `sed` at `make install` time with the absolute path to the repo checkout. After install, the script lives at `/usr/local/bin/agent-sandbox` and cannot derive the repo root from its own location.
+**Installed CLI (`agent-sandbox.sh`):** uses a build-time macro `@@AGENT_SANDBOX_REPO@@` that is replaced by `sed` at `make install` time with the absolute path to the repo checkout. After install, the script lives at `/usr/local/bin/agent-sandbox` and cannot derive the repo root from its own location.
 
 ```bash
 # agent-sandbox.sh
@@ -187,6 +186,6 @@ containers ──→ libs/shared/ only   entrypoints only source shared libs
 
 ## References
 
-- [`execution_model.md`](../architecture/execution_model.md) -- Directory layout and mount shape
+- [`execution_model.md`](../reference/execution_model.md) -- Directory layout and mount shape
 - [`sandbox_host_interface.md`](sandbox_host_interface.md) -- Host-container operation correspondence
 - [`two_layer_model.md`](two_layer_model.md) -- Reasoning/capability layer separation

@@ -8,7 +8,7 @@ The system is a sandbox and execution harness for autonomous coding agents. It p
 
 ## Core Invariants
 
-These guarantees hold across all agent runs. Defined authoritatively in [`security.md`](security.md#security-invariants):
+These guarantees hold across all agent runs. Defined authoritatively in [`../development/security.md`](../development/security.md#security-invariants):
 
 - Agents execute inside isolated containers
 - The host repository is never modified by an agent directly
@@ -41,7 +41,7 @@ The freeze status is layer-scoped (a whole layer freezes, never an individual fi
 
 **Two-layer container runtime** -- each session runs two containers: a capability layer (sandbox, seed pipeline, diff pipeline) and a reasoning layer (agent runtime, provider-specific). Both are ephemeral and discarded after each run. The capability layer starts first and owns the sandbox volume; the reasoning layer attaches to it via `--volumes-from`.
 
-**Host-side volume seed** -- before the sandbox container starts, a one-shot seeder service (the sandbox image) fills the sandbox volume: repository with index, git-enumerated working tree, and `SESSION_STATE`; the seeder self-verifies and its exit code gates the start. No staging directory and no snapshot mount exist at any point. Details: [copy_delivery.md](../concepts/copy_delivery.md).
+**Host-side volume seed** -- before the sandbox container starts, a one-shot seeder service (the sandbox image) fills the sandbox volume: repository with index, git-enumerated working tree, and `SESSION_STATE`; the seeder self-verifies and its exit code gates the start. No staging directory and no snapshot mount exist at any point. Details: [copy_delivery.md](../reference/copy_delivery.md).
 
 **Sandbox** -- a named Docker volume owned by the capability layer. Seeded before first use by the helper-container transport. The agent works exclusively in `sandbox/`. Survives stop/resume; removed by prune.
 
@@ -49,7 +49,7 @@ The freeze status is layer-scoped (a whole layer freezes, never an individual fi
 
 **Diff and apply** -- on capability layer exit, the diff pipeline produces per-commit `.diff` files, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` into a session-scoped directory under `session-diffs/{session,autosave}/`. The operator runs `make draft` to apply patches to a working branch, or `make apply DIFF=<path>` to apply a diff file directly (unstaged). Host-side `make package-branch` provides equivalent export capability outside the container.
 
-**Per-project config** -- each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context -- session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `providers/<n>/config/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#agent-context-model).
+**Per-project config** -- each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context -- session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `providers/<n>/config/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model).
 
 ---
 
@@ -58,7 +58,7 @@ The freeze status is layer-scoped (a whole layer freezes, never an individual fi
 | Topic | Document |
 |---|---|
 | Container lifecycle, seed pipeline, mount shape | [execution_model.md](execution_model.md) |
-| Workflow expression model and policy map | [../concepts/agent_workflow.md](../concepts/agent_workflow.md) |
-| Security guarantees and trust boundaries | [security.md](security.md) |
-| STRIDE threat analysis | [threat_model_stride.md](threat_model_stride.md) |
-| Standard operating procedures | [../operations/standard_operating_procedures.md](../operations/standard_operating_procedures.md) |
+| Workflow expression model and policy map | [../reference/agent_workflow.md](../reference/agent_workflow.md) |
+| Security guarantees and trust boundaries | [../development/security.md](../development/security.md) |
+| STRIDE threat analysis | [../development/threat_model_stride.md](../development/threat_model_stride.md) |
+| Standard operating procedures | [../development/standard_operating_procedures.md](../development/standard_operating_procedures.md) |

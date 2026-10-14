@@ -60,17 +60,17 @@ The pinned command run against this repository on the 679 commits reachable from
 134	devlog/handovers/archive/20260701-03-impl-m2_6_2_persistence.md
 88	scripts/start_agent.sh
 66	scripts/agent-sandbox.sh
-62	docs/architecture/tool_interface.md
-62	docs/architecture/sandbox_lifecycle.md
+62	docs/reference/tool_interface.md
+62	docs/reference/sandbox_lifecycle.md
 59	devlog/AGENT_FEEDBACK.md
 54	scripts/templates/Makefile.template
-52	docs/architecture/execution_model.md
+52	docs/reference/execution_model.md
 50	src/capability/entrypoint.sh
 48	devlog/roadmap_future.md
 46	src/build/compose.sh
-44	docs/operations/handover_policy.md
+44	docs/policies/handover_policy.md
 43	scripts/run_agent.sh
-43	docs/operations/iteration_policy.md
+43	docs/policies/iteration_policy.md
 ```
 
 Applying the two-sweep rule above gives the ranked table for the top fifteen files. The cross-reference column holds the register rows that name the file, with the sectors those rows are triaged into.
@@ -81,17 +81,17 @@ Applying the two-sweep rule above gives the ranked table for the top fifteen fil
 | `devlog/handovers/archive/20260701-03-impl-m2_6_2_persistence.md` | 134 | 7 | 127 | none |
 | `scripts/start_agent.sh` | 88 | 4 | 84 | 43, 120, 165-171, 173, 265, 266 (A, C, F, H, I, J) |
 | `scripts/agent-sandbox.sh` | 66 | 2 | 64 | 7, 48, 136, 199-201, 203-207, 266, 283 (A, C, G, H, I, J) |
-| `docs/architecture/tool_interface.md` | 62 | 2 | 60 | 91, 299 (C, F) |
-| `docs/architecture/sandbox_lifecycle.md` | 62 | 5 | 57 | none |
+| `docs/reference/tool_interface.md` | 62 | 2 | 60 | 91, 299 (C, F) |
+| `docs/reference/sandbox_lifecycle.md` | 62 | 5 | 57 | none |
 | `devlog/AGENT_FEEDBACK.md` | 59 | 4 | 55 | none |
 | `scripts/templates/Makefile.template` | 54 | 3 | 51 | 37, 44, 45, 48, 155, 267-274 (A, F, H, I, J) |
-| `docs/architecture/execution_model.md` | 52 | 4 | 48 | none |
+| `docs/reference/execution_model.md` | 52 | 4 | 48 | none |
 | `src/capability/entrypoint.sh` | 50 | 6 | 44 | 10, 22, 70, 105-112, 302 (A, B, C, D, F) |
 | `devlog/roadmap_future.md` | 48 | 3 | 45 | none |
 | `src/build/compose.sh` | 46 | 3 | 43 | 19, 92, 94-96, 98-100, 116, 294, 297 (C, F, J) |
-| `docs/operations/handover_policy.md` | 44 | 2 | 42 | none |
+| `docs/policies/handover_policy.md` | 44 | 2 | 42 | none |
 | `scripts/run_agent.sh` | 43 | 2 | 41 | 36, 166, 174-180, 182-186 (A, C, F, H, I, J) |
-| `docs/operations/iteration_policy.md` | 43 | 3 | 40 | none |
+| `docs/policies/iteration_policy.md` | 43 | 3 | 40 | none |
 
 The files that are both high-churn and finding-bearing, in rank order, are the deliverable of this run:
 
@@ -99,13 +99,13 @@ The files that are both high-churn and finding-bearing, in rank order, are the d
 |---|---|---|
 | `scripts/start_agent.sh` | 84 | 43, 120, 165-171, 173, 265, 266 |
 | `scripts/agent-sandbox.sh` | 64 | 7, 48, 136, 199-201, 203-207, 266, 283 |
-| `docs/architecture/tool_interface.md` | 60 | 91, 299 |
+| `docs/reference/tool_interface.md` | 60 | 91, 299 |
 | `scripts/templates/Makefile.template` | 51 | 37, 44, 45, 48, 155, 267-274 |
 | `src/capability/entrypoint.sh` | 44 | 10, 22, 70, 105-112, 302 |
 | `src/build/compose.sh` | 43 | 19, 92, 94-96, 98-100, 116, 294, 297 |
 | `scripts/run_agent.sh` | 41 | 36, 166, 174-180, 182-186 |
 
-`docs/architecture/tool_interface.md` enters the list through its two documentation findings; its remedy is a documentation edit, not a code rewrite. The two highest-churn entries are records, not code: `devlog/roadmap.md` and a handover carry the most commits because every iteration edits them. They stay in the ranked table and stay off the action list. This is the caution in practice.
+`docs/reference/tool_interface.md` enters the list through its two documentation findings; its remedy is a documentation edit, not a code rewrite. The two highest-churn entries are records, not code: `devlog/roadmap.md` and a handover carry the most commits because every iteration edits them. They stay in the ranked table and stay off the action list. This is the caution in practice.
 
 ## Invariants
 

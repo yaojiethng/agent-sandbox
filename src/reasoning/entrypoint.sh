@@ -21,7 +21,7 @@
 # from the baked template (/opt/workflow/agent/config/) at every start, so the
 # image owns them and a session's edit does not outlive its container.
 # Subdirectories prompts/, sessions/, skills/ are bind-mounted by the provider
-# overlay, so they carry state between runs. See docs/architecture/
+# overlay, so they carry state between runs. See docs/reference/
 # provider_lifecycle.md.
 #
 # Required environment variables (set via ENV in provider.dockerfile):

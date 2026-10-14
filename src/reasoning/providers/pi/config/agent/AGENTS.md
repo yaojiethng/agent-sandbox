@@ -15,9 +15,8 @@ The paths this layer covers. Each is part of the container, so a reference to on
 | `$AGENT_HOME/` | the running provider's config home: this file at `$AGENT_HOME/agent/AGENTS.md`, and the settings the provider reads |
 | `/opt/workflow/agent/prompts/` | the harness prompts and the coding-agent workflow prompts, merged into one root |
 | `/opt/workflow/agent/skills/` | the skill root |
-| `/opt/sandbox/docs/architecture/` | the harness architecture documents |
-| `/opt/sandbox/docs/concepts/` | the harness concept documents |
-| `/opt/sandbox/docs/operations/` | the operations policies |
+| `/opt/sandbox/docs/reference/` | the reference layer: contracts, states and sequences, the interface index |
+| `/opt/sandbox/docs/policies/` | the policy corpus the loop obeys |
 | `/opt/sandbox/lib/` | the harness libraries |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts |
 | `/home/agentuser/workspace/input/` | the operator's handover files, read-only |
@@ -43,7 +42,7 @@ Key behavioral rules:
 
 Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs  --  fragmented or half-applied changes across iterations create review burden.
 
-Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md) `### Line wrapping`.
+Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) `### Line wrapping`.
 
 When writing code, always take into account the following:
 
@@ -70,7 +69,7 @@ Tools you have access to:
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. Full policy: `docs/operations/documentation_policy.md` in the target repo when present.
+General communication guidelines for all agent prose. Full policy: `docs/policies/documentation_policy.md` in the target repo when present.
 
 - Meet ASD-STE100. Delete-test every word, phrase, and sentence: if a reader can delete it without losing required meaning, delete it.
 - Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".

@@ -16,9 +16,9 @@
   - Keep this file short. An agent reading it should finish in under 60 seconds
     of context consumption.
 
-  See docs/concepts/agent_workflow.md  --  Agent Context Model for the two-layer
+  See docs/reference/agent_workflow.md  --  Agent Context Model for the two-layer
   model this file participates in.
-  See docs/operations/provider_onboarding_guide.md for the authoring step.
+  See docs/development/provider_onboarding_guide.md for the authoring step.
 -->
 
 ## Interface

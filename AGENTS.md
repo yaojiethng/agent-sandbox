@@ -32,7 +32,7 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
+**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/policies/git_policy.md`](docs/policies/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
@@ -50,7 +50,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
-**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/operations/documentation_policy.md#numbered-vs-bulleted-presentation).
+**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/policies/documentation_policy.md#numbered-vs-bulleted-presentation).
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
@@ -126,7 +126,7 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
-Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/operations/documentation_policy.md).
+Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/policies/documentation_policy.md).
 
 **Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
@@ -137,7 +137,7 @@ Every output class -- chat, prompts, documentation, roadmap items, code comments
 - **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at the scope gate.
 - **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
 
-See [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) for the criteria and the close mechanics.
+See [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) for the criteria and the close mechanics.
 
 **Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
@@ -157,15 +157,15 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), the Roadmap as the sole task list in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), the commit and delivery rules in [`docs/operations/git_policy.md`](docs/operations/git_policy.md), and the Markdown lint gate in [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/operations/iteration_policy.md#iteration-invariants).
+The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/policies/handover_policy.md`](docs/policies/handover_policy.md), the Roadmap as the sole task list in [`docs/policies/roadmap_policy.md`](docs/policies/roadmap_policy.md), the commit and delivery rules in [`docs/policies/git_policy.md`](docs/policies/git_policy.md), and the Markdown lint gate in [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/policies/iteration_policy.md#iteration-invariants).
 
-The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/operations/iteration_policy.md)) before any further output.
+The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/policies/iteration_policy.md)) before any further output.
 
-**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
+**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/policies/roadmap_policy.md`](docs/policies/roadmap_policy.md).
 
 ### Loop prompts
 
-The runbooks the loop runs, each seeded into the container. The list is the `scope` of [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), which holds the invariants each runbook must not break.
+The runbooks the loop runs, each seeded into the container. The list is the `scope` of [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), which holds the invariants each runbook must not break.
 
 | Prompt | Runs from |
 |---|---|
@@ -203,10 +203,10 @@ Read these in addition to the above when opening a milestone planning iteration.
 
 | Document | Read before |
 |---|---|
-| [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md) | Architecture layer boundary or freeze status checks |
-| [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
-| [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Any roadmap update |
-| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
-| [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Any iteration start or end, creating or updating a handover |
-| [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
-| [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |
+| [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or freeze status checks |
+| [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md) | Any documentation task |
+| [`docs/policies/roadmap_policy.md`](docs/policies/roadmap_policy.md) | Any roadmap update |
+| [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
+| [`docs/policies/handover_policy.md`](docs/policies/handover_policy.md) | Any iteration start or end, creating or updating a handover |
+| [`docs/policies/discussion_policy.md`](docs/policies/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
+| [`docs/policies/adr_policy.md`](docs/policies/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |

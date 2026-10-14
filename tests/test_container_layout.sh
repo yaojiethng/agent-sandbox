@@ -122,7 +122,7 @@ write_manifest() {
       "runtime_path": "/opt/workflow/agent/prompts/",
       "loader": "the running provider's config lists this path as a prompt root",
       "reachable": [
-        { "path": "docs/operations/", "holds": "the policies a prompt reads", "condition": "the reader has the repository tree" }
+        { "path": "docs/policies/", "holds": "the policies a prompt reads", "condition": "the reader has the repository tree" }
       ]
     },
     {
@@ -211,19 +211,19 @@ test_manifest_row_with_no_copy_line_flagged() {
   manifest_edit "$root" '
     const fs = require("fs");
     const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.image.push({ provider: "pi", source: "docs/concepts/", destination: "/opt/sandbox/docs/concepts/" });
+    manifest.image.push({ provider: "pi", source: "docs/reference/", destination: "/opt/sandbox/docs/reference/" });
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a manifest row no COPY line carries fails'
-  assert_contains "$GATE_OUT" $'image: the manifest declares \'pi\tdocs/concepts/' 'the row is named'
+  assert_contains "$GATE_OUT" $'image: the manifest declares \'pi\tdocs/reference/' 'the row is named'
   assert_contains "$GATE_OUT" 'which the dockerfiles do not carry' 'the direction is named'
 }
 
 test_copy_line_with_no_manifest_row_flagged() {
   local root="$FIXTURE_DIR/lineonly"
   write_default_tree "$root"
-  printf 'COPY docs/operations/   /opt/sandbox/docs/operations/\n' \
+  printf 'COPY docs/policies/     /opt/sandbox/docs/policies/\n' \
     >> "$root/src/reasoning/providers/pi/provider.dockerfile"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a COPY line no manifest row carries fails'
@@ -283,29 +283,29 @@ test_cell_source_no_image_sends_flagged() {
   manifest_edit "$root" '
     const fs = require("fs");
     const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.cells[1].sources = ["src/reasoning/agent/skills/", "docs/concepts/"];
+    manifest.cells[1].sources = ["src/reasoning/agent/skills/", "docs/reference/"];
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a declared source no image sends to the path fails'
-  assert_contains "$GATE_OUT" "declares source 'docs/concepts/'" 'the source is named'
+  assert_contains "$GATE_OUT" "declares source 'docs/reference/'" 'the source is named'
   assert_contains "$GATE_OUT" 'which no image row sends to this runtime path' 'the direction is named'
 }
 
 test_destination_no_cell_declares_flagged() {
   local root="$FIXTURE_DIR/nocell"
   write_default_tree "$root"
-  printf 'COPY docs/concepts/   /opt/workflow/agent/concepts/\n' \
+  printf 'COPY docs/reference/   /opt/workflow/agent/reference/\n' \
     >> "$root/src/reasoning/providers/pi/provider.dockerfile"
   manifest_edit "$root" '
     const fs = require("fs");
     const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.image.push({ provider: "pi", source: "docs/concepts/", destination: "/opt/workflow/agent/concepts/" });
+    manifest.image.push({ provider: "pi", source: "docs/reference/", destination: "/opt/workflow/agent/reference/" });
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a destination in the agent tree with no cell fails'
-  assert_contains "$GATE_OUT" "sends 'docs/concepts/' to '/opt/workflow/agent/concepts/'" 'the destination is named'
+  assert_contains "$GATE_OUT" "sends 'docs/reference/' to '/opt/workflow/agent/reference/'" 'the destination is named'
   assert_contains "$GATE_OUT" 'which no cell declares' 'the rule is named'
 }
 

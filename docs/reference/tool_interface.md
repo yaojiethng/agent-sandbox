@@ -99,7 +99,7 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** -- Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
 
-**Rule 1 -- stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness: the record's `host-head-sha` differs from the current project HEAD (registry-truth, see `docs/concepts/terminology.md` `## staleness`). Image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
+**Rule 1 -- stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness: the record's `host-head-sha` differs from the current project HEAD (registry-truth, see `docs/reference/terminology.md` `## staleness`). Image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
 
 - `STALE=sandbox` -- the only accepted kind (repo out of date -- the session's `host-head-sha` != current HEAD); unset behaves the same. Any other value errors.
 - `PROVIDER=<n>` -- narrow Rule 1's selection to records of that provider (same filter as `make resume`).
@@ -127,8 +127,7 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 
 Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
-The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches.
-Resolves from the `session` channel (`session-diffs/session/`) by default. `BUNDLE=<name>` names the bundle to apply (name-only -- absolute paths rejected) and is required in non-interactive mode: with no bundle named, the command exits non-zero and points at `INTERACTIVE=1`. The router no longer auto-selects the newest bundle.
+The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches. Resolves from the `session` channel (`session-diffs/session/`) by default. `BUNDLE=<name>` names the bundle to apply (name-only -- absolute paths rejected) and is required in non-interactive mode: with no bundle named, the command exits non-zero and points at `INTERACTIVE=1`. The router no longer auto-selects the newest bundle.
 
 **Channels:**
 
@@ -202,7 +201,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 
 ## Onboarding
 
-See [`../operations/project_onboarding_guide.md`](../operations/project_onboarding_guide.md) for the full onboarding procedure.
+See [`../reference/project_onboarding_guide.md`](../reference/project_onboarding_guide.md) for the full onboarding procedure.
 
 An onboarded project provides the following in `SANDBOX_DIR`:
 
@@ -213,16 +212,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `AGENTS.md` | Stub written by onboard; operator-completed | Agent context brief |
 | `.<provider>/` | Copied from `src/reasoning/providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
-`docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`,
-`docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned
-templates -- never written to `SANDBOX_DIR`. The merged result of
-`compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and
-persists after the session (see [`execution_model.md` -- Compose
-Generation](execution_model.md#compose-generation)). The delivery overlays
-(`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the
-caller's `--delivery` (`copy|mount`) at generation time -- see the
-delivery-overlay note in
-[`execution_model.md`](execution_model.md#compose-generation).
+`docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned templates -- never written to `SANDBOX_DIR`. The merged result of `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and persists after the session (see [`execution_model.md` -- Compose Generation](execution_model.md#compose-generation)). The delivery overlays (`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the caller's `--delivery` (`copy|mount`) at generation time -- see the delivery-overlay note in [`execution_model.md`](execution_model.md#compose-generation).
 
 ---
 
@@ -280,11 +270,11 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
-**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See [`../operations/provider_onboarding_guide.md -- Step 7`](../operations/provider_onboarding_guide.md#step-7-optional----setupsh).
+**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See [`../development/provider_onboarding_guide.md -- Step 7`](../development/provider_onboarding_guide.md#step-7-optional----setupsh).
 
 Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh`, baked as `/opt/sandbox/bin/provider-entrypoint.sh`, is injected into every provider image by the harness via the build context -- providers do not author it.
 
-See [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
+See [`../development/provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) for the full provider contract and step-by-step implementation guide.
 
 The reasoning layer builds in three tiers. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. Each provider's `base.dockerfile` builds `<provider>-base` on top of it, and its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
 
@@ -317,6 +307,6 @@ A dry-run does not prove agent correctness -- it proves the harness containers s
 |---|---|
 | Internal implementation | [execution_model.md](execution_model.md) |
 | CLI interaction conventions | [../development/interface-conventions.md](../development/interface-conventions.md) |
-| Security model | [security.md](security.md) |
-| Onboarding a project | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |
-| Adding a provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |
+| Security model | [../development/security.md](../development/security.md) |
+| Onboarding a project | [../reference/project_onboarding_guide.md](../reference/project_onboarding_guide.md) |
+| Adding a provider | [../development/provider_onboarding_guide.md](../development/provider_onboarding_guide.md) |

@@ -113,7 +113,7 @@ Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in 
 - **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from that directory.
 - **User layer** -- files the operator places in `$AGENT_HOME/agent/skills|prompts/`, which the mounts carry. Loaded by pi's discovery from the same directories.
 
-The three-layer model is defined in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#skills-and-prompts-layer-model).
+The three-layer model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#skills-and-prompts-layer-model).
 
 ---
 
@@ -124,5 +124,5 @@ The three-layer model is defined in [`../concepts/agent_workflow.md`](../concept
 | Capability layer lifecycle | [sandbox_lifecycle.md](sandbox_lifecycle.md) |
 | Mount shape and container wiring | [execution_model.md](execution_model.md) |
 | Provider interface contract | [tool_interface.md](tool_interface.md#provider-interface) |
-| Adding a provider | [../operations/provider_onboarding_guide.md](../operations/provider_onboarding_guide.md) |
-| Project onboarding | [../operations/project_onboarding_guide.md](../operations/project_onboarding_guide.md) |
+| Adding a provider | [../development/provider_onboarding_guide.md](../development/provider_onboarding_guide.md) |
+| Project onboarding | [../reference/project_onboarding_guide.md](../reference/project_onboarding_guide.md) |

@@ -4,7 +4,7 @@
 #
 # Provider config: the image ships none, by decision. Hermes runs on its own
 # defaults, its own config lives under HERMES_HOME for the session, and this repo
-# seeds nothing into it. See docs/architecture/provider_lifecycle.md.
+# seeds nothing into it. See docs/reference/provider_lifecycle.md.
 
 services:
   agent:

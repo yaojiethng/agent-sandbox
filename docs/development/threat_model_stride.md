@@ -4,7 +4,7 @@
 
 This document provides a detailed STRIDE threat model for the agent-sandbox system. It captures all threat entities, impacted assets, trust boundaries, reasoning, and mitigation strategies discussed during the threat modeling process. This detailed record is intended for reference, training, and operational understanding.
 
-Operational responses to each threat category are defined in [`operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md).
+Operational responses to each threat category are defined in [`../development/standard_operating_procedures.md`](../development/standard_operating_procedures.md).
 
 ---
 

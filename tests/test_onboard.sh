@@ -6,7 +6,7 @@
 #   it over.
 # scripts/onboard.sh end-to-end behavioural tests.
 #
-# Pins cite: docs/operations/provider_onboarding_guide.md (.env schema).
+# Pins cite: docs/development/provider_onboarding_guide.md (.env schema).
 
 # Tests the directory tree and files produced by a fresh onboard,
 # the guard check that prevents clobbering, and refresh mode behaviour.

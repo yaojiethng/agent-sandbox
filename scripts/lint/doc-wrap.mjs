@@ -1,5 +1,5 @@
 // markdownlint custom rule: one paragraph per physical line.
-// Enforces docs/operations/documentation_policy.md `### Line wrapping`:
+// Enforces docs/policies/documentation_policy.md `### Line wrapping`:
 // prose is one paragraph per physical line, however long the line;
 // hard breaks separate blocks only (paragraphs, headings, list items).
 //

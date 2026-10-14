@@ -9,7 +9,7 @@ scope: ["docs/adr/", "docs/adr/archive/"]
 
 A concept doc states a model. The ADR states why that model was selected over alternatives. A concept doc links to its ADRs as further reading, like a paper cites references. The concept is the parent. The ADR is the explainer.
 
-The classification of each record type -- what it contains, whether it must be current, and its durability -- is the concept document [`documentation_taxonomy.md`](../concepts/documentation_taxonomy.md).
+The classification of each record type -- what it contains, whether it must be current, and its durability -- is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md).
 
 ## Unit of record
 
@@ -119,4 +119,4 @@ The optional `<scope>` suffix is used for specialization when a principle has sp
 
 Keep each dated entry in the structure template's field order: Decision, Rationale, Rejected alternatives, Edge cases / drivers.
 
-Link reserved terms to [terminology.md](../concepts/terminology.md) on first use. Do not redefine a reserved term in the ADR.
+Link reserved terms to [terminology.md](../reference/terminology.md) on first use. Do not redefine a reserved term in the ADR.

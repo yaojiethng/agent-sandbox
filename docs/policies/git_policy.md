@@ -94,7 +94,7 @@ When a change is not tied to a specific sub-milestone (e.g. a cross-cutting poli
 
 ### Protected branches
 
-`main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols).
+`main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in [`standard_operating_procedures.md`](../development/standard_operating_procedures.md#5-human--operational-protocols).
 
 ---
 
@@ -310,7 +310,7 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | Document | Purpose |
 |---|---|
 | [`handover_policy.md`](handover_policy.md) | Iteration types that map to commit types |
-| [`standard_operating_procedures.md`](standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
+| [`standard_operating_procedures.md`](../development/standard_operating_procedures.md#5-human--operational-protocols) | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
 | [`/merge` template](../../workflow/coding-agent/prompts/merge.md) | Draft-export merging operation |
 | [`/rebase` template](../../workflow/coding-agent/prompts/rebase.md) | Stale-branch porting operation |

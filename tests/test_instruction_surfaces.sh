@@ -66,7 +66,7 @@ EOF
 # scope it must match.
 write_layers() {
   local root="$1"
-  mkdir -p "$root/src/reasoning/providers/pi/config/agent" "$root/docs/operations"
+  mkdir -p "$root/src/reasoning/providers/pi/config/agent" "$root/docs/policies"
   cat > "$root/src/reasoning/providers/pi/config/agent/AGENTS.md" <<'EOF'
 # Provider layer
 
@@ -94,7 +94,7 @@ EOF
 | `/iter` | `workflow/coding-agent/prompts/iter.md` |
 | `/wrapup` | `workflow/coding-agent/prompts/wrapup.md` |
 EOF
-  cat > "$root/docs/operations/iteration_policy.md" <<'EOF'
+  cat > "$root/docs/policies/iteration_policy.md" <<'EOF'
 ---
 description: "Owns the iteration grain."
 scope: ["/iter", "/wrapup"]

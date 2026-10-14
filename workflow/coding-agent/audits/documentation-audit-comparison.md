@@ -5,7 +5,7 @@
 
 ## The experiment
 
-The iteration ran a staleness sweep over `docs/architecture/` autonomously (no audit prompt loaded): grep for known stale terms (`rsync`, `docker cp`, `baseline.tar`, "fresh git init", "not yet implemented"), then verify each hit against the implementation (`scripts/prune.sh`, `scripts/start_agent.sh`, `src/capability/`, `scripts/workflows/draft.sh`) before editing.
+The iteration ran a staleness sweep over `docs/reference/` autonomously (no audit prompt loaded): grep for known stale terms (`rsync`, `docker cp`, `baseline.tar`, "fresh git init", "not yet implemented"), then verify each hit against the implementation (`scripts/prune.sh`, `scripts/start_agent.sh`, `src/capability/`, `scripts/workflows/draft.sh`) before editing.
 
 The sweep work was then stashed, and a fresh `pi -p` subagent ran the `architecture-doc-reviewer.skill.md` prompt (staleness + consistency sections only) over the same pre-change tree. Findings from both passes were verified against the code and merged.
 

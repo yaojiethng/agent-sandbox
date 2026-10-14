@@ -4,10 +4,9 @@ The sandbox and host repository are never the same git repository -- they have d
 
 This document is the interface contract between them. It names the contract surfaces, what the harness expects from each co-resident copy, and the version declaration and comparison points that keep the copies interoperable. It covers three distinct cases: live sandbox, stopped sandbox, and newly started sandbox.
 
-The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary -- see [`tool_interface.md`](../architecture/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
+The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary -- see [`tool_interface.md`](../reference/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
 
-Implementation detail and command shapes: [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../architecture/tool_interface.md) (Commands).
-Reasoning record: [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md).
+Implementation detail and command shapes: [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../reference/tool_interface.md) (Commands). Reasoning record: [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md).
 
 ---
 
@@ -56,7 +55,7 @@ The P0-P3 rollover and the container-sig retirement are recorded in [the design 
 
 ### Relationship to MAKEFILE_VERSION
 
-The sandbox's `.env` carries a separate host-side marker, `MAKEFILE_VERSION`, stamped at onboard time from the `Makefile.template` version marker. It is a different use case, not part of the interface contract: it is host-internal (template in the repo vs the onboarded project copy), has no container party, and bumps on Makefile-template surface changes (frequent). `INTERFACE_CONTRACT_VERSION` is the cross-boundary contract and bumps only on contract changes (rare). Do not fold the two into one number. As of this writing `MAKEFILE_VERSION` has no consumer -- it is a write-only marker; the stale-onboarded-file detection it was designed for is not wired. Its doc edits and interface surfaces live in [`project_onboarding_guide.md`](../operations/project_onboarding_guide.md).
+The sandbox's `.env` carries a separate host-side marker, `MAKEFILE_VERSION`, stamped at onboard time from the `Makefile.template` version marker. It is a different use case, not part of the interface contract: it is host-internal (template in the repo vs the onboarded project copy), has no container party, and bumps on Makefile-template surface changes (frequent). `INTERFACE_CONTRACT_VERSION` is the cross-boundary contract and bumps only on contract changes (rare). Do not fold the two into one number. As of this writing `MAKEFILE_VERSION` has no consumer -- it is a write-only marker; the stale-onboarded-file detection it was designed for is not wired. Its doc edits and interface surfaces live in [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md).
 
 ---
 
@@ -184,7 +183,6 @@ No `git am`, no `format-patch`, no git metadata headers. Works identically in bo
 | `bash /opt/sandbox/lib/package_branch.sh --to=<dir>` | Container | Packages all artefacts (patches, uncommitted, all-changes, changed-files) into `<to>/bundles/<ts>[-<label>]-<runid>/`. |
 | `bash .../package_branch.sh --to=<dir> [--baseline=<sha>]` | Container | Packages all commits since `init_sha` as numbered diffs + `uncommitted.diff` + `all-changes.diff` + `changed-files/` under `<to>/bundles/<ts>-<label>/`. |
 | `bash /opt/sandbox/lib/package_eval_snapshot.sh --to=<dir> --snapshot-summary=<slug>` | Container | Writes an eval snapshot under `<to>/evals/<ts>-<slug>-<runid>/`: the transcript frozen at the copy, a complete repository bundle, the operator turn stream, the session facts and a credential scan. |
-
 | `agent-sandbox package-branch --sandbox=<path>` | Host | Host-side wrapper. Derives `INPUT_DIR` from `SANDBOX_DIR` via `dirs_resolve`, writes to `INPUT_DIR/bundles/<ts>-<label>/`. |
 | `make apply DIFF=<path> [INTERACTIVE=1]` | Host | Applies an exact diff file (`--diff=<path>` required) uncommitted. `--interactive` previews the changes + asks for confirmation. |
 | `make draft [CHANNEL=<channel>] [BUNDLE=<name>] [INTERACTIVE=1]` | Host | Creates `draft/<branch>`, applies patches then `uncommitted.diff`. Default: `session` channel. `INTERACTIVE=1` prompts through channel/bundle picker. |
@@ -227,5 +225,5 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 | [`drift_state_coherence.md`](../adr/drift_state_coherence.md) | Coherence by minimisation, not detection |
 | [`session_identifier.md`](../adr/session_identifier.md) | Project/session identity |
 | [`20260803-design-settled-apply_draft_workflow.md`](../../devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md) | Full design record -- export pipeline, channels, commands |
-| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
-| [`provider_lifecycle.md`](../architecture/provider_lifecycle.md) | Provider config provisioning at session start |
+| [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
+| [`provider_lifecycle.md`](../reference/provider_lifecycle.md) | Provider config provisioning at session start |

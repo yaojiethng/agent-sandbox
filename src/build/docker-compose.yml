@@ -4,7 +4,7 @@
 # delivery overlay selected by the caller's --delivery (copy|mount), the
 # provider overlay (if present), and the mode overlay (dry-run/serve); the
 # merged result is written to SANDBOX_DIR/.compose/<session-id>.yml and persists
-# after the session (see docs/architecture/execution_model.md).
+# after the session (see docs/reference/execution_model.md).
 #
 # Double-brace placeholders are substituted at generation time:
 #   {{PROJECT_NAME}}       -> project name

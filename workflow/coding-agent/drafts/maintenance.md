@@ -159,7 +159,7 @@ A run that changed no record says so in one line, with the state it found and th
 - Editing `gm.md`. This prompt supersedes the survey `gm.md` performs inline over the roadmap and the handover chain, and migrating `gm.md` onto this prompt is a separate step. Until it lands, `gm.md` remains as it is and this prompt is the way to reach either payload.
 - Surveying project state outside the two records. Git history, stashes, branches, feedback entries, and candidate next tasks belong to [`gm.md`](../prompts/gm.md).
 - Deciding what the next unit of work is. This prompt corrects records; it does not choose work.
-- Writing policy. A finding no policy covers is reported, and the rule belongs in `docs/operations/`.
+- Writing policy. A finding no policy covers is reported, and the rule belongs in `docs/policies/`.
 - Running several maintenance tracks at once. This prompt dispatches one worker at a time. A multi-track maintenance campaign is [`parallel-work.md`](parallel-work.md), and the fork, join, and bring-back primitive is the task-queue prompt.
 
 ## Failure modes and invariants

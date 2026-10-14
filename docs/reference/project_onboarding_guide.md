@@ -80,7 +80,7 @@ Verify the harness infrastructure is functional:
 make dry-run PROVIDER=<n>
 ```
 
-See [Dry-Run Guarantees](../architecture/tool_interface.md#dry-run-guarantees) for what a passing dry-run proves.
+See [Dry-Run Guarantees](../reference/tool_interface.md#dry-run-guarantees) for what a passing dry-run proves.
 
 ---
 
@@ -104,7 +104,7 @@ To recover from a bad apply:
 git reset --hard "$(cat .workspace/checkpoint-latest.ref)"
 ```
 
-See [`../architecture/sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) for full details on checkpoint tags and session lifecycle.
+See [`../reference/sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) for full details on checkpoint tags and session lifecycle.
 
 ---
 
@@ -112,6 +112,6 @@ See [`../architecture/sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.m
 
 | Document | Purpose |
 |---|---|
-| [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, `.env` variable reference |
-| [`provider_onboarding_guide.md`](provider_onboarding_guide.md) | Adding a new reasoning layer provider |
-| [`../operations/quickstart.md`](../development/quickstart.md) | Session workflow -- before, during, and after a run |
+| [`../reference/tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, `.env` variable reference |
+| [`../development/provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) | Adding a new reasoning layer provider |
+| [`../development/quickstart.md`](../development/quickstart.md) | Session workflow -- before, during, and after a run |

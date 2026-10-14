@@ -1,6 +1,6 @@
 # Two-Layer Architecture -- Reasoning and Capability Layers
 
-> **Context:** This document records the conceptual model. Implementation details are distributed across [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) and [`execution_model.md`](../architecture/execution_model.md). The reasoning behind this decision is in [`20260312-study-settled-mcp_server.md`](../../devlog/discussions/archive/20260312-study-settled-mcp_server.md) -- Conclusion section.
+> **Context:** This document records the conceptual model. Implementation details are distributed across [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) and [`execution_model.md`](../reference/execution_model.md). The reasoning behind this decision is in [`20260312-study-settled-mcp_server.md`](../../devlog/discussions/archive/20260312-study-settled-mcp_server.md) -- Conclusion section.
 
 ## The Model
 
@@ -48,9 +48,9 @@ The following documents implement this conceptual model:
 
 | Document | Responsibility |
 |---|---|
-| [`sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
-| [`execution_model.md`](../architecture/execution_model.md) | Directory layout, invocation model, compose generation, container lifecycle, entrypoint sequences |
-| [`tool_interface.md`](../architecture/tool_interface.md) | External contract: command shapes, naming, mount guarantees, execution modes |
-| [`security.md`](../architecture/security.md) | Trust boundaries and security invariants |
+| [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Snapshot pipeline, git baseline, diff pipeline, input channels, apply workflow |
+| [`execution_model.md`](../reference/execution_model.md) | Directory layout, invocation model, compose generation, container lifecycle, entrypoint sequences |
+| [`tool_interface.md`](../reference/tool_interface.md) | External contract: command shapes, naming, mount guarantees, execution modes |
+| [`security.md`](../development/security.md) | Trust boundaries and security invariants |
 
 Changes to any of these documents should be checked against this conceptual model before being accepted.

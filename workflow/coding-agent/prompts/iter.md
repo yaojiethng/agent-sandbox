@@ -30,7 +30,7 @@ Verify the roadmap reflects the state the prior handover claims. If the roadmap 
 
 Read the prior handover's Objective and Findings for context before evaluating the directive. The prior handover carries no continuation scope: the roadmap is the sole task list, and a missing directive is an unmet scope-gate precondition, not something the agent derives.
 
-The types are [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md)'s Type table; this table is the directive word a caller may write.
+The types are [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md)'s Type table; this table is the directive word a caller may write.
 
 | Type | Shortform |
 |---|---|
@@ -77,7 +77,7 @@ This step defines scope but does not stop for a release. The scope gate below co
 
 ## Step 3  --  Design
 
-Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](/opt/sandbox/docs/operations/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md). If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](/opt/sandbox/docs/operations/adr_policy.md)). Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
+Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md). If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md)). Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
 
 Exit condition: all design questions resolved and recorded, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
 
@@ -85,7 +85,7 @@ Exit condition: all design questions resolved and recorded, and the ADR created 
 
 ## Step 4  --  Information gathering pass
 
-After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate per [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md). (Assessed step: run unless not applicable to the iteration type.)
+After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate per [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). (Assessed step: run unless not applicable to the iteration type.)
 
 ---
 
@@ -93,9 +93,9 @@ After design is confirmed, read in order: the roadmap task, the design decisions
 
 This is the collapsed gate the operator-involved workflows share. It confirms scope **and** acceptance criteria together, and clears on a single operator approval. Step 2 defined the scope; this gate presents it and the AC table as one release.
 
-Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md) Milestone Promotion.
+Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md) Milestone Promotion.
 
-Present the handover's `Decisions pending` table with the scope, per [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md). Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
+Present the handover's `Decisions pending` table with the scope, per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md). Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
@@ -104,7 +104,7 @@ Define the acceptance criteria in a four-column table:
 | # | Criterion | Verifiable by | Verified by |
 |---|---|---|---|
 
-The authoring standards are [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md) `### Acceptance-criteria invariants`: what qualifies as a criterion, the delta and traceability rules, the three-way `Operator` / `Agent [x]` / `Agent [ ]` marking, and the `Not yet defined.` gate. Apply them here; this step adds only what the scope-gate presentation needs beyond them. Every iteration that touches architecture includes *"Architecture documents in scope describe the system as built."*, and a criterion may be one line when it is specific.
+The authoring standards are [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`: what qualifies as a criterion, the delta and traceability rules, the three-way `Operator` / `Agent [x]` / `Agent [ ]` marking, and the `Not yet defined.` gate. Apply them here; this step adds only what the scope-gate presentation needs beyond them. Every iteration that touches architecture includes *"Architecture documents in scope describe the system as built."*, and a criterion may be one line when it is specific.
 
 **Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`.
 
@@ -131,7 +131,7 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 Produce changes against the confirmed scope. Write tests alongside per `testing_policy.md`. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 
-The record-state invariants live in [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md); this step applies them to the handover. The policy owns the rules; this step is their operational face. Satisfy each record-state invariant as you produce deliverables: record decisions where they are made, write findings as they arise, and verify every record write landed in the same turn (grep the row key or content you claim to have written -- the write is not done until the grep finds it).
+The record-state invariants live in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md); this step applies them to the handover. The policy owns the rules; this step is their operational face. Satisfy each record-state invariant as you produce deliverables: record decisions where they are made, write findings as they arise, and verify every record write landed in the same turn (grep the row key or content you claim to have written -- the write is not done until the grep finds it).
 
 The handover write-back fires at three moments in the runbook's operation:
 
@@ -146,7 +146,7 @@ The handover write-back fires at three moments in the runbook's operation:
 Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has five sections:
 
 1. **Acceptance criteria** -- table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the scope-gate AC-presentation format from Step 5; this table answers "did it pass?", not "who can verify?".
-2. **Roadmap write-back** -- per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Per [`roadmap_policy.md`](/opt/sandbox/docs/operations/roadmap_policy.md). When no task was touched, state `none worked this iteration`.
+2. **Roadmap write-back** -- per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Per [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md). When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
 | File | Change planned | Status |
@@ -154,7 +154,7 @@ Step 7 is the pre-close verification before the release gate. Present a pre-clos
 
 Every row must carry a status. A deferred or not-started row must be written back to the roadmap as an open row before the gate closes.
 
-4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in [`git_policy.md`](/opt/sandbox/docs/operations/git_policy.md).
+4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md).
 5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
@@ -169,7 +169,7 @@ This is the common acceptance gate the operator-involved workflows share. The ac
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
-After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B9 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](/opt/sandbox/docs/operations/git_policy.md).
+After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B9 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md).
 
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
@@ -182,16 +182,16 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 `/iter` stops at the acceptance gate. It presents the AC table, the roadmap write-back, the propagation replay, and the commit message; the operator releases; [`/wrapup`](wrapup.md) picks the iteration up from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
-**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
+**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 
 ---
 
 ## File Tracking
 
-There is no document registry; the docs tree is the authoritative file list. The iteration-scoped list is the active handover's Hot files section, governed by [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md).
+There is no document registry; the docs tree is the authoritative file list. The iteration-scoped list is the active handover's Hot files section, governed by [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md).
 
 ---
 
 ## Policy
 
-The invariants these steps must not break are in [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md) and the separation is recorded in the ADR `coding_agent_loop_workflow.md`.
+The invariants these steps must not break are in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) and the separation is recorded in the ADR `coding_agent_loop_workflow.md`.

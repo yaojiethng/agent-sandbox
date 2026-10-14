@@ -10,7 +10,7 @@
 # anyway, so the rule is enforced here instead of restated.
 #
 # The scan also covers every policy file (docs/**/*_policy.md), whose
-# frontmatter holds a description and a scope per docs/operations/
+# frontmatter holds a description and a scope per docs/policies/
 # documentation_policy.md `### Document header format`.
 #
 # The parse itself is Node's, in scripts/lint/frontmatter.mjs, because
@@ -49,5 +49,5 @@ if FRONTMATTER_SCAN_ROOT="$SCAN_ROOT" node "$SCAN_SCRIPT"; then
   exit 0
 fi
 
-echo "Blocking gate: fix the frontmatter above (see docs/development/prompt-authoring-conventions.md and docs/operations/documentation_policy.md)." >&2
+echo "Blocking gate: fix the frontmatter above (see docs/development/prompt-authoring-conventions.md and docs/policies/documentation_policy.md)." >&2
 exit 1

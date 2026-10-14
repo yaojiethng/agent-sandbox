@@ -552,9 +552,9 @@ test_frontmatter_gate_fails_closed_without_node() {
 test_frontmatter_gate_scans_policy_files() {
   local root out rc=0
   root="$FIXTURE_DIR/frontmatter_policy_$$_$RANDOM"
-  mkdir -p "$root/docs/operations"
+  mkdir -p "$root/docs/policies"
   printf '%s\n' '---' 'description: Owns a rule: unquoted colon' '---' '' '# X Policy' \
-    > "$root/docs/operations/x_policy.md"
+    > "$root/docs/policies/x_policy.md"
   out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed policy block fails the gate"
   assert_contains "$out" "x_policy.md" "the finding names the policy file"

@@ -26,7 +26,7 @@ Each agent run is reproducible via a container image version, a specific project
 
 ## System Invariants
 
-The system enforces a set of invariants by construction -- constraints that hold across all agent runs regardless of configuration. These are defined authoritatively in [`../architecture/security.md`](../architecture/security.md#security-invariants).
+The system enforces a set of invariants by construction -- constraints that hold across all agent runs regardless of configuration. These are defined authoritatively in [`../development/security.md`](../development/security.md#security-invariants).
 
 In summary: no unreviewed output reaches the repository; no direct mutation of the host repository occurs from inside either container; every change is traceable to an agent run; the operator initiates every run and has final authority over all outputs.
 
@@ -46,7 +46,7 @@ Provider-layer content is narrow and environment-specific. It does not carry pro
 
 Each project commits an `AGENTS.md` at its repository root. This file is discovered by the agent through working-directory lookup at iteration start. It carries everything project-specific: iteration workflow, navigation instructions (what to read and in what order), durable operational decisions, and collaboration principles scoped to this project.
 
-Project-layer content is stable across iterations. It is not per-iteration state -- that is carried by the handover. It is not policy -- that is carried by the policy documents in `docs/operations/`. It is the orienting layer between the two.
+Project-layer content is stable across iterations. It is not per-iteration state -- that is carried by the handover. It is not policy -- that is carried by the policy documents in `docs/policies/`. It is the orienting layer between the two.
 
 ### Reference template
 
@@ -70,7 +70,7 @@ Skills and prompt templates follow a parallel three-layer model with distinct lo
 
 **Why the sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
 
-**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`. The sandbox-layer files are not seeded into these paths by default -- they are baked into the image at `/opt/workflow/`. The `settings.json` `"packages"` key bridges this gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots. One key, and one entry per payload. This makes the sandbox layer critically dependent on that key surviving in `settings.json` across sessions -- see [Config Flow and Fragility Notes](../architecture/provider_lifecycle.md#config-flow-and-fragility-notes) in `provider_lifecycle.md`.
+**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`. The sandbox-layer files are not seeded into these paths by default -- they are baked into the image at `/opt/workflow/`. The `settings.json` `"packages"` key bridges this gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots. One key, and one entry per payload. This makes the sandbox layer critically dependent on that key surviving in `settings.json` across sessions -- see [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes) in `provider_lifecycle.md`.
 
 ---
 
@@ -84,7 +84,7 @@ Policy documents are the authoritative source for workflow rules. They describe 
 
 Rules live in the policy document where they will be read and are most valuable contextually. Duplicate rules across documents are a defect -- one document is the canonical owner and the other links to it.
 
-Policy documents live in `docs/operations/`, `docs/architecture/`, `docs/concepts/`, and `docs/development/`. The policy map below names the canonical owner for each area of the workflow.
+Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the canonical owner for each area of the workflow.
 
 ### Skill files
 
@@ -110,17 +110,17 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 | Workflow area | Canonical document | Owns | Does not own |
 |---|---|---|---|
-| Iteration sequencing and loop structure | [`iteration_policy.md`](../operations/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
-| Handover lifecycle | [`handover_policy.md`](../operations/handover_policy.md) | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
-| Roadmap maintenance | [`roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap update sequence, task compaction, roadmap maintenance, top-level milestone close, changelog format, milestone promotion | Handover format, iteration step definitions |
-| Milestone planning | [`roadmap_policy.md`](../operations/roadmap_policy.md) and the `/milestone-start` and `/plan` prompts | Milestone states, the record shape, scoping criteria, and the close rules | Iteration execution |
-| Agent feedback and gotchas | routing: [`iteration_policy.md`](../operations/iteration_policy.md) (close review/publish invariants); record: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
-| Discussion record types | [`discussion_policy.md`](../operations/discussion_policy.md) | Story, study, design, and report section order, statuses, naming, and closure | Iteration sequencing, roadmap entry format, ADR authoring |
-| Documentation rules | [`documentation_policy.md`](../operations/documentation_policy.md) | Folder ownership, rule placement, linking conventions, grep navigation, policy-vs-skill separation | Workflow sequencing |
-| Security model and invariants | [`security.md`](../architecture/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
-| Execution mechanics | [`execution_model.md`](../architecture/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
-| External contract | [`tool_interface.md`](../architecture/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
-| Provider AGENTS.md contract | [`provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, iteration workflow |
+| Iteration sequencing and loop structure | [`iteration_policy.md`](../policies/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
+| Handover lifecycle | [`handover_policy.md`](../policies/handover_policy.md) | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
+| Roadmap maintenance | [`roadmap_policy.md`](../policies/roadmap_policy.md) | Roadmap update sequence, task compaction, roadmap maintenance, top-level milestone close, changelog format, milestone promotion | Handover format, iteration step definitions |
+| Milestone planning | [`roadmap_policy.md`](../policies/roadmap_policy.md) and the `/milestone-start` and `/plan` prompts | Milestone states, the record shape, scoping criteria, and the close rules | Iteration execution |
+| Agent feedback and gotchas | routing: [`iteration_policy.md`](../policies/iteration_policy.md) (close review/publish invariants); record: [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
+| Discussion record types | [`discussion_policy.md`](../policies/discussion_policy.md) | Story, study, design, and report section order, statuses, naming, and closure | Iteration sequencing, roadmap entry format, ADR authoring |
+| Documentation rules | [`documentation_policy.md`](../policies/documentation_policy.md) | Folder ownership, rule placement, linking conventions, grep navigation, policy-vs-skill separation | Workflow sequencing |
+| Security model and invariants | [`security.md`](../development/security.md) | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
+| Execution mechanics | [`execution_model.md`](../reference/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
+| External contract | [`tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
+| Provider AGENTS.md contract | [`provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, iteration workflow |
 
 ### Boundary notes
 
@@ -134,7 +134,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../operations/documentation_policy.md#rule-authority) to resolve which document is authoritative.
+When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../policies/documentation_policy.md#rule-authority) to resolve which document is authoritative.
 
 ---
 
@@ -143,9 +143,9 @@ When a rule appears to exist in two documents in this map, apply the canonical o
 | Topic | Document |
 |---|---|
 | Two-layer architectural model | [`two_layer_model.md`](two_layer_model.md) |
-| Security invariants and trust boundaries | [`../architecture/security.md`](../architecture/security.md) |
-| Container lifecycle and execution mechanics | [`../architecture/execution_model.md`](../architecture/execution_model.md) |
-| External contract: commands, naming, guarantees | [`../architecture/tool_interface.md`](../architecture/tool_interface.md) |
-| Iteration workflow (authoritative) | [`../operations/iteration_policy.md`](../operations/iteration_policy.md) |
-| Provider AGENTS.md contract and reference template | [`../operations/provider_onboarding_guide.md`](../operations/provider_onboarding_guide.md) |
-| Onboarding and running guide | [`../operations/quickstart.md`](../development/quickstart.md) |
+| Security invariants and trust boundaries | [`../development/security.md`](../development/security.md) |
+| Container lifecycle and execution mechanics | [`../reference/execution_model.md`](../reference/execution_model.md) |
+| External contract: commands, naming, guarantees | [`../reference/tool_interface.md`](../reference/tool_interface.md) |
+| Iteration workflow (authoritative) | [`../policies/iteration_policy.md`](../policies/iteration_policy.md) |
+| Provider AGENTS.md contract and reference template | [`../development/provider_onboarding_guide.md`](../development/provider_onboarding_guide.md) |
+| Onboarding and running guide | [`../development/quickstart.md`](../development/quickstart.md) |

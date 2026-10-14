@@ -29,9 +29,8 @@ RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 # transport that could load a prompt or a skill, so a payload here would ship
 # unreachable. The image carries the agent's own install and the harness's
 # documentation; the payload ships in pi's image only.
-COPY docs/architecture/                          /opt/sandbox/docs/architecture/
-COPY docs/concepts/                              /opt/sandbox/docs/concepts/
-COPY docs/operations/                            /opt/sandbox/docs/operations/
+COPY docs/reference/                          /opt/sandbox/docs/reference/
+COPY docs/policies/                           /opt/sandbox/docs/policies/
 
 # -------------------------
 # Non-root user

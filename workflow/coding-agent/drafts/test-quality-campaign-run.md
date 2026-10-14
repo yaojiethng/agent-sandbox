@@ -26,12 +26,12 @@ Then read `$SESSION_DIR/FINAL_REVIEW.md`.
 
 ## Step 3 - Work the proposal through the iteration
 
-The subagent's uncommitted changes and its report are a proposal. Operate the normal iteration workflow with the operator: review the proposal, and accept, amend, cherry-pick, or reject as the iteration requires. Commit at iteration close per `docs/operations/git_policy.md`.
+The subagent's uncommitted changes and its report are a proposal. Operate the normal iteration workflow with the operator: review the proposal, and accept, amend, cherry-pick, or reject as the iteration requires. Commit at iteration close per `docs/policies/git_policy.md`.
 
 The report's sections feed the iteration:
 
 - `Remaining Gaps & Recommended Next Steps` become roadmap tasks.
-- `Bash Conventions & Testing Policy Gaps` become policy proposals, one section at a time, per `docs/operations/documentation_policy.md`.
+- `Bash Conventions & Testing Policy Gaps` become policy proposals, one section at a time, per `docs/policies/documentation_policy.md`.
 - `Architectural & Functional Seams` become ADR or discussion candidates.
 - `Agent Feedback & Gotchas` become entries in `devlog/AGENT_FEEDBACK.md`.
 

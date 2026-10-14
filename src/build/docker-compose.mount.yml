@@ -3,7 +3,7 @@
 # run_agent.sh (compose_generate merges the assembled set).
 # The agent works directly on the host worktree, bind-mounted at
 # /home/agentuser/sandbox. No snapshot, no named sandbox volume  --  the worktree
-# is the durable place (see docs/architecture/execution_model.md  --  Container
+# is the durable place (see docs/reference/execution_model.md  --  Container
 # State Contract; design record devlog/discussions/20260730-design-settled-mount_model.md).
 #
 # Path mapping: ${WORKTREE_DIR} (host) -> /home/agentuser/sandbox (container)

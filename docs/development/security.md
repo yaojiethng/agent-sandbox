@@ -33,7 +33,7 @@ The system includes the following explicit trust boundaries, which hold in every
 
 ### Principle
 
-The sandbox adds no security beyond what the host provides -- it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design -- Mount Model](../../devlog/discussions/archive/20260730-design-settled-mount_model.md) and the delivery-model concept docs: [copy_delivery.md](../concepts/copy_delivery.md), [mount_delivery.md](../concepts/mount_delivery.md).
+The sandbox adds no security beyond what the host provides -- it only restricts what the host shares. The default share is nothing. Every mount is an explicit grant, and each grant carries its required controls. The harness provides the container boundary; the user provides what `.git` backs the sandbox. The harness does not mediate, protect, or audit git operations. See [Design -- Mount Model](../../devlog/discussions/archive/20260730-design-settled-mount_model.md) and the delivery-model concept docs: [copy_delivery.md](../reference/copy_delivery.md), [mount_delivery.md](../reference/mount_delivery.md).
 
 ### Mount modes
 
@@ -108,13 +108,13 @@ Residual risk is acknowledged.
 
 | Threat Entity | STRIDE | Mitigations (link to SOP) |
 |---------------|--------|---------------------------|
-| Resource Exhaustion | D: High, R: Medium, T: Medium | [API / Billable Resource Control](../operations/standard_operating_procedures.md#4-api--billable-resource-control), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment) |
-| Orchestration / Agent Runtime Compromise | T/I/D/E: High | [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling), [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
-| Container Misconfiguration / Image Compromise | T/E/I: High | [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
-| External Network Threats | T/I: High | [Network Access Rules](../operations/standard_operating_procedures.md#3-network-access-rules), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling) |
-| Package / Dependency Compromise | T/I/E: High | [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
-| Secrets / Sensitive Data Leakage | I: High | [Secrets Handling](../operations/standard_operating_procedures.md#2-secrets-handling), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Network Access Rules](../operations/standard_operating_procedures.md#3-network-access-rules) |
-| Human / Operational Misuse | T/R: High | [Human / Operational Protocols](../operations/standard_operating_procedures.md#5-human--operational-protocols), [Container Build & Deployment](../operations/standard_operating_procedures.md#6-container-build--deployment), [Child Agent Output Handling](../operations/standard_operating_procedures.md#1-child-agent-output-handling), [Agent Lifecycle Compliance](../operations/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| Resource Exhaustion | D: High, R: Medium, T: Medium | [API / Billable Resource Control](../development/standard_operating_procedures.md#4-api--billable-resource-control), [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Container Build & Deployment](../development/standard_operating_procedures.md#6-container-build--deployment) |
+| Orchestration / Agent Runtime Compromise | T/I/D/E: High | [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Secrets Handling](../development/standard_operating_procedures.md#2-secrets-handling), [Container Build & Deployment](../development/standard_operating_procedures.md#6-container-build--deployment), [Agent Lifecycle Compliance](../development/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| Container Misconfiguration / Image Compromise | T/E/I: High | [Container Build & Deployment](../development/standard_operating_procedures.md#6-container-build--deployment), [Agent Lifecycle Compliance](../development/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| External Network Threats | T/I: High | [Network Access Rules](../development/standard_operating_procedures.md#3-network-access-rules), [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Secrets Handling](../development/standard_operating_procedures.md#2-secrets-handling) |
+| Package / Dependency Compromise | T/I/E: High | [Container Build & Deployment](../development/standard_operating_procedures.md#6-container-build--deployment), [Secrets Handling](../development/standard_operating_procedures.md#2-secrets-handling), [Agent Lifecycle Compliance](../development/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
+| Secrets / Sensitive Data Leakage | I: High | [Secrets Handling](../development/standard_operating_procedures.md#2-secrets-handling), [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Network Access Rules](../development/standard_operating_procedures.md#3-network-access-rules) |
+| Human / Operational Misuse | T/R: High | [Human / Operational Protocols](../development/standard_operating_procedures.md#5-human--operational-protocols), [Container Build & Deployment](../development/standard_operating_procedures.md#6-container-build--deployment), [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Agent Lifecycle Compliance](../development/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
 
 ---
 
@@ -152,4 +152,5 @@ Future hardening steps (e.g., outbound whitelisting, proxy enforcement) are trac
 - Linux namespaces
 - Linux cgroups
 - Container escape research
+
 (Refer to authoritative sources as needed.)

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines Standard Operating Procedures (SOPs) for operating the agent-sandbox system. These procedures cover mitigations that cannot be fully enforced via Dockerfile or code and ensure workflow compliance with the threat model defined in [`architecture/threat_model_stride.md`](../architecture/threat_model_stride.md).
+This document defines Standard Operating Procedures (SOPs) for operating the agent-sandbox system. These procedures cover mitigations that cannot be fully enforced via Dockerfile or code and ensure workflow compliance with the threat model defined in [`threat_model_stride.md`](threat_model_stride.md).
 
 ---
 

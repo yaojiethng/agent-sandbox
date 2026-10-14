@@ -70,8 +70,7 @@ Container paths are fixed by the harness and not configurable via `.env`. The fu
 
 ## Compose Generation
 
-`scripts/run_agent.sh` generates the compose configuration on each run and writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<session-id>.yml`. The file persists after the session ends -- it is the session's compose record and an inspection handle (e.g. `docker compose -f .compose/<session-id>.yml config`).
-Resume reuses the same SESSION_ID and overwrites its own file; each unique session leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the file is never visible in the agent workspace. `.compose/` is gitignored.
+`scripts/run_agent.sh` generates the compose configuration on each run and writes it to a stable on-disk path: `$SANDBOX_DIR/.compose/<session-id>.yml`. The file persists after the session ends -- it is the session's compose record and an inspection handle (e.g. `docker compose -f .compose/<session-id>.yml config`). Resume reuses the same SESSION_ID and overwrites its own file; each unique session leaves one record. Containers mount only SANDBOX_DIR subdirectories, so the file is never visible in the agent workspace. `.compose/` is gitignored.
 
 **Per-session activity log:** alongside the compose record, each session keeps a `.compose/<session-id>.log` -- a minimal `KEY=VALUE` lifecycle log (entries `last_started=` / `last_stopped=`, UTC `YYYYMMDD-HHMMSS`). `run_agent.sh` writes `last_started=` on session start/resume (and clears `last_stopped` so a running session is not shown as stopped) and `last_stopped=` on post-session teardown. Dry-run ids (session_is_dry_run) are excluded from the log: dry-run machinery leaves no activity record. `make resume --list` derives its `AGE` column from the latest `last_started=` / `last_stopped=` entry, the verb overridden by live docker state when they disagree. The `KEY=VALUE` shape is intentionally extensible (e.g. future preflight/dry-run outcome lines) without structural change. Both `.yml` and `.log` live under `.compose/` and are gitignored. The compose record also carries the session's image-content identity: `compose_generate` stamps the `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest` labels (image ID digests, read via docker inspect post-build) so `make resume --list` reads the record without a docker dependency (ADR harness_versioning.md).
 
@@ -93,23 +92,17 @@ Resume reuses the same SESSION_ID and overwrites its own file; each unique sessi
 
 **Delivery overlays:** the delivery type is passed to `run_agent.sh` as `--delivery` (`copy|mount`); `start_agent.sh` parses it at ingestion (default `copy`), `resume_agent.sh` recovers it from the session record, and `run_agent.sh` itself never defaults it. The delivery overlay carries the per-delivery worktree wiring, so the base template stays shared. Delivery is a command input, not environment state -- never an ambient variable. Dry-run on `--delivery=mount` stacks the mount overlay too: the probes run against the real worktree read-only, writing only to the workspace channels and the entrypoint-owned `.git/SESSION_STATE` marker -- tracked repo content is never modified.
 
-- `src/build/docker-compose.copy.yml` -- the per-run named sandbox volume.
-Content is seeded by the one-shot seeder service (helper-container
-transport); no snapshot mount. Copy mode only.
-- `src/build/docker-compose.mount.yml` -- the worktree bind mount at
-`/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
+- `src/build/docker-compose.copy.yml` -- the per-run named sandbox volume. Content is seeded by the one-shot seeder service (helper-container transport); no snapshot mount. Copy mode only.
+- `src/build/docker-compose.mount.yml` -- the worktree bind mount at `/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
 
 The provider overlay (`providers/<n>/docker-compose.<n>.yml`) is optional -- merged if the file exists. It covers mounts and environment variables that apply in all modes. The serve, dry-run, and delivery overlays are static files in the repo; only the merged result is written to `SANDBOX_DIR` (at `.compose/<session-id>.yml`).
 
 **Delivery-aware container init:** the capability-layer entrypoint branches on `SANDBOX_TYPE` (passed as a container env literal by each delivery overlay):
 
-- **Copy:** the seeded volume -- the one-shot seeder service (helper-container
-  transport) fills the volume before this container starts: repository with
-  index, working tree, `SESSION_STATE`. The entrypoint validates the git state.
-- **Mount:** no seed. The entrypoint validates `.git` is present in the
-  bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit for a flattened worktree, or the host HEAD at materialization for a full-history worktree), and skips the seed init.
+- **Copy:** the seeded volume -- the one-shot seeder service (helper-container transport) fills the volume before this container starts: repository with index, working tree, `SESSION_STATE`. The entrypoint validates the git state.
+- **Mount:** no seed. The entrypoint validates `.git` is present in the bind-mounted worktree, writes the `SESSION_STATE` init marker into the worktree `.git` if absent (this is the start-validation init marker; `init_sha` is the worktree baseline root commit for a flattened worktree, or the host HEAD at materialization for a full-history worktree), and skips the seed init.
 
-`SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy has the seeder write it into the volume's `.git` before the container exists; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/concepts/terminology.md`](../concepts/terminology.md) mirror + the M2.6.6 Start-contract decision).
+`SESSION_STATE` is retained in both deliveries as container-side co-located provenance: copy has the seeder write it into the volume's `.git` before the container exists; mount writes it into the worktree `.git`, where it doubles as the init marker (see [`docs/reference/terminology.md`](../reference/terminology.md) mirror + the M2.6.6 Start-contract decision).
 
 **Mount worktree materialization:** on a fresh mount run, `start_agent.sh` materializes the host worktree (`${WORKTREE_DIR}`, default `${SANDBOX_DIR}/.worktree`) via the shared snapshot delivery dispatcher `snapshot_deliver` -- full history by default (`cp -a .git` plus a git-enumerated worktree copy), or `--flatten` for a fresh baseline without host history. The worktree records its delivery-history mode in `.git/config` (`agent-sandbox.flatten`) so a later mode mismatch is refused -- and a corrupt (non-boolean) recorded value is refused in the clear rather than interpreted -- and the container then writes the `SESSION_STATE` init marker. On subsequent runs the worktree already has `.git` and is reused directly. Resume cross-checks the record's `FLATTEN` against the worktree's recorded mode and warns on a mismatch, continuing with the record value.
 
@@ -270,9 +263,9 @@ Docker's layer cache is the primary staleness mechanism. The repo root is used a
 
 | Topic | Document |
 |---|---|
-| Two-layer conceptual model | [../concepts/two_layer_model.md](../concepts/two_layer_model.md) |
+| Two-layer conceptual model | [../reference/two_layer_model.md](../reference/two_layer_model.md) |
 | Capability layer lifecycle | [sandbox_lifecycle.md](sandbox_lifecycle.md) |
 | Reasoning layer lifecycle | [provider_lifecycle.md](provider_lifecycle.md) |
 | External contract | [tool_interface.md](tool_interface.md) |
 | System invariants and component overview | [system_overview.md](system_overview.md) |
-| Security guarantees | [security.md](security.md) |
+| Security guarantees | [../development/security.md](../development/security.md) |

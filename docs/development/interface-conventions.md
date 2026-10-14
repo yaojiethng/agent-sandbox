@@ -201,7 +201,7 @@ Stick with the simple comparison.
 
 | Document | Relevance |
 |---|---|
-| [`tool_interface.md`](../architecture/tool_interface.md) | Harness-level CLI contracts |
+| [`tool_interface.md`](../reference/tool_interface.md) | Harness-level CLI contracts |
 | [`package_branch.sh`](../../src/libs/package_branch.sh) | Reference implementation -- error recovery + actionable next step |
 
 ---
@@ -226,5 +226,5 @@ To be defined. TUI extensions (e.g. interactive pickers, progress displays) shar
 
 ## API Contracts
 
-API contracts are defined in [`docs/architecture/execution_model.md`](../architecture/execution_model.md).
+API contracts are defined in [`docs/reference/execution_model.md`](../reference/execution_model.md).
 Interface-level guarantees (container lifecycle, mount shape, compose contracts, provider interface) are architecture invariants, not CLI surface.

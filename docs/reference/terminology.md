@@ -1,12 +1,10 @@
 # Terminology
 
-> Registry of reserved technical terms. Add new terms under their own header;
-> keep each term's identity, scope, and relationships together under it.
+> Registry of reserved technical terms. Add new terms under their own header; keep each term's identity, scope, and relationships together under it.
 
 ## Usage
 
-These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code.
-Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
+These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
 ---
 

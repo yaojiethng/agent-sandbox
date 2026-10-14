@@ -4,7 +4,7 @@
 
 A documentation pass is a dedicated review sweep that tests documents for policy compliance using the diagnostic checklists below. This document is a stub: it marks the home of the pass and carries its initial checklist content. It has not been expanded into a full procedure (trigger, scope, cadence, close-out) -- that expansion is deferred until the pass is first run.
 
-The checklists are diagnostic -- they identify what has gone wrong, not what to do instead. The corresponding prescriptive rules for documents are in [`documentation_policy.md`](../../../docs/operations/documentation_policy.md); the authoring bar for skill files and prompt templates is in [`prompt-authoring-conventions.md`](../../../docs/development/prompt-authoring-conventions.md), and the model that underlies it is in [`agent_workflow.md`](../../../docs/concepts/agent_workflow.md#how-the-workflow-is-expressed). The canonical owner test appears in both `### Rule authority` (prescriptive) and here (diagnostic) -- this is intentional; the two registers serve different readers.
+The checklists are diagnostic -- they identify what has gone wrong, not what to do instead. The corresponding prescriptive rules for documents are in [`documentation_policy.md`](../../../docs/policies/documentation_policy.md); the authoring bar for skill files and prompt templates is in [`prompt-authoring-conventions.md`](../../../docs/development/prompt-authoring-conventions.md), and the model that underlies it is in [`agent_workflow.md`](../../../docs/reference/agent_workflow.md#how-the-workflow-is-expressed). The canonical owner test appears in both `### Rule authority` (prescriptive) and here (diagnostic) -- this is intentional; the two registers serve different readers.
 
 ## Checklist
 
@@ -17,8 +17,8 @@ The checklists are diagnostic -- they identify what has gone wrong, not what to 
 
 **Signs of misplaced content to check:**
 
-- Future language (`will`, `plan`, `eventually`) in any `architecture/` document
-- TODO items in any `architecture/` document
+- Future language (`will`, `plan`, `eventually`) in any `reference/` document
+- TODO items in any `reference/` document
 - Prescriptive rules in a skill file or prompt template with no corresponding entry in a policy document
 - A rule that only exists in a skill file -- skills are fast paths, not sources of truth
 

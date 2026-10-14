@@ -21,7 +21,7 @@ Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to
 - Multi-agent coordination (parent/child dispatch) is a future milestone -- not currently active. `task-queue`, the parallel fan-out prompt, is an active M3.2.1 task. See `roadmap_future.md` -- M4 (Multi-Agent Coordination, with M4.1-M4.6).
 - Output naming conventions and metadata requirements are defined per milestone as they are implemented.
 
-For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/concepts/agent_workflow.md`](../concepts/agent_workflow.md).
+For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/reference/agent_workflow.md`](../reference/agent_workflow.md).
 
 ---
 
@@ -31,7 +31,7 @@ For the workflow expression model, policy map, and authority hierarchy between p
 - Agents receive secrets via environment variable injection at container runtime -- never preloaded in the workspace or baked into images.
 - Network outputs are untrusted and must be validated before use.
 
-See [`docs/architecture/security.md`](../architecture/security.md) and [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) -- Secrets Handling.
+See [`docs/development/security.md`](../development/security.md) and [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) -- Secrets Handling.
 
 ---
 
@@ -42,7 +42,7 @@ See [`docs/architecture/security.md`](../architecture/security.md) and [`docs/op
 - Manual interventions should be minimal and logged.
 - Workspace integrity must be maintained -- accidental overwrites are prohibited.
 
-See [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) -- Human / Operational Protocols.
+See [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) -- Human / Operational Protocols.
 
 ---
 
@@ -53,7 +53,7 @@ See [`docs/operations/standard_operating_procedures.md`](../operations/standard_
 - Containers must run unprivileged with minimal capabilities.
 - Do not mount sensitive host directories.
 
-See [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) -- Container Build & Deployment.
+See [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) -- Container Build & Deployment.
 
 ---
 
@@ -61,9 +61,9 @@ See [`docs/operations/standard_operating_procedures.md`](../operations/standard_
 
 Before making any documentation or roadmap change, read the relevant policy:
 
-- [`docs/operations/documentation_policy.md`](../operations/documentation_policy.md) -- document structure, folder ownership, enforcement rules
-- [`docs/operations/roadmap_policy.md`](../operations/roadmap_policy.md) -- roadmap update sequence and cleanup rules
-- [`docs/operations/iteration_policy.md`](../operations/iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
+- [`docs/policies/documentation_policy.md`](../policies/documentation_policy.md) -- document structure, folder ownership, enforcement rules
+- [`docs/policies/roadmap_policy.md`](../policies/roadmap_policy.md) -- roadmap update sequence and cleanup rules
+- [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
 
 ---
 
@@ -72,8 +72,8 @@ Before making any documentation or roadmap change, read the relevant policy:
 | Document | Purpose |
 |---|---|
 | [`readme.md`](../../readme.md) | System overview and invariants |
-| [`docs/architecture/security.md`](../architecture/security.md) | Security model and trust boundaries |
-| [`docs/architecture/threat_model_stride.md`](../architecture/threat_model_stride.md) | STRIDE threat model |
-| [`docs/operations/standard_operating_procedures.md`](../operations/standard_operating_procedures.md) | Operational SOPs |
-| [`docs/operations/iteration_policy.md`](../operations/iteration_policy.md) | Iteration workflow and milestone planning |
-| [`docs/operations/roadmap_policy.md`](../operations/roadmap_policy.md) | Roadmap policy |
+| [`docs/development/security.md`](../development/security.md) | Security model and trust boundaries |
+| [`docs/development/threat_model_stride.md`](threat_model_stride.md) | STRIDE threat model |
+| [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) | Operational SOPs |
+| [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) | Iteration workflow and milestone planning |
+| [`docs/policies/roadmap_policy.md`](../policies/roadmap_policy.md) | Roadmap policy |

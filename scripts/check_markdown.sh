@@ -9,7 +9,7 @@
 # docs/development/bash-coding-conventions.md 3.2).
 #
 # Uses .markdownlint-cli2.mjs at the repo root. The config enables the
-# rule subset that matches docs/operations/documentation_policy.md plus
+# rule subset that matches docs/policies/documentation_policy.md plus
 # the custom doc-ascii rule (plain-ASCII prose), the doc-wrap rule
 # (one paragraph per physical line) and the record-links rule (link targets
 # and heading fragments resolve). MD013 and MD060 are

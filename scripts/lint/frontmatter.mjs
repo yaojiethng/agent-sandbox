@@ -8,7 +8,7 @@
 // and was still missed, so the rule is enforced here rather than restated.
 //
 // Policy files (docs/**/*_policy.md) carry a description and a scope in their
-// frontmatter too, per docs/operations/documentation_policy.md `### Document
+// frontmatter too, per docs/policies/documentation_policy.md `### Document
 // header format`. Nothing consumes their values at runtime, so the block's
 // parse is the one thing a reader cannot check by eye; this gate is it.
 //

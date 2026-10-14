@@ -1,6 +1,6 @@
 // Handover format gate.
 //
-// Enforces docs/operations/handover_policy.md `## Format` over handovers: the
+// Enforces docs/policies/handover_policy.md `## Format` over handovers: the
 // frontmatter fields (date, milestone, type, status) and the section set (the
 // required sections present, the forbidden ones absent).
 //

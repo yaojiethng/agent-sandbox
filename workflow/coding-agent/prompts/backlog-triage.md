@@ -43,7 +43,7 @@ Apply the test from `sequential-work.md` Step 1 to every candidate. The test is:
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
-Use the commit types from [`git_policy.md`](/opt/sandbox/docs/operations/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
+Use the commit types from [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
 
 Two rows that cannot be separated by the records alone are one row. Merge them and say so in the verdict, rather than guessing where the boundary falls.
 
@@ -61,7 +61,7 @@ Where the row is parked on a decision the operator already made but the agent ha
 
 ## Step 4 - Check each runnable row against the run's own rules
 
-A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_policy.md`](/opt/sandbox/docs/operations/iteration_policy.md): one commit, one context, one verification, disjoint files.
+A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md): one commit, one context, one verification, disjoint files.
 
 - A row that fails one commit is over-scoped. Park it with the question of which slice comes first.
 - A row that needs two contexts splits, and each half is its own candidate. Present the split as two rows.

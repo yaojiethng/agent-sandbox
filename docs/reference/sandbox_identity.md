@@ -84,22 +84,11 @@ Containers are ephemeral -- they live for one session and die. All labels are ac
 
 ## Interface contract (container boundary)
 
-The interface contract governs the container boundary. Its version
-(`agent-sandbox.interface-contract-version`) is baked into tier-3 images at
-build, written into the session record, and compared at preflight and at the
-agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md)
-and ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
+The interface contract governs the container boundary. Its version (`agent-sandbox.interface-contract-version`) is baked into tier-3 images at build, written into the session record, and compared at preflight and at the agent entrypoint. See [sandbox_host_interface.md](sandbox_host_interface.md) and ADR [interface_contract_compatibility.md](../adr/interface_contract_compatibility.md).
 
-Further reading: the build-time signature model is a superseded principle -- the
-standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md)
-(coherence by minimisation, not detection), with the per-surface version
-semantics in [harness_versioning.md](../adr/harness_versioning.md). Image
-version is the image ID digest, recorded per session as
-`agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`.
+Further reading: the build-time signature model is a superseded principle -- the standing rationale is [drift_state_coherence.md](../adr/drift_state_coherence.md) (coherence by minimisation, not detection), with the per-surface version semantics in [harness_versioning.md](../adr/harness_versioning.md). Image version is the image ID digest, recorded per session as `agent-sandbox.agent-image-digest` / `agent-sandbox.sandbox-image-digest`.
 
-The interim `agent-sandbox.container-sig` source-subset hash and its preflight
-comparison are retired. The interface-contract version replaces the interim
-check as the standalone container-boundary contract.
+The interim `agent-sandbox.container-sig` source-subset hash and its preflight comparison are retired. The interface-contract version replaces the interim check as the standalone container-boundary contract.
 
 ## Identity persistence (registry)
 

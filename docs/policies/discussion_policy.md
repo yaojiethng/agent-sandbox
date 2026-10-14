@@ -45,7 +45,7 @@ This table is the single status vocabulary for all four discussion types, in the
 
 ### Standalone policy docs
 
-Policy files under `docs/operations/` are not discussion docs and do not follow this naming convention.
+Policy files under `docs/policies/` are not discussion docs and do not follow this naming convention.
 
 ### Legacy docs
 

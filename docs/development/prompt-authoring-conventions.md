@@ -6,7 +6,7 @@ This document states the authoring rules for prompts and skills. It answers four
 
 The per-prompt quality passes read this document before they edit a prompt. The `fanout` doc pass reads it before it edits that prompt. Any session that writes a new prompt or skill reads it first.
 
-This document owns the authoring bar for workflow documents. The conceptual model behind them stays in [`agent_workflow.md`](../concepts/agent_workflow.md) - the layers, the loading mechanism, and the authority hierarchy. That document says what a prompt or skill is; this document says how to write one. A rule that states a fact about the model, not a rule about writing, lives in `agent_workflow.md`.
+This document owns the authoring bar for workflow documents. The conceptual model behind them stays in [`agent_workflow.md`](../reference/agent_workflow.md) - the layers, the loading mechanism, and the authority hierarchy. That document says what a prompt or skill is; this document says how to write one. A rule that states a fact about the model, not a rule about writing, lives in `agent_workflow.md`.
 
 The authoring rules borrow from two external references: Claude's Skill authoring best practices (`https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`) and mattpocock's `writing-for-agents` skill (`https://github.com/mattpocock/skills`, under `skills/productivity/writing-for-agents`). Both describe levers for writing documents an agent consumes. The repository's own prompt and skill set is the primary source; the references explain the reasoning. Read this document for the rules.
 
@@ -14,11 +14,11 @@ The authoring rules borrow from two external references: Claude's Skill authorin
 
 A document an agent consumes is one of three types. The type determines where it lives and how it is written.
 
-**Policy** documents hold the authoritative rules. Write a rule only into a policy document in `docs/operations/`, `docs/architecture/`, `docs/concepts/`, or `docs/development/`.
+**Policy** documents hold the authoritative rules. Write a rule only into a policy document in `docs/policies/`, `docs/reference/`, `docs/reference/`, or `docs/development/`.
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states no rule; it serves the rules that live in policy.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. This document calls them workflow documents; [`documentation_policy.md`](../operations/documentation_policy.md) excludes them from its scope by the same boundary.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
 
 Two tests identify a workflow document:
 
@@ -27,7 +27,7 @@ Two tests identify a workflow document:
 
 A third test separates the forms a workflow document takes. Is it steps, reference, or judgement? A runbook holds ordered steps. A reference holds facts. An advisor holds judgement rules and a diagnostic checklist. This distinction shapes the structure, described below.
 
-The three-layer model for where prompts and skills live is in [`agent_workflow.md`](../concepts/agent_workflow.md). The provider layer, the sandbox layer, and the user layer load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
+The three-layer model for where prompts and skills live is in [`agent_workflow.md`](../reference/agent_workflow.md). The provider layer, the sandbox layer, and the user layer load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
 
 ## The information hierarchy
 
@@ -86,7 +86,7 @@ The workflow-document presentation rules that the `/document` stub defers here c
 
 One subject per prompt. The subject is the class of work the prompt owns. A prompt that owns two subjects is two prompts, or a runbook that dispatches two sub-cases.
 
-Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../operations/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
+Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../policies/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
 
 A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`workflow/coding-agent/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
@@ -124,7 +124,7 @@ The failure this rule catches is a document that is locally accurate and globall
 
 A prompt runs at its image path. The harness prompts run from `/opt/workflow/agent/prompts/`, from `src/reasoning/agent/prompts/`. A workflow module's prompts run from the module's own root, `/opt/workflow/agent/modules/<module>/prompts/`, from `workflow/<module>/prompts/`, because the module is the unit a provider enables or leaves out. A provider's own prompt runs from that provider's root: pi's `pi-agent.md` runs from `$AGENT_HOME/agent/prompts/` -- `/home/agentuser/.pi/agent/prompts/` -- which the image seeds from `src/reasoning/providers/pi/config/agent/prompts/` through the config template. The repository tree is not there. The link check resolves a link in an instruction file in the image's path space rather than the repository's, so a target that exists only in the repository is a finding, and a link in the old repository-relative form no longer passes.
 
-A prompt links a document that ships. The operations policy ships at `/opt/sandbox/docs/operations/`, and `docs/architecture/` and `docs/concepts/` ship beside it. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
+A prompt links a document that ships. The policy corpus ships at `/opt/sandbox/docs/policies/`, and the reference layer ships beside it at `/opt/sandbox/docs/reference/`. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
 
 A prompt names a document that does not ship -- a record, a draft, an ADR, a development document -- in plain text or a code span. Name it by the path a reader can find, and do not link it: the link would pass no reader in the container and fail the check. A reference to a project file, such as the project `AGENTS.md` or `devlog/roadmap.md`, is the same case, because the project tree is the reader's working directory rather than the prompt's.
 
@@ -146,4 +146,4 @@ A prompt or skill that is not yet operator-reviewed is a draft. The durable gate
 
 The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time.
 
-The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../concepts/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.
+The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.

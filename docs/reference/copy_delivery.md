@@ -55,6 +55,6 @@ Volume locking: a volume attached to a running session cannot start a second con
 |---|---|
 | [`../adr/sandbox_delivery_model.md`](../adr/sandbox_delivery_model.md) | Requirements, seed-transport decision, rejected alternatives, defect history |
 | [`mount_delivery.md`](mount_delivery.md) | Companion delivery model |
-| [`../architecture/sandbox_lifecycle.md`](../architecture/sandbox_lifecycle.md) | Session lifecycle implementation detail |
-| [`../architecture/execution_model.md`](../architecture/execution_model.md) | Compose generation and container topology |
-| [`../architecture/security.md`](../architecture/security.md) | Security posture -- copy and fresh-baseline profile |
+| [`../reference/sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Session lifecycle implementation detail |
+| [`../reference/execution_model.md`](../reference/execution_model.md) | Compose generation and container topology |
+| [`../development/security.md`](../development/security.md) | Security posture -- copy and fresh-baseline profile |

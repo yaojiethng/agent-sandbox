@@ -6,7 +6,7 @@
 # tests/test_dry_run_probe.sh
 # Host-side unit harness for the dry-run bearer probes. Runs each probe with a
 # Pins cite: 20260828-design-settled-dry_run_phase_split.md;
-#             docs/architecture/tool_interface.md (Dry-Run Guarantees, diagnostics record).
+#             docs/reference/tool_interface.md (Dry-Run Guarantees, diagnostics record).
 
 # controllable fixture env + stubbed libs (tests/stubs/libs) and asserts each
 # readiness layer's PASS/FAIL in isolation, plus the diagnostics record

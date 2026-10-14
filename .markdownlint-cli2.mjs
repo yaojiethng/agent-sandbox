@@ -1,6 +1,6 @@
 // markdownlint-cli2 configuration for the agent-sandbox repository.
 // Enables the subset of markdownlint rules that align with
-// docs/operations/documentation_policy.md, plus two custom rules:
+// docs/policies/documentation_policy.md, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
 // physical line) and record-links (link targets and heading fragments
 // resolve). Both exempt the record trees declared below, under one key.
@@ -83,14 +83,14 @@ export default {
         "docs/adr/single_source_model_recommendations.md",
         "docs/adr/task_queue_primitive.md",
         "docs/adr/task_type_taxonomy.md",
-        "docs/architecture/execution_model.md",
-        "docs/architecture/sandbox_lifecycle.md",
-        "docs/architecture/security.md",
-        "docs/architecture/tool_interface.md",
-        "docs/concepts/context_resolution.md",
-        "docs/concepts/sandbox_host_interface.md",
-        "docs/concepts/sandbox_identity.md",
-        "docs/concepts/terminology.md",
+        "docs/reference/execution_model.md",
+        "docs/reference/sandbox_lifecycle.md",
+        "docs/development/security.md",
+        "docs/reference/tool_interface.md",
+        "docs/reference/context_resolution.md",
+        "docs/reference/sandbox_host_interface.md",
+        "docs/reference/sandbox_identity.md",
+        "docs/reference/terminology.md",
         "docs/development/interface-conventions.md",
         "docs/development/testing-conventions.md",
         "src/reasoning/agent/skills/caveman/SKILL.md",

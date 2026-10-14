@@ -76,7 +76,7 @@ for i in $(seq 1 "$RUNS"); do
   mkdir -p "$RUN_DIR"
   git clone -q "$BUNDLE" "$PROJ" || { echo "clone failed for run $i" >&2; exit 1; }
   cp "$CANDIDATE/AGENTS.md" "$PROJ/AGENTS.md"
-  cp "$CANDIDATE/git_policy.md" "$PROJ/docs/operations/git_policy.md"
+  cp "$CANDIDATE/git_policy.md" "$PROJ/docs/policies/git_policy.md"
   git -C "$PROJ" apply "$PATCH" || { echo "patch failed for run $i" >&2; exit 1; }
   git -C "$PROJ" rev-list --count HEAD >"$RUN_DIR/base-count"
   git -C "$PROJ" rev-parse HEAD >"$RUN_DIR/base-sha"

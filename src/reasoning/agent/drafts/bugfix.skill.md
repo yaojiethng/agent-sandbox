@@ -72,7 +72,7 @@ Apply targeted edits to the minimum set of files that address the root causes:
 
 Document the bug and fix in two places:
 
-**A. Handover `[CORRECTION]` block** (per `docs/operations/handover_policy.md`):
+**A. Handover `[CORRECTION]` block** (per `docs/policies/handover_policy.md`):
 
 - What was wrong, root cause for each distinct bug, what was changed, which files were modified
 

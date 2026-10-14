@@ -9,11 +9,11 @@ description: "Checks handover content and the closed handover chain against hand
 
 ## Purpose
 
-Checks handover documents and reports the violations of [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
+Checks handover documents and reports the violations of [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
 
 This runbook carries two tracks over one subject. Track A checks the content quality of the handover the current iteration is writing. Track B checks the chain of handovers already closed, which is where deferred items, status values, and stale references live.
 
-The rules live in [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/operations/documentation_policy.md). This runbook is a convenience copy of the checks. Read the two policy documents before acting. Where this runbook and a policy disagree, the policy wins.
+The rules live in [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). This runbook is a convenience copy of the checks. Read the two policy documents before acting. Where this runbook and a policy disagree, the policy wins.
 
 ## When to run
 
@@ -127,7 +127,7 @@ Completion criterion: every named file and symbol either exists or is reported.
 
 #### Step 9 - The correction form
 
-Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. Read step 2 and step 3 of [`handover_policy.md`](/opt/sandbox/docs/operations/handover_policy.md) `## Corrections to Closed Handovers`:
+Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. Read step 2 and step 3 of [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) `## Corrections to Closed Handovers`:
 
 - A **misrecording** gets the paragraph rewritten in place and the tag moved to a `[CORRECTION -- YYYY-MM-DD: ...]` block at the end of the corrected section.
 - A non-standard format or a policy violation that cannot be corrected cleanly gets an `[AMENDMENT -- YYYY-MM-DD: ...]` block, leaving the content unchanged.

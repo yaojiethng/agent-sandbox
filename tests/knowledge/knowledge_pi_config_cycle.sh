@@ -36,7 +36,7 @@
 #  - src/reasoning/providers/pi/config/agent/settings.json (the image template)
 #  - src/reasoning/entrypoint.sh (_provision_agent_home)
 #  - src/build/container-interface.json (the template's source and image path)
-#  - docs/architecture/provider_lifecycle.md ("Config Flow and Fragility Notes")
+#  - docs/reference/provider_lifecycle.md ("Config Flow and Fragility Notes")
 #  - docs/development/testing_policy.md (knowledge test format)
 #
 # Not run by make test. Run manually:

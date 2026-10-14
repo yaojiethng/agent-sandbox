@@ -1,6 +1,6 @@
 # Provider Onboarding Guide
 
-A provider is a directory under [`src/reasoning/providers/`](../../src/reasoning/providers/) holding the two Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../architecture/tool_interface.md` -- Provider Interface](../architecture/tool_interface.md#provider-interface).
+A provider is a directory under [`src/reasoning/providers/`](../../src/reasoning/providers/) holding the two Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
 
 Read a shipped provider before writing one. Each file below is a working example of the shape it names.
 
@@ -50,7 +50,7 @@ ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]
 CMD ["<agent-command>"]
 ```
 
-`command:` in a compose overlay replaces the invocation, which is how serve mode and the dry-run probe select what runs. See [`../architecture/tool_interface.md`](../architecture/tool_interface.md#provider-interface) and the comment in [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
+`command:` in a compose overlay replaces the invocation, which is how serve mode and the dry-run probe select what runs. See [`../reference/tool_interface.md`](../reference/tool_interface.md#provider-interface) and the comment in [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
 
 ## Step 4 -- Write `docker-compose.serve.yml`
 
@@ -78,7 +78,7 @@ src/reasoning/providers/<n>/config/
 └── env.stub     ← seeded as AGENT_HOME/.env
 ```
 
-Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/providers/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
+Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/providers/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
 
 ## Step 7 (optional) -- `setup.sh`
 
@@ -100,7 +100,7 @@ Providers hold no registry. The agent chooses a provider by name at run time, an
 
 | Document | Purpose |
 |---|---|
-| [`../architecture/tool_interface.md`](../architecture/tool_interface.md) | the provider interface contract |
-| [`../architecture/execution_model.md`](../architecture/execution_model.md) | how the harness calls provider scripts |
-| [`../concepts/agent_workflow.md`](../concepts/agent_workflow.md) | two-layer agent context model |
+| [`../reference/tool_interface.md`](../reference/tool_interface.md) | the provider interface contract |
+| [`../reference/execution_model.md`](../reference/execution_model.md) | how the harness calls provider scripts |
+| [`../reference/agent_workflow.md`](../reference/agent_workflow.md) | two-layer agent context model |
 | [`scripts/build.sh`](../../scripts/build.sh) | the three-tier build a provider base sits in |

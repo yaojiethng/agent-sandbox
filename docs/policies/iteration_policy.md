@@ -65,7 +65,7 @@ Principles owned by other layers and echoed here:
 
 ## The autonomous agent loop
 
-The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../concepts/autonomous_agent_loop.md). The milestone phase takes its rules from [`roadmap_policy.md`](roadmap_policy.md#milestone-states)  -  a milestone is a node in the roadmap's tree  -  and its procedure from `/milestone-start`, `/plan` and `/milestone-close`. The iteration phase is governed by this policy.
+The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md). The milestone phase takes its rules from [`roadmap_policy.md`](roadmap_policy.md#milestone-states)  -  a milestone is a node in the roadmap's tree  -  and its procedure from `/milestone-start`, `/plan` and `/milestone-close`. The iteration phase is governed by this policy.
 
 ---
 
