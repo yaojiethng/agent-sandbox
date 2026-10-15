@@ -1,5 +1,5 @@
 ---
-active-milestone: M3.3 - Instruction Surface
+active-milestone: M3.6 - Cost-Aware Dispatch
 active-milestone-status: in-progress
 ---
 
@@ -41,7 +41,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.2 - Retire the policy form](#m332---retire-the-policy-form) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.3 - The skill maintenance pipeline](#m333---the-skill-maintenance-pipeline) | Not started |
 | &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | Not started |
-| &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | Not started |
+| &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
@@ -268,6 +268,8 @@ A skill lands in the tree by hand today. Nothing records its origin, nothing sta
 **Objective:** make dispatch cost-aware, by reading the cost a run already records, routing on it, and reaching the free model inventory through a real OpenCode runtime rather than through attribution.
 
 **Depends on:** M3.3.1, which settles where the instruction surfaces live, because the OpenCode transport points at those surfaces; and the `model-failover` extension, whose ledger this milestone extends.
+
+**Sequencing:** activated ahead of M3.3.2 and M3.3.3 on operator direction (2026-10-15). Cost-aware dispatch is the prerequisite for running the policy-form slices in parallel, so this milestone goes first and M3.3's remaining children wait.
 
 **Evidence.** The T7 row `Expose a capacity signal to the agent` is the measured misalignment: the agent reported running out of room with no signal to read, raised `[A] 2026-10-02`. The parent finding under T2 is that cost, throughput and failure modes are invisible for subagent runs and tool calls. Both remain open, and both are this milestone's instrument rather than separate ones.
 
