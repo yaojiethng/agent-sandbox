@@ -12,13 +12,14 @@ The paths this layer covers. Each is part of the container, so a reference to on
 
 | Path | What is there |
 |---|---|
-| `$AGENT_HOME/` | the running provider's config home: this file at `$AGENT_HOME/agent/AGENTS.md`, and the settings the provider reads |
+| `$AGENT_HOME/` | `/home/agentuser/.pi`, the agent's own config home. Put configuration there, not in a project-level `.pi`. |
 | `/opt/workflow/agent/prompts/` | the harness prompts and the coding-agent workflow prompts, merged into one root |
 | `/opt/workflow/agent/skills/` | the skill root |
 | `/opt/sandbox/docs/reference/` | the reference layer: contracts, states and sequences, the interface index |
 | `/opt/sandbox/docs/policies/` | the policy corpus the loop obeys |
 | `/opt/sandbox/lib/` | the harness libraries |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts |
+| `/tmp/` | the scratch directory: throwaway verification, and the working files of any run that needs scratch space |
 | `/home/agentuser/workspace/input/` | the operator's handover files, read-only |
 | `/home/agentuser/workspace/output/` | where the session writes its result |
 | `/home/agentuser/workspace/session-diffs/` | the session diff output |
@@ -99,33 +100,25 @@ The `-p` flag spawns a new subagent with a clean context  --  it does not inheri
 
 The subagent runs in the same container/workspace as the primary agent, with the same tools  --  it **can** persist file edits and run git commits. It starts with a clean conversation context, so it cannot see this session's chat history, in-memory files, or tool state; pass everything it needs in the `-p` argument or on disk. Its output is returned inline. The results should be triaged by the primary agent.
 
-## Running Review Subagents
+**What any dispatch must hold.**
 
-State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices in the operator's recommendations file, never here. Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. If the file is missing or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When the tag has no value, resolve the model in this order:
+- **The brief goes to a file**, and the file must be non-empty. Pre-flight it: `[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }`.
+- **Pin the model and the thinking level**, and state both in the brief, because the subagent cannot see its invocation flags.
+- **Give the run a timeout you set**, and record the exit code and the elapsed seconds.
+- **Log to a file, never a pipe.** A run's log is its only evidence.
 
-1. The `$AGENT_HOME/model-recommendations.md` role value.
-2. The pi default, read from `~/.pi/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`), a project-level `.pi/settings.json` override taking precedence. Confirm with the operator that this is the model to use.
-3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
+  ```bash
+  run_timeout=<seconds>                    # the run's timeout; set it yourself
+  start=$(date +%s)
+  timeout "$run_timeout" pi --provider <provider> --model <id> --thinking <level> \
+    --session <path> -p "$(cat "$brief")" >"$log" 2>&1
+  rc=$?
+  ```
 
-The last two rungs confirm with the operator so a fallback never guesses silently. Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default; a partial match is silent, so verify the effective model from the session header either way.
-
-Capture each subagent run to a log file, never through a pipe. Give the run a timeout you set, and a provider, model, and thinking level. Pre-flight the brief, then run and record the exit code and elapsed seconds:
-
-```bash
-brief=<path to brief>                    # the subagent's instructions; must be non-empty
-[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }
-run_timeout=<seconds>                    # the run's timeout; set it yourself
-start=$(date +%s)
-timeout "$run_timeout" pi --provider <provider> --model <model> --thinking <level> -p "$(cat "$brief")" > /tmp/review.log 2>&1
-rc=$?
-echo "rc=$rc secs=$(( $(date +%s) - start ))" > /tmp/review.meta
-```
-
-A `rc=0` with an empty log means the subagent did no work: treat it as an outcome of failure. A `rc=0` with a non-empty log means the subagent ran; check its output.
+- **An empty log is a failure.** A `rc=0` with an empty log means the subagent did no work. Treat it as an outcome of failure, not as a run with nothing to report.
+- **Trust no summary over the artifact.** Review the diff or the report yourself; a "done" from a subagent is a claim.
 
 Resuming an interrupted session needs an explicit continuation prompt: `pi --session <path>` opens the session but does not continue on its own. Resume with `pi --session <path> "Continue and give your verdict."`.
-
-A `Warning: No models match pattern` message means pi did not keep the requested model and fell back to the startup default; it is not benign noise. Confirm the effective model before trusting a run: give the run an explicit session path (`pi --session /tmp/review.jsonl ...`) and read the model from that file with `grep -o '"model":"[^"]*"' /tmp/review.jsonl | sort -u`.
 
 ### Keeping a subagent alive
 
@@ -146,3 +139,19 @@ echo "secs=$(( $(date +%s) - start ))"
 Each subagent gets its own brief file and its own log. Give the call a timeout larger than the per-agent timeout times the count, so the call is the outer bound rather than a second accidental cap. Nothing is orphaned, because the call does not return until every child has finished.
 
 A run can still be truncated by its own timeout. The signature is a short log with no report, and a subject tree that is partially patched. Score the tree rather than the report in that case, and say so.
+
+## Running Review Subagents
+
+A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT_HOME/agent/skills/pi-reviewer-dispatch/SKILL.md`. It states the reviewer contract and runs the pinned pair. Read it before dispatching a review. This section carries only what that skill cannot.
+
+**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices in the operator's recommendations file, never here.
+
+**Which model.** Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. If the file is missing or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When the tag has no value, resolve the model in this order:
+
+1. The `$AGENT_HOME/model-recommendations.md` role value.
+2. The pi default, read from `$AGENT_HOME/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`). Confirm with the operator that this is the model to use.
+3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
+
+The last two rungs confirm with the operator so a fallback never guesses silently.
+
+**The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.

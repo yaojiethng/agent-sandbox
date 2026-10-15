@@ -186,6 +186,10 @@
       "holds": "the entrypoint and preflight scripts"
     },
     {
+      "path": "/tmp/",
+      "holds": "the scratch directory: throwaway verification, and the working files of any run that needs scratch space"
+    },
+    {
       "path": "$AGENT_HOME/",
       "holds": "the running provider's config home, seeded from its template at every start"
     },
