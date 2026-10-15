@@ -36,7 +36,7 @@ Every review prompt carries, explicitly:
 - **Prior-round blockers** (rounds 2+): the list of previous blockers with a claim of where each was fixed, so the reviewer verifies rather than re-discovers.
 - **Verdict contract**: end with `VERDICT: APPROVE` or `VERDICT: BLOCK` plus the blocker list. The verdict is the loop's control signal -- do not accept prose-only conclusions.
 
-If the subagent's skill file does not already contain the review standards, inline them (the thermo-nuclear skill's full text is inlined via `$(cat ...)` in 20260912-05; audit skills live in `workflow/coding-agent/audits/`).
+If the subagent's skill file does not already contain the review standards, inline them (the thermo-nuclear skill's full text is inlined via `$(cat ...)` in 20260912-05; audit skills live in `.agents/audits/`).
 
 ## Standing review instruction (seed every round)
 

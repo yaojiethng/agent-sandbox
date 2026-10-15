@@ -59,8 +59,7 @@ Every unit that claims to pin a behaviour gets at least one mutation of that beh
 - **Proven** requires a named failing test file and a re-run to exclude the liveness gate. A single non-zero suite exit is not proof: a flaky gate can abort the suite for a reason unrelated to the mutation.
 - **A surviving mutation is a row, not a pass.** Record it, then classify it by running the deletion and comparing the outcome for the code's callers:
   - output or exit status changes for some input: a coverage gap, and the row stays `action_kind: test`;
-  - nothing changes for any exercised input: a code row, `action_kind: code`, and no unit is owed, because the fix is the deletion.
-  Decide the second case by running the deletion, never by argument: `bash -c 'set -e; f() { false; echo REACHED; exit $?; }; f'` prints nothing and exits 1, so the `exit $?` is unreachable with a failure and a no-op on success.
+  - nothing changes for any exercised input: a code row, `action_kind: code`, and no unit is owed, because the fix is the deletion.   Decide the second case by running the deletion, never by argument: `bash -c 'set -e; f() { false; echo REACHED; exit $?; }; f'` prints nothing and exits 1, so the `exit $?` is unreachable with a failure and a no-op on success.
 - **A mutation that cannot change behaviour is not a mutation.** Replace it with one that can.
 - **Back up the subject before the mutation and byte-compare the restored file after it.** A mutation that is not restored contaminates every later unit.
 - **Run one test suite at a time.** Two suites in flight make every baseline unsafe.

@@ -5,7 +5,7 @@ description: "Checks the documentation set against documentation_policy.md and r
 
 # doc-maintenance
 
-<!-- Merge provenance: the diagnostic register of `workflow/coding-agent/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `workflow/coding-agent/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both files are superseded by this skill. `documentation-pass.md` was removed by handover 20261006-09; `documentation-audit-comparison.md` stays until the folder is dissolved, because the milestone scope names it. -->
+<!-- Merge provenance: the diagnostic register of `.agents/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `.agents/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both files are superseded by this skill. `documentation-pass.md` was removed by handover 20261006-09; `documentation-audit-comparison.md` stays until the folder is dissolved, because the milestone scope names it. -->
 
 ## Project conventions
 

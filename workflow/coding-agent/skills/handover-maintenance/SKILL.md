@@ -5,7 +5,7 @@ description: "Checks handover content and the closed handover chain against the 
 
 # handover-maintenance
 
-<!-- Merge provenance: Track A (the two content checks and their run conditions) is the substance of workflow/coding-agent/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of workflow/coding-agent/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
+<!-- Merge provenance: Track A (the two content checks and their run conditions) is the substance of .agents/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of .agents/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
 
 ## Project conventions
 

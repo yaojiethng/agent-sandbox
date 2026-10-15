@@ -4,7 +4,7 @@
 
 **Scope:** the run directive for the task list mechanism study. It states the premise to attack, the falsifiable done predicate, the phase ledger, the parallel shape of each phase, the model for each seat, and the limits the run must respect. It carries no implementation detail for the mechanism itself; the mechanism is what the run decides.
 
-**Origin:** the operator's rewrite request (2026-10-15), the eight requirements R1 to R8 in the churn study, and the two T5 rows that own the subject. This brief is a draft under `workflow/coding-agent/drafts/`, so no live dispatch path reaches it until the operator promotes it.
+**Origin:** the operator's rewrite request (2026-10-15), the eight requirements R1 to R8 in the churn study, and the two T5 rows that own the subject. This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
 **Vocabulary:** the system is the Task List Mechanism. A task is the record of work that will need to be done, and a task list is the collection of tasks. Work item is the wider term for a task once it is picked up and expands through scoping, design or planning. The two name different subdomains and are not synonyms.
 
@@ -24,7 +24,7 @@ Write this premise down before any design work, and confirm or kill it from the 
 
 The premise is that prose is the state store. The roadmap holds machine state and human text in the same characters, so a state change is a text edit, and text edits serialize on the file.
 
-Three facts support it. The `active-milestone` field in [`roadmap.md`](../../../devlog/roadmap.md) is a scalar, and the project's `task-list` convention defines it as naming the milestone work is scoped to. Three runbooks write that one field. The churn study found 197 references to a roadmap row by position, and a row has no identity other than its prose. Twelve invariant families are rule-only, so an unmet invariant is a review duty.
+Three facts support it. The `active-milestone` field in [`roadmap.md`](../../devlog/roadmap.md) is a scalar, and the project's `task-list` convention defines it as naming the milestone work is scoped to. Three runbooks write that one field. The churn study found 197 references to a roadmap row by position, and a row has no identity other than its prose. Twelve invariant families are rule-only, so an unmet invariant is a review duty.
 
 If the census in Phase 1 shows that milestone serialization is not the dominant cost, say so and rescope the run to the cost that is dominant. The premise is the thing under test, not the conclusion.
 
@@ -154,7 +154,7 @@ One suite runs at a time. V4 and V6 both run the suite, so they serialize even t
 
 ### Phase 7, the proposal
 
-One design record at `devlog/discussions/` in the `design` section order from [`discussion_policy.md`](../../../docs/policies/discussion_policy.md), one ADR, and the roadmap write-back. The writer is the strongest prose seat. A different family reviews it.
+One design record at `devlog/discussions/` in the `design` section order from [`discussion_policy.md`](../../docs/policies/discussion_policy.md), one ADR, and the roadmap write-back. The writer is the strongest prose seat. A different family reviews it.
 
 ## The dispatch plan
 

@@ -56,7 +56,7 @@ Two surfaces declare one provider's config home: the home itself, which carries 
 
 `workflow/<module>/` is a toggle unit. Its `prompts/` and `skills/` folders are its payload, and each ships to its own root under `/opt/workflow/agent/modules/<module>/`. A module is enabled by naming its directory as a package: pi's `settings.json` carries `/opt/workflow/agent/modules/coding-agent` in its `packages` key, and the package convention contributes that directory's `prompts` and `skills` subdirectories as roots, so one entry enables both. The harness's own payload root is reached through the same key and the same convention: the `/opt/workflow/agent` entry contributes `/opt/workflow/agent/prompts/` and `/opt/workflow/agent/skills/`, so no `skills` or `prompts` list names a harness root. The gate derives those roots from the entries, and a module root that no entry enables is a finding.
 
-The repository keeps the two kinds apart because a prompt root reads files into commands and a skill root reads directories holding `SKILL.md`. A module's `prompts/` folder ships whole, and its `drafts/` and `audits/` folders do not ship at all, which is why the dockerfiles name the payload folders rather than the module directory.
+The repository keeps the two kinds apart because a prompt root reads files into commands and a skill root reads directories holding `SKILL.md`. A module's `prompts/` folder ships whole. Working records live outside a module: the repository's run briefs and audits are at `.agents/`, beside the `.agents/skills/` cell reserved for a skill specific to one repository, and the dockerfiles name a module's payload folders rather than the module directory.
 
 ## A module's conventions
 

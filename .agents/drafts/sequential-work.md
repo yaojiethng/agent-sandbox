@@ -27,9 +27,9 @@ Not this template: one large pass fanned out to concurrent subagents on a frozen
 
 Build the plan from the roadmap task list, or from the list the operator names. It names every unit and the order they run in.
 
-**The well-specifiedness test.** A row enters the plan only when a scope confirmation would raise no open question: the design or spec is clear, the acceptance criteria are clear, and nothing is left to decide. Write the answer sheet for each candidate row - the type, what is in scope, what is deferred, the acceptance criteria with their checks, and the unit split - then read it back. Any line that would be a question parks the row. The parked rows and their questions are presented with the plan. A row that needs a decision is design work, not run work. When the plan is the whole open backlog rather than a list the operator handed over, run [`backlog-triage.md`](../prompts/backlog-triage.md) first: it applies this test across every open roadmap row and returns the runnable set with the parked rows' questions, so the questions are answered before the run starts rather than at a mid-run stop.
+**The well-specifiedness test.** A row enters the plan only when a scope confirmation would raise no open question: the design or spec is clear, the acceptance criteria are clear, and nothing is left to decide. Write the answer sheet for each candidate row - the type, what is in scope, what is deferred, the acceptance criteria with their checks, and the unit split - then read it back. Any line that would be a question parks the row. The parked rows and their questions are presented with the plan. A row that needs a decision is design work, not run work. When the plan is the whole open backlog rather than a list the operator handed over, run [`backlog-triage.md`](../../workflow/coding-agent/prompts/backlog-triage.md) first: it applies this test across every open roadmap row and returns the runnable set with the parked rows' questions, so the questions are answered before the run starts rather than at a mid-run stop.
 
-**The unit rule.** A unit is one roadmap task, scoped as a vertical slice, and it lands as one commit and one handover. The binding rule is in [`docs/policies/iteration_policy.md`](../../../docs/policies/iteration_policy.md). It fails the rule if any of these fail:
+**The unit rule.** A unit is one roadmap task, scoped as a vertical slice, and it lands as one commit and one handover. The binding rule is in [`docs/policies/iteration_policy.md`](../../docs/policies/iteration_policy.md). It fails the rule if any of these fail:
 
 - **One commit.** The slice lands as one commit with one handover. If the commit subject cannot be written from the slice's diff, the boundary is wrong in one of two directions: re-scope the slice, or merge two units. A per-section or per-file commit inside one task is not a split -- it is one unit broken across commits.
 - **One context.** The source, the tests and the evidence fit one subagent context with room to spare. A unit that needs two contexts splits. A unit that needs no fresh context is not worth dispatching.
@@ -139,13 +139,13 @@ The run's work is committed, so the review range is a fixed `git diff <run-base>
 
 Carry each rule into the brief.
 
-(a) **A background dispatch.** The subagent was killed with the tool call, halfway through a record repair. Dispatch blocking.
-(b) **A pipe instead of a log file.** The output and the exit status were lost. Redirect to a file and read `pi`'s own status.
-(c) **A duplicate unit.** The destination suite already pinned the case, and the new unit failed the same mutation. Read the destination suite first, and delete the duplicate rather than keep both.
-(d) **A stale call site.** The unit called a helper with the arity it had before a rename. Run the suite, and read the diff for the call sites the unit touched.
-(e) **A work list taken from a shared data file.** The unit named rows that belonged to another kind of work. Take the list from the unit's own deliverable.
-(f) **A tree that never returned to clean.** A worktree stayed registered and a scratch file stayed in the tree. Prune, and check `git status --porcelain` at every boundary.
-(g) **A tool that is not in the image.** `pgrep`, `jq`, `python3`, `make` and `docker` are absent, so a brief that calls one fails at its first command. Use the repository's own scripts, and check that a tool exists before a brief depends on it.
+- (a) **A background dispatch.** The subagent was killed with the tool call, halfway through a record repair. Dispatch blocking.
+- (b) **A pipe instead of a log file.** The output and the exit status were lost. Redirect to a file and read `pi`'s own status.
+- (c) **A duplicate unit.** The destination suite already pinned the case, and the new unit failed the same mutation. Read the destination suite first, and delete the duplicate rather than keep both.
+- (d) **A stale call site.** The unit called a helper with the arity it had before a rename. Run the suite, and read the diff for the call sites the unit touched.
+- (e) **A work list taken from a shared data file.** The unit named rows that belonged to another kind of work. Take the list from the unit's own deliverable.
+- (f) **A tree that never returned to clean.** A worktree stayed registered and a scratch file stayed in the tree. Prune, and check `git status --porcelain` at every boundary.
+- (g) **A tool that is not in the image.** `pgrep`, `jq`, `python3`, `make` and `docker` are absent, so a brief that calls one fails at its first command. Use the repository's own scripts, and check that a tool exists before a brief depends on it.
 
 ## Invariants
 

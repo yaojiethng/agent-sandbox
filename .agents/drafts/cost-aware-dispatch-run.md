@@ -4,7 +4,7 @@
 
 **Scope:** the run directive for the cost-aware dispatch work: the instruction transport into an OpenCode runtime, the runner seam between two backends, the cost ledger, the dispatch-policy axis, and the provider decision. It carries the measured facts the run must not re-derive, the ruling it must not cross, the phase ledger, the parallel shape and the done predicate.
 
-**Origin:** the operator's scoping request (2026-10-15), the measured evidence in the T7 row `Expose a capacity signal to the agent`, and the T2 telemetry rows. This brief is a draft under `workflow/coding-agent/drafts/`, so no live dispatch path reaches it until the operator promotes it.
+**Origin:** the operator's scoping request (2026-10-15), the measured evidence in the T7 row `Expose a capacity signal to the agent`, and the T2 telemetry rows. This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
 ---
 
@@ -45,7 +45,7 @@ The sanctioned route to a free model is the real OpenCode CLI, invoked as a suba
 
 Build the config that makes the harness's instruction surfaces reachable inside an OpenCode runtime. This is the work the Dockerfile comment says is missing.
 
-Decide and record which roots carry: the provider `AGENTS.md`, the project `AGENTS.md`, the prompt root, the skill roots, the module package directory. Prefer pointing at the surfaces already declared in [`container-interface.json`](../../../src/build/container-interface.json) rather than adding a second declaration. `OPENCODE_CONFIG` is the seam for a harness-chosen path.
+Decide and record which roots carry: the provider `AGENTS.md`, the project `AGENTS.md`, the prompt root, the skill roots, the module package directory. Prefer pointing at the surfaces already declared in [`container-interface.json`](../../src/build/container-interface.json) rather than adding a second declaration. `OPENCODE_CONFIG` is the seam for a harness-chosen path.
 
 Prove it by running one real repository skill through OpenCode and keeping the transcript. Then reword the Dockerfile sentence.
 
@@ -67,7 +67,7 @@ This is the T2 telemetry instrument and the T7 capacity signal, not a third thin
 
 ## Phase 4, the dispatch policy
 
-[`model-failover`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md) already routes on health: `routes.json` chains, two route states, `eligible` and `cooling`, transitions T1 to T6, and a `limited` failure class with a one-hour cooldown. Extend that machine rather than building a parallel dispatcher. Add a cost or quota axis and whatever state it needs, with a case and a mutation row like the existing ones.
+[`model-failover`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md) already routes on health: `routes.json` chains, two route states, `eligible` and `cooling`, transitions T1 to T6, and a `limited` failure class with a one-hour cooldown. Extend that machine rather than building a parallel dispatcher. Add a cost or quota axis and whatever state it needs, with a case and a mutation row like the existing ones.
 
 The failover README's discipline applies. State the measured behaviour the design rests on, then the configuration surface, the algorithm, the state model and the invariants.
 

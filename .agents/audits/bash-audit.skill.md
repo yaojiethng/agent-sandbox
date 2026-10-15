@@ -1,8 +1,6 @@
 # Skill  --  Bash Audit
 
-Audit bash code against the rules in
-[`bash-coding-conventions.md`](../../../docs/development/bash-coding-conventions.md).
-One-line findings, ranked by impact. Read-only, one-shot.
+Audit bash code against the rules in [`bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md). One-line findings, ranked by impact. Read-only, one-shot.
 
 ## Tags
 
@@ -20,17 +18,12 @@ One-line findings, ranked by impact. Read-only, one-shot.
 
 ## Hunt
 
-Bare `exit` in `src/libs/` and `src/build/`, unquoted expansions, heredocs
-generating Makefile content, `local` at top level, `export` of behaviour
-flags, `|| true` on pipelines, circular source paths.
+Bare `exit` in `src/libs/` and `src/build/`, unquoted expansions, heredocs generating Makefile content, `local` at top level, `export` of behaviour flags, `|| true` on pipelines, circular source paths.
 
 ## Output
 
-One line per finding, ranked by impact: `<tag> <what to cut>. <replacement>. [path:line]`.
-End with `net: -<N> issues found.` Nothing to cut: `Clean. Ship.`
+One line per finding, ranked by impact: `<tag> <what to cut>. <replacement>. [path:line]`. End with `net: -<N> issues found.` Nothing to cut: `Clean. Ship.`
 
 ## Boundaries
 
-Scope: bash coding-conventions violations only. Correctness bugs, security
-holes, and performance are out of scope. Lists findings, applies nothing.
-One-shot.
+Scope: bash coding-conventions violations only. Correctness bugs, security holes, and performance are out of scope. Lists findings, applies nothing. One-shot.

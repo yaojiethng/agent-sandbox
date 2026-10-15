@@ -19,18 +19,18 @@ The authoritative rules stay in the policy documents. The payloads are convenien
 
 ## When to run
 
-- The operator asks to check the roadmap against the `task-list` convention, or to fix a roadmap defect. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md).
-- The operator asks whether a compaction pass is safe, or wants the roadmap prepared for one. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md), Step 4.
-- The operator asks about the content quality of the handover the current iteration is writing. That is [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track A.
-- The operator asks to audit the closed handover chain, or to trace one deferred item across iterations. That is [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track B.
+- The operator asks to check the roadmap against the `task-list` convention, or to fix a roadmap defect. That is [`roadmap-maintenance`](../../workflow/coding-agent/skills/roadmap-maintenance/SKILL.md).
+- The operator asks whether a compaction pass is safe, or wants the roadmap prepared for one. That is [`roadmap-maintenance`](../../workflow/coding-agent/skills/roadmap-maintenance/SKILL.md), Step 4.
+- The operator asks about the content quality of the handover the current iteration is writing. That is [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance/SKILL.md), Track A.
+- The operator asks to audit the closed handover chain, or to trace one deferred item across iterations. That is [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance/SKILL.md), Track B.
 - The operator asks for any of the above to run in its own worktree, isolated from this session's tree. That is Step 5 of the procedure below, which carries the whole dispatch loop.
 
 ## When not to run, and what replaces it
 
-- A survey of project state (git history, stashes, branches, open feedback entries, unsettled discussions, and a list of candidate next tasks) is [`gm.md`](../prompts/gm.md). This prompt supersedes the roadmap and handover parts of that survey, because the two payloads carry both and this prompt dispatches them. Migrating `gm.md` onto this prompt is a separate step and has not happened. Until that step lands, `gm.md` keeps its inline survey, and running both in one session duplicates the work.
-- Choosing which roadmap rows can run unattended is [`backlog-triage.md`](../prompts/backlog-triage.md). A parked row is a planning question, not a maintenance defect.
-- Planning or opening a unit is [`plan.md`](../prompts/plan.md) and [`iter.md`](../prompts/iter.md). Maintenance corrects records inside an open unit; it does not decide what the next unit is.
-- Ending a session is [`wrapup.md`](../prompts/wrapup.md). The close owns its own maintenance step and does not hand that step to this prompt.
+- A survey of project state (git history, stashes, branches, open feedback entries, unsettled discussions, and a list of candidate next tasks) is [`gm.md`](../../workflow/coding-agent/prompts/gm.md). This prompt supersedes the roadmap and handover parts of that survey, because the two payloads carry both and this prompt dispatches them. Migrating `gm.md` onto this prompt is a separate step and has not happened. Until that step lands, `gm.md` keeps its inline survey, and running both in one session duplicates the work.
+- Choosing which roadmap rows can run unattended is [`backlog-triage.md`](../../workflow/coding-agent/prompts/backlog-triage.md). A parked row is a planning question, not a maintenance defect.
+- Planning or opening a unit is [`plan.md`](../../workflow/coding-agent/prompts/plan.md) and [`iter.md`](../../workflow/coding-agent/prompts/iter.md). Maintenance corrects records inside an open unit; it does not decide what the next unit is.
+- Ending a session is [`wrapup.md`](../../workflow/coding-agent/prompts/wrapup.md). The close owns its own maintenance step and does not hand that step to this prompt.
 - A finding that no policy text covers is a gap to report, not a rule to add here.
 
 ## The procedure
@@ -41,9 +41,9 @@ Take the argument when the operator gave one and the request when they did not. 
 
 | The job | Payload |
 |---|---|
-| Roadmap markers, nesting, compaction, structure, or pre-compaction readiness | [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md) |
-| Handover content quality on the active handover | [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track A |
-| Handover chain structure, deferred chain, status, or dangling references | [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track B |
+| Roadmap markers, nesting, compaction, structure, or pre-compaction readiness | [`roadmap-maintenance`](../../workflow/coding-agent/skills/roadmap-maintenance/SKILL.md) |
+| Handover content quality on the active handover | [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance/SKILL.md), Track A |
+| Handover chain structure, deferred chain, status, or dangling references | [`handover-maintenance`](../../workflow/coding-agent/skills/handover-maintenance/SKILL.md), Track B |
 
 A job that names both subjects runs both payloads, roadmap first, and reports each separately. Never merge their findings into one table; the two have different severities and different policy owners.
 
@@ -157,7 +157,7 @@ A run that changed no record says so in one line, with the state it found and th
 ## Non-goals
 
 - Editing `gm.md`. This prompt supersedes the survey `gm.md` performs inline over the roadmap and the handover chain, and migrating `gm.md` onto this prompt is a separate step. Until it lands, `gm.md` remains as it is and this prompt is the way to reach either payload.
-- Surveying project state outside the two records. Git history, stashes, branches, feedback entries, and candidate next tasks belong to [`gm.md`](../prompts/gm.md).
+- Surveying project state outside the two records. Git history, stashes, branches, feedback entries, and candidate next tasks belong to [`gm.md`](../../workflow/coding-agent/prompts/gm.md).
 - Deciding what the next unit of work is. This prompt corrects records; it does not choose work.
 - Writing policy. A finding no policy covers is reported, and the rule belongs in `docs/policies/`.
 - Running several maintenance tracks at once. This prompt dispatches one worker at a time. A multi-track maintenance campaign is [`parallel-work.md`](parallel-work.md), and the fork, join, and bring-back primitive is the task-queue prompt.

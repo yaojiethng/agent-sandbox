@@ -6,13 +6,13 @@ description: "Braindump for a runbook that adds, amends and retires a lint gate.
 
 # Pre-commit and lint gate maintenance - braindump
 
-Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `divergent`, run over that session's digest), the decisions they proposed, and what this repository's gates look like today. Where a proposal is still a proposal it says so. Nothing here is a rule; the rules live in [`docs/development/bash-coding-conventions.md`](../../../docs/development/bash-coding-conventions.md), [`docs/adr/git_hooks.md`](../../../docs/adr/git_hooks.md) and [`.markdownlint-cli2.mjs`](../../../.markdownlint-cli2.mjs), and M3.1.2 decides what moves where.
+Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `divergent`, run over that session's digest), the decisions they proposed, and what this repository's gates look like today. Where a proposal is still a proposal it says so. Nothing here is a rule; the rules live in [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md), [`docs/adr/git_hooks.md`](../../docs/adr/git_hooks.md) and [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs), and M3.1.2 decides what moves where.
 
 ## 1. What exists today
 
 | Surface | Where | What it does |
 |---|---|---|
-| Copy-delivery hook | `src/capability/git-hooks/pre-commit.sh` | Markdown and ShellCheck over the staged set; blocks the commit. Mount delivery installs no hook, because its `.git` is a host directory ([`git_hooks.md`](../../../docs/adr/git_hooks.md)) |
+| Copy-delivery hook | `src/capability/git-hooks/pre-commit.sh` | Markdown and ShellCheck over the staged set; blocks the commit. Mount delivery installs no hook, because its `.git` is a host directory ([`git_hooks.md`](../../docs/adr/git_hooks.md)) |
 | Host hook install | `scripts/manual/install_host_git_hooks.sh` | gives the host checkout the same gate |
 | Lint umbrella | `scripts/lint.sh` | five gates run concurrently: shell, lib-contract, markdown, prompt frontmatter, legacy wrap |
 | Markdown gate | `scripts/check_markdown.sh` | markdownlint-cli2 over the tree; owns the record-links rule, the doc-wrap rule and the unresolved-rule warning |
@@ -47,7 +47,7 @@ Shipped, after shipping the opposite: `grandfatherTrees` and `ignoredRoots` held
 
 *Proposal (`judgment`).* "Every conclusion already drawn against that file is void, not only future ones - re-derive before the next measurement."
 
-The cost this session: `git checkout .markdownlint-cli2.mjs`, run to recover a fixture, silently dropped `doc-wrap.mjs` from `customRules`. Every measurement taken afterwards was of a gate that no longer ran the rule, and several turns went into explaining the discrepancy. This is a recurrence of `[A] 2026-08-10` in [`devlog/AGENT_FEEDBACK.md`](../../../devlog/AGENT_FEEDBACK.md), whose prescription is temp copies.
+The cost this session: `git checkout .markdownlint-cli2.mjs`, run to recover a fixture, silently dropped `doc-wrap.mjs` from `customRules`. Every measurement taken afterwards was of a gate that no longer ran the rule, and several turns went into explaining the discrepancy. This is a recurrence of `[A] 2026-08-10` in [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md), whose prescription is temp copies.
 
 ## 3. The mechanics, as measured
 
