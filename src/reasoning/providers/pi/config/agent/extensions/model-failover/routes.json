@@ -1,0 +1,18 @@
+{
+	"chains": [
+		{
+			"id": "step-5-preview-free",
+			"transientFailuresBeforeCooldown": 3,
+			"cooldownMs": {
+				"transient": 120000,
+				"limited": 3600000
+			},
+			"routes": [
+				{
+					"provider": "opencode-go",
+					"model": "step-5-preview-free"
+				}
+			]
+		}
+	]
+}

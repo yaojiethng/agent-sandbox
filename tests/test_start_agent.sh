@@ -2,8 +2,8 @@
 # TEST_DEADLINE: 15
 # -------------------------
 # Host-side start_agent.sh behavioral tests  --  start policy flags
-# Pins cite: docs/concepts/sandbox_identity.md (labels, naming);
-#             docs/architecture/tool_interface.md (naming table).
+# Pins cite: docs/reference/sandbox_identity.md (labels, naming);
+#             docs/reference/tool_interface.md (naming table).
 
 # (default/--rebuild/--refresh), rendered-compose contract (full substitution,
 # container naming, session labels), removed-flag rejection, help/usage surface,

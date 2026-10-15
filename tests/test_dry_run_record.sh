@@ -2,7 +2,7 @@
 # tests/test_dry_run_record.sh
 # Unit tests for src/libs/dry_run_record.sh -- the diagnostics-record read /
 # Pins cite: 20260828-design-settled-dry_run_phase_split.md;
-#             docs/architecture/tool_interface.md (Dry-Run Guarantees, diagnostics record).
+#             docs/reference/tool_interface.md (Dry-Run Guarantees, diagnostics record).
 
 # correct-container-verification consumed by compose_dry_run.
 

@@ -1,5 +1,13 @@
 # AGENTS.md - agent-sandbox
 
+## Scope
+
+This file is the project layer: the second context file pi loads, after the provider layer at `$AGENT_HOME/agent/AGENTS.md`. The provider layer covers the harness and the container paths. This file adds the project itself, which is the working tree the session runs in.
+
+| Path | What is there |
+|---|---|
+| `/home/agentuser/sandbox/` | the project working tree: `docs/`, `devlog/`, `scripts/`, `tests/`, `src/`, `workflow/`, and this file |
+
 ## System
 
 **agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute and commit inside containers, output is exported as a draft branch, and a human operator reviews and merges. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.
@@ -24,7 +32,7 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
-**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/operations/git_policy.md`](docs/operations/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
+**Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/policies/git_policy.md`](docs/policies/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
@@ -42,7 +50,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
-**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/operations/documentation_policy.md#numbered-vs-bulleted-presentation).
+**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/policies/documentation_policy.md#numbered-vs-bulleted-presentation).
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
@@ -58,32 +66,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 ## Propagation Discipline
 
-When a task requires applying a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- use a propagation checklist to track coverage.
-
-**Before writing any file**, produce a checklist in chat:
-
-```text
-Propagation checklist -- <change description>
-
-| File | Change | Status |
-|---|---|---|
-| path/to/file.sh | rename FOO_VAR to BAR_VAR | pending |
-| path/to/other.sh | rename FOO_VAR to BAR_VAR | pending |
-| docs/architecture/file.md | update reference to BAR_VAR | pending |
-```
-
-Update the checklist:
-
-- When a file is completed -- mark it `done` before moving to the next file.
-- **When the task scope expands** -- add new rows for the new scope before producing any output for it.
-
-**Before declaring the task complete**, confirm every row is `done`. Any row that cannot be completed this iteration must be flagged explicitly with a reason. Do not summarise coverage -- show the table.
-
-**Renaming is one kind of propagation task.** When renaming a file or directory, search the repo for references to the old name (`grep -rn "<old name>" .`), update them all, use `git mv` for tracked files or `mv` + `git add` for untracked, and confirm zero stale references remain before committing.
-
-**The checklist is required whenever the task uses language like:** "all", "every", "throughout", "wherever X appears", "consistent with", or names more than two files as targets.
-
-**Output contract changes require a propagation checklist regardless of task language.** A change that alters an output format, file layout, API surface, or any contract consumed by other code or documented in `docs/` must be accompanied by a checklist covering all consumers -- tests, docs, downstream scripts, fixtures, and knowledge tests -- even if the task is phrased as a single-file edit.
+When a task applies a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- produce a propagation checklist before writing the first file, show it in chat, and confirm every row before declaring the task complete. The trigger list, the format, and the audit that verifies coverage are in the [`propagation-check`](src/reasoning/agent/skills/propagation-check/SKILL.md) skill.
 
 ---
 
@@ -101,17 +84,13 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. This table is the single source for which provider, model, and thinking level to use for each role. Read a recommendation by role tag; each role tag names the provider, the model, and the thinking level (the provider prefix `opencode/` or `opencode-go/` disambiguates a model served by more than one provider). When one model is required but several are listed, use the first in listed order; a routing clause on a row takes precedence. When a prompt is not tied to a role tag, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`).
+A prompt or skill dispatches subagents for a role. The role-to-model recommendations live in an operator-owned file at `$AGENT_HOME/model-recommendations.md`, outside this repository, so a model change never enters a commit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, and the provider prefix disambiguates a model served by more than one provider. When one model is required but several are listed, use the first in listed order; a routing clause on a value takes precedence.
 
-| Role tag | Recommendation, in order |
-|---|---|
-| `_IMPLEMENTER` | opencode/space-bunny-free at high; opencode-go/deepseek-v4-flash at medium |
-| `_REVIEWER` | opencode/space-bunny-free at xhigh; opencode-go/deepseek-v4-flash at medium |
-| `_ADVISOR` | opencode-go/glm-5.3-flash at high for documentation and language reviews; opencode-go/deepseek-v4-flash at xhigh for code reviews |
+The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
 
-If a prompt names a role tag that this table does not list, resolve the startup default as above. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
+If the file is missing, or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When a prompt is not tied to a role tag, or the role has no value, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`); a project-level `.pi/settings.json` override takes precedence. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file.
 
-A startup default resolved from a project-level `.pi/settings.json` override takes precedence over `~/.pi/agent/settings.json`. Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
+Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
 
 ---
 
@@ -143,7 +122,7 @@ A full file read without a prior grep is a signal the discipline is not being ap
 
 Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
-Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/operations/documentation_policy.md).
+Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/policies/documentation_policy.md).
 
 **Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
@@ -154,7 +133,7 @@ Every output class -- chat, prompts, documentation, roadmap items, code comments
 - **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at the scope gate.
 - **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
 
-See [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) for the criteria and the close mechanics.
+See [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) for the criteria and the close mechanics.
 
 **Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
@@ -174,11 +153,26 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The handover format is in [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), the Roadmap as the sole task list in [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md), the commit and delivery rules in [`docs/operations/git_policy.md`](docs/operations/git_policy.md), and the Markdown lint gate in [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/operations/iteration_policy.md#iteration-invariants).
+The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in [`docs/policies/git_policy.md`](docs/policies/git_policy.md), and the Markdown lint gate in [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/policies/iteration_policy.md#iteration-invariants).
 
-The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/operations/iteration_policy.md)) before any further output.
+The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/policies/iteration_policy.md)) before any further output.
 
-**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md).
+**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention.
+
+### Loop prompts
+
+The runbooks the loop runs, each seeded into the container. The list is the `scope` of [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), which holds the invariants each runbook must not break.
+
+| Prompt | Runs from |
+|---|---|
+| `/iter` | [`iter.md`](workflow/coding-agent/prompts/iter.md) |
+| `/sidequest` | [`sidequest.md`](workflow/coding-agent/prompts/sidequest.md) |
+| `/milestone-start` | [`milestone-start.md`](workflow/coding-agent/prompts/milestone-start.md) |
+| `/milestone-close` | [`milestone-close.md`](workflow/coding-agent/prompts/milestone-close.md) |
+| `/plan` | [`plan.md`](workflow/coding-agent/prompts/plan.md) |
+| `/scope` | [`scope.md`](workflow/coding-agent/prompts/scope.md) |
+| `/document` | [`document.md`](workflow/coding-agent/prompts/document.md) |
+| `/wrapup` | [`wrapup.md`](workflow/coding-agent/prompts/wrapup.md) |
 
 ## Iteration Start
 
@@ -206,10 +200,10 @@ Read these in addition to the above when opening a milestone planning iteration.
 
 | Document | Read before |
 |---|---|
-| [`docs/architecture/system_overview.md`](docs/architecture/system_overview.md) | Architecture layer boundary or freeze status checks |
-| [`docs/operations/documentation_policy.md`](docs/operations/documentation_policy.md) | Any documentation task |
-| [`docs/operations/roadmap_policy.md`](docs/operations/roadmap_policy.md) | Any roadmap update |
-| [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
-| [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md) | Any iteration start or end, creating or updating a handover |
-| [`docs/operations/discussion_policy.md`](docs/operations/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
-| [`docs/operations/adr_policy.md`](docs/operations/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |
+| [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or freeze status checks |
+| [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md) | Any documentation task |
+| [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
+| [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
+| [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover |
+| [`docs/policies/discussion_policy.md`](docs/policies/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
+| [`docs/policies/adr_policy.md`](docs/policies/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |

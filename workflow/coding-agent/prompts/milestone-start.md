@@ -9,6 +9,13 @@ argument-hint: "[direction or intent - optional]"
 
 **Scope:** turn the roadmap's remaining task pool into a named, scoped milestone at the current nesting level. Milestone numbering is fractal: the same protocol opens a sub-milestone within a milestone, or a milestone at the top level.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+
 ## Orient
 
 Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, its milestone section, its open items, and the Milestone Summary table. Read the most recent handover in `devlog/handovers/`. Read `devlog/AGENT_FEEDBACK.md` open entries.
@@ -19,7 +26,7 @@ Determine the finish state: a caller can finish at any nesting level. A finish t
 
 The task pool is the remaining open tasks in the roadmap at and below the current lineage. Read the current milestone's open tasks and its child sub-milestones; do not cross into unrelated milestones.
 
-Group the tasks in the pool into task categories, and grade the categories on the decision axes the check-in skill defines (`workflow/coding-agent/skills/check-in/SKILL.md`, from the repository root): Size, Progress and Impact. That skill owns the axes and their value sets; read them there rather than restating them here.
+Group the tasks in the pool into task categories, and grade the categories on the decision axes the check-in skill defines ([`check-in`](/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md), from the repository root): Size, Progress and Impact. That skill owns the axes and their value sets; read them there rather than restating them here.
 
 Present the task categories and their grades to the operator in a table.
 
@@ -32,7 +39,7 @@ Present one reorganization proposal to the operator. The proposal covers the who
 - which existing milestones are overfull and should split;
 - the nesting level each milestone sits at.
 
-Milestone numbering is fractal and nests to any depth -- M{n}, M{n}.{m}, M{n}.{m}.{o}. Numbering uses integers only; follow the Fractal Milestone Numbering section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) for the numbering rules and the Milestone Summary table's indentation.
+Milestone numbering is fractal and nests to any depth -- M{n}, M{n}.{m}, M{n}.{m}.{o}. Numbering uses integers only; follow the Milestone numbering section of the project's `task-list` convention for the numbering rules and the Milestone Summary table's indentation.
 
 You may propose nested sub-milestones where the pool decomposes cleanly. If the pool cannot factor at the current level, propose the shape one nesting level up. If the shape has genuine variants, rank them (1-3) -- the operator still decides once, on one point.
 
@@ -51,10 +58,14 @@ When a task is ambiguous about its bin, ask the operator. When the operator prop
 
 ## Promote and record
 
+Run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap_future.md` and `devlog/roadmap.md`, and apply its report, before the selection is written.
+
 When several milestones exist, select one as next active with the operator. Update every record the selection touches:
 
 - `roadmap.md` Milestone Summary table row -- set the active milestone to `In progress`.
 - The milestone's section -- add the full task checklist to the active one; non-active milestones carry an objective paragraph only.
-- `roadmap.md` frontmatter `active-milestone` -- set it to the active major milestone.
+- `roadmap.md` frontmatter `active-milestone` -- set it to the active milestone, at the level the operator selected.
 
-Follow the Record shape section of [roadmap_policy.md](../../../docs/operations/roadmap_policy.md) when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
+Follow the record's shape in the project's `task-list` convention when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
+
+**The milestone phase's design step is [`plan.md`](plan.md)'s.** [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md)'s milestone phase opens or revises stories, investigates or designs, and resolves the stories before Gate 3 releases the sub-milestone. That step runs at milestone grain, so it is `/plan`'s rather than `/iter`'s. This prompt names the route; it does not run the step.

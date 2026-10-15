@@ -56,9 +56,11 @@ _preflight_check_bind_mounts() {
 # ---------------------------------------------------------------------------
 # Harness key merge
 # ---------------------------------------------------------------------------
-# Ensures harness-owned settings.json keys survive pi's runtime writes.
-# Pi only writes keys it manages; this merge re-injects harness-owned keys
-# (skills, prompts, packages paths) without touching pi-managed keys.
+# Ensures the harness-owned settings.json key survives pi's runtime writes.
+# Pi only writes keys it manages; this merge re-injects `packages`, which is the
+# single switch for the harness payload: each entry contributes its conventional
+# `prompts/` and `skills/` subdirectories as roots. Both entries matter, and the
+# module root has no second switch, so the merge carries both.
 
 _ensure_harness_keys() {
   local settings="$AGENT_HOME/agent/settings.json"
@@ -68,14 +70,12 @@ _ensure_harness_keys() {
       const p = process.argv[1];
       let o;
       try { o = JSON.parse(fs.readFileSync(p, 'utf8')); } catch(e) { o = {}; }
-      o.packages = [...new Set([...(o.packages||[]), '/opt/workflow/agent'])];
-      o.skills = [...new Set([...(o.skills||[]), '/opt/workflow/agent/skills'])];
-      o.prompts = [...new Set([...(o.prompts||[]), '/opt/workflow/agent/prompts'])];
+      o.packages = [...new Set([...(o.packages||[]), '/opt/workflow/agent', '/opt/workflow/agent/modules/coding-agent'])];
       fs.writeFileSync(p, JSON.stringify(o, null, 2) + '\n');
     " "$settings"
     # Verify merge took effect
-    if ! grep -q '"skills"' "$settings" 2>/dev/null; then
-      echo "WARN: Pi harness keys (skills/prompts/packages) missing after merge" >&2
+    if ! grep -q '"packages"' "$settings" 2>/dev/null; then
+      echo "WARN: Pi harness key (packages) missing after merge" >&2
     fi
   else
     echo "WARN: $settings not found  --  Pi harness keys not injected" >&2

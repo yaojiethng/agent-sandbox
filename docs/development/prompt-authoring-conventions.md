@@ -6,7 +6,7 @@ This document states the authoring rules for prompts and skills. It answers four
 
 The per-prompt quality passes read this document before they edit a prompt. The `fanout` doc pass reads it before it edits that prompt. Any session that writes a new prompt or skill reads it first.
 
-This document owns the authoring bar for workflow documents. The conceptual model behind them stays in [`agent_workflow.md`](../concepts/agent_workflow.md) - the layers, the loading mechanism, and the authority hierarchy. That document says what a prompt or skill is; this document says how to write one. A rule that states a fact about the model, not a rule about writing, lives in `agent_workflow.md`.
+This document owns the authoring bar for workflow documents. The conceptual model behind them stays in [`agent_workflow.md`](../reference/agent_workflow.md) - the layers, the loading mechanism, and the authority hierarchy. That document says what a prompt or skill is; this document says how to write one. A rule that states a fact about the model, not a rule about writing, lives in `agent_workflow.md`.
 
 The authoring rules borrow from two external references: Claude's Skill authoring best practices (`https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`) and mattpocock's `writing-for-agents` skill (`https://github.com/mattpocock/skills`, under `skills/productivity/writing-for-agents`). Both describe levers for writing documents an agent consumes. The repository's own prompt and skill set is the primary source; the references explain the reasoning. Read this document for the rules.
 
@@ -14,11 +14,11 @@ The authoring rules borrow from two external references: Claude's Skill authorin
 
 A document an agent consumes is one of three types. The type determines where it lives and how it is written.
 
-**Policy** documents hold the authoritative rules. Write a rule only into a policy document in `docs/operations/`, `docs/architecture/`, `docs/concepts/`, or `docs/development/`.
+**Policy** documents hold the authoritative rules. Write a rule only into a policy document in `docs/policies/`, `docs/reference/`, `docs/reference/`, or `docs/development/`.
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states no rule; it serves the rules that live in policy.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. This document calls them workflow documents; [`documentation_policy.md`](../operations/documentation_policy.md) excludes them from its scope by the same boundary.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
 
 Two tests identify a workflow document:
 
@@ -27,7 +27,7 @@ Two tests identify a workflow document:
 
 A third test separates the forms a workflow document takes. Is it steps, reference, or judgement? A runbook holds ordered steps. A reference holds facts. An advisor holds judgement rules and a diagnostic checklist. This distinction shapes the structure, described below.
 
-The three-layer model for where prompts and skills live is in [`agent_workflow.md`](../concepts/agent_workflow.md). The provider layer, the sandbox layer, and the user layer load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
+The three-layer model for where prompts and skills live is in [`agent_workflow.md`](../reference/agent_workflow.md). The provider layer, the sandbox layer, and the user layer load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
 
 ## The information hierarchy
 
@@ -65,7 +65,7 @@ Subagents receive `pi -p` with a brief; the same brief-writing rules apply. The 
 
 A prompt opens with frontmatter and a body. The frontmatter fields are the prompt's context pointers: they decide when the agent or the operator reaches the document.
 
-**Description.** State what the prompt does and when to use it. Include the trigger terms a reader or the model would say or think. The description is the top-level pointer, forced to stay loaded. Front-load the triggering word, keep one trigger per branch, and cut anything the body already carries. Write the description in the imperative or the third person; pick one for the prompt. The repo prompt set is split: the loop prompts and `task-queue` use the imperative (`iter`: "Open a new iteration..."), `plan` uses the third person ("Runs a plan session... Routes the outcome"). Third person reads better where several sentences share one subject; do not claim one voice for all. The description names the prompt's subject: `iter` names every workflow type it accepts, `milestone-close` names the fractal close, `task-queue` names the operator decision at segment boundaries. The frontmatter is YAML, so a malformed value breaks the prompt. A plain (unquoted) value cannot hold a colon, a leading dash, or a trailing colon, because YAML reads each as structure rather than as text; a value holding any of the three must be wrapped in double quotes, with any double quote inside it escaped. An apostrophe in a plain value is legal and needs no quoting. Pi drops a prompt whose frontmatter does not parse without a message in the session, so the prompt never appears in the command list. `scripts/check_prompt_frontmatter.sh` parses every prompt, skill and policy frontmatter in the tree and fails the gate on a block that does not parse, so the rule is enforced by the gate rather than left to the author.
+**Description.** State what the prompt does and when to use it. Include the trigger terms a reader or the model would say or think. The description is the top-level pointer, forced to stay loaded. Front-load the triggering word, keep one trigger per branch, and cut anything the body already carries. Write the description in the imperative or the third person; pick one for the prompt. The repo prompt set is split: the loop prompts and `task-queue` use the imperative (`iter`: "Open a new iteration..."), `plan` uses the third person ("Runs a plan session... Routes the outcome"). Third person reads better where several sentences share one subject; do not claim one voice for all. The description names the prompt's subject: `iter` names every workflow type it accepts, `milestone-close` names the fractal close, `task-queue` names the operator decision at segment boundaries. The frontmatter is YAML, so a malformed value breaks the prompt. A plain (unquoted) value cannot hold a colon, a leading dash, or a trailing colon, because YAML reads each as structure rather than as text; a value holding any of the three must be wrapped in double quotes, with any double quote inside it escaped. An apostrophe in a plain value is legal and needs no quoting. Pi drops a prompt whose frontmatter does not parse without a message in the session, so the prompt never appears in the command list. `scripts/check_frontmatter.sh` parses every prompt, skill and policy frontmatter in the tree and fails the gate on a block that does not parse, so the rule is enforced by the gate rather than left to the author.
 
 **Argument hint.** Where the prompt accepts an argument, state the argument's shape and whether it is optional. The `iter` prompt names its accepted type words; `plan` marks its argument required.
 
@@ -77,8 +77,11 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 2. **Purpose** states what the prompt or skill is for and what it is not. The task-queue prompt leads with what it is a primitive for, then names what it is not in its "Not this template" routing, inside "When to use".
 3. **When to use** states the conditions that invoke it and the routing: what it is for, and what replaces it in the cases it is not for. The task-queue prompt names `iter.md` and `fanout-run.md` as the not-this-template cases.
 4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; a reference region lists its rules consulted on demand.
-5. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
-6. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
+5. **The handoff.** A runbook that ends by handing to another prompt states the boundary by the workflow handoff pattern below. A prompt that ends inside its own scope omits it.
+6. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
+7. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
+
+**The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 
 The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only home of a rule.
 
@@ -86,9 +89,9 @@ The workflow-document presentation rules that the `/document` stub defers here c
 
 One subject per prompt. The subject is the class of work the prompt owns. A prompt that owns two subjects is two prompts, or a runbook that dispatches two sub-cases.
 
-Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../operations/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
+Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../policies/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
 
-A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`workflow/coding-agent/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
+A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`.agents/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
 **Context pointers and trigger branches.** A prompt or skill reaches its content through pointers. The pointer's wording, not its target, decides when the agent reaches the material. Each trigger branch is one distinct case the document handles. One branch one trigger: synonyms that rename a single branch are one branch written twice, and collapse into one. A pointer that states one branch in prose holds a trigger word not yet written. Name the branch with one word and use that word.
 
@@ -106,7 +109,7 @@ Construct defensively against two decay modes:
 - **No-ops.** An instruction the agent already obeys by default pays load to say nothing. The test is model-relative: does the sentence change behaviour against the default? When a sentence fails, delete the whole sentence rather than trim its words.
 - **Stale accumulation.** Content accumulates because adding feels safe and removing feels risky. A document without pruning keeps obsolete content. Prune by relevance: does each line still bear on what the document does? Shorter documents are easier to keep relevant.
 
-`documentation-pass.md` is the diagnostic register for these checks. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); `documentation-pass.md` lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
+The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); the register lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
 
 ## A workflow document owns one step, and owns it whole
 
@@ -120,13 +123,30 @@ The test is ownership, not duplication. Ask what the document is responsible for
 
 The failure this rule catches is a document that is locally accurate and globally unreliable: every sentence is true of the moment it was written, and nothing compares it against the steps it describes. A step that changes leaves the copy behind with no signal.
 
-## A prompt names a record, it does not link it
+## The workflow handoff pattern
 
-A prompt runs where the prompt is seeded: `~/.pi/agent/`, bind-mounted from `src/reasoning/agent/`. The `docs/` tree is not seeded there, so a link from a prompt into `docs/adr/` -- or into any `docs/` path -- has no target at runtime. The record-links gate does not scan `src/`, so nothing catches it: the link passes every gate and fails the reader.
+A runbook that ends by handing to another prompt does it in four moves. Four prompts already apply the shape and none of them names it: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close. This section is the one home for the shape, so a prompt applies it rather than restating another prompt's steps.
 
-A prompt may name a record in plain text. It may not link one. When the content behind the reference matters to the agent working in the container, it belongs in the prompt or in a seeded file, and the record is the place the decision is argued -- not the place the running agent is sent.
+1. **Name the next prompt and the part that runs.** `/iter` names `/wrapup` Part B, not `/wrapup`. A bare name leaves the reader to work out where to enter a long runbook.
+2. **List what the next prompt owns, and state that this prompt does not restate it.** The list is what makes the handoff checkable: a step absent from both lists is a gap.
+3. **Name what stays, with its reason.** `/iter` keeps its pre-close summary and its findings attribution because they gate the release rather than the close. A step that stays without a reason reads as an oversight.
+4. **State where this prompt stops and who picks it up.** One sentence naming the entry point.
+
+The pattern carries no rule of its own. It is a presentation rule for the boundary between two workflow documents, and the ownership rule it serves is [A workflow document owns one step, and owns it whole](#a-workflow-document-owns-one-step-and-owns-it-whole).
+
+## A reference resolves where the prompt runs
+
+A prompt runs at its image path. The harness prompts run from `/opt/workflow/agent/prompts/`, from `src/reasoning/agent/prompts/`. A workflow module's prompts run from the module's own root, `/opt/workflow/agent/modules/<module>/prompts/`, from `workflow/<module>/prompts/`, because the module is the unit a provider enables or leaves out. A provider's own prompt runs from that provider's root: pi's `pi-agent.md` runs from `$AGENT_HOME/agent/prompts/` -- `/home/agentuser/.pi/agent/prompts/` -- which the image seeds from `src/reasoning/providers/pi/config/agent/prompts/` through the config template. The repository tree is not there. The link check resolves a link in an instruction file in the image's path space rather than the repository's, so a target that exists only in the repository is a finding, and a link in the old repository-relative form no longer passes.
+
+A prompt links a document that ships. The policy corpus ships at `/opt/sandbox/docs/policies/`, and the reference layer ships beside it at `/opt/sandbox/docs/reference/`. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
+
+A prompt names a document that does not ship -- a record, a draft, an ADR, a development document -- in plain text or a code span. Name it by the path a reader can find, and do not link it: the link would pass no reader in the container and fail the check. A reference to a project file, such as the project `AGENTS.md` or `devlog/roadmap.md`, is the same case, because the project tree is the reader's working directory rather than the prompt's.
+
+When the content behind the reference matters to the agent working in the container, it belongs in the prompt or in a shipped file, and the record is the place the decision is argued -- not the place the running agent is sent.
 
 The same rule covers the inverse: a rule whose only home is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
+
+The rule holds for a bundled document too. A document under `docs/reference/` or `docs/policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between the two bundled folders resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`record-links.mjs`](../../scripts/lint/record-links.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
 
 ## Naming
 
@@ -136,10 +156,10 @@ A name changes when its scope changes. Rename a document whose name no longer ma
 
 ## Draft status and the switch-over gate
 
-A prompt or skill that is not yet operator-reviewed is a draft. The durable gate is the location: drafts live in `workflow/coding-agent/drafts/` -- a root the prompt-frontmatter gate does not scan, the dispatch conventions do not read, and live dispatch never references -- so an unreviewed prompt is structurally unreachable by the run paths that would trust it. The file itself carries `**Status:** draft` as the human-readable marker. A draft is released from draft status only with explicit operator direction; the release is one commit that moves the file from `drafts/` into its live root (or the agent-facing prompt tree), runs a documentation pass over it at the same time, and the move is the promotion -- there is no separate promotion step to forget. A prompt written by an autonomous worker unit is a draft by default, whatever its author claimed; the `maintenance` dispatch prompt's premature switch-over (it became load-bearing in the session that wrote it, and carried a merge-back contract that produced seven `merge:` commits) is the recorded incident this gate exists to stop.
+A prompt or skill that is not yet operator-reviewed is a draft. The durable gate is the location: drafts live in `.agents/drafts/` -- a root the frontmatter gate does not scan, the dispatch conventions do not read, and live dispatch never references -- so an unreviewed prompt is structurally unreachable by the run paths that would trust it. The file itself carries `**Status:** draft` as the human-readable marker. A draft is released from draft status only with explicit operator direction; the release is one commit that moves the file from `drafts/` into its live root (or the agent-facing prompt tree), runs a documentation pass over it at the same time, and the move is the promotion -- there is no separate promotion step to forget. A prompt written by an autonomous worker unit is a draft by default, whatever its author claimed; the `maintenance` dispatch prompt's premature switch-over (it became load-bearing in the session that wrote it, and carried a merge-back contract that produced seven `merge:` commits) is the recorded incident this gate exists to stop.
 
 ## Compliance
 
 The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time.
 
-The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`documentation-pass.md`](../../workflow/coding-agent/audits/documentation-pass.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../concepts/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.
+The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.

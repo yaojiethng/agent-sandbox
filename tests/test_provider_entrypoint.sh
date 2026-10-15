@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_provider_entrypoint.sh
-# Regression tests for libs/provider-entrypoint.sh
+# Regression tests for src/reasoning/entrypoint.sh
 #
 # Tests generic shared entrypoint behaviour:
 #   - env var validation (AGENT_HOME, PROVIDER_NAME)

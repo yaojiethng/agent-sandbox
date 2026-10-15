@@ -6,7 +6,7 @@ One JSON object per line, one line per finding. The schema has one owner, this s
 
 | Field | Required | Meaning |
 |---|---|---|
-| `skill` | yes | the auditor that produced the line: `roadmap-maintenance` or `handover-maintenance` |
+| `skill` | yes | the auditor that produced the line: `roadmap-maintenance`, `handover-maintenance` or `doc-maintenance` |
 | `file` | yes | the record, as a repository-root-relative path |
 | `section` | yes on a finding | the heading, row or other locus. Never a line number: a number in a record is true once and goes stale with the next edit above it. |
 | `check` | yes on a finding | the numbered check that produced it, as the auditor numbers it |
@@ -43,8 +43,8 @@ The file lives at the run-scoped path the invocation template sets, outside the 
 ## Example
 
 ```json
-{"skill":"roadmap-maintenance","file":"devlog/roadmap.md","section":"M2.7 summary row","check":"3.18","rule":"roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries","finding":"row reads Complete while the changelog entry records a supersession; no marker","recommendation":"fix-now","evidence":"grep -n SUPERSEDED devlog/changelog.md"}
-{"skill":"roadmap-maintenance","file":"devlog/roadmap.md","section":"closed rows across the milestone","check":"3.6","rule":"roadmap_policy.md#compaction-cascading","finding":"twenty-plus closed rows carry landed narrative and counts that go stale","recommendation":"defer","deferTo":"the T12 pi-bump and extension pass","evidence":"grep -c Handover devlog/roadmap.md"}
-{"skill":"roadmap-maintenance","file":"devlog/roadmap.md","section":"M3.2 sub-milestone","check":"3.10","rule":"roadmap_policy.md#fractal-milestone-numbering","finding":"a M3.2.1 node with no M3.2 parent, and no summary row","recommendation":"escalate","evidence":"no M3.2 heading exists in the tree or in git history"}
+{"skill":"roadmap-maintenance","file":"devlog/roadmap.md","section":"M2.7 summary row","check":"3.15.4","rule":"task-list#corrections-to-a-closed-entry","finding":"row reads Complete while the changelog entry records a supersession; no marker","recommendation":"fix-now","evidence":"grep -n SUPERSEDED devlog/changelog.md"}
+{"skill":"roadmap-maintenance","file":"devlog/roadmap.md","section":"closed rows across the milestone","check":"3.6","rule":"roadmap-maintenance#the-compaction-procedure","finding":"twenty-plus closed rows carry landed narrative and counts that go stale","recommendation":"defer","deferTo":"the T12 pi-bump and extension pass","evidence":"grep -c Handover devlog/roadmap.md"}
+{"skill":"roadmap-maintenance","file":"devlog/roadmap.md","section":"M3.2 sub-milestone","check":"3.10","rule":"task-list#milestone-numbering","finding":"a M3.2.1 node with no M3.2 parent, and no summary row","recommendation":"escalate","evidence":"no M3.2 heading exists in the tree or in git history"}
 {"skill":"handover-maintenance","check":"3","result":"skip","reason":"no acceptance criterion names a validation tool that misses its failure mode"}
 ```

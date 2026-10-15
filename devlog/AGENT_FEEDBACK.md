@@ -16,6 +16,98 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-15  --  A gate that hand-lists its subject set misses a live root
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: none
+mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing.
+```
+
+`scripts/lint/frontmatter.mjs` listed the folders it scanned by hand. The list held the workflow module, the pi provider config and the agent skills, and it omitted `.agents/skills/`, the project convention-skill tree pi loads. A `description` value in `.agents/skills/task-list/SKILL.md` held a colon-space (`changelog: their shape`), which YAML reads as a nested mapping, so the whole block failed to parse and pi dropped the skill. The gate reported clean across 57 files throughout.
+
+The class is a check whose subject set is an enumeration inside the check. The tree gains a root and the check keeps passing over the roots it already knew. The container interface already declared these roots as data, and the gate already read the same manifest for its shipping-document check, so the derivation was one call away. The durable rule is to read the declaration rather than restate it; a check that cannot read its declaration must fail, not scan nothing.
+
+Raised by the agent during handover `20261015-04`.
+
+## [A] 2026-10-15  --  The decomposition of a task into work units has no owner for a manual run
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: the manual half of [O] 2026-09-25 "An autonomous scope proposal must assign the work to units and commits"; that entry keeps the autonomous half, which this entry does not resolve.
+mitigation: `/scope` emits the work-unit table that `iteration_policy.md` `### Unit and scope invariants` defines -- the unit, its commit type, the owned files, its handover -- and files no roadmap row; the session close files it per the project's `task-list` convention. `/plan` gives up its "scoped unit at its stated grain" and hands the decomposition to `/scope`, and the four-move workflow handoff pattern gets one named home so `/scope` can hand off the way `/iter` does.
+```
+
+The decomposition has four writers and no owner. `/plan` writes what it calls "the scoped unit at its stated grain". `/iter` invents the granularity of its own single row. `/wrapup` files deferred items as it finds them. `/scope`, drawn before a run, wrote rows for a brief that had not run. All four point at the project's `task-list` convention `**Task granularity**`, which asks for the file and the nature of change, and nothing reads the result.
+
+Measured 2026-10-15 over 151 open rows in `roadmap.md` and `roadmap_future.md`: 87, or 58%, name no file at all, and 17, or 11%, exceed 900 characters against a median of 284 and a maximum of 1645.
+
+The same measurement found no duplicate task rows, zero exact duplicate titles and zero duplicates on the first 45 characters, so the list does not repeat itself. The repetition the operator sees is across `roadmap.md`, `roadmap_future.md` and `changelog.md`, which the churn study measured as six duplicated subjects. That is a property of the three-file record shape rather than of the filing owner, and it belongs to the task-list mechanism milestone.
+
+One owner plus one check. The owner is `/scope`. The check is the record-shape gate that milestone stages, which fails a row carrying neither a file nor a nature of change.
+
+## [A] 2026-10-14  --  A partial model name silently binds to a different model
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: pass the full provider-prefixed model id to `--model` (for example `z-ai/glm-5.3-flash`); a short name is a substring pattern and can bind to another model with no warning.
+```
+
+`pi --provider openrouter --model glm-5.3-flash` ran `z-ai/glm-5.3-flashx`. The `--model` value is a substring pattern over the provider's model list, not an id lookup, and where several ids match it takes the last one in the list. `glm-5.3-flash` matched three ids and bound to the last, `z-ai/glm-5.3-flashx`; `glm-5.3` matched six and bound to `z-ai/glm-5.3:batch`. The full id `z-ai/glm-5.3-flash` matches one id and binds correctly. pi warns only when nothing matches (`No models match pattern`), so a near-match that selects a different model is silent.
+
+The cost is a run that reports success while measuring a model nobody chose. The brief named `glm-5.3-flash` and the session recorded `glm-5.3-flashx`; only reading the session's `model` field showed it. A dispatch that names a model should read the resolved model back from the session file before trusting the result.
+
+Raised by the agent during handover `20261014-09`.
+
+## [A] 2026-10-14  --  A parallel suite run flaked one unit, and no cause was found
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: when a full suite run reports a failure, re-run the failing file in isolation before trusting the run; a single parallel-run failure that does not reproduce is recorded, not chased.
+```
+
+The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. The file then passed 22 of 22 units in isolation, and the next full run was clean at 1126 of 1126. The failure carried a partial `UNIT:` report, so it was a unit assertion and not the deadline-expiry mode of the 2026-09-25 entry; `test_unknown_args_rejected` asserts that `scripts/prune.sh --stale=fresh` exits non-zero and names the bad kind, under the default 8-worker run. No reproduction, so no cause is claimed. The points to keep are the triage and the re-run, not a mechanism.
+
+Raised by the agent during handover `20261014-03`.
+
+---
+
+## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: none
+mitigation: write the body to `git_policy.md`'s budget before committing -- a subject of 50 characters or fewer, a body under 280 characters, no path list, and a pointer to the handover or the ADR rather than its reasoning -- and measure it, with `git log -1 --format=%b | wc -c`, because nothing else does.
+```
+
+Three of five delivery commits across two sessions exceeded the 280-character body budget: 324, 880 and 1248 characters. The longest repeated its handover's argument, which the policy forbids twice over -- the body does not repeat the handover, and a reason longer than the budget lives in the handover or the ADR with the body pointing there. The bodies also carried file paths, which the paragraph after the budget forbids.
+
+The habit is the cause, not the size of the changes: a commit body reads like a place to record the reason, and the longer the iteration, the more there is to record. No gate reads a commit message, and the operator caught the third by reading the log. The failure is loud to that reader and silent to every check, so it stays a discipline: the review gate already reads the series, and the only part written down as enforced is the type prefix. All three messages were rewritten to the budget in the fold recorded by handover `20261005-08`.
+
+---
+
+## [A] 2026-10-05  --  A roadmap row filed under a subject track instead of the active sub-milestone
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: none
+mitigation: before writing a roadmap row, read the `task-list` convention's Filing rules, `**Roadmap task placement**`, and apply it literally: the row lands in the current sub-milestone's task list unless the operator directs otherwise. Subject ownership decides nothing about the bin.
+```
+
+Three rows in one session were filed into a subject track rather than the active sub-milestone. The retired provider-config transport sweep went to T10, then to T10 again after the operator had already redirected it. The repository-to-image path map went to T1, on the reasoning that it unifies gates rather than settling an instruction-surface convention.
+
+The reasoning was the defect. A track's blurb reads as a claim on every row that touches its subject, so a row is filed where it "belongs" by topic. The policy default is the opposite: what the work raises lands in the sub-milestone being worked, and a track placement is a directed exception. The operator redirected all three.
+
+---
+
 ## [A] 2026-10-03  --  A heavy test file's own deadline fails it under parallel load
 
 ```text
@@ -26,6 +118,10 @@ mitigation: when a full-suite run reports only tests/test_runner_contract.sh as 
 ```
 
 `tests/test_runner_contract.sh` carries `# TEST_DEADLINE: 10` and takes about 7 seconds alone. Two full-suite runs on a loaded container timed it out; a third run passed at 97 seconds. The runner counts a deadline expiry as a failed file, so a load spike reads as a red run.
+
+**Recurrence, 2026-10-05.** Two consecutive full-suite runs each reported exactly one failure, and each named a different file: `tests/test_start_agent.sh` (`test_wizard_picker_abort`) in the first, `tests/test_resume.sh` (`test_interactive_shows_current_branch_hint`) in the second. Both files pass alone, 32 of 32 in the first case, and a third full run was green. The moving name is the diagnostic: a defect does not migrate between files, and a load-dependent one does. Both files drive an interactive picker, so the shared exposure is a wait on a prompt under parallel scheduling rather than a deadline the file declares.
+
+**Recurrence, 2026-10-14.** One full-suite run reported two deadline expiries at once, `tests/test_dry_run_probe.sh` and `tests/test_lint_umbrella.sh`; both passed standalone and the next full run was green at 1126 of 1126. `test_lint_umbrella.sh` runs the real gate in-test and measured 6 to 10 seconds across the session, so its declared 10s budget sits on the expiry. Two expiries in one run is the load signal, and it repeats the 2026-09-25 entry's finding: the per-file deadline is a shared budget sized near the honest runtime, so the container's parallel load decides which files cross it.
 
 ---
 
@@ -104,7 +200,7 @@ mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) 
 state: open
 scoped: M3 T1 -- close-milestone automation
 legacy: 2026-09-27 -- one policy decision landed as ten commits, one per released section, though the one-commit rule was explicit in `iteration_policy.md` and the provider `AGENTS.md`. The governance cadence in the project `AGENTS.md` was read as setting the commit count; it governs the proposal. The unit the gap lacked -- one roadmap task, one vertical slice -- is defined in `iteration_policy.md` Step 2 (handover `20260927-08`).
-legacy: 2026-10-01 -- the propagation sweep recurred against a different surface. Adding a `Decisions pending` section to the handover format swept the prompt tree and the policy tree, and missed `workflow/coding-agent/audits/audit.skill.md`, whose structural-completeness rule enumerates the required sections; the rule would have fired on every conforming handover. The earlier mitigation named the tests tree, which is the same gap one directory over: an enumeration of the thing being changed lives outside the tree being changed, and a grep bounded by the changed paths cannot find it.
+legacy: 2026-10-01 -- the propagation sweep recurred against a different surface. Adding a `Decisions pending` section to the handover format swept the prompt tree and the policy tree, and missed `.agents/audits/audit.skill.md`, whose structural-completeness rule enumerates the required sections; the rule would have fired on every conforming handover. The earlier mitigation named the tests tree, which is the same gap one directory over: an enumeration of the thing being changed lives outside the tree being changed, and a grep bounded by the changed paths cannot find it.
 mitigation: the milestone close is where record integrity fails. A green committed iteration without an open handover is a record defect, not a fast close; content below the unit-of-work threshold amends an open/same-session handover rather than opening a new one (hollow iterations); roadmap open-item status must be marked `[x]` in the same iteration its resolving handover closes; keep the close surfaces short and rely on the roadmap as the sole task list; close-out propagation greps sweep the full tests tree. A section-by-section review of one task is still one unit: the cadence governs the proposal, and a unit's diff carries a writable subject.
 ```
 
@@ -250,22 +346,40 @@ Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "u
 
 Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
 
-### [A] 2026-09-30  --  A backgrounded process holding the caller's stdout stalls the whole tool call
+### [A] 2026-10-05  --  An apostrophe inside a `${VAR:-default}` opens a quote, so the whole script is a syntax error
 
 ```text
-state: probation
-scoped: T1 -- the process-scan rule is recorded in `bash-coding-conventions.md` section 4.7; the redirect and explicit-stop prescriptions were not adopted
+state: open
+scoped: M3.3.1 -- the eval harness under the module skill
 legacy: none
-mitigation: a process scan must match on the executable and the argument and exclude the current pid, then verify the process is gone rather than read a kill as success. See `docs/development/bash-coding-conventions.md` section 4.7.
+mitigation: keep the default free of apostrophes, or assign the default on its own line and expand the variable where it is used. The failure is loud but mislocated: bash reports `unexpected EOF while looking for matching` at the file's last line, whatever line holds the apostrophe.
 ```
 
-A script that starts a long-lived background process without redirecting its stdout keeps the caller's stdout pipe open for as long as it lives. A pipeline such as `timeout 300 bash script.sh | tail -20` then reports nothing at all: `timeout` kills the foreground script at 300s, the orphan keeps the write end of the pipe open, and the reader blocks until the tool call itself is aborted. Measured cost: 47 minutes for a script whose own budget was 300 seconds. The failure is silent, because the killed script produced no output to explain itself.
+`PROMPT="${EVAL_PROMPT:-The working tree holds this iteration's work.}"` is a syntax error. Inside `${...}` a single quote starts a quoted string, so the apostrophe in `iteration's` opens a quote that never closes. `bash -n` reports the EOF at the end of the file, so the line to fix has to be found by counting quotes rather than by reading the message.
 
-Two adjacent traps in the same session, both from a cleanup scan written as a shell loop over `/proc`. A scan matching a process name with a glob also matches the scanning shell's own command line, because the pattern text is in that command line: the loop signalled itself and the tool call died with 143. And `pkill` does not exist in this image, so an earlier cleanup that used it silently removed nothing and left the port held, which made the next run's probe talk to a dead server and report that nothing had been captured. The scan discipline is recorded in `bash-coding-conventions.md` section 4.7.
+The measured check is cheap. `grep -c "'" file` against the file gives an odd count, and the offending lines are the ones that hold exactly one. Cross-reference: `docs/development/bash-coding-conventions.md`.
 
-Scope: any test or script that starts a background process or scans for one. Cross-reference: `docs/development/bash-coding-conventions.md`.
+### [A] 2026-10-06  --  `name+=value` without `declare -i` concatenates, and a 0-prefixed total then fails as octal
 
-Resolved at the source: the script that caused the stall stood up a loopback capture server to read a request body, and pi already exposes `onPayload` plus an injectable `fetch` for exactly that. Rewritten to use the hook, the background process is gone, and the class of incident goes with it. The entry is probation because the redirect and explicit-stop prescriptions were not adopted as rules; the process-scan discipline is the recorded part.
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: declare an accumulator integer (`declare -i n=0`) or assign through `$(( ))`; after a loop, compare the iteration count against the count a dry run reported instead of trusting a per-step summary line.
+```
+
+A cleanup loop summed freed bytes with `dirbytes+=$bytes` while `dirbytes` was never declared integer, so the byte counts concatenated into one very long number. The division that formatted it then failed with `value too great for base` - a 0-prefixed integer reads as octal - and the script printed its per-directory summary for the first of four directories only. That summary was plausible, the work for the other three silently did not happen, and a second run was needed to finish it. The durable check is the count rather than the total: a loop that reports what it did should also report how many iterations it ran. Cross-reference: `docs/development/bash-coding-conventions.md`.
+
+### [A] 2026-10-06  --  `git bundle create` takes no option after its positional arguments, and an `A && B` guard hides the failure
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: put every option before the file and the revision (`git bundle create -q <file> <rev>`), and end a guard chain with `|| { echo ...; exit 1; }` when the guarded command's failure must be visible.
+```
+
+The eval harness's write-back ran `git bundle create <file> <rev> -q`, which git refused with `error: unrecognized argument: -q`; nothing was written. The call sat behind `[[ "$head" != "$base" ]] && git ...`, so the status never reached the caller, and a run that produced no bundle still looked graded and complete. The missing artefact was the one the change exists to produce, and only the new test case caught it. Cross-reference: `docs/development/bash-coding-conventions.md`.
 
 ## Node
 
@@ -315,6 +429,14 @@ legacy: none
 mitigation: a perl one-liner intended to count matches in a test file was written with the `/g` modifier against a full-file slurp; it matched nothing, but the loop structure ran forever, emitting a line count that grew into the hundreds of millions before the run was aborted and the log killed. The deeper fix: a mechanical transform that prints only a summary at the end is invisible while it spins. Always (1) bound the tool with `timeout`, (2) have the transform emit a match/replacement count to stderr BEFORE any output, and (3) diff against the input to verify the change before committing. A long-running transform with no stderr progress is the signal to inspect the loop, not to wait. The standing order to run every script through `timeout` is withdrawn: a blanket timeout on a simple script maxes out the wait every run. Move to a test harness with per-test timeouts.
 ```
 
+**Recurrence, 2026-10-05.** A `node -e` transform rewrote a test file with `String.replace`, and the replacement string contained `$'`. In JavaScript that is not literal text: `$&`, `` $` ``, `$'` and `$1` are replacement patterns, and `$'` means the portion of the input *after* the match. The write therefore duplicated the file's tail, so the file held its own body twice. Both prescribed guards were skipped, and the run was quiet: the shrunken first copy still parsed, and the suite still reported results, so the doubling surfaced only when a later anchor stopped matching.
+
+Two additions for this failure mode. A replacement that is not a literal constant -- a shell-quoted heredoc, a path, a value from a variable -- goes through a function replacer (`text.replace(re, () => to)`) or a tool that treats it literally; the pattern characters are only honoured in a plain string. And the count check is not enough on its own: compare the output's line count or size against the input's after every transform, because a transform can succeed at the wrong edit rather than fail at the right one.
+
+**A second occurrence, the same day.** A fixture-builder script was patched with a chain of unguarded `String.replace` calls. The patch applied partly and produced two fixtures that differed in the wrong places, which the eval run would then have reported as a null result about the instruction set rather than a broken fixture. The guard belongs in the builder: assert the fixture's facts at the end of the build, and let the build fail loudly.
+
+**A third occurrence, 2026-10-06.** A folder rename replaced the bare word `architecture/` with `reference/` across every text file in the repository. The replacement hit `src/reasoning/agent/skills/improve-codebase-architecture/`, a skill directory whose name merely shares the word, and corrupted one lint exemption and one roadmap line. The count guard was present and its counts were correct; the pattern was the defect, because it was anchored to nothing. A replacement driven by a path rename matches a path form (`docs/architecture/`, `../architecture/`, the image path) and never the bare directory name, and the verification is a read of the diff, because the run is green either way. The damage surfaced two gates later, when the exempt file started failing.
+
 ### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
 
 ```text
@@ -327,16 +449,6 @@ mitigation: for an autonomous iteration, the scope proposal carries a work-unit 
 The read-through close was released as "follow through everything autonomously", and the agent then landed three workflow briefs, a 661-line lesson plan, the register repair, and 87 fix rows across four lanes as a single commit with one handover. Each sampled change reviewed fine; the aggregate was unreviewable as a unit of work. The operator expected six commits - one per workstream and one per fix lane, each with its own handover - which is the decomposition the scope proposal should have offered and awaited release on. The gate asked what would be delivered and named the lanes, but it never bound the lanes to commits, so autonomy collapsed them.
 
 A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
-
-### [O] 2026-09-29  --  `/iter` pauses for confirmation at nearly every step, not only at the gates
-
-```text
-state: probation
-scoped: M3.2.1 -- `/iter` gate collapse and per-prompt quality pass (roadmap row 83)
-legacy: none
-mitigation: the operator previously expected to respond to the agent only at Gate 1, Gate 2, and Gate 3. After the loop-to-workflow move, `/iter` stops for confirmation at nearly every step, and each pause reads as a gate, so the operator approves step after step instead of only at the three decision points. The gate-collapse and quality pass (roadmap row 83) must restore gates as the only confirmation points and cut the per-step pauses that add no operator decision. The quality bar is: a step is a gate only when the operator must decide something; a step that only reports progress or awaits an acknowledge signal should not pause the loop. Recorded in handover `20260929-08`.
-probation_note: the gate collapse (handover `20260929-10`) folded confirmation into two gates (scope gate, release gate) and a glm quality-pass review found no remaining pedantic pause in `/iter` -- unconditional stops stand only at the scope gate and the Step 7 pre-close summary that feeds the release gate. The entry stays under probation at the operator's direction (2026-09-29): the fix has not been stress-tested by a live interactive run, so it is not confirmed resolved. Maintained at the M3.2.1 close (2026-10-03): still no live interactive run to test the fix against.
-```
 
 ### [O] 2026-09-29  --  Conversational numbering must be unambiguous
 
@@ -553,7 +665,7 @@ The first dispatch of the parallel-track trial produced a unit that changed `scr
 
 Two sub-cases from the same trial. A per-unit file list invents a boundary that does not exist: a repair subagent found a defect in a file its own track already owned, declined to fix it because that unit's list omitted the file, and reported it instead - the right call under the brief it was given, and a wasted dispatch under a track-level one. And a subagent working in a worktree outside the canonical sandbox directory needs the brief to remap the boundary rule explicitly, because the provider-layer instruction not to modify files outside the sandbox is a contradiction until the brief says which directory is the project root.
 
-Scope: brief construction for every dispatched subagent, not only the parallel case. Cross-reference: the trial's design record [`20260927-design-draft-parallel_auto_experiment.md`](discussions/archive/20260927-design-draft-parallel_auto_experiment.md), findings F3 and F4; the unit and brief contract in [`auto.md`](../workflow/coding-agent/drafts/auto.md).
+Scope: brief construction for every dispatched subagent, not only the parallel case. Cross-reference: the trial's design record [`20260927-design-draft-parallel_auto_experiment.md`](discussions/archive/20260927-design-draft-parallel_auto_experiment.md), findings F3 and F4; the unit and brief contract in [`auto.md`](../.agents/drafts/auto.md).
 
 ### [O] 2026-10-02  --  The policy forbids task lists in non-active milestones, and the roadmap contradicts it every day
 

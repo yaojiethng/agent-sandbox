@@ -5,7 +5,7 @@
 
 #
 # Tests:
-#   - _ensure_harness_keys injects skills/prompts/packages keys
+#   - _ensure_harness_keys injects the packages key
 #   - _ensure_harness_keys preserves existing user keys
 #   - Warn when settings.json is missing
 #   - Warn when AGENTS.md is missing (Pi-specific path)
@@ -49,22 +49,28 @@ test_merge_adds_harness_keys() {
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
-  # Start with minimal Pi settings (no skills/prompts)
+  # Start with minimal Pi settings (no harness keys)
   echo '{"defaultModel":"deepseek-v4-flash"}' > "$ah/agent/settings.json"
 
   _source_preflight "$ah"
 
   local settings="$ah/agent/settings.json"
-  if grep -q '"skills"' "$settings" && grep -q '"prompts"' "$settings" && grep -q '"packages"' "$settings"; then
-    pass "merge adds skills, prompts, packages keys"
+  if grep -q '"packages"' "$settings"; then
+    pass "merge adds the packages key"
   else
-    fail "merge missing one or more harness keys"
+    fail "merge missing the packages key"
   fi
 
-  if grep -q '/opt/workflow/agent/skills' "$settings"; then
-    pass "skills path references /opt/workflow/agent/"
+  if grep -q '"/opt/workflow/agent"' "$settings" && grep -q '"/opt/workflow/agent/modules/coding-agent"' "$settings"; then
+    pass "both package entries are named"
   else
-    fail "skills path incorrect"
+    fail "package entries incomplete"
+  fi
+
+  if ! grep -q '"/opt/workflow/agent/skills"' "$settings" && ! grep -q '"/opt/workflow/agent/prompts"' "$settings"; then
+    pass "merge adds no redundant skills or prompts list"
+  else
+    fail "merge still writes a redundant skills or prompts list"
   fi
 
 }
@@ -90,6 +96,11 @@ test_merge_preserves_existing_keys() {
   else
     fail "merge lost user skills path"
   fi
+  if ! grep -q '"/opt/workflow/agent/skills"' "$settings"; then
+    pass "merge leaves the user's own list alone"
+  else
+    fail "merge added a harness skills entry beside the user's"
+  fi
 
 }
 
@@ -98,15 +109,15 @@ test_merge_deduplicates_paths() {
   local ah="$tmpdir/ah"
   mkdir -p "$ah/agent"
 
-  # Settings that already has /opt/workflow/agent/skills
-  echo '{"skills":["/opt/workflow/agent/skills"]}' > "$ah/agent/settings.json"
+  # Settings that already names the harness root in packages
+  echo '{"packages":["/opt/workflow/agent"]}' > "$ah/agent/settings.json"
 
   _source_preflight "$ah"
 
   local settings="$ah/agent/settings.json"
   local count
-  count=$(grep -c '/opt/workflow/agent/skills' "$settings" || true)
-  assert_eq_num "$count" "1" "merge deduplicates existing paths"
+  count=$(grep -c '"/opt/workflow/agent"' "$settings" || true)
+  assert_eq_num "$count" "1" "merge deduplicates existing package entries"
 
 }
 
@@ -156,7 +167,7 @@ test_merge_does_not_fail_on_missing_agents_md() {
   _source_preflight "$ah"
 
   local settings="$ah/agent/settings.json"
-  if grep -q '"skills"' "$settings"; then
+  if grep -q '"packages"' "$settings"; then
     pass "merge succeeds even when AGENTS.md is missing"
   else
     fail "merge failed when AGENTS.md was missing"

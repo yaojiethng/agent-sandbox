@@ -14,10 +14,11 @@ COPY src/reasoning/entrypoint.sh                        /opt/sandbox/bin/provide
 COPY src/reasoning/providers/pi/preflight.sh            /opt/sandbox/bin/provider-preflight.sh
 COPY src/reasoning/agent/skills/                        /opt/workflow/agent/skills/
 COPY src/reasoning/agent/prompts/                       /opt/workflow/agent/prompts/
-COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/prompts/
+COPY workflow/coding-agent/prompts/                     /opt/workflow/agent/modules/coding-agent/prompts/
+COPY workflow/coding-agent/skills/                      /opt/workflow/agent/modules/coding-agent/skills/
 COPY src/reasoning/providers/pi/config/                 /opt/workflow/agent/config/
-COPY docs/architecture/                                 /opt/sandbox/docs/architecture/
-COPY docs/concepts/                                     /opt/sandbox/docs/concepts/
+COPY docs/reference/                                 /opt/sandbox/docs/reference/
+COPY docs/policies/                                  /opt/sandbox/docs/policies/
 RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 
 # Create agentuser at the host's UID to avoid bind mount permission conflicts.
@@ -40,7 +41,7 @@ ENV PROVIDER_NAME=pi
 # Create key directories before user switch so agentuser
 # owns them. Docker bind mounts on macOS create parent dirs as root when they
 # don't exist in the image, which would block the entrypoint's
-# copy-in provisioning step.
+# seeding step.
 RUN mkdir -p $AGENT_HOME/agent/prompts \
              $AGENT_HOME/agent/sessions \
              $AGENT_HOME/agent/skills \
@@ -63,8 +64,8 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# provider-entrypoint.sh seeds config into AGENT_HOME, registers a copy-out
-# EXIT trap, then execs the agent command.
+# provider-entrypoint.sh seeds config into AGENT_HOME from the image template,
+# then execs the agent command.
 ENV PATH=/opt/sandbox/bin:$PATH
 
 CMD ["pi"]

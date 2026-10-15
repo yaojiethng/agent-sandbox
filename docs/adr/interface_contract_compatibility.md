@@ -150,7 +150,7 @@ satisfied: the old check was stripped only after the new was proven).
 
 **Documentation note (2026-09-19, handover `20260919-05`):** the doc
 consolidation landed. The interface concept document is
-`docs/concepts/sandbox_host_interface.md` (renamed from
+`docs/reference/sandbox_host_interface.md` (renamed from
 `sandbox_host_correspondence_model.md`), carrying the contract surfaces, the
 per-copy expectations, the version declaration and comparison points, and the
 `MAKEFILE_VERSION` relationship (separate host-internal marker, not part of

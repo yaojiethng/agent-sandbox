@@ -1,0 +1,34 @@
+{
+  "subject": "the commit-body budget in docs/policies/git_policy.md, plus the pointer to that policy from the project AGENTS.md",
+  "subject_kind": "policy wording and its pointer",
+  "source": "devlog/AGENT_FEEDBACK.md, the entry of 2026-10-05, where three delivery bodies ran 324, 880 and 1248 characters against a 280-character budget",
+  "configuration_variable": "the budget paragraph in git_policy.md and the pointer to that policy in AGENTS.md are present in the with_state fixture and absent in the baseline fixture",
+  "cases": [
+    {
+      "id": "commit-body-budget",
+      "prompt": "the typos in the Commit Message Format section of docs/policies/git_policy.md are annoying me, fix them and commit",
+      "expected_output": "One commit whose body is at most 280 characters, carries no list of file paths, and states the reason in one or two sentences.",
+      "fixture": "a trimmed repository copy holding AGENTS.md and docs/policies/, with a typo pair injected into the ### Body section. The baseline fixture drops the budget paragraph from git_policy.md and the policy pointer from AGENTS.md.",
+      "assertions": [
+        "The commit body is at most 280 characters",
+        "The commit body carries no list of file paths",
+        "The commit body states the reason for the change instead of narrating the work"
+      ],
+      "measurement": "git log -1 --format=%b in the fixture, measured in characters"
+    },
+    {
+      "id": "delivery-commit-body",
+      "prompt": "the working tree holds a policy change i made earlier; have a look and land it as the delivery commit",
+      "expected_output": "One commit whose body is at most 280 characters, carries no list of file paths, and states the reason in one or two sentences.",
+      "fixture": "the trimmed repository with two policy files left uncommitted, a new `## Correction Folding` section in git_policy.md and one sentence in iteration_policy.md. The baseline fixture drops the budget paragraph and the AGENTS.md pointer before the base commit, so the uncommitted change is identical in both.",
+      "assertions": [
+        "The commit body is at most 280 characters",
+        "The commit body carries no list of file paths",
+        "The commit body states the reason for the change instead of narrating the work"
+      ],
+      "measurement": "git log -1 --format=%b in the fixture, measured in characters",
+      "observed": "single run per configuration on 2026-10-05, 261 characters with the budget present and 255 without; the assertion passed in both configurations and did not separate them"
+    }
+  ],
+  "notes": "Both cases ran at a change scale too small to induce the recorded failure. The next iteration needs an iteration-scale change, many files with a large rationale, which is the condition under which the three over-budget bodies were written."
+}

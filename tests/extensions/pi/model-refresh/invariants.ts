@@ -91,9 +91,9 @@ export function buildCatalog(): InvariantCase[] {
 		},
 		{
 			id: "M8",
-			name: "the transport follows pi and the metadata",
-			statement: "an id pi's baked catalog carries keeps the adapter pi encodes for it, a declared transport entry wins over the metadata, and an id the metadata labels @ai-sdk/openai or @ai-sdk/anthropic gets that adapter",
-			source: `${RECORD} the source model; derivedTransport, and pi's baked catalog in pi-ai dist/providers/all.js`,
+			name: "the transport follows the declaration and the metadata",
+			statement: "a declared transport entry wins over the metadata, an id the metadata labels @ai-sdk/openai or @ai-sdk/anthropic gets that adapter, and an id no source classifies falls to the completions surface",
+			source: `${RECORD} the source model; derivedTransport`,
 		},
 		{
 			id: "M6",
@@ -457,7 +457,7 @@ export const CLASSIFICATION: readonly Classification[] = [
 	{ id: "M4", name: "unique ids", kind: "state", edges: ["S1"] },
 	{ id: "M5", name: "a valid model", kind: "state", edges: ["S1"] },
 	{ id: "M7", name: "a usable entry", kind: "state", edges: ["S1"] },
-	{ id: "M8", name: "the transport follows pi and the metadata", kind: "state", edges: ["S1"] },
+	{ id: "M8", name: "the transport follows the declaration and the metadata", kind: "state", edges: ["S1"] },
 	{ id: "M6", name: "purity", kind: "transition", edges: ["X3"] },
 	{ id: "G1", name: "the exact gate", kind: "guard", edges: ["X1", "X2"] },
 	{ id: "G2", name: "the store's fields win", kind: "transition", edges: ["X2"] },

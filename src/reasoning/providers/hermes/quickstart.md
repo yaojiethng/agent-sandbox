@@ -137,19 +137,16 @@ rm .workspace/input/*
 
 ## Provider config
 
-Hermes config and credentials persist on the host at `.workspace/output/.hermes/`:
+Hermes keeps its own config and state under `HERMES_HOME`, which is `/home/agentuser/.hermes` inside the container. The harness ships no config for hermes: the image carries the agent's own install and nothing of the harness's choosing, so the container starts on hermes's defaults and any config the agent writes lasts for the session.
+
+Credentials and the iteration cap arrive as environment variables, declared in [`docker-compose.hermes.yml`](docker-compose.hermes.yml) and filled from the sandbox `.env` on the host:
 
 ```sh
-# Edit provider credentials (API keys, model config)
-$EDITOR .workspace/output/.hermes/.env
-
-# Edit Hermes config (backend, model settings)
-$EDITOR .workspace/output/.hermes/config.yaml
+# Edit provider credentials (API keys, iteration cap)
+$EDITOR .workspace/output/.env
 ```
 
-Both files are bind-mounted into the container at runtime. Changes take effect on the next `make start` or `make serve`  --  no rebuild required.
-
-If `.workspace/output/.hermes/config.yaml` does not exist, `setup.sh` seeds it from `providers/hermes/config.yaml` on first run.
+Changes take effect on the next `make start` or `make serve` -- no rebuild required.
 
 ---
 
@@ -270,5 +267,5 @@ make dry-run PROVIDER=hermes
 
 | Document | Purpose |
 |---|---|
-| [`../../docs/operations/quickstart.md`](../../../../docs/development/quickstart.md) | First-run setup guide |
-| [`../../docs/architecture/tool_interface.md`](../../../../docs/architecture/tool_interface.md) | Full command reference and `.env` variables |
+| [`../../docs/development/quickstart.md`](../../../../docs/development/quickstart.md) | First-run setup guide |
+| [`../../docs/reference/tool_interface.md`](../../../../docs/reference/tool_interface.md) | Full command reference and `.env` variables |

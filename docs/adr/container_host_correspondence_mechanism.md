@@ -19,7 +19,7 @@
 **Decision:** The sandbox repository and the host repository are never the same git repository -- divergent histories, different baselines, no shared object store. Git is a tool used independently inside each repo; it is not the correspondence mechanism between them. Correspondence flows through the git-agnostic unified diff file, which applies cleanly when the target files are in the expected state. The harness depends on no shared git history, commit SHAs, or object stores across the boundary. Identity factors (`HOST_HEAD_SHA`, `init_sha`) carry just enough state to scope and baseline the diff -- not to link the repositories. Host-side workflow commands (`apply`/`draft`/`confirm`/`reject`) consume the diff artefacts; their design rationale is in [diff_packaging.md](diff_packaging.md).
 
 **Rationale:** Diff-file correspondence keeps the boundary tool-agnostic -- any tool that produces or consumes unified diffs participates in the model -- and keeps all host modification behind explicit operator review: the host repo is never modified by the container directly, and no unreviewed change becomes a commit. It also avoids the security and complexity cost of git mediation across the boundary, whose rejection as a delivery model is recorded in [sandbox_delivery_model.md](sandbox_delivery_model.md) -- the same principle applied to git plumbing rather than worktree wiring. Model:
-[sandbox_host_interface.md](../concepts/sandbox_host_interface.md).
+[sandbox_host_interface.md](../reference/sandbox_host_interface.md).
 
 **Rejected alternatives:**
 

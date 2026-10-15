@@ -1,6 +1,6 @@
 // Extension compatibility probe for a pi version bump.
 //
-// The two extensions under src/reasoning/providers/pi/config/agent/extensions/
+// The extensions under src/reasoning/providers/pi/config/agent/extensions/
 // import from pi and from pi-ai. A bump can remove one of those names and the
 // extension then fails at load, inside a container, at startup, with a stack
 // that points at the extension rather than at the bump. The bump skill's own

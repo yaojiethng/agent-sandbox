@@ -7,7 +7,7 @@
 # copy is invisible in review because the provider base is a small file, and the
 # result is that two containers stop having the same toolchain.
 #
-# Pins cite: docs/architecture/tool_interface.md provider interface table;
+# Pins cite: docs/reference/tool_interface.md provider interface table;
 # docs/adr/git_hooks.md ("the linter ships in every provider base").
 #
 # Run:

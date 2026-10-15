@@ -2,8 +2,9 @@
 # Provider overlay for the Hermes provider. Applied in all modes (standard and serve).
 # Merged by scripts/run_agent.sh before the mode overlay.
 #
-# Provider config (config.yaml, .env) is seeded into AGENT_HOME by
-# provider-entrypoint.sh at container start  --  not mounted. See sandbox_lifecycle.md.
+# Provider config: the image ships none, by decision. Hermes runs on its own
+# defaults, its own config lives under HERMES_HOME for the session, and this repo
+# seeds nothing into it. See docs/reference/provider_lifecycle.md.
 
 services:
   agent:

@@ -54,4 +54,4 @@ ENV_FILE := $(CURDIR)/.env
 - *CWD-only `.env` location (`make -C`) as the primary mechanism* -- fragile when make is invoked differently (`make -f`, a scripted call); demoted to the last-resort fallback (R5).
 - *Project-root as a `.env` host* -- `onboard` writes `.env` only to the sandbox dir, so the project root cannot host it.
 
-**Edge cases / drivers:** The P4 precedence pins and the study's thermo-nuclear finding (c) established the file-beats-flag baseline that the S2 flip removed. The identity flags stay accepted (backward compatible); removing them is future work, layered onto this ADR. Full primitive and consumption detail: [sandbox_identity.md](../concepts/sandbox_identity.md).
+**Edge cases / drivers:** The P4 precedence pins and the study's thermo-nuclear finding (c) established the file-beats-flag baseline that the S2 flip removed. The identity flags stay accepted (backward compatible); removing them is future work, layered onto this ADR. Full primitive and consumption detail: [sandbox_identity.md](../reference/sandbox_identity.md).

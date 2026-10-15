@@ -183,7 +183,7 @@ Debug helpers that verify the internal invariants of a specific production scrip
 
 **Purpose:** Provide a structured troubleshooting path for a specific failure domain (e.g. "why does the dry-run reasoning probe fail?"). Each section checks one link in the chain -- environment, library sourcing, path resolution, script hygiene, etc. Because they are diagnostic (not deterministic pass/fail, may need operator interpretation, or run only in a container), they are **not** in the `make test` suite.
 
-**Relation to ACs:** Diagnostic scripts can be referenced from acceptance criteria as a regression-guard AC for a recurring bug class where a full unit test is impractical. See [handover policy Acceptance criteria -- Regression guard](../operations/handover_policy.md#acceptance-criteria).
+**Relation to ACs:** Diagnostic scripts can be referenced from acceptance criteria as a regression-guard AC for a recurring bug class where a full unit test is impractical. See the acceptance-criteria invariants in [`iteration_policy.md`](../policies/iteration_policy.md#acceptance-criteria-invariants).
 
 **Naming:** `tests/knowledge/diagnose_<subsystem>.sh` -- mirrors the production script name it diagnoses.
 
@@ -277,8 +277,8 @@ This applies to renames, interface changes, flag additions, and behavioural fixe
 
 [`testing-conventions.md`](testing-conventions.md) -- fixture patterns, anti-patterns, templates, checklists, and debug steps.
 
-[`read-through-run.md`](../../workflow/coding-agent/drafts/read-through-run.md) -- the brief for a periodic whole-tree read-through pass: pair each production file with its covering tests, mutate the behaviour, and record the findings.
+[`read-through-run.md`](../../.agents/drafts/read-through-run.md) -- the brief for a periodic whole-tree read-through pass: pair each production file with its covering tests, mutate the behaviour, and record the findings.
 
-[`churn-analysis-run.md`](../../workflow/coding-agent/drafts/churn-analysis-run.md) -- the brief for the churn-analysis pass: rank the tracked files by commit count with a pinned command and window, separate mechanical churn from functional churn, and cross-reference the read-through register.
+[`churn-analysis-run.md`](../../.agents/drafts/churn-analysis-run.md) -- the brief for the churn-analysis pass: rank the tracked files by commit count with a pinned command and window, separate mechanical churn from functional churn, and cross-reference the read-through register.
 
-[`fanout-run.md`](../../workflow/coding-agent/drafts/fanout-run.md) -- the draft brief for fanning a large pass out to parallel subagents: a frozen snapshot per batch, one owner per file, a serialized test suite, and a scripted register integrity check.
+[`fanout-run.md`](../../.agents/drafts/fanout-run.md) -- the draft brief for fanning a large pass out to parallel subagents: a frozen snapshot per batch, one owner per file, a serialized test suite, and a scripted register integrity check.

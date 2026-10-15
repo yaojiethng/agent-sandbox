@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# libs/provider-entrypoint.sh
+# src/reasoning/entrypoint.sh
 # Harness-owned wrapper entrypoint for all reasoning layer provider containers.
 # Copied into the image via the build context  --  a change to this file triggers
 # a Docker layer cache miss on the COPY step in provider.dockerfile.
 #
 # Responsibilities:
-#   1. Provision AGENT_HOME from image template (copy-in config files not
-#      provided by Docker bind mounts  --  prompts/, sessions/, skills/).
+#   1. Provision AGENT_HOME from the image's config template, for the config
+#      files Docker bind mounts do not provide (prompts/, sessions/, skills/).
 #   2. Run generic pre-flight checks (env vars, container libs, AGENT_HOME).
 #   3. Source provider-specific pre-flight script if present
 #      (/opt/sandbox/bin/provider-preflight.sh).
@@ -17,11 +17,12 @@
 # belongs in src/reasoning/providers/<n>/preflight.sh, staged as provider-preflight.sh in
 # the build context. The shared entrypoint stays generic.
 #
-# Config files (settings.json, auth.json, models.json, AGENTS.md) are
-# copy-in from the baked template (/opt/workflow/agent/config/) at startup.
-# Subdirectories prompts/, sessions/, skills/ are Docker bind-mounted  -- 
-# they shadow the template copies at runtime. See devlog/roadmap.md
-# M2.4 for the design rationale.
+# Config files (settings.json, auth.json, models.json, AGENTS.md) are seeded
+# from the baked template (/opt/workflow/agent/config/) at every start, so the
+# image owns them and a session's edit does not outlive its container.
+# Subdirectories prompts/, sessions/, skills/ are bind-mounted by the provider
+# overlay, so they carry state between runs. See docs/reference/
+# provider_lifecycle.md.
 #
 # Required environment variables (set via ENV in provider.dockerfile):
 #   AGENT_HOME           --  provider config dir inside the container
@@ -57,13 +58,13 @@
 # When a TERM trap is set and a synchronous foreground child is running, bash
 # defers the trap until the child exits. This means "docker stop" SIGTERM is
 # not delivered promptly to the agent; after the 10s grace period Docker sends
-# SIGKILL and copy-out does not run.
+# SIGKILL, and the seeding step does not run again.
 #
 # This only affects the "docker stop mid-session" path. For all normal exit
 # paths (user quits TUI, agent exits cleanly), session state is preserved
-# because the sessions/ subdirectory is bind-mounted directly  --  no copy-out
-# needed. Config files (settings.json, auth.json) are regenerated from the
-# template on next startup (ephemeral by design, avoids utime/EPERM).
+# because the sessions/ subdirectory is bind-mounted directly. Config files
+# (settings.json, auth.json) are regenerated from the template on next start
+# (ephemeral by design, avoids utime/EPERM).
 # If cleanup on docker stop is required, implement it at the harness level:
 # run_agent.sh can copy provider config out via "docker cp" after the container
 # exits, independent of the entrypoint.
@@ -91,8 +92,8 @@ _require_var PROVIDER_NAME
 # Provision AGENT_HOME from image template
 # ---------------------------------------------------------------------------
 # Provisions AGENT_HOME by copying files from the image template.
-# Docker bind-mounted subdirs overlay the copied content  --  the copy-in
-# seeds them on first run; subsequent runs use persisted host content.
+# Docker bind-mounted subdirs are in place before this runs, so the copy writes
+# into them; the host's content is what the agent finds afterward.
 _provision_agent_home() {
   local template="${1:?provision_agent_home requires template_dir}"
   local target="${2:?provision_agent_home requires target_dir}"

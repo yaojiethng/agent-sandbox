@@ -5,6 +5,15 @@ argument-hint: "[workflow intent and branch line - optional; e.g. full loop, wor
 
 > $@
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+- `decision-records` - the architecture decision records.
+- `docs` - the document tree.
+
 ## Mandate
 
 You are initializing the agent-sandbox content layer on this repository. The harness plumbing is already provisioned: pi config, prompt templates, staging paths, and the diff pipeline all work. Your deliverable is the content layer - the project records that check-ins and iterations consume.
@@ -28,7 +37,7 @@ Harness records - record each as present, missing, or stale:
 
 - Repo-root `AGENTS.md`, the project layer
 - `devlog/roadmap.md`, including its `active-milestone` frontmatter
-- `docs/operations/` policy set: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`, plus `discussion_policy.md` and `adr_policy.md`
+- `docs/policies/` policy set: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`, plus `discussion_policy.md` and `adr_policy.md`
 - `devlog/handovers/`
 - `devlog/AGENT_FEEDBACK.md`
 - `devlog/discussions/`
@@ -42,7 +51,7 @@ Project conventions - evidence of life, in whatever form it exists:
 Environment:
 
 - Which runtimes exist in this container: python3, node, make, pytest, and anything the project needs. This decides the verification contract wording.
-- Where the policy sources live: `/opt/sandbox/docs/operations/`
+- Where the policy sources live: `/opt/sandbox/docs/policies/`
 - Whether `~/workspace/input/` exists for operator-supplied files
 
 ## Classify
@@ -56,11 +65,11 @@ Environment:
 
 ## Report gaps
 
-Present the record table: one row per record, its status, and its source - copy from `/opt/sandbox/docs/operations/`, or write new.
+Present the record table: one row per record, its status, and its source - copy from `/opt/sandbox/docs/policies/`, or write new.
 
 Name the expected deviations; do not treat them as breakage:
 
-- Dead `docs/operations/` links on a first run are expected before the setup; they must resolve after it.
+- Dead `docs/policies/` links on a first run are expected before the setup; they must resolve after it.
 - `/opt/sandbox/lib` differs between the two containers by design. A file missing in one container is not a regression.
 - `/package-branch` names a capability, not a filesystem path. Verify the tool at first package time.
 - Skills that assume `CONTEXT.md` and `docs/adr/` are inert until that content exists. That is fine.
@@ -85,7 +94,7 @@ Answer these four during this iteration.
 
 Only after the decisions. One iteration. In this order.
 
-1. `docs/operations/` - copy the minimum policy set verbatim from `/opt/sandbox/docs/operations/`: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`. Add `discussion_policy.md` and `adr_policy.md`. The repository owns its copies; the policies are generic by design. These files are the link targets and wording authority for what follows.
+1. `docs/policies/` - copy the minimum policy set verbatim from `/opt/sandbox/docs/policies/`: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`. Add `discussion_policy.md` and `adr_policy.md`. The repository owns its copies; the policies are generic by design. These files are the link targets and wording authority for what follows.
 2. Repo-root `AGENTS.md` - the project layer. Contains the primer from decision 3, links to the policy set, the verification contract from decision 5, and the workflow intent from decision 1. Follow the wording rules of `documentation_policy.md`.
 3. `devlog/roadmap.md` - the `active-milestone` frontmatter, the goal and definition of done from decision 4, and the first task row: the setup iteration itself, closing with handover 1.
 4. `devlog/handovers/` - the directory, ready for handover 1 at this wrap-up.

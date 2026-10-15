@@ -72,7 +72,7 @@ Why drift is loud by construction: the failure count rides the file's real exit 
 
 The gate accepts a directory argument, defaulting to the real suite. The runner calls it before dispatch with the real suite directory on every run. The self-test calls it directly against a fixture for the dead-registration case; its runner invocations skip the gate with `RUN_TESTS_SELFTEST=1`.
 
-`scripts/check_test_smoke.sh` syntax-checks the excluded `tests/knowledge/`, `tests/integration/`, and `tests/eval/` scripts with `bash -n`, so excluded scripts cannot rot silently. It is non-gating.
+`scripts/check_test_smoke.sh` syntax-checks the excluded `tests/knowledge/` and `tests/integration/` scripts with `bash -n`, so excluded scripts cannot rot silently. It is non-gating.
 
 `scripts/check_test_coverage.sh` is an ad hoc helper: given changed file paths, it prints which test files reference each. It is not a gate.
 

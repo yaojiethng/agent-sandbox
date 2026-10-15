@@ -156,7 +156,7 @@ Renamed surfaces (current code/docs):
 - `--run-id` CLI flag -> `--session-id`
 - Container/volume/project naming embeds the session id
 
-This is a durable name change to reserved-term vocabulary (see [`docs/concepts/terminology.md`](../docs/concepts/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
+This is a durable name change to reserved-term vocabulary (see [`docs/reference/terminology.md`](../docs/reference/terminology.md)). Historical records (this changelog's M2.7 entry, earlier handovers, the study/ADR `20260722-*session_identity*`) use the former `RUN_ID` name and are not retro-renamed; read them as referring to `SESSION_ID`. Resume uses force-fresh semantics: pre-rename volumes are rejected at the volume-label gate ("older harness version... start fresh").
 
 ### [CORRECTION - 2026-05-21] Pre-flight checks: wrong container, silent failures, set -e regression
 
@@ -195,5 +195,13 @@ M3.1 became a parent when M3.1.2 was created to own the gates own upkeep, so the
 The minor and major loop procedures moved out of `iteration_policy.md` and `roadmap_policy.md` into `/iter`, `/plan`, `/milestone-start` and `/milestone-close`, with the policies keeping the invariants and linking their runbook. The policy and procedure deconfliction passes read 196 rules and 235 steps against a canonical-owner test, retiring `milestone_policy.md` and folding the milestone grain into `roadmap_policy.md`. The loop taxonomy and its two-grain state diagram took one home in the concept document, and the transition rules and rejected alternatives took another in the loop-workflow ADR.
 
 `/document` landed as the docs-session runbook, `task-queue` and its `taskq` extension as a general sequencing primitive, and `/wrapup` as the shared close mechanics for `/iter`, `/plan` and `/document`; `/iter` collapsed from three gates to two. The policy set was declared as every `docs/**/*_policy.md` file, each carrying a `description` and a `scope` in frontmatter, and the reasoning layer gained one shared runtime base.
+
+---
+
+## M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract
+
+*An instruction surface now declares where it runs, what it can reach and what loads it, and every reference it carries resolves in the image it runs in.*
+
+The contract between prompts, skills and the two `AGENTS.md` layers is settled and structural. The surfaces are declared once as data in `src/build/container-interface.json`, one reader serves every gate, and a link in a surface's file must land inside the reach its cell grants; a reference now takes the absolute path its document has in the image, so the repository-relative form fails the gate. The policy form is designed away, each policy splitting into a mechanism a procedure runs and a convention the project's convention-skill holds, with a default convention-skill corpus that `initialize` installs and a handoff at `.agents/skills/<convention>/SKILL.md`. The five hand-maintained `CONTEXT.md` files are gone, the harness and the workflow module each ship as one declared payload, and the reviewer dispatch became one provider-layer skill with a script and a stub-`pi` test.
 
 ---

@@ -8,7 +8,7 @@ Substitute two values and pass the result to a fresh subagent.
 - `<report-path>` -- the run-scoped path for that auditor's report, outside the repository tree. One file per auditor; more auditors mean more files. A path under `/tmp` is the default.
 
 ```text
-Read the file `workflow/coding-agent/skills/<auditor>.md` from the repository root and follow its procedure.
+Read the file `/opt/workflow/agent/modules/coding-agent/skills/<auditor>/SKILL.md` and follow its procedure.
 
 You report only. Write no record, no file inside the repository tree, and no commit. Your single output is the JSONL report at the path below.
 
@@ -35,7 +35,7 @@ For a check that produced no finding, write one line with exactly these fields i
 - result: "skip"
 - reason: why, in one line; name the exception clause when one protects what the check found
 
-The schema has one owner, `workflow/coding-agent/skills/check-in/report-schema.md`; do not restate it in your output and do not add fields to it.
+The schema has one owner, `/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md`; do not restate it in your output and do not add fields to it.
 ```
 
 ## After the dispatch

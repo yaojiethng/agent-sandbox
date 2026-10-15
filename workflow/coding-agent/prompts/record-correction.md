@@ -5,11 +5,19 @@ argument-hint: "[target commit hash or subject] [what the correction changes] [w
 
 > $@
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `work-log` - the work-unit record and the exploration record.
+- `decision-records` - the architecture decision records.
+- `git-discipline` - commit types, branch names and the delivery commit.
+
 ## Mandate
 
 You are correcting a record that has already been closed. The operator named the commit the correction belongs to. Your deliverable is that commit rewritten to carry the correction, with no other commit touched, no commit added, and no port artifact left behind.
 
-A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. This is the record correction described in [`closed_record_corrections.md`](../../../docs/adr/closed_record_corrections.md), and that document owns the policy. This prompt owns the mechanics.
+A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md#amending) owns that rule, and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md#post-close-document-corrections) owns the record principle behind it. This prompt owns the mechanics.
 
 Two rules govern the run.
 
@@ -94,6 +102,45 @@ bash scripts/lint.sh
 bash scripts/run_tests.sh
 git status --porcelain    # clean
 ```
+
+## Correcting a record
+
+A closed record is edited only at the operator's direction, and every edit carries the corresponding correction tag. The operator signals direction any way it is said: "amend the handover", "reopen the handover", "edit it", "fix the typo", or by naming the change. A correction is never applied unasked.
+
+Three forms qualify:
+
+- A **misrecording**: an incorrect status, a wrong filename, a misrecorded decision, or a count or state that disagrees with the tree.
+- A **folded fix**: a later squash, fixup or amend folded into the close, and the record amendments the fold carries.
+- An **omission**, and only where the record's own account of what the iteration turned in is incomplete without it: the iteration delivered something and did not record a defect in it.
+
+An omission is not a place to record work the iteration never did, and it is not a place to state a limit the iteration set only afterwards. Both are new work, and a new record carries them.
+
+### Procedure
+
+1. Confirm the operator's direction and identify the paragraph or section.
+2. Rewrite the entire affected paragraph, or section, in place. Do not leave an inline marker such as a reference count or a `[see correction below]` label. The rewritten text reads as the record.
+3. Insert the correction tag as a block at the end of the corrected section, immediately before the start of the next section:
+
+```text
+---
+[CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
+
+---
+```
+
+Keep the blank line before the closing fence. Without it, the tag paragraph parses as a setext heading and the Markdown lint gate reports `MD022`.
+
+4. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
+5. Do not alter the `status`, the date, or any other frontmatter field in the corrected record. A reopen and re-close cycle is a procedure step, not a record edit: the record ends `Closed`, with the date and metadata it carried before.
+6. **Findings triage.** If the correction surfaces a new finding, route it before the correction is finalised: to the active handover's `## Findings`, to a new roadmap row, or to the document the finding concerns. The correction tag states where the finding was routed.
+
+The correction principle, the propagation rule and the two correction stops and one smell are in [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md#post-close-document-corrections).
+
+### What this is not
+
+A correction is not a substitute for a new record. Work the iteration did not do is new work, and a new record carries it.
+
+A correction may reopen the record. Reopening to adjust the work and closing again is a correction path. A correction that cannot be finished returns the record to `Closed` as it was.
 
 ## Close
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/test_session_log.sh
 # Unit tests for the per-session activity log (session_log_* helpers) and the
-# Pins cite: docs/architecture/tool_interface.md l.55 (LIST=1 time rendering).
+# Pins cite: docs/reference/tool_interface.md l.55 (LIST=1 time rendering).
 
 # relative human-time formatter (ts_to_epoch / relative_time) in
 # src/libs/session_inventory.sh -- the backing store + display for the

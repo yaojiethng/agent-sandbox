@@ -74,7 +74,7 @@ The dirty-first precedence is the contract: any uncommitted change forces a save
 - *`init_sha`-only baseline (level 1 alone)* -- skips the never-changed session but cannot skip re-saving an unchanged committed state after the first save; a session that committed once then stalled would re-create empty bundles every cycle. Rejected as insufficient: level 2 is the actual optimization.
 - *A separate persisted last-save tracker file* -- an extra file the harness must write, read, and keep consistent. Rejected as unnecessary: the previous save's `.export-status` already records what was captured; its `HEAD` line is the natural comparison point.
 
-**Edge cases / drivers:** The autosave loop reads the baseline *before* the swap, because replacing the checkpoint replaces the very `.export-status` that holds the comparison point. A FAILed previous export is not a baseline -- `_save_baseline` falls back to `init_sha` rather than trust an interrupted save. A busy agent with uncommitted edits always saves, so an export is never lost to the guard. The lifecycle and layout are documented in [sandbox_lifecycle.md](../architecture/sandbox_lifecycle.md).
+**Edge cases / drivers:** The autosave loop reads the baseline *before* the swap, because replacing the checkpoint replaces the very `.export-status` that holds the comparison point. A FAILed previous export is not a baseline -- `_save_baseline` falls back to `init_sha` rather than trust an interrupted save. A busy agent with uncommitted edits always saves, so an export is never lost to the guard. The lifecycle and layout are documented in [sandbox_lifecycle.md](../reference/sandbox_lifecycle.md).
 
 ## 2026-09-19 -- Host workflows require a clean tree; reject discards residue
 
@@ -95,7 +95,7 @@ Rejecting lacks an operator-visible surface for the discard decision: revert dis
 - *Reject leaves residue; ask the operator to resolve by hand* (prior behaviour) -- could not check out and aborted, stranding the draft. Rejected as the state leak.
 - *Reject prompts before discarding* -- adds a confirm surface to a command whose purpose is discard; the residue is information-free once the commits drop. Rejected as needless friction.
 
-**Edge cases / drivers:** The guard runs before any working-tree mutation, so a refused draft/apply leaves the tree untouched. `make apply --force` may produce `.rej` files from failing hunks; the warning points the operator at them. The lifecycle and command behaviours are documented in [sandbox_lifecycle.md](../architecture/sandbox_lifecycle.md).
+**Edge cases / drivers:** The guard runs before any working-tree mutation, so a refused draft/apply leaves the tree untouched. `make apply --force` may produce `.rej` files from failing hunks; the warning points the operator at them. The lifecycle and command behaviours are documented in [sandbox_lifecycle.md](../reference/sandbox_lifecycle.md).
 
 ## 2026-08-01 -- Single export mechanism, four guarded workflow commands
 
@@ -118,4 +118,4 @@ Rejecting lacks an operator-visible surface for the discard decision: revert dis
 - *Keep `package-diff` alongside `package-branch`* -- overlapping output from
   the same primitives is duplication.
 
-**Edge cases / drivers:** Rebase conflict during `confirm` must leave the repo restorable (savepoint reset to pre-confirm state); checkout failure during `reject` must leave the draft intact (atomicity); patch application failure during `draft` must leave the repo in its pre-draft state. The host repo is never modified by the container directly -- the command set is the host-side half of the [interface contract](../concepts/sandbox_host_interface.md).
+**Edge cases / drivers:** Rebase conflict during `confirm` must leave the repo restorable (savepoint reset to pre-confirm state); checkout failure during `reject` must leave the draft intact (atomicity); patch application failure during `draft` must leave the repo in its pre-draft state. The host repo is never modified by the container directly -- the command set is the host-side half of the [interface contract](../reference/sandbox_host_interface.md).

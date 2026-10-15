@@ -487,27 +487,27 @@ EOF
 }
 
 # Given: a fixture root whose only prompt has frontmatter that parses
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 0
 # Asserts: the clean verdict, so a passing gate is not a gate that never fires.
 test_frontmatter_gate_passes_on_a_parsing_block() {
   local root out rc=0
   root=$(make_frontmatter_fixture '---' 'description: "Draft: a quoted value"' '---' '' '# Sequential Work')
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a parsing block passes the gate"
   assert_contains "$out" "Clean" "the clean verdict reaches the operator"
 }
 
 # Given: a fixture root holding a prompt whose unquoted description contains a
 # colon followed by a space
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 1 and the finding names the file, the line, and the offending text
 # Asserts: the silent drop is reported at the line an author has to edit. A gate
 # that only printed a count would leave the author hunting for it.
 test_frontmatter_gate_names_the_offending_line() {
   local root out rc=0
   root=$(make_frontmatter_fixture '---' 'description: Draft - the shape: run a plan' '---' '' '# Sequential Work')
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "an unquoted colon-space fails the gate"
   assert_contains "$out" "broken.md" "the finding names the file"
   assert_contains "$out" "offending line: description: Draft - the shape: run a plan" \
@@ -516,7 +516,7 @@ test_frontmatter_gate_names_the_offending_line() {
 
 # Given: a fixture root holding a prompt that opens on its title, with no
 # frontmatter block at all
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 0
 # Asserts: the gate scopes itself to a block that fails to parse. A prompt draft
 # with no block is a separate, tracked defect; failing every known open item
@@ -524,13 +524,13 @@ test_frontmatter_gate_names_the_offending_line() {
 test_frontmatter_gate_skips_a_prompt_with_no_block() {
   local root out rc=0
   root=$(make_frontmatter_fixture '# Fan-Out Run' '' '## Purpose')
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a prompt with no frontmatter block is skipped, not flagged"
   assert_contains "$out" "clean across 1 prompt, skill and policy files" "the file is collected and its block skipped"
 }
 
 # Given: a PATH with no node on it
-# When:  check_prompt_frontmatter.sh runs
+# When:  check_frontmatter.sh runs
 # Then:  rc is 1
 # Asserts: the gate fails closed. A missing parser must never read as a pass.
 test_frontmatter_gate_fails_closed_without_node() {
@@ -539,25 +539,91 @@ test_frontmatter_gate_fails_closed_without_node() {
   mkdir -p "$bin"
   ln -sf "$(command -v dirname)" "$bin/dirname"
   ln -sf "$(command -v bash)" "$bin/bash"
-  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "no node on PATH fails the gate"
   assert_contains "$out" "node is not on PATH" "the missing dependency is named"
 }
 
+# Given: a manifest root with no container-interface.json
+# When:  check_frontmatter.sh runs
+# Then:  rc is 1 and the missing declaration is named
+# Asserts: the gate fails closed. The instruction roots are derived from the
+# declaration, so an absent declaration means the root set is unknown; reading
+# an empty set as clean is exactly the silent pass this branch prevents.
+test_frontmatter_gate_fails_closed_without_manifest() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_nomanifest_$$_$RANDOM"
+  mkdir -p "$root"
+  out=$(FRONTMATTER_MANIFEST_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a missing manifest fails the gate"
+  assert_contains "$out" "cannot derive the instruction roots" "the missing declaration is named"
+}
+
 # Given: a fixture root holding a policy file whose frontmatter does not parse
-# When:  check_prompt_frontmatter.sh runs against that root
+# When:  check_frontmatter.sh runs against that root
 # Then:  rc is 1 and the finding names the policy file
 # Asserts: the policy scan root is live. A policy block is never loaded at
 # runtime, so a malformed one has no other symptom; the gate is the only check.
 test_frontmatter_gate_scans_policy_files() {
   local root out rc=0
   root="$FIXTURE_DIR/frontmatter_policy_$$_$RANDOM"
-  mkdir -p "$root/docs/operations"
+  mkdir -p "$root/docs/policies"
   printf '%s\n' '---' 'description: Owns a rule: unquoted colon' '---' '' '# X Policy' \
-    > "$root/docs/operations/x_policy.md"
-  out=$(PROMPT_FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_prompt_frontmatter.sh" 2>&1) || rc=$?
+    > "$root/docs/policies/x_policy.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed policy block fails the gate"
   assert_contains "$out" "x_policy.md" "the finding names the policy file"
+}
+
+# Given: a fixture root holding a project convention-skill whose unquoted
+# description contains a colon followed by a space
+# When:  check_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding names the skill file
+# Asserts: the project convention-skill tree is scanned. It sat outside the
+# gate's root list, so a malformed description in `.agents/skills/` cost the
+# skill silently while the gate still reported clean.
+test_frontmatter_gate_scans_project_convention_skills() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_agents_$$_$RANDOM"
+  mkdir -p "$root/.agents/skills/task-list"
+  printf '%s\n' '---' 'name: task-list' 'description: the roadmap and the changelog: their shape' '---' '' '# task-list' \
+    > "$root/.agents/skills/task-list/SKILL.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a malformed convention-skill block fails the gate"
+  assert_contains "$out" ".agents/skills/task-list/SKILL.md" "the finding names the convention-skill"
+}
+
+# Given: a fixture root holding a malformed frontmatter block in every
+#        instruction root the container interface declares, plus the two
+#        project convention roots
+# When:  check_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding count equals the number of planted files
+# Asserts: the scan set is derived from the declaration, not hand-listed. The
+# test reads the same declaration the gate does, so a cell source added to the
+# manifest is scanned and asserted without editing the gate or this test.
+test_frontmatter_gate_covers_every_declared_instruction_root() {
+  local root out rc=0 rel count=0 rels
+  rels=$( cd "$REPO_ROOT" && node --input-type=module -e '
+    import { load_manifest, manifest_rows } from "./src/build/container-interface.mjs";
+    const sources = manifest_rows(load_manifest(process.cwd()), "cells")
+      .flatMap((cell) => cell.sources ?? []);
+    process.stdout.write([...sources, ".agents/skills", ".agents/prompts"].join("\n"));
+  ' ) || return 1
+  root="$FIXTURE_DIR/frontmatter_roots_$$_$RANDOM"
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    rel="${rel%/}/a.md"
+    mkdir -p "$root/$(dirname "$rel")"
+    printf '%s\n' '---' 'description: shape: unquoted colon' '---' '' '# a' > "$root/$rel"
+    count=$((count + 1))
+  done <<< "$rels"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a malformed block in every declared instruction root fails the gate"
+  assert_contains "$out" "$count frontmatter finding(s)" "every declared instruction root is scanned"
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    assert_contains "$out" "${rel%/}/a.md:" "the finding names ${rel%/}/a.md"
+  done <<< "$rels"
 }
 
 # Given: the repository's own .markdownlint-cli2.mjs
@@ -600,12 +666,64 @@ test_every_registered_rule_is_enabled() {
 run_test test_every_registered_rule_is_enabled
 run_test test_lint_gate_set_is_complete
 run_test test_lint_forwards_gate_output
+# Given: a fixture root holding a shipping document with no reader declared
+# When:  check_frontmatter.sh runs with that folder as a shipping root
+# Then:  rc is 1 and the finding names the file
+# Asserts: the reader field is required where it has teeth. The ship set is a
+# decision, so a shipping document that declares no reader is the one state the
+# gate must not pass over.
+test_frontmatter_gate_requires_a_reader_on_a_shipping_document() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_reader_$$_$RANDOM"
+  mkdir -p "$root/docs/reference"
+  printf '%s\n' '# Undeclared' '' 'Prose.' > "$root/docs/reference/undeclared.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" FRONTMATTER_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a shipping document with no reader fails the gate"
+  assert_contains "$out" "undeclared.md frontmatter: no frontmatter" "the finding names the file and the reason"
+}
+
+# Given: a fixture root holding a shipping document that declares the maintainer alone
+# When:  check_frontmatter.sh runs with that folder as a shipping root
+# Then:  rc is 1 and the finding says the document does not ship
+# Asserts: the declaration and the folder set cannot disagree. A maintainer-only
+# document belongs outside a shipping folder, and the check states which side moves.
+test_frontmatter_gate_rejects_a_maintainer_only_shipping_document() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_maintainer_$$_$RANDOM"
+  mkdir -p "$root/docs/reference"
+  printf '%s\n' '---' 'reader: [maintainer]' '---' '' '# Maintainer Only' > "$root/docs/reference/maintainer_only.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" FRONTMATTER_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a maintainer-only shipping document fails the gate"
+  assert_contains "$out" "does not ship" "the finding states the consequence"
+}
+
+# Given: a fixture root holding a shipping document with a declared reader
+# When:  check_frontmatter.sh runs with that folder as a shipping root
+# Then:  rc is 0
+# Asserts: the positive case, so the two findings above are not a gate that fails
+# on every tree.
+test_frontmatter_gate_accepts_a_declared_reader() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_ok_$$_$RANDOM"
+  mkdir -p "$root/docs/reference"
+  printf '%s\n' '---' 'reader: [agent, operator]' '---' '' '# Declared' > "$root/docs/reference/declared.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" FRONTMATTER_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 0 "$rc" "a declared reader passes the gate"
+  assert_contains "$out" "1 shipping document(s) declare a reader" "the verdict counts the shipping documents"
+}
+
 run_test test_markdown_finding_with_zero_status_fails
 run_test test_markdown_gate_runs_at_repo_root
 run_test test_frontmatter_gate_passes_on_a_parsing_block
 run_test test_frontmatter_gate_names_the_offending_line
 run_test test_frontmatter_gate_skips_a_prompt_with_no_block
 run_test test_frontmatter_gate_fails_closed_without_node
+run_test test_frontmatter_gate_fails_closed_without_manifest
 run_test test_frontmatter_gate_scans_policy_files
+run_test test_frontmatter_gate_scans_project_convention_skills
+run_test test_frontmatter_gate_covers_every_declared_instruction_root
+run_test test_frontmatter_gate_requires_a_reader_on_a_shipping_document
+run_test test_frontmatter_gate_rejects_a_maintainer_only_shipping_document
+run_test test_frontmatter_gate_accepts_a_declared_reader
 
 test_done

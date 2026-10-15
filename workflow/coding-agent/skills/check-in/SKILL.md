@@ -6,6 +6,13 @@ disable-model-invocation: true
 
 # check-in - the survey and the work inventory
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+
 ## Purpose
 
 A check-in surveys project state and hands the operator an inventory of open work with a starting direction. It is not an iteration. Its intensive half, the record audit, runs only when the operator asks for it, so the default check-in stays short and its task list carries work rather than record housekeeping.
@@ -17,8 +24,8 @@ The prompt `/gm` owns the command name and parses its arguments. This skill owns
 Run this when the operator wants to know what is open and where to start. Four cases it is not for, and what replaces it:
 
 - **One task, already chosen.** Open the iteration with `/iter`. A check-in named the task in an earlier turn.
-- **A record audit on its own.** Dispatch [`roadmap-maintenance`](../roadmap-maintenance.md) or [`handover-maintenance`](../handover-maintenance.md) directly. This skill runs both only on the thoroughness argument.
-- **Which work runs without the operator.** [`/backlog-triage.md`](../../prompts/backlog-triage.md) answers that narrower question. This skill reports what is open, not what is dispatchable.
+- **A record audit on its own.** Dispatch [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) or [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) directly. This skill runs both only on the thoroughness argument.
+- **Which work runs without the operator.** [`/backlog-triage`](/opt/workflow/agent/modules/coding-agent/prompts/backlog-triage.md) answers that narrower question. This skill reports what is open, not what is dispatchable.
 - **A milestone boundary.** `/milestone-start` and `/milestone-close` own those.
 
 ## Scope
@@ -38,7 +45,7 @@ Without a thoroughness word this skill never opens the auditor references and ne
 
 The survey reads state; it does not repair it. Apply the repository's read discipline: grep to locate, then read the needed sections. Do not open files wholesale beyond what the survey needs.
 
-- Handover chain: the latest file in `devlog/handovers/` -- highest date and index in the filename. Read its status, findings and deferred items.
+- Handover chain: read the latest ten handovers. When the operator names a different window - a count ("the last three handovers") or a period ("the last seven days") - read that window instead. Read each record's `status`, findings and deferred items.
 - Roadmap: `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, that milestone's section, and its open items. Check done items for forward-looking text left behind.
 - Recent git history (`git log --oneline -20`): what landed, and the time gap since the last iteration.
 - Open entries in `devlog/AGENT_FEEDBACK.md` -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.
@@ -91,7 +98,7 @@ The auditor recommends; this skill disposes. The report names no commit, no mess
 | `defer` | determinable, and an existing roadmap unit already names the broader task this belongs to | nothing. The named unit owns it; clearing it ahead of that pass is premature. A `defer` entry with no named unit is rejected. |
 | `escalate` | two sources disagree, or a value cannot be re-derived | present it as a point below the table, never as a row |
 
-A compaction carries the survival table [`roadmap_policy.md`](../../../../docs/operations/roadmap_policy.md#compaction-cascading) names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
+A compaction carries the survival table the `roadmap-maintenance` skill's compaction procedure names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
 
 This skill makes the one `chore:` commit, in the main tree, after the auditors return -- never a subagent, and never one commit per finding. Neither auditor is told to commit.
 

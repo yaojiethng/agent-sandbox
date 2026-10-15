@@ -411,7 +411,7 @@ session_teardown() {
   # Removes containers + network (frees the default address pool); the
   # SESSION_ID-scoped named volume persists so resume still works. The container
   # is disposable  --  durable state lives in the named volume + bind mounts
-  # (see docs/architecture/execution_model.md  --  Container State Contract).
+  # (see docs/reference/execution_model.md  --  Container State Contract).
   docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
 }
 

@@ -99,7 +99,7 @@ Operator resolutions:
 
 - `src/libs/session_env.sh` -- `sandbox_dir_canon` + single `session_id_derive`.
 - `scripts/start_agent.sh`, `scripts/resume_agent.sh` -- dropped `SANDBOX_ID`.
-- `docs/concepts/sandbox_identity.md`, `docs/concepts/sandbox_host_correspondence_model.md`.
+- `docs/reference/sandbox_identity.md`, `docs/reference/sandbox_host_correspondence_model.md`.
 - `tests/test_checkpoint.sh`, `tests/test_start_agent.sh`, trace stubs.
 
 ## Supersedes

@@ -25,7 +25,7 @@ Migration is forward-only: resume reads `SESSION_ID` off the record filename and
   dead intermediate and the superfluous hash; layered, not simplified.
 
 **Edge cases / drivers:** Prune label-reliability defect (iterations `20260831-05/06`): leftover volumes showed visible removal but label-only Rule 2 missed them because `sandbox-dir`/`session-id` labels were inconsistent or absent. Canonical convergence of all path spellings makes label filters spelling-independent. 24-bit entropy (6 hex) is sufficient for session disambiguation within a sandbox instance. Full primitive/consumption detail:
-[sandbox_identity.md](../concepts/sandbox_identity.md).
+[sandbox_identity.md](../reference/sandbox_identity.md).
 
 ## 2026-07-22 -- Hash-based identifier, two-stage derivation
 
@@ -41,4 +41,4 @@ Container naming `<role>-<project>-<SESSION_ID>`; a fixed Docker label schema (`
 **Rationale:** Raw timestamps give no identity guarantees -- they encode neither sandbox instance nor host commit, cannot be verified against source state, and collide for parallel worktree sessions started in the same second.
 Labels are the only runtime-verifiable filtering mechanism at scale (`docker stop --filter label=X`), and deterministic naming makes exports and audits reproducible from identity inputs. A UUID alternative was rejected at the time for being non-deterministic -- replaying a session from the same state would produce a different identity, breaking artefact correlation without an external registry.
 
-**Reason superseded by 2026-08-31:** The two-stage formula carried a dead intermediate, a superfluous second hash, and a lossy raw-path first hash -- the identifier was a function of path spelling rather than folder, which the prune label-reliability defect exposed. The canonical single hash converges every spelling of a folder to one identifier. The marker/label schema and label-based lifecycle-filtering decisions of this entry remain in force and are governed by the [container marker schema](../concepts/sandbox_identity.md#docker-label-schema); image-version marking later moved to [harness_versioning.md](harness_versioning.md).
+**Reason superseded by 2026-08-31:** The two-stage formula carried a dead intermediate, a superfluous second hash, and a lossy raw-path first hash -- the identifier was a function of path spelling rather than folder, which the prune label-reliability defect exposed. The canonical single hash converges every spelling of a folder to one identifier. The marker/label schema and label-based lifecycle-filtering decisions of this entry remain in force and are governed by the [container marker schema](../reference/sandbox_identity.md#docker-label-schema); image-version marking later moved to [harness_versioning.md](harness_versioning.md).

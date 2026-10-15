@@ -4,7 +4,7 @@
 # delivery overlay selected by the caller's --delivery (copy|mount), the
 # provider overlay (if present), and the mode overlay (dry-run/serve); the
 # merged result is written to SANDBOX_DIR/.compose/<session-id>.yml and persists
-# after the session (see docs/architecture/execution_model.md).
+# after the session (see docs/reference/execution_model.md).
 #
 # Double-brace placeholders are substituted at generation time:
 #   {{PROJECT_NAME}}       -> project name
@@ -67,7 +67,10 @@ x-workspace:
   changes_host:    "${CHANGES_DIR}"              # -> "/home/agentuser/workspace/session-diffs"
   input_host:      "${INPUT_DIR}"                # -> "/home/agentuser/workspace/input"
   output_host:     "${OUTPUT_DIR}"               # -> "/home/agentuser/workspace/output"
-  provider_config_host: "${SANDBOX_DIR}/.{{PROVIDER_NAME}}" # -> "/opt/provider-config"
+# The provider config directory ("${SANDBOX_DIR}/.{{PROVIDER_NAME}}") has no row
+# here: the provider overlay mounts the subdirectories it needs, and the image
+# seeds the rest into AGENT_HOME at container start. See
+# providers/<provider>/docker-compose.<provider>.yml and provider_lifecycle.md.
 
 services:
   sandbox:

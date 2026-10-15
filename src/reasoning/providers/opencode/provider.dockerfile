@@ -8,9 +8,10 @@
 #
 # Provider contract (harness interface):
 #   AGENT_HOME     --  where OpenCode writes config and state
-#   PROVIDER_NAME  --  used by provider-entrypoint.sh for copy-out target naming
-#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command; seeds config
-#                   and registers copy-out trap before exec-ing opencode
+#   PROVIDER_NAME  --  the provider identifier the entrypoint reads
+#   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command, and seeds
+#                   AGENT_HOME only when the image carries a config template. This
+#                   image carries none: the agent starts on its own defaults.
 ARG BASE_IMAGE=opencode-base
 FROM ${BASE_IMAGE}
 
@@ -24,11 +25,12 @@ ARG HOST_GID=1000
 COPY src/libs/                                  /opt/sandbox/lib/
 COPY src/reasoning/entrypoint.sh                /opt/sandbox/bin/provider-entrypoint.sh
 RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
-COPY src/reasoning/agent/skills/                 /opt/workflow/agent/skills/
-COPY src/reasoning/agent/prompts/                /opt/workflow/agent/prompts/
-COPY workflow/coding-agent/prompts/              /opt/workflow/agent/prompts/
-COPY docs/architecture/                          /opt/sandbox/docs/architecture/
-COPY docs/concepts/                              /opt/sandbox/docs/concepts/
+# The harness payload is not copied into this image. OpenCode has no config
+# transport that could load a prompt or a skill, so a payload here would ship
+# unreachable. The image carries the agent's own install and the harness's
+# documentation; the payload ships in pi's image only.
+COPY docs/reference/                          /opt/sandbox/docs/reference/
+COPY docs/policies/                           /opt/sandbox/docs/policies/
 
 # -------------------------
 # Non-root user
@@ -75,7 +77,7 @@ WORKDIR /home/agentuser/sandbox
 HEALTHCHECK --interval=2s --timeout=5s --start-period=60s --retries=10 \
   CMD test -d /home/agentuser/sandbox/.git
 
-# provider-entrypoint.sh seeds config and registers copy-out trap,
+# provider-entrypoint.sh seeds config from the image template,
 # then execs opencode. Subcommand and args passed via compose:
 #   standard: no override  --  runs as `opencode` with no args
 #   serve:    docker-compose.serve.yml sets command: ["serve", ...]

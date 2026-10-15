@@ -1,7 +1,7 @@
 # ADR Format
 
 ADRs live in `docs/adr/` and follow the project's living format defined in
-`docs/operations/adr_policy.md`. Read that policy before writing or editing
+`docs/policies/adr_policy.md`. Read that policy before writing or editing
 an ADR; this file is a working summary, not the authority.
 
 An ADR records the *why* behind one standing principle -- a pattern, interface

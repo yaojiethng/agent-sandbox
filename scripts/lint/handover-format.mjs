@@ -1,6 +1,6 @@
 // Handover format gate.
 //
-// Enforces docs/operations/handover_policy.md `## Format` over handovers: the
+// Enforces the work-log convention's record shape over handovers: the
 // frontmatter fields (date, milestone, type, status) and the section set (the
 // required sections present, the forbidden ones absent).
 //
@@ -9,7 +9,7 @@
 // lacks the frontmatter block is a finding. A file list without `--force` (the
 // `--staged` mode) still honours the cutover, so a correction to a record in
 // the archive is not blocked. `--force` drops the cutover for the file list it
-// is given, which is the on-demand audit mode handover-maintenance.md uses.
+// is given, which is the on-demand audit mode handover-maintenance uses.
 //
 // Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 // finding count is printed, never encoded in the exit code.
@@ -23,18 +23,18 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const DEFAULT_CUTOVER = "20261001";
 
-/** The frontmatter type vocabulary, from handover_policy.md `## Types`. */
+/** The frontmatter type vocabulary, from the project's work-log convention. */
 const TYPES = [
   "Implementation", "Discussion", "Design", "Plan", "Documentation",
   "Workflow", "Housekeeping", "Audit",
 ];
 
-/** The status vocabulary, from handover_policy.md `## Lifecycle`. */
+/** The status vocabulary, from the project's work-log convention. */
 const STATUSES = ["Open", "Active", "Closed"];
 
-/** The required sections, in the order the policy lists them. */
+/** The required sections, in the order the project's work-log convention lists them. */
 const REQUIRED_SECTIONS = [
-  "Objective", "Scope", "Acceptance criteria", "Hot files",
+  "Objective", "Scope", "Acceptance criteria",
   "Decisions", "Decisions pending", "Findings", "Completed",
 ];
 

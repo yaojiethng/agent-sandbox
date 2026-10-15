@@ -381,4 +381,4 @@ Before marking a lib or script change complete:
 - [ ] `grep -rl "<changed file>" tests/` run; all returned files reviewed for staleness
 - [ ] Any stale test cases updated in the same change
 - [ ] `make test` passes clean
-- [ ] An output-contract change produced a propagation checklist per AGENTS.md, covering tests, docs, and downstream consumers
+- [ ] An output-contract change produced a propagation checklist per the [`propagation-check`](../../src/reasoning/agent/skills/propagation-check/SKILL.md) skill, covering tests, docs, and downstream consumers

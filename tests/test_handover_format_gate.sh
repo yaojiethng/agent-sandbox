@@ -49,7 +49,6 @@ write_handover() {
     printf '## Objective\n\nTest.\n\n'
     printf '## Scope\n\nTest.\n\n'
     printf '## Acceptance criteria\n\nTest.\n\n'
-    printf '## Hot files\n\nTest.\n\n'
     printf '## Decisions\n\nNone.\n\n'
     printf '## Decisions pending\n\nNone.\n\n'
     printf '## Findings\n\nNone.\n\n'

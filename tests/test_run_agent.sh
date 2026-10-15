@@ -2,7 +2,7 @@
 # TEST_DEADLINE: 20
 # tests/test_run_agent.sh  --  Behavioural tests for scripts/run_agent.sh
 # provider hook + provider overlay selection.
-# Pins cite: docs/architecture/tool_interface.md l.41, l.225 (SERVE_PORT contract);
+# Pins cite: docs/reference/tool_interface.md l.41, l.225 (SERVE_PORT contract);
 #             code-owner: scripts/run_agent.sh SERVE_PORT_DEFAULT.
 # TEST_DEADLINE: 10
 #   This file absorbed the trace-start family and now runs 33 units, most of

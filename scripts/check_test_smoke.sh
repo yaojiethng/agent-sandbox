@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # scripts/check_test_smoke.sh
 # Non-gating rot detection for tests excluded from `make test`:
-# syntax-checks every script under tests/knowledge/, tests/integration/
-# and tests/eval/, plus the extension knowledge scripts under
-# tests/extensions/**/knowledge/, with `bash -n`.
+# syntax-checks every script under tests/knowledge/ and tests/integration/,
+# plus the extension knowledge scripts under tests/extensions/**/knowledge/,
+# with `bash -n`.
 #
 # Rationale: exclusion from the unit suite is policy (non-deterministic or
 # diagnostic seams), but excluded scripts have rotted silently before
@@ -32,7 +32,7 @@ check_file() {
   fi
 }
 
-for DIR in knowledge integration eval; do
+for DIR in knowledge integration; do
   TARGET="$REPO_ROOT/tests/$DIR"
   [[ -d "$TARGET" ]] || continue
   for F in "$TARGET"/*.sh; do

@@ -17,7 +17,7 @@
 
 **Edge cases / drivers:** Two contract points that host-vs-container framing misses and pure detection cannot fix: (1) intra-session container<->container drift -- agent and sandbox images are buildable independently (`--targets=agent|sandbox`), so mount-delivery wiring can land in one while the other is older; (2) the session-record schema (`.compose/<id>.yml` + in-worktree `SESSION_STATE`) is itself a resume-breaking contract written by host and read by container. These belong to the interface-contract compatibility thread; ADR [interface_contract_compatibility.md](interface_contract_compatibility.md) is the standing mechanism.
 
-The interim `container-sig` stand-in is retired (P3, 2026-09-19); the interface-contract version is the standalone container-boundary contract -- see [sandbox_identity.md](../concepts/sandbox_identity.md).
+The interim `container-sig` stand-in is retired (P3, 2026-09-19); the interface-contract version is the standalone container-boundary contract -- see [sandbox_identity.md](../reference/sandbox_identity.md).
 
 ## 2026-07-22 -- Drift detection via build-time source signature
 

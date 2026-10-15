@@ -28,7 +28,7 @@ Out of scope: the live effort probe (item three of the diagnosis). The operator 
 | 3 | The two `openrouter` overrides apply: `deepseek/deepseek-v4-flash` and `deepseek/deepseek-v4-pro` reach the effective model, and `low` no longer clamps to `high` | the check asserts the override landed and `wire(low) === "low"`; the payload is `reasoning:{effort:"low"}` | Agent [x] |
 | 4 | The `deepseek` provider's dead `deepseek-v4-flash` key is resolved, with the reason recorded | the key is dropped; the record states the baked map already names every advertised level | Agent [x] |
 | 5 | The check runs under `make test`, with the suite's registration guard covering it | the wrapper reports 10 node files, and the guard fails on an unregistered one | Agent [x] |
-| 6 | The diagnosis is recorded: the probe prompts, the per-turn percentile table, the API surface facts, and the deferred live probe as an option | `devlog/discussions/20261004-study-deepseek_effort_levels.md` | Agent [x] |
+| 6 | The diagnosis is recorded: the probe prompts, the per-turn percentile table, the API surface facts, and the deferred live probe as an option | `devlog/discussions/20261004-study-settled-deepseek_effort_levels.md` | Agent [x] |
 
 ## Hot files
 
@@ -37,7 +37,7 @@ Out of scope: the live effort probe (item three of the diagnosis). The operator 
 | [`src/reasoning/providers/pi/config/agent/models.json`](../../src/reasoning/providers/pi/config/agent/models.json) | the three stale override keys; the `deepseek` key's resolution |
 | [`tests/extensions/pi/model-refresh/config.test.ts`](../../tests/extensions/pi/model-refresh/config.test.ts) | new: the offline map and wire check, and its printed table |
 | [`tests/test_model_refresh.sh`](../../tests/test_model_refresh.sh) | the registration guard gains the new file |
-| [`devlog/discussions/20261004-study-deepseek_effort_levels.md`](../../devlog/discussions/20261004-study-deepseek_effort_levels.md) | new: the diagnosis record and the deferred live probe |
+| [`devlog/discussions/20261004-study-settled-deepseek_effort_levels.md`](../../devlog/discussions/20261004-study-settled-deepseek_effort_levels.md) | new: the diagnosis record and the deferred live probe |
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | the T12 row for the fix and its check |
 
 ## Decisions
@@ -56,8 +56,8 @@ None.
 
 | Finding | Type | Impact | Triaged to |
 |---|---|---|---|
-| `git log -S'"deepseek-flash"'` on `models.json` returns nothing: the stale keys are not a code regression, they were written when pi's baked ids matched and stopped matching when pi renamed the native entry | measurement | this iteration, criteria 3 and 4 | Triaged to: this record; `20261004-study-deepseek_effort_levels.md` |
-| `openrouter` may not honour `reasoning:{effort:"low"}` upstream. The fix makes pi send it; only an OpenRouter probe confirms the answer | assumption | next iteration if the probe is ever wanted | Triaged to: `20261004-study-deepseek_effort_levels.md` Open Questions |
+| `git log -S'"deepseek-flash"'` on `models.json` returns nothing: the stale keys are not a code regression, they were written when pi's baked ids matched and stopped matching when pi renamed the native entry | measurement | this iteration, criteria 3 and 4 | Triaged to: this record; `20261004-study-settled-deepseek_effort_levels.md` |
+| `openrouter` may not honour `reasoning:{effort:"low"}` upstream. The fix makes pi send it; only an OpenRouter probe confirms the answer | assumption | next iteration if the probe is ever wanted | Triaged to: `20261004-study-settled-deepseek_effort_levels.md` Open Questions |
 | The check reads `models.json` beside the extension, so it skips in the mutation gate's mirror, which copies the extension alone. The gate still replays 44 rows and the suite stays green | method | recorded, no action | Triaged to: this record |
 
 ## Completed
@@ -67,5 +67,5 @@ None.
 | [`src/reasoning/providers/pi/config/agent/models.json`](../../src/reasoning/providers/pi/config/agent/models.json) | the two `openrouter` override keys take the `deepseek/` prefix; the dead `deepseek/deepseek-v4-flash` override is dropped |
 | [`tests/extensions/pi/model-refresh/config.test.ts`](../../tests/extensions/pi/model-refresh/config.test.ts) | new: the offline config check, its dead-key gate, its wire assertion and its printed table |
 | [`tests/test_model_refresh.sh`](../../tests/test_model_refresh.sh) | the registration guard gains `config.test.ts` |
-| [`devlog/discussions/20261004-study-deepseek_effort_levels.md`](../../devlog/discussions/20261004-study-deepseek_effort_levels.md) | new: the API surface, the dead keys, the measurement, the probe prompts and the deferred live probe |
+| [`devlog/discussions/20261004-study-settled-deepseek_effort_levels.md`](../../devlog/discussions/20261004-study-settled-deepseek_effort_levels.md) | new: the API surface, the dead keys, the measurement, the probe prompts and the deferred live probe |
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | the T12 row for the fix and its check |

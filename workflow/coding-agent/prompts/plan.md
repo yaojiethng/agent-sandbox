@@ -11,6 +11,13 @@ Run a plan session for planning and design work. Run `/iter` for feature work.
 
 **State the grain.** `/plan` is one workflow at two grains: a milestone scope, or a single task that needs decisions before it can be worked. Infer the grain from the invocation argument and from the material gathered below, then state it when the scope is presented, so the operator can correct it. The grain is inferred and stated, never passed as a parameter -- a caller forced to know the grain before it can invoke `/plan` has been given the wrong interface.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `decision-records` - the architecture decision records.
+
 ## Orient
 
 Read the most recent handover and the roadmap:
@@ -26,7 +33,7 @@ Read the prior handover's Objective and Findings for context, and any open stori
 
 Capture the goal and the problem for this session. Read the goal from the invocation argument or from the operator's direction. When no goal is stated, state it and confirm it with the operator. Capture the problem statement from the invocation argument or from the operator as well. Keep every planned item inside the goal.
 
-Open a plan-session handover per [`handover_policy.md`](../../../docs/operations/handover_policy.md), mirroring `/iter` Step 1. Record the goal and the problem in the handover so they are a durable record. Assign the handover to the session's milestone. When no major milestone is open, stop and ask the operator.
+Open a plan-session handover, mirroring `/iter` Step 1. Record the goal and the problem in the handover so they are a durable record. Assign the handover to the session's milestone. When no major milestone is open, stop and ask the operator.
 
 **Skip condition.** If the work is already well-scoped and needs no planning, record that decision in the handover, say so, and end the session.
 
@@ -45,7 +52,7 @@ Present the gathered context and the session goal. Set the session's scope and d
 
 ## Interview
 
-Pass the session context -- the recorded goal and problem, the gathered context, and the confirmed scope -- to the [`grill-me`](../../../src/reasoning/agent/skills/grill-me/SKILL.md) skill for the interview. The skill resolves each branch of the decision tree. Treat its resolved branches as the interview result.
+Pass the session context -- the recorded goal and problem, the gathered context, and the confirmed scope -- to the [`grill-me`](/opt/workflow/agent/skills/grill-me/SKILL.md) skill for the interview. The skill resolves each branch of the decision tree. Treat its resolved branches as the interview result.
 
 ## Decide the outcome
 
@@ -53,7 +60,7 @@ Route the interview result to a write-back target. Choose one: a written report 
 
 ## Write back
 
-Write the plan to the confirmed target: the roadmap entry, the scoped unit at its stated grain, decisions, and ADRs. Apply the binding rules in [`iteration_policy.md`](../../../docs/operations/iteration_policy.md) [Iteration Invariants](../../../docs/operations/iteration_policy.md#iteration-invariants), [`roadmap_policy.md`](../../../docs/operations/roadmap_policy.md), and [`adr_policy.md`](../../../docs/operations/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check.md`](../../../src/reasoning/agent/prompts/propagation-check.md).
+Write the plan to the confirmed target: decisions and ADRs. The decomposition into work units is not written here. Hand it to [`scope.md`](scope.md), whose brief carries the work-unit table, and let the close file it per the project's `task-list` convention. Apply the binding rules in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) [Iteration Invariants](/opt/sandbox/docs/policies/iteration_policy.md#iteration-invariants), the project's `task-list` convention, and [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check`](/opt/workflow/agent/skills/propagation-check/SKILL.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
 

@@ -19,10 +19,11 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
     volumes:
       # Provider config: selective bind mounts for persistent subdirs
-      # Only prompts/, sessions/, skills/ are RW bind-mounted from the host.
-      # Config files (settings.json, auth.json, models.json, AGENTS.md) are
-      # copy-in from the baked image template at startup  --  avoids utime/EPERM
-      # on cross-filesystem mounts (macOS virtiofs, Windows 9p).
+      # prompts/, sessions/, skills/ and the model recommendations file are RW
+      # bind-mounted from the host. Config files (settings.json, auth.json,
+      # models.json, AGENTS.md) are seeded from the baked image template at
+      # startup  --  avoids utime/EPERM on cross-filesystem mounts (macOS
+      # virtiofs, Windows 9p).
       - type: bind
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts
         target: /home/agentuser/.pi/agent/prompts
@@ -32,3 +33,11 @@ services:
       - type: bind
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/skills
         target: /home/agentuser/.pi/agent/skills
+      # Operator-owned role-to-model recommendations. Not part of the image:
+      # setup.sh seeds a slug-free skeleton on the host, then the operator or
+      # the setup-model-recommendations skill fills it. This is the one
+      # single-file mount; a writer replaces the content in place, never with
+      # mv, because mv would break the mount.
+      - type: bind
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/model-recommendations.md
+        target: /home/agentuser/.pi/model-recommendations.md

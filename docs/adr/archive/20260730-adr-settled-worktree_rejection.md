@@ -19,7 +19,7 @@ Worktree backing -- linking the agent's working tree to the host repository via 
 ## Consequences
 
 - Worktree backing permanently removed from roadmap scope (M2.6.6 Not in scope).
-- `docs/architecture/security.md` Mount modes table: Worktree row removed or marked rejected.
+- `docs/reference/security.md` Mount modes table: Worktree row removed or marked rejected.
 - The full investigation (mechanism, security delta, residual risk analysis) is preserved in [`devlog/discussions/archive/20260730-study-settled-worktree_rejection.md`](../../../devlog/discussions/archive/20260730-study-settled-worktree_rejection.md).
 - The backing axis in the mount model design now has one active option: user-provided `.git`.
 

@@ -18,6 +18,28 @@
 #   no recordTrees key         --  nothing is exempt; the rule holds no list
 #   a configured carve-out      --  the named trees are exempt
 #   an unreadable target        --  flagged as a missing target, never a pass
+#   an image path, from a shipped file -- clean when the image path maps back to
+#                                 a populated repository source
+#   a repository path, from a shipped file -- flagged: the file runs in the image
+#   a target that ships nowhere -- flagged, from an instruction root
+#   a repository path, from a bundled document -- flagged: a bundled document
+#                                 ships too, so its links resolve in the image
+#   a link between two bundled documents -- clean: their destinations keep the
+#                                 repository's shape, so the relative link
+#                                 survives the move
+#   the provider config root    -- its links resolve in the image too: the
+#                                 repository-relative form fails, the image path
+#                                 passes, so the root is a registered root
+#   a link outside the cell reach -- flagged, even when the image carries it
+#   a link to a reachable row     -- clean: the cell declares the path
+#   a repository link under a reachable row -- clean: the cell reads it there
+#   a repository path, from a bundled document -- clean: only the instruction
+#                                 roots resolve in the image's path space
+#
+# The image-space cases need a fixture that looks like the repository from the
+# rule's point of view, because the rule keys on the file's repository-relative
+# path. Each one builds a fake root, changes into it, and runs markdownlint from
+# there, so `<!-- cwd -->/workflow/coding-agent/prompts/` is a shipped root.
 #
 # The rule's live whole-tree behaviour is the Markdown gate's job
 # (`check_markdown.sh`), not a fixture unit test's: see
@@ -188,6 +210,147 @@ test_unreadable_target_is_flagged() {
   assert_contains "$out" 'link fragment names no heading' 'a fragment into a headingless target is flagged'
 }
 
+# shipped_root NAME -- a fixture root shaped like the repository, with one
+# prompt in a shipped instruction root and one bundled policy document.
+shipped_root() {
+  local name="$1"
+  local dir="$FIXTURE_DIR/$name"
+  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/docs/policies"
+  printf '# Policy\n' > "$dir/docs/policies/iteration_policy.md"
+  printf '%s' "$dir"
+}
+
+test_image_path_from_a_shipped_file_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root image_path)"
+  printf '[policy](/opt/sandbox/docs/policies/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'an absolute image path that a COPY populates is clean'
+}
+
+test_image_path_missing_from_the_image_is_flagged() {
+  local dir cfg out
+  dir="$(shipped_root image_missing)"
+  printf '[policy](/opt/sandbox/docs/policies/absent_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_contains "$out" 'does not exist in the image' 'an image path nothing populates is flagged'
+}
+
+test_repository_path_from_a_shipped_file_is_flagged() {
+  local dir cfg out
+  dir="$(shipped_root repo_form)"
+  printf '[policy](../../../docs/policies/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # The target exists in the repository, and the file never runs there: the old
+  # form is the defect this rule now catches.
+  assert_contains "$out" 'does not exist in the image' 'the repository-relative form is flagged from a shipped file'
+}
+
+test_repository_path_from_a_bundled_document_is_flagged() {
+  local dir cfg out
+  dir="$(shipped_root bundled_doc)"
+  mkdir -p "$dir/docs/adr"
+  printf '# Record\n' > "$dir/docs/adr/x.md"
+  printf '[adr](../adr/x.md)\n' > "$dir/docs/policies/iteration_policy.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # A bundled document ships as well, so its own tree's relative links face the
+  # same test: the ADR is absent from the image, and the link is a finding.
+  assert_contains "$out" 'does not exist in the image' 'a bundled document resolves its links in the image too'
+}
+
+test_link_between_two_bundled_documents_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root bundled_pair)"
+  mkdir -p "$dir/docs/reference"
+  printf '# Reference\n' > "$dir/docs/reference/page.md"
+  printf '[page](../reference/page.md)\n' > "$dir/docs/policies/iteration_policy.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # The two destinations keep the repository's shape, so a relative link between
+  # two bundled documents resolves in the image unchanged.
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a relative link between two bundled documents is clean'
+}
+
+test_sibling_instruction_root_link_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root sibling_root)"
+  mkdir -p "$dir/src/reasoning/agent/prompts" "$dir/src/reasoning/agent/skills/grill-me"
+  printf '# Skill\n' > "$dir/src/reasoning/agent/skills/grill-me/SKILL.md"
+  printf '[skill](../skills/grill-me/SKILL.md)\n' > "$dir/src/reasoning/agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  # The two prompt roots and the skill root meet in the image, so a link between
+  # them resolves as a sibling link rather than by source-tree depth.
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a link between instruction roots resolves in the image'
+}
+
+test_provider_config_root_resolves_in_the_image() {
+  local dir cfg out
+  dir="$(shipped_root provider_root)"
+  mkdir -p "$dir/src/reasoning/providers/pi/config/agent"
+  local file="$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
+  printf '# Layer\n' > "$file"
+
+  printf '[policy](../../../../../../docs/policies/iteration_policy.md)\n' >> "$file"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_contains "$out" 'does not exist in the image' 'the repository form fails from the provider config root'
+
+  printf '# Layer\n' > "$file"
+  printf '[policy](/opt/sandbox/docs/policies/iteration_policy.md)\n' >> "$file"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'the image path passes from the provider config root'
+}
+
+# provision_root NAME -- a fixture root with a prompt in a shipped module root
+# and a file in the provider config template. The template is a declared image
+# destination that the module prompt's cell does not reach.
+provision_root() {
+  local name="$1"
+  local dir="$FIXTURE_DIR/$name"
+  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/src/reasoning/providers/pi/config/agent"
+  printf '# Template file\n' > "$dir/src/reasoning/providers/pi/config/agent/template.md"
+  printf '%s' "$dir"
+}
+
+test_link_outside_the_cell_reach_is_flagged() {
+  local dir cfg out
+  dir="$(provision_root outside_reach)"
+  # The target exists in the image, and it names the provider config surface's
+  # tree rather than any path the module prompt's cell reaches.
+  printf '[tpl](/opt/workflow/agent/config/agent/template.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_contains "$out" 'lands outside the instruction surface' 'a target outside the cell reach is flagged'
+}
+
+test_link_through_a_reachable_row_is_clean() {
+  local dir cfg out
+  dir="$(provision_root reachable_row)"
+  # The same target, linked from the cell whose reachable rows name it.
+  printf '[tpl](/opt/workflow/agent/config/agent/template.md)\n' > "$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a reachable-row target is clean'
+}
+
+test_repository_link_under_a_reachable_row_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root reachable_repo)"
+  mkdir -p "$dir/devlog"
+  printf '# Roadmap\n' > "$dir/devlog/roadmap.md"
+  # The module prompt cell declares `devlog/` reachable, so a repository link
+  # there is legal even though no image destination carries it.
+  printf '[roadmap](../../../devlog/roadmap.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a repository path under a reachable row is clean'
+}
+
 run_test test_existing_target_is_clean
 run_test test_directory_target_is_clean
 run_test test_same_file_fragment_resolves
@@ -199,5 +362,15 @@ run_test test_link_in_a_fenced_block_is_skipped
 run_test test_no_carve_out_exempts_nothing
 run_test test_configured_carve_out_exempts_the_named_trees
 run_test test_unreadable_target_is_flagged
+run_test test_image_path_from_a_shipped_file_is_clean
+run_test test_image_path_missing_from_the_image_is_flagged
+run_test test_repository_path_from_a_shipped_file_is_flagged
+run_test test_repository_path_from_a_bundled_document_is_flagged
+run_test test_link_between_two_bundled_documents_is_clean
+run_test test_sibling_instruction_root_link_is_clean
+run_test test_provider_config_root_resolves_in_the_image
+run_test test_link_outside_the_cell_reach_is_flagged
+run_test test_link_through_a_reachable_row_is_clean
+run_test test_repository_link_under_a_reachable_row_is_clean
 
 test_done

@@ -79,7 +79,7 @@ The label pair `project-name` + `sandbox-dir` is the compound key for all lifecy
 | `session-ts` | Human-readable chronological ordering of sessions. Single source of temporal truth -- names use `RUN_ID`. |
 | `host-head-sha` + `host-branch` | Provenance tracking -- which host commit and branch the session branched from. |
 
-Image identity is separate: images are tagged by project name only (`sandbox-<project>`, `<provider>-agent-<project>`). Image tags encode harness code identity, not project repo state -- the repo state is captured at runtime by the snapshot pipeline and carried by Docker labels. See `docs/concepts/sandbox_identity.md` for the full label schema and artefact path table.
+Image identity is separate: images are tagged by project name only (`sandbox-<project>`, `<provider>-agent-<project>`). Image tags encode harness code identity, not project repo state -- the repo state is captured at runtime by the snapshot pipeline and carried by Docker labels. See `docs/reference/sandbox_identity.md` for the full label schema and artefact path table.
 
 ## Consequences
 
@@ -97,7 +97,7 @@ Image identity is separate: images are tagged by project name only (`sandbox-<pr
 
 ## Related Documents
 
-- [`docs/concepts/sandbox_identity.md`](../../concepts/sandbox_identity.md) -- stable reference for primitives, derivation formulas, artefact paths, and consumption table
+- [`docs/reference/sandbox_identity.md`](../../reference/sandbox_identity.md) -- stable reference for primitives, derivation formulas, artefact paths, and consumption table
 - [`scripts/start_agent.sh`](../../../scripts/start_agent.sh) -- primitive set implementation
 - [`scripts/stop.sh`](../../../scripts/stop.sh) -- label-based lifecycle filtering implementation
 - [`src/build/docker-compose.yml`](../../../src/build/docker-compose.yml) -- compose template with label schema
