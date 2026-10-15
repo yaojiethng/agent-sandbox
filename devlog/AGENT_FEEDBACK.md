@@ -74,6 +74,8 @@ mitigation: when a full-suite run reports only tests/test_runner_contract.sh as 
 
 **Recurrence, 2026-10-05.** Two consecutive full-suite runs each reported exactly one failure, and each named a different file: `tests/test_start_agent.sh` (`test_wizard_picker_abort`) in the first, `tests/test_resume.sh` (`test_interactive_shows_current_branch_hint`) in the second. Both files pass alone, 32 of 32 in the first case, and a third full run was green. The moving name is the diagnostic: a defect does not migrate between files, and a load-dependent one does. Both files drive an interactive picker, so the shared exposure is a wait on a prompt under parallel scheduling rather than a deadline the file declares.
 
+**Recurrence, 2026-10-14.** One full-suite run reported two deadline expiries at once, `tests/test_dry_run_probe.sh` and `tests/test_lint_umbrella.sh`; both passed standalone and the next full run was green at 1126 of 1126. `test_lint_umbrella.sh` runs the real gate in-test and measured 6 to 10 seconds across the session, so its declared 10s budget sits on the expiry. Two expiries in one run is the load signal, and it repeats the 2026-09-25 entry's finding: the per-file deadline is a shared budget sized near the honest runtime, so the container's parallel load decides which files cross it.
+
 ---
 
 ## [A] 2026-10-02  --  A capacity claim was stated as a fact with no signal behind it

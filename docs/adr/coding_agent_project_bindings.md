@@ -122,3 +122,16 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 - **State the failure and stop.** Rejected: stopping is the agent's steering's decision, not the workflow's, since control has already passed.
 
 **Edge cases / drivers:** The mapping from each of the fourteen prompts and six skills to its conventions is in [`20261014-design-settled-handoff_contract.md`](../../devlog/discussions/20261014-design-settled-handoff_contract.md). The devlog's `AGENT_FEEDBACK.md` record has no convention; the fit is a third `work-log` structure. `communication` takes no handoff, being a standard read from the project's steering. The wiring of the prompts and skills is a separate iteration.
+
+## 2026-10-14 -- The policy form is retired by subtraction
+
+**Decision:** Each policy splits by subtraction: the mechanism goes to the procedure that already runs it, the convention goes to the project's convention-skill, and the remainder is the rule. A rule a procedure enforces is stated where it is enforced; a rule that binds the procedures to each other keeps a document. On that rule the eight policies become two documents: `iteration_policy`'s Principles and Iteration Invariants keep a protocol document, because they bind every runbook, and `documentation_policy`'s Communication Standards keep the `communication` standard, because they govern every text. The other six dissolve. The per-policy map is in [`20261014-design-settled-retire_the_policy_form.md`](../../devlog/discussions/20261014-design-settled-retire_the_policy_form.md); each policy is one slice, ordered `handover_policy` through `iteration_policy`.
+
+**Rationale:** A section often carries the mechanism and the convention at once, so assigning each section one label forces an artificial choice. Subtraction needs no label: what remains after the mechanism and the convention are removed is the rule by construction, and the document count then follows from a property of the remainder rather than a judgement about the section.
+
+**Rejected alternatives:**
+
+- **Assign each section to one kind.** Rejected: it forces a choice where a section carries two kinds, and the label hides the rule.
+- **Dissolve every policy.** Rejected: the iteration invariants and the communication standards bind the procedures to one another, so no single procedure can hold them.
+
+**Edge cases / drivers:** The map is at section grain; a section that straddles the line is resolved by the same subtraction in the slice that moves it. `Drop the policy bundle` lands after the last policy leaves, because a shipped prompt reads a policy where it ships. `testing_policy` sits outside `docs/policies/` and is in scope, so the convention count and the document folder are independent.
