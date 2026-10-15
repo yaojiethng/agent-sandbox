@@ -98,7 +98,7 @@ The auditor recommends; this skill disposes. The report names no commit, no mess
 | `defer` | determinable, and an existing roadmap unit already names the broader task this belongs to | nothing. The named unit owns it; clearing it ahead of that pass is premature. A `defer` entry with no named unit is rejected. |
 | `escalate` | two sources disagree, or a value cannot be re-derived | present it as a point below the table, never as a row |
 
-A compaction carries the survival table [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md#compaction-cascading) names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
+A compaction carries the survival table the `roadmap-maintenance` skill's compaction procedure names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
 
 This skill makes the one `chore:` commit, in the main tree, after the auditors return -- never a subagent, and never one commit per finding. Neither auditor is told to commit.
 

@@ -261,8 +261,8 @@ When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -
 | Document type | Nature | Form | See |
 |---|---|---|---|
 | Handover | states what the iteration did | rewrite the paragraph, or reopen the record and close it again; either way a `[CORRECTION -- YYYY-MM-DD: <...>]` tag at the end of the corrected section | the `record-correction` procedure |
-| Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
-| Changelog entry | tracks closed tasks, archived | as a roadmap entry | [`roadmap_policy.md`](roadmap_policy.md#corrections-to-closed-roadmap-and-changelog-entries) |
+| Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry | the project's `task-list` convention |
+| Changelog entry | tracks closed tasks, archived | as a roadmap entry | the project's `task-list` convention |
 | Discussion record (story, study, design, report) | states reasoning and evidence | rewrite, tag | this section |
 | ADR, concept, architecture, policy | states what the system does | rewrite, tag | this section |
 

@@ -1,5 +1,5 @@
 ---
-description: "Dispatch prompt for record maintenance. Picks the maintenance payload for the job, runs it, and reports it. Also carries the single-worker worktree dispatch loop, so an isolated maintenance run has one documented procedure. Use when the operator asks to maintain the roadmap, check the roadmap against roadmap_policy.md, verify compaction readiness, check handover content quality, audit the handover chain, trace a deferred item across iterations, or run any of those inside its own worktree. Supersedes the roadmap and handover survey in gm.md."
+description: "Dispatch prompt for record maintenance. Picks the maintenance payload for the job, runs it, and reports it. Also carries the single-worker worktree dispatch loop, so an isolated maintenance run has one documented procedure. Use when the operator asks to maintain the roadmap, check the roadmap against the task-list convention, verify compaction readiness, check handover content quality, audit the handover chain, trace a deferred item across iterations, or run any of those inside its own worktree. Supersedes the roadmap and handover survey in gm.md."
 argument-hint: "[target - roadmap, handovers, both, or a worktree dispatch - optional]"
 ---
 
@@ -19,7 +19,7 @@ The authoritative rules stay in the policy documents. The payloads are convenien
 
 ## When to run
 
-- The operator asks to check the roadmap against `roadmap_policy.md`, or to fix a roadmap defect. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md).
+- The operator asks to check the roadmap against the `task-list` convention, or to fix a roadmap defect. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md).
 - The operator asks whether a compaction pass is safe, or wants the roadmap prepared for one. That is [`roadmap-maintenance`](../skills/roadmap-maintenance/SKILL.md), Step 4.
 - The operator asks about the content quality of the handover the current iteration is writing. That is [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track A.
 - The operator asks to audit the closed handover chain, or to trace one deferred item across iterations. That is [`handover-maintenance`](../skills/handover-maintenance/SKILL.md), Track B.

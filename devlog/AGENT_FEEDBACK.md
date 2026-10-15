@@ -67,7 +67,7 @@ The habit is the cause, not the size of the changes: a commit body reads like a 
 state: open
 scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
 legacy: none
-mitigation: before writing a roadmap row, read `roadmap_policy.md` `### Filing rules` `**Roadmap task placement**` and apply it literally: the row lands in the current sub-milestone's task list unless the operator directs otherwise. Subject ownership decides nothing about the bin.
+mitigation: before writing a roadmap row, read the `task-list` convention's Filing rules, `**Roadmap task placement**`, and apply it literally: the row lands in the current sub-milestone's task list unless the operator directs otherwise. Subject ownership decides nothing about the bin.
 ```
 
 Three rows in one session were filed into a subject track rather than the active sub-milestone. The retired provider-config transport sweep went to T10, then to T10 again after the operator had already redirected it. The repository-to-image path map went to T1, on the reasoning that it unifies gates rather than settling an instruction-surface convention.

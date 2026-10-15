@@ -153,11 +153,11 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in [`docs/policies/roadmap_policy.md`](docs/policies/roadmap_policy.md), the commit and delivery rules in [`docs/policies/git_policy.md`](docs/policies/git_policy.md), and the Markdown lint gate in [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/policies/iteration_policy.md#iteration-invariants).
+The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in [`docs/policies/git_policy.md`](docs/policies/git_policy.md), and the Markdown lint gate in [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md#markdown-lint-gate). Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/policies/iteration_policy.md#iteration-invariants).
 
 The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/policies/iteration_policy.md)) before any further output.
 
-**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per [`docs/policies/roadmap_policy.md`](docs/policies/roadmap_policy.md).
+**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention.
 
 ### Loop prompts
 
@@ -201,7 +201,7 @@ Read these in addition to the above when opening a milestone planning iteration.
 |---|---|
 | [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or freeze status checks |
 | [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md) | Any documentation task |
-| [`docs/policies/roadmap_policy.md`](docs/policies/roadmap_policy.md) | Any roadmap update |
+| [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
 | [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
 | [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover |
 | [`docs/policies/discussion_policy.md`](docs/policies/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |

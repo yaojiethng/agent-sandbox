@@ -90,7 +90,7 @@ This step defines scope but does not stop for a release. The scope gate below co
 
 ## Step 3  --  Design
 
-Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md). If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md)). Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
+Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per the project's `task-list` convention. If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md)). Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
 
 Exit condition: all design questions resolved and recorded, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
 
@@ -106,7 +106,7 @@ After design is confirmed, read in order: the roadmap task, the design decisions
 
 This is the collapsed gate the operator-involved workflows share. It confirms scope **and** acceptance criteria together, and clears on a single operator approval. Step 2 defined the scope; this gate presents it and the AC table as one release.
 
-Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md) Milestone Promotion.
+Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in the `roadmap-maintenance` skill's promotion invariant.
 
 Present the handover's `Decisions pending` table with the scope. Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
 
@@ -162,7 +162,7 @@ The handover write-back fires at three moments in the runbook's operation:
 Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has five sections:
 
 1. **Acceptance criteria** -- the table the project's `work-log` convention states, with `Result` carrying the marking; each criterion marked accepted or pushed. Run verifiable checks and show output.
-2. **Roadmap write-back** -- per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Per [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md). When no task was touched, state `none worked this iteration`.
+2. **Roadmap write-back** -- per task touched, the exact row change and the completed rows it supersedes or invalidates, per the project's `task-list` convention. When a task's sub-rows are all resolved, present the compacted outcome summary here, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
 | File | Change planned | Status |

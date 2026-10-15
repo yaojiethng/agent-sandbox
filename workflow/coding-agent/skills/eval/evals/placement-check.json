@@ -6,12 +6,12 @@
   "cases": [
     {
       "id": "placement-check",
-      "prompt": "can you check devlog/roadmap.md against the roadmap policy for me? write what you find to report.md",
+      "prompt": "can you check devlog/roadmap.md against the task-list convention for me? write what you find to report.md",
       "expected_output": "A report naming the row filed under track T1 as misplaced work, grounded in the placement default, and leaving the rows under the active sub-milestone alone.",
-      "fixture": "a repository copy trimmed to AGENTS.md, docs/ and devlog/, taken from an eval snapshot, holding one row injected into track T1 while M3.3.1 is the active sub-milestone. The workflow/ tree is absent from both fixtures, so the baseline cannot read the skill.",
+      "fixture": "a repository copy trimmed to AGENTS.md, `.agents/skills/`, docs/ and devlog/, taken from an eval snapshot, holding one row injected into track T1 while M3.3.1 is the active sub-milestone. The workflow/ tree is absent from both fixtures, so the baseline cannot read the skill.",
       "assertions": [
         "The report names the injected T1 row as work filed in the wrong place",
-        "The report grounds that finding in the placement default in roadmap_policy.md",
+        "The report grounds that finding in the placement default in the task-list convention",
         "The report does not call any row under M3.3.1's task list misplaced"
       ],
       "measurement": "the report names the injected row's subject text, and cites the placement default"

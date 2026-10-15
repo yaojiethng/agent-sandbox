@@ -62,7 +62,7 @@ See [`docs/development/standard_operating_procedures.md`](../development/standar
 Before making any documentation or roadmap change, read the relevant policy:
 
 - [`docs/policies/documentation_policy.md`](../policies/documentation_policy.md) -- document structure, folder ownership, enforcement rules
-- [`docs/policies/roadmap_policy.md`](../policies/roadmap_policy.md) -- roadmap update sequence and cleanup rules
+- `.agents/skills/task-list/SKILL.md` -- roadmap update sequence and cleanup rules
 - [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
 
 ---
@@ -76,4 +76,4 @@ Before making any documentation or roadmap change, read the relevant policy:
 | [`docs/development/threat_model_stride.md`](threat_model_stride.md) | STRIDE threat model |
 | [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) | Operational SOPs |
 | [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) | Iteration workflow and milestone planning |
-| [`docs/policies/roadmap_policy.md`](../policies/roadmap_policy.md) | Roadmap policy |
+| `.agents/skills/task-list/SKILL.md` | Task-list convention |

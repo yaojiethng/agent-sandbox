@@ -6,13 +6,13 @@ reader: [agent]
 
 # Iteration Policy
 
-Milestones are nodes in the roadmap's tree, so their structure and states are [`roadmap_policy.md`](roadmap_policy.md#milestone-states)'s, and the loop model is in `docs/adr/coding_agent_loop_workflow.md`.
+Milestones are nodes in the roadmap's tree, so their structure and states are the project's `task-list` convention's, and the loop model is in `docs/adr/coding_agent_loop_workflow.md`.
 
 Read this document at the start of any iteration.
 
 | Phase | Step | Governing document |
 |---|---|---|
-| **Milestone** | 1. Close prior milestone | [`roadmap_policy.md`](roadmap_policy.md#top-level-milestone-close) -- Top-level milestone close |
+| **Milestone** | 1. Close prior milestone | the `roadmap-maintenance` skill -- the top-level milestone close |
 | | **Gate 1** | select next milestone |
 | | 2. Orient to next milestone | `roadmap.md` |
 | | **Gate 2** | select sub-milestone (also entry point from roadmap maintenance when a sub-milestone closes) |
@@ -59,14 +59,14 @@ Principles owned by other layers and echoed here:
 - **All outputs are proposals** (the operator reviews, approves, and commits) -- owned by the project `AGENTS.md` Output Format.
 - **Resolve open questions before advancing** (surface explicitly; the iteration does not advance past an unanswered scope or design question) -- owned by `workflow/coding-agent/prompts/iter.md` as the iteration variant.
 - **Scope is fixed at confirmation** (adjacent issues go to Findings, deferred) -- owned by `workflow/coding-agent/prompts/iter.md`.
-- **Roadmap reflects reality** (completed items marked promptly) -- owned by [`roadmap_policy.md`](roadmap_policy.md).
+- **Roadmap reflects reality** (completed items marked promptly) -- owned by the project's `task-list` convention.
 - **Tests for non-trivial logic** -- owned by `docs/development/testing_policy.md`.
 
 ---
 
 ## The autonomous agent loop
 
-The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md). The milestone phase takes its rules from [`roadmap_policy.md`](roadmap_policy.md#milestone-states)  -  a milestone is a node in the roadmap's tree  -  and its procedure from `/milestone-start`, `/plan` and `/milestone-close`. The iteration phase is governed by this policy.
+The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md). The milestone phase takes its rules from the project's `task-list` convention  -  a milestone is a node in the roadmap's tree  -  and its procedure from `/milestone-start`, `/plan` and `/milestone-close`. The iteration phase is governed by this policy.
 
 ---
 
@@ -143,7 +143,7 @@ A clean committed range uses the same fold; `/wrapup` runs the squash where the 
 
 ### Sub-milestone close
 
-The milestone's structure, states and close rules are [`roadmap_policy.md`](roadmap_policy.md#milestone-states)'s; the close procedure runs from `workflow/coding-agent/prompts/milestone-close.md`. This policy does not restate them.
+The milestone's structure, states and close rules are the project's `task-list` convention's; the close procedure runs from `workflow/coding-agent/prompts/milestone-close.md`. This policy does not restate them.
 
 **Probation decisions are operator-owned.** For an entry under `probation` in `devlog/AGENT_FEEDBACK.md`, the operator decides dismiss / maintain / escalate. The agent does not decide a probation entry.
 

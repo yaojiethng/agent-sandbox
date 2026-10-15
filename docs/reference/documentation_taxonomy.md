@@ -16,8 +16,8 @@ This document is the index and view of the documentation ecosystem. It states no
 | Architecture document (`docs/reference/`) | implementation design and decisions | durable | [`documentation_policy.md`](../policies/documentation_policy.md); the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
 | `readme.md` | entry point for humans and agents: system invariants, architecture layer model, documentation guide path | durable | -- |
 | `AGENTS.md` | provider notes, collaboration protocol, role, read discipline, output format rules | durable | -- |
-| Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | [`roadmap_policy.md`](../policies/roadmap_policy.md) |
-| Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | [`roadmap_policy.md`](../policies/roadmap_policy.md) |
+| Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | the project's `task-list` convention |
+| Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | the project's `task-list` convention |
 | Handover (`devlog/handovers/`) | one session's record of the work done | transient | the project's `.agents/skills/work-log/SKILL.md` convention |
 | Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | [`discussion_policy.md`](../policies/discussion_policy.md) |
 
