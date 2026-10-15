@@ -7,8 +7,8 @@
 | # | Requirement | Meaning |
 |---|---|---|
 | R1 | The procedure is fixed; only the values vary | a project cannot change what the loop does, only the values it reads |
-| R2 | Every binding point is a value or `default`, never a procedure | the agent must not improvise a method |
-| R3 | A project that binds nothing still runs | the workflow ships a default form for every point |
+| R2 | Every binding point is a declared value, never a procedure | the agent must not improvise a method (amended 2026-10-14: no `default` resolution; see the second decision) |
+| R3 | A project must bind its mechanics; a required binding that is absent fails fast | superseded 2026-10-14: a project does not run on silent defaults |
 | R4 | A mechanism and a convention do not share a form | a rule that says how and a rule that says what are separate |
 | R5 | Project knowledge survives the work ledger | pruning the ledger must not lose project context |
 
@@ -34,7 +34,10 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 |---|---|
 | protocol | the fixed loop sequence, gates, mandatory writes and record kinds |
 | convention | a project binding value |
-| default corpus | the workflow's own values, used when a project binds nothing |
+| default corpus | the workflow's own binding values, which the initializer proposes for a project; no run-time fallback |
+| maintenance surface | the fixed set of maintenance skills the prompts invoke, each stating an operation without naming a file |
+| mechanics | the storage and format behind a maintenance surface; the bindable unit |
+| maturity chain | rule -> skill -> gate -> binding; the direction a convention travels as it is made checkable |
 | ownership split | the protocol / convention / default-corpus division |
 | binding point, binding set, binding value | the declared input, a unit's set, and the supplied value |
 | module | a coherent unit with its own binding set; the form, not the capability |
@@ -55,3 +58,33 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 ### In development
 
 This principle governs the M3.3.1 structural moves, and it stays under development until they land. The exploration record is [`20261014-design-draft-coding_agent_binding_surface.md`](../../devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md). Remove that link when the moves complete, which closes this record.
+
+## 2026-10-14 -- The maintenance surface is fixed; the mechanics behind it are bound
+
+**Decision:** The workflow's fixed unit is the **maintenance surface**: the maintenance skills the prompts invoke - `check-in`, `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance` and `document`. Each states an operation - orient, update the task list, log and read a work unit, record a decision, publish knowledge - **without naming a file**. The **mechanics** behind a surface - the storage and the format, such as the roadmap file, the handover directory and the changelog - are the bindable unit. The workflow ships the default mechanics, and a project binds its own. This corrects the earlier reading in which a binding point was a path or a format value.
+
+**Amends:** R2 becomes a declared value with no `default` resolution, and R3 is superseded: a project initializes its bindings, and a required binding that is absent fails fast. The workflow's own values still ship, as the values the initializer proposes rather than a run-time fallback.
+
+**The maturity chain.** A convention matures along one chain, and each step moves discretion into something checkable:
+
+| Stage | Form | Checkable by |
+|---|---|---|
+| rule | prose in a policy | nothing |
+| skill | a `SKILL.md` the agent loads | a malformed file warns |
+| gate | a deterministic script the skill bundles | an exit code |
+| binding | a declared value the project supplies | the completeness gate |
+
+The direction of travel is down the chain. **Coexistence is required:** a stage is not a migration, a mature workflow still carries unmigrated rules, and a consumer must accept any stage. The skill is the carrier - it packages prose in `SKILL.md`, judgement, a bundled `scripts/` file and data in `assets/` - and the contract and the gate sit beside it, workflow-owned.
+
+**The seams kept open:** the surface states the operation while the mechanics hold the storage; inside a surface the checkable part extracts into a script while the skill keeps the judgement (`handover-maintenance` plus `scripts/check_handover_format.sh` is the one instance; `roadmap-maintenance` and `doc-maintenance` are judgement only); and a mechanics value is a parameter now and a deterministic implementation later, with the surface unchanged. For all three, the surface's contract is stated so a script could implement it, and the mechanics are declared as data rather than prose, so a script can read them.
+
+**The skill specification's limits.** The Agent Skills specification (`agentskills.io/specification`, implemented by pi's `docs/skills.md`) carries all four stages, and a project's version can occupy `.agents/skills/`. It supplies none of the following, so the workflow supplies them:
+
+1. **No typed inputs.** No field declares a required input. `metadata` is "a map from string keys to string values" that "clients can use this to store additional properties", so it can loosely declare a value, but it is untyped, unvalidated and string-to-string. The binding contract is ours.
+2. **No enforcement.** "Most invalid fields produce warnings rather than stopping startup." A malformed skill is not a failure. The gate is ours.
+3. **No non-agent execution.** A skill is model-loaded, and a bundled script runs only when something invokes it. The gate wiring is ours.
+4. **No override.** "Name collisions keep the first discovered skill and produce a warning." Project-over-workflow replacement is not expressible. It is ours, or sidestepped.
+
+`compatibility` is not a binding carrier: it is a free-text environment-requirements string, capped at 500 characters. For structured values, the specification's own carrier is a bundled `assets/` data file - "Data files (lookup tables, schemas)" - which holds our schema rather than a co-opted field.
+
+**Edge cases / drivers:** The script layer is out of scope; only the seams are cut, so a script can slot in later. T5 (linear-style task tracking, an append-only changelog, handover rotation) and T6 (structured task logs) change the mechanics behind the surface, not the surface, which is why the surface must not name a file.

@@ -28,8 +28,10 @@ This exploration was opened by the M3.3.1 design row, `Decide where the policy c
 | **Procedure** | the ordered steps a run executes; fixed, workflow-owned |
 | **Binding point** | one named project input the procedure reads; variable |
 | **Binding set** | every point one unit needs; this is the unit's boundary |
-| **Binding value** | what a project supplies at a point: a path, a document reference, a vocabulary, or `default` |
-| **Default corpus** | the workflow's own binding values, used when a project supplies nothing |
+| **Maintenance surface** | the fixed unit: a maintenance skill the prompts invoke, stating an operation without naming a file |
+| **Mechanics** | the storage and format behind a maintenance surface; the bindable unit |
+| **Binding value** | what a project supplies at a point: a path, a document reference, or a vocabulary |
+| **Default corpus** | the workflow's own binding values, which the initializer proposes for a project; no run-time fallback |
 | **Module** | a coherent unit with its own binding set; the form, not the capability |
 | **Standard** | a practice with no procedure and no binding, read and applied by judgement |
 | **Host tooling** | agent-sandbox-only payload; no binding set, may hardcode |
@@ -76,36 +78,31 @@ The class follows the process stage, not a guess at write time. Exploration is a
 
 Each policy splits along its mechanism and its convention:
 
-| Policy | Mechanism (core procedure) | Convention (binding) |
+| Policy | Mechanism (fixed) | Mechanics (bound, behind the surface) |
 |---|---|---|
 | `iteration_policy` | the loop sequence and the gates | its references to the ledger and its paths |
-| `handover_policy` | `handover-maintenance` | the format and the directory |
-| `roadmap_policy` | `roadmap-maintenance` | the task-list structure and paths |
-| `discussion_policy` | `document` | the types and the directory |
-| `adr_policy` | `document` | the format and the directory |
-| `documentation_policy` | `doc-maintenance` | the taxonomy and paths |
-| `git_policy` | `merge`, `rebase`, `record-correction` | the history conventions |
+| `handover_policy` | `handover-maintenance` | the work-log storage, identity and format |
+| `roadmap_policy` | `roadmap-maintenance` | the task-list storage and format |
+| `discussion_policy` | `document` | the discussion storage and the type format |
+| `adr_policy` | `document` | the decision-record storage and the living format |
+| `documentation_policy` | `doc-maintenance` | the documentation tree and taxonomy |
+| `git_policy` | `merge`, `rebase`, `record-correction` | the delivery mechanics: the commit vocabulary and branch scheme |
 
 The mechanism lives in the procedure that runs. The convention shrinks to a binding value with a workflow default. The policy document as a form disappears.
 
-### The binding list
+### The fixed surface and the bound mechanics
 
-| # | Binding point | Workflow default |
-|---|---|---|
-| 1 | Ledger root | `devlog/` |
-| 2 | Task list | `roadmap.md` and `roadmap_future.md` |
-| 3 | Unit log | `devlog/handovers/` and the format |
-| 4 | Changelog | `devlog/changelog.md` |
-| 5 | Feedback record | `devlog/AGENT_FEEDBACK.md` |
-| 6 | Discussion records | `devlog/discussions/` and the type format |
-| 7 | Decision records | `docs/adr/` and the living format |
-| 8 | Documentation | the `docs/` tree and taxonomy |
-| 9 | Commit vocabulary | commit types, subject and body rules |
-| 10 | Branch naming | the branch scheme |
-| 11 | Verification | `make test` |
-| 12 | Host interface | how the tree enters (copy or mount) and how changes leave (packaging) |
+The fixed unit is the **maintenance surface** - the maintenance skills the prompts invoke. The bound unit is the **mechanics** behind a surface: its storage and its format. The surface states the operation; the mechanics name the file. The earlier path points are the default mechanics' parameters, not top-level binding points.
 
-Two optional module binding sets sit beside these: **eval** and **skill ingestion**. Every point is a value or `default`, never a procedure, which is what keeps the agent from improvising a method.
+| Maintenance surface (fixed) | Default mechanics (adjustable) |
+|---|---|
+| `check-in` | the ledger paths it reads for orientation |
+| `roadmap-maintenance` | the task-list storage and format |
+| `handover-maintenance` | the work-log storage, identity and format |
+| `doc-maintenance` | the documentation tree |
+| `document` | the decision-record and discussion storage and format |
+
+The core-loop mechanics no maintenance surface owns: **verification** (the project's check command), **delivery** (the commit vocabulary and branch scheme), and the **host interface** (how the tree enters and how changes leave). Two optional module sets sit beside them: **eval** and **skill ingestion**. Every mechanics value is declared, never improvised, and a required value that is absent fails fast.
 
 ### Pruning
 
@@ -113,9 +110,11 @@ The workflow must not assume the full ledger is present. Distillation precedes p
 
 ## Consequences
 
-- The M3.3.1 task list is superseded. Its seven per-policy move rows assume the policy corpus survives as documents; under the split there is no corpus to move. The move rows become: retire each policy's mechanism into its procedure, and place its convention in the default corpus.
-- The default corpus needs a home. It is a set of convention values with a workflow default, not a document set, so the destination is a default-convention surface in the module rather than a `policies/` folder.
-- The binding mechanism is deferred. This design defines the points; the implementation of the binding mechanism, and the gate that checks a binding is complete, is a later row. The host project's own form stands until then.
-- The protocol document's references must resolve through the binding mechanism. `iteration_policy` states the protocol, but it names the ledger and its paths; those references become bindings, so the protocol document no longer hardcodes `devlog/`.
-- The two named blockers dissolve. `defer.md`, `ADR-FORMAT.md` and the provider `AGENTS.md` table read the bound convention, so none has to move or stop linking.
+- The M3.3.1 task list is superseded. Its seven per-policy move rows assume the policy corpus survives as documents; under the split there is no corpus to move. The move rows become: retire each policy's mechanism into its maintenance surface, and place its mechanics in the default surface.
+- The default mechanics need a home. They are declared data, not a document set, so the destination is a default-convention surface in the module rather than a `policies/` folder, and an initializer proposes their values for a project.
+- No run-time default remains. A required binding that is absent fails fast; the workflow's own values are what the initializer proposes, not a fallback.
+- The maturity chain `rule -> skill -> gate -> binding` governs the surface's evolution, and every stage coexists. The surface's contract is stated so a script could implement it, and the mechanics are declared as data so a script can read them.
+- The binding mechanism is deferred. This design fixes the seam; the mechanism that resolves a binding, and the gate that checks a binding is complete, is a later row.
+- The protocol document's references must resolve through the binding. `iteration_policy` states the protocol, but it names the ledger and its paths; those references become mechanics, so the protocol document no longer hardcodes `devlog/`.
+- The two named blockers dissolve. `defer.md`, `ADR-FORMAT.md` and the provider `AGENTS.md` table read the bound mechanics, so none has to move or stop linking.
 - `record-correction` is unwired: it is referenced only by the roadmap and called by no prompt. It is a mechanism with no entry point, and the split gives it one or retires it.
