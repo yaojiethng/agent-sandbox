@@ -13,21 +13,13 @@ status: Open
 
 ## Scope
 
-<Which task groups or tasks from the task list this iteration targets. Reference by group name; do not copy the task list. List a blocking design question as an obstacle. When this iteration works a subtask of a parent row, open with one continuation line naming the parent row and the record it continues from. An item raised in-session and ruled out of scope is one sentence here with its reason; an item deferred with a destination goes to the task list instead.>
+<Which task groups or tasks from the task list this iteration targets. Reference by group name; do not copy the task list. List a blocking design question as an obstacle. When this iteration works a subtask of a parent row, open with one continuation line naming the parent row and the record it continues from. An item raised in-session and ruled out of scope is one sentence here with its reason; an item deferred with a destination goes to the task list instead. The scope proposal owns the iteration's file list, and presents it at the scope gate; this record carries none.>
 
 ## Acceptance criteria
 
 <Table: criterion | verification | result. One row per criterion. At iteration end, mark each criterion accepted or pushed; both stay visible.>
 
 Not yet defined.
-
-## Hot files
-
-<The files in scope. Each entry is a markdown link to the file with a one-line reason.>
-
-| File | Why in scope |
-|---|---|
-| `<path/to/file.md>` | <one-line reason> |
 
 ## Decisions
 

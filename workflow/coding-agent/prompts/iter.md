@@ -76,6 +76,8 @@ Write the record from the project's template, `.agents/skills/work-log/assets/ha
 
 Derive scope from the argument, the prior handover, and the roadmap. Read any additional files needed to make the scope concrete  --  what files will change, what will not change, and why.
 
+The scope proposal carries a file table, `File | Why in scope`, one markdown link per file. It is the table's only owner: the record carries no file list. When design names a file the table does not carry, add it before presenting the gate.
+
 If scope cannot be confidently derived, ask the operator one question at a time to define the task scope. Do not guess. Only when scope is clear do you continue to the design step below.
 
 **One iteration, one unit.** The unit rule is the policy's: one roadmap task, one vertical slice, one commit, one handover. Apply it here; do not restate it.
@@ -110,14 +112,16 @@ Present the handover's `Decisions pending` table with the scope. Design runs bef
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
-Define the acceptance criteria in a four-column table:
+Define the acceptance criteria in the table the project's `work-log` convention states, one row per criterion:
 
-| # | Criterion | Verifiable by | Verified by |
-|---|---|---|---|
+| Criterion | Verification | Result |
+|---|---|---|
 
 The authoring standards are [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`: what qualifies as a criterion, the delta and traceability rules, the three-way `Operator` / `Agent [x]` / `Agent [ ]` marking, and the `Not yet defined.` gate. Apply them here; this step adds only what the scope-gate presentation needs beyond them. Every iteration that touches architecture includes *"Architecture documents in scope describe the system as built."*, and a criterion may be one line when it is specific.
 
-**Pre-verify every criterion the agent can verify now.** For each criterion whose "Verifiable by" is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`.
+When the handover's `## Decisions` table is not empty, or the iteration created an ADR entry, the acceptance-criteria table carries this criterion: *every decision this iteration recorded is realized in the files.* `wrapup` B1 verifies it with the others at the close.
+
+**Pre-verify every criterion the agent can verify now.** For each criterion whose `Verification` is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`.
 
 **When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs  --  they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see `testing_policy.md`).
 
@@ -126,6 +130,7 @@ Present together:
 - **Restate the intent first.** State the operator's goal and the problem the work solves, so the gate confirms understood intent rather than echoing the request back. Present the scope against that intent.
 - The iteration type with a one-line justification (the operator confirms the type alongside scope)
 - What is in scope this iteration and why
+- The scope proposal's file table, `File | Why in scope`, one markdown link per file
 - The full acceptance criteria table with pre-verification results
 - What is explicitly deferred and why
 - Any questions that must be resolved before work can begin
@@ -156,7 +161,7 @@ The handover write-back fires at three moments in the runbook's operation:
 
 Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has five sections:
 
-1. **Acceptance criteria** -- table `| # | Criterion | Verifiable by | Status |`; each criterion marked accepted or pushed. Run verifiable checks and show output. Do not reuse the scope-gate AC-presentation format from Step 5; this table answers "did it pass?", not "who can verify?".
+1. **Acceptance criteria** -- the table the project's `work-log` convention states, with `Result` carrying the marking; each criterion marked accepted or pushed. Run verifiable checks and show output.
 2. **Roadmap write-back** -- per task touched this iteration, the exact row change, and completed rows the change supersedes or invalidates. Per [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md). When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
@@ -199,7 +204,7 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 ## File Tracking
 
-There is no document registry; the docs tree is the authoritative file list. The iteration-scoped list is the active handover's hot-files section, whose structure is the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
+There is no document registry; the docs tree is the authoritative file list. The iteration's file list is the scope proposal's, presented at the scope gate.
 
 ---
 

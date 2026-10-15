@@ -5,7 +5,7 @@ description: "Checks handover content and the closed handover chain against the 
 
 # handover-maintenance
 
-<!-- Merge provenance: Track A (the three content checks and their run conditions) is the substance of workflow/coding-agent/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of workflow/coding-agent/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
+<!-- Merge provenance: Track A (the two content checks and their run conditions) is the substance of workflow/coding-agent/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of workflow/coding-agent/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
 
 ## Project conventions
 
@@ -41,9 +41,8 @@ Read `.agents/skills/work-log/SKILL.md` for the vocabulary, the section roles an
 
 | Check | Run at | Stop condition |
 |---|---|---|
-| Design-to-source integrity | The scope gate, before implementation | A code block names a file that does not appear in the hot-files or completed section, or that no longer matches the file |
 | Structured output format | The scope gate, before implementation | A required structured output has no format template in its own section |
-| Validation tool coverage | Step 7 of the iteration, at pre-close | An acceptance criterion names a tool that does not catch its failure mode |
+| Validation tool coverage | The iteration's pre-close step | An acceptance criterion names a tool that does not catch its failure mode |
 
 A Track A finding does not block a gate, but the dispatcher must route it before the iteration closes.
 
@@ -63,15 +62,7 @@ Each step ends on a completion criterion.
 
 ### Track A
 
-#### Step 1 - Design-to-source integrity
-
-**Rule.** Any code block in the handover's design sections that will be copied into implementation must be validated against live source within the same iteration. Memory is not a substitute.
-
-**Check.** For each code block in the design sections, read the handover's hot-files and completed sections. The source file the code block names must appear in one of them.
-
-Completion criterion: every code block in the design sections either names a file in the hot-files or completed section and matches that file as it stands, or is reported.
-
-#### Step 2 - Structured output format
+#### Step 1 - Structured output format
 
 **Rule.** When the design sections require a structured output such as a coverage map, a propagation table, or a diff summary, the format must be defined in the handover before implementation begins. An open-ended analysis requirement with no stated format produces inconsistent results across iterations.
 
@@ -79,7 +70,7 @@ Completion criterion: every code block in the design sections either names a fil
 
 Completion criterion: every hit above has a format template in its own section, or is reported.
 
-#### Step 3 - Validation tool coverage
+#### Step 2 - Validation tool coverage
 
 **Rule.** When an acceptance criterion names a validation tool, confirm the tool catches the failure mode it guards. `bash -n` does not catch runtime-only bash errors such as `local` outside a function, a `set -u` violation in a conditional branch, or an arithmetic evaluation error. For scripts, use a runtime check that captures stderr from an actual run, or a targeted grep for the specific anti-pattern.
 
@@ -89,7 +80,7 @@ Completion criterion: each criterion names a tool that covers its failure mode, 
 
 ### Track B
 
-#### Step 4 - Scope the handovers
+#### Step 3 - Scope the handovers
 
 Determine the set of handovers to check.
 
@@ -98,7 +89,7 @@ Determine the set of handovers to check.
 
 Completion criterion: the set is named, and each member has a reason for being in scope.
 
-#### Step 5 - Structural scan
+#### Step 4 - Structural scan
 
 For each handover in scope, run the project's record gate on it directly, when the project has one. Read `.agents/skills/work-log/SKILL.md` for the gate's path and its invocation.
 
@@ -113,7 +104,7 @@ Where the project has no gate, report the missing gate as a skip and check the b
 
 Completion criterion: every handover in scope passes the gate, every anomaly is classified as replaceable or not, and every empty section carries its canonical marker.
 
-#### Step 6 - Landed claim and write-back
+#### Step 5 - Landed claim and write-back
 
 Handovers carry no deferred items: an item deferred with a destination is written back to the roadmap as an open row, and an item ruled out is a Scope sentence. For each handover in scope, confirm the landed claim and the write-back outcome instead.
 
@@ -123,7 +114,7 @@ Handovers carry no deferred items: an item deferred with a destination is writte
 
 Completion criterion: every landed task the handovers in scope claim is reflected in its roadmap row, and every older deferred item is resolved by a roadmap row, reported as dropped, or reported for escalation.
 
-#### Step 7 - Status
+#### Step 6 - Status
 
 Read each handover's `**Status:**` value.
 
@@ -133,15 +124,15 @@ Read each handover's `**Status:**` value.
 
 Completion criterion: every handover in scope carries `Active` or `Closed` in the position the rule requires, or is reported.
 
-#### Step 8 - Dangling references
+#### Step 7 - Dangling references
 
-For each file named in the completed or hot-files section, confirm the file exists at the referenced path. A deleted or renamed file is a finding that names the deletion context.
+For each file named in the completed section, confirm the file exists at the referenced path. A deleted or renamed file is a finding that names the deletion context.
 
 For each function or variable named, grep the codebase to confirm it still exists. A removed symbol leaves a stale reference, and is a finding.
 
 Completion criterion: every named file and symbol either exists or is reported.
 
-#### Step 9 - The correction form
+#### Step 8 - The correction form
 
 Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. The procedure that applies a correction is [`record-correction`](/opt/workflow/agent/modules/coding-agent/prompts/record-correction.md); the forms are:
 
@@ -151,9 +142,9 @@ Where a finding is a correction to a closed record, the report states the form t
 
 The report names the form; it does not write the block. A correction that more than one form could satisfy is reported as one no record settles, not as a fix this run can recommend for application.
 
-Completion criterion: every finding from Steps 5 to 8 that lands on a closed record names its correction form.
+Completion criterion: every finding from Steps 4 to 7 that lands on a closed record names its correction form.
 
-#### Step 10 - Report
+#### Step 9 - Report
 
 Write the report as JSONL at the path the dispatcher set, in the schema [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md) owns.
 
@@ -173,12 +164,12 @@ A Track A finding is reported through the same schema as any other, with the rec
 - Does not close an iteration. Track B reports what is already closed and what needs escalation.
 - Does not check the roadmap. That is [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md).
 - Does not write policy. A finding that no policy text covers is a gap to report, not a rule to add here.
-- Does not audit handovers outside the scope set from Step 4. A wider sweep is a separate run with its own scope.
+- Does not audit handovers outside the scope set from Step 3. A wider sweep is a separate run with its own scope.
 - Does not choose a commit shape, a message, or a fold. The report carries no field for one.
 
 ## Failure modes
 
-- **A dropped deferred item reads as resolved.** Step 6 exists because an item can vanish from the chain silently. Older handovers carried deferred items in sections now removed; read the roadmap rows the items were written back to before concluding an item was resolved.
+- **A dropped deferred item reads as resolved.** Step 5 exists because an item can vanish from the chain silently. Older handovers carried deferred items in sections now removed; read the roadmap rows the items were written back to before concluding an item was resolved.
 - **A reported correction loses its form.** A finding that names a fix without naming the `[CORRECTION]` or `[AMENDMENT]` form leaves the dispatcher to invent one, and the closed record's history is rewritten without a block that says what changed and why. Name the form.
 - **A case-only header repair loses content.** Confirm a header differs only in casing before reporting it replaceable. A header with custom content is not replaceable one to one.
 - **A `bash -n` acceptance criterion reads as passed.** The check passes on syntax the script never executes. Confirm the failure mode is a syntax error, or report it.

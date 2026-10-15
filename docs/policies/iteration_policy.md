@@ -151,4 +151,4 @@ The milestone's structure, states and close rules are [`roadmap_policy.md`](road
 
 ## File Tracking
 
-There is no document registry. The docs tree itself is the authoritative file list. The iteration-scoped list is the active handover's hot-files section, whose structure the project's `work-log` convention states.
+There is no document registry. The docs tree itself is the authoritative file list. The scope proposal owns the iteration's file list and presents it at the scope gate.

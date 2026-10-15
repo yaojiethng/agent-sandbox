@@ -34,7 +34,7 @@ const STATUSES = ["Open", "Active", "Closed"];
 
 /** The required sections, in the order the project's work-log convention lists them. */
 const REQUIRED_SECTIONS = [
-  "Objective", "Scope", "Acceptance criteria", "Hot files",
+  "Objective", "Scope", "Acceptance criteria",
   "Decisions", "Decisions pending", "Findings", "Completed",
 ];
 

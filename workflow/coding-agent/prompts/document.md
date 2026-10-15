@@ -73,7 +73,7 @@ Every criterion names a delta that is false or absent before the session and tru
 | A phrase the document must stop carrying | `grep -c "<phrase>" <path>` returns 0 |
 | A rule the document now states | `grep -n "<rule anchor>" <path>` returns the section |
 
-Three rules hold for the table, carried from [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`. A criterion is observable, so it names a command or a line range the operator runs, never a judgement such as "the document is accurate". The lint gate is a universal precondition. Every session runs it, so it is not a criterion. Mark the Verified by column `Agent [x]` for a criterion that passes now, `Agent [ ]` for one that fails in the pre-state as expected, and `Operator` for a criterion the agent cannot run.
+Three rules hold for the table, carried from [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`. A criterion is observable, so it names a command or a line range the operator runs, never a judgement such as "the document is accurate". The lint gate is a universal precondition. Every session runs it, so it is not a criterion. Mark the `Result` column `Agent [x]` for a criterion that passes now, `Agent [ ]` for one that fails in the pre-state as expected, and `Operator` for a criterion the agent cannot run.
 
 Every session that touches an architecture document carries the criterion [`/iter`](iter.md) `### Step 5` makes mandatory - "Architecture documents in scope describe the system as built". Beside it, add the command that settles each claim the document makes about the system, such as `grep -n "<claim anchor>" <path>`. Run the lint gate now and show its output, then mark the table.
 
@@ -125,8 +125,8 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 ## Output shape
 
 - **The handover is the record of the criteria.** It follows the project's `work-log` convention.
-- **At the scope gate**, present the intent restatement, the in-scope files, the acceptance criteria table `| # | Criterion | Verifiable by | Verified by |` with the pre-verification output, the deferred items, and the open questions. This is the shape [`/iter`](iter.md) `### Step 5` requires.
-- **At pre-close**, present the table `| # | Criterion | Verifiable by | Status |`. It answers whether the criterion passed, not who verifies it.
+- **At the scope gate**, present the intent restatement, the in-scope files, the acceptance criteria table the project's `work-log` convention states, with the pre-verification output, the deferred items, and the open questions. This is the table [`/iter`](iter.md) `### Step 5` requires.
+- **At pre-close**, present the same table with `Result` carrying the marking.
 - **At the close**, one delivery commit carries the documents, the closed handover, and the roadmap write-back, per [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md).
 - **Findings and deferred items** carry their destinations before the handover closes, per the close invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md).
 

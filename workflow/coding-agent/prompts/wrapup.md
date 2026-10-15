@@ -125,7 +125,7 @@ When a `docs/adr/` or `devlog/discussions/` document's work landed this session,
 
 ### B9. Prepare all files for the commit
 
-Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Update Hot files. Set `Status: Closed`. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
+Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Set `Status: Closed`. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
 
 ### B10. Land the single commit
 

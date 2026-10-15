@@ -19,7 +19,7 @@ A workflow procedure that reads or writes a record hands off here for its struct
 
 One file per iteration, committed with the iteration's changes, retained for the life of the milestone. It is a log, not a document, so the drafting rules for `docs/` do not apply.
 
-Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the eight sections.
+Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the seven sections.
 
 ### Filename
 
@@ -66,7 +66,6 @@ A procedure that checks a record names a section by role. The template carries t
 | the objective | `## Objective` |
 | the scope | `## Scope` |
 | the acceptance criteria | `## Acceptance criteria` |
-| the hot files | `## Hot files` |
 | the decisions | `## Decisions` |
 | the pending decisions | `## Decisions pending` |
 | the findings | `## Findings` |
@@ -83,6 +82,17 @@ An empty nullable section carries its canonical marker and nothing else. Do not 
 | Decisions pending | `None.` |
 | Findings | `None.` |
 | Completed | `No file changes this iteration.` |
+
+### The acceptance-criteria table
+
+The acceptance-criteria table has three columns, one row per criterion:
+
+| Criterion | Verification | Result |
+|---|---|---|
+
+The `Verification` cell names the command or the line range that settles the criterion. The `Result` cell carries the marking: `Operator` when only the operator can verify it, `Agent [x]` when it passes, and `Agent [ ]` when it fails in the pre-state as expected. The workflow presents the same table at the scope gate and at pre-close.
+
+The table holds the criteria the iteration derives. What makes a criterion well-formed is the workflow's, not this convention's.
 
 ### The format window
 
