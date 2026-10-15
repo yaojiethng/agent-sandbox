@@ -5,6 +5,14 @@ argument-hint: "[target commit hash or subject] [what the correction changes] [w
 
 > $@
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `work-log` - the work-unit record and the exploration record.
+- `decision-records` - the architecture decision records.
+- `git-discipline` - commit types, branch names and the delivery commit.
+
 ## Mandate
 
 You are correcting a record that has already been closed. The operator named the commit the correction belongs to. Your deliverable is that commit rewritten to carry the correction, with no other commit touched, no commit added, and no port artifact left behind.

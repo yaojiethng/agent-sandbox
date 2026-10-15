@@ -5,6 +5,17 @@ argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus descri
 
 > $@
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+- `decision-records` - the architecture decision records.
+- `docs` - the document tree.
+- `git-discipline` - commit types, branch names and the delivery commit.
+- `testing` - the suite and the lint umbrella.
+
 ## Orient
 
 Read the most recent handover and the roadmap:

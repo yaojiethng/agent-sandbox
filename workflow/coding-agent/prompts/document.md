@@ -9,6 +9,12 @@ argument-hint: "[documentation goal or target document - optional]"
 
 **Scope:** one runbook for an iteration whose deliverable is a document. The in-scope targets are a policy, concept, architecture, prompt, skill, or record document. It owns what the shared prompts do not supply - the type test that names the rule set a target document is written against, acceptance criteria the operator checks by reading or linting the produced document, the alignment step that settles what a rewrite must change before the rewrite begins, the propagation checklist a cross-cutting change requires, the standards check each produced document takes before the close, and the review-advisor dispatch for a rule other sessions depend on. The handover, the scope gate and the release gate, the commit discipline, and the close stay with [`/iter`](iter.md) and [`/wrapup`](wrapup.md).
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `docs` - the document tree.
+
 ## Purpose
 
 A documentation session has no runtime to run. The acceptance criteria of [`/iter`](iter.md) ask the operator to run the system and observe an output, which a documentation session has no way to produce.

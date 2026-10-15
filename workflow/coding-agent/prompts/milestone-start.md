@@ -9,6 +9,13 @@ argument-hint: "[direction or intent - optional]"
 
 **Scope:** turn the roadmap's remaining task pool into a named, scoped milestone at the current nesting level. Milestone numbering is fractal: the same protocol opens a sub-milestone within a milestone, or a milestone at the top level.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+
 ## Orient
 
 Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, its milestone section, its open items, and the Milestone Summary table. Read the most recent handover in `devlog/handovers/`. Read `devlog/AGENT_FEEDBACK.md` open entries.

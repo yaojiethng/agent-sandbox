@@ -7,6 +7,12 @@ description: "Checks the documentation set against documentation_policy.md and r
 
 <!-- Merge provenance: the diagnostic register of `workflow/coding-agent/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `workflow/coding-agent/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both files are superseded by this skill. `documentation-pass.md` was removed by handover 20261006-09; `documentation-audit-comparison.md` stays until the folder is dissolved, because the milestone scope names it. -->
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `docs` - the document tree.
+
 ## Purpose
 
 Checks the documentation set and reports the claims the tree contradicts. The method is per-document claim extraction followed by an implementation cross-reference, then a cross-document consistency pass, then the diagnostic register below.

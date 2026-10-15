@@ -6,6 +6,13 @@ disable-model-invocation: true
 
 # check-in - the survey and the work inventory
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+
 ## Purpose
 
 A check-in surveys project state and hands the operator an inventory of open work with a starting direction. It is not an iteration. Its intensive half, the record audit, runs only when the operator asks for it, so the default check-in stays short and its task list carries work rather than record housekeeping.

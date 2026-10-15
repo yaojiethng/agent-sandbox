@@ -8,6 +8,12 @@ trigger: /package-eval-snapshot
 
 **Scope:** Writes one snapshot directory and prints the operator reply. It does not author the iteration records, it does not export the branch, and it does not run the host workflow.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `evals` - the eval harness and the snapshot.
+
 ## Purpose
 
 An eval needs three things: the task stream that was given, the state the work started from, and the state it reached. The script writes all three as files, so a snapshot taken today and one taken a month from now have the same shape and can be compared. The half that needs judgement -- what an eval would score, and whether the scan found a secret -- is this prompt's.

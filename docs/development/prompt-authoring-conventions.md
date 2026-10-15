@@ -80,6 +80,8 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 5. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
 6. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
 
+**The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
+
 The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only home of a rule.
 
 ## Scope a prompt's subject

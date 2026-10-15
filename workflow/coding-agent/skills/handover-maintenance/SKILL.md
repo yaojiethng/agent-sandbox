@@ -7,6 +7,12 @@ description: "Checks handover content and the closed handover chain against hand
 
 <!-- Merge provenance: Track A (the three content checks and their run conditions) is the substance of workflow/coding-agent/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of workflow/coding-agent/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `work-log` - the work-unit record and the exploration record.
+
 ## Purpose
 
 Checks handover documents and reports the violations of [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.

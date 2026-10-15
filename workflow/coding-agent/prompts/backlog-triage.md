@@ -9,6 +9,12 @@ argument-hint: "[scope - a milestone ID, a task group, or empty for the whole op
 
 **Scope:** classify the open roadmap rows named by the argument, or the whole open backlog when the argument is empty, into the rows an autonomous run can dispatch and the rows it cannot. Classification only: this prompt reads records and returns a table. It opens no iteration, edits no record, and dispatches nothing.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+
 ## Purpose
 
 An autonomous run spends the operator's goodwill. Every unit it dispatches consumes a subagent context and a commit, and a unit dispatched on a row that turned out to need a decision returns a question the operator must answer before the run can continue. Triage moves that question to the front, where the operator can answer it once, before any context is spent.

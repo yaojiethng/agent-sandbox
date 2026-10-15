@@ -9,6 +9,16 @@ argument-hint: "[optional: a commit range to audit]"
 
 **Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it: milestone-close owns the milestone-record close, and the work runs substitute an autonomous review for the operator gate.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+- `decision-records` - the architecture decision records.
+- `git-discipline` - commit types, branch names and the delivery commit.
+- `testing` - the suite and the lint umbrella.
+
 ## Mandate
 
 You run the consolidated close for an active-operator session that ends at its release point. Two jobs share this document: the **commit-discipline checkpoint** runs during the session after each committed task group; the **close** runs once at the session end. Both deliver a HEAD that reads as one coherent delivery commit per unit, with an open handover naming it, and no pile of typed checkpoints left for the operator to untangle.

@@ -11,6 +11,13 @@ Run a plan session for planning and design work. Run `/iter` for feature work.
 
 **State the grain.** `/plan` is one workflow at two grains: a milestone scope, or a single task that needs decisions before it can be worked. Infer the grain from the invocation argument and from the material gathered below, then state it when the scope is presented, so the operator can correct it. The grain is inferred and stated, never passed as a parameter -- a caller forced to know the grain before it can invoke `/plan` has been given the wrong interface.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `decision-records` - the architecture decision records.
+
 ## Orient
 
 Read the most recent handover and the roadmap:

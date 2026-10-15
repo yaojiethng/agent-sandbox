@@ -8,6 +8,12 @@ disable-model-invocation: true
 
 An eval answers one question. Does this instruction set change what the agent does, and is the change worth its cost? A text check reads the document; only a run reads the behaviour.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `evals` - the eval harness and the snapshot.
+
 ## Purpose
 
 Run a case set against two or more configurations of the same task, grade each run against the fixture, and report the pass rate, the wall clock and the token cost per configuration. The result is a graded table and a verdict.

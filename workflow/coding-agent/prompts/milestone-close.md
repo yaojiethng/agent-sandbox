@@ -9,6 +9,14 @@ argument-hint: "[milestone name - for example M3.1 - Backpressure]"
 
 **Scope:** record that the named milestone's work is complete. Milestone numbering is fractal, so the same protocol closes a sub-milestone and a top-level milestone; the close boundary tells how far the record cascade goes.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+- `work-log` - the work-unit record and the exploration record.
+- `decision-records` - the architecture decision records.
+
 ## Orient
 
 Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, the named milestone's section, and the Milestone Summary table. Read the most recent handover in `devlog/handovers/`. Read `devlog/AGENT_FEEDBACK.md` open entries.

@@ -9,6 +9,14 @@ argument-hint: "<what the sidequest does - required>"
 
 **Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#sidequests)'s.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `work-log` - the work-unit record and the exploration record.
+- `task-list` - the task list and its companions.
+- `decision-records` - the architecture decision records.
+
 ## When to use
 
 Run `/sidequest` when the operator raises work the open iteration does not own and that cannot wait for the next iteration.

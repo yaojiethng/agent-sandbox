@@ -7,6 +7,12 @@ description: "Checks devlog/roadmap.md, devlog/roadmap_future.md and devlog/chan
 
 <!-- Source: this skill subsumed workflow/coding-agent/audits/roadmap-audit.skill.md, now removed. Steps 1 to 4 carry that file's checks A to D unchanged, and Step 5 reports the run. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. -->
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+
 ## Purpose
 
 Checks the three roadmap records -- `devlog/roadmap.md`, `devlog/roadmap_future.md` and `devlog/changelog.md` -- and reports the violations of [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.

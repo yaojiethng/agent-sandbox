@@ -5,6 +5,12 @@ argument-hint: "[stale branch] [target branch] [port intent - what the stale bra
 
 > $@
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `git-discipline` - commit types, branch names and the delivery commit.
+
 ## Mandate
 
 You are porting a stale branch onto a target branch. The operator named both branches and stated the port intent. Your deliverable is the stale branch's work done again correctly on the target: each iteration becomes one commit, and the target history reads as if that work had always lived there.
