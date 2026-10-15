@@ -60,7 +60,7 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 
 ### In development
 
-This principle governs the M3.3.1 structural moves, and it stays under development until they land. The exploration record is [`20261014-design-draft-coding_agent_binding_surface.md`](../../devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md). Remove that link when the moves complete, which closes this record.
+This principle governs the M3.3.2 structural moves, and it stays under development until they land. The exploration record is [`20261014-design-draft-coding_agent_binding_surface.md`](../../devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md). Remove that link when the moves complete, which closes this record.
 
 The convention-skill corpus lands at handover `20261014-05`. It supersedes the interface, the project value file and the gate an earlier attempt in the same iteration produced: see the section below.
 
