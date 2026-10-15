@@ -1,6 +1,6 @@
 ---
 name: task-list
-description: agent-sandbox's task-list convention - the roadmap, the future roadmap and the changelog: their shape, their states, their numbering, and the rules for filing into them. Use when a workflow procedure reads or writes the task list.
+description: "agent-sandbox's task-list convention - the roadmap, the future roadmap and the changelog: their shape, their states, their numbering, and the rules for filing into them. Use when a workflow procedure reads or writes the task list."
 ---
 
 # task-list

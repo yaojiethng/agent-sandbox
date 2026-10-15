@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-15  --  A gate that hand-lists its subject set misses a live root
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: none
+mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing.
+```
+
+`scripts/lint/frontmatter.mjs` listed the folders it scanned by hand. The list held the workflow module, the pi provider config and the agent skills, and it omitted `.agents/skills/`, the project convention-skill tree pi loads. A `description` value in `.agents/skills/task-list/SKILL.md` held a colon-space (`changelog: their shape`), which YAML reads as a nested mapping, so the whole block failed to parse and pi dropped the skill. The gate reported clean across 57 files throughout.
+
+The class is a check whose subject set is an enumeration inside the check. The tree gains a root and the check keeps passing over the roots it already knew. The container interface already declared these roots as data, and the gate already read the same manifest for its shipping-document check, so the derivation was one call away. The durable rule is to read the declaration rather than restate it; a check that cannot read its declaration must fail, not scan nothing.
+
+Raised by the agent during handover `20261015-04`.
+
 ## [A] 2026-10-15  --  The decomposition of a task into work units has no owner for a manual run
 
 ```text

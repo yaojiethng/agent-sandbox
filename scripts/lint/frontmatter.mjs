@@ -16,6 +16,11 @@
 // that opens on its title is a separate, tracked defect; only a block that
 // parses badly is the silent failure this gate exists to catch.
 //
+// The file set is the manifest's instruction cells plus the project's own
+// `.agents/` tree; see the ROOTS derivation below. The scan root is a test
+// seam, while the declaration is always read from the module root, so a fixture
+// tree is scanned against the real declaration.
+//
 // Exit codes: 0 = every block parsed, 1 = a block failed to parse or the gate
 // could not run. The finding count is printed, never encoded in the exit code.
 
@@ -25,18 +30,45 @@ import { fileURLToPath } from "url";
 import { loadYaml } from "./yaml-loader.mjs";
 import { load_manifest, manifest_rows } from "../../src/build/container-interface.mjs";
 
+const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+
 const REPO_ROOT = process.env.FRONTMATTER_SCAN_ROOT
   ? resolve(process.env.FRONTMATTER_SCAN_ROOT)
-  : resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+  : MODULE_ROOT;
 
-/** Roots holding a prompt or a skill. A missing root is skipped. */
+// The declaration is read from the module root, not the scan root, so a fixture
+// tree is scanned against the real declaration. FRONTMATTER_MANIFEST_ROOT is the
+// seam that points the read elsewhere, so the fail-closed branch is reachable.
+const MANIFEST_ROOT = process.env.FRONTMATTER_MANIFEST_ROOT
+  ? resolve(process.env.FRONTMATTER_MANIFEST_ROOT)
+  : MODULE_ROOT;
+
+// The instruction roots are declared once, in src/build/container-interface.json:
+// a cell's `sources` are the repository folders that become prompt and skill
+// roots at runtime. Deriving them here means a new instruction surface enters
+// this gate with the declaration, not with a second edit that an author can
+// forget. A manifest that is missing or does not parse is a finding, never an
+// empty root set: a gate over no files would report clean.
+const manifest = load_manifest(MANIFEST_ROOT);
+if (manifest === undefined) {
+  console.error(
+    "Frontmatter gate: " + join(MANIFEST_ROOT, "src/build/container-interface.json") +
+      " is missing or does not parse; cannot derive the instruction roots.",
+  );
+  process.exit(1);
+}
+
+/**
+ * Roots holding a prompt or a skill. `.agents/` is the project's own
+ * convention tree, which ships nowhere and so is declared by no cell; the two
+ * entries are covered whether or not a project has installed them.
+ */
 const ROOTS = [
-  // .agents/drafts is deliberately absent: a draft is not a live prompt.
-  "workflow/coding-agent/prompts",
-  "workflow/coding-agent/skills",
-  "src/reasoning/providers/pi/config/agent/prompts",
-  "src/reasoning/agent/skills",
-  "src/reasoning/providers/pi/config/agent/skills",
+  // A draft is not a live prompt or skill, so .agents/drafts and
+  // src/reasoning/agent/drafts are deliberately absent from the declaration.
+  ...manifest_rows(manifest, "cells").flatMap((cell) => cell.sources ?? []),
+  ".agents/skills",
+  ".agents/prompts",
 ];
 
 /** Root holding the policy files, and the name suffix that marks one. */
@@ -69,9 +101,14 @@ function frontmatterOf(text) {
 }
 
 const { parse } = loadYaml("Frontmatter gate");
+// A cell source may contain another cell source -- the pi config home holds its
+// own prompt and skill folders -- so the collected list is de-duplicated by
+// path. Without the Set a file under a nested root is reported twice.
 const files = [
-  ...ROOTS.flatMap((root) => collect(join(REPO_ROOT, root))),
-  ...collect(join(REPO_ROOT, POLICY_ROOT), POLICY_SUFFIX),
+  ...new Set([
+    ...ROOTS.flatMap((root) => collect(join(REPO_ROOT, root))),
+    ...collect(join(REPO_ROOT, POLICY_ROOT), POLICY_SUFFIX),
+  ]),
 ];
 const findings = [];
 
@@ -111,7 +148,7 @@ const shippedRoots =
         .filter(Boolean)
     : [
         ...new Set(
-          manifest_rows(load_manifest(REPO_ROOT), "image")
+          manifest_rows(manifest, "image")
             .map((row) => row.source)
             .filter((source) => typeof source === "string" && source.startsWith("docs/")),
         ),

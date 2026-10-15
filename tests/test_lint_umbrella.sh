@@ -544,6 +544,21 @@ test_frontmatter_gate_fails_closed_without_node() {
   assert_contains "$out" "node is not on PATH" "the missing dependency is named"
 }
 
+# Given: a manifest root with no container-interface.json
+# When:  check_frontmatter.sh runs
+# Then:  rc is 1 and the missing declaration is named
+# Asserts: the gate fails closed. The instruction roots are derived from the
+# declaration, so an absent declaration means the root set is unknown; reading
+# an empty set as clean is exactly the silent pass this branch prevents.
+test_frontmatter_gate_fails_closed_without_manifest() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_nomanifest_$$_$RANDOM"
+  mkdir -p "$root"
+  out=$(FRONTMATTER_MANIFEST_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a missing manifest fails the gate"
+  assert_contains "$out" "cannot derive the instruction roots" "the missing declaration is named"
+}
+
 # Given: a fixture root holding a policy file whose frontmatter does not parse
 # When:  check_frontmatter.sh runs against that root
 # Then:  rc is 1 and the finding names the policy file
@@ -558,6 +573,57 @@ test_frontmatter_gate_scans_policy_files() {
   out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed policy block fails the gate"
   assert_contains "$out" "x_policy.md" "the finding names the policy file"
+}
+
+# Given: a fixture root holding a project convention-skill whose unquoted
+# description contains a colon followed by a space
+# When:  check_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding names the skill file
+# Asserts: the project convention-skill tree is scanned. It sat outside the
+# gate's root list, so a malformed description in `.agents/skills/` cost the
+# skill silently while the gate still reported clean.
+test_frontmatter_gate_scans_project_convention_skills() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_agents_$$_$RANDOM"
+  mkdir -p "$root/.agents/skills/task-list"
+  printf '%s\n' '---' 'name: task-list' 'description: the roadmap and the changelog: their shape' '---' '' '# task-list' \
+    > "$root/.agents/skills/task-list/SKILL.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a malformed convention-skill block fails the gate"
+  assert_contains "$out" ".agents/skills/task-list/SKILL.md" "the finding names the convention-skill"
+}
+
+# Given: a fixture root holding a malformed frontmatter block in every
+#        instruction root the container interface declares, plus the two
+#        project convention roots
+# When:  check_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding count equals the number of planted files
+# Asserts: the scan set is derived from the declaration, not hand-listed. The
+# test reads the same declaration the gate does, so a cell source added to the
+# manifest is scanned and asserted without editing the gate or this test.
+test_frontmatter_gate_covers_every_declared_instruction_root() {
+  local root out rc=0 rel count=0 rels
+  rels=$( cd "$REPO_ROOT" && node --input-type=module -e '
+    import { load_manifest, manifest_rows } from "./src/build/container-interface.mjs";
+    const sources = manifest_rows(load_manifest(process.cwd()), "cells")
+      .flatMap((cell) => cell.sources ?? []);
+    process.stdout.write([...sources, ".agents/skills", ".agents/prompts"].join("\n"));
+  ' ) || return 1
+  root="$FIXTURE_DIR/frontmatter_roots_$$_$RANDOM"
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    rel="${rel%/}/a.md"
+    mkdir -p "$root/$(dirname "$rel")"
+    printf '%s\n' '---' 'description: shape: unquoted colon' '---' '' '# a' > "$root/$rel"
+    count=$((count + 1))
+  done <<< "$rels"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a malformed block in every declared instruction root fails the gate"
+  assert_contains "$out" "$count frontmatter finding(s)" "every declared instruction root is scanned"
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    assert_contains "$out" "${rel%/}/a.md:" "the finding names ${rel%/}/a.md"
+  done <<< "$rels"
 }
 
 # Given: the repository's own .markdownlint-cli2.mjs
@@ -652,7 +718,10 @@ run_test test_frontmatter_gate_passes_on_a_parsing_block
 run_test test_frontmatter_gate_names_the_offending_line
 run_test test_frontmatter_gate_skips_a_prompt_with_no_block
 run_test test_frontmatter_gate_fails_closed_without_node
+run_test test_frontmatter_gate_fails_closed_without_manifest
 run_test test_frontmatter_gate_scans_policy_files
+run_test test_frontmatter_gate_scans_project_convention_skills
+run_test test_frontmatter_gate_covers_every_declared_instruction_root
 run_test test_frontmatter_gate_requires_a_reader_on_a_shipping_document
 run_test test_frontmatter_gate_rejects_a_maintainer_only_shipping_document
 run_test test_frontmatter_gate_accepts_a_declared_reader
