@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-14  --  A parallel suite run flaked one unit, and no cause was found
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: when a full suite run reports a failure, re-run the failing file in isolation before trusting the run; a single parallel-run failure that does not reproduce is recorded, not chased.
+```
+
+The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. The file then passed 22 of 22 units in isolation, and the next full run was clean at 1126 of 1126. The failure carried a partial `UNIT:` report, so it was a unit assertion and not the deadline-expiry mode of the 2026-09-25 entry; `test_unknown_args_rejected` asserts that `scripts/prune.sh --stale=fresh` exits non-zero and names the bad kind, under the default 8-worker run. No reproduction, so no cause is claimed. The points to keep are the triage and the re-run, not a mechanism.
+
+Raised by the agent during handover `20261014-03`.
+
+---
+
 ## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
 
 ```text

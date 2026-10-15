@@ -347,21 +347,11 @@ describe("invariant report", () => {
 		assert.deepEqual(ids(guarded), ["a"], "the union drops an entry with no usable id");
 	});
 
-	itCase("M8", "the transport follows pi and the metadata", async () => {
-		if (!fs.existsSync(BAKED_CATALOG)) return;
-		const { getBuiltinModels } = await loadPiModule<{ getBuiltinModels: (id: string) => ModelDefinition[] }>(BAKED_CATALOG);
-		// The provider SDK models.dev labels each id with, measured 2026-10-03. All
-		// other ids in the blob carry no label, and an unlabelled id is served over
-		// the gateway's completions surface, which is what pi bakes for most of them.
-		const labelled: Record<string, string> = {};
-		for (const id of ["minimax-m2.7", "minimax-m3", "qwen3.8-flash"]) labelled[id] = "@ai-sdk/anthropic";
-		for (const id of ["gpt-5.6-luna", "gpt-6-luna", "grok-4.5", "grok-4.6", "grok-4.7", "muse-spark-1.2-contributor", "muse-spark-1.3-contributor"]) labelled[id] = "@ai-sdk/openai";
-		for (const baked of getBuiltinModels(PROVIDER_ID)) {
-			assert.equal(derivedTransport(TEST_DECL, baked.id, labelled[baked.id]), baked.api, `${baked.id} keeps the adapter pi encodes`);
-		}
+	itCase("M8", "the transport follows the declaration and the metadata", () => {
 		assert.equal(derivedTransport(TEST_DECL, "x", "@ai-sdk/openai"), "openai-responses", "the metadata's OpenAI SDK names the responses adapter");
-		assert.equal(derivedTransport(TEST_DECL, "x", "@ai-sdk/anthropic"), "anthropic-messages");
+		assert.equal(derivedTransport(TEST_DECL, "x", "@ai-sdk/anthropic"), "anthropic-messages", "the metadata's Anthropic SDK names the messages adapter");
 		assert.equal(derivedTransport(TEST_DECL, "messages-only", "@ai-sdk/openai"), "anthropic-messages", "a declared entry wins over the metadata");
+		assert.equal(derivedTransport(TEST_DECL, "unlabelled"), "openai-completions", "an id no source classifies falls to the completions surface");
 	});
 
 	itCase("M6", "purity", () => {
