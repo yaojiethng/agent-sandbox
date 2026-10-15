@@ -346,23 +346,6 @@ Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "u
 
 Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
 
-### [A] 2026-09-30  --  A backgrounded process holding the caller's stdout stalls the whole tool call
-
-```text
-state: probation
-scoped: T1 -- the process-scan rule is recorded in `bash-coding-conventions.md` section 4.7; the redirect and explicit-stop prescriptions were not adopted
-legacy: none
-mitigation: a process scan must match on the executable and the argument and exclude the current pid, then verify the process is gone rather than read a kill as success. See `docs/development/bash-coding-conventions.md` section 4.7.
-```
-
-A script that starts a long-lived background process without redirecting its stdout keeps the caller's stdout pipe open for as long as it lives. A pipeline such as `timeout 300 bash script.sh | tail -20` then reports nothing at all: `timeout` kills the foreground script at 300s, the orphan keeps the write end of the pipe open, and the reader blocks until the tool call itself is aborted. Measured cost: 47 minutes for a script whose own budget was 300 seconds. The failure is silent, because the killed script produced no output to explain itself.
-
-Two adjacent traps in the same session, both from a cleanup scan written as a shell loop over `/proc`. A scan matching a process name with a glob also matches the scanning shell's own command line, because the pattern text is in that command line: the loop signalled itself and the tool call died with 143. And `pkill` does not exist in this image, so an earlier cleanup that used it silently removed nothing and left the port held, which made the next run's probe talk to a dead server and report that nothing had been captured. The scan discipline is recorded in `bash-coding-conventions.md` section 4.7.
-
-Scope: any test or script that starts a background process or scans for one. Cross-reference: `docs/development/bash-coding-conventions.md`.
-
-Resolved at the source: the script that caused the stall stood up a loopback capture server to read a request body, and pi already exposes `onPayload` plus an injectable `fetch` for exactly that. Rewritten to use the hook, the background process is gone, and the class of incident goes with it. The entry is probation because the redirect and explicit-stop prescriptions were not adopted as rules; the process-scan discipline is the recorded part.
-
 ### [A] 2026-10-05  --  An apostrophe inside a `${VAR:-default}` opens a quote, so the whole script is a syntax error
 
 ```text
@@ -466,16 +449,6 @@ mitigation: for an autonomous iteration, the scope proposal carries a work-unit 
 The read-through close was released as "follow through everything autonomously", and the agent then landed three workflow briefs, a 661-line lesson plan, the register repair, and 87 fix rows across four lanes as a single commit with one handover. Each sampled change reviewed fine; the aggregate was unreviewable as a unit of work. The operator expected six commits - one per workstream and one per fix lane, each with its own handover - which is the decomposition the scope proposal should have offered and awaited release on. The gate asked what would be delivered and named the lanes, but it never bound the lanes to commits, so autonomy collapsed them.
 
 A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
-
-### [O] 2026-09-29  --  `/iter` pauses for confirmation at nearly every step, not only at the gates
-
-```text
-state: probation
-scoped: M3.2.1 -- `/iter` gate collapse and per-prompt quality pass (roadmap row 83)
-legacy: none
-mitigation: the operator previously expected to respond to the agent only at Gate 1, Gate 2, and Gate 3. After the loop-to-workflow move, `/iter` stops for confirmation at nearly every step, and each pause reads as a gate, so the operator approves step after step instead of only at the three decision points. The gate-collapse and quality pass (roadmap row 83) must restore gates as the only confirmation points and cut the per-step pauses that add no operator decision. The quality bar is: a step is a gate only when the operator must decide something; a step that only reports progress or awaits an acknowledge signal should not pause the loop. Recorded in handover `20260929-08`.
-probation_note: the gate collapse (handover `20260929-10`) folded confirmation into two gates (scope gate, release gate) and a glm quality-pass review found no remaining pedantic pause in `/iter` -- unconditional stops stand only at the scope gate and the Step 7 pre-close summary that feeds the release gate. The entry stays under probation at the operator's direction (2026-09-29): the fix has not been stress-tested by a live interactive run, so it is not confirmed resolved. Maintained at the M3.2.1 close (2026-10-03): still no live interactive run to test the fix against. Maintained (2026-10-05, iteration `20261005-02`): the counter-failure appeared, and it is a skip rather than a collapse. The scope gate released the scope and one mid-iteration proposal, and the agent then implemented, wrote the records and landed the delivery commit with no Step 7 summary and no release point. The two-gate model is intact in the prompts; what is missing is a stop the agent cannot pass on its own.
-```
 
 ### [O] 2026-09-29  --  Conversational numbering must be unambiguous
 

@@ -197,3 +197,11 @@ The minor and major loop procedures moved out of `iteration_policy.md` and `road
 `/document` landed as the docs-session runbook, `task-queue` and its `taskq` extension as a general sequencing primitive, and `/wrapup` as the shared close mechanics for `/iter`, `/plan` and `/document`; `/iter` collapsed from three gates to two. The policy set was declared as every `docs/**/*_policy.md` file, each carrying a `description` and a `scope` in frontmatter, and the reasoning layer gained one shared runtime base.
 
 ---
+
+## M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract
+
+*An instruction surface now declares where it runs, what it can reach and what loads it, and every reference it carries resolves in the image it runs in.*
+
+The contract between prompts, skills and the two `AGENTS.md` layers is settled and structural. The surfaces are declared once as data in `src/build/container-interface.json`, one reader serves every gate, and a link in a surface's file must land inside the reach its cell grants; a reference now takes the absolute path its document has in the image, so the repository-relative form fails the gate. The policy form is designed away, each policy splitting into a mechanism a procedure runs and a convention the project's convention-skill holds, with a default convention-skill corpus that `initialize` installs and a handoff at `.agents/skills/<convention>/SKILL.md`. The five hand-maintained `CONTEXT.md` files are gone, the harness and the workflow module each ship as one declared payload, and the reviewer dispatch became one provider-layer skill with a script and a stub-`pi` test.
+
+---
