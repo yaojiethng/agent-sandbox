@@ -24,6 +24,8 @@ The file is operator-owned. It lives outside version control and outside pi's ow
 
 Enumerate the models this session can dispatch: run `pi --list-models` and treat its output as the dependable source. If you cannot detect any, ask the operator to paste the slugs they have access to. Never write a real slug you have not confirmed is available.
 
+A slug is the model's **full** id, provider prefix included. `--model` is a substring pattern over the provider's list, not an id lookup, and where several ids match it takes the last one in the list, silently. A short name therefore binds to whichever matching id comes last, which is not necessarily the model intended. Copy the id exactly as the list prints it.
+
 ### 2. Load current state
 
 Read `$AGENT_HOME/model-recommendations.md`. Keep every value already present. A line for a role not in the table above is from a retired role: drop it. If a role line is missing, add it empty.
@@ -36,7 +38,7 @@ State the level explicitly, because a recommendation carries its thinking level.
 
 ### 4. Validate
 
-Every real slug written must be in the detected set. If a chosen slug is not available, stop and ask again.
+Every real slug written must be in the detected set, and must be the full id: a prefix short enough to match several entries binds to one of them, not to the one intended, and nothing reports the difference. Confirm the value is the id the list prints, character for character. If a chosen slug is not available, stop and ask again.
 
 ### 5. Write the file in place
 
