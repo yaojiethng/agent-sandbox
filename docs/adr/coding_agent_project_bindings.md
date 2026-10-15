@@ -34,7 +34,10 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 |---|---|
 | protocol | the fixed loop sequence, gates, mandatory writes and record kinds |
 | convention | a project binding value |
-| default corpus | the workflow's own binding values, which the initializer proposes for a project; no run-time fallback |
+| convention | a structure over a subset of content; a skill is provisioned for each |
+| convention-skill | the project-owned skill that serves a convention |
+| provision | a skill supplied for a convention; a missing provision degrades only its dependents |
+| default convention-skill corpus | the workflow's shipped stubs, installed by the initializer; not a run-time default |
 | maintenance surface | the fixed set of maintenance skills the prompts invoke, each stating an operation without naming a file |
 | mechanics | the storage and format behind a maintenance surface; the bindable unit |
 | maturity chain | rule -> skill -> gate -> binding; the direction a convention travels as it is made checkable |
@@ -58,6 +61,8 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 ### In development
 
 This principle governs the M3.3.1 structural moves, and it stays under development until they land. The exploration record is [`20261014-design-draft-coding_agent_binding_surface.md`](../../devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md). Remove that link when the moves complete, which closes this record.
+
+The convention-skill corpus lands at handover `20261014-05`. It supersedes the interface, the project value file and the gate an earlier attempt in the same iteration produced: see the section below.
 
 ## 2026-10-14 -- The maintenance surface is fixed; the mechanics behind it are bound
 
@@ -88,3 +93,17 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 `compatibility` is not a binding carrier: it is a free-text environment-requirements string, capped at 500 characters. For structured values, the specification's own carrier is a bundled `assets/` data file - "Data files (lookup tables, schemas)" - which holds our schema rather than a co-opted field.
 
 **Edge cases / drivers:** The script layer is out of scope; only the seams are cut, so a script can slot in later. T5 (linear-style task tracking, an append-only changelog, handover rotation) and T6 (structured task logs) change the mechanics behind the surface, not the surface, which is why the surface must not name a file.
+
+## 2026-10-14 -- The workflow ships convention-skills, and the seam is a handoff
+
+**Decision:** The workflow ships a **default convention-skill corpus**, not a default convention corpus. A **convention** is a structure over a subset of content; the total list of conventions is the list of subsets a skill must be provisioned for, and a missing provision degrades only the workflows that depend on that subset. Each shipped convention-skill is a **stub** that states a skill is expected, that what was found is a stub, and a few open questions offered without direction. The `initialize` skill installs and updates the corpus into the project's `.agents/skills/`. A workflow step states its handoff to a convention-skill explicitly; when the skill is absent the handoff fails, and the agent reasons over it with the steering it has loaded. This supersedes the default-corpus decision above.
+
+**Rationale:** The workflow imposes nothing on the project. It is a procedural layer, non-deterministic by nature; if it were deterministic it would be code. A run-time default would answer for a project that never chose, and a gate would police a project whose hooks the workflow does not control. A handoff states the need and the failure and leaves the reasoning to the agent.
+
+**Rejected alternatives:**
+
+- **A declared binding interface checked by a gate.** Superseded: a gate is a lint, and a lint over a project's bindings cannot run, because the workflow does not control the project's commit or lint hooks.
+- **A project value file.** Superseded: the project's convention is a skill it owns, not a value it supplies, so the structure and the content live together.
+- **A run-time default.** Superseded: a default answers for a project that never chose. The shipment is seed material, and its stub states a failure.
+
+**Edge cases / drivers:** The convention list is the set of subjects that carry a maintenance surface: `task-list`, `work-log` (handovers and discussions), `decision-records`, `docs`, `git-discipline`, `testing` and `evals`, of which `evals` is optional. `iteration_policy` is the protocol, not a convention. A convention may cover more than one structure, and `work-log` carries two. The corpus lives in the `initialize` skill's `assets/` and ships with the skills cell, so no new layout surface is needed. The writing standard that governs all communicated text - chat, code comments, records and documents alike - is the `communication` standard, not a convention: it has no structure and no provision, and it lives in the project's always-loaded steering. Moving the conventions out of the shipped maintenance skills is deferred to the policy-form retirement.
