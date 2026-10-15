@@ -60,7 +60,7 @@ None.
 |---|---|---|
 | The roadmap row is larger than one slice: six skills and fourteen prompts carry the workflow's own record paths. The design stage is separated from the wiring stage per the unit rule. | scope change | current iteration |
 | The devlog's `AGENT_FEEDBACK.md` record has no convention in the seven-convention corpus, yet five steps carry it. The fit is a third `work-log` structure, `assets/feedback.md`. | contradiction | next iteration; Triaged to: the ADR and the roadmap |
-| [`20261014-design-draft-coding_agent_binding_surface.md`](../discussions/20261014-design-draft-coding_agent_binding_surface.md) carries `**Status:** settled` while its filename says `draft`, which the discussion naming rule forbids. | contradiction | roadmap |
+| [`20261014-design-settled-coding_agent_binding_surface.md`](../discussions/20261014-design-settled-coding_agent_binding_surface.md) carries `**Status:** settled` while its filename says `draft`, which the discussion naming rule forbids. | contradiction | roadmap |
 
 ## Completed
 

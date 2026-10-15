@@ -55,7 +55,7 @@ The `type` vocabulary, with the commit type each maps to at close:
 
 The shortform appears in the filename. The commit type disambiguates an implementation's subclass at close. The deprecated types `story`, `study` and `spec` are retained for historical records only.
 
-The `status` vocabulary is `Open` when the record is created, `Active` while the iteration runs, and `Closed` at iteration end.
+The `status` vocabulary is `Active` when the iteration opens the record, `Closed` at iteration end, and `Open` for a record created ahead of the iteration that writes it.
 
 ### Section roles
 

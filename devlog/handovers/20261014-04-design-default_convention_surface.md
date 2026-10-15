@@ -38,7 +38,7 @@ Deferred with its row: the build - the interface, the `initialize` skill and the
 | File | Why in scope |
 |---|---|
 | [`docs/adr/coding_agent_project_bindings.md`](../../docs/adr/coding_agent_project_bindings.md) | the fixed surface and bound mechanics decision, the maturity chain, the three seams, and the skill specification's gaps |
-| [`devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md`](../discussions/20261014-design-draft-coding_agent_binding_surface.md) | the corrected model in its vocabulary, policy split, binding list and consequences |
+| [`devlog/discussions/20261014-design-settled-coding_agent_binding_surface.md`](../discussions/20261014-design-settled-coding_agent_binding_surface.md) | the corrected model in its vocabulary, policy split, binding list and consequences |
 | [`devlog/roadmap.md`](../roadmap.md) | the row's landing note and write-back at close |
 | `devlog/handovers/20261014-04-design-default_convention_surface.md` | this handover |
 
@@ -75,5 +75,5 @@ None.
 |---|---|
 | [`devlog/roadmap.md`](../roadmap.md) | roadmap maintenance check: the roadmap reflects the prior handovers; M3.3.1 is `In progress`, and T12's M8 rows are closed. No maintenance edit was needed. |
 | [`docs/adr/coding_agent_project_bindings.md`](../../docs/adr/coding_agent_project_bindings.md) | new dated section: the fixed maintenance surface and the bound mechanics, the maturity chain, the three seams, and the skill specification's four gaps with the `metadata` / `compatibility` assessment; R2 amended and R3 superseded; the reserved glossary gains `maintenance surface`, `mechanics` and `maturity chain` |
-| [`devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md`](../discussions/20261014-design-draft-coding_agent_binding_surface.md) | the vocabulary, the policy split, the binding list and the consequences carry the corrected model: the surface is fixed, the mechanics are bound, and no run-time default remains |
+| [`devlog/discussions/20261014-design-settled-coding_agent_binding_surface.md`](../discussions/20261014-design-settled-coding_agent_binding_surface.md) | the vocabulary, the policy split, the binding list and the consequences carry the corrected model: the surface is fixed, the mechanics are bound, and no run-time default remains |
 | `devlog/handovers/20261014-04-design-default_convention_surface.md` | this handover |

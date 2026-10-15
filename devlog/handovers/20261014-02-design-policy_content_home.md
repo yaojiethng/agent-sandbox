@@ -27,7 +27,7 @@ Out of scope: the `tests/test_model_refresh.sh` node suite fails at HEAD, before
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The design document exists in `devlog/discussions/` at draft status | `ls devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md` | Agent [x] |
+| The design document exists in `devlog/discussions/` at draft status | `ls devlog/discussions/20261014-design-settled-coding_agent_binding_surface.md` | Agent [x] |
 | The ownership split is stated with the placement rule | reading `### The ownership split` | Operator [x] |
 | The module map names every unit and places `git` as a tool | reading `### Modules` | Operator [x] |
 | All seven policies have their mechanism and convention halves named, one row each | reading `### The policy split` | Operator [x] |
@@ -41,7 +41,7 @@ Out of scope: the `tests/test_model_refresh.sh` node suite fails at HEAD, before
 
 | File | Why in scope |
 |---|---|
-| [`devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md`](../discussions/20261014-design-draft-coding_agent_binding_surface.md) | the deliverable: the design discussion document |
+| [`devlog/discussions/20261014-design-settled-coding_agent_binding_surface.md`](../discussions/20261014-design-settled-coding_agent_binding_surface.md) | the deliverable: the design discussion document |
 | [`devlog/roadmap.md`](../roadmap.md) | the design row closes, and the seven move rows are superseded by the split |
 | [`docs/policies/`](../../docs/policies/) | the seven documents whose mechanism and convention halves are separated, read and not moved |
 | [`src/build/container-interface.json`](../../src/build/container-interface.json) | the manifest the default-convention surface must fit |
@@ -81,7 +81,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20261014-design-draft-coding_agent_binding_surface.md`](../discussions/20261014-design-draft-coding_agent_binding_surface.md) | new: the binding-surface design, at draft - the ownership split, the module map, the persistence classes, the policy split, and the binding list |
+| [`devlog/discussions/20261014-design-settled-coding_agent_binding_surface.md`](../discussions/20261014-design-settled-coding_agent_binding_surface.md) | new: the binding-surface design, at draft - the ownership split, the module map, the persistence classes, the policy split, and the binding list |
 | [`docs/adr/coding_agent_project_bindings.md`](../../docs/adr/coding_agent_project_bindings.md) | new: the ADR for the binding surface, under development, with the reserved terminology |
 | [`devlog/roadmap.md`](../roadmap.md) | the design row closed; the six per-policy move rows replaced by the default-convention surface and the policy-form retirement; the readers-outside row replaced by the binding mechanism; the own-tree and bundle rows re-scoped; the `layer` vocabulary row filed under T8 |
 | `devlog/handovers/20261014-02-design-policy_content_home.md` | this handover |

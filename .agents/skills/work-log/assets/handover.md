@@ -2,7 +2,7 @@
 date: YYYY-MM-DD
 milestone: <the task group, named as the task list names it>
 type: <one value from the type vocabulary>
-status: Open
+status: Active
 ---
 
 # Handover - <the concrete subject>
