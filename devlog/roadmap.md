@@ -39,6 +39,8 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;[M3.3 - Instruction Surface](#m33---instruction-surface) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract](#m331---the-prompt-skill-and-agentsmd-interaction-contract) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.2 - The skill maintenance pipeline](#m332---the-skill-maintenance-pipeline) | Not started |
+| &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | Not started |
+| &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | Not started |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
@@ -74,13 +76,13 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 
 **Objective:** every commit gets gate feedback, cheaply enough that the author waits for it rather than reaching for the bypass. M3.1.1 holds the mechanisms that landed; M3.1.2 holds the gates' own upkeep, which is open because adding a gate and keeping it fast are both unowned.
 
-#### M3.1.1 - Backpressure mechanisms
+##### M3.1.1 - Backpressure mechanisms
 
 The sub-milestone that built the gates: the commit-time hooks and the lint rules that give code and prose feedback, and the test harness they run against. Its outcome is recorded in [`changelog.md`](changelog.md#m311---backpressure-mechanisms).
 
 - [x] **Backpressure mechanisms, test-harness hardening, and the suite read-through** -- every commit gets gate feedback: a host-side install model gives the host checkout a staged Markdown + ShellCheck `pre-commit` hook ([`docs/adr/git_hooks.md`](../docs/adr/git_hooks.md)); the full lint gate runs cheap in parallel with the doc-wrap, doc-ascii, and sourced-lib contracts; and the test suite runs files in parallel under a pure-bash per-file deadline with a reason on rc-driven failures ([`docs/adr/test_harness.md`](../docs/adr/test_harness.md)). The suite read through against a fixed inventory frame into a 319-row register with bite checks and BDD write-backs, and its evidence folded into that register (plan [`20260922-design-settled-test_harness_improvements.md`](../devlog/discussions/archive/20260922-design-settled-test_harness_improvements.md); decision [`20260922-design-settled-m3_1_test_harness_decision.md`](../devlog/discussions/archive/20260922-design-settled-m3_1_test_harness_decision.md); mutation tier [`20260926-design-draft-mutation_corpus_runner.md`](../devlog/discussions/archive/20260926-design-draft-mutation_corpus_runner.md)). Handover `20260927-01`; record [`20260927-report-settled-test_suite_readthrough.md`](../devlog/discussions/archive/20260927-report-settled-test_suite_readthrough.md). Out of scope by operator direction: the compose YAML and the capability dockerfile, `scripts/macos_bootstrap.sh`, `scripts/manual/*.sh`, and the `check_*.sh` gates.
 
-#### M3.1.2 - Gate upkeep
+##### M3.1.2 - Gate upkeep
 
 The copy-delivery Markdown `pre-commit` hook is the first instance ([`git_hooks.md`](../docs/adr/git_hooks.md)); mount delivery carries no hook under the current delivery constraint. Two things about the gates are unowned: what they cost the author, and the procedure for changing one. The gates themselves are not in question here.
 
@@ -100,7 +102,7 @@ The sub-milestone that moved the loop procedures out of the policies and into wo
 
 - [x] **Loops as workflows** -- the minor and major loop procedures left `iteration_policy.md` and `roadmap_policy.md` for `/iter`, `/plan`, `/milestone-start` and `/milestone-close`, with the policies keeping the rules and linking the runbook; the loop taxonomy and its two-grain state diagram landed in `autonomous_agent_loop.md` and the transition rules in [`coding_agent_loop_workflow.md`](../docs/adr/coding_agent_loop_workflow.md). The policy and procedure deconfliction passes gave every rule one canonical owner, retiring `milestone_policy.md`; the documentation taxonomy was refactored and the policy set declared as every `docs/**/*_policy.md` with `description` and `scope` frontmatter. `/document`, `task-queue` and `/wrapup` landed as new workflow surfaces, `/iter` collapsed to two gates, and the reasoning layer gained one shared runtime base (design record [`20260928-design-settled-loop_workflows_migration.md`](discussions/archive/20260928-design-settled-loop_workflows_migration.md)).
 
-#### Not in scope: M3.2.1
+##### Not in scope: M3.2.1
 
 - The audit and review workflow cleanup -- M3.2.2 owns it.
 - Mechanism changes to how roadmap entries are recorded -- the T5 Roadmap-mechanism rewrite study owns them.
@@ -124,7 +126,7 @@ Also in scope, the review-pass family: the three framing fixes tracking the `202
   - [x] **Remove the superseded roadmap maintenance files** -- `workflow/coding-agent/audits/roadmap-audit.skill.md` and `src/reasoning/agent/drafts/roadmap-management.skill.md` are removed; their content lives in `workflow/coding-agent/skills/roadmap-maintenance.md`.
   - [x] Remove the superseded handover audit files -- `workflow/coding-agent/audits/handover-audit.skill.md` and `audit.skill.md` were removed; their content lives under `skills/handover-maintenance.md`, whose Track B Step 5 now delegates the structural scan to `scripts/check_handover_format.sh`. Handover `20261003-02`.
 
-#### Not in scope: M3.2.2
+##### Not in scope: M3.2.2
 
 - The loop-to-workflow move and the loop workflows -- M3.2.1 owns them.
 
@@ -153,18 +155,18 @@ M3.2.1 owned the autonomous dispatch shapes (`/auto`, `/parallel-auto`) as `/ite
 
 - [ ] **Decide the two settings questions the harness boundary raised** -- whether `yaml` becomes a declared repository dependency rather than resolving from pi's install tree, and whether the harness boundary extends so an agent can write `~/.pi/agent/settings.json`. Handovers `20261002-06` and `20261002-08`.
 
-#### Not in scope: M3.2.3
+##### Not in scope: M3.2.3
 
 - The M4 `/auto` smart-dispatcher implementation and the M4 `/goal` capability -- M4 owns them.
 - The loop-taxonomy proper (the four loops) -- M3.2.1 owns it.
 
-### M3.3 - Instruction Surface
+#### M3.3 - Instruction Surface
 
 The three instruction surfaces an agent reads -- prompts, skills and the two `AGENTS.md` layers -- and the rules that govern how one reaches the next. The surfaces were grown independently, so the contracts between them were never settled: a prompt links into a record it cannot see at runtime, the provider `AGENTS.md` carries a project's policy under a global title, the frontmatter gate names one of its three subjects, and each upstream skill lands in the tree by hand with no record of where it came from or what was changed. M3.3 settles the contracts, then builds the pipeline that holds skills to them.
 
 The two halves are ordered by dependency: M3.3.1 is the design, M3.3.2 is the pipeline that reads it. The pool came from T1 (the seeded-document dependency convention, the shipped-prompt link resolution, the frontmatter gate rename, the two `AGENTS.md` rows), T7 (the skill-maintenance backlog triage and the fork-and-strip convention) and the retired M8 (`.skills/`, skill templates, skill integration -- all three stale prose naming a loader the repository does not use). M8 is superseded by M3.3.2; its rows named no subject the tree recognises.
 
-#### M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract
+##### M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract
 
 **Objective:** settle how a prompt, a skill and an `AGENTS.md` reach each other and the policy documents, and make each convention a gate rather than a rule.
 
@@ -225,7 +227,7 @@ This sub-milestone owns the skill and prompt config surface: which files a promp
 - [x] **A command that packages an eval snapshot** -- the snapshot assembled by hand at the end of the M3.3.1 series has one owner now. `src/libs/package_eval_snapshot.sh` writes the frozen transcript, a complete repository bundle with its verification, the operator turn stream, the commit series, the session facts, a credential scan and a status file under `<to>/evals/<export-time>-<summary>-<session-id>/`, and `workflow/coding-agent/prompts/package-eval-snapshot.md` writes what an eval would score: the summary, the reply, the scan triage and the README. The scan counts patterns and never prints a value, and it does not refuse, because the transcript of the run that scans it holds the pattern text. `tests/test_package_eval_snapshot.sh` covers the script in 12 cases. The split follows the packaging command: mechanism in the lib, judgement in the prompt.
 - [x] **The instruction interface specification, and the retirement of `CONTEXT.md`** -- the five `CONTEXT.md` files (210 lines, 59 of them one twelve-row reachable set rewritten per file) are gone. `src/build/container-interface.json` now carries `session` (the twelve rows, declared once: they are the environment of a session rather than a property of a surface, so a cell -- and a project-scope cell in particular -- may claim none) and `cells` (one row per surface: source folders, runtime path, optional provider, loader, and the rows it adds). `src/build/container-interface.mjs` is the only reader and derives each cell's folder set from the image and provision rows; `scripts/check_container_layout.sh` and `scripts/check_instruction_surfaces.sh` are the two gates, the second reduced to the layer tables and the loop inventory. The model is in [`instruction_surface_declaration.md`](../docs/adr/instruction_surface_declaration.md) and the how-to in [`instruction-surface-conventions.md`](../docs/development/instruction-surface-conventions.md). Operator rulings along the way: `scripts/lint/` holds rules, so the declaration lives in `src/build/` beside the `x-workspace` path table; the twelve rows are the session's, so a project surface need not assume `/opt`; the file-content whitelist-and-blacklist scan is *not* built, on the silence test recorded in the ADR, and stays on the outgoing-link row. The derivation caught a defect the prose could not: the pi skills surface declared `$AGENT_HOME/skills/` where the overlay's bind mount gives `$AGENT_HOME/agent/skills/`. Handover `20261005-07`.
 
-#### M3.3.2 - The skill maintenance pipeline
+##### M3.3.2 - The skill maintenance pipeline
 
 **Objective:** a repeatable pipeline that takes an upstream skill, adapts it to agent-sandbox, and records where it came from and what was changed, so a later reader can tell an adapted skill from a home-grown one.
 
@@ -237,10 +239,77 @@ A skill lands in the tree by hand today. Nothing records its origin, nothing sta
 - [ ] **First pipeline test run: distil the operator-supplied skills** -- the operator holds skills to distil from. Each goes through the fork-and-strip convention, lands with a maintenance record, and runs. The run is the pipeline's first measurement; its friction becomes the convention's amendments.
 - [ ] **Take over the documentation-writing and skill-writing guidelines** -- [`prompt-authoring-conventions.md`](../docs/development/prompt-authoring-conventions.md) and the prose standards in [`documentation_policy.md`](../docs/policies/documentation_policy.md) are the authoring bars this pipeline checks a skill against. Decide whether they stay in place under this milestone's ownership or move under a skill that carries them, consistent with the M3.3.1 decision on where policy documents sit for the seeded subset.
 
-#### Not in scope: M3.3
+##### Not in scope: M3.3
 
 - The skill and prompt eval infrastructure -- the row stays in T1.
 - The `pi-bump` and `setup-pre-commit` skills' own content -- they are instances a later run may fork, not pipeline work.
+
+#### M3.5 - Task List Mechanism
+
+**Objective:** replace the prose-as-state-store roadmap with a mechanism whose task state is machine-held and whose view is generated, so two sub-milestones advance at once and a semantic rule is a gate rather than a review duty.
+
+**Vocabulary:** the system is the Task List Mechanism. A task is the record of work that will need to be done, and a task list is the collection of tasks. Work item is the wider term for a task once it is picked up and expands through scoping, design or planning. The two name different subdomains and are not synonyms.
+
+**Depends on:** M3.3.1, which settles where the policy documents live, because this milestone amends three of them at whatever home that decision gives them.
+
+**Premise to attack:** prose is the state store. The roadmap holds machine state and human text in the same characters, so a state change is a text edit and text edits serialize on the file. A row's identity is its prose, so a rename propagates into 197 positional references, and twelve invariant families are rules with no machine form. The first task below prices that premise before the design commits to it.
+
+**The scalar already disagrees with the summary table.** That table lists M3.1, M3.2.2, M3.2.3, M3.3 and M3.3.1 as `In progress`, and the frontmatter `active-milestone` names one of them. Five rows assert concurrency and one scalar denies it, so the record is already inconsistent and nothing catches it. This is the defect the milestone removes, and it is why M3.5 opens beside M3.3.1 rather than after it.
+
+**Source:** the T5 rows `Roadmap mechanism: linear-style task tracking` and `Roadmap-mechanism rewrite study`; the eight requirements R1 to R8 in [`20261003-study-draft-roadmap_churn_study.md`](discussions/20261003-study-draft-roadmap_churn_study.md); and the run directive [`task-list-mechanism-rewrite-run.md`](../workflow/coding-agent/drafts/task-list-mechanism-rewrite-run.md), which carries the phase ledger, the dispatch plan and the done predicate.
+
+**Tasks:**
+
+- [ ] **The serialization census** - one rerunnable script under `scripts/` that classifies operator turns in the session transcripts and counts the turns blocked because the work sat in a non-active sub-milestone, plus its report under `devlog/discussions/`. The count prices the rewrite. Nature of change: new script, new test, new report.
+- [ ] **The roadmap change-stream classifier** - one script that reads `git log -p --follow devlog/roadmap.md` and emits one typed event per roadmap edit, so the workload the new model must carry is a labelled stream rather than a count. Nature of change: new script and test.
+- [ ] **The invariant census and the record-shape gate** - a table of every invariant the three record policies state, each marked gated or rule-only, and the machine-checkable subset implemented as a lint module under `scripts/`. Retires the judgement pass `roadmap-maintenance` runs twice per iteration. Nature of change: new check module, policy table.
+- [ ] **The task writer census** - one table naming every code path and prompt that reads or writes task state, with the shared write target each actor touches. Answers whether the handover format serializes, whether the review gate forces one task at a time, and where else a scalar assumes one writer. Nature of change: new survey and report.
+- [ ] **The task domain model** - the entity, its identity rule, its state machine, the transition where a task expands into a work item, and its append-only event schema, written before any tool is named, in `docs/reference/`. Nature of change: new reference document.
+- [ ] **The mechanism decision** - one design record under `devlog/discussions/` and one ADR under `docs/adr/`, choosing the store after the baked-off prototypes are compared against the real corpus. Nature of change: new design record and ADR.
+- [ ] **The store and its generated view** - the committed utility that holds the state and renders the view, with the view derived and never hand-edited. Nature of change: new lib, script and test.
+- [ ] **The legacy converter and this repository's migration** - one boundary parser from the old format into the model, idempotent under a second run and a mid-run crash, with the dry-run diff against the current record enumerated. Nature of change: new converter and test.
+- [ ] **The foreign-format migration and its fixture** - a fixture project with an alternative roadmap and handover format, migrated end to end inside the suite. Nature of change: new fixture and test.
+- [ ] **The concurrency proof** - one test in which two sessions advance two sub-milestones at once for a fixed round count, asserting no lost update and no record conflict. This is the criterion that retires the operator's first blocker. Nature of change: new test and its runner.
+- [ ] **The parallel-milestone rule** - amend `docs/policies/roadmap_policy.md`, `docs/policies/iteration_policy.md` and the runbooks that write the field, so the active-milestone scalar becomes a set and the serialization rule is deleted rather than reinterpreted. Nature of change: policy amendment and runbook update.
+- [ ] **Retire the legacy record** - delete the old format, its readers and its checks at the deletion date the converter contract names. Nature of change: deletion.
+
+##### Not in scope: M3.5
+
+- A paid tracker dependency. The harness must test offline, so a hosted tracker enters only through a mirror, and a licence cost is a reason to prefer a free mechanism.
+- The migration of other projects' records. This milestone builds the mechanism and the migration path; a foreign project runs the converter itself.
+- Coordinated multi-agent dispatch, its branch surface and its metadata. Those are M4's, and this milestone only makes them possible.
+
+#### M3.6 - Cost-Aware Dispatch
+
+**Objective:** make dispatch cost-aware, by reading the cost a run already records, routing on it, and reaching the free model inventory through a real OpenCode runtime rather than through attribution.
+
+**Depends on:** M3.3.1, which settles where the instruction surfaces live, because the OpenCode transport points at those surfaces; and the `model-failover` extension, whose ledger this milestone extends.
+
+**Evidence.** The T7 row `Expose a capacity signal to the agent` is the measured misalignment: the agent reported running out of room with no signal to read, raised `[A] 2026-10-02`. The parent finding under T2 is that cost, throughput and failure modes are invisible for subagent runs and tool calls. Both remain open, and both are this milestone's instrument rather than separate ones.
+
+**Measured, 2026-10-15.** pi records per-message cost already, 87 `usage` objects in one session, each with a four-component `cost`, and it surfaces a session total. `opencode run` is headless, answers through the app-gated free tier with no spoofing, and returns tokens and cost per step under `--format json`. The package is `opencode-ai`. OpenCode reads `AGENTS.md` and `.agents/skills/*/SKILL.md`. Its catalog carries 498 models, ten free ones among them that pi cannot reach.
+
+**Ruling.** No attribution spoofing. The sanctioned route to a free model is the real OpenCode CLI invoked as a subagent, and a dispatch rule that would require misrepresenting the client is rejected rather than softened.
+
+**Source:** the run directive [`cost-aware-dispatch-run.md`](../workflow/coding-agent/drafts/cost-aware-dispatch-run.md), which carries the measured facts, the phase ledger, the run shape and the done predicate.
+
+**Tasks:**
+
+- [ ] **The OpenCode instruction transport** - the config that makes the harness's declared surfaces reachable inside an OpenCode runtime, using `OPENCODE_CONFIG` and pointing at [`container-interface.json`](../src/build/container-interface.json) rather than adding a second declaration, with the ambiguous sentence in `src/reasoning/providers/opencode/provider.dockerfile` reworded to name the harness's missing work. Evidence is a real skill loaded and executed by OpenCode. Nature of change: new config, comment correction, a proof run.
+- [ ] **The runner seam** - one command builder with two backends, `pi -p` and `opencode run`, so a brief names a role and not a runtime, including the flag and session-resume mapping where the two differ. Thirty-five launch sites exist, measured by grep; the row closes with the propagation count and a written decision on whether to sweep them or keep the seam in one lib. Nature of change: new lib, new test, a propagation decision.
+- [ ] **The cost ledger** - one script over pi's session JSONL and OpenCode's JSON event stream, emitting one record per dispatch: backend, provider, model, thinking level, wall clock, tokens by class, cost, and the brief's identity, plus the same brief on two models side by side. This is the T2 telemetry instrument and the T7 capacity signal, not a third meter. Nature of change: new script, new test.
+- [ ] **The dispatch-policy axis** - a cost or quota axis on the `model-failover` ledger, with the state it needs, a case and a mutation row like the existing ones, and a way to reject a model for capability rather than price. State the measured behaviour the design rests on. Nature of change: extension change and its record.
+- [ ] **The policy bakeoff** - two or three dispatch policies measured on one brief and one commit, cost beside wall clock beside re-queue count, with the winner and what it beats recorded. Nature of change: measurement and its record.
+- [ ] **The provider decision** - decide in writing whether opencode stops being a base-level provider, then land it: `opencode-ai` into the pi image, or a stated reason to keep the tier. Either way the layout gate and the instruction surfaces stay equal across both runtimes. Nature of change: provider deletion or a retained-by-decision record.
+- [ ] **The capacity signal** - resolves the T7 row `Expose a capacity signal to the agent`, naming it rather than restating it, once the ledger exposes consumed and remaining budget to a running agent. Nature of change: the row's resolution and its check.
+- [ ] **The dispatch-rule surface** - where a dispatch rule lives, who edits it, how a rule change is tested, and how a stale rule is detected, so a free model appearing or a price moving is a data edit and not a code change. Nature of change: config schema, validation, and its record.
+
+##### Not in scope: M3.6
+
+- Attribution spoofing, in any form. Settled by operator ruling.
+- Adding a paid dependency. A paid fallback stays limited to what the operator has already configured.
+- The task-list mechanism and the record format. That is M3.5's.
+- The multi-agent coordination surface that M4 owns. This milestone makes its dispatch cost-aware; it does not build its coordination.
 
 ### T - Harness Development Tracks
 
