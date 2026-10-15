@@ -33,7 +33,7 @@ Read the prior handover's Objective and Findings for context, and any open stori
 
 Capture the goal and the problem for this session. Read the goal from the invocation argument or from the operator's direction. When no goal is stated, state it and confirm it with the operator. Capture the problem statement from the invocation argument or from the operator as well. Keep every planned item inside the goal.
 
-Open a plan-session handover per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md), mirroring `/iter` Step 1. Record the goal and the problem in the handover so they are a durable record. Assign the handover to the session's milestone. When no major milestone is open, stop and ask the operator.
+Open a plan-session handover, mirroring `/iter` Step 1. Record the goal and the problem in the handover so they are a durable record. Assign the handover to the session's milestone. When no major milestone is open, stop and ask the operator.
 
 **Skip condition.** If the work is already well-scoped and needs no planning, record that decision in the handover, say so, and end the session.
 

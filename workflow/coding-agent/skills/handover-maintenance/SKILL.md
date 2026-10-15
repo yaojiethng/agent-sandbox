@@ -1,6 +1,6 @@
 ---
 name: handover-maintenance
-description: "Checks handover content and the closed handover chain against handover_policy.md and documentation_policy.md, and reports the violations. Use when the operator asks to check handover content quality, audit the handover chain, trace a deferred item across iterations, or correct handover structure. Writes nothing."
+description: "Checks handover content and the closed handover chain against the project's work-log convention, and reports the violations. Use when the operator asks to check handover content quality, audit the handover chain, trace a deferred item across iterations, or correct handover structure. Writes nothing."
 ---
 
 # handover-maintenance
@@ -9,17 +9,31 @@ description: "Checks handover content and the closed handover chain against hand
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+This step reads project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
 
 - `work-log` - the work-unit record and the exploration record.
 
 ## Purpose
 
-Checks handover documents and reports the violations of [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
+Checks handover documents and reports the violations of the project's `work-log` convention. The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
 
 This runbook carries two tracks over one subject. Track A checks the content quality of the handover the current iteration is writing. Track B checks the chain of handovers already closed, which is where deferred items, status values, and stale references live.
 
-The rules live in [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). This runbook is a convenience copy of the checks. Read the two policy documents before acting. Where this runbook and a policy disagree, the policy wins.
+## What this runbook checks
+
+The record's shape is the project's template; its controlled vocabulary is the project's `work-log` convention. This runbook states no vocabulary of its own. It checks:
+
+| Check | Against |
+|---|---|
+| the four frontmatter keys are present | the template |
+| `type` holds a value from the vocabulary | the convention |
+| `status` holds a value from the vocabulary | the convention |
+| every section the template carries is present, and no forbidden section is | the template and the convention |
+| each empty nullable section carries its canonical marker | the convention |
+| the filename follows the pattern | the convention |
+| the record is inside the format window, or exempt | the convention |
+
+Read `.agents/skills/work-log/SKILL.md` for the vocabulary, the section roles and the window, and `.agents/skills/work-log/assets/handover.md` for the shape. The checks below name a section by role.
 
 ## When to run
 
@@ -27,7 +41,7 @@ The rules live in [`handover_policy.md`](/opt/sandbox/docs/policies/handover_pol
 
 | Check | Run at | Stop condition |
 |---|---|---|
-| Design-to-source integrity | The scope gate, before implementation | A code block names a file that does not appear in Hot files or Completed, or that no longer matches the file |
+| Design-to-source integrity | The scope gate, before implementation | A code block names a file that does not appear in the hot-files or completed section, or that no longer matches the file |
 | Structured output format | The scope gate, before implementation | A required structured output has no format template in its own section |
 | Validation tool coverage | Step 7 of the iteration, at pre-close | An acceptance criterion names a tool that does not catch its failure mode |
 
@@ -53,9 +67,9 @@ Each step ends on a completion criterion.
 
 **Rule.** Any code block in the handover's design sections that will be copied into implementation must be validated against live source within the same iteration. Memory is not a substitute.
 
-**Check.** For each code block in the design sections, read the handover's Hot files and Completed tables. The source file the code block names must appear in one of them.
+**Check.** For each code block in the design sections, read the handover's hot-files and completed sections. The source file the code block names must appear in one of them.
 
-Completion criterion: every code block in the design sections either names a file in Hot files or Completed and matches that file as it stands, or is reported.
+Completion criterion: every code block in the design sections either names a file in the hot-files or completed section and matches that file as it stands, or is reported.
 
 #### Step 2 - Structured output format
 
@@ -79,29 +93,25 @@ Completion criterion: each criterion names a tool that covers its failure mode, 
 
 Determine the set of handovers to check.
 
-- Periodic: list the handovers in `devlog/handovers/` inside the date range and sort them by date.
+- Periodic: list the handovers inside the date range, in the order the project's `work-log` convention states, and take them in that order.
 - Event-driven: trace the deferred item through the roadmap rows it was written back to, and the handovers that cite it.
 
 Completion criterion: the set is named, and each member has a reason for being in scope.
 
 #### Step 5 - Structural scan
 
-For each handover in scope, run the format gate on it directly:
+For each handover in scope, run the project's record gate on it directly, when the project has one. Read `.agents/skills/work-log/SKILL.md` for the gate's path and its invocation.
 
-```bash
-bash scripts/check_handover_format.sh path/to/handover.md
-```
-
-The gate checks the frontmatter fields and the section set over the named file, whatever its date, so the maintenance pass and the commit-time gate share one rule. It reports every required section that is missing and every forbidden section present, and it treats a header whose casing differs from the canonical form as that section missing.
-
-The required sections are Objective, Scope, Acceptance criteria, Hot files, Decisions, Decisions pending, Findings, and Completed. An empty section carries a null marker. `Decisions pending` applies from handover `20261001-03` forward, so a handover closed before that date is not flagged for its absence. The forbidden sections are `Deferred`, `Carried forward` and `What's Next`; a deferred item goes to the roadmap instead.
+The gate checks the frontmatter fields and the body section set over the named file, whatever its date. It reports every required section that is missing and every forbidden section present, and it treats a heading whose casing differs from the project's canonical form as that section missing.
 
 An anomaly the gate reports as a missing section falls into one of two categories, and the finding names which:
 
-- **Replaceable one to one.** The header has a canonical equivalent that differs only in casing. The fix is a header replacement plus a `[CORRECTION]` block.
-- **Not replaceable one to one.** The header carries custom content with no canonical equivalent. The fix is an `[AMENDMENT]` block, leaving the content unchanged.
+- **Replaceable one to one.** The heading has a canonical equivalent that differs only in casing. The fix is a heading replacement plus a `[CORRECTION]` block.
+- **Not replaceable one to one.** The heading carries custom content with no canonical equivalent. The fix is an `[AMENDMENT]` block, leaving the content unchanged.
 
-Completion criterion: every handover in scope passes the gate, every anomaly is classified as replaceable or not, and every empty section carries a null marker.
+Where the project has no gate, report the missing gate as a skip and check the body against the convention by hand.
+
+Completion criterion: every handover in scope passes the gate, every anomaly is classified as replaceable or not, and every empty section carries its canonical marker.
 
 #### Step 6 - Landed claim and write-back
 
@@ -125,7 +135,7 @@ Completion criterion: every handover in scope carries `Active` or `Closed` in th
 
 #### Step 8 - Dangling references
 
-For each file named in `## Completed` or `## Hot files`, confirm the file exists at the referenced path. A deleted or renamed file is a finding that names the deletion context.
+For each file named in the completed or hot-files section, confirm the file exists at the referenced path. A deleted or renamed file is a finding that names the deletion context.
 
 For each function or variable named, grep the codebase to confirm it still exists. A removed symbol leaves a stale reference, and is a finding.
 
@@ -133,7 +143,7 @@ Completion criterion: every named file and symbol either exists or is reported.
 
 #### Step 9 - The correction form
 
-Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. Read step 2 and step 3 of [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md) `## Corrections to Closed Handovers`:
+Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. The procedure that applies a correction is [`record-correction`](/opt/workflow/agent/modules/coding-agent/prompts/record-correction.md); the forms are:
 
 - A **misrecording** gets the paragraph rewritten in place and the tag moved to a `[CORRECTION -- YYYY-MM-DD: ...]` block at the end of the corrected section.
 - A non-standard format or a policy violation that cannot be corrected cleanly gets an `[AMENDMENT -- YYYY-MM-DD: ...]` block, leaving the content unchanged.

@@ -44,9 +44,8 @@ use" rule states in prose drifts independently of its source. The decoupling
 removes the coupling that produced the ambiguity. The commit type is judged
 from the diff; the handover type is judged from the deliverable.
 
-**Links.** The operational tables live in
-[`docs/policies/handover_policy.md`](../policies/handover_policy.md)
-(Types) and
+**Links.** The operational tables live in the type vocabulary of the
+`work-log` convention (`.agents/skills/work-log/SKILL.md`) and
 [`docs/policies/git_policy.md`](../policies/git_policy.md) (Active Types).
 This ADR records the principle; those tables record the current sets. The
 AGENTS.md guard carries the single chore carveout: a chore commit may land

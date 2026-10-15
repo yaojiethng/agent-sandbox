@@ -95,7 +95,7 @@ The principle behind this shape -- a policy's invariants must not couple to its 
 
 ### Acceptance-criteria invariants
 
-The iteration derives the acceptance criteria; the handover records them. What makes one well-formed is stated here. The table that holds them, its columns, and its canonical markers are [`handover_policy.md`](handover_policy.md)'s.
+The iteration derives the acceptance criteria; the handover records them. What makes one well-formed is stated here. The project's `work-log` convention owns the table that holds them, its columns, and its canonical markers.
 
 - **An acceptance criterion describes a delta.** It is an observable change -- verified by running the system, never by reading source alone.
 - **Universal preconditions are not ACs.** Universal preconditions (`make test passes clean`, `bash -n passes`) gate every iteration equally and add no iteration-specific information. Omit them from the AC table; verify them as prerequisites before pre-close instead.
@@ -105,7 +105,7 @@ The iteration derives the acceptance criteria; the handover records them. What m
 - **A rename checks its companion files.** After the criteria are written, grep for tests, knowledge tests and fixtures matching the old path pattern, and include or defer each explicitly.
 - **A recurring bug class gets one generic guard.** A bug representing a class -- a bash trap, a common mis-pattern, something review often misses -- gets one repo-wide check, not a per-file test. A one-off logic error does not need one.
 - **A criterion is marked `Operator` when the agent cannot verify it** -- manual review, `head -N`, operator-only access -- and `Agent [x]` (pass) or `Agent [ ]` (fail, expected in pre-state) when it has a runnable command.
-- **The `Not yet defined.` marker is replaced before implementation.** The marker is [`handover_policy.md`](handover_policy.md)'s; the rule here is that a criterion still carrying it when the scope gate releases is not confirmed.
+- **The `Not yet defined.` marker is replaced before implementation.** The project's `work-log` convention owns the marker; the rule here is that a criterion still carrying it when the scope gate releases is not confirmed.
 
 ### Record-state invariants
 
@@ -151,4 +151,4 @@ The milestone's structure, states and close rules are [`roadmap_policy.md`](road
 
 ## File Tracking
 
-There is no document registry. The docs tree itself is the authoritative file list. The iteration-scoped list is the active handover's Hot files section, governed by [`handover_policy.md`](handover_policy.md).
+There is no document registry. The docs tree itself is the authoritative file list. The iteration-scoped list is the active handover's hot-files section, whose structure the project's `work-log` convention states.

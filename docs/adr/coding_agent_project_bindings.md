@@ -135,3 +135,30 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 - **Dissolve every policy.** Rejected: the iteration invariants and the communication standards bind the procedures to one another, so no single procedure can hold them.
 
 **Edge cases / drivers:** The map is at section grain; a section that straddles the line is resolved by the same subtraction in the slice that moves it. `Drop the policy bundle` lands after the last policy leaves, because a shipped prompt reads a policy where it ships. `testing_policy` sits outside `docs/policies/` and is in scope, so the convention count and the document folder are independent.
+
+## 2026-10-14 -- The split test is cross-cutting, and a record's shape is its template
+
+**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `check-in` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
+
+No artifact states the contract as a whole. Each procedure states the part it reads or writes, and nothing restates the whole:
+
+| Part | Stated by |
+|---|---|
+| the four keys, the `type` vocabulary and its commit mapping | `iter`, the writer |
+| the `status` value it sets | `wrapup` and `milestone-close` |
+| the `status` values it reads | `check-in` |
+| the keys and roles it validates | `handover-maintenance`, as checks, restating no vocabulary |
+
+The record's shape is its template, `.agents/skills/work-log/assets/handover.md`, which carries the frontmatter block and the section set. The `work-log` convention-skill states the controlled vocabularies, because a vocabulary is a rule and not a shape. The shipped corpus ships the template as a stub; a project fills it, so the corpus asserts no record shape on a project.
+
+**Rationale:** The boundary is the point where a fixed procedure breaks when an element changes. A procedure is fixed, so whatever it reads by name must hold; where only the record's own subsystem reads an element, the project may reshape it, and the subsystem adapts through the handoff.
+
+**Rejected alternatives:**
+
+- **Rule versus structure.** Rejected: the handover `type` is a convention under that test, and a fixed procedure's behaviour depends on it, so the test misclassifies it.
+- **A workflow contract file beside the prompts**, or **the contract in `iteration_policy.md`.** Rejected: both invent a second artifact to state what the template already states.
+- **The contract in the `handover-maintenance` skill.** Rejected: it puts the interface every writer reads inside the one skill that checks the writers.
+- **All of the format and lifecycle as convention.** Rejected: a project that renames `status` breaks `check-in` and `milestone-close`, which the workflow cannot adapt.
+- **The gate reads the project's format.** Rejected: the gate is the project's own artifact, so it enforces the project's structure, and the workflow owns no format for it to read.
+
+**Edge cases / drivers:** The `handover-maintenance` skill held project structure - the storage path, the section set, a date window, a gate path and two policy references - which the `Retire handover_policy` slice extracted to the `work-log` convention-skill; the skill now names a section by role. The shipped procedures still use the project's word "handover" for the iteration record, 251 times across 20 files. The follow-up is recorded as its own roadmap row.

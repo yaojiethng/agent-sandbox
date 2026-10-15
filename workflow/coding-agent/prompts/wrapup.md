@@ -75,7 +75,7 @@ Run the canonical squash procedure in [`iteration_policy.md`](/opt/sandbox/docs/
 
 ### A6. Confirm an open handover names the unit
 
-If none is open, create it (naming convention per `handover_policy.md`) or fold the existing one. Mark `Status: Closed` only when the unit genuinely closes.
+If none is open, create it (naming per the project's `work-log` convention) or fold the existing one. Mark `Status: Closed` only when the unit genuinely closes.
 
 ### A7. Verify the result
 
@@ -115,7 +115,7 @@ Run the findings-review/publish invariant in [`iteration_policy.md`](/opt/sandbo
 
 ### B7. Pending-decision resolution
 
-Every row of the handover's `Decisions pending` table closes before the handover closes, per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md). Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work is written back as an open roadmap row and the question leaves the handover with it.
+Every row of the handover's `Decisions pending` table closes before the handover closes, per the project's `work-log` convention. Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work is written back as an open roadmap row and the question leaves the handover with it.
 
 A row left open here is a question the operator meets twice, which is the cost this section exists to remove. A table holding only the canonical marker is closed with no work.
 

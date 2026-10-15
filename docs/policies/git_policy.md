@@ -1,5 +1,5 @@
 ---
-description: "Owns commit-message and branch-naming rules. Commit types align with the iteration types defined in `handover_policy.md`, so the git log and iteration history tell the same story."
+description: "Owns commit-message and branch-naming rules. Commit types align with the iteration types defined in the `work-log` convention's type vocabulary, so the git log and iteration history tell the same story."
 scope: ["commit messages", "branches"]
 reader: [agent]
 ---
@@ -42,7 +42,7 @@ These types are adopted now. The commit type is decided from the nature of the c
 | `test` | Adding or updating tests or test infrastructure (runner, stubs, harness, `tests/libs/`) |
 | `build` | Changes to Dockerfile, build scripts, image pipeline |
 
-The commit type is chosen from the diff alone, not from the handover type. Both are evaluated at close: the commit type names what the change is; the handover type (set at scope time) names the deliverable. The two tables in `handover_policy.md` and here stay independent -- a documentation iteration that only touches an ADR is `docs` regardless, while any behaviour change's commit is `feat`, `fix`, or `refactor` according to the diff.
+The commit type is chosen from the diff alone, not from the handover type. Both are evaluated at close: the commit type names what the change is; the handover type (set at scope time) names the deliverable. The record's table and this table stay independent: a documentation iteration that only touches an ADR is `docs` regardless, while any behaviour change's commit is `feat`, `fix`, or `refactor` according to the diff.
 
 ### Choosing between types
 
@@ -54,7 +54,7 @@ A commit that changes both code and documentation uses the type of the primary c
 
 `chore` vs `docs`: if the change fixes stale links, updates an index, or cleans up formatting without changing the substance of what a document says, it is a chore. If the change updates the documented system reality, it is `docs`.
 
-`plan` vs `docs`: a plan commit performs roadmap and milestone bookkeeping -- scoping a milestone or a task, assigning work to iterations, compacting a completed task list, closing a milestone. A docs commit records the system or its decisions. `plan` was an iteration type in `handover_policy.md` before the 2026-09-20 taxonomy reframe dropped it from the type table; commit `1c11267` (`plan: close M2.7 and collapse sub milestones`) is the historical precedent.
+`plan` vs `docs`: a plan commit performs roadmap and milestone bookkeeping -- scoping a milestone or a task, assigning work to iterations, compacting a completed task list, closing a milestone. A docs commit records the system or its decisions. `plan` was an iteration type before the 2026-09-20 taxonomy reframe dropped it from the type table; commit `1c11267` (`plan: close M2.7 and collapse sub milestones`) is the historical precedent.
 
 ---
 
@@ -218,7 +218,7 @@ Amending folds a change into the commit it corrects, so the history reads as if 
 - Never rewrite a commit that has left this container, and never rewrite published history.
 - Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
 
-A correction to the work of a closed iteration folds into that iteration's commit, at the operator's direction, and never opens a new one; the record amendments ride with the fold. What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md); the record forms are in [`handover_policy.md`](handover_policy.md#corrections-to-closed-handovers) and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections).
+A correction to the work of a closed iteration folds into that iteration's commit, at the operator's direction, and never opens a new one; the record amendments ride with the fold. What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md); the record forms are in the `record-correction` procedure and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections).
 
 ---
 
@@ -310,7 +310,7 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 
 | Document | Purpose |
 |---|---|
-| [`handover_policy.md`](handover_policy.md) | Iteration types that map to commit types |
+| the `work-log` convention's type vocabulary | Iteration types that map to commit types |
 | `docs/development/standard_operating_procedures.md#5-human--operational-protocols` | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
 | `workflow/coding-agent/prompts/merge.md` | Draft-export merging operation |

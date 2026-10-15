@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-14  --  A partial model name silently binds to a different model
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: pass the full provider-prefixed model id to `--model` (for example `z-ai/glm-5.3-flash`); a short name is a substring pattern and can bind to another model with no warning.
+```
+
+`pi --provider openrouter --model glm-5.3-flash` ran `z-ai/glm-5.3-flashx`. The `--model` value is a substring pattern over the provider's model list, not an id lookup, and where several ids match it takes the last one in the list. `glm-5.3-flash` matched three ids and bound to the last, `z-ai/glm-5.3-flashx`; `glm-5.3` matched six and bound to `z-ai/glm-5.3:batch`. The full id `z-ai/glm-5.3-flash` matches one id and binds correctly. pi warns only when nothing matches (`No models match pattern`), so a near-match that selects a different model is silent.
+
+The cost is a run that reports success while measuring a model nobody chose. The brief named `glm-5.3-flash` and the session recorded `glm-5.3-flashx`; only reading the session's `model` field showed it. A dispatch that names a model should read the resolved model back from the session file before trusting the result.
+
+Raised by the agent during handover `20261014-09`.
+
 ## [A] 2026-10-14  --  A parallel suite run flaked one unit, and no cause was found
 
 ```text

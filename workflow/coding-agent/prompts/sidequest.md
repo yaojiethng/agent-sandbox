@@ -39,7 +39,7 @@ Record the parent's handle. The sidequest names it twice: in its own Scope conti
 
 ## Create the sidequest handover
 
-Create the handover per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md), as `/iter` Create the handover does, with Status `Active`. Set the type from the work, not from the parent.
+Create the handover as `/iter` Create the handover does, with Status `Active`. Set the type from the work, not from the parent.
 
 Two writes belong to this step, and both land before the scope gate:
 

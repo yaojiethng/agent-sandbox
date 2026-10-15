@@ -95,7 +95,7 @@ The standards check reads each produced document against the standard its type s
 
 - **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and its canonical-owner test. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
 - **A policy, concept, or architecture document.** Read [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) and check the folder placement, the header format, and the section map.
-- **A record document.** Check it against the record-state invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Record-state invariants`, and against the policy that owns the record type, per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md), [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md), or [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md).
+- **A record document.** Check it against the record-state invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Record-state invariants`, and against the project's `work-log` convention for a handover, [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md), or [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md).
 Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in [`doc-maintenance`](../skills/doc-maintenance/SKILL.md).
 
 Exit condition: each produced document has been read against its governing standard, every finding is fixed or recorded as a finding in the handover, and the lint gate is clean.
@@ -124,7 +124,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 
 ## Output shape
 
-- **The handover is the record of the criteria.** It follows [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md).
+- **The handover is the record of the criteria.** It follows the project's `work-log` convention.
 - **At the scope gate**, present the intent restatement, the in-scope files, the acceptance criteria table `| # | Criterion | Verifiable by | Verified by |` with the pre-verification output, the deferred items, and the open questions. This is the shape [`/iter`](iter.md) `### Step 5` requires.
 - **At pre-close**, present the table `| # | Criterion | Verifiable by | Status |`. It answers whether the criterion passed, not who verifies it.
 - **At the close**, one delivery commit carries the documents, the closed handover, and the roadmap write-back, per [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md).

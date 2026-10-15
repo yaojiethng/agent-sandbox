@@ -18,7 +18,7 @@ This document is the index and view of the documentation ecosystem. It states no
 | `AGENTS.md` | provider notes, collaboration protocol, role, read discipline, output format rules | durable | -- |
 | Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | [`roadmap_policy.md`](../policies/roadmap_policy.md) |
 | Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | [`roadmap_policy.md`](../policies/roadmap_policy.md) |
-| Handover (`devlog/handovers/`) | one session's record of the work done | transient | [`handover_policy.md`](../policies/handover_policy.md) |
+| Handover (`devlog/handovers/`) | one session's record of the work done | transient | the project's `.agents/skills/work-log/SKILL.md` convention |
 | Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | [`discussion_policy.md`](../policies/discussion_policy.md) |
 
 The policy set is every `docs/**/*_policy.md` file, in any folder. The other folders hold no rules.
@@ -63,7 +63,7 @@ Documents promote along a path, and each step is an obligation with one policy h
 
 ## Boundary
 
-Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority. The rules that govern a handover are in [`handover_policy.md`](../policies/handover_policy.md).
+Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority. The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
 
 ## Audience dispatch
 

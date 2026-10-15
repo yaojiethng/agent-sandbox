@@ -1,6 +1,6 @@
 // Handover format gate.
 //
-// Enforces docs/policies/handover_policy.md `## Format` over handovers: the
+// Enforces the work-log convention's record shape over handovers: the
 // frontmatter fields (date, milestone, type, status) and the section set (the
 // required sections present, the forbidden ones absent).
 //
@@ -23,16 +23,16 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const DEFAULT_CUTOVER = "20261001";
 
-/** The frontmatter type vocabulary, from handover_policy.md `## Types`. */
+/** The frontmatter type vocabulary, from the project's work-log convention. */
 const TYPES = [
   "Implementation", "Discussion", "Design", "Plan", "Documentation",
   "Workflow", "Housekeeping", "Audit",
 ];
 
-/** The status vocabulary, from handover_policy.md `## Lifecycle`. */
+/** The status vocabulary, from the project's work-log convention. */
 const STATUSES = ["Open", "Active", "Closed"];
 
-/** The required sections, in the order the policy lists them. */
+/** The required sections, in the order the project's work-log convention lists them. */
 const REQUIRED_SECTIONS = [
   "Objective", "Scope", "Acceptance criteria", "Hot files",
   "Decisions", "Decisions pending", "Findings", "Completed",

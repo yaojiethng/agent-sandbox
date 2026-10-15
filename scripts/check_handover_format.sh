@@ -3,7 +3,7 @@
 # Handover format gate over the handovers dated on or after the cutover, and
 # over any file named on the command line.
 #
-# Enforces docs/policies/handover_policy.md `## Format`: the frontmatter
+# Enforces the work-log convention's record shape: the frontmatter
 # fields and the section set. The scanner is scripts/lint/handover-format.mjs.
 #
 # Scope: the default scan reads the live handover folder, which the archive

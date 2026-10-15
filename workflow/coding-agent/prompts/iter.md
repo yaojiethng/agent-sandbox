@@ -41,7 +41,7 @@ Verify the roadmap reflects the state the prior handover claims. If the roadmap 
 
 Read the prior handover's Objective and Findings for context before evaluating the directive. The prior handover carries no continuation scope: the roadmap is the sole task list, and a missing directive is an unmet scope-gate precondition, not something the agent derives.
 
-The types are [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md)'s Type table; this table is the directive word a caller may write.
+The types are the type vocabulary in the project's `work-log` convention, `.agents/skills/work-log/SKILL.md`; this table is the directive word a caller may write.
 
 | Type | Shortform |
 |---|---|
@@ -68,7 +68,7 @@ If the directive slot is non-empty:
 
 Before creating the handover, read the iteration invariants in `iteration_policy.md`: `## Iteration Invariants`, and the record-state and close invariants under it. Create the handover per those rules. Set Status to `Active`.
 
-The record opens with a YAML frontmatter block, per `handover_policy.md ## Format`. It carries four keys: `date` (`YYYY-MM-DD`), `milestone`, `type` (one of the vocabulary), and `status`. Do not write the fields as bold header lines.
+Write the record from the project's template, `.agents/skills/work-log/assets/handover.md`, and set `status` to `Active`. The filename, the vocabulary and the format window are the project's `work-log` convention, in `.agents/skills/work-log/SKILL.md`. Do not write the fields as bold header lines.
 
 ---
 
@@ -106,7 +106,7 @@ This is the collapsed gate the operator-involved workflows share. It confirms sc
 
 Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in [`roadmap_policy.md`](/opt/sandbox/docs/policies/roadmap_policy.md) Milestone Promotion.
 
-Present the handover's `Decisions pending` table with the scope, per [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md). Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
+Present the handover's `Decisions pending` table with the scope. Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
@@ -199,7 +199,7 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 ## File Tracking
 
-There is no document registry; the docs tree is the authoritative file list. The iteration-scoped list is the active handover's Hot files section, governed by [`handover_policy.md`](/opt/sandbox/docs/policies/handover_policy.md).
+There is no document registry; the docs tree is the authoritative file list. The iteration-scoped list is the active handover's hot-files section, whose structure is the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
 
 ---
 

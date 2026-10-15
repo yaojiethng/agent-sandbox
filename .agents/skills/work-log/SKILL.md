@@ -1,16 +1,101 @@
 ---
 name: work-log
-description: agent-sandbox's work-log convention - handovers, discussions and the feedback record.
+description: "agent-sandbox's work-log convention - the work-unit record (handovers), the exploration record (discussions) and the feedback record. Use when a workflow procedure reads or writes one of these records."
 ---
 
 # work-log
 
 This project's work log holds three records.
 
-| Record | Path |
-|---|---|
-| The work-unit record | `devlog/handovers/YYYYMMDD-NN-<type>-<slug>.md` |
-| The exploration record | `devlog/discussions/` |
-| The agent-feedback and gotchas record | `devlog/AGENT_FEEDBACK.md` |
+| Record | Path | Its shape |
+|---|---|---|
+| The work-unit record | `devlog/handovers/` | [`assets/handover.md`](assets/handover.md) |
+| The exploration record | `devlog/discussions/` | [`discussion_policy.md`](../../../docs/policies/discussion_policy.md) |
+| The agent-feedback and gotchas record | `devlog/AGENT_FEEDBACK.md` | stated below |
 
-The rules that govern them are [`handover_policy.md`](../../../docs/policies/handover_policy.md) and [`discussion_policy.md`](../../../docs/policies/discussion_policy.md).
+A workflow procedure that reads or writes a record hands off here for its structure. This file states the rules; the template states the shape.
+
+## The work-unit record
+
+One file per iteration, committed with the iteration's changes, retained for the life of the milestone. It is a log, not a document, so the drafting rules for `docs/` do not apply.
+
+Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the eight sections.
+
+### Filename
+
+```text
+YYYYMMDD-NN-<shortform>-<slug>.md
+```
+
+| Component | Rule |
+|---|---|
+| `YYYYMMDD` | the date |
+| `NN` | the two-digit per-day index, reset daily: `max + 1` over the day's existing records, so the day's first is `01` |
+| `<shortform>` | the type shortform, from the vocabulary below |
+| `<slug>` | the specific subject. Name the concrete thing, not a restatement of the type. Underscores for spaces; no other special character. A reader scanning a list of filenames distinguishes this iteration from others of its type without opening the file. |
+
+Example: `20260316-02-workflow-scope_gate_and_preclose_verification.md`
+
+The record with the highest date and index is the latest record. Earlier records are never overwritten.
+
+### Vocabularies
+
+The `type` vocabulary, with the commit type each maps to at close:
+
+| Type | Shortform | Commit mapping |
+|---|---|---|
+| Implementation | `impl` | `feat`, `fix`, `refactor`, `test`, `build` |
+| Discussion | `discussion` | `docs` |
+| Design | `design` | `docs` |
+| Plan | `plan` | `plan` |
+| Documentation | `docs` | `docs` |
+| Workflow | `workflow` | `workflow` |
+| Housekeeping | `chore` | `chore` |
+| Audit | `audit` | any |
+
+The shortform appears in the filename. The commit type disambiguates an implementation's subclass at close. The deprecated types `story`, `study` and `spec` are retained for historical records only.
+
+The `status` vocabulary is `Open` when the record is created, `Active` while the iteration runs, and `Closed` at iteration end.
+
+### Section roles
+
+A procedure that checks a record names a section by role. The template carries the heading.
+
+| Role | Heading |
+|---|---|
+| the objective | `## Objective` |
+| the scope | `## Scope` |
+| the acceptance criteria | `## Acceptance criteria` |
+| the hot files | `## Hot files` |
+| the decisions | `## Decisions` |
+| the pending decisions | `## Decisions pending` |
+| the findings | `## Findings` |
+| the completed work | `## Completed` |
+
+The record carries no `Deferred`, `Carried forward` or `What's Next` section. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is one sentence in the scope section with its reason.
+
+An empty nullable section carries its canonical marker and nothing else. Do not explain why the section is empty; a decision that affects it belongs in the decisions section.
+
+| Section | Marker |
+|---|---|
+| Acceptance criteria | `Not yet defined.` |
+| Decisions | `None.` |
+| Decisions pending | `None.` |
+| Findings | `None.` |
+| Completed | `No file changes this iteration.` |
+
+### The format window
+
+`scripts/check_handover_format.sh` enforces the template's shape on every record dated 2026-10-01 or later, as a blocking gate. A record dated before that date is exempt, and stays exempt when it is amended. The gate changes a non-conforming record inside the window. The gate leaves a record outside the window unchanged.
+
+A record with no frontmatter block is unreachable by the default scan, because the scan reads the block to find the date. Naming the file on the command line reaches it regardless of date, and is the only way to do so.
+
+The `milestone` field names the task group the iteration belongs to. The task list states its value's format, in [`../task-list/SKILL.md`](../task-list/SKILL.md).
+
+## The exploration record
+
+`devlog/discussions/`. `discussion_policy.md` states its naming, type codes, statuses and templates.
+
+## The feedback record
+
+`devlog/AGENT_FEEDBACK.md`. It is append-only, one entry per topic. The agent records a recurrence on the existing entry, not as a new entry. Each entry carries a `state` and a `scoped` field in a fenced block, and a `mitigation` line.
