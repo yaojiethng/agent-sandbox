@@ -107,3 +107,18 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 - **A run-time default.** Superseded: a default answers for a project that never chose. The shipment is seed material, and its stub states a failure.
 
 **Edge cases / drivers:** The convention list is the set of subjects that carry a maintenance surface: `task-list`, `work-log` (handovers and discussions), `decision-records`, `docs`, `git-discipline`, `testing` and `evals`, of which `evals` is optional. `iteration_policy` is the protocol, not a convention. A convention may cover more than one structure, and `work-log` carries two. The corpus lives in the `initialize` skill's `assets/` and ships with the skills cell, so no new layout surface is needed. The writing standard that governs all communicated text - chat, code comments, records and documents alike - is the `communication` standard, not a convention: it has no structure and no provision, and it lives in the project's always-loaded steering. Moving the conventions out of the shipped maintenance skills is deferred to the policy-form retirement.
+
+## 2026-10-14 -- The handoff names a convention and its path
+
+**Decision:** A workflow step that needs a project convention names the convention and the path `initialize` installs, `.agents/skills/<convention>/SKILL.md`, and reads that file for the project's structure. When the file is absent or holds the seeded stub, the step states that and hands control to the agent; the workflow prescribes neither a stop nor a continuation, because at that point control has already passed to the agent, which reasons over the failure with the steering it has loaded. The workflow keeps the procedure; the project's convention-skill holds the structure.
+
+**Rationale:** The path form is deterministic. pi keeps the first discovered skill when two share a name, so a name alone would let load order decide where a step reads; a path does not. The failure is stated rather than handled because the workflow imposes nothing: the agent's steering, not the workflow, decides what a missing convention means.
+
+**Rejected alternatives:**
+
+- **Name the convention alone and rely on skill discovery.** Rejected: a name collision resolves by pi's load order, not by the step.
+- **State the need in prose and let the agent resolve the layout.** Rejected: the least checkable form, and the path is known at ship time.
+- **State the failure and continue on a workflow default.** Rejected: a default answers for a project that never chose, which the decision above forecloses.
+- **State the failure and stop.** Rejected: stopping is the agent's steering's decision, not the workflow's, since control has already passed.
+
+**Edge cases / drivers:** The mapping from each of the fourteen prompts and six skills to its conventions is in [`20261014-design-settled-handoff_contract.md`](../../devlog/discussions/20261014-design-settled-handoff_contract.md). The devlog's `AGENT_FEEDBACK.md` record has no convention; the fit is a third `work-log` structure. `communication` takes no handoff, being a standard read from the project's steering. The wiring of the prompts and skills is a separate iteration.
