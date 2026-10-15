@@ -181,6 +181,35 @@ export function session_paths(manifest) {
   return manifest_rows(manifest, "session").map((row) => row.path);
 }
 
+// instruction_reach ROOT REPO_PATH -- the reach the cell that declares a file
+// grants it, or null when no cell declares the file. `image` is every prefix a
+// link may target in the image's path space: the instruction roots the cells
+// declare, the session paths every surface reads, and the cell's own reachable
+// rows. `repo` is the cell's reachable rows as repository paths, the paths its
+// files read with the repository tree present. `$AGENT_HOME` stays literal and
+// is also expanded with each provider's home, because a cell writes the
+// variable and the image resolves it.
+export function instruction_reach(root, repoPath) {
+  const manifest = load_manifest(root);
+  if (!manifest) return null;
+  const cells = manifest_rows(manifest, "cells");
+  const cell = cells.find((row) =>
+    (row.sources || []).some((source) => repoPath.startsWith(source)),
+  );
+  if (!cell) return null;
+  const homes = manifest_rows(manifest, "env")
+    .filter((row) => row.name === "AGENT_HOME")
+    .map((row) => row.value);
+  const variants = (path) => [path, ...homes.map((home) => path.replace(/^\$AGENT_HOME/, home))];
+  const reachable = (cell.reachable || []).map((row) => row.path);
+  const image = [
+    ...cells.map((row) => row.runtime_path).filter((path) => path && path !== "none"),
+    ...session_paths(manifest),
+    ...reachable,
+  ].flatMap(variants);
+  return { cell, image, repo: reachable };
+}
+
 // check_cells ROOT MANIFEST PROVIDERS FINDINGS -- the declared instruction
 // surfaces checked against the artefacts and against the rules each carries.
 // A cell's folder set is derived from the `image` and `provision` rows, so a

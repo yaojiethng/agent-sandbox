@@ -74,10 +74,12 @@ The two tables split the `session` rows between them, and every row belongs to e
 
 ## The gates
 
-Two gates read the declaration, both through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader.
+Two gates read the declaration, both through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader, and a third reader holds the files to the reach the declaration grants.
 
 [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY` and `ENV` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
 
 [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, and the loop inventory against the policy's `scope`.
+
+[`scripts/lint/record-links.mjs`](../../scripts/lint/record-links.mjs), under the Markdown gate, holds the files to their cell's reach. A link in a cell's file must land inside the set the declaration grants that cell: every instruction root, the `session` paths, and the cell's own `reachable` rows. A target outside that set fails even when the image carries it, because it names a tree the surface cannot reach. A repository link under a `reachable` row resolves there instead of in the image.
 
 The gates are why a stale claim cannot survive. A `COPY` line added or removed fails the cell that described the old map, and a path that changes in the manifest and not in a layer table fails as a drift.
