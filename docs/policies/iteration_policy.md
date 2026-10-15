@@ -1,6 +1,6 @@
 ---
 description: "Owns the iteration grain: the invariants the runbooks must not break, the two gates, the acceptance-criteria model, and the close rules. This document states the rules; `/iter` runs the procedure."
-scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/document", "/wrapup"]
+scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/document", "/wrapup"]
 reader: [agent]
 ---
 

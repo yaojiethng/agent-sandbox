@@ -11,11 +11,17 @@ argument-hint: "[the rough ask - required]"
 
 Turn one rough ask into one executable brief. The ask arrives as the operator's own words, shaped by what they already know and already believe. The four questions below widen it before it is rewritten, because a prompt rewritten without them asks for the same task in better prose.
 
+## Project conventions
+
+This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+
+- `task-list` - the task list and its companions.
+
 ## Purpose
 
-A brief is what a run reads. It carries the premise under test, the material to start from, the method, and the check that proves the result. This prompt produces that brief and nothing else.
+A brief is what a run reads. It carries the premise under test, the material to start from, the method, the check that proves the result, and the work units the run is cut into.
 
-The deliverable is one file at `devlog/briefs/`. The home is stated once, here; a change to it changes this line and the pointer in `docs/development/prompt-authoring-conventions.md` owns the rest.
+The deliverable is one brief at `.agents/drafts/`. The home is stated once, here; `docs/development/prompt-authoring-conventions.md` owns the draft gate and its root.
 
 ## When to use
 
@@ -23,9 +29,9 @@ Use when the operator hands over a task idea, a complaint about the current stat
 
 Three cases route elsewhere.
 
-- The ask needs decisions resolved before it can be run, not sharpened. Use [`plan.md`](../../workflow/coding-agent/prompts/plan.md).
-- The work is already scoped and needs executing. Use `iter.md`.
-- The ask is a question with a cited answer, not work. Use the `how` skill if the run is not yet known; a scoping brief with no run to brief is not this prompt's subject.
+- The ask needs decisions resolved before it can be run, not sharpened. Use [`plan.md`](plan.md).
+- The work is already scoped and needs executing. Use [`iter.md`](iter.md).
+- The ask is a read-only question whose answer is a citation, not a run. Answer it; a scoping brief with no run to brief is not this prompt's subject.
 
 ## The four questions
 
@@ -59,6 +65,7 @@ A brief carries these parts. Omit one only when the run genuinely has none.
 | The rulings | the lines the run must not cross, stated with the reason |
 | The phases | each phase's question, deliverable and dependency order |
 | The run shape | which phases fan out, which compete, and the widest wave |
+| The work units | one row per unit: the unit, its commit type, the owned files, its handover. This is the table [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#unit-and-scope-invariants) defines. |
 | The model assignment | a seat per role, with why, and the seats known to be dead |
 | Verification | the checks, each naming the artifact that proves it |
 | Constraints and invariants | what the run must not do, and what must stay true across it |
@@ -66,15 +73,24 @@ A brief carries these parts. Omit one only when the run genuinely has none.
 
 The measured-facts table is the part that pays most. A fact recorded with its command stops the next run from spending a session rediscovering it.
 
-## Scope the record
+## The work units
 
-When the ask warrants its own milestone, stage it in `devlog/roadmap.md` under the active top-level milestone, per the filing rules in the project's `task-list` convention. State the dependency on the prior sub-milestones, name the evidence, and give each task row a file and a nature of change. Do not restate a row that already exists; name it.
+The brief carries a work-unit table, because a task decomposed into units is a run and a task that is not is a wish. One row per unit: the unit, its commit type, the owned files, its handover. `/scope` emits that table and does not file it.
 
-A task row is warranted when the work needs a design decision, spans iterations, or closes a policy gap. A one-edit defect is corrected in place and named in the handover instead.
+A unit is one concern, not one file class and not one commit type. Several concerns that happen to share a commit type are several units, and one concern crossing a data file, a prompt and a policy clause is one unit.
+
+Filing is the caller's. Where a row lands is the project's `task-list` convention's, and when it lands is [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#close-invariants)'s write-back invariant: in the commit the session already owns, at its close. `/scope` writes no roadmap row, because a brief is drawn before a run and the timing rule puts rows at a close.
 
 ## Close
 
-Stop after the brief and the roadmap row. The operator reviews both, then says whether to commit. A brief written by an agent is a draft by default, whatever its author claimed.
+Stop after the brief. The operator reviews it, then says whether to commit. A brief written by an agent is a draft by default, whatever its author claimed.
+
+Then hand over by the workflow handoff pattern, the same shape `/iter` and `/plan` use.
+
+- **Next prompt.** `/wrapup` Part B, the `Roadmap write-back` step, files the unit table.
+- **What it owns.** AC verification, propagation replay, scope reconciliation, the roadmap write-back, carry-forward resolution, findings review, closing ADRs and discussion docs, closing the handover, and the commit. `/scope` does not restate any of it.
+- **What stays here.** The four questions, the brief, and the work-unit table, because they are what the run is cut from.
+- **Where `/scope` stops.** At the brief. The operator releases it, `/wrapup` files the units and lands the commit, and `/iter` consumes one unit.
 
 ## Non-goals
 

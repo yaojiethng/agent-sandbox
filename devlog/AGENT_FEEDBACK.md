@@ -16,6 +16,23 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-15  --  The decomposition of a task into work units has no owner for a manual run
+
+```text
+state: open
+scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
+legacy: the manual half of [O] 2026-09-25 "An autonomous scope proposal must assign the work to units and commits"; that entry keeps the autonomous half, which this entry does not resolve.
+mitigation: `/scope` emits the work-unit table that `iteration_policy.md` `### Unit and scope invariants` defines -- the unit, its commit type, the owned files, its handover -- and files no roadmap row; the session close files it per the project's `task-list` convention. `/plan` gives up its "scoped unit at its stated grain" and hands the decomposition to `/scope`, and the four-move workflow handoff pattern gets one named home so `/scope` can hand off the way `/iter` does.
+```
+
+The decomposition has four writers and no owner. `/plan` writes what it calls "the scoped unit at its stated grain". `/iter` invents the granularity of its own single row. `/wrapup` files deferred items as it finds them. `/scope`, drawn before a run, wrote rows for a brief that had not run. All four point at the project's `task-list` convention `**Task granularity**`, which asks for the file and the nature of change, and nothing reads the result.
+
+Measured 2026-10-15 over 151 open rows in `roadmap.md` and `roadmap_future.md`: 87, or 58%, name no file at all, and 17, or 11%, exceed 900 characters against a median of 284 and a maximum of 1645.
+
+The same measurement found no duplicate task rows, zero exact duplicate titles and zero duplicates on the first 45 characters, so the list does not repeat itself. The repetition the operator sees is across `roadmap.md`, `roadmap_future.md` and `changelog.md`, which the churn study measured as six duplicated subjects. That is a property of the three-file record shape rather than of the filing owner, and it belongs to the task-list mechanism milestone.
+
+One owner plus one check. The owner is `/scope`. The check is the record-shape gate that milestone stages, which fails a row carrying neither a file nor a nature of change.
+
 ## [A] 2026-10-14  --  A partial model name silently binds to a different model
 
 ```text

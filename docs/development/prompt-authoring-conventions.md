@@ -77,8 +77,9 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 2. **Purpose** states what the prompt or skill is for and what it is not. The task-queue prompt leads with what it is a primitive for, then names what it is not in its "Not this template" routing, inside "When to use".
 3. **When to use** states the conditions that invoke it and the routing: what it is for, and what replaces it in the cases it is not for. The task-queue prompt names `iter.md` and `fanout-run.md` as the not-this-template cases.
 4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; a reference region lists its rules consulted on demand.
-5. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
-6. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
+5. **The handoff.** A runbook that ends by handing to another prompt states the boundary by the workflow handoff pattern below. A prompt that ends inside its own scope omits it.
+6. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
+7. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
 
 **The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 
@@ -121,6 +122,17 @@ The test is ownership, not duplication. Ask what the document is responsible for
 3. **A top-down view of the whole flow is a different artefact.** The sequence across every step, and why the steps are in that order, is a concept document when a reader needs to understand how the system works, and an ADR when it records a decision and its alternatives. That document names the steps; it does not replace them. See `diff_packaging.md` for a worked case: the export, draft, and confirm sequence is recorded there as a decision, each step prints its own next hop, and `/package-branch` carries none of them.
 
 The failure this rule catches is a document that is locally accurate and globally unreliable: every sentence is true of the moment it was written, and nothing compares it against the steps it describes. A step that changes leaves the copy behind with no signal.
+
+## The workflow handoff pattern
+
+A runbook that ends by handing to another prompt does it in four moves. Four prompts already apply the shape and none of them names it: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close. This section is the one home for the shape, so a prompt applies it rather than restating another prompt's steps.
+
+1. **Name the next prompt and the part that runs.** `/iter` names `/wrapup` Part B, not `/wrapup`. A bare name leaves the reader to work out where to enter a long runbook.
+2. **List what the next prompt owns, and state that this prompt does not restate it.** The list is what makes the handoff checkable: a step absent from both lists is a gap.
+3. **Name what stays, with its reason.** `/iter` keeps its pre-close summary and its findings attribution because they gate the release rather than the close. A step that stays without a reason reads as an oversight.
+4. **State where this prompt stops and who picks it up.** One sentence naming the entry point.
+
+The pattern carries no rule of its own. It is a presentation rule for the boundary between two workflow documents, and the ownership rule it serves is [A workflow document owns one step, and owns it whole](#a-workflow-document-owns-one-step-and-owns-it-whole).
 
 ## A reference resolves where the prompt runs
 
