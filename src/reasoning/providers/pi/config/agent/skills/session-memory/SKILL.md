@@ -28,7 +28,11 @@ The memory has two grains, one per file. The log records occurrences and is neve
 | `diff` | print the change since the mark |
 | `mark` | set the mark |
 
-Paths are the caller's. Any of the three flags may appear before or after the command.
+One invocation shape serves every command. The three path flags are the caller's and are optional.
+
+```text
+node session-memory.mjs <command> [args] [--log <path>] [--block <path>] [--heading <text>]
+```
 
 | Flag | Means | Default |
 |---|---|---|
