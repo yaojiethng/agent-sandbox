@@ -246,7 +246,7 @@ A principle here is a convention, not a rule. It cannot be enforced, so it carri
 
 **Not in scope:** the upstream `principle-*` set the pi provider ships, which this milestone does not own.
 
-- [ ] **`communication-principle-show-dont-describe`** -- hand over the artifact a reader acts on, or the output that proves a rule was followed, instead of a description or an assumption. Filed at `src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md`, installed to `$AGENT_HOME/agent/skills/`. Handover `20261016-07`.
+- [x] **`communication-principle-show-dont-describe`** -- hand over the artifact a reader acts on, or the output that proves a rule was followed, instead of a description or an assumption. Filed at `src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md`, installed to `$AGENT_HOME/agent/skills/`. Handover `20261016-07`.
 - [ ] **Plan the `communication` standard into principle specs** -- one spec per judgement row, with its name, its one-line statement and its source line. The plan is a discussion document; each spec files as its own row here, per the task-list convention's story-backed row.
 - [ ] **Plan the prompt-authoring conventions into principle specs** -- the same method over [`prompt-authoring-conventions.md`](../docs/development/prompt-authoring-conventions.md). Its writer-judgement rows file here; its document-structure rows stay where M3.3.3 places them.
 - [ ] **Dedupe the two plans** -- one judgement, one principle, one name.
