@@ -1,16 +1,20 @@
 ---
-description: Restore the traversal from the active task tracker after returning through pi's /tree or /fork. pi provider only, because it pairs with pi's session tree.
+description: Restore the traversal pointer from the active task tracker after returning through pi's /tree or /fork. pi provider only, because it pairs with pi's session tree.
 argument-hint: "[the frame to pop]"
 ---
 
 > $@
 
-Read the active task tracker after the return. Its directory is the session-local scratch the project `AGENTS.md` Scope table declares; read `<scratch>/ACTIVE_TASK_TRACKER.md`.
+Restore the traversal pointer only. Do not start the work.
 
-Report three lines, then resume.
+Read `<scratch>/ACTIVE_TASK_TRACKER.md` and nothing else: not the repository, not the work files, not the prompt that produced this call. The scratch directory is the one the project `AGENTS.md` Scope table declares.
 
-1. The frame popped: the task named by the argument, or the top of the stack.
-2. The node it returns to.
-3. The workspace delta: the git HEAD now against the recorded one.
+Report exactly three lines.
 
-Then resume the returned-to node. Do not re-derive the tree.
+1. The frame popped: the frame named by the argument, or the tracker's stack top.
+2. The node the pointer returns to.
+3. The workspace delta: `git log --oneline -1` now against the tracker's recorded HEAD.
+
+The tracker's resume marker owns line 2. When the marker, the stack path and the popped frame's return node disagree, report the marker's node and name the disagreement in the same line.
+
+Then stop. The operator issues the next node.
