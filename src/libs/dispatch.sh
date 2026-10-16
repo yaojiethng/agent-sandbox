@@ -104,6 +104,62 @@ dispatch_backend() {
   printf 'pi'
 }
 
+# dispatch_roles [REC_FILE]
+#
+# Prints one line per role in the table, in file order:
+#
+#   <role> <provider>/<model> <backend>
+#
+# A blank line and any line that is not a `role:` entry are skipped, so a
+# heading or prose never becomes a role. An empty table is not an error.
+dispatch_roles() {
+  local file="${1:-$(dispatch_rec_file)}"
+  if [[ ! -f "$file" ]]; then
+    echo "dispatch: role table not found: $file" >&2
+    return 1
+  fi
+  local line role resolved pair provider backend
+  while IFS= read -r line; do
+    # The tag before the first colon is the role; anything else is not an entry.
+    [[ "$line" =~ ^[A-Za-z0-9_]+: ]] || continue
+    role="${line%%:*}"
+    resolved="$(dispatch_role_model "$role" "$file")" || continue
+    pair="${resolved%% *}"
+    provider="${pair%%/*}"
+    backend="$(dispatch_backend "$provider")"
+    printf '%s %s %s\n' "$role" "$pair" "$backend"
+  done < "$file"
+  return 0
+}
+
+# dispatch_check ROLE [REC_FILE]
+#
+# Reports whether ROLE's backend can run in this session. Silent and 0 when it
+# can; one message on stderr and 1 when it cannot.
+dispatch_check() {
+  local role="$1"
+  local file="${2:-$(dispatch_rec_file)}"
+  local resolved
+  resolved="$(dispatch_role_model "$role" "$file")" || return 1
+  local pair provider backend bin
+  pair="${resolved%% *}"
+  provider="${pair%%/*}"
+  backend="$(dispatch_backend "$provider")"
+  if [[ "$backend" == "opencode" ]]; then
+    bin="$(dispatch_opencode_bin)"
+    if command -v "$bin" >/dev/null 2>&1; then
+      return 0
+    fi
+    echo "dispatch: role '${role}' needs the opencode CLI, not runnable: ${bin}" >&2
+    return 1
+  fi
+  if command -v pi >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "dispatch: role '${role}' needs the pi CLI, not on PATH" >&2
+  return 1
+}
+
 # dispatch_command ROLE BRIEF DIR [MODEL] [THINKING] [SESSION]
 #
 # Prints the shell command that runs one subagent for a role. MODEL overrides

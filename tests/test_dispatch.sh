@@ -10,6 +10,10 @@
 #                            --provider/--model/--thinking, opencode takes
 #                            -m provider/model and --variant, plus --auto
 #                            and --dir, with the brief read at run time
+#   dispatch_roles       --  the table lists as role, pair and backend
+#   dispatch_check       --  a runnable backend passes, a missing one refuses
+#   scripts/dispatch.sh  --  --list-roles prints the table and a normal
+#                            dispatch refuses an empty brief
 
 set -uo pipefail
 
@@ -19,10 +23,11 @@ source "$REPO_ROOT/src/libs/dispatch.sh"
 
 # A role table fixture, so the case never reads the operator's real file.
 # AGENT_HOME points at the fixture directory, so dispatch_command's default
-# resolution reads the fixture rather than the live table.
-TEST_DIR="$(get_test_dir)"
-REC_FILE="$TEST_DIR/model-recommendations.md"
-export AGENT_HOME="$TEST_DIR"
+# resolution reads the fixture rather than the live table. FIXTURE_ROOT is
+# set by test_setup; the allocator behind get_test_dir is not live until
+# run_test, so a file-scope call would leak a redirection error.
+REC_FILE="$FIXTURE_ROOT/model-recommendations.md"
+export AGENT_HOME="$FIXTURE_ROOT"
 cat >"$REC_FILE" <<'EOF'
 _IMPLEMENTER: opencode-go/cat-jam-free at high
 _REVIEWER: openrouter/z-ai/glm-5.3-flash
@@ -125,6 +130,52 @@ test_command_missing_args_refuses() {
   assert_rc "$RC" 1 "a command without a brief or dir refuses"
 }
 
+test_roles_lists_table() {
+  local RESULT EXPECTED
+  EXPECTED="$(printf '%s\n' \
+    '_IMPLEMENTER opencode-go/cat-jam-free pi' \
+    '_REVIEWER openrouter/z-ai/glm-5.3-flash pi' \
+    '_ADVISOR opencode/cat-jam-free opencode')"
+  RESULT="$(dispatch_roles "$REC_FILE")"
+  assert_eq "$RESULT" "$EXPECTED" "dispatch_roles prints every role in file order"
+}
+
+test_check_opencode_success() {
+  local BIN RC
+  BIN="$FIXTURE_DIR/opencode-stub"
+  printf '#!/bin/sh\n' > "$BIN"
+  chmod +x "$BIN"
+  DISPATCH_OPENCODE_BIN="$BIN" dispatch_check _ADVISOR "$REC_FILE" 2>/dev/null
+  RC=$?
+  assert_rc "$RC" 0 "dispatch_check passes when the opencode binary is runnable"
+}
+
+test_check_opencode_failure() {
+  local RC
+  DISPATCH_OPENCODE_BIN="$FIXTURE_DIR/no-such-opencode" dispatch_check _ADVISOR "$REC_FILE" 2>/dev/null
+  RC=$?
+  assert_rc "$RC" 1 "dispatch_check fails when the opencode binary is missing"
+}
+
+test_cli_list_roles() {
+  local RESULT EXPECTED
+  EXPECTED="$(printf '%s\n' \
+    '_IMPLEMENTER opencode-go/cat-jam-free pi' \
+    '_REVIEWER openrouter/z-ai/glm-5.3-flash pi' \
+    '_ADVISOR opencode/cat-jam-free opencode')"
+  RESULT="$(bash "$REPO_ROOT/scripts/dispatch.sh" --list-roles)"
+  assert_eq "$RESULT" "$EXPECTED" "the CLI --list-roles prints the fixture roles"
+}
+
+test_cli_empty_brief_refuses() {
+  local EMPTY RC
+  EMPTY="$FIXTURE_DIR/empty-brief.md"
+  : > "$EMPTY"
+  bash "$REPO_ROOT/scripts/dispatch.sh" --role _IMPLEMENTER --brief "$EMPTY" >/dev/null 2>&1
+  RC=$?
+  assert_rc "$RC" 2 "the CLI refuses an empty brief"
+}
+
 run_test test_role_model_with_level
 run_test test_role_model_without_level
 run_test test_role_model_missing_role
@@ -139,5 +190,10 @@ run_test test_command_thinking_override
 run_test test_command_session_on_both_backends
 run_test test_command_missing_role_refuses
 run_test test_command_missing_args_refuses
+run_test test_roles_lists_table
+run_test test_check_opencode_success
+run_test test_check_opencode_failure
+run_test test_cli_list_roles
+run_test test_cli_empty_brief_refuses
 
 test_done
