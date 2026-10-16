@@ -1,5 +1,5 @@
 ---
-active-milestone: M3.6 - Cost-Aware Dispatch
+active-milestone: M3.6.1 - Disable and ship OpenCode dispatch
 active-milestone-status: in-progress
 ---
 
@@ -42,6 +42,9 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.3 - The skill maintenance pipeline](#m333---the-skill-maintenance-pipeline) | Not started |
 | &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | Not started |
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](#m361---disable-and-ship-opencode-dispatch) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.2 - Measure](#m362---measure) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.3 - Route and decide](#m363---route-and-decide) | Not started |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
@@ -267,7 +270,7 @@ A skill lands in the tree by hand today. Nothing records its origin, nothing sta
 
 **Objective:** make dispatch cost-aware, by reading the cost a run already records, routing on it, and reaching the free model inventory through a real OpenCode runtime rather than through attribution.
 
-**Depends on:** M3.3.1, which settles where the instruction surfaces live, because the OpenCode transport points at those surfaces; and the `model-failover` extension, whose ledger this milestone extends.
+**Depends on:** M3.3.1, which settles where the instruction surfaces live, because the OpenCode transport points at those surfaces.
 
 **Sequencing:** activated ahead of M3.3.2 and M3.3.3 on operator direction (2026-10-15). Cost-aware dispatch is the prerequisite for running the policy-form slices in parallel, so this milestone goes first and M3.3's remaining children wait.
 
@@ -277,18 +280,38 @@ A skill lands in the tree by hand today. Nothing records its origin, nothing sta
 
 **Ruling.** No attribution spoofing. The sanctioned route to a free model is the real OpenCode CLI invoked as a subagent, and a dispatch rule that would require misrepresenting the client is rejected rather than softened.
 
+**Design:** the settled shape is [`20261015-design-settled-cost_aware_dispatch.md`](discussions/20261015-design-settled-cost_aware_dispatch.md): the ordering, the runtime-agnostic measurement, the `(provider, model)` router boundary, and the failure taxonomy. The run directive below is a hypothesis, and parts of it are superseded by that design.
+
 **Source:** the run directive [`cost-aware-dispatch-run.md`](../.agents/drafts/cost-aware-dispatch-run.md), which carries the measured facts, the phase ledger, the run shape and the done predicate.
 
 **Tasks:**
 
-- [x] **The OpenCode instruction transport** - `src/build/opencode-config.mjs` derives an OpenCode config from `src/build/container-interface.json` through `container-interface.mjs`: the `skills` array is every manifest cell whose source folder is a skill root, plus `.agents/skills/`, and the `instructions` array names the repository and provider-layer `AGENTS.md`. `OPENCODE_CONFIG` points at the emitted file. The `provider.dockerfile` sentence now names the harness's missing work and points at the manifest. Proof: OpenCode lists 24 skills under the config against 8 without it, so the harness and module skill roots are reachable. Prompts as OpenCode commands are deferred to the runner seam, which owns the agent and model mapping. Handover `20261015-09`.
-- [ ] **The runner seam** - one command builder with two backends, `pi -p` and `opencode run`, so a brief names a role and not a runtime, including the flag and session-resume mapping where the two differ. Thirty-five launch sites exist, measured by grep; the row closes with the propagation count and a written decision on whether to sweep them or keep the seam in one lib. Nature of change: new lib, new test, a propagation decision.
-- [ ] **The cost ledger** - one script over pi's session JSONL and OpenCode's JSON event stream, emitting one record per dispatch: backend, provider, model, thinking level, wall clock, tokens by class, cost, and the brief's identity, plus the same brief on two models side by side. This is the T2 telemetry instrument and the T7 capacity signal, not a third meter. Nature of change: new script, new test. The pi source landed: `scripts/cost_ledger.mjs` emits one record per session over a sessions tree, with `tests/test_cost_ledger.sh` and 591 records measured over the live session store; handover `20261015-10`. The OpenCode JSON event stream and the two-model comparison wait on the runner seam.
-- [ ] **The dispatch-policy axis** - a cost or quota axis on the `model-failover` ledger, with the state it needs, a case and a mutation row like the existing ones, and a way to reject a model for capability rather than price. State the measured behaviour the design rests on. Nature of change: extension change and its record.
-- [ ] **The policy bakeoff** - two or three dispatch policies measured on one brief and one commit, cost beside wall clock beside re-queue count, with the winner and what it beats recorded. Nature of change: measurement and its record.
-- [ ] **The provider decision** - decide in writing whether opencode stops being a base-level provider, then land it: `opencode-ai` into the pi image, or a stated reason to keep the tier. Either way the layout gate and the instruction surfaces stay equal across both runtimes. Nature of change: provider deletion or a retained-by-decision record.
-- [ ] **The capacity signal** - resolves the T7 row `Expose a capacity signal to the agent`, naming it rather than restating it, once the ledger exposes consumed and remaining budget to a running agent. Nature of change: the row's resolution and its check.
+##### M3.6.1 - Disable and ship OpenCode dispatch
+
+The first cut: disable the failover extension whose value is unmeasured, then make `opencode run` a dispatch backend so a swarm runs on the free models.
+
+- [x] **The OpenCode instruction transport** - `src/build/opencode-config.mjs` derives an OpenCode config from `src/build/container-interface.json` through `container-interface.mjs`: the `skills` array is every manifest cell whose source folder is a skill root, plus `.agents/skills/`, and the `instructions` array names the repository and provider-layer `AGENTS.md`. `OPENCODE_CONFIG` points at the emitted file. Proof: OpenCode lists 24 skills under the config against 8 without it. Handover `20261015-09`.
+- [ ] **Disable `model-failover` behind a flag** - the flag defaults off, the extension registers nothing and routes nothing when off, and a test asserts it is inert. Raised by the settled design ([`20261015-design-settled-cost_aware_dispatch.md`](discussions/20261015-design-settled-cost_aware_dispatch.md)): across 592 sessions no `model-failover/outcome` entry exists, and the only chain declares one route, so failover has never run. Nature of change: extension guard, flag, test.
+- [ ] **The runner seam** - one command builder with two backends, `pi -p` and `opencode run`, so a brief names a role and not a runtime. The role resolves to a `(provider, model)`, and a model only OpenCode can reach, such as `opencode-go/cat-jam-free`, selects the `opencode run` backend. It carries the flag and session-resume mapping where the two differ. Fifteen launch sites exist, measured by grep; the seam is proven on one, and the sweep is deferred to M3.6.3. Nature of change: new lib, new test, a proof dispatch.
+- [ ] **The provider decision** - decide in writing whether opencode stops being a base-level provider, then land it: `opencode-ai` into the pi image, or a stated reason to keep the tier. The seam's `opencode run` backend depends on the decision. Either way the layout gate and the instruction surfaces stay equal across both runtimes. Nature of change: provider deletion or a retained-by-decision record.
+
+##### M3.6.2 - Measure
+
+The instrument is runtime-agnostic and lives in the ledger, so it reads a pi session and an OpenCode dispatch alike. The storage grain is one record per request; the reading grain is an aggregate.
+
+- [ ] **The cost ledger** - one script over pi's session JSONL and OpenCode's JSON event stream, emitting one record per dispatch. The pi source landed: [`scripts/cost_ledger.mjs`](../scripts/cost_ledger.mjs) emits one record per session, with `tests/test_cost_ledger.sh` and 591 records measured over the live store; handover `20261015-10`. The OpenCode JSON event stream, whose shape is still unmeasured, remains. Nature of change: new script, new test.
+- [ ] **The outcome and latency instrument** - extend the ledger from cost to one typed outcome per request, keyed by `(provider, model)`, over the settled failure taxonomy: success, transient, quota, capability, timeout. This is the number that proves whether any routing helps. Nature of change: ledger extension, test.
+- [ ] **The three aggregates** - the reading grain: a tally per subagent call, an aggregate per main-agent call, and a cost summary at the close of an iteration. Nature of change: ledger views, test.
+- [ ] **The capacity signal** - resolves the T7 row `Expose a capacity signal to the agent`: the agent reads its context-window use, the operator reads total tokens, cache-hit rate and cost. Nature of change: the row's resolution and its check.
+
+##### M3.6.3 - Route and decide
+
+- [ ] **The model-catalog track** - the live inventory of models across both runtimes: what each is good for, its cost, its rate limits, and its provenance, tied to the existing `model-recommendations` mechanism. Nature of change: catalog record, refresh, staleness check.
 - [ ] **The dispatch-rule surface** - where a dispatch rule lives, who edits it, how a rule change is tested, and how a stale rule is detected, so a free model appearing or a price moving is a data edit and not a code change. Nature of change: config schema, validation, and its record.
+- [ ] **The dispatch-policy axis, re-keyed to `(provider, model)`** - the router as a state machine keyed by `(provider, model)`, with the state it needs, a case and a mutation row like the existing ones, and a way to reject a model for capability rather than price. State the measured behaviour the design rests on. Nature of change: router change and its record.
+- [ ] **The failover A/B and the verdict** - run the same briefs with the extension off and on, comparing success rate, cost and wall clock, then rebuild the extension from the spec the measurement writes or delete it. Nature of change: measurement and its record.
+- [ ] **The policy bakeoff** - two or three dispatch policies measured on one brief and one commit, cost beside wall clock beside re-queue count, with the winner and what it beats recorded. Nature of change: measurement and its record.
+- [ ] **The launch-site sweep** - migrate the remaining launch sites onto the seam, or record why they keep their own form. Nature of change: propagation.
 
 ##### Not in scope: M3.6
 
