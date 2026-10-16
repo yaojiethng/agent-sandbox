@@ -1,30 +1,32 @@
 #!/usr/bin/env bash
-# Tests for the active-tracker skill's tool, active-tracker.mjs.
+# Tests for the active-tracker skill: the facade and the two libraries.
 #
 # The tree is an edge list, so the tests feed it edges and read the derived path
-# and frontier.
+# and frontier. The frame model frames the divergence cases. The report is a
+# pure function of the two logs and the two views, so it is asserted as text.
 #
-# The frame model frames the cases. A frame is one divergence: the operator forks
-# at a node, works a task, and returns. The tracker does not store a frame, so
-# the cases derive their transitions from it:
+# The frame model. A frame is one divergence: the operator forks at a node,
+# works a task, and returns. The tracker does not store a frame, so the cases
+# derive their transitions from it:
 #
 #   frame    fork at   work   return to
 #   outer    B         T      B
 #   nested   T         U      T
 #
 # Each row derives a push and pop pair. `push <work> <fork-at>` moves the pointer
-# into the divergence, and `pop <work>` returns it to the fork point. The pair is
-# one frame's transition, and the log carries both legs, so a frame whose pop
-# was missed is visible as a push with no matching pop.
+# into the divergence, and `pop <work>` returns it to the fork point. The log
+# carries both legs, so a frame whose pop was missed is a push with no matching
+# pop.
 #
 # Covers:
-#   push    --  a node lands, the pointer moves, a repeat is a no-op, the state is an enum
-#   pop     --  one id or many prune their subtrees and the pointer falls to the parent
+#   push    --  a node lands, a repeat is a no-op, the state is an enum
+#   pop     --  one id or many prune their subtrees, and the pointer falls to the parent
 #   view    --  the tree, the path and the frontier render with the enum values
-#   log     --  push and pop each append one event, and the log is append-only
-#   library --  the module drives the same operations with no CLI
+#   memory  --  note, wake, merge and the restatement rule
+#   report  --  one report composes the tree diff, the memory diff and the view
 #   frame   --  a stated frame transition derives its push and pop pair, and an
 #               open frame is visible in the log when its pop was missed
+#   library --  the facade and both libraries drive the same operations
 #   refuse  --  an unknown state, a missing store and a missing section
 
 set -uo pipefail
@@ -40,6 +42,7 @@ write_store() {
   cat > "$d/TRACKER.json" <<'JSON'
 {
   "current": "B",
+  "head": "0000000",
   "nodes": [
     { "id": "root", "parent": null, "label": "the work", "state": "open" },
     { "id": "A", "parent": "root", "label": "the first branch", "state": "open" },
@@ -70,13 +73,19 @@ placeholder
 ## The workspace note
 
 Workspace HEAD at last write: `0000000`.
+
+## Session memory
 MD
 }
 
 run_at() {
   local d="$1"
   shift
-  node "$AT" "$@" --store "$d/TRACKER.json" --tracker "$d/TRACKER.md"
+  node "$AT" "$@" --store "$d/TRACKER.json" --tracker "$d/TRACKER.md" --log "$d/MEMORY_LOG.jsonl"
+}
+
+state_of() {
+  node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.find(n=>n.id===process.argv[2]).state)' "$1/TRACKER.json" "$2"
 }
 
 test_push_lands_a_node_and_moves_the_pointer() {
@@ -100,24 +109,22 @@ test_push_is_idempotent() {
 }
 
 test_push_state_is_an_enum() {
-  local d out state
+  local d out
   d="$(get_fixture_dir)"
   write_store "$d"
   run_at "$d" push B2 B --state later >/dev/null
-  state="$(node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.find(n=>n.id==="B2").state)' "$d/TRACKER.json")"
-  assert_eq "$state" "later" "the store holds the enum value, not a symbol"
+  assert_eq "$(state_of "$d" B2)" "later" "the store holds the enum value, not a symbol"
   assert_contains "$(run_at "$d" view 2>&1)" "later" "the enum value renders directly"
   out="$(run_at "$d" push C root --state suspended 2>&1)"
   assert_contains "$out" "state must be one of open later elsewhere" "a value outside the enum refuses"
 }
 
 test_push_keeps_an_existing_state() {
-  local d state
+  local d
   d="$(get_fixture_dir)"
   write_store "$d"
   run_at "$d" push B1 B --label "renamed" >/dev/null
-  state="$(node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.find(n=>n.id==="B1").state)' "$d/TRACKER.json")"
-  assert_eq "$state" "later" "a push with no --state keeps the state"
+  assert_eq "$(state_of "$d" B1)" "later" "a push with no --state keeps the state"
 }
 
 test_pop_prunes_a_subtree() {
@@ -156,53 +163,9 @@ test_view_renders_the_tree_and_the_path() {
   assert_contains "$t" "path:     root -> B" "the path is derived from the edges"
   assert_contains "$t" "frontier: at root: A" "the frontier is derived from the edges"
   assert_contains "$t" "<- here" "the pointer is marked"
-  assert_contains "$t" "A node is \`open\`" "the legend is rendered, not cross-referenced"
-  assert_not_contains "$t" "stale legend" "the legend replaces the prose it owns"
+  assert_contains "$t" "A node is \`open\`" "the legend replaces the prose it owns"
+  assert_not_contains "$t" "stale legend" "the legend owns the region above the tree"
   assert_not_contains "$t" "placeholder" "the owned blocks replace their placeholder"
-}
-
-test_log_records_every_change() {
-  local d t
-  d="$(get_fixture_dir)"
-  write_store "$d"
-  run_at "$d" push B2 B >/dev/null
-  run_at "$d" pop B2 >/dev/null
-  assert_contains "$(run_at "$d" log 2>&1)" '"op":"push"' "the log records a push"
-  assert_contains "$(run_at "$d" log 2>&1)" '"op":"pop"' "the log records a pop"
-  assert_contains "$(run_at "$d" log --since 1 2>&1)" '"n":2' "a since bound trims the log"
-  t="$(wc -l < "$d/ACTIVE_TASK_TRACKER_LOG.jsonl")"
-  assert_eq "$t" "2" "one line per change, and re-reading appends nothing"
-}
-
-test_library_drives_the_same_operations() {
-  local d out
-  d="$(get_fixture_dir)"
-  write_store "$d"
-  out="$(node --input-type=module -e "
-    import { push, pop, view } from 'file://$AT';
-    const opts = { store: '$d/TRACKER.json', tracker: '$d/TRACKER.md' };
-    push({ ...opts, id: 'C', parent: 'root', label: 'via the library' });
-    pop({ ...opts, ids: ['A'] });
-    console.log(view({ store: opts.store }).join('|'));
-  " 2>&1)"
-  assert_contains "$out" "C. via the library" "the library pushes"
-  assert_not_contains "$out" "A. the first branch" "the library prunes"
-}
-
-test_missing_store_refuses() {
-  local d out
-  d="$(get_fixture_dir)"
-  out="$(node "$AT" view --store "$d/absent.json" --tracker "$d/absent.md" 2>&1)"
-  assert_contains "$out" "no store at" "a missing store refuses"
-}
-
-test_missing_section_refuses() {
-  local d out
-  d="$(get_fixture_dir)"
-  write_store "$d"
-  printf '# ACTIVE_TASK_TRACKER\n' > "$d/TRACKER.md"
-  out="$(run_at "$d" view 2>&1)"
-  assert_contains "$out" "no \"## The work tree\" section" "a missing region refuses rather than half-writing"
 }
 
 # The outer frame: push T under B enters the divergence, and pop T returns the
@@ -218,8 +181,6 @@ test_a_frame_transition_restores_the_pointer() {
   assert_contains "$log" '"op":"pop","id":"T"' "the log records the return leg"
 }
 
-# The nested frame: the fork point is itself inside the outer frame, so the
-# inner pair unwinds first and the outer return then reaches B.
 test_a_nested_frame_unwinds_in_order() {
   local d
   d="$(get_fixture_dir)"
@@ -251,6 +212,96 @@ test_the_log_reconciles_a_missed_pop() {
   assert_eq "$open" "T" "the log names the frame whose pop was missed"
 }
 
+test_memory_notes_and_wakes() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  out="$(run_at "$d" push B2 B --note "the free tier is measured" 2>&1)"
+  assert_contains "$out" "noted n=1" "push can note in the same call"
+  assert_contains "$(run_at "$d" memory wake 2>&1)" "[1-1] the free tier is measured" "wake prints the view"
+}
+
+test_memory_restatement_adds_no_line() {
+  local d
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  run_at "$d" memory note "hold the fork open" >/dev/null
+  run_at "$d" memory note "hold the fork open, repeated" --restates 1 >/dev/null
+  assert_eq "$(run_at "$d" memory wake 2>&1)" "[1-1] hold the fork open" "a restatement adds no view line"
+}
+
+test_memory_merge_compresses() {
+  local d
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  run_at "$d" memory note "a" >/dev/null
+  run_at "$d" memory note "b" >/dev/null
+  run_at "$d" memory merge 1 2 "a and b" >/dev/null
+  assert_eq "$(run_at "$d" memory wake 2>&1)" "[1-2] a and b" "merge replaces two lines with one summary"
+}
+
+test_the_report_composes_both() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  run_at "$d" push B2 B --label "a new child" --note "a directive" >/dev/null
+  run_at "$d" push B1 B --state open >/dev/null
+  run_at "$d" pop B1 >/dev/null
+  out="$(run_at "$d" report 2>&1)"
+  assert_contains "$out" "## Push report" "the report has one heading"
+  assert_contains "$out" "pruned: B1" "the tree diff names the prune"
+  assert_contains "$out" "added: B2" "the tree diff names the addition"
+  assert_contains "$out" "state moved: B1 later -> open" "the tree diff names the state move"
+  assert_contains "$out" "appended: n=1" "the memory diff names the occurrence"
+  assert_contains "$out" "[1-1] a directive" "the memory view is in the report"
+}
+
+test_the_report_advances_both_marks() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  run_at "$d" push B2 B --note "a directive" >/dev/null
+  run_at "$d" report >/dev/null
+  out="$(run_at "$d" report 2>&1)"
+  assert_contains "$out" "pruned: none" "the second report shows no tree change"
+  assert_contains "$out" "appended: none" "the second report shows no memory change"
+}
+
+test_library_drives_the_same_operations() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  out="$(node --input-type=module -e "
+    import { push, pop, report, tree, memory } from 'file://$AT';
+    const paths = { store: '$d/TRACKER.json', tracker: '$d/TRACKER.md', log: '$d/MEMORY_LOG.jsonl' };
+    push({ ...paths, id: 'C', parent: 'root', label: 'via the library', note: 'from the library' });
+    pop({ ...paths, ids: ['A'] });
+    console.log(tree.renderTree(tree.load(paths.store)).join('|'));
+    console.log(memory.wake({ log: paths.log }));
+    console.log(report(paths));
+  " 2>&1)"
+  assert_contains "$out" "C. via the library" "the tree library pushes"
+  assert_not_contains "$out" "A. the first branch" "the tree library prunes"
+  assert_contains "$out" "from the library" "the memory library notes"
+  assert_contains "$out" "## Push report" "the facade reports"
+}
+
+test_missing_store_refuses() {
+  local d out
+  d="$(get_fixture_dir)"
+  out="$(node "$AT" view --store "$d/absent.json" --tracker "$d/absent.md" --log "$d/absent.jsonl" 2>&1)"
+  assert_contains "$out" "no store at" "a missing store refuses"
+}
+
+test_missing_section_refuses() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  printf '# ACTIVE_TASK_TRACKER\n' > "$d/TRACKER.md"
+  out="$(run_at "$d" view 2>&1)"
+  assert_contains "$out" "no \"## The work tree\" section" "a missing region refuses rather than half-writing"
+}
+
 run_test test_push_lands_a_node_and_moves_the_pointer
 run_test test_push_is_idempotent
 run_test test_push_state_is_an_enum
@@ -259,12 +310,16 @@ run_test test_pop_prunes_a_subtree
 run_test test_pop_prunes_many_at_once
 run_test test_pop_is_idempotent
 run_test test_view_renders_the_tree_and_the_path
-run_test test_log_records_every_change
-run_test test_library_drives_the_same_operations
-run_test test_missing_store_refuses
-run_test test_missing_section_refuses
 run_test test_a_frame_transition_restores_the_pointer
 run_test test_a_nested_frame_unwinds_in_order
 run_test test_the_log_reconciles_a_missed_pop
+run_test test_memory_notes_and_wakes
+run_test test_memory_restatement_adds_no_line
+run_test test_memory_merge_compresses
+run_test test_the_report_composes_both
+run_test test_the_report_advances_both_marks
+run_test test_library_drives_the_same_operations
+run_test test_missing_store_refuses
+run_test test_missing_section_refuses
 
 test_done

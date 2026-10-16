@@ -7,14 +7,10 @@ argument-hint: "[the node to resume at]"
 
 Re-orient from the tracker, then stop. Do not start the work. If you have an autopilot grant, consider it invalidated. Proceed with autonomy off until the operator explicitly re-grants it.
 
-The tracker is the `active-tracker` skill: read `$AGENT_HOME/agent/skills/active-tracker/SKILL.md` first, then `view` the tracker with `active-tracker.mjs` beside it. Read the tracker and nothing else: not the repository, not the work files, not the prompt that produced this call.
+The tracker is the `active-tracker` skill: read `$AGENT_HOME/agent/skills/active-tracker/SKILL.md` first.
 
-Report exactly three lines.
+Run `active-tracker.mjs report`. It prints the tree diff, the pointer the traversal resumes at, the workspace delta and the `## Session memory` block. Report what it prints, unchanged. Read the tracker and nothing else: not the repository, not the work files, not the prompt that produced this call.
 
-1. The pointer node: the tracker's resume marker.
-2. The path from the root to it, and the frontier still to visit.
-3. The workspace delta, the tracker's recorded HEAD against the live one.
-
-Report the `## Session memory` block after the three lines, or `steering: none`. Expand a range only when you need the original, with the `session-memory` skill's `zoom <lo>-<hi>`. Do not act on it; the operator's next instruction is the action.
+Do not act on the memory block; the operator's next instruction is the action. Expand a range only when you need the original, with `memory zoom <lo>-<hi>`.
 
 Then stop. The operator issues the next instruction.

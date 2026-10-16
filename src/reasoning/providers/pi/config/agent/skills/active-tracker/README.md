@@ -1,6 +1,12 @@
 # active-tracker
 
-The model behind `active-tracker.mjs`. The agent-facing contract is [`SKILL.md`](SKILL.md); this file records why the data is shaped the way it is.
+The model behind the tool. The agent-facing contract is [`SKILL.md`](SKILL.md); this file records why the data is shaped the way it is.
+
+## Two libraries, one facade
+
+`tree.mjs` holds the task tree as an edge list. `memory.mjs` holds the steering memory in the OptMem shape. Neither knows about the other, and each is usable alone.
+
+`active-tracker.mjs` is the facade. It owns the three paths, it is the single writer of the tracker file, and it composes the single report from both. The composition is the point: the two libraries share a lifecycle, a file and a mark, so a caller that recorded one without the other would leave the session's state inconsistent. One entry point makes that state hard to get wrong.
 
 ## The task tree is an edge list
 
@@ -24,15 +30,25 @@ A frame would be one divergence: the operator forked a session branch, worked, a
 
 A frame is therefore an unobservable event plus a label. The label belongs to the node, not to a stack. The model still earns its place: it names what the tracker deliberately does not hold, and it is the shape a test uses when it feeds a sequence of divergences and returns.
 
-## Idempotence, and the log
+## Idempotence, and the two logs
 
-The store records the traversal as it stands. It is not a log of events, so recording it twice changes nothing: `push` upserts by node id, `pop` on an absent id is a no-op, and `view` is a pure render.
+The store records the traversal as it stands. It is not a log of events, so `push` upserts by node id and `pop` on an absent id is a no-op.
 
-Idempotence and history pull in opposite directions, so they live in different files. The store is idempotent and small. The log beside it is append-only and never edited, and every push and pop emits one event there. The log is the change record the store is not, so a missed push or a missed pop can be reconciled after the fact, which the store alone cannot show.
+Idempotence and history pull in opposite directions, so they live in different files. The store is idempotent and small. Each library keeps an append-only log beside it, and neither log is ever edited: the tree's log records every push and pop, and the memory's log records every occurrence. They are the change records the store is not, so a missed push or a missed pop can be reconciled after the fact, which the store alone cannot show.
+
+## The memory is the OptMem shape
+
+The memory is OptMem's, https://github.com/VictorTaelin/OptMem: an append-only log as storage, a bounded read, a merge on write, and a summary that is a rebuildable cache. `memory.mjs` reimplements that shape for short-term memory, with the constants adjusted and the binary tree dropped, because the view is 16 lines rather than a million records.
+
+## The report is the reason for the facade
+
+A report that a model composes is a report that varies. The tree's diff is derivable from its log, the memory's diff from its own, and the memory's view is already rendered, so the combined report is a pure function of the two logs since their marks and the two views.
+
+That is why the facade exists rather than a document telling a caller how to write the report. The caller runs one command and relays the output, and the same events always produce the same text.
 
 ## Non-goals
 
 - The session tree. The tracker survives a pi `/fork` or `/tree`; it does not observe one.
-- The memory. The `session-memory` skill holds the steering; this tool holds the traversal.
 - The roadmap. The tree is the work in hand, not the project's task list.
-- The destination of an `elsewhere` node. The roadmap owns filing, and a second copy of the destination goes stale. `elsewhere` says the node does not continue here; the roadmap says where it went.
+- Durable memory. Nothing here outlives the session.
+- The destination of an `elsewhere` node. The roadmap owns filing, and a second copy of the destination goes stale.
