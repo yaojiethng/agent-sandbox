@@ -9,7 +9,7 @@ Record the active task tracker. If you have an autopilot grant, consider it inva
 
 The tracker is the `active-tracker` skill: read `$AGENT_HOME/agent/skills/active-tracker/SKILL.md` first, then use `active-tracker.mjs` beside it.
 
-Recording is a checkpoint, not a prediction. It records the traversal as it stands, so recording it twice changes nothing. Make each change with the tool: `push` a node, `pop` a subtree, move a state with `push --state`, and `view` to render.
+Recording is a checkpoint, not a prediction. It records the traversal as it stands, so recording it twice changes nothing. Make each change with the tool: `push` a node, `pop` one or more subtrees, move a state with `push --state`, and `view` to render. For a bulk change, import the module and drive it from one script, so the change is one script and one render.
 
 The tool prints what it changed. Report that to the operator, naming every dropped node, because a prune the operator cannot see is a prune they cannot question.
 

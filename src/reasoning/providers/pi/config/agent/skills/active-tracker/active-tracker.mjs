@@ -1,60 +1,68 @@
 #!/usr/bin/env node
 // src/reasoning/providers/pi/config/agent/skills/active-tracker/active-tracker.mjs
 //
-// The active task tracker as data. The task tree is an edge list: every node
-// names exactly one parent, and the root names none. The path from the root to
-// the pointer node and the frontier still to visit are both derived from the
-// edges, so neither is stored.
+// The active task tracker. This file is both the library and the CLI: import
+// push, pop, view and log to drive the tracker from a script, or run it
+// directly for the same operations. The model behind the data is README.md
+// beside this file; the agent-facing contract is SKILL.md.
 //
-// The tool owns the move; the model owns the ids, the labels and the states.
-//
-// Usage: node active-tracker.mjs push <id> <parent> [--label <text>] [--state <mark>] [--stay]
-//        node active-tracker.mjs pop <id>
+// Usage: node active-tracker.mjs push <id> <parent> [--label <text>] [--state <state>] [--stay]
+//        node active-tracker.mjs pop <id> [<id>...]
 //        node active-tracker.mjs view
+//        node active-tracker.mjs log [--since <n>]
 //
 // Exit codes: 0 ok, 1 a refusal with a message on stderr.
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const STATES = ["[ ]", "[~]", "[-]"];
-const OPEN = "[ ]";
-const MARKER = "  <- resume here";
+export const STATES = ["open", "later", "elsewhere"];
+export const DEFAULT_STORE = ".scratchpad/ACTIVE_TASK_TRACKER.json";
+export const DEFAULT_TRACKER = ".scratchpad/ACTIVE_TASK_TRACKER.md";
 
-const raw = process.argv.slice(2);
-let storePath = ".scratchpad/ACTIVE_TASK_TRACKER.json";
-let trackerPath = ".scratchpad/ACTIVE_TASK_TRACKER.md";
-const argv = [];
-while (raw.length > 0) {
-  const token = raw.shift();
-  if (token === "--store") storePath = raw.shift();
-  else if (token === "--tracker") trackerPath = raw.shift();
-  else argv.push(token);
-}
-const command = argv.shift();
+const MARKER = "  <- here";
+const LEGEND = "The decomposition. A node is `open`, `later` (continues later), or `elsewhere` (continues elsewhere). A resolved node is pruned.";
 
-const refuse = (message) => {
-  process.stderr.write(`active-tracker: ${message}\n`);
-  process.exit(1);
-};
-const say = (message) => process.stdout.write(`${message}\n`);
+let clock = () => new Date().toISOString();
 
-function load() {
-  if (!existsSync(storePath)) refuse(`no store at ${storePath}`);
+// --- the store -----------------------------------------------------------------
+
+export function load(storePath) {
+  if (!existsSync(storePath)) throw new Error(`no store at ${storePath}`);
   const store = JSON.parse(readFileSync(storePath, "utf8"));
-  if (!Array.isArray(store.nodes)) refuse(`${storePath} carries no nodes`);
+  if (!Array.isArray(store.nodes)) throw new Error(`${storePath} carries no nodes`);
   return store;
 }
 
-function save(store) {
+function save(storePath, store) {
   store.nodes.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
   writeFileSync(storePath, JSON.stringify(store, null, 2) + "\n");
 }
 
-const byId = (store) => new Map(store.nodes.map((n) => [n.id, n]));
-const childrenOf = (store, id) => store.nodes.filter((n) => (n.parent ?? "") === id);
+const logFile = (storePath) => join(dirname(storePath), "ACTIVE_TASK_TRACKER_LOG.jsonl");
 
-// The root-to-pointer chain. A node whose parent is absent stops the walk.
-function pathTo(store, id) {
+// The log is append-only and is never edited. It is the change record the store
+// is not, so a missed push or pop can be reconciled after the fact.
+function emit(storePath, event) {
+  const path = logFile(storePath);
+  const n = existsSync(path) ? readFileSync(path, "utf8").split("\n").filter(Boolean).length + 1 : 1;
+  appendFileSync(path, JSON.stringify({ n, ts: clock(), ...event }) + "\n");
+  return n;
+}
+
+export function readLog(storePath, since = 0) {
+  const path = logFile(storePath);
+  if (!existsSync(path)) return [];
+  return readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l)).filter((e) => e.n > since);
+}
+
+// --- the derived views ---------------------------------------------------------
+
+export const byId = (store) => new Map(store.nodes.map((n) => [n.id, n]));
+export const childrenOf = (store, id) => store.nodes.filter((n) => (n.parent ?? "") === id);
+
+export function pathTo(store, id) {
   const index = byId(store);
   const path = [];
   let cur = id;
@@ -65,7 +73,23 @@ function pathTo(store, id) {
   return path;
 }
 
-function renderTree(store) {
+export function subtreeOf(store, id) {
+  if (!byId(store).has(id)) return [];
+  const out = new Set([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const node of store.nodes) {
+      if (node.parent !== null && out.has(node.parent) && !out.has(node.id)) {
+        out.add(node.id);
+        grew = true;
+      }
+    }
+  }
+  return store.nodes.filter((n) => out.has(n.id)).map((n) => n.id);
+}
+
+export function renderTree(store) {
   const index = byId(store);
   const depth = (node) => {
     let d = 0;
@@ -84,9 +108,8 @@ function renderTree(store) {
       const last = i === kids.length - 1;
       const stem = parent === "" ? "" : prefix + (last ? "└── " : "├── ");
       const label = `${node.id}. ${node.label ?? ""}`.trimEnd();
-      const state = node.state ?? OPEN;
       const marker = node.id === store.current ? MARKER : "";
-      rows.push(`${`${stem}${label}`.padEnd(width)}  ${state}${marker}`.trimEnd());
+      rows.push(`${`${stem}${label}`.padEnd(width)}  ${node.state ?? "open"}${marker}`.trimEnd());
       walk(node.id, parent === "" ? "" : prefix + (last ? "    " : "│   "));
     });
   };
@@ -94,7 +117,7 @@ function renderTree(store) {
   return rows;
 }
 
-function renderStack(store) {
+export function renderStack(store) {
   const path = pathTo(store, store.current);
   const on = new Set(path);
   const rows = [];
@@ -108,20 +131,22 @@ function renderStack(store) {
   return lines;
 }
 
-// Replace the body of the fenced block under a heading, leaving the rest of the
-// tracker alone. A missing region refuses, so a render never half-writes.
-function spliceBlock(text, heading, body) {
+// A missing region refuses, so a render never half-writes. The legend, when
+// given, replaces the prose between the heading and the fence.
+function splice(text, heading, body, legend = null) {
   const at = text.indexOf(heading);
-  if (at < 0) refuse(`the tracker carries no "${heading}" section`);
+  if (at < 0) throw new Error(`the tracker carries no "${heading}" section`);
   const open = text.indexOf("```", at);
   const close = text.indexOf("```", open + 3);
-  if (open < 0 || close < 0) refuse(`"${heading}" carries no fenced block`);
-  const bodyAt = text.indexOf("\n", open) + 1;
-  return text.slice(0, bodyAt) + body + "\n" + text.slice(close);
+  if (open < 0 || close < 0) throw new Error(`"${heading}" carries no fenced block`);
+  const before = text.slice(0, text.indexOf("\n", at) + 1);
+  const fenceLine = text.slice(open, text.indexOf("\n", open));
+  const legendPart = legend === null ? "" : `\n${legend}\n`;
+  return `${before}${legendPart}\n${fenceLine}\n${body}\n${text.slice(close)}`;
 }
 
-function render(store) {
-  if (!existsSync(trackerPath)) refuse(`no tracker at ${trackerPath}`);
+export function render(store, storePath, trackerPath) {
+  if (!existsSync(trackerPath)) throw new Error(`no tracker at ${trackerPath}`);
   let text = readFileSync(trackerPath, "utf8");
   const node = byId(store).get(store.current);
   if (node !== undefined) {
@@ -130,75 +155,110 @@ function render(store) {
       `**Resume here.** Current node: **${node.id}**, ${node.label ?? ""}.`,
     );
   }
-  text = spliceBlock(text, "## The work tree", renderTree(store).join("\n"));
-  text = spliceBlock(text, "## The stack", renderStack(store).join("\n"));
+  text = splice(text, "## The work tree", renderTree(store).join("\n"), LEGEND);
+  text = splice(text, "## The stack", renderStack(store).join("\n"));
   writeFileSync(trackerPath, text);
 }
 
-function cmdPush() {
-  const id = argv.shift();
-  const parent = argv.shift();
-  if (id === undefined || parent === undefined) refuse("push needs an id and a parent");
-  let label;
-  let state = OPEN;
-  let stay = false;
-  while (argv.length > 0) {
-    const flag = argv.shift();
-    if (flag === "--label") label = argv.shift();
-    else if (flag === "--state") state = argv.shift();
-    else if (flag === "--stay") stay = true;
-    else refuse(`unknown flag ${flag}`);
-  }
-  if (!STATES.includes(state)) refuse(`state must be one of ${STATES.join(" ")}`);
-  const store = load();
-  const node = byId(store).get(id);
+// --- the operations ------------------------------------------------------------
+
+export function push({ store = DEFAULT_STORE, tracker, id, parent, label, state, stay = false }) {
+  if (id === undefined || parent === undefined) throw new Error("push needs an id and a parent");
+  if (state !== undefined && !STATES.includes(state)) throw new Error(`state must be one of ${STATES.join(" ")}`);
+  const data = load(store);
+  const node = byId(data).get(id);
   if (node === undefined) {
-    if (parent !== "-" && !byId(store).has(parent)) refuse(`parent ${parent} is not a node`);
-    store.nodes.push({ id, parent: parent === "-" ? null : parent, label: label ?? id, state });
+    if (parent !== "-" && !byId(data).has(parent)) throw new Error(`parent ${parent} is not a node`);
+    data.nodes.push({ id, parent: parent === "-" ? null : parent, label: label ?? id, state: state ?? "open" });
   } else {
     if (label !== undefined) node.label = label;
-    node.state = state;
+    if (state !== undefined) node.state = state;
   }
-  if (!stay) store.current = id;
-  save(store);
-  render(store);
-  say(`pushed ${id} under ${parent}${stay ? ", pointer stayed" : `, pointer -> ${id}`}`);
+  if (!stay) data.current = id;
+  save(store, data);
+  emit(store, { op: "push", id, parent: node === undefined ? (parent === "-" ? null : parent) : node.parent, label: label ?? node?.label, state: state ?? node?.state ?? "open", stay, current: data.current });
+  if (tracker !== undefined) render(data, store, tracker);
+  return { id, current: data.current, nodes: data.nodes.length };
 }
 
-function cmdPop() {
-  const id = argv.shift();
-  if (id === undefined) refuse("pop needs an id");
-  const store = load();
-  const doomed = new Set([id]);
-  let grew = true;
-  while (grew) {
-    grew = false;
-    for (const node of store.nodes) {
-      if (node.parent !== null && doomed.has(node.parent) && !doomed.has(node.id)) {
-        doomed.add(node.id);
-        grew = true;
+export function pop({ store = DEFAULT_STORE, tracker, ids }) {
+  const list = Array.isArray(ids) ? ids : [ids];
+  if (list.length === 0 || list[0] === undefined) throw new Error("pop needs at least one id");
+  const data = load(store);
+  const events = [];
+  for (const id of list) {
+    const gone = subtreeOf(data, id);
+    if (gone.length === 0) continue;
+    const parent = byId(data).get(id).parent ?? null;
+    data.nodes = data.nodes.filter((n) => !gone.includes(n.id));
+    if (gone.includes(data.current)) data.current = parent;
+    events.push({ op: "pop", id, subtree: gone, parent, current: data.current });
+  }
+  if (events.length === 0) return { ids: list, popped: 0 };
+  save(store, data);
+  for (const event of events) emit(store, event);
+  if (tracker !== undefined) render(data, store, tracker);
+  return { ids: list, popped: events.length, removed: events.flatMap((e) => e.subtree), current: data.current };
+}
+
+export function view({ store = DEFAULT_STORE, tracker } = {}) {
+  const data = load(store);
+  if (tracker !== undefined) render(data, store, tracker);
+  return renderTree(data);
+}
+
+// --- the CLI -------------------------------------------------------------------
+
+function main(raw) {
+  let store = DEFAULT_STORE;
+  let tracker = DEFAULT_TRACKER;
+  const argv = [];
+  while (raw.length > 0) {
+    const token = raw.shift();
+    if (token === "--store") store = raw.shift();
+    else if (token === "--tracker") tracker = raw.shift();
+    else argv.push(token);
+  }
+  const command = argv.shift();
+  try {
+    if (command === "push") {
+      const id = argv.shift();
+      const parent = argv.shift();
+      let label;
+      let state;
+      let stay = false;
+      while (argv.length > 0) {
+        const flag = argv.shift();
+        if (flag === "--label") label = argv.shift();
+        else if (flag === "--state") state = argv.shift();
+        else if (flag === "--stay") stay = true;
+        else throw new Error(`unknown flag ${flag}`);
       }
+      const out = push({ store, tracker, id, parent, label, state, stay });
+      process.stdout.write(`pushed ${out.id}; pointer -> ${out.current}\n`);
+    } else if (command === "pop") {
+      const out = pop({ store, tracker, ids: argv.length > 0 ? argv : undefined });
+      if (out.popped === 0) process.stdout.write("pop: nothing present, nothing changed\n");
+      else process.stdout.write(`popped ${out.removed.join(", ")}; pointer -> ${out.current ?? "(none)"}\n`);
+    } else if (command === "view") {
+      process.stdout.write(view({ store, tracker }).join("\n") + "\n");
+    } else if (command === "log") {
+      let since = 0;
+      while (argv.length > 0) {
+        const flag = argv.shift();
+        if (flag === "--since") since = Number(argv.shift());
+        else throw new Error(`unknown flag ${flag}`);
+      }
+      for (const event of readLog(store, since)) process.stdout.write(`${JSON.stringify(event)}\n`);
+    } else {
+      throw new Error("unknown command; one of push, pop, view, log");
     }
+  } catch (error) {
+    process.stderr.write(`active-tracker: ${error.message}\n`);
+    process.exit(1);
   }
-  if (doomed.size === 0 || !byId(store).has(id)) {
-    say(`popped ${id}: not present, nothing changed`);
-    return;
-  }
-  const parent = byId(store).get(id).parent ?? null;
-  store.nodes = store.nodes.filter((n) => !doomed.has(n.id));
-  if (doomed.has(store.current)) store.current = parent;
-  save(store);
-  render(store);
-  say(`popped ${id} and ${doomed.size - 1} descendant(s); pointer -> ${store.current ?? "(none)"}`);
 }
 
-function cmdView() {
-  const store = load();
-  render(store);
-  say(renderTree(store).join("\n"));
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main(process.argv.slice(2));
 }
-
-if (command === "push") cmdPush();
-else if (command === "pop") cmdPop();
-else if (command === "view") cmdView();
-else refuse("unknown command; one of push, pop, view");
