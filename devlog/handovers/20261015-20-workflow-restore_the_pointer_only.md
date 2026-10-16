@@ -1,6 +1,6 @@
 ---
 date: 2026-10-15
-milestone: M3.6.1 - Disable and ship OpenCode dispatch
+milestone: M3.2.3 - Dispatch Workflows as a Command Surface
 type: Workflow
 status: Closed
 ---
