@@ -82,4 +82,4 @@ None.
 | [`tests/test_build_probe.sh`](../../tests/test_build_probe.sh) | 12 cases over the parsing, the emitters and the restore |
 | [`tests/test_trace_build.sh`](../../tests/test_trace_build.sh) | 3 cases: the default passes `--quiet`, `plain` replaces it, and the CLI flag reaches docker |
 | [`devlog/roadmap.md`](../roadmap.md) | the design row's pin scope widened, and the pinning row filed after it |
-| [`devlog/discussions/20261016-study-active-invalidation_history.md`](../discussions/20261016-study-active-invalidation_history.md) | the skip-echo sentence corrected |
+| [`devlog/discussions/20261016-study-settled-invalidation_history.md`](../discussions/20261016-study-settled-invalidation_history.md) | the skip-echo sentence corrected |

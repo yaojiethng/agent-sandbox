@@ -1,14 +1,14 @@
 # The invalidation history of the three reasoning tiers
 
-**Status:** active
+**Status:** settled
 
 ## Direction and parent story
 
-This study belongs to the M3.6.1 layer install design, the roadmap row `The layer install design` under M3.6.1 `Disable and ship OpenCode dispatch`. That row decides where the shared dispatch CLIs and both agents' extensions install, the pin per layer and how it is checked, and the tier placement among keeping `<provider>-base`, making `<provider>-agent` the final image, and a shared dispatch-tools tier. The decision rests on three measurements: the census of install and copy steps, this invalidation history, and the measured cost of build seconds times rebuild count. This study supplies the last two: a counted per-tier trigger history from git, and whatever the session store records about rebuilds and their durations. The sibling study [`20261016-study-active-install_step_census.md`](20261016-study-active-install_step_census.md) supplies the census. Parent row: [`devlog/roadmap.md`](../roadmap.md#m361---disable-and-ship-opencode-dispatch).
+This study belongs to the M3.6.1 layer install design, the roadmap row `The layer install design` under M3.6.1 `Disable and ship OpenCode dispatch`. That row decides where the shared dispatch CLIs and both agents' extensions install, the pin per layer and how it is checked, and the tier placement among keeping `<provider>-base`, making `<provider>-agent` the final image, and a shared dispatch-tools tier. The decision rests on three measurements: the census of install and copy steps, this invalidation history, and the measured cost of build seconds times rebuild count. This study supplies the last two: a counted per-tier trigger history from git, and whatever the session store records about rebuilds and their durations. The sibling study [`20261016-study-settled-install_step_census.md`](20261016-study-settled-install_step_census.md) supplies the census. Parent row: [`devlog/roadmap.md`](../roadmap.md#m361---disable-and-ship-opencode-dispatch).
 
 ## Required reading
 
-- [`devlog/discussions/20261016-study-active-install_step_census.md`](20261016-study-active-install_step_census.md) -- the sibling census of the install and copy steps
+- [`devlog/discussions/20261016-study-settled-install_step_census.md`](20261016-study-settled-install_step_census.md) -- the sibling census of the install and copy steps
 - [`devlog/roadmap.md`](../roadmap.md#m361---disable-and-ship-opencode-dispatch) -- the parent row and its two options
 - [`scripts/build.sh`](../../scripts/build.sh) -- the three-tier orchestrator and the `_build_key` cache gate
 - [`src/build/image.sh`](../../src/build/image.sh) -- image naming and the stamped `agent-sandbox.base-build-key` label
@@ -104,4 +104,4 @@ This study feeds the M3.6.1 `The layer install design` row together with the cen
 
 ## Resolution
 
-Open. This study is the trigger-and-cost evidence the layer install design rests on; it closes when that design is decided.
+Adopted. The layer install design is decided in [`20261016-design-settled-reasoning_layer_install.md`](20261016-design-settled-reasoning_layer_install.md). This study's standing finding is that the session store carries the cost of no current-shape image, so the cost side waited on a measurement. The host build probe supplied it and it is recorded above: 1 second for a tier-3-only rebuild, 2 to 3 seconds for a base change and 77 seconds cold. That measurement is what turns the trigger counts of 1, 22 and 448 into a design input rather than a threat, and the design's answer is that docker's layer cache is the only reuse rule.

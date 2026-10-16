@@ -1,6 +1,27 @@
 # Instruction Surface Declaration
 
-**Current:** 2026-10-05
+**Current:** 2026-10-16
+
+## 2026-10-16 -- A runtime's surface is generated from the declaration, never restated by hand
+
+**Decision:** Each runtime's native surface is generated from the manifest by one reader, and the generated surface is a checked artifact. `src/build/opencode-config.mjs` is OpenCode's reader. It emits four keys: `instructions` carries the ambient `AGENTS.md` files, `skills.paths` carries the cells whose source folder is a skill root, `command` carries one entry per prompt file under the prompt cells, and `references` carries the ambient directories worth advertising. A cell tagged with a provider reaches that provider only, so a cell tagged `provider: pi` reaches pi and no other runtime.
+
+The prompt argument placeholder is `$ARGUMENTS`. pi accepts `$@` and `$ARGUMENTS`, OpenCode accepts `$ARGUMENTS` only, and one form serves both runtimes from one file.
+
+Three properties make the generated surface trustworthy. `OPENCODE_CONFIG` is the seam, and OpenCode loads it as one local-scope config among the scopes it already merges, so the generated file is an additional config rather than the whole one. OpenCode rejects an unknown top-level key and refuses to start on an invalid config, so the emitted file names `$schema` and a check validates the output. And the generator is the only writer for the keys it owns, so a surface added to the manifest cannot fail to travel without the check failing.
+
+**Rationale:** A hand-authored surface restates the declaration, and the comparison between the two exists only because of the repetition. That is the failure this declaration was written to prevent, and it had already happened in the generated case: the reader was written, tested, and invoked by nothing, so the surfaces it derives reached no runtime and no check reported it. A generated surface cannot drift from the declaration, and a check that validates the output catches the case where it stops matching.
+
+This also retires a claim in the section below. That section reads "only pi's record is checked, because only pi declares its roots in one; the other providers' loader claims remain prose." OpenCode's loader claim is no longer prose: it is generated and checked.
+
+**Rejected alternatives:**
+
+- *A hand-authored `opencode.json`, managed the way pi's seed config is* -- it writes the same roots a second time with no gate between the two, and the failure is silent: a surface added to the manifest would simply not reach OpenCode.
+- *The prompt roots as `references` only* -- a reference offers an alias in `@` autocomplete and a described directory, which is discovery. It does not make a prompt invocable, and invocation is the parity pi's prompt root already provides. The prompt cells are emitted as commands, and `references` carries the directories that are discovered rather than invoked.
+- *One `<name>.md` file per command in a command directory* -- the inline `command` key takes `description` and `template` directly, so the generator emits entries without writing a second tree of prompt files.
+- *Rewrite `$@` to `$ARGUMENTS` in the generator* -- it leaves two spellings in the repository and one of them is only ever correct after a transform. Unifying the files is the smaller lasting change.
+
+**Edge cases / drivers:** A `references` entry is advertised to the agent only when it carries a `description`, so a reference without one is an alias in autocomplete and nothing more. `hidden: true` keeps an entry out of autocomplete while leaving it reachable, which is the form for a directory the agent should read but the operator need not browse. A prompt file that uses a shell-style default such as `${@:-default}` has no OpenCode equivalent, and the tree carries none today; a future one would need the placeholder mapped per runtime rather than unified.
 
 ## 2026-10-05 -- The instruction surfaces are declared once, in the container interface manifest
 

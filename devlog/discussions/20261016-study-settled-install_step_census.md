@@ -1,6 +1,6 @@
 # The install and copy steps in the three reasoning tiers
 
-**Status:** active
+**Status:** settled
 
 ## Direction and parent story
 
@@ -109,4 +109,4 @@ The census feeds the M3.6.1 `The layer install design` row together with the inv
 
 ## Resolution
 
-Open. This study is the evidence the layer install design rests on; it closes when that design is decided.
+Adopted. The layer install design is decided in [`20261016-design-settled-reasoning_layer_install.md`](20261016-design-settled-reasoning_layer_install.md), and this census's 41 rows are its evidence. Its four open questions resolved with it: the opencode base's unpinned `opencode-ai` collapses to one install in the shared `agent-tools` tier; the pi extension payload is in neither tier 2 nor tier 3, because it is not provider-specific and ships in the `agent-payload` image; the hermes clone stays unpinned and the base unification is indefinitely deferred; and `node:22.22.3-slim` and the hadolint release move from a tag to a digest under the pin policy.

@@ -13,7 +13,7 @@ Count what invalidates each reasoning tier and measure the rebuild cost, so the 
 
 ## Scope
 
-One new study record, [`devlog/discussions/20261016-study-active-invalidation_history.md`](../discussions/20261016-study-active-invalidation_history.md). No Dockerfile, build script or source file changed.
+One new study record, [`devlog/discussions/20261016-study-settled-invalidation_history.md`](../discussions/20261016-study-settled-invalidation_history.md). No Dockerfile, build script or source file changed.
 
 ## Acceptance criteria
 
@@ -49,5 +49,5 @@ None. The study's open questions are filed with it and feed the layer install de
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20261016-study-active-invalidation_history.md`](../discussions/20261016-study-active-invalidation_history.md) | the new study |
+| [`devlog/discussions/20261016-study-settled-invalidation_history.md`](../discussions/20261016-study-settled-invalidation_history.md) | the new study |
 | [`devlog/roadmap.md`](../roadmap.md) | the invalidation-history row is complete |

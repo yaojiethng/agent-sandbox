@@ -13,7 +13,7 @@ Census every install and copy step in the three reasoning tiers, so the layer in
 
 ## Scope
 
-One new study record, [`devlog/discussions/20261016-study-active-install_step_census.md`](../discussions/20261016-study-active-install_step_census.md). No Dockerfile, no build script and no source file changed.
+One new study record, [`devlog/discussions/20261016-study-settled-install_step_census.md`](../discussions/20261016-study-settled-install_step_census.md). No Dockerfile, no build script and no source file changed.
 
 ## Acceptance criteria
 
@@ -51,5 +51,5 @@ None.
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20261016-study-active-install_step_census.md`](../discussions/20261016-study-active-install_step_census.md) | the new study |
+| [`devlog/discussions/20261016-study-settled-install_step_census.md`](../discussions/20261016-study-settled-install_step_census.md) | the new study |
 | [`devlog/roadmap.md`](../roadmap.md) | the census row is complete |
