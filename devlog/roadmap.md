@@ -45,6 +45,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](#m361---disable-and-ship-opencode-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.2 - Measure](#m362---measure) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.3 - Route and decide](#m363---route-and-decide) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.4 - Provider installs and the build layers](#m364---provider-installs-and-the-build-layers) | Not started |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
@@ -314,6 +315,16 @@ The instrument is runtime-agnostic and lives in the ledger, so it reads a pi ses
 - [ ] **The failover A/B and the verdict** - run the same briefs with the extension off and on, comparing success rate, cost and wall clock, then rebuild the extension from the spec the measurement writes or delete it. Nature of change: measurement and its record.
 - [ ] **The policy bakeoff** - two or three dispatch policies measured on one brief and one commit, cost beside wall clock beside re-queue count, with the winner and what it beats recorded. Nature of change: measurement and its record.
 - [ ] **The launch-site sweep** - migrate the remaining launch sites onto the seam, or record why they keep their own form. Nature of change: propagation.
+
+##### M3.6.4 - Provider installs and the build layers
+
+**Objective:** decide where the provider CLIs and both agents' extensions install, and make the three-tier build reproducible and correctly cached, so a container can carry several providers' dispatch tools without a silent staleness. The measured invalidation frequency is the test: tier 2 rebuilds on a version bump, tier 3 on every refresh. The build runs on the host; the agent runs in a container with no Docker, so the measurement is a host-side probe the operator runs, writing one report to `$INPUT_DIR/build/`, and the agent reads it there.
+
+- [ ] **The dispatch-CLI pin and gate** - one home for `opencode-ai` with one pinned version, a presence and version check at build or preflight time, and the two defects it exposes: `src/reasoning/providers/opencode/base.dockerfile` installs `opencode-ai` unpinned under a header that wrongly names `providers/pi/base.dockerfile`, while `src/reasoning/providers/pi/base.dockerfile` pins `@1.19.1`, so one dependency has two homes and two pins; and `build_if_missing` skips a tier-1 or tier-2 build when the image exists with no content hash of the Dockerfile in the decision, so the pi-image install is inert until `--no-cache` or an image removal. Nature of change: one pinned install, one check, two defect fixes.
+- [ ] **The install-step census** - every install and copy step in the three tiers, from the tree: the agent packages, the pi extension payload, the opencode plugin set, the apt and curl installs, the uv Python, and every `COPY`. For each, its input, its output path, and whether the input is pinned. Written as a file, because it does not exist. Nature of change: a new record.
+- [ ] **The invalidation history** - per tier, the rebuild count, the trigger and the cost, extracted from `$AGENT_HOME/agent/sessions/` and the harness logs and cross-checked against `git log --stat` over the Dockerfiles and config roots. This replaces the rough figure from the chat logs with a counted one. Nature of change: measurement and its record.
+- [ ] **The host build probe** - `scripts/build_probe.sh`, operator-run with one command. It resolves `$INPUT_DIR`, records the trigger (`git HEAD` and the sha256 of each Dockerfile), runs a small perturbation matrix with `docker build --progress=plain`, parses the per-step `DONE` lines, captures `docker history --no-trunc` and `docker image inspect` digests, asserts the expected rebuild set per row, and writes one JSON report to `$INPUT_DIR/build/<timestamp>.json`. Every row carries its expected outcome, so the probe fails loudly when the cache is wrong. Nature of change: new host-side script and a record format.
+- [ ] **The cache model and the tier decision** - the inputs that form each build step's cache key, the pin per layer and how it is checked, and the tier placement decided on the measured cost of build seconds times rebuild count. The options are keeping `<provider>-base`, making `<provider>-agent` the final image with the shared payload copied in, and a shared dispatch-tools tier. Nature of change: design record and ADR.
 
 ##### Not in scope: M3.6
 
