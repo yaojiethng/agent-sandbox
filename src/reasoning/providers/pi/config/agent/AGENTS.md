@@ -19,7 +19,6 @@ The paths this layer covers. Each is part of the container, so a reference to on
 | `/opt/sandbox/docs/policies/` | the policy corpus the loop obeys |
 | `/opt/sandbox/lib/` | the harness libraries |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts |
-| `/tmp/` | the scratch directory: throwaway verification, and the working files of any run that needs scratch space |
 | `/home/agentuser/workspace/input/` | the operator's handover files, read-only |
 | `/home/agentuser/workspace/output/` | where the session writes its result |
 | `/home/agentuser/workspace/session-diffs/` | the session diff output |
@@ -55,7 +54,7 @@ When writing code, always take into account the following:
 6. One line?                  -> one line
 7. Only then: the minimum that works
 
-Run throwaway verification in `/tmp`, never in the repo tree. The repository is git-tracked; a stray file created during verification surfaces in `git status` and pollutes the diff. A throwaway file is any file you create only to check something and do not keep.
+Run throwaway verification in `.scratchpad/`, the session-local scratch, never elsewhere in the repo tree. `.scratchpad/` is gitignored, so a stray file there does not surface in `git status` or pollute the diff. A throwaway file is any file you create only to check something and do not keep.
 
 Prefer the `edit` tool for in-place text changes. The `edit` tool reports a miss when its `oldText` does not match; a `sed` one-liner run through the `bash` tool with a missing file operand silently writes nothing. After a `sed` change, verify the write landed.
 
@@ -130,7 +129,7 @@ To run subagents in parallel, put every one of them inside a single call and let
 start=$(date +%s)
 for name in a b; do
   timeout "$run_timeout" pi --provider <provider> --model <model> --thinking <level> \
-    -p "$(cat "$brief_$name")" > "/tmp/$name.log" 2>&1 &
+    -p "$(cat "$brief_$name")" > ".scratchpad/$name.log" 2>&1 &
 done
 wait
 echo "secs=$(( $(date +%s) - start ))"

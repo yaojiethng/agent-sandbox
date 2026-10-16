@@ -158,6 +158,10 @@
       "holds": "the project tree, and the working directory"
     },
     {
+      "path": "/home/agentuser/sandbox/.scratchpad/",
+      "holds": "the session-local scratch: throwaway verification, and state a /fork or /tree must carry across"
+    },
+    {
       "path": "/home/agentuser/workspace/input/",
       "holds": "the operator's handover files, read-only"
     },
@@ -184,10 +188,6 @@
     {
       "path": "/opt/sandbox/bin/",
       "holds": "the entrypoint and preflight scripts"
-    },
-    {
-      "path": "/tmp/",
-      "holds": "the scratch directory: throwaway verification, and the working files of any run that needs scratch space"
     },
     {
       "path": "$AGENT_HOME/",

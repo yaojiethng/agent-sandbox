@@ -7,6 +7,7 @@ This file is the project layer: the second context file pi loads, after the prov
 | Path | What is there |
 |---|---|
 | `/home/agentuser/sandbox/` | the project working tree: `docs/`, `devlog/`, `scripts/`, `tests/`, `src/`, `workflow/`, and this file |
+| `/home/agentuser/sandbox/.scratchpad/` | the session-local scratch, inside the working tree: state a `/fork` or `/tree` must carry across, such as the active task tracker. It lasts the session and no longer. |
 
 ## System
 

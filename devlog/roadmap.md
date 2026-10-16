@@ -159,6 +159,9 @@ M3.2.1 owned the autonomous dispatch shapes (`/auto`, `/parallel-auto`) as `/ite
 
 - [ ] **Decide the two settings questions the harness boundary raised** -- whether `yaml` becomes a declared repository dependency rather than resolving from pi's install tree, and whether the harness boundary extends so an agent can write `~/.pi/agent/settings.json`. Handovers `20261002-06` and `20261002-08`.
 
+- [x] **The task tracker prompts** - `/push-task` and `/pop-task` in the pi provider prompt root, `src/reasoning/providers/pi/config/agent/prompts/`. `/push-task` records the work tree and the DFS stack before a `/fork` or `/tree`; `/pop-task` restores the position after the return. The canonical session-local scratch is `.scratchpad/`, declared in the project `AGENTS.md` Scope table and the manifest session rows, so the state sits inside the mounted sandbox volume and persists with the workspace; the old `/tmp` scratch row is retired. The mechanism pairs with pi's session tree, which no other provider has. Handover `20261015-19`.
+- [ ] **The automatic task-tracker reorientation** - replace the manual `/push-task` and `/pop-task` with pi's `session_start` context hook and `ctx.sessionManager.getBranch()`, so a returning agent reaches the right node without an invocation. The design prompt is [`active-task-tracker-design-prompt.md`](../.agents/drafts/active-task-tracker-design-prompt.md). Nature of change: a pi extension and its test.
+
 ##### Not in scope: M3.2.3
 
 - The M4 `/auto` smart-dispatcher implementation and the M4 `/goal` capability -- M4 owns them.
