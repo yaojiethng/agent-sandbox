@@ -5,7 +5,7 @@ argument-hint: "[the frame to pop]"
 
 > $@
 
-Restore the traversal pointer only. Do not start the work.
+Restore the traversal pointer only. Do not start the work. If you have an autopilot grant, consider it invalidated. Proceed with autonomy off until the operator explicitly re-grants it.
 
 Read `<scratch>/ACTIVE_TASK_TRACKER.md` and nothing else: not the repository, not the work files, not the prompt that produced this call. The scratch directory is the one the project `AGENTS.md` Scope table declares.
 

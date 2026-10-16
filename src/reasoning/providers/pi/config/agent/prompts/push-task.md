@@ -7,6 +7,8 @@ argument-hint: "<task name> <reason>"
 
 Record the active task tracker before the divergence. Its directory is the session-local scratch the project `AGENTS.md` Scope table declares; write `<scratch>/ACTIVE_TASK_TRACKER.md`. Read the scratch path from that table instead of hardcoding it.
 
+If you have an autopilot grant, consider it invalidated. Proceed with autonomy off until the operator explicitly re-grants it.
+
 The tracker is a call stack: a divergence pushes a frame, a return pops it, and a node is kept only while it can still be resumed. Prune before you write.
 
 Prune.
