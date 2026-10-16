@@ -31,11 +31,17 @@ dispatch_rec_file() {
   printf '%s/model-recommendations.md' "${AGENT_HOME:-$HOME/.pi}"
 }
 
-# The OpenCode CLI, which is not on PATH in the reasoning container. The
-# override exists so a test never depends on an install.
+# The OpenCode CLI. The pi image installs `opencode-ai` globally, so it
+# resolves on PATH; the agent-home path is the fallback for a session whose
+# image predates that install. The override exists so a test never depends on
+# an install.
 dispatch_opencode_bin() {
   if [[ -n "${DISPATCH_OPENCODE_BIN:-}" ]]; then
     printf '%s' "$DISPATCH_OPENCODE_BIN"
+    return 0
+  fi
+  if command -v opencode >/dev/null 2>&1; then
+    command -v opencode
     return 0
   fi
   printf '%s' "${AGENT_HOME:-$HOME/.pi}/opencode/node_modules/.bin/opencode"
