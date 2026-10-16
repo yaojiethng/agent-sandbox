@@ -12,8 +12,9 @@
 #                            and --dir, with the brief read at run time
 #   dispatch_roles       --  the table lists as role, pair and backend
 #   dispatch_check       --  a runnable backend passes, a missing one refuses
-#   scripts/dispatch.sh  --  --list-roles prints the table and a normal
-#                            dispatch refuses an empty brief
+#   scripts/dispatch.sh  --  --list-roles prints the table, a normal dispatch
+#                            refuses an empty brief, and --run executes the
+#                            built command and propagates its exit code
 
 set -uo pipefail
 
@@ -176,6 +177,32 @@ test_cli_empty_brief_refuses() {
   assert_rc "$RC" 2 "the CLI refuses an empty brief"
 }
 
+# The stub journals its argv so the case can assert what --run executed without
+# a real opencode. Recording every argument, not a joined string, keeps a
+# space-bearing argument distinguishable from two arguments.
+test_cli_run_executes_built_command() {
+  local BIN LOG BRIEF ARGV RC EXPECTED
+  BIN="$FIXTURE_DIR/opencode-run-stub"
+  LOG="$FIXTURE_DIR/run-argv.log"
+  BRIEF="$FIXTURE_DIR/run-brief.md"
+  printf 'the run brief\n' > "$BRIEF"
+  cat > "$BIN" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$@" > "$LOG"
+exit 7
+EOF
+  chmod +x "$BIN"
+  DISPATCH_OPENCODE_BIN="$BIN" bash "$REPO_ROOT/scripts/dispatch.sh" \
+    --role _ADVISOR --brief "$BRIEF" --dir /work --run >/dev/null 2>&1
+  RC=$?
+  ARGV="$(cat "$LOG")"
+  EXPECTED="$(printf '%s\n' \
+    run --auto --dir /work -m opencode/cat-jam-free --variant high 'the run brief')"
+  assert_eq "$ARGV" "$EXPECTED" "the run path hands the stub the built argv"
+  assert_contains "$ARGV" "the run brief" "the stub received the brief's text, so the brief was read at run time"
+  assert_rc 7 "$RC" "the stub's exit code propagates through --run"
+}
+
 run_test test_role_model_with_level
 run_test test_role_model_without_level
 run_test test_role_model_missing_role
@@ -195,5 +222,6 @@ run_test test_check_opencode_success
 run_test test_check_opencode_failure
 run_test test_cli_list_roles
 run_test test_cli_empty_brief_refuses
+run_test test_cli_run_executes_built_command
 
 test_done
