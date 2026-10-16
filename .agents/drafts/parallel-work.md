@@ -84,7 +84,12 @@ One fresh subagent per track, all dispatched before any of them returns. The tra
 ```bash
 brief="/tmp/<track>.brief"                    # the track's instructions; must exist and be non-empty
 [ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }
-cd "/tmp/wt-<track>" && nohup bash -c 'S=$(date +%s); pi --provider <p> --model <m> --thinking <t> -p "$(cat /tmp/<track>.brief)"; echo "RC=$?"; echo "SECONDS=$(( $(date +%s) - S ))"' > "/tmp/<track>.log" 2>&1 &
+worktree="/tmp/wt-<track>"
+# The seam resolves the role to a model and the backend that reaches it: pi for
+# a provider pi serves, the OpenCode CLI for a provider only it reaches. The
+# brief names a role, never a runtime.
+cmd="$(<repo-root>/scripts/dispatch.sh --role _IMPLEMENTER --brief "$brief" --dir "$worktree")"
+cd "$worktree" && nohup bash -c "S=\$(date +%s); $cmd; echo \"RC=\$?\"; echo \"SECONDS=\$(( \$(date +%s) - S ))\"" > "/tmp/<track>.log" 2>&1 &
 ```
 
 Read `RC` and `SECONDS` from each log after the run, and map what you see to what happened:
