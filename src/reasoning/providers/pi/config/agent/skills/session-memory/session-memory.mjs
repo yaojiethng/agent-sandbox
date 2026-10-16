@@ -1,23 +1,27 @@
 #!/usr/bin/env node
-// scripts/steer.mjs
+// src/reasoning/providers/pi/config/agent/skills/session-memory/session-memory.mjs
 //
-// The steering memory, modelled on OptMem
-// (https://github.com/VictorTaelin/OptMem). OptMem separates storage from the
-// reading budget: an append-only log that is never edited, a bounded read
-// (`WAKE_LINES`), a merge that compresses on write, and a summary that is a
-// cache rebuildable from the log alone. This tool keeps that separation and
-// drops OptMem's binary tree, because the view is 16 lines rather than a
-// million records.
+// Session-scoped memory: the steering that applies across a session's tasks
+// and dies with the session. It survives a pi /fork or /tree, so it is the
+// memory a returning traversal reads.
 //
-// Two grains, one per file. The log records occurrences. The view holds
-// directives, one line per distinct directive, newest first.
+// The shape is OptMem's, https://github.com/VictorTaelin/OptMem: an
+// append-only log that is never edited, a bounded read, a merge on write, and a
+// summary that is a cache rebuildable from the log alone. This is a
+// reimplementation of that shape for short-term memory, with the constants
+// adjusted and the binary tree dropped, because the view is 16 lines rather
+// than a million records.
 //
-// Usage: node scripts/steer.mjs [--dir <scratch>] <command> [args]
+// Two grains, one per file. The log records occurrences. The view holds one
+// line per directive, newest first.
+//
+// Usage: node session-memory.mjs [--log <path>] [--block <path>] [--heading <text>] <command> [args]
 //
 // Commands:
 //   note <text> [--home <path>] [--restates <n>]   append an occurrence
 //   merge <lo> <hi> <text>                          compress a view range
 //   wake                                            print the view
+//   render                                          write the block into --block
 //   zoom <lo>-<hi>                                  print the log range
 //   forget <lo>-<hi>                                drop a summary, resurface it
 //   diff                                            print the change since the mark
@@ -26,25 +30,30 @@
 // Exit codes: 0 ok, 1 a refusal with a message on stderr.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const VIEW_LINES = 16;
 const LINE_CHARS = 240;
 
 const argv = process.argv.slice(2);
-let dir = process.env.STEERING_DIR ?? ".scratchpad";
-if (argv[0] === "--dir") {
-  dir = argv[1];
-  argv.splice(0, 2);
+let logPath = ".scratchpad/SESSION_MEMORY_LOG.jsonl";
+let blockPath = "";
+let heading = "## Session memory";
+while (argv[0] === "--log" || argv[0] === "--block" || argv[0] === "--heading") {
+  const flag = argv.shift();
+  const value = argv.shift();
+  if (flag === "--log") logPath = value;
+  else if (flag === "--block") blockPath = value;
+  else heading = value;
 }
 const command = argv.shift();
 
-const logPath = join(dir, "STEERING_LOG.jsonl");
-const viewPath = join(dir, "STEERING_VIEW.jsonl");
-const statePath = join(dir, "STEERING_STATE.json");
+const logDir = dirname(logPath);
+const viewPath = join(logDir, "SESSION_MEMORY_VIEW.jsonl");
+const statePath = join(logDir, "SESSION_MEMORY_STATE.json");
 
 const refuse = (message) => {
-  process.stderr.write(`steer: ${message}\n`);
+  process.stderr.write(`session-memory: ${message}\n`);
   process.exit(1);
 };
 const say = (message) => process.stdout.write(`${message}\n`);
@@ -74,14 +83,14 @@ const writeState = (state) => {
 };
 
 function ensureDir() {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });
 }
 
 const clip = (text) => (text.length > LINE_CHARS ? text.slice(0, LINE_CHARS - 3) + "..." : text);
 
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 
-// The view text a return reads, or the absence marker.
+// The text a return reads, or the absence marker.
 function renderView() {
   const view = readView();
   if (view.length === 0) return "steering: none";
@@ -146,8 +155,7 @@ function cmdMerge() {
 }
 
 function cmdZoom() {
-  const range = argv.shift();
-  const match = /^(\d+)-(\d+)$/.exec(range ?? "");
+  const match = /^(\d+)-(\d+)$/.exec(argv.shift() ?? "");
   if (!match) refuse("zoom needs <lo>-<hi>");
   const lo = Number(match[1]);
   const hi = Number(match[2]);
@@ -193,10 +201,35 @@ function cmdMark() {
   say(`marked at n=${readLog().length}`);
 }
 
+// Replace the region from the heading to the next level-2 heading, or append it.
+function cmdRender() {
+  if (blockPath === "") refuse("render needs --block");
+  const original = existsSync(blockPath) ? readFileSync(blockPath, "utf8") : "";
+  const block = `${heading}\n\n\`\`\`text\n${renderView()}\n\`\`\`\n`;
+  const lines = original.split("\n");
+  const start = lines.findIndex((l) => l.trim() === heading.trim());
+  let out;
+  if (start < 0) {
+    out = original.replace(/\n*$/, "") + (original === "" ? "" : "\n\n") + block;
+  } else {
+    let end = lines.length;
+    for (let i = start + 1; i < lines.length; i += 1) {
+      if (/^##\s/.test(lines[i])) {
+        end = i;
+        break;
+      }
+    }
+    out = [...lines.slice(0, start), ...block.split("\n"), ...lines.slice(end)].join("\n");
+  }
+  writeFileSync(blockPath, out.endsWith("\n") ? out : out + "\n");
+  say(`block written into ${blockPath} under ${heading}`);
+}
+
 const commands = {
   note: cmdNote,
   merge: cmdMerge,
   wake: () => say(renderView()),
+  render: cmdRender,
   zoom: cmdZoom,
   forget: cmdForget,
   diff: cmdDiff,
