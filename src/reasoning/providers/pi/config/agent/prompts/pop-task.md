@@ -17,4 +17,6 @@ Report exactly three lines.
 
 The tracker's resume marker owns line 2. When the marker, the stack path and the popped frame's return node disagree, report the marker's node and name the disagreement in the same line.
 
+Report the `## Steering` section after the three lines, or `steering: none`. Expand a range only when you need the original, with `node scripts/steer.mjs --dir <scratch> zoom <lo>-<hi>`. Do not act on it; the operator's next instruction is the action.
+
 Then stop. The operator issues the next node.
