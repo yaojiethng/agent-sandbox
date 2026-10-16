@@ -11,7 +11,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
-import factory from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/index.ts";
+import factory, { failoverEnabled } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/index.ts";
 import { parseLedger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/ledger.ts";
 import { tempLedgerPath } from "./helpers.ts";
 
@@ -64,6 +64,32 @@ function routeRequest(reason: string, previous?: { provider: string; id: string 
 }
 
 describe("the pi wiring", () => {
+	// The enable flag defaults off, so the wired cases below turn it on. The
+	// inert case flips it off and asserts the factory registers nothing.
+	process.env.MODEL_FAILOVER_ENABLED = "1";
+
+	it("the enable flag is off unless it names a truthy value", () => {
+		assert.equal(failoverEnabled({}), false, "unset is off");
+		assert.equal(failoverEnabled({ MODEL_FAILOVER_ENABLED: "0" }), false, "a zero is off");
+		assert.equal(failoverEnabled({ MODEL_FAILOVER_ENABLED: "false" }), false, "a false is off");
+		assert.equal(failoverEnabled({ MODEL_FAILOVER_ENABLED: "true" }), true, "a true is on");
+		assert.equal(failoverEnabled({ MODEL_FAILOVER_ENABLED: "ON" }), true, "case does not matter");
+	});
+
+	it("G3 a factory without the enable flag registers nothing", () => {
+		const prior = process.env.MODEL_FAILOVER_ENABLED;
+		delete process.env.MODEL_FAILOVER_ENABLED;
+		try {
+			const fake = fakePi();
+			factory(fake.pi as never);
+			assert.equal(fake.virtuals.length, 0, "a disabled extension registers no virtual model");
+			assert.equal(fake.handlers.size, 0, "a disabled extension observes nothing");
+			assert.equal(fake.entries.length, 0, "a disabled extension appends nothing");
+		} finally {
+			process.env.MODEL_FAILOVER_ENABLED = prior;
+		}
+	});
+
 	it("the factory registers one virtual model per declared chain", () => {
 		const ledgerPath = tempLedgerPath();
 		process.env.MODEL_FAILOVER_LEDGER = ledgerPath;

@@ -2,6 +2,10 @@
 
 Implementation changes to the model-failover extension, newest first. One heading per change, dated by the day the change landed in the tree. The design record for every change is README.md.
 
+## [0.3.0] - 2026-10-15
+
+- The extension is inert by default. `MODEL_FAILOVER_ENABLED` must name a truthy value for the factory to register a virtual model, install the network adaptor or observe an outcome; unset or falsy, the factory returns before it reads `routes.json`. The flag makes the off state the default and turns the on/off comparison into one environment variable.
+
 ## [0.2.0] - 2026-10-14
 
 - The edge layer lands: the extension wraps the process fetch and pins each managed host's inference request to a chosen edge address, resolving the address itself and keeping the provider's host as SNI and `Host`. The provider registry, the model registry and `models.json` are not touched; an unmanaged host is delegated untouched.

@@ -48,6 +48,16 @@ export function ledgerPathFromEnv(env: NodeJS.ProcessEnv = process.env): string 
 	return env.MODEL_FAILOVER_LEDGER ?? LEDGER_PATH;
 }
 
+/**
+ * The enable flag. The extension is inert unless `MODEL_FAILOVER_ENABLED` names
+ * a truthy value, so the off state is the default and the on/off comparison is
+ * one environment variable.
+ */
+export function failoverEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+	const value = (env.MODEL_FAILOVER_ENABLED ?? "").trim().toLowerCase();
+	return value === "1" || value === "true" || value === "on" || value === "yes";
+}
+
 /** The process-global guard, so a reload does not nest one adaptor inside another. */
 const ADAPTOR_INSTALLED = Symbol.for("model-failover.adaptor");
 type GlobalWithAdaptor = typeof globalThis & { [ADAPTOR_INSTALLED]?: true };
@@ -63,6 +73,14 @@ export function installAdaptor(adaptor: NetworkAdaptor): void {
 }
 
 export default function modelFailover(pi: ExtensionAPI) {
+	// The extension is inert unless the enable flag is set. Its value is
+	// unmeasured: no session carries a `model-failover/outcome` entry and the
+	// only shipped chain declares one route, so failover has never run. The
+	// flag makes the off state the default and the on/off comparison a
+	// one-variable change.
+	if (!failoverEnabled()) {
+		return;
+	}
 	// A malformed declarations file throws here, and the extension fails to
 	// load loudly: a chain that half-parsed would route to nothing and read as
 	// healthy (R8).

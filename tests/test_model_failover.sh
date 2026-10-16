@@ -53,7 +53,7 @@ test_model_failover_node_suite() {
   local out rc pass fail skipped ledger_file
   ledger_file="$(mktemp -t model-failover-ledger.XXXXXX)"
   rm -f "$ledger_file"
-  out="$(cd "$REPO_ROOT" && MODEL_FAILOVER_LEDGER="$ledger_file" node --test "$MF_DIR"/*.test.ts 2>&1)"
+  out="$(cd "$REPO_ROOT" && MODEL_FAILOVER_ENABLED=1 MODEL_FAILOVER_LEDGER="$ledger_file" node --test "$MF_DIR"/*.test.ts 2>&1)"
   rc=$?
   rm -f "$ledger_file"
   pass="$(printf '%s\n' "$out" | sed -n 's/^# pass \([0-9][0-9]*\)$/\1/p' | tail -1)"

@@ -49,6 +49,8 @@ Rules the loader enforces, refusing the whole file with a named error when any f
 
 A top-level `selection` block chooses the edge reselection policy: `policy` is `epsilon` (default) or `rate`, and `epsilon` is the exploration rate, a number at least 0 and below 1. The loader refuses an unknown policy or an out-of-range epsilon with a named error.
 
+The extension is inert unless the `MODEL_FAILOVER_ENABLED` environment variable names a truthy value (`1`, `true`, `on` or `yes`). The flag defaults off, and a disabled factory returns before it reads `routes.json`, registers a virtual model, installs the network adaptor or observes an outcome. The default follows the measurement in the parent design record: no session carries a `model-failover/outcome` entry and the only shipped chain declares one route, so failover has never run, and the off state keeps an unproven feature from touching a request until a comparison earns it. Set the variable to enable the extension. A coarse alternative is pi's own `--no-extensions` flag, which disables every extension rather than this one.
+
 The shipped `routes.json` carries one chain with one route. That matches the measured state of this deployment: the models the chain would otherwise list were quiet on 2026-10-12 (`space-bunny-free` answered model-unavailable, `deepseek-v4-flash` and `glm-5.3-flash` answered usage-limit), and `opencode` cannot serve this model at all. A second route is a declaration edit away; the loader validates it and the ledger cools it when it fails, so the surface accepts a route before it is needed.
 
 ## The algorithm
@@ -183,6 +185,7 @@ Guard invariants:
 |---|---|
 | G1 | the sticky guard chooses the previous route only when that route is in `healthy` |
 | G2 | the streak resets only on `outcome.received`, never on a cooldown lapse |
+| G3 | a factory without a truthy `MODEL_FAILOVER_ENABLED` returns before it reads `routes.json`, registers a virtual model, installs the network adaptor or observes an outcome |
 
 ## The edge layer
 
