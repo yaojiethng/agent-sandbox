@@ -1,10 +1,10 @@
 # Steering memory - full design prompt
 
-Future task. The stopgap lands first as a `## Steering` section in two pi-provider prompts, [`push-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) and [`pop-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md), over a session-local append-only log and a bounded view, both owned by [`scripts/steer.mjs`](../../scripts/steer.mjs). This prompt designs the measured mechanism that replaces the stopgap's round-number limits and its single read trigger, and it is aware of what the stopgap fixes and what it leaves open.
+Future task. The stopgap lands first as a `## Steering` section in two pi-provider prompts, [`push-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) and [`pop-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md), over a session-local append-only log and a bounded view, both owned by the [`session-memory` skill](../../src/reasoning/providers/pi/config/agent/skills/session-memory/SKILL.md). This prompt designs the measured mechanism that replaces the stopgap's round-number limits and its single read trigger, and it is aware of what the stopgap fixes and what it leaves open.
 
 ## The model
 
-Steering is an operator instruction that applies across tasks rather than to one node: a filing rule, a constraint, a preference. The memory that carries it is a reading budget over an append-only store, the shape [OptMem](https://github.com/VictorTaelin/OptMem) uses at lifetime scale. Concretely, its `LOG.txt` is unbounded and never edited, `WAKE_LINES` is a reading budget rather than a storage budget, `memo note` appends one line and may ask for a compression, `memo wake` prints the budget, `memo zoom` opens a summary into its halves, `memo forget` drops a bad summary, and `TREE/` is a cache rebuildable from the log alone. The stopgap implements that shape in [`scripts/steer.mjs`](../../scripts/steer.mjs), with `note`, `wake`, `merge`, `zoom`, `forget` and `diff`, and drops the binary tree, because the view is 16 lines rather than a million records. The design keeps the shape; if it changes it, it states why, and it reads `steer.mjs` beside `memo` rather than substituting one for the other.
+Steering is an operator instruction that applies across tasks rather than to one node: a filing rule, a constraint, a preference. The memory that carries it is a reading budget over an append-only store, the shape [OptMem](https://github.com/VictorTaelin/OptMem) uses at lifetime scale. Concretely, its `LOG.txt` is unbounded and never edited, `WAKE_LINES` is a reading budget rather than a storage budget, `memo note` appends one line and may ask for a compression, `memo wake` prints the budget, `memo zoom` opens a summary into its halves, `memo forget` drops a bad summary, and `TREE/` is a cache rebuildable from the log alone. The stopgap implements that shape in the [`session-memory` skill](../../src/reasoning/providers/pi/config/agent/skills/session-memory/SKILL.md) and its `session-memory.mjs`, with `note`, `wake`, `merge`, `zoom`, `forget` and `diff`, and drops the binary tree, because the view is 16 lines rather than a million records. The design keeps the shape; if it changes it, it states why, and it reads the skill beside `memo` rather than substituting one for the other.
 
 ## What the stopgap leaves open
 
@@ -43,10 +43,11 @@ Diagnose first.
    reading them. The limits come from this table, not from a round number.
 
 3. Read OptMem's `memo` implementation, source at https://github.com/VictorTaelin/OptMem, and read
-   the stopgap's scripts/steer.mjs beside it rather than substituting one for
-   the other. State which parts fit a session-scoped, roughly 16-item,
-   read-on-return memory, and which exist only for its million-record lifetime
-   store.
+   the stopgap's session-memory skill beside it, its SKILL.md and its
+   session-memory.mjs under src/reasoning/providers/pi/config/agent/skills/session-memory/,
+   rather than substituting one for the other. State which parts fit a
+   session-scoped, roughly 16-item, read-on-return memory, and which exist only
+   for its million-record lifetime store.
 
 Then design, and let the eval choose.
 
