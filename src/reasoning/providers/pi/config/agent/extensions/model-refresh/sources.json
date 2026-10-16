@@ -1,10 +1,10 @@
 {
   "opencode-go": {
-    "endpoint": "https://opencode.ai/zen/go/v1/models",
+    "endpoint": "https://opencode.ai/inference/go/v1/models",
     "baseUrls": {
-      "openai-completions": "https://opencode.ai/zen/go/v1",
-      "openai-responses": "https://opencode.ai/zen/go/v1",
-      "anthropic-messages": "https://opencode.ai/zen/go"
+      "openai-completions": "https://opencode.ai/inference/go/v1",
+      "openai-responses": "https://opencode.ai/inference/go/v1",
+      "anthropic-messages": "https://opencode.ai/inference/go"
     },
     "transports": {
       "openai-completions": ["minimax-m2.7"],

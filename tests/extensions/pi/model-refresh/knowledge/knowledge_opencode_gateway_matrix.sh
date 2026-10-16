@@ -6,8 +6,8 @@
 # value a thinking-level map uses for the disabled state.
 #
 # The finding this records is that acceptance is PER MODEL, not a property of
-# the product. Both opencode products (Zen at opencode.ai/zen, Go at
-# opencode.ai/zen/go) are operated by the same company and share a gateway, yet
+# the product. Both opencode products (Zen at opencode.ai/inference, Go at
+# opencode.ai/inference/go) are operated by the same company and share a gateway, yet
 # space-bunny-free rejects the value with HTTP 400 on both while
 # longcat-2.5-preview-free, deepseek-v4-flash and glm-5.3-flash accept it on Go.
 # So an override that maps a disabled level onto "none" is only safe for a model

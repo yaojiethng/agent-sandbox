@@ -50,7 +50,7 @@ test_setup
 probe_model() {
   local ip="$1" model="$2" out
   out="$(curl -s -o /tmp/mff_probe_body.txt -w '%{http_code}' --resolve opencode.ai:443:"$ip" --max-time 30 \
-    -X POST "https://opencode.ai/zen/go/v1/chat/completions" \
+    -X POST "https://opencode.ai/inference/go/v1/chat/completions" \
     -H "Authorization: Bearer ${OPENCODE_API_KEY}" \
     -H "Content-Type: application/json" \
     -H "x-opencode-session: knowledge-probe" \

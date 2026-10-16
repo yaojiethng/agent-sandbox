@@ -31,7 +31,7 @@ const COMPOSER_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/provider-composer.js`;
 const piAvailable = () => fs.existsSync(COMPOSER_ENTRY);
 const skip = () => (piAvailable() ? false : "pi installation not present");
 
-const V1_BASE = "https://opencode.ai/zen/go/v1";
+const V1_BASE = "https://opencode.ai/inference/go/v1";
 const GENERATED_AT = 1_000_000;
 
 function baked(id: string): ModelDefinition {

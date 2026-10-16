@@ -66,7 +66,7 @@ async function thinkingFields(options: { compat: Record<string, unknown>; levelM
 		name: "probe",
 		api: "openai-completions",
 		provider: "opencode-go",
-		baseUrl: "https://opencode.ai/zen/go/v1",
+		baseUrl: "https://opencode.ai/inference/go/v1",
 		reasoning: true,
 		input: ["text"],
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },

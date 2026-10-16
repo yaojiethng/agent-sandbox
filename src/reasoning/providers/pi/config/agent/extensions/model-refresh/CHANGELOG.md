@@ -2,6 +2,11 @@
 
 Implementation changes to the model-refresh extension, newest first. One heading per change, dated by the day the change landed in the tree.
 
+## [0.7.0] - 2026-10-15
+
+- The declared `opencode-go` endpoints move to the ones pi 1.3.0 bakes: the live listing to `https://opencode.ai/inference/go/v1/models`, and the transport fallback bases to `https://opencode.ai/inference/go` (anthropic-messages) and `https://opencode.ai/inference/go/v1` (openai-completions, openai-responses). The old `opencode.ai/zen/go` URLs still answer, but they are no longer what pi uses, and the new listing was confirmed live before the change.
+- The assumption table is re-walked against pi 1.3.0. A7, A8 and A10 moved: the Zen free tier re-enforces its client check (403, where A8 recorded 200), `space-bunny-free` has left the baked `opencode-go` catalog for the baked `opencode` catalog, and A7's 400/400 evidence no longer reproduces though the per-model split does. A2's cost observation and A11's `mergeCatalogs` reference are stale method details and are corrected. Every remaining row holds.
+
 ## [0.6.0] - 2026-10-04
 
 - The extension keeps its own cache file, so endpoint-sourced ids survive an offline start. It is a new declared source, read in the offline phase, and additive: a cached id adds a model and never changes a field the served catalog already states. The file is `{ version, writtenAt, endpoints }`, each endpoint keyed to a `{ retrievedAt, entries }` record.
