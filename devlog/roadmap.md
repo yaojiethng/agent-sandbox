@@ -40,6 +40,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract](changelog.md#m331---the-prompt-skill-and-agentsmd-interaction-contract) | [Complete - see changelog](changelog.md#m331---the-prompt-skill-and-agentsmd-interaction-contract) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.2 - Retire the policy form](#m332---retire-the-policy-form) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.3 - The skill maintenance pipeline](#m333---the-skill-maintenance-pipeline) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.4 - The prose standards as principles](#m334---the-prose-standards-as-principles) | Not started |
 | &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | Not started |
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](#m361---disable-and-ship-opencode-dispatch) | In progress |
@@ -174,7 +175,7 @@ M3.2.1 owned the autonomous dispatch shapes (`/auto`, `/parallel-auto`) as `/ite
 
 The three instruction surfaces an agent reads -- prompts, skills and the two `AGENTS.md` layers -- and the rules that govern how one reaches the next. The surfaces were grown independently, so the contracts between them were never settled: a prompt links into a record it cannot see at runtime, the provider `AGENTS.md` carries a project's policy under a global title, the frontmatter gate names one of its three subjects, and each upstream skill lands in the tree by hand with no record of where it came from or what was changed. M3.3 settles the contracts, then builds the pipeline that holds skills to them.
 
-The three parts are ordered by dependency: M3.3.1 settles the contract, M3.3.2 executes it by retiring the policy form, and M3.3.3 is the pipeline that reads both. The pool came from T1 (the seeded-document dependency convention, the shipped-prompt link resolution, the frontmatter gate rename, the two `AGENTS.md` rows), T7 (the skill-maintenance backlog triage and the fork-and-strip convention) and the retired M8 (`.skills/`, skill templates, skill integration -- all three stale prose naming a loader the repository does not use). M8 is superseded by M3.3.3; its rows named no subject the tree recognises.
+The four parts are ordered by dependency: M3.3.1 settles the contract, M3.3.2 executes it by retiring the policy form, M3.3.3 is the pipeline that reads both, and M3.3.4 files the prose standards that survive as principles. The pool came from T1 (the seeded-document dependency convention, the shipped-prompt link resolution, the frontmatter gate rename, the two `AGENTS.md` rows), T7 (the skill-maintenance backlog triage and the fork-and-strip convention) and the retired M8 (`.skills/`, skill templates, skill integration -- all three stale prose naming a loader the repository does not use). M8 is superseded by M3.3.3; its rows named no subject the tree recognises.
 
 ##### M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract
 
@@ -204,6 +205,7 @@ The design is settled at handover `20261014-08` and the binding ADR. This sub-mi
 - One declaration names each maintenance skill and its invoking prompts, and a gate holds it both ways.
 - `bash scripts/lint.sh` and `bash scripts/run_tests.sh` are clean.
 
+- [ ] **Retire the rule that a skill or a prompt can never hold a rule** -- eight carriers state it: `documentation_policy.md:17`, `agent_workflow.md:99` and `:101`, `prompt-authoring-conventions.md:56` and `:60`, the section at `:98` with its rule 1, and `doc-advisor-policy.md:28`. M3.3.1's settled split already contradicts it, because the split states a rule where a procedure enforces it, so the doctrine retires with the form it came from. Six further carriers state the same claim as the canonical-owner test, policy membership and the policy map, and retire in the same slice. Ends when no instruction surface forbids a rule in a skill. Raised by the `communication-principle-show-dont-describe` unit, handover `20261016-06`.
 - [ ] **Retire the policy form** -- for each policy, move its mechanism into the procedure that runs it and its convention into the project's convention-skill. The split method and the per-policy map are settled at handover `20261014-08`: subtract the mechanism and the convention, and the remainder is the rule; a rule a procedure enforces is stated where it is enforced, and a rule that binds the procedures keeps a document. Design [`20261014-design-settled-retire_the_policy_form.md`](discussions/20261014-design-settled-retire_the_policy_form.md); ADR [`coding_agent_project_bindings.md`](../docs/adr/coding_agent_project_bindings.md). Ends when no policy document remains as a form and each maintenance skill's convention has left its shipped body. The parent closes when every slice below closes.
   - [x] **Settle the policy-form split** -- the subtraction method, the per-policy mechanism/convention/remainder map, the fates and the order. Handover `20261014-08`.
   - [x] **Retire `handover_policy`** -- mechanism to `handover-maintenance`, `iter` and `wrapup`; convention to `work-log`; the remainder stated where it is enforced. The first slice sets the pattern.
@@ -231,6 +233,23 @@ A skill lands in the tree by hand today. Nothing records its origin, nothing sta
  - [ ] **Take over the documentation-writing and skill-writing guidelines** -- [`prompt-authoring-conventions.md`](../docs/development/prompt-authoring-conventions.md) and the prose standards in [`documentation_policy.md`](../docs/policies/documentation_policy.md) are the authoring bars this pipeline checks a skill against. Decide whether they stay in place under this milestone's ownership or move under a skill that carries them, consistent with the M3.3.1 decision on where policy documents sit for the seeded subset.
 - [ ] **The advisor skills have grown past a readable length** -- the dogmatic reading of `prompt-authoring-conventions.md` ("each step ends on a completion criterion") puts a criterion on every step of every procedure, and `roadmap-maintenance` carries one per check as well. `roadmap-maintenance` is now 237 lines, `task-list` 145, and `milestone-close` 112, against 193 for the policy the second of them replaced. The risk is verbosity: a criterion per step crowds the instruction it bounds, and a reader cannot tell the bound from the step. Ends when the two advisor skills are measured against the reporting an agent actually consumes, and a criterion the agent never needs is dropped or moved. Raised by the `Retire roadmap_policy` slice, handover `20261014-12`, on operator direction. Moved from M3.3.1, since the skill corpus is this sub-milestone's subject.
 - [ ] **The feedback record resolves to a convention** -- the devlog's `AGENT_FEEDBACK.md` record has no convention in the seven-convention corpus, yet `bootstrap`, `check-in`, `wrapup`, `milestone-start` and `milestone-close` all carry it. The fit is a third `work-log` structure, `assets/feedback.md`, beside `handover.md` and `discussion.md`. Raised by the handoff-contract design (`20261014-design-settled-handoff_contract.md`), handover `20261014-06`. Moved from M3.3.1, since the convention corpus is this sub-milestone's subject.
+
+##### M3.3.4 - The prose standards as principles
+
+**Objective:** file the surviving prose standards, the `communication` standard and the prompt-authoring conventions, as `communication-principle-*` skills, so a standard a writer reaches for mid-draft is a skill rather than a document to search.
+
+M3.3.2's `Retire documentation_policy` slice leaves the Communication Standards as the `communication` standard, and `prompt-authoring-conventions.md` is the authoring bar M3.3.3 checks a skill against. Both govern the act of writing, so a writer meets them while drafting rather than at a lookup. The prefix marks the set as the project's own, against the upstream `principle-*` skills the pi provider ships.
+
+A principle here is a convention, not a rule. It cannot be enforced, so it carries no gate and no authority claim; it is steering a writer applies or does not.
+
+**Depends on:** M3.3.2, which retires the policy form and leaves the `communication` standard this files. Filed out of order on operator direction (2026-10-16), while M3.6.1 is the active milestone and M3.3.2 is `Not started`, so the first principle and its shape land early.
+
+**Not in scope:** the upstream `principle-*` set the pi provider ships, which this milestone does not own.
+
+- [ ] **`communication-principle-show-dont-describe`** -- hand over the artifact a reader acts on, or the output that proves a rule was followed, instead of a description or an assumption. Filed at `src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md`, installed to `$AGENT_HOME/agent/skills/`. Handover `20261016-07`.
+- [ ] **Plan the `communication` standard into principle specs** -- one spec per judgement row, with its name, its one-line statement and its source line. The plan is a discussion document; each spec files as its own row here, per the task-list convention's story-backed row.
+- [ ] **Plan the prompt-authoring conventions into principle specs** -- the same method over [`prompt-authoring-conventions.md`](../docs/development/prompt-authoring-conventions.md). Its writer-judgement rows file here; its document-structure rows stay where M3.3.3 places them.
+- [ ] **Dedupe the two plans** -- one judgement, one principle, one name.
 
 ##### Not in scope: M3.3
 
