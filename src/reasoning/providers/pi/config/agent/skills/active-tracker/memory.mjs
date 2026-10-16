@@ -102,10 +102,26 @@ export function forget({ log, lo, hi }) {
   if (removed.length === 0) throw new Error(`no view line covers [${lo}-${hi}]`);
   const kept = view.filter((l) => l.hi < lo || l.lo > hi);
   for (const e of logOf(log)) {
-    if (e.n >= lo && e.n <= hi && e.covers === undefined) kept.push({ lo: e.n, hi: e.n, text: clip(e.text) });
+    if (e.n >= lo && e.n <= hi && e.covers === undefined && e.retires === undefined) {
+      kept.push({ lo: e.n, hi: e.n, text: clip(e.text) });
+    }
   }
   writeView(log, kept);
   return { removed: removed.length };
+}
+
+// The log is append-only, but a directive is a mutable instruction and can be
+// outgrown by a later design. The retirement is logged, and the view drops the
+// line, so the view stops lying and the log keeps the fact.
+export function retire({ log, lo, hi }) {
+  const view = viewOf(log);
+  const removed = view.filter((l) => !(l.hi < lo || l.lo > hi));
+  if (removed.length === 0) throw new Error(`no view line covers [${lo}-${hi}]`);
+  const n = logOf(log).length + 1;
+  const range = `${lo}-${hi}`;
+  appendFileSync(log, JSON.stringify({ n, ts: clock(), retires: range, text: `retired [${range}]` }) + "\n");
+  writeView(log, view.filter((l) => l.hi < lo || l.lo > hi));
+  return { retired: removed.length, n, range };
 }
 
 // Replace the region from the heading to the next level-2 heading, or append it.

@@ -240,6 +240,26 @@ test_memory_merge_compresses() {
   assert_eq "$(run_at "$d" memory wake 2>&1)" "[1-2] a and b" "merge replaces two lines with one summary"
 }
 
+test_memory_retire_drops_a_directive() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  run_at "$d" memory note "a directive the design outgrew" >/dev/null
+  run_at "$d" memory note "a directive that stands" >/dev/null
+  out="$(run_at "$d" memory retire 1-1 2>&1)"
+  assert_contains "$out" "retired 1 line(s) covering [1-1]" "retire drops the line"
+  assert_eq "$(run_at "$d" memory wake 2>&1)" "[2-2] a directive that stands" "the retired line leaves the view"
+  assert_contains "$(cat "$d/MEMORY_LOG.jsonl")" '"retires":"1-1"' "the log keeps the retirement"
+}
+
+test_memory_retire_refuses_an_absent_range() {
+  local d out
+  d="$(get_fixture_dir)"
+  write_store "$d"
+  out="$(run_at "$d" memory retire 9-9 2>&1)"
+  assert_contains "$out" "no view line covers [9-9]" "an absent range refuses rather than logging"
+}
+
 test_the_report_composes_both() {
   local d out
   d="$(get_fixture_dir)"
@@ -316,6 +336,8 @@ run_test test_the_log_reconciles_a_missed_pop
 run_test test_memory_notes_and_wakes
 run_test test_memory_restatement_adds_no_line
 run_test test_memory_merge_compresses
+run_test test_memory_retire_drops_a_directive
+run_test test_memory_retire_refuses_an_absent_range
 run_test test_the_report_composes_both
 run_test test_the_report_advances_both_marks
 run_test test_library_drives_the_same_operations

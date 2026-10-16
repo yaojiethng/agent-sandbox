@@ -31,7 +31,7 @@ The session's working state: the task tree, the pointer into it, and the steerin
 | `pop <id> [<id>...]` | prune one or more nodes, each with its subtree |
 | `view` | render the tree and the path into the tracker file |
 | `report` | print the combined change report, and advance both marks |
-| `memory <wake\|note\|merge\|zoom\|forget>` | the memory's own operations |
+| `memory <wake\|note\|merge\|zoom\|forget\|retire>` | the memory's own operations |
 | `log [--since <n>]` | print the tree's change record |
 
 The paths default to `<scratch>/ACTIVE_TASK_TRACKER.json`, `<scratch>/ACTIVE_TASK_TRACKER.md` and `<scratch>/SESSION_MEMORY_LOG.jsonl`, overridden by `--store`, `--tracker` and `--log`. A missing store or a missing section refuses, so a render never half-writes.
@@ -53,6 +53,8 @@ There is no resolved state: a resolved node is pruned, because its history is th
 An append-only log is the storage, and a bounded view is the reading budget. The view is at most 16 lines by 240 characters; when it overflows, `note` reports a merge due, and the two ranges it names merge into one summary. A summary is a cache, so `forget` drops one and the originals resurface. The log is never pruned.
 
 `note` appends one occurrence. `--restates <n>` records a restatement and adds no view line. `--home <path>` points at a durable record. `wake` prints the view, and `zoom <lo>-<hi>` prints the log range.
+
+`retire <lo>-<hi>` drops a directive the design has outgrown. The log records the retirement and the view stops carrying the line, because a directive is a mutable instruction rather than a durable fact. Retire a directive in the same recording that invalidated it.
 
 ## The report
 

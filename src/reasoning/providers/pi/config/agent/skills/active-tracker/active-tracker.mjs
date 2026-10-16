@@ -10,7 +10,7 @@
 //        node active-tracker.mjs pop <id> [<id>...]
 //        node active-tracker.mjs view
 //        node active-tracker.mjs report
-//        node active-tracker.mjs memory <wake|note|merge|zoom|forget> [args]
+//        node active-tracker.mjs memory <wake|note|merge|zoom|forget|retire> [args]
 //        node active-tracker.mjs log [--since <n>]
 //
 // Exit codes: 0 ok, 1 a refusal with a message on stderr.
@@ -170,8 +170,12 @@ function main(raw) {
         out(`noted n=${result.n}${result.mergeDue ? `; merge due: ${result.mergeDue}` : ""}`);
       } else if (sub === "merge") out(`merged ${memory.merge({ log, lo: Number(argv.shift()), hi: Number(argv.shift()), text: argv.shift() }).merged} line(s)`);
       else if (sub === "forget") out(`forgot ${memory.forget({ log, ...range(argv.shift()) }).removed} line(s)`);
+      else if (sub === "retire") {
+        const result = memory.retire({ log, ...range(argv.shift()) });
+        out(`retired ${result.retired} line(s) covering [${result.range}]; logged as n=${result.n}`);
+      }
       else if (sub === "zoom") for (const entry of memory.zoom({ log, ...range(argv.shift()) })) out(JSON.stringify(entry));
-      else throw new Error("memory needs one of wake, note, merge, zoom, forget");
+      else throw new Error("memory needs one of wake, note, merge, zoom, forget, retire");
     } else {
       throw new Error("unknown command; one of push, pop, view, report, memory, log");
     }
