@@ -15,7 +15,9 @@
 // Two grains, one per file. The log records occurrences. The view holds one
 // line per directive, newest first.
 //
-// Usage: node session-memory.mjs [--log <path>] [--block <path>] [--heading <text>] <command> [args]
+// Usage: node session-memory.mjs <command> [args] [--log <path>] [--block <path>] [--heading <text>]
+//
+// The three path flags are read from anywhere in the argument list.
 //
 // Commands:
 //   note <text> [--home <path>] [--restates <n>]   append an occurrence
@@ -35,16 +37,17 @@ import { dirname, join } from "node:path";
 const VIEW_LINES = 16;
 const LINE_CHARS = 240;
 
-const argv = process.argv.slice(2);
+const argv = [];
 let logPath = ".scratchpad/SESSION_MEMORY_LOG.jsonl";
 let blockPath = "";
 let heading = "## Session memory";
-while (argv[0] === "--log" || argv[0] === "--block" || argv[0] === "--heading") {
-  const flag = argv.shift();
-  const value = argv.shift();
-  if (flag === "--log") logPath = value;
-  else if (flag === "--block") blockPath = value;
-  else heading = value;
+const raw = process.argv.slice(2);
+while (raw.length > 0) {
+  const token = raw.shift();
+  if (token === "--log") logPath = raw.shift();
+  else if (token === "--block") blockPath = raw.shift();
+  else if (token === "--heading") heading = raw.shift();
+  else argv.push(token);
 }
 const command = argv.shift();
 

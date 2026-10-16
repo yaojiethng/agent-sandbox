@@ -129,6 +129,17 @@ test_render_writes_the_block() {
   assert_contains "$out" "[1-1] a directive" "the block carries the view"
 }
 
+test_flags_follow_the_command() {
+  local d out
+  d="$(get_fixture_dir)"
+  node "$SM" note "trailing flags work" --log "$d/SESSION_MEMORY_LOG.jsonl" >/dev/null
+  assert_eq "$(node "$SM" wake --log "$d/SESSION_MEMORY_LOG.jsonl")" "[1-1] trailing flags work" "a path flag may follow the command"
+  printf 'body\n' > "$d/TRACKER.md"
+  node "$SM" render --log "$d/SESSION_MEMORY_LOG.jsonl" --block "$d/TRACKER.md" --heading "## Session memory" >/dev/null
+  out="$(cat "$d/TRACKER.md")"
+  assert_contains "$out" "[1-1] trailing flags work" "render takes its flags after the command"
+}
+
 run_test test_wake_empty
 run_test test_note_appends
 run_test test_view_newest_first
@@ -140,5 +151,6 @@ run_test test_forget_resurfaces
 run_test test_mark_resets_the_diff
 run_test test_clip_to_the_bound
 run_test test_render_writes_the_block
+run_test test_flags_follow_the_command
 
 test_done
