@@ -59,3 +59,13 @@ image_digest() {
   local image_name="${1:?image_digest requires an image name}"
   docker image inspect --format '{{.Id}}' "$image_name" 2>/dev/null
 }
+
+# image_label IMAGE_NAME LABEL_KEY
+# One image config label's value, or empty when the image carries no such
+# label. The build stamps a base tier's content key as a label and reads it
+# back here, so a skip decision compares content rather than mere existence.
+image_label() {
+  local image_name="${1:?image_label requires an image name}"
+  local key="${2:?image_label requires a label key}"
+  docker image inspect --format '{{index .Config.Labels "'"$key"'"}}' "$image_name" 2>/dev/null
+}

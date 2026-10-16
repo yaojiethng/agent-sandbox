@@ -157,6 +157,27 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
   assert_ne "$rc" "0" "build: a failed image build propagates a non-zero exit"
 }
 
+# compute_base_build_keys  --  the `image:key` map the docker stub reports for
+# the tier-1 and tier-2 base images, computed the way build.sh computes it.
+# With it exported the base tiers' content keys match and they skip, so a
+# build-count assertion measures the target routing rather than the base tiers.
+# image_digest runs through the stub, so the keys match what the build computes.
+compute_base_build_keys() {
+  local keys p prov
+  keys="agent-base:$(
+    PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
+      _build_key "$REPO_ROOT/src/reasoning/base.dockerfile"
+  )"
+  for p in "$REPO_ROOT"/src/reasoning/providers/*/base.dockerfile; do
+    prov="$(basename "$(dirname "$p")")"
+    keys="$keys $(agent_base_image_name "$prov"):$(
+      PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
+        _build_key "$p" "agent-base"
+    )"
+  done
+  printf '%s' "$keys"
+}
+
 # The (string-as-list -> array) refactor is behavior-preserving at the LIST
 # level: for path sets whose entries are all whitespace-free, the old unquoted
 # word-split call and the new array call produce the SAME argument list. So a
@@ -177,6 +198,10 @@ test_build_default_targets_all() {
   local FIXTURE_DIR="$FIXTURE_DIR/bld_default"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
+  export DOCKER_STUB_IMAGE_DIGEST="sha256:stub"
+  local base_keys
+  base_keys="$(compute_base_build_keys)"
+  export DOCKER_STUB_IMAGE_BUILD_KEYS="$base_keys"
   ( export PATH="$STUB_DIR:$PATH"
     bash "$REPO_ROOT/scripts/build.sh" \
       --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR"
@@ -188,6 +213,85 @@ test_build_default_targets_all() {
     pass "build (default no --targets): sandbox + all providers ($expected docker builds)"
   else
     fail "build (default no --targets): expected $expected 'docker build', got $actual"
+  fi
+  unset DOCKER_STUB_IMAGE_BUILD_KEYS DOCKER_STUB_IMAGE_DIGEST
+}
+
+# Given: a Dockerfile, unchanged then changed
+# When:  the build key is computed
+# Then:  the key tracks the content, not the file's identity
+# Asserts: an edit to a base takes effect instead of being skipped
+test_build_key_tracks_dockerfile_content() {
+  local df="$FIXTURE_DIR/Dockerfile"
+  printf 'FROM scratch\n' > "$df"
+  local k1 k2 k3
+  k1="$(_build_key "$df")"
+  k2="$(_build_key "$df")"
+  assert_eq "$k1" "$k2" "build key: an unchanged Dockerfile yields the same key"
+  printf 'RUN true\n' >> "$df"
+  k3="$(_build_key "$df")"
+  assert_ne "$k1" "$k3" "build key: a changed Dockerfile yields a changed key"
+}
+
+# Given: one Dockerfile over a base image whose content id differs
+# When:  the build key is computed with the base image named
+# Then:  the key changes, so a rebuilt shared base forces the provider tier
+# Asserts: a base-tier change propagates to the tier that sits on it
+test_build_key_tracks_the_base_image() {
+  local df="$FIXTURE_DIR/Dockerfile"
+  printf 'FROM scratch\n' > "$df"
+  local old_path="$PATH"
+  PATH="$STUB_DIR:$PATH"
+  local k1 k2
+  k1="$(DOCKER_STUB_IMAGE_DIGEST=sha256:old _build_key "$df" "base-image")"
+  k2="$(DOCKER_STUB_IMAGE_DIGEST=sha256:new _build_key "$df" "base-image")"
+  PATH="$old_path"
+  assert_ne "$k1" "$k2" "build key: a rebuilt base yields a changed key for its tier"
+}
+
+# Given: an image whose stamped key equals the Dockerfile's current key
+# When:  build_if_missing runs
+# Then:  the tier is skipped, so no docker build reaches the trace
+# Asserts: a content match is what lets a base tier skip
+test_build_if_missing_skips_on_matching_key() {
+  local df="$FIXTURE_DIR/Dockerfile"
+  printf 'FROM scratch\n' > "$df"
+  local key
+  key="$(_build_key "$df")"
+  export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
+  : > "$DOCKER_TRACE_LOG"
+  export DOCKER_STUB_IMAGE_BUILD_KEY="$key"
+  local old_path="$PATH"
+  PATH="$STUB_DIR:$PATH"
+  build_if_missing "some-base" "$df" "$FIXTURE_DIR" "" "" "" >/dev/null 2>&1
+  PATH="$old_path"
+  unset DOCKER_STUB_IMAGE_BUILD_KEY
+  if grep -q " build " "$DOCKER_TRACE_LOG"; then
+    fail "build_if_missing: a matching content key should skip, but a build ran"
+  else
+    pass "build_if_missing: a tier whose stamped key matches is skipped"
+  fi
+}
+
+# Given: an image whose stamped key differs from the Dockerfile's current key
+# When:  build_if_missing runs
+# Then:  the tier is built
+# Asserts: a changed base is not served from a stale image
+test_build_if_missing_builds_on_stale_key() {
+  local df="$FIXTURE_DIR/Dockerfile"
+  printf 'FROM scratch\n' > "$df"
+  export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
+  : > "$DOCKER_TRACE_LOG"
+  export DOCKER_STUB_IMAGE_BUILD_KEY="stale-key"
+  local old_path="$PATH"
+  PATH="$STUB_DIR:$PATH"
+  build_if_missing "some-base" "$df" "$FIXTURE_DIR" "" "" "" >/dev/null 2>&1
+  PATH="$old_path"
+  unset DOCKER_STUB_IMAGE_BUILD_KEY
+  if grep -q " build " "$DOCKER_TRACE_LOG"; then
+    pass "build_if_missing: a stale content key forces the tier to build"
+  else
+    fail "build_if_missing: a stale content key did not force a build"
   fi
 }
 
@@ -397,6 +501,10 @@ run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 run_test test_build_default_targets_all
 run_test test_build_does_not_require_sandbox
+run_test test_build_key_tracks_dockerfile_content
+run_test test_build_key_tracks_the_base_image
+run_test test_build_if_missing_skips_on_matching_key
+run_test test_build_if_missing_builds_on_stale_key
 run_test test_preflight_builds_when_images_missing
 run_test test_preflight_refuses_missing_images_when_resume
 run_test test_build_main_requires_project
