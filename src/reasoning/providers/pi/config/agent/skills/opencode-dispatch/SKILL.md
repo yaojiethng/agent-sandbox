@@ -26,7 +26,7 @@ A caller runs the script beside this skill:
 bash "$AGENT_HOME/agent/skills/opencode-dispatch/dispatch.sh" <brief-file> <scratch-dir> [role]
 ```
 
-The role defaults to `_IMPLEMENTER`. The script builds the command through the runner seam (`<repo>/src/libs/dispatch.sh`), so the flag mapping lives in one place, and runs it in the foreground of one call so the worker is never orphaned. It writes the log and the change set beneath the scratch directory and prints their paths. It refuses a missing or empty brief, an absent or unwritable scratch directory, and a dirty tree.
+The role defaults to `_IMPLEMENTER`. The script builds the command through the runner seam (`/opt/sandbox/lib/dispatch.sh`), so the flag mapping lives in one place, and runs it in the foreground of one call so the worker is never orphaned. It writes the log and the change set beneath the scratch directory and prints their paths. It refuses a missing or empty brief, an absent or unwritable scratch directory, and a dirty tree.
 
 Env overrides: `OPENCODE_DISPATCH_MODEL`, `OPENCODE_DISPATCH_THINKING`, `OPENCODE_DISPATCH_TIMEOUT`.
 

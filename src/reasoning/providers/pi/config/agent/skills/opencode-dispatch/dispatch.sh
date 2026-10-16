@@ -60,7 +60,7 @@ main() {
   local repo_root
   repo_root="$(git rev-parse --show-toplevel)"
   # shellcheck source=/dev/null
-  source "$repo_root/src/libs/dispatch.sh"
+  source /opt/sandbox/lib/dispatch.sh
 
   local model="${OPENCODE_DISPATCH_MODEL:-$DEFAULT_MODEL}"
   local level="${OPENCODE_DISPATCH_THINKING:-$DEFAULT_THINKING}"
