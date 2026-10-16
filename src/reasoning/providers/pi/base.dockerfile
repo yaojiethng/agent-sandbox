@@ -1,4 +1,4 @@
 ARG BASE_IMAGE=agent-base
 FROM ${BASE_IMAGE}
 
-RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@1.2.0
+RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@1.3.0
