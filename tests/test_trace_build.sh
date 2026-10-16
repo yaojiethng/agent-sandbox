@@ -273,6 +273,74 @@ test_build_if_missing_skips_on_matching_key() {
   fi
 }
 
+# Given: a build through build_image with no progress mode stated
+# When:  the docker invocation is traced
+# Then:  --quiet is passed, which is what keeps the harness log one line per
+#        image
+# Asserts: the default progress mode is quiet
+test_build_image_defaults_to_quiet_progress() {
+  local df="$FIXTURE_DIR/Dockerfile"
+  printf 'FROM scratch\n' > "$df"
+  export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
+  : > "$DOCKER_TRACE_LOG"
+  local old_path="$PATH"
+  PATH="$STUB_DIR:$PATH"
+  BUILD_PROGRESS="quiet"
+  build_image "an-image" "$df" "$FIXTURE_DIR" "" "" "" >/dev/null 2>&1
+  PATH="$old_path"
+  if grep -q -- "--quiet" "$DOCKER_TRACE_LOG"; then
+    pass "build_image: the default progress mode passes --quiet"
+  else
+    fail "build_image: the default progress mode should pass --quiet"
+  fi
+}
+
+# Given: a build through build_image with plain progress
+# When:  the docker invocation is traced
+# Then:  --progress=plain replaces --quiet, so the per-step lines the host probe
+#        parses actually reach the log and the two flags never collide
+# Asserts: the progress mode reaches docker instead of riding alongside --quiet
+test_build_image_plain_progress_replaces_quiet() {
+  local df="$FIXTURE_DIR/Dockerfile"
+  printf 'FROM scratch\n' > "$df"
+  export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
+  : > "$DOCKER_TRACE_LOG"
+  local old_path="$PATH"
+  PATH="$STUB_DIR:$PATH"
+  BUILD_PROGRESS="plain"
+  build_image "an-image" "$df" "$FIXTURE_DIR" "" "" "" >/dev/null 2>&1
+  PATH="$old_path"
+  # Read by the sourced build.sh's build_image.
+  # shellcheck disable=SC2034
+  BUILD_PROGRESS="quiet"
+  if grep -q -- "--progress=plain" "$DOCKER_TRACE_LOG" && ! grep -q -- "--quiet" "$DOCKER_TRACE_LOG"; then
+    pass "build_image: plain progress reaches docker and --quiet is absent"
+  else
+    fail "build_image: --progress=plain should replace --quiet, trace: $(cat "$DOCKER_TRACE_LOG")"
+  fi
+}
+
+# Given: the builder invoked with --progress=plain on its command line
+# When:  it builds one provider chain
+# Then:  the flag is parsed at ingestion and reaches every docker build
+# Asserts: the option is wired from the CLI, not only from a sourced variable
+test_cli_progress_flag_reaches_docker() {
+  local FIXTURE_DIR="$FIXTURE_DIR/progress_cli"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  (
+    export PATH="$STUB_DIR:$PATH"
+    bash "$REPO_ROOT/scripts/build.sh" \
+      --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" \
+      --targets=pi --progress=plain
+  ) >"$FIXTURE_DIR/progress-cli.log" 2>&1 || true
+  if grep -q -- "--progress=plain" "$DOCKER_TRACE_LOG"; then
+    pass "--progress=plain is parsed at ingestion and reaches docker build"
+  else
+    fail "--progress=plain did not reach docker build; trace: $(cat "$DOCKER_TRACE_LOG"); output: $(cat "$FIXTURE_DIR/progress-cli.log")"
+  fi
+}
+
 # Given: an image whose stamped key differs from the Dockerfile's current key
 # When:  build_if_missing runs
 # Then:  the tier is built
@@ -503,6 +571,9 @@ run_test test_build_default_targets_all
 run_test test_build_does_not_require_sandbox
 run_test test_build_key_tracks_dockerfile_content
 run_test test_build_key_tracks_the_base_image
+run_test test_build_image_defaults_to_quiet_progress
+run_test test_build_image_plain_progress_replaces_quiet
+run_test test_cli_progress_flag_reaches_docker
 run_test test_build_if_missing_skips_on_matching_key
 run_test test_build_if_missing_builds_on_stale_key
 run_test test_preflight_builds_when_images_missing

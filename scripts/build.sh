@@ -17,6 +17,12 @@
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
+# The docker build progress mode. `quiet` is the default and keeps the harness
+# log to one line per image; the host build probe passes `plain` so its report
+# can carry the per-step timings. Any other docker --progress value passes
+# through. The option is parsed once at ingestion and read here.
+BUILD_PROGRESS="quiet"
+
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/src/libs/interface_contract.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
@@ -42,16 +48,23 @@ build_image() {
   local extra_label="${6:-}"
   shift 6
 
-  local build_cmd=(docker build --quiet)
+  local build_cmd=(docker build)
+  if [[ "${BUILD_PROGRESS:-quiet}" == "quiet" ]]; then
+    build_cmd+=(--quiet)
+  else
+    build_cmd+=(--progress="$BUILD_PROGRESS")
+  fi
   [[ -n "$no_cache" ]] && build_cmd+=(--no-cache)
   build_cmd+=(-t "$image_name" -f "$dockerfile")
   [[ -n "$contract_label" ]] && build_cmd+=(--label "agent-sandbox.interface-contract-version=$contract_label")
   [[ -n "$extra_label" ]] && build_cmd+=(--label "$extra_label")
   build_cmd+=("$@" "$repo_root")
 
-  # Run docker build with --quiet: per-step progress output (the cached-step
-  # staircase) is suppressed so the harness log stays clean; failures still
-  # surface their error text. The exit status is captured so a failure surfaces
+  # Run docker build with --quiet by default: per-step progress output (the
+  # cached-step staircase) is suppressed so the harness log stays clean, and
+  # failures still surface their error text. --progress=<mode> replaces --quiet
+  # for a caller that needs the step lines, which is the host build probe. The
+  # exit status is captured so a failure surfaces
   # a single, descriptive message instead of a bare `set -e` abort. `_build_rc`
   # defaults to a non-zero sentinel (fail closed): the `&& ... || ...` capture
   # clears it to 0 on success or the build's real status on failure, so a path
@@ -315,6 +328,8 @@ Options:
   --sandbox=<path>    Accepted for CLI uniformity; build does not read it
   --targets=<list>    Comma-separated targets: all, sandbox, <provider>[,<provider>] (default: all)
   --rebuild           Force a full rebuild from scratch
+  --progress=<mode>   docker build progress: quiet (default) or a docker mode
+                      such as plain, which prints the per-step timings
 EOF
 }
 
@@ -324,6 +339,7 @@ main() {
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --targets=BUILD_TARGETS \
+    --progress=BUILD_PROGRESS \
     --rebuild \
     -- "$@"
   local rc=$?
