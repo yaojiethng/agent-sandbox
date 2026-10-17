@@ -13,11 +13,21 @@ import { dirname, join } from "node:path";
 export const VIEW_LINES = 16;
 export const LINE_CHARS = 240;
 
-export const pathsOf = (log) => ({
-  log,
-  view: join(dirname(log), "SESSION_MEMORY_VIEW.jsonl"),
-  state: join(dirname(log), "SESSION_MEMORY_STATE.json"),
-});
+const requireLog = (log) => {
+  if (typeof log !== "string" || log === "") {
+    throw new Error("no log path given: the facade supplies one, the libraries take it");
+  }
+  return log;
+};
+
+export const pathsOf = (log) => {
+  requireLog(log);
+  return {
+    log,
+    view: join(dirname(log), "SESSION_MEMORY_VIEW.jsonl"),
+    state: join(dirname(log), "SESSION_MEMORY_STATE.json"),
+  };
+};
 
 let clock = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 export const setClock = (fn) => {
@@ -31,6 +41,7 @@ const readLines = (path) =>
 const clip = (text) => (text.length > LINE_CHARS ? `${text.slice(0, LINE_CHARS - 3)}...` : text);
 
 function ensure(log) {
+  requireLog(log);
   const dir = dirname(log);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }

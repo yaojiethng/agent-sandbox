@@ -27,6 +27,7 @@ The session's working state: the task tree, the pointer into it, and the steerin
 
 | Command | Does |
 |---|---|
+| `init` | seed the store and the tracker, so a fresh session opens rather than refuses |
 | `push <id> <parent> [--label <text>] [--state <state>] [--stay] [--note <text>] [--home <path>]` | upsert a node, move the pointer, and optionally note a directive |
 | `pop <id> [<id>...]` | prune one or more nodes, each with its subtree |
 | `view` | render the tree and the path into the tracker file |
@@ -34,7 +35,7 @@ The session's working state: the task tree, the pointer into it, and the steerin
 | `memory <wake\|note\|merge\|zoom\|forget\|retire>` | the memory's own operations |
 | `log [--since <n>]` | print the tree's change record |
 
-The paths default to `<scratch>/ACTIVE_TASK_TRACKER.json`, `<scratch>/ACTIVE_TASK_TRACKER.md` and `<scratch>/SESSION_MEMORY_LOG.jsonl`, overridden by `--store`, `--tracker` and `--log`. A missing store or a missing section refuses, so a render never half-writes.
+The skill owns its filenames. A caller names one root with `--root`, defaulting to `.scratchpad`, and the files are fixed under it: `ACTIVE_TASK_TRACKER.json`, `ACTIVE_TASK_TRACKER.md` and `SESSION_MEMORY_LOG.jsonl`. The names are not configurable, so the store, the tracker and the log cannot be split across three directories. A missing store or a missing section refuses, so a render never half-writes; `init` is how a fresh session supplies them.
 
 ## The tree
 
@@ -65,14 +66,15 @@ An append-only log is the storage, and a bounded view is the reading budget. The
 Import the facade, or either library, rather than shelling out.
 
 ```js
-import { push, pop, view, report, tree, memory } from "$AGENT_HOME/agent/skills/active-tracker/active-tracker.mjs";
+import { init, push, pop, view, report, tree, memory } from "$AGENT_HOME/agent/skills/active-tracker/active-tracker.mjs";
 
+init();
 push({ id: "B6b", parent: "B6", label: "the dispatch-CLI pin and gate", note: "the free tier is measured" });
 pop({ ids: ["B3e", "B4a-i", "B4a-ii", "B4a-iii"] });
 console.log(report());
 ```
 
-Each function takes `{ store, tracker, log, ... }` and defaults to the scratch paths. `pop` takes `ids`, an array.
+Each facade function takes `{ root, ... }` and defaults the root to `.scratchpad`. `pop` takes `ids`, an array. `tree` and `memory` are exported for tests; a caller drives the facade, because only the facade composes the two into one tracker file and one report.
 
 ## Non-goals
 

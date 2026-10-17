@@ -39,7 +39,7 @@ AT="$REPO_ROOT_DIR/src/reasoning/providers/pi/config/agent/skills/active-tracker
 
 write_store() {
   local d="$1"
-  cat > "$d/TRACKER.json" <<'JSON'
+  cat > "$d/ACTIVE_TASK_TRACKER.json" <<'JSON'
 {
   "current": "B",
   "head": "0000000",
@@ -51,7 +51,7 @@ write_store() {
   ]
 }
 JSON
-  cat > "$d/TRACKER.md" <<'MD'
+  cat > "$d/ACTIVE_TASK_TRACKER.md" <<'MD'
 # ACTIVE_TASK_TRACKER
 
 **Resume here.** Current node: **B**, the second branch.
@@ -81,11 +81,11 @@ MD
 run_at() {
   local d="$1"
   shift
-  node "$AT" "$@" --store "$d/TRACKER.json" --tracker "$d/TRACKER.md" --log "$d/MEMORY_LOG.jsonl"
+  node "$AT" "$@" --root "$d"
 }
 
 state_of() {
-  node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.find(n=>n.id===process.argv[2]).state)' "$1/TRACKER.json" "$2"
+  node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.find(n=>n.id===process.argv[2]).state)' "$1/ACTIVE_TASK_TRACKER.json" "$2"
 }
 
 test_push_lands_a_node_and_moves_the_pointer() {
@@ -104,7 +104,7 @@ test_push_is_idempotent() {
   run_at "$d" push B2 B --label "a new child" >/dev/null
   run_at "$d" push B2 B --label "a new child" >/dev/null
   run_at "$d" push B2 B --label "a new child" >/dev/null
-  count="$(node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.length)' "$d/TRACKER.json")"
+  count="$(node -e 'const s=require("fs").readFileSync(process.argv[1],"utf8");console.log(JSON.parse(s).nodes.length)' "$d/ACTIVE_TASK_TRACKER.json")"
   assert_eq "$count" "5" "a repeated push adds one node, not three"
 }
 
@@ -158,7 +158,7 @@ test_view_renders_the_tree_and_the_path() {
   d="$(get_fixture_dir)"
   write_store "$d"
   run_at "$d" view >/dev/null
-  t="$(cat "$d/TRACKER.md")"
+  t="$(cat "$d/ACTIVE_TASK_TRACKER.md")"
   assert_contains "$t" "root. the work" "the tree renders"
   assert_contains "$t" "path:     root -> B" "the path is derived from the edges"
   assert_contains "$t" "frontier: at root: A" "the frontier is derived from the edges"
@@ -249,7 +249,7 @@ test_memory_retire_drops_a_directive() {
   out="$(run_at "$d" memory retire 1-1 2>&1)"
   assert_contains "$out" "retired 1 line(s) covering [1-1]" "retire drops the line"
   assert_eq "$(run_at "$d" memory wake 2>&1)" "[2-2] a directive that stands" "the retired line leaves the view"
-  assert_contains "$(cat "$d/MEMORY_LOG.jsonl")" '"retires":"1-1"' "the log keeps the retirement"
+  assert_contains "$(cat "$d/SESSION_MEMORY_LOG.jsonl")" '"retires":"1-1"' "the log keeps the retirement"
 }
 
 test_memory_retire_refuses_an_absent_range() {
@@ -293,12 +293,11 @@ test_library_drives_the_same_operations() {
   write_store "$d"
   out="$(node --input-type=module -e "
     import { push, pop, report, tree, memory } from 'file://$AT';
-    const paths = { store: '$d/TRACKER.json', tracker: '$d/TRACKER.md', log: '$d/MEMORY_LOG.jsonl' };
-    push({ ...paths, id: 'C', parent: 'root', label: 'via the library', note: 'from the library' });
-    pop({ ...paths, ids: ['A'] });
-    console.log(tree.renderTree(tree.load(paths.store)).join('|'));
-    console.log(memory.wake({ log: paths.log }));
-    console.log(report(paths));
+    push({ root: '$d', id: 'C', parent: 'root', label: 'via the library', note: 'from the library' });
+    pop({ root: '$d', ids: ['A'] });
+    console.log(tree.renderTree(tree.load('$d/ACTIVE_TASK_TRACKER.json')).join('|'));
+    console.log(memory.wake({ log: '$d/SESSION_MEMORY_LOG.jsonl' }));
+    console.log(report({ root: '$d' }));
   " 2>&1)"
   assert_contains "$out" "C. via the library" "the tree library pushes"
   assert_not_contains "$out" "A. the first branch" "the tree library prunes"
@@ -309,7 +308,7 @@ test_library_drives_the_same_operations() {
 test_missing_store_refuses() {
   local d out
   d="$(get_fixture_dir)"
-  out="$(node "$AT" view --store "$d/absent.json" --tracker "$d/absent.md" --log "$d/absent.jsonl" 2>&1)"
+  out="$(node "$AT" view --root "$d/absent" 2>&1)"
   assert_contains "$out" "no store at" "a missing store refuses"
 }
 
@@ -317,7 +316,7 @@ test_missing_section_refuses() {
   local d out
   d="$(get_fixture_dir)"
   write_store "$d"
-  printf '# ACTIVE_TASK_TRACKER\n' > "$d/TRACKER.md"
+  printf '# ACTIVE_TASK_TRACKER\n' > "$d/ACTIVE_TASK_TRACKER.md"
   out="$(run_at "$d" view 2>&1)"
   assert_contains "$out" "no \"## The work tree\" section" "a missing region refuses rather than half-writing"
 }

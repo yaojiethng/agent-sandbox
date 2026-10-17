@@ -4,9 +4,13 @@ The model behind the tool. The agent-facing contract is [`SKILL.md`](SKILL.md); 
 
 ## Two libraries, one facade
 
-`tree.mjs` holds the task tree as an edge list. `memory.mjs` holds the steering memory in the OptMem shape. Neither knows about the other, and each is usable alone.
+`tree.mjs` holds the task tree as an edge list. `memory.mjs` holds the steering memory in the OptMem shape. Neither knows about the other.
 
-`active-tracker.mjs` is the facade. It owns the three paths, it is the single writer of the tracker file, and it composes the single report from both. The composition is the point: the two libraries share a lifecycle, a file and a mark, so a caller that recorded one without the other would leave the session's state inconsistent. One entry point makes that state hard to get wrong.
+`active-tracker.mjs` is the facade. It is the single writer of the tracker file, and it composes the single report from both. The composition is the point: the two libraries share a lifecycle, a file and a mark, so a caller that recorded one without the other would leave the session's state inconsistent. One entry point makes that state hard to get wrong.
+
+## The skill owns its filenames
+
+One value crosses the boundary, and it is a directory. `paths({ root })` is the only place in the skill that builds a filename, and the four names under the root are constants. Three separately settable paths would let a caller put the store in one directory and the log in another, which is the split the paragraph above says the design exists to prevent. A parameter that can express the failure is not a guarantee.
 
 ## The task tree is an edge list
 
