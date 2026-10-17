@@ -8,7 +8,10 @@
 # Special return-value stubs:
 #   compose config   — returns first input file unchanged (valid YAML from sed substitution)
 #   inspect (health) — returns "healthy"
+#   inspect          -- returns DOCKER_STUB_INSPECT_LINE when the format names State.ExitCode
 #   wait             — returns immediately (exit 0)
+#   stop             -- sleeps DOCKER_STUB_STOP_BLOCK seconds when set (simulates a hanging docker stop)
+#   events           -- prints DOCKER_STUB_EVENTS_LINES when set (raw event JSON lines)
 #   ps -aq           — returns nothing unless DOCKER_STUB_PS_IDS is set
 #   network ls -q    — returns nothing unless DOCKER_STUB_NETWORK_IDS is set
 #   volume ls        — returns DOCKER_STUB_VOLUME_NAMES
@@ -27,6 +30,21 @@ CMD="${0##*/}"
 
 log() {
   echo "[$(date +%s)] $*" >> "$LOG"
+}
+
+# _arg_id ARG... — the resource id among a subcommand's arguments. The id can sit
+# before or after the --format flag, so take the last argument that is neither a
+# flag nor a format template.
+_arg_id() {
+  local a out=""
+  for a in "$@"; do
+    case "$a" in
+      -*) continue ;;
+      *'{{'*) continue ;;
+      *) out="$a" ;;
+    esac
+  done
+  printf '%s' "$out"
 }
 
 # _session_id_for ID — resolve the agent-sandbox.session-id label reported for
@@ -190,9 +208,23 @@ if [[ "$CMD" == "docker" ]]; then
   sub="${1:-}"; shift || true
 
   case "$sub" in
+    events)
+      log "events $*"
+      # DOCKER_STUB_EVENTS_LINES holds raw `docker events --format '{{json .}}'`
+      # lines, newline-separated, so a caller can state the window exactly.
+      if [[ -n "${DOCKER_STUB_EVENTS_LINES:-}" ]]; then
+        printf '%s\n' "$DOCKER_STUB_EVENTS_LINES"
+      fi
+      ;;
     inspect)
       log "inspect $*"
-      if [[ "$*" == *"Health.Status"* ]]; then
+      if [[ "$*" == *"State.ExitCode"* && -n "${DOCKER_STUB_INSPECT_LINE:-}" ]]; then
+        # The multi-field container inspect. DOCKER_STUB_INSPECT_LINE is the
+        # pipe-delimited line the stub reports, so a caller can state exactly
+        # what one container looks like without a daemon.
+        # Fields: name|status|exit|stop_signal|finished_at|path
+        printf '%s\n' "$DOCKER_STUB_INSPECT_LINE"
+      elif [[ "$*" == *"Health.Status"* ]]; then
         # Failure simulation: DOCKER_STUB_SANDBOX_HEALTH overrides the sandbox
         # health status (empty = healthy, as in production). compose_sandbox_wait
         # loops until healthy, so a non-healthy value makes it time out/exit.
@@ -202,7 +234,7 @@ if [[ "$CMD" == "docker" ]]; then
       elif [[ "$*" == *"session-id"* ]]; then
         # Registry-truth Rule 2 orphan detection reads each resource's
         # agent-sandbox.session-id label (per-resource map or fallback).
-        _session_id_for "${1:-}"
+        _session_id_for "$(_arg_id "$@")"
       else
         echo '{"Config":{"Labels":{}}}'
       fi
@@ -212,6 +244,12 @@ if [[ "$CMD" == "docker" ]]; then
       ;;
     stop|rm)
       log "$sub $*"
+      # DOCKER_STUB_STOP_BLOCK simulates a docker stop that hangs -- the
+      # external call does not return within the caller's bound. Sleep the
+      # given seconds before returning; empty/unset leaves the stub as before.
+      if [[ "$sub" == "stop" && -n "${DOCKER_STUB_STOP_BLOCK:-}" ]]; then
+        sleep "$DOCKER_STUB_STOP_BLOCK"
+      fi
       # DOCKER_STUB_STOP_FAIL simulates a failing docker stop, which stop.sh
       # treats as fail-closed (a non-zero stop aborts the run).
       if [[ "$sub" == "stop" && -n "${DOCKER_STUB_STOP_FAIL:-}" ]]; then
@@ -263,7 +301,7 @@ if [[ "$CMD" == "docker" ]]; then
           # Identity labels are read via --format. Return valid JSON with
           # labels from env vars that start_agent.sh sets.
           if [[ "$*" == *"session-id"* ]]; then
-            _session_id_for "${1:-}"
+            _session_id_for "$(_arg_id "$@")"
             exit 0
           fi
           cat <<'STUBEOF'

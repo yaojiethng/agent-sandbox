@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-17  --  A dispatch that hits its timeout leaves a half-applied tree
+
+```text
+state: open
+scoped: T2 - Perf
+legacy: none
+mitigation: after a dispatch returns rc=124 with a short log, treat the worktree as dirty, not as untouched: run `git status`, diff every changed file against the brief, and only then decide whether to re-dispatch or finish the work in the main thread. Give a script-editing brief a timeout well above the edit size; a 300-line script rewrite and a six-section census both hit 900s on the free tier, and neither finished.
+```
+
+Two of four workers dispatched in one parallel call returned rc=124. Both logs held only the model banner, so the failure had no report to read. One of them had nonetheless created `scripts/stop_probe.sh` and modified `tests/stubs/docker`, so the tree carried a partial change set that no worker claimed and no summary described. The other had written nothing.
+
+The class is a timeout that reads as "nothing happened". The mitigation for an empty log already exists in the provider layer, which treats a `rc=0` with an empty log as failure; the same rule is missing for a non-zero rc with an empty log, where the log proves nothing about the tree. Trust no summary over the artifact cuts both ways: a timed-out run has no summary, so the artifact is the only evidence, and it must be read before the work is re-planned.
+
+Raised by the agent during handover `20261017-01`.
+
 ## [A] 2026-10-15  --  A gate that hand-lists its subject set misses a live root
 
 ```text

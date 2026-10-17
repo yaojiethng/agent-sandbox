@@ -115,5 +115,8 @@ export default {
   globs: ["**/*.md"],
   // Operator-owned state, never committed: the provider config home on the host
   // holds the model recommendations and session state, not project documents.
-  ignores: ["**/node_modules/**", ".pi/**"],
+  // .scratchpad/ is the session-local scratch, gitignored and absent from a
+  // delivered tree, so a blocking gate must not read the throwaway notes a
+  // session leaves there.
+  ignores: ["**/node_modules/**", ".pi/**", ".scratchpad/**"],
 };
