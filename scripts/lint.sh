@@ -22,7 +22,7 @@ SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_frontmatter.sh check_handover_format.sh check_doc_wrap_legacy.sh check_instruction_surfaces.sh check_container_layout.sh)
+GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_frontmatter.sh check_handover_format.sh check_doc_wrap_legacy.sh check_instruction_surfaces.sh check_container_layout.sh check_norm_ownership.sh)
 
 OUT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX") || exit 1
 trap 'rm -rf "$OUT_DIR"' EXIT

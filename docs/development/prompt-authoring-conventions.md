@@ -18,14 +18,14 @@ A document an agent consumes is one of three types. The type determines where it
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states no rule; it serves the rules that live in policy.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. It may carry a judgement, in a principle skill, and that skill is the judgement's only home. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
 
 Two tests identify a workflow document:
 
 1. **Who invokes it.** A prompt runs at the operator's word (`/iter`, `/plan`). A skill runs at the model's or the operator's invocation. A policy or reference document is read, not invoked.
 2. **Does it carry authoritative rules?** If removing the document leaves a rule unstated anywhere, the document carries that rule and is policy, not workflow. A workflow document that is the only home of a rule is miswritten.
 
-A third test separates the forms a workflow document takes. Is it steps, reference, or judgement? A runbook holds ordered steps. A reference holds facts. An advisor holds judgement rules and a diagnostic checklist. This distinction shapes the structure, described below.
+A third test separates the forms a workflow document takes. Is it steps, reference, or judgement? A runbook holds ordered steps. A reference holds facts. An advisor holds judgements and a diagnostic checklist. This distinction shapes the structure, described below.
 
 The three-layer model for where prompts and skills live is in [`agent_workflow.md`](../reference/agent_workflow.md). The provider layer, the sandbox layer, and the user layer load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
 
@@ -57,7 +57,7 @@ An **advisor** is a prompt or skill that holds reference and judgement, run agai
 
 The advisor-role split is explicit: the advisor names its role, states when to run it, and constructs a brief. The triage and consensus steps after the advisor returns are part of the runbook that dispatched it.
 
-A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It is a fast path to a rule that lives in policy. A constraint that exists only in a skill is not authoritative. An inline distillation of a rule is a convenience copy; it may go stale, and that is acceptable only because it is not the source of truth.
+A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It is a fast path to a rule that lives in policy. A rule that exists only in a skill is not authoritative. An inline distillation of a rule is a convenience copy; it may go stale, and that is acceptable only because it is not the source of truth. A judgement is the other case: it lives in the principle skill that states it and nowhere else, per [`documentation_policy.md`](../policies/documentation_policy.md) `## Rule authority`.
 
 Subagents receive `pi -p` with a brief; the same brief-writing rules apply. The `/task-queue` prompt forks a fresh subagent per task with a brief that names the task, its segments, its owned files, its report, and the worker protocol.
 

@@ -14,9 +14,9 @@ The document taxonomy -- what document types exist, their durability, and which 
 
 ## Rule authority
 
-A rule is authoritative only where a policy document canonically states it. A rule that exists only in a skill file or prompt template is not authoritative: bypass the skill and the constraint disappears. A concept document or ADR may describe a rule in readable form, but it links to the policy and is not the rule's home. A rule with no policy home is descriptive, not binding.
+A norm is a rule when an observer detects its violation: a gate in `scripts/lint.sh`, a lint rule under `scripts/lint/`, or a reading procedure a prompt dispatches. A norm with no observer is a judgement: it states how a writer decides, and it cannot be enforced, because nothing detects a breach. A judgement belongs in the principle skill that states it, and that skill is the judgement's only home, so a principle carries no gate and no authority claim. A norm that asserts the system's structure and asks the author to do nothing is a model, and belongs in a concept document.
 
-A statement is a rule when it imposes an obligation a document or its author must meet, and belongs in policy. A statement is a model when it describes the system's structure as a consequence of earlier decisions, and belongs in a concept document, which states it readably and links the rules behind it.
+The ledger `scripts/lint/norm-ownership.tsv` records the kind and the observer of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new norm line arrives unclassified and an edited sentence loses its kind.
 
 **Canonical-owner test.** Duplicate content is a defect. When the same rule appears in two documents, one document is the canonical owner and the other links to it. The canonical owner is the document an agent reads first when it needs the rule.
 
