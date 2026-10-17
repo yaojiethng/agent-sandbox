@@ -4,7 +4,7 @@
 
 ## Purpose and scope
 
-`/auto` changes semantics from a sequential autopilot into a generalized smart dispatcher, a plan iteration and stub work that M4 implements and M3.2.3 reserves. This record fixes the semantics, the ownership split, and the naming deconfliction before any implementation.
+`/auto` changes semantics from a sequential autopilot into a generalized smart dispatcher, a plan iteration that M3.2.3 scopes and M4 implements. This record fixes the semantics, the ownership split, and the naming deconfliction before any implementation.
 
 ## The dispatch command surface
 
@@ -16,7 +16,7 @@ The agent's dispatch surface is a curated set of dispatch commands the operator 
 | `/parallel-work` | concurrent independent tracks (was `/parallel-auto`) | M3.2.3 |
 | `/task-queue` | operator-gated fan-out | M3.2.1 / curated |
 | `fanout` | design-option exploration | curated |
-| `/auto` | smart dispatcher (Option A) | M4 (stub reserved in M3.2.3) |
+| `/auto` | smart dispatcher (Option A) | M4 (keyword reserved in M3.2.3) |
 | `/goal` | loose-goal decomposition (Option B) | M4 |
 
 ## `/auto` -- the smart dispatcher (Option A)
@@ -46,7 +46,7 @@ The dispatcher reads a provided decomposition; it does not derive one from a loo
 
 ## The `/auto` keyword reservation
 
-M3.2.3 reserves the `/auto` keyword by renaming the old sequential autopilot to `/sequential-work` and standing a stub in its place. The stub fails closed: it routes a single well-ordered unit list to `/sequential-work` and refuses any shape the dispatcher is not yet equipped to handle, rather than guessing. M4 implements the smart dispatcher.
+M3.2.3 reserves the `/auto` keyword by renaming the old sequential autopilot to `/sequential-work`, which frees the name for the M4 dispatcher. The reservation is a naming claim recorded in the ADR taxonomy row and the M4.7 roadmap row. It carries no runtime artifact. M4 implements the smart dispatcher.
 
 ## Deferred to M4
 
