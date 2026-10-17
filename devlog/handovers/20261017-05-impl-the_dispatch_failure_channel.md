@@ -21,11 +21,11 @@ No roadmap row names this work, which is why the milestone line reads `Unrouted`
 |---|---|---|
 | The seam puts the CLI's error channel on stderr | `bash tests/test_dispatch.sh`, the built command carries `--print-logs --log-level ERROR` | Agent [x] |
 | The title model's own failure is not read as the run's failure | `bash tests/test_opencode_dispatch.sh`, `test_reports_every_failed_candidate_at_the_end` reports `quota`, not `capability` | Agent [x] |
-| A refused attempt advances to the next model | `bash tests/test_opencode_dispatch.sh`, `test_falls_back_to_the_next_candidate` | Agent [x] |
-| An attempt that adds changes stops instead of advancing | `bash tests/test_opencode_dispatch.sh`, `test_a_changed_failure_does_not_fall_back` | Agent [x] |
-| The caller's own uncommitted work does not block the advance | `bash tests/test_opencode_dispatch.sh`, `test_the_callers_own_edits_do_not_block_the_fallback` | Agent [x] |
-| Every failed candidate and its class is reported at the end | `bash tests/test_opencode_dispatch.sh`, `test_reports_every_failed_candidate_at_the_end` | Agent [x] |
-| A refusal is detected in seconds, not on a timeout | `bash tests/test_opencode_dispatch.sh`, `test_a_refused_model_is_stopped_early` | Agent [x] |
+| A refused attempt advances to the next model | `OPENCODE_DISPATCH_FALLBACK_CASES=1 bash tests/test_opencode_dispatch.sh`, `test_falls_back_to_the_next_candidate` | Agent [x] |
+| An attempt that adds changes stops instead of advancing | `OPENCODE_DISPATCH_FALLBACK_CASES=1 bash tests/test_opencode_dispatch.sh`, `test_a_changed_failure_does_not_fall_back` | Agent [x] |
+| The caller's own uncommitted work does not block the advance | `OPENCODE_DISPATCH_FALLBACK_CASES=1 bash tests/test_opencode_dispatch.sh`, `test_the_callers_own_edits_do_not_block_the_fallback` | Agent [x] |
+| Every failed candidate and its class is reported at the end | `OPENCODE_DISPATCH_FALLBACK_CASES=1 bash tests/test_opencode_dispatch.sh`, `test_reports_every_failed_candidate_at_the_end` | Agent [x] |
+| A refusal is detected in seconds, not on a timeout | `OPENCODE_DISPATCH_FALLBACK_CASES=1 bash tests/test_opencode_dispatch.sh`, `test_a_refused_model_is_stopped_early` | Agent [x] |
 | The live path refuses, falls back and reports in one run | a dispatch against the spent free tier: attempt 1 `quota` at 3s, attempt 2 on `opencode-go/deepseek-v4.1-flash`, `failures: 1`, exit 0 at 7s | Agent [x] |
 | The lint and ShellCheck gates pass | `bash scripts/lint.sh`, `bash scripts/check_shell.sh` | Agent [x] |
 

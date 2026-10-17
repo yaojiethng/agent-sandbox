@@ -107,6 +107,7 @@ refusal_class() {
 run_worker() {
   local cmd="$1" log="$2" limit="$3"
   local stall="${OPENCODE_DISPATCH_STALL:-15}"
+  local poll="${OPENCODE_DISPATCH_POLL:-1}"
   local launcher=(bash -c)
   command -v setsid >/dev/null 2>&1 && launcher=(setsid bash -c)
 
@@ -132,7 +133,7 @@ run_worker() {
       stop_worker "$pid" "$log" "the time limit of ${limit}s expired"
       return 1
     fi
-    sleep 1
+    sleep "$poll"
   done
   wait "$pid" || rc=$?
   return "$rc"
