@@ -205,12 +205,25 @@ REFRESH_FLAG=""
 
 ### 1.16 Scope `|| true` to the command that needs it
 
-Under `set -o pipefail`, `|| true` on the whole pipeline swallows every command"s failure. Scope to the individual command with a subshell:
+Under `set -o pipefail`, `|| true` on the whole pipeline swallows every command's failure. Scope to the individual command with a subshell:
 
 ```bash
-# Right  --  only grep"s failure is absorbed
+# Right  --  only grep's failure is absorbed
 docker compose up -d 2>&1 | (grep -v "^Container " || true)
 ```
+
+A tolerated failure is not a success message. Tolerating a non-zero return keeps the script running. It does not license a completion sentence. Print what the command confirmed, and when it returned non-zero, say that instead:
+
+```bash
+# Right  --  the removal is tolerated, and the message does not claim it happened
+if docker rm "${CONTAINER_IDS[@]}"; then
+  echo "Containers removed."
+else
+  echo "Containers not removed; another process may be tearing them down."
+fi
+```
+
+The wrong form prints "Containers stopped and removed." after `docker rm ... || true` caught a failure. The sentence reaches the operator's terminal and every log that reads it, and it asserts work the command did not do.
 
 ### 1.17 Shell option flags by file class
 
@@ -230,6 +243,23 @@ Notes:
 - Direct execution of subcommand scripts is the rule 1.13 dispatch architecture, not an accident to be designed away.
 - `-u` in library code would fire on consumer-controlled environments; libraries validate their inputs explicitly instead.
 - A class change (e.g. a lib growing an entry point) means re-declaring flags for the new class as part of that change.
+
+### 1.18 Bound every external blocking call
+
+An external call that can wait on a peer carries an explicit bound, and the bound is a stated duration, not a default inherited from the tool.
+
+| Call | Bound |
+|---|---|
+| `docker stop` | `--time <seconds>` |
+| `docker compose stop` / `down` | `--timeout <seconds>` |
+| a call with no native bound | `timeout <seconds> <command>` |
+
+Notes:
+
+- A tool default is not a bound. `docker stop` spends its default grace per container, so a teardown of three containers can wait thirty seconds before the first slow end is visible anywhere.
+- The bound is written where the call is made, not held in a variable three files away.
+- A caller that must wait longer than its bound says why in a comment on the command.
+- A timeout is a distinct outcome. `timeout` returns 124, so the caller reports "did not return" rather than reporting success.
 
 ---
 
