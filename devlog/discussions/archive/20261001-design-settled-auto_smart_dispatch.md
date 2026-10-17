@@ -1,6 +1,6 @@
 # Design: the `/auto` smart dispatcher and the `-work` dispatch family (M3.2.3, M4)
 
-**Status:** settled -- captures the 2026-10-01 plan walk. The `/auto` smart dispatcher and `/goal` are M4's; the `-work` family and the `/auto` keyword reservation are M3.2.3's.
+**Status:** settled -- captures the 2026-10-01 plan walk. The `/auto` smart dispatcher and `/goal` are M4's; the `-work` family and the `/auto` keyword reservation are M3.2.3's. Its M4 content is dated evidence, not a specification. M4.7 re-derives the `/auto` requirements from the surface shipped at its planning time.
 
 ## Purpose and scope
 
