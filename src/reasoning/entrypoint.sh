@@ -53,18 +53,20 @@
 # directly from the shell (the PTY in Docker), and the child is in the shell's
 # process group, which is the terminal foreground group.
 #
-# SIGTERM limitation
-# ------------------
-# When a TERM trap is set and a synchronous foreground child is running, bash
-# defers the trap until the child exits. This means "docker stop" SIGTERM is
-# not delivered promptly to the agent; after the 10s grace period Docker sends
-# SIGKILL, and the seeding step does not run again.
+# SIGTERM
+# -------
+# The agent is the container's main process and registers no SIGTERM handler,
+# so a stop signal ends it only if an init process forwards the signal. The
+# compose file sets `init: true` for that reason. Without an init, a process
+# that is the PID-namespace init and holds a signal at its default disposition
+# never receives it: docker then spends the full stop grace and sends SIGKILL,
+# and the container exits 137. Measured on the host as three PID 1 shapes, see
+# scripts/stop_signal_matrix.sh.
 #
-# This only affects the "docker stop mid-session" path. For all normal exit
-# paths (user quits TUI, agent exits cleanly), session state is preserved
-# because the sessions/ subdirectory is bind-mounted directly. Config files
-# (settings.json, auth.json) are regenerated from the template on next start
-# (ephemeral by design, avoids utime/EPERM).
+# Session state survives a stop either way, because the sessions/ subdirectory
+# is bind-mounted directly. Config files (settings.json, auth.json) are
+# regenerated from the template on next start (ephemeral by design, avoids
+# utime/EPERM).
 # If cleanup on docker stop is required, implement it at the harness level:
 # run_agent.sh can copy provider config out via "docker cp" after the container
 # exits, independent of the entrypoint.
@@ -234,13 +236,9 @@ unset _agent_cmd
 # Run
 # ---------------------------------------------------------------------------
 
-# Run the command as a synchronous foreground child. stdin, stdout, and stderr
-# are inherited from the shell; the process is in the shell's process group
-# (terminal foreground group). The command (agent binary or dry-run probe)
-# therefore replaces the wrapper as the container's main process.
-set +e
-"$@"
-EXIT_CODE=$?
-set -e
-
-exit "$EXIT_CODE"
+# Replace the wrapper with the command: the agent becomes the container's main
+# process, so its exit status is the container's status and an init process in
+# front of the container has exactly one child to forward a stop signal to.
+# exec, not a foreground child, because a shell parent exits before the agent
+# and leaves the agent orphaned while the namespace is torn down.
+exec "$@"

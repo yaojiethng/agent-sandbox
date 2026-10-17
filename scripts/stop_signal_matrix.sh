@@ -69,7 +69,7 @@ A row whose observation contradicts its expectation fails the run.
 USAGE
 }
 
-say() { echo "stop_signal_matrix: $*"; }
+say() { echo "stop_signal_matrix: $*" >&2; }
 
 die() {
   echo "stop_signal_matrix: ERROR: $*" >&2
@@ -86,26 +86,37 @@ json_string() {
   printf '"%s"' "$s"
 }
 
-# expect_verdict SECONDS EXIT_CODE: the model, per row shape, in one place.
-#   ignored  -- SIGTERM did not end it, so the grace ran out and SIGKILL landed
-#   exited   -- SIGTERM ended it, so the stop returned well inside the grace
-# The grace is the row's own timeout argument, so the boundary follows the flag.
+# expect_verdict SECONDS EXIT_CODE TIMEOUT EXPECT: compare one row against the
+# model that row declares.
+#   burn  -- the row's PID 1 holds TERM at its default disposition, so the
+#            grace runs out and docker sends SIGKILL (exit 137)
+#   term  -- a forwarder delivers the signal, so the container ends inside the
+#            grace with 143 (or 0 if it shut itself down cleanly)
+# A row whose outcome lands in neither window is ambiguous, and the run fails on
+# it rather than reporting a pass.
 expect_verdict() {
-  local seconds="$1" exit_code="$2" timeout="${3:-10}"
+  local seconds="$1" exit_code="$2" timeout="${3:-10}" expect="$4"
   local limit_for_exit=$(( timeout + 3 ))
   if awk -v s="$seconds" -v l="$limit_for_exit" 'BEGIN{exit !(s >= l)}'; then
-    if [[ "$exit_code" == "137" ]]; then echo "expected"; else echo "unexpected"; fi
-  elif awk -v s="$seconds" 'BEGIN{exit !(s < 2)}'; then
-    if [[ "$exit_code" == "143" || "$exit_code" == "0" ]]; then echo "expected"; else echo "unexpected"; fi
-  else
-    echo "ambiguous"
+    if [[ "$expect" == "burn" && "$exit_code" == "137" ]]; then echo "expected"; else echo "unexpected"; fi
+    return 0
   fi
+  if awk -v s="$seconds" 'BEGIN{exit !(s < 2)}'; then
+    if [[ "$expect" == "term" ]] && [[ "$exit_code" == "143" || "$exit_code" == "0" ]]; then
+      echo "expected"
+    else
+      echo "unexpected"
+    fi
+    return 0
+  fi
+  echo "ambiguous"
 }
 
-# run_row NAME ENTRYPOINT_ARGS...: start, probe /proc/1/status, stop, record.
-# Prints one JSON object and echoes a human line.
+# run_row NAME EXPECT ENTRYPOINT_ARGS...: start, probe /proc/1/status, stop,
+# record. Prints one JSON object on stdout and one aligned table line on stderr.
 run_row() {
   local name="$1"; shift
+  local expect="$1"; shift
   local container="stop-matrix-${name}-$$"
   local id="" sigign="" sigcgt="" seconds="" exit_code="" verdict=""
 
@@ -131,11 +142,12 @@ run_row() {
   end="$(date +%s.%N)"
   seconds="$(awk -v s="$start" -v e="$end" 'BEGIN{printf "%.2f", e - s}')"
   exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$container" 2>/dev/null)"
-  verdict="$(expect_verdict "$seconds" "${exit_code:-unknown}" "${MATRIX_STOP_TIMEOUT:-10}")"
+  verdict="$(expect_verdict "$seconds" "${exit_code:-unknown}" "${MATRIX_STOP_TIMEOUT:-10}" "$expect")"
 
-  say "$name: stop=${seconds}s exit=${exit_code:-?} SigIgn=${sigign:-?} SigCgt=${sigcgt:-?} -> $verdict"
-  printf '{"name": %s, "container": %s, "id": %s, "stop_seconds": %s, "exit_code": %s, "sig_ign": %s, "sig_cgt": %s, "verdict": %s}' \
-    "$(json_string "$name")" "$(json_string "$container")" "$(json_string "$id")" \
+  printf 'stop_signal_matrix: %-10s model=%-4s stop=%6ss exit=%-3s SigIgn=%s SigCgt=%s -> %s\n' \
+    "$name" "$expect" "$seconds" "${exit_code:-?}" "${sigign:-?}" "${sigcgt:-?}" "$verdict" >&2
+  printf '{"name": %s, "model": %s, "container": %s, "id": %s, "stop_seconds": %s, "exit_code": %s, "sig_ign": %s, "sig_cgt": %s, "verdict": %s}' \
+    "$(json_string "$name")" "$(json_string "$expect")" "$(json_string "$container")" "$(json_string "$id")" \
     "${seconds:-null}" "${exit_code:-null}" "$(json_string "$sigign")" "$(json_string "$sigcgt")" \
     "$(json_string "$verdict")"
 }
@@ -150,9 +162,9 @@ cleanup() {
 
 plan_rows() {
   say "image ${MATRIX_IMAGE}, grace ${MATRIX_STOP_TIMEOUT:-docker default}"
-  say "row bash-child: docker run -d --name <c> --entrypoint bash ${MATRIX_IMAGE} -c 'sleep 600 & wait'"
-  say "row exec-child: docker run -d --name <c> --entrypoint sleep ${MATRIX_IMAGE} 600"
-  say "row init-child: docker run -d --init --name <c> --entrypoint sleep ${MATRIX_IMAGE} 600"
+  say "row bash-child: docker run -d --name <c> --entrypoint bash ${MATRIX_IMAGE} -c 'sleep 600 & wait' (model: burn)"
+  say "row exec-child: docker run -d --name <c> --entrypoint sleep ${MATRIX_IMAGE} 600 (model: burn)"
+  say "row init-child: docker run -d --init --name <c> --entrypoint sleep ${MATRIX_IMAGE} 600 (model: term)"
 }
 
 main() {
@@ -197,11 +209,11 @@ main() {
 
   local -a rows=()
   local row
-  row="$(run_row bash-child --entrypoint bash "$MATRIX_IMAGE" -c 'sleep 600 & wait')" || true
+  row="$(run_row bash-child burn --entrypoint bash "$MATRIX_IMAGE" -c 'sleep 600 & wait')" || true
   rows+=("$row")
-  row="$(run_row exec-child --entrypoint sleep "$MATRIX_IMAGE" 600)" || true
+  row="$(run_row exec-child burn --entrypoint sleep "$MATRIX_IMAGE" 600)" || true
   rows+=("$row")
-  row="$(run_row init-child --init --entrypoint sleep "$MATRIX_IMAGE" 600)" || true
+  row="$(run_row init-child term --init --entrypoint sleep "$MATRIX_IMAGE" 600)" || true
   rows+=("$row")
 
   {

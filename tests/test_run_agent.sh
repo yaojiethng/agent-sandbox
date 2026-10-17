@@ -1275,7 +1275,33 @@ run_test test_serve_docker_wait_status_swallowed
 run_test test_standard_up_failure_still_tears_down
 run_test test_standard_sandbox_unhealthy_still_tears_down
 run_test test_compose_file_persisted
+# Given: the docker stub reporting the agent ended by signal (143, then 137)
+# When:  run_agent.sh runs a standard session
+# Then:  it exits 0 and says the container ended by signal
+# Asserts: a deliberate stop is not reported as a make error
+test_standard_stop_signal_is_not_a_failure() {
+  local code out rc
+  for code in 143 137; do
+    local FIXTURE_DIR="$FIXTURE_DIR/start_signal_$code"
+    mkdir -p "$FIXTURE_DIR"
+    setup_start_fixture "$FIXTURE_DIR"
+    export DOCKER_STUB_RUN_RC="$code"
+    rc=0
+    out="$(
+      export PATH="$STUB_DIR:$PATH"
+      bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+        --name="$PROJECT_NAME" \
+        --sandbox="$SANDBOX_DIR" \
+        --env="$SANDBOX_DIR/.env" \
+        --provider="$PROVIDER_NAME" \
+        --delivery=copy < /dev/null 2>&1
+    )" || rc=$?
+    assert_eq_num "$rc" 0 "standard: exit $code from a stop is not a failure"
+    assert_contains "$out" "ended by signal (exit $code)" "standard: the stop is reported, not swallowed"
+  done
+}
 run_test test_missing_delivery_rejected
+run_test test_standard_stop_signal_is_not_a_failure
 run_test test_copy_delivery_default_merges_copy_overlay
 run_test test_mount_delivery_merges_mount_overlay
 run_test test_invalid_sandbox_type_rejected

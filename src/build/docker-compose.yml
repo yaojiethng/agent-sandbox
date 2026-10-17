@@ -113,6 +113,10 @@ services:
     container_name: {{AGENT_CONTAINER_NAME}}
     labels: *session_labels
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    # An init process at PID 1 forwards the stop signal to the agent. Without
+    # it the agent is PID 1, holds SIGTERM at its default disposition, and
+    # docker spends the whole stop grace before a SIGKILL (exit 137).
+    init: true
     depends_on:
       sandbox:
         condition: service_healthy

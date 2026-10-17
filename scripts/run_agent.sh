@@ -473,4 +473,15 @@ fi
 # Exit semantics: standard propagates the agent's exit code; serve exits 0
 # (its session ends via make stop, not agent completion). Teardown already
 # ran in the EXIT trap (_session_cleanup).
+#
+# 137 and 143 are the container ending by signal, which is what make stop does
+# and is not a session result. They are reported and mapped to 0, so a
+# deliberate stop does not present as a make error. Any other code still
+# propagates.
+case "$agent_rc" in
+  137|143)
+    echo "+ the agent ended by signal (exit ${agent_rc}); a stop is not a session failure"
+    agent_rc=0
+    ;;
+esac
 exit "$agent_rc"

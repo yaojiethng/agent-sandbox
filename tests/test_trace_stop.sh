@@ -133,7 +133,7 @@ test_stop_removes_containers() {
   local STOP_RC=0
   invoke_stop "$FIXTURE_DIR" || STOP_RC=$?
   assert_rc 0 "$STOP_RC" "stop invocation succeeds"
-  if trace_has "stop abc123def456" && trace_has "rm abc123def456"; then
+  if trace_has "stop --time 10 abc123def456" && trace_has "rm abc123def456"; then
     pass "stop: containers stopped and removed"
   else
     fail "stop: expected stop+rm for found containers"
@@ -206,10 +206,12 @@ test_stop_removal_race_is_tolerated() {
       --name="$PROJECT_NAME" \
       --sandbox="$SANDBOX_DIR" \
       --project="$PROJECT_DIR"
-  ) > /dev/null 2>&1
+  ) > "$FIXTURE_DIR/stop.out" 2>&1
   local rc=$?
 
   assert_eq_num "$rc" "0" "stop: docker rm 'already in progress' race is tolerated (rc 0)"
+  assert_contains "$(cat "$FIXTURE_DIR/stop.out")" "removal deferred" "stop: a failed removal is reported, not claimed as done"
+  assert_not_contains "$(cat "$FIXTURE_DIR/stop.out")" "Containers removed." "stop: no success sentence for an unconfirmed removal"
 }
 
 # Given: the same fixture and an empty stub

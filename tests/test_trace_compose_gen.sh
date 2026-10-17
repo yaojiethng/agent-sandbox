@@ -155,6 +155,12 @@ test_output_is_valid_yaml() {
   else
     fail "generated compose file missing expected sections"
   fi
+
+  if grep -q '^    init: true$' "$out"; then
+    pass "agent service carries init: true, so a stop signal has a forwarder"
+  else
+    fail "agent service does not set init: true"
+  fi
 }
 
 # Given: a staged copy of the base template and the docker stub

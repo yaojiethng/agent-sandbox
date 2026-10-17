@@ -91,16 +91,23 @@ if [[ ${#CONTAINER_IDS[@]} -eq 0 ]]; then
   echo "No containers found for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${SESSION_ID:+ session: ${SESSION_ID}}"
 else
   echo "Stopping containers for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})${SESSION_ID:+ session: ${SESSION_ID}}"
-  # Containers are disposable  --  durable state lives in the named volume +
-  # bind mounts (Container State Contract). Remove them so the network can
-  # be freed and no stopped containers accumulate.
-  docker stop "${CONTAINER_IDS[@]}"
+  # 10 is the stated bound on the stop, not docker's default: the capability
+  # layer's export must finish (measured at 0.52s), and a container that holds
+  # SIGTERM would otherwise cost the full grace per container.
+  _t0="$(date +%s.%N)"
+  docker stop --time 10 "${CONTAINER_IDS[@]}"
+  _t1="$(date +%s.%N)"
+  printf 'Containers stopped in %.1fs.\n' "$(awk -v a="$_t0" -v b="$_t1" 'BEGIN{print b-a}')"
   # Removal races run_agent.sh's EXIT-trap `compose down`, which may already
   # be removing these containers, so `docker rm` can report "already in
   # progress". The containers are disposable, so tolerate removal failure and
-  # reconcile on the next stop. `docker stop` above stays fail-closed.
-  docker rm "${CONTAINER_IDS[@]}" || true
-  echo "Containers stopped and removed."
+  # reconcile on the next stop. `docker stop` above stays fail-closed, and the
+  # message states only what this script confirmed.
+  if docker rm "${CONTAINER_IDS[@]}" 2>/dev/null; then
+    echo "Containers removed."
+  else
+    echo "Containers stopped; removal deferred to the next stop or teardown."
+  fi
   if [[ -n "$SESSION_ID" ]]; then
     session_end_hints "$SANDBOX_DIR" "$SESSION_ID"
   fi
@@ -121,8 +128,11 @@ if [[ ${#NETWORK_IDS[@]} -eq 1 && -z "${NETWORK_IDS[0]}" ]]; then
 fi
 if [[ ${#NETWORK_IDS[@]} -gt 0 ]]; then
   echo "Removing session networks for ${PROJECT_NAME} (sandbox: ${SANDBOX_DIR})"
-  docker network rm "${NETWORK_IDS[@]}" 2>/dev/null || true
-  echo "Networks removed."
+  if docker network rm "${NETWORK_IDS[@]}" 2>/dev/null; then
+    echo "Networks removed."
+  else
+    echo "Networks kept; removal deferred to the next stop or teardown."
+  fi
 fi
 
 # -------------------------

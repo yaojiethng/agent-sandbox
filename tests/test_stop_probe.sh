@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# TEST_DEADLINE: 20
 # tests/test_stop_probe.sh  --  the stop forensics probe's report shape, its
 # read-only safety contract, and its timing wrapper.
 #
