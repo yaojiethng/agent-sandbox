@@ -47,7 +47,9 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Diagnose before fixing.** Explain the root cause and confirm your understanding before proposing a fix.
 
-**Scope discipline.** Address only what was asked. Flag adjacent issues separately -- never fix them silently.
+**Scope discipline.** Address what was asked. An issue inside the artifact you are changing is a carrier, not an adjacent issue: a reference to the thing you just deleted is part of the deletion. An issue outside that artifact is flagged, never fixed silently.
+
+**Propagation is part of the task.** A change is not done while a carrier still asserts the old state. See the [`principle-propagation-discipline`](src/reasoning/providers/pi/config/agent/skills/principle-propagation-discipline/SKILL.md) skill before declaring such a change complete.
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
