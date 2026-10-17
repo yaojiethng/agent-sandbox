@@ -55,13 +55,13 @@
 #
 # SIGTERM
 # -------
-# The agent is the container's main process and registers no SIGTERM handler,
-# so a stop signal ends it only if an init process forwards the signal. The
-# compose file sets `init: true` for that reason. Without an init, a process
-# that is the PID-namespace init and holds a signal at its default disposition
-# never receives it: docker then spends the full stop grace and sends SIGKILL,
-# and the container exits 137. Measured on the host as three PID 1 shapes, see
-# scripts/stop_signal_matrix.sh.
+# The agent is the container's main process, so a stop signal reaches it only
+# through an init process that forwards it. The compose file sets `init: true`
+# for that reason. With it, a stop ends the container in 0.287s with exit 0.
+# Without one, a process that is the PID-namespace init receives nothing:
+# docker spends the full stop grace and sends SIGKILL, and the container exits
+# 137 (measured 10.20s). See scripts/stop_signal_matrix.sh and handover
+# 20261017-03.
 #
 # Session state survives a stop either way, because the sessions/ subdirectory
 # is bind-mounted directly. Config files (settings.json, auth.json) are

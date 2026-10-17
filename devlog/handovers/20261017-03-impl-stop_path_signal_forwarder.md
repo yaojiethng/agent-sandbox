@@ -26,7 +26,7 @@ Continues the T2 row filed by handover `20261017-01`. The evidence was the opera
 | `stop.sh` never claims a removal it did not confirm | `bash tests/test_trace_stop.sh` | Agent [x] |
 | `stop.sh` states its stop bound, per the conventions rule 1.18 released in handover `20261017-02` | `bash tests/test_trace_stop.sh` | Agent [x] |
 | The suite and the gates are green | `make test` (1206 of 1206), `make lint` (8 gates) | Agent [x] |
-| A real stop returns under two seconds with no 137, and `make start` prints no make error | `bash scripts/stop_probe.sh --perform-stop --session-id=<sid>`, then `bash scripts/stop_acceptance.sh --report=<report>` | Operator |
+| A real stop returns under two seconds with no 137, and `make start` prints no make error | `bash scripts/stop_probe.sh --perform-stop --session-id=<sid>`, then `bash scripts/stop_acceptance.sh --report=<report>` | Operator [x]: slowest stop 0.287s, die codes 0 and 0, both containers gone |
 
 ## Decisions
 
@@ -53,6 +53,7 @@ Continues the T2 row filed by handover `20261017-01`. The evidence was the opera
 | One real stop: the slowest `docker stop` 10.238s, die codes 0 and 137 | measurement, operator host session `3f28b4` | Confirms the mechanism on the shipped path: the capability container ends cleanly, the reasoning container is killed |
 | The matrix's JSON report was unparseable because its own progress lines were captured into the array | measurement, operator host | Fixed by reporting progress on stderr; a verdict that prints only PASS hides its own evidence |
 | `docker network rm` at `scripts/stop.sh:124` also printed success for a non-zero return | code reading | Same honesty defect one step later in the same script |
+| The real stop after the fix ends both containers with exit 0 in 0.287s, not 143 | measurement, operator host session `35e8fb` | The agent does end cleanly when an init forwards the signal. The earlier reading that the bundle registers no TERM handler is unsupported, and the matrix cannot settle it: its exec row ran a handlerless `sleep`, so that row shows what a handlerless PID 1 does, not what the agent does |
 
 ## Completed
 
