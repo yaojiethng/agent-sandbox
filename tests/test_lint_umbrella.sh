@@ -607,7 +607,8 @@ test_frontmatter_gate_covers_every_declared_instruction_root() {
     import { load_manifest, manifest_rows } from "./src/build/container-interface.mjs";
     const sources = manifest_rows(load_manifest(process.cwd()), "cells")
       .flatMap((cell) => cell.sources ?? []);
-    process.stdout.write([...sources, ".agents/skills", ".agents/prompts"].join("\n"));
+    const roots = [...sources, ".agents/skills", ".agents/prompts"].map((root) => root.replace(/\/+$/, ""));
+    process.stdout.write([...new Set(roots)].join("\n"));
   ' ) || return 1
   root="$FIXTURE_DIR/frontmatter_roots_$$_$RANDOM"
   while IFS= read -r rel; do

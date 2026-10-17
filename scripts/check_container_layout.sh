@@ -9,8 +9,9 @@
 # generated from the other, so this gate is what stops the two from disagreeing:
 # a manifest row no `COPY` or `ENV` line carries, a line no row carries, a
 # declared instruction surface whose folder set differs from the one the image
-# sends there, an `/opt` surface the provider cannot load, and a destination in
-# the agent tree no cell declares are all findings. The parse, the derivation
+# sends there, an `/opt` surface the provider cannot load, a destination in the
+# agent tree no cell declares, and a project-tree surface the provider's
+# settings record does not name are all findings. The parse, the derivation
 # and the comparison live in src/build/container-interface.mjs, so this script
 # is the gate wrapper and nothing else.
 #

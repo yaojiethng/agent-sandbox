@@ -316,6 +316,14 @@
           "condition": "the reader has the repository tree"
         }
       ]
+    },
+    {
+      "sources": [
+        ".agents/prompts/"
+      ],
+      "runtime_path": "/home/agentuser/sandbox/.agents/prompts/",
+      "loader": "the provider's settings record names this directory in its prompts key, so each Markdown file here is an invocable command in a session in this project",
+      "provider": "pi"
     }
   ]
 }

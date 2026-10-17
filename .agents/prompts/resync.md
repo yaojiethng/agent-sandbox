@@ -9,7 +9,7 @@ argument-hint: "[optional: one skill name to narrow the sweep]"
 
 **Scope:** `$AGENT_HOME/agent/` is a projection of the image stage at `/opt/workflow/agent/config/agent/`, not of the repository. A repo change reaches the running session only after a rebuild, and a reprovision restores the stage over anything copied in during the session. This closes the gap for the current session and nothing longer. It does not rebuild the image.
 
-`.agents/prompts/` is outside this sweep. No manifest cell declares where it ships, so this runbook does not restore it; the roadmap row `.agents/prompts/` becomes a fourth instruction surface owns that destination and its check.
+`.agents/prompts/` is outside this sweep. It is read from the project tree itself: the pi settings record names it in its `prompts` key, so a file there needs no copy into `$AGENT_HOME/agent/`. An edit to one takes effect on `/reload`.
 
 ## 1. Compare, do not guess
 

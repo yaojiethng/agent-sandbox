@@ -1,6 +1,24 @@
 # Instruction Surface Declaration
 
-**Current:** 2026-10-16
+**Current:** 2026-10-17
+
+## 2026-10-17 -- A surface read from the project tree is declared and named by the provider's settings record
+
+**Decision:** A cell's runtime path may sit inside a `session` row. That declares a surface the project tree carries: no image row sends it anywhere, and the provider named on the cell must name the path in its settings record's `prompts` key. The gate holds the two equal, and a cell the record does not name is a finding.
+
+`.agents/prompts/` is the first such cell. The pi settings record reads `"prompts": ["/home/agentuser/sandbox/.agents/prompts"]`, so the repository's own prompt files are invocable commands in a session in this project.
+
+**Rationale:** pi discovers `.agents/skills/` by walking from the working directory to the git root, and has no equivalent rule for prompts. The surface therefore needs both a declaration and a carrier, and the two must be checked against each other: without the carry the surface is declared and never loaded, and nothing reports the loss. The settings record is the carrier because pi skips a missing path in that key silently, and because the value is the project mount the `session` rows already declare, so the declaration stays the single source.
+
+**Rejected alternatives:**
+
+- *A relative `prompts` value in the settings record* -- a user setting's resource path resolves from the agent directory, so `.agents/prompts` resolves to `$AGENT_HOME/agent/.agents/prompts` and loads nothing. The route was tried and reverted twice, in `20261015-02`.
+- *A `--prompt-template` flag on the provider's launch command* -- the path can then be relative to the working directory, but pi records an error diagnostic for the flag's path when it is absent (`resource-loader.js`: `Prompt template path does not exist`), and the interactive UI renders it as a prompt conflict at session start in every project without the folder. The flag also loads only when the session starts at the mount root.
+- *A project `.pi/settings.json`* -- it requires un-ignoring `.pi/`, which is operator-owned state and never committed, and `20261015-02` rejected it.
+- *A `.agents` directory as a pi package* -- a package root does contribute `prompts/` beside `skills/`, but the entry still has to name an absolute path from the agent directory, and it re-adds the skill root pi already discovers.
+- *Shipping the folder into the image* -- the files are the repository's own, and an image copy would give every project's session commands written for this one.
+
+**Edge cases / drivers:** The absolute value names the mount, which every provider image sets to `/home/agentuser/sandbox`; a project tree mounted elsewhere would need the value changed with the mount. `none` still means no runtime path at all; the project-tree form is for a surface the session loads, which `none` does not describe. A missing settings record is reported once, as a missing record, rather than also as a cell it does not name.
 
 ## 2026-10-16 -- A runtime's surface is generated from the declaration, never restated by hand
 

@@ -29,6 +29,9 @@
     "/opt/workflow/agent",
     "/opt/workflow/agent/modules/coding-agent"
   ],
+  "prompts": [
+    "/home/agentuser/sandbox/.agents/prompts"
+  ],
   "enabledModels": [
     "failover/*",
     "opencode-go/*",

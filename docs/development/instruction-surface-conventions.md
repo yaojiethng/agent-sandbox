@@ -7,7 +7,7 @@ An instruction surface is a folder an agent loads prompts or skills from. The su
 A cell answers three questions about a surface:
 
 1. **What lands there** -- the source folders that land on the runtime path.
-2. **Where it runs** -- the runtime path, or `none` when no image carries the folder.
+2. **Where it runs** -- the runtime path, a `session` path when the project tree carries it, or `none` when no image carries the folder.
 3. **Loaded when** -- the condition under which the agent can load a file from it.
 
 A runtime path is the subject rather than a source folder, because two source folders can land on one, and then one cell names both. What the gate refuses is two cells on one path, because they would overwrite each other in the image. A module's payload does not merge into the harness roots: `workflow/<module>/prompts/` lands on `/opt/workflow/agent/modules/<module>/prompts/`, its own root. A merge loses which module a file came from, and it lets one module's file shadow another's with nothing reported. That shadowing is checked instead: no two roots under one settings key may hold a file, or a skill directory, of the same name.
@@ -28,7 +28,7 @@ A runtime path is the subject rather than a source folder, because two source fo
 | Field | Rule |
 |---|---|
 | `sources` | Every folder that lands on the runtime path, trailing slash, in the order the provider dockerfile copies them. No folder appears in two cells. |
-| `runtime_path` | `/opt/...`, `$AGENT_HOME/...`, or `none`. |
+| `runtime_path` | `/opt/...`, `$AGENT_HOME/...`, a path inside a `session` row, or `none`. |
 | `loader` | The condition, not the mechanism. A surface that belongs to no provider names no provider here. |
 | `provider` | Optional. Present only when the surface belongs to one provider, and then only to a provider that carries a dockerfile. |
 | `reachable` | The rows this surface adds to the session environment. Optional, and often absent. A row carries `path`, `holds` and `condition`. |
@@ -50,13 +50,29 @@ A cell's own rows carry a condition that is not `always`. The condition vocabula
 
 A surface with a runtime path ships in an image, and its files are read by an agent running in a container. A surface whose runtime path is `none` ships nowhere: it travels with the project, is reached by a reference that names it, and is read from the repository. Such a surface names no image path and no provider, in its cell or in its files. It states the project's own structure and nothing outside it.
 
+A surface whose runtime path sits inside a `session` row is read from the project tree the session mounts, and it is loaded: a path under the project tree names a folder the running session reads, so the surface is invocable rather than linked to. No image row sends it anywhere - the project is already where it is read - and a provider is named, because the loader is that provider's settings record.
+
 Two surfaces declare one provider's config home: the home itself, which carries the agent `AGENTS.md` and the settings record, and the prompt and skill folders inside it.
+
+## A surface the project tree carries
+
+`.agents/prompts/` is the repository's own prompt root, beside `.agents/skills/`, which pi discovers by walking from the working directory to the git root. No equivalent rule covers prompts, so the surface is declared and the provider's settings record names it:
+
+```json
+"prompts": ["/home/agentuser/sandbox/.agents/prompts"]
+```
+
+The value is the project mount, which the `session` rows already declare, so the record and the cell name one path and the gate holds them equal. It is absolute because a user setting's resource path resolves from the agent directory: the relative form `.agents/prompts` there resolves to `$AGENT_HOME/agent/.agents/prompts` and loads nothing, which is the defect recorded and reverted twice before this form was chosen.
+
+A path the record names and the tree lacks is skipped silently (`collectFilesFromPaths` ignores a missing path), so a project without the folder costs nothing. That is the reason the record is the carrier rather than a launch flag: `--prompt-template` reports every project without the folder as a prompt conflict at session start. The flag also resolves from the working directory, so it loads only when the session starts at the mount root.
+
+The settings key is the carrier, and the gate checks it: a project-tree cell whose path the provider's `prompts` key does not name is a finding, because the surface would be declared and never loaded, and nothing reports the loss.
 
 ## A module's payload
 
 `workflow/<module>/` is a toggle unit. Its `prompts/` and `skills/` folders are its payload, and each ships to its own root under `/opt/workflow/agent/modules/<module>/`. A module is enabled by naming its directory as a package: pi's `settings.json` carries `/opt/workflow/agent/modules/coding-agent` in its `packages` key, and the package convention contributes that directory's `prompts` and `skills` subdirectories as roots, so one entry enables both. The harness's own payload root is reached through the same key and the same convention: the `/opt/workflow/agent` entry contributes `/opt/workflow/agent/prompts/` and `/opt/workflow/agent/skills/`, so no `skills` or `prompts` list names a harness root. The gate derives those roots from the entries, and a module root that no entry enables is a finding.
 
-The repository keeps the two kinds apart because a prompt root reads files into commands and a skill root reads directories holding `SKILL.md`. A module's `prompts/` folder ships whole. Working records live outside a module: the repository's run briefs and audits are at `.agents/`, beside the `.agents/skills/` cell reserved for a skill specific to one repository, and the dockerfiles name a module's payload folders rather than the module directory.
+The repository keeps the two kinds apart because a prompt root reads files into commands and a skill root reads directories holding `SKILL.md`. A module's `prompts/` folder ships whole. Working records live outside a module: the repository's run briefs and audits are at `.agents/`, and its two instruction folders are declared differently - `.agents/prompts/` is a cell the launch command carries, and `.agents/skills/` is discovered by pi from the working directory with no cell at all.
 
 ## A module's conventions
 
@@ -76,7 +92,7 @@ The two tables split the `session` rows between them, and every row belongs to e
 
 Two gates read the declaration, both through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader, and a third reader holds the files to the reach the declaration grants.
 
-[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY` and `ENV` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
+[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY`, `ENV`, `WORKDIR` and `CMD` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a project-tree surface whose provider's command does not carry it, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
 
 [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, and the loop inventory against the policy's `scope`.
 

@@ -59,9 +59,10 @@ if (manifest === undefined) {
 }
 
 /**
- * Roots holding a prompt or a skill. `.agents/` is the project's own
- * convention tree, which ships nowhere and so is declared by no cell; the two
- * entries are covered whether or not a project has installed them.
+ * Roots holding a prompt or a skill. `.agents/skills` is the project's own
+ * convention tree, which ships nowhere and so is declared by no cell. Its
+ * sibling `.agents/prompts` is a declared cell, and it stays listed here so a
+ * project whose manifest predates that cell is still scanned.
  */
 const ROOTS = [
   // A draft is not a live prompt or skill, so .agents/drafts and

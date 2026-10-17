@@ -26,6 +26,12 @@
 #   one source landing in two places         --  rc 1; both are named
 #   two cells claiming one folder            --  rc 1; the other cell is named
 #   a `none` cell naming an image path       --  rc 1; the path is named
+#   a project-tree cell the record names   --  rc 0
+#   a project-tree cell the record omits    --  rc 1; the record and the path are
+#                                                named
+#   a project-tree cell named elsewhere      --  rc 1; the declared path is named
+#   a project-tree cell naming no provider   --  rc 1; the cell is named
+#   a project-tree cell for a copied folder  --  rc 1; the copy is named
 #   a providerless cell naming a provider    --  rc 1; the provider is named
 #   a cell with no loader                    --  rc 1; the field is named
 #   a module root named by a package entry   --  rc 0 (the entry enables it)
@@ -196,6 +202,42 @@ MODULE_OUT=""
 run_module() {
   MODULE_RC=0
   MODULE_OUT=$(node "$MODULE" "$@" 2>&1) || MODULE_RC=$?
+}
+
+# add_project_cell ROOT  --  a cell whose runtime path sits inside the fixture's
+# session project-tree row, which is the form a surface read from the project
+# takes instead of from an image path. The fixture's settings record names the
+# path in its `prompts` key, which is the carrier the gate holds it to.
+add_project_cell() {
+  local root="$1"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.cells.push({
+      sources: [".agents/prompts/"],
+      runtime_path: "/home/agentuser/sandbox/.agents/prompts/",
+      loader: "the provider settings record names this directory as a prompt root",
+      provider: "pi",
+    });
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  settings_edit "$root" '
+    settings.prompts = [...(settings.prompts ?? []), "/home/agentuser/sandbox/.agents/prompts"];
+  '
+  mkdir -p "$root/.agents/prompts"
+}
+
+# settings_edit ROOT SCRIPT  --  runs SCRIPT against the fixture's pi settings
+# record with node, with `settings` bound and written back at the end.
+settings_edit() {
+  local root="$1" script="$2"
+  node -e "
+    const fs = require('fs');
+    const file = '$root/src/reasoning/providers/pi/config/agent/settings.json';
+    const settings = JSON.parse(fs.readFileSync(file, 'utf8'));
+    $script
+    fs.writeFileSync(file, JSON.stringify(settings, null, 2));
+  "
 }
 
 test_conforming_tree_passes() {
@@ -505,6 +547,80 @@ test_skill_name_in_two_roots_flagged() {
   assert_contains "$GATE_OUT" "skills: 'check-in' is held by" 'both roots are named'
 }
 
+# When: a cell's runtime path is inside the session's project-tree row, nothing
+# copies it, and the provider's settings record names it
+# Then: the tree passes, because the declaration and the record agree
+test_project_tree_cell_named_by_the_settings_passes() {
+  local root="$FIXTURE_DIR/projecttree"
+  write_default_tree "$root"
+  add_project_cell "$root"
+  run_gate "$root"
+  assert_rc 0 "$GATE_RC" 'a project-tree cell the settings record names passes'
+}
+
+# When: the cell declares a project-tree surface and the settings record omits it
+# Then: the gate reports it, because the surface is declared and never loaded
+test_project_tree_cell_missing_from_settings_flagged() {
+  local root="$FIXTURE_DIR/projecttree-nokey"
+  write_default_tree "$root"
+  add_project_cell "$root"
+  settings_edit "$root" '
+    settings.prompts = (settings.prompts ?? []).filter((entry) => !entry.includes(".agents/prompts"));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a project-tree cell the settings record omits fails'
+  assert_contains "$GATE_OUT" "names no '/home/agentuser/sandbox/.agents/prompts' in its prompts key" 'the record and the path are named'
+}
+
+# When: the settings record names a different path from the one the cell declares
+# Then: the gate reports both, because the cell names one and the record loads
+#       the other
+test_project_tree_cell_named_at_another_path_flagged() {
+  local root="$FIXTURE_DIR/projecttree-elsewhere"
+  write_default_tree "$root"
+  add_project_cell "$root"
+  settings_edit "$root" '
+    settings.prompts = (settings.prompts ?? []).map((entry) => entry.includes(".agents/prompts") ? "/home/agentuser/sandbox/docs/prompts" : entry);
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a project-tree cell named at another path fails'
+  assert_contains "$GATE_OUT" "names no '/home/agentuser/sandbox/.agents/prompts'" 'the declared path is named'
+}
+
+# When: a project-tree cell names no provider
+# Then: no settings record can carry it, and the gate says so
+test_project_tree_cell_with_no_provider_flagged() {
+  local root="$FIXTURE_DIR/projecttree-noprovider"
+  write_default_tree "$root"
+  add_project_cell "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    delete manifest.cells.find((cell) => cell.runtime_path.includes(".agents/prompts")).provider;
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a project-tree cell naming no provider fails'
+  assert_contains "$GATE_OUT" 'names no provider whose settings record reads it' 'the cell is named'
+}
+
+# When: an image row sends a folder a project-tree cell declares
+# Then: the surface has two homes, and the gate names the copy
+test_project_tree_cell_for_a_copied_folder_flagged() {
+  local root="$FIXTURE_DIR/projecttree-copied"
+  write_default_tree "$root"
+  add_project_cell "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.cells.find((cell) => cell.runtime_path.includes(".agents/prompts")).sources = ["src/reasoning/agent/prompts/"];
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a project-tree cell for a copied folder fails'
+  assert_contains "$GATE_OUT" "runtime path 'the project tree' while pi copies" 'the copy is named'
+}
+
 run_test test_conforming_tree_passes
 run_test test_manifest_row_with_no_copy_line_flagged
 run_test test_copy_line_with_no_manifest_row_flagged
@@ -522,6 +638,11 @@ run_test test_provisioned_cell_without_provision_row_flagged
 run_test test_one_source_two_destinations_flagged
 run_test test_two_cells_claiming_one_folder_flagged
 run_test test_none_cell_naming_an_image_path_flagged
+run_test test_project_tree_cell_named_by_the_settings_passes
+run_test test_project_tree_cell_missing_from_settings_flagged
+run_test test_project_tree_cell_named_at_another_path_flagged
+run_test test_project_tree_cell_with_no_provider_flagged
+run_test test_project_tree_cell_for_a_copied_folder_flagged
 run_test test_providerless_cell_naming_a_provider_flagged
 run_test test_cell_without_a_loader_flagged
 run_test test_module_root_with_no_package_entry_flagged

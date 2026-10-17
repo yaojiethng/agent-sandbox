@@ -4,8 +4,8 @@
 // `src/build/container-interface.json` declares the interface. This module is
 // its only reader: the checks call it rather than parsing the manifest
 // themselves, so there is one parse, one derivation and one resolution rule.
-// The truth the manifest claims is the provider dockerfiles' `COPY` and `ENV`
-// lines and the entrypoint's provisioning, and
+// The truth the manifest claims is the provider dockerfiles' `COPY`, `ENV`,
+// `WORKDIR` and `CMD` lines and the entrypoint's provisioning, and
 // `scripts/check_container_layout.sh` holds them equal in both directions.
 //
 // Two halves of the manifest need different treatment. The `image`, `provision`
@@ -216,11 +216,14 @@ export function instruction_reach(root, repoPath) {
 // `COPY` line added to an instruction root with no cell is a finding rather
 // than an undeclared surface. `runtime_path: none` means no image carries the
 // surface, and such a cell may name no image path at all: a surface that
-// travels with a project must not assume the container it is read in.
+// travels with a project must not assume the container it is read in. A runtime
+// path inside a `session` row is read from the project tree, and the provider's
+// settings record must name it.
 function check_cells(root, manifest, providers, findings) {
   const cells = manifest_rows(manifest, "cells");
   const images = manifest_rows(manifest, "image");
   const provisions = manifest_rows(manifest, "provision");
+  const session = session_paths(manifest);
   const root_keys = settings_root_keys(root);
   const roots = root_keys === null ? null : SETTINGS_ROOTS.flatMap((key) => root_keys[key]);
 
@@ -265,7 +268,7 @@ function check_cells(root, manifest, providers, findings) {
     }
     check_reachable(where, cell, findings);
     check_scoping(where, cell, providers, findings);
-    check_surface(where, cell, images, provisions, roots, findings);
+    check_surface(where, cell, images, provisions, roots, root, session, findings);
   }
 
   // Every destination in the agent tree is a declared surface or the template
@@ -346,28 +349,22 @@ function check_scoping(where, cell, providers, findings) {
   }
 }
 
-// check_surface WHERE CELL IMAGES PROVISIONS ROOTS FINDINGS -- the cell's
-// runtime path against the artefacts that implement it. The folder set is
+// check_surface WHERE CELL IMAGES PROVISIONS ROOTS ROOT SESSION FINDINGS -- the
+// cell's runtime path against the artefacts that implement it. The folder set is
 // derived rather than trusted: an `/opt` path is a `COPY` destination, a
 // `$AGENT_HOME` path is the provision template with the home prefix removed,
 // and `none` is a folder no `COPY` line sends anywhere, directly or inside a
 // copied tree. An `/opt` path is also a prompt or skill root in the provider's
 // settings record, because a path the image carries and the agent cannot load
-// is the failure this check exists for.
-function check_surface(where, cell, images, provisions, roots, findings) {
+// is the failure this check exists for. A path inside a `session` row is read
+// from the project tree, so no `COPY` line sends it and the provider whose
+// launch command names it must carry it there.
+function check_surface(where, cell, images, provisions, roots, root, session, findings) {
   const runtime = cell.runtime_path;
   const declared = cell.sources.map(normalize_dir);
 
   if (runtime === "none") {
-    for (const source of declared) {
-      const copied = images.find((row) => normalize_dir(row.source) === source);
-      const inside = images.find((row) => source.startsWith(normalize_dir(row.source)));
-      if (copied) {
-        findings.push(`${where}: runtime path 'none' while ${copied.provider} copies '${source}' to '${copied.destination}'`);
-      } else if (inside) {
-        findings.push(`${where}: runtime path 'none' while ${inside.provider} copies '${inside.source}', which contains '${source}'`);
-      }
-    }
+    check_no_copy(where, runtime, declared, images, findings);
     return;
   }
 
@@ -391,7 +388,58 @@ function check_surface(where, cell, images, provisions, roots, findings) {
     return;
   }
 
-  findings.push(`${where}: runtime path '${runtime}' is neither an /opt path, a $AGENT_HOME path, nor 'none'`);
+  const session_path = session.find((path) => normalize_dir(runtime).startsWith(normalize_dir(path)));
+  if (session_path) {
+    check_project_surface(where, cell, declared, images, root, findings);
+    return;
+  }
+
+  findings.push(`${where}: runtime path '${runtime}' is neither an /opt path, a $AGENT_HOME path, a session path, nor 'none'`);
+}
+
+// check_no_copy WHERE KIND DECLARED IMAGES FINDINGS -- no `COPY` line may send a
+// declared source into an image, directly or as part of a copied tree. A
+// surface that travels with the project is read from where the project is, and
+// a `none` surface ships nowhere at all, so either way an image copying it
+// would be a second copy with no owner. KIND names the runtime path the cell
+// declares, for the finding's text.
+function check_no_copy(where, kind, declared, images, findings) {
+  for (const source of declared) {
+    const copied = images.find((row) => normalize_dir(row.source) === source);
+    const inside = images.find((row) => source.startsWith(normalize_dir(row.source)));
+    if (copied) {
+      findings.push(`${where}: runtime path '${kind}' while ${copied.provider} copies '${source}' to '${copied.destination}'`);
+    } else if (inside) {
+      findings.push(`${where}: runtime path '${kind}' while ${inside.provider} copies '${inside.source}', which contains '${source}'`);
+    }
+  }
+}
+
+// check_project_surface WHERE CELL DECLARED IMAGES ROOT FINDINGS -- a surface
+// read from the project tree the session mounts. No image row may send its
+// source anywhere, and the provider's settings record must name the path in its
+// `prompts` key: a root the record does not name is declared and never loaded,
+// and nothing reports the loss. A path the record does not name is also skipped
+// silently when it is absent, which is why the record is the carrier rather
+// than a launch flag that reports every project without the folder.
+function check_project_surface(where, cell, declared, images, root, findings) {
+  const runtime = cell.runtime_path;
+  check_no_copy(where, "the project tree", declared, images, findings);
+
+  if (cell.provider === undefined) {
+    findings.push(`${where}: runtime path '${runtime}' is in the project tree, but the cell names no provider whose settings record reads it`);
+    return;
+  }
+
+  const keys = settings_root_keys(root);
+  if (keys === null) {
+    // A missing record is reported once, by check_cells, so it is not restated
+    // here as a cell that the record does not name.
+    return;
+  }
+  if (!keys.prompts.includes(strip_dir(runtime))) {
+    findings.push(`${where}: ${SETTINGS_REL} names no '${strip_dir(runtime)}' in its prompts key, so nothing loads '${runtime}'`);
+  }
 }
 
 // compare_sources WHERE DECLARED DERIVED FINDINGS -- the two sets, each

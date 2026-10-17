@@ -30,6 +30,20 @@ Two of four workers dispatched in one parallel call returned rc=124. Both logs h
 The class is a timeout that reads as "nothing happened". The mitigation for an empty log already exists in the provider layer, which treats a `rc=0` with an empty log as failure; the same rule is missing for a non-zero rc with an empty log, where the log proves nothing about the tree. Trust no summary over the artifact cuts both ways: a timed-out run has no summary, so the artifact is the only evidence, and it must be read before the work is re-planned.
 
 Raised by the agent during handover `20261017-01`.
+## [A] 2026-10-17  --  A typed delivery commit landed with no open handover
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: run the `/wrapup` commit-discipline checkpoint before the typed commit, not after the session; its A2 already counts "no open handover" as a missing-record signal, so the check exists and went unrun.
+```
+
+Two commits landed on the delivery branch typed as deliveries with no handover behind them: `e47d395b chore: add prompt resync to reload dogfooded agent-sandbox` and `f82b0d1d workflow: add auto forked from poteto-agent`, adding `.agents/prompts/resync.md` and `.agents/prompts/auto.md`. Nothing records why the files exist, what shape they were meant to take, or whether they were meant to stay.
+
+The record was found only at the next session's check-in, when the surface they sit in was about to be declared. A handover written after the fact cannot recover the intent, so the cost is permanent: the next reader has the files and no reason for them. The typed prefix is what made them read as closed deliverables, which is exactly the signal the one-commit rule reserves for a unit that has its record.
+
+Raised by the agent during handover `20261017-02`.
 
 ## [A] 2026-10-15  --  A gate that hand-lists its subject set misses a live root
 
