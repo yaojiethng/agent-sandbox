@@ -205,3 +205,11 @@ The minor and major loop procedures moved out of `iteration_policy.md` and `road
 The contract between prompts, skills and the two `AGENTS.md` layers is settled and structural. The surfaces are declared once as data in `src/build/container-interface.json`, one reader serves every gate, and a link in a surface's file must land inside the reach its cell grants; a reference now takes the absolute path its document has in the image, so the repository-relative form fails the gate. The policy form is designed away, each policy splitting into a mechanism a procedure runs and a convention the project's convention-skill holds, with a default convention-skill corpus that `initialize` installs and a handoff at `.agents/skills/<convention>/SKILL.md`. The five hand-maintained `CONTEXT.md` files are gone, the harness and the workflow module each ship as one declared payload, and the reviewer dispatch became one provider-layer skill with a script and a stub-`pi` test.
 
 ---
+
+## M3.6.1 - Disable and ship OpenCode dispatch
+
+*An agent can now dispatch a read-write worker onto the free OpenCode tier that pi cannot reach, and a later pass over the same unit runs in place against a named revision.*
+
+The reasoning container carries both harnesses, so a brief names a role and the runner seam picks pi or the OpenCode CLI from the provider that role resolves to. The unproven model-failover extension is off behind a flag, the seam refuses a role whose backend cannot run, and the dispatch script keeps its log and its change set as the evidence the run leaves. Attribution moved from a clean tree to a named base revision, with a pre-state stash commit as the recovery point for work a second pass needs to see, and the script gained the check it lacked. The build half is measurement and design rather than applied change, fixing what each tier costs and what invalidates it.
+
+---
