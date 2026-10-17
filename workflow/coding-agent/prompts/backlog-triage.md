@@ -33,7 +33,7 @@ Routing:
 
 - A specific multi-unit plan the operator has already released is `sequential-work.md`. That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
-- The generalized dispatcher that resolves execution order and picks a dispatch shape is `auto.md`, reserved for M4. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
+- The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
 
 ## Step 1 - Build the candidate set
 
@@ -100,7 +100,7 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 - Sequencing the runnable rows into a run plan. `sequential-work.md` owns the order and the unit split of a released plan.
 - Surveying the project for work that is not on the roadmap. [`gm.md`](gm.md) owns the situational survey.
-- Choosing a dispatch shape, or resolving execution order across a dependency graph. `auto.md` owns that, from M4.
+- Choosing a dispatch shape, or resolving execution order across a dependency graph. `/auto` owns that, from M4.
 - Editing any record. A stale row becomes a finding; the record is fixed in an iteration.
 - Answering a question the operator owns. Triage surfaces it once, in a form that can be answered in a reply.
 

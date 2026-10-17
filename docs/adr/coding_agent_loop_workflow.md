@@ -43,7 +43,7 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 | Workflow | Kind | Artifact |
 |---|---|---|
 | `/iter` | the iteration workflow | `workflow/coding-agent/prompts/iter.md`, renamed from `src/reasoning/agent/prompts/new-iteration.md` |
-| `/auto` | **M4 smart dispatcher (reserved stub), not an `/iter` work-loop expansion** | `.agents/drafts/auto.md` (draft: the reserved stub pending operator review) |
+| `/auto` | **M4 smart dispatcher, not an `/iter` work-loop expansion** | M4.7 |
 | `/goal` | **M4 loose-goal decomposition (Option B), not an `/iter` work-loop expansion** | M4 |
 | `/sequential-work` | curated dispatch shape (was `/auto`), `/iter` work-loop expansion owned by M3.2.3 | `.agents/drafts/sequential-work.md` (draft) |
 | `/parallel-work` | curated dispatch shape (was `/parallel-auto`), `/iter` work-loop expansion owned by M3.2.3 | `.agents/drafts/parallel-work.md` (draft) |

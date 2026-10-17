@@ -101,7 +101,9 @@ Multiple well-specified work tasks run once, in the background, with the operato
 
 ### M4.7 -- The `/auto` Smart Dispatcher
 
-`/auto` becomes a generalized dispatcher (Option A): given a roadmap task list (possibly out of order, subtasks each carrying an execution rank), it resolves the execution order, picks the dispatch shape per the work structure, and orchestrates. It parks any unit that genuinely needs operator input. The curated dispatch shapes (`sequential-work`, `parallel-work`, `task-queue`, `fanout`) are its building blocks. M3.2.3 reserves the `/auto` keyword with a stub; M4 implements the dispatcher. Design precedes implementation -- the semantics record and the ADR section are written before code changes.
+`/auto` becomes a generalized dispatcher (Option A): given a roadmap task list (possibly out of order, subtasks each carrying an execution rank), it resolves the execution order, picks the dispatch shape per the work structure, and orchestrates. It parks any unit that genuinely needs operator input.
+
+M4.7 derives its requirements from the surface shipped at its planning time. No requirement, criterion, or check in this milestone may rest on an M3 or M4 artifact that has not shipped. The 2026-10-01 semantics record records an M3 ownership decision and is not a specification for this milestone.
 
 - [ ] Implement the `/auto` smart dispatcher
 
