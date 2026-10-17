@@ -14,7 +14,7 @@ The contract is what makes this a general subagent rather than a reviewer.
 - **Read-write.** It edits the tree, runs tests, and returns the change set. The caller verifies the tree and lands the commit.
 - **One brief, passed verbatim.** The brief is the only variable input.
 - **A pinned model and thinking level.** The default is the free model `opencode/deepseek-v4.1-flash-free` at `high`. pi cannot reach that tier, which answers `403 FreeTierError`, so the run goes through the real OpenCode CLI and never spoofs a client.
-- **A clean tree before dispatch.** The worker's change set is then the diff against that tree, and the caller can attribute every line.
+- **A named base revision.** The report is attributable to the revision the caller names, so the caller can attribute every line. This is what lets a later pass over the same unit run in place.
 - **Its own log and event stream.** The log is the only evidence the run leaves.
 - **A report in the brief's shape**, returned to the caller.
 
@@ -26,16 +26,16 @@ A caller runs the script beside this skill:
 bash "$AGENT_HOME/agent/skills/opencode-dispatch/dispatch.sh" <brief-file> <scratch-dir> [role]
 ```
 
-The role defaults to `_IMPLEMENTER`. The script builds the command through the runner seam (`/opt/sandbox/lib/dispatch.sh`), so the flag mapping lives in one place, and runs it in the foreground of one call so the worker is never orphaned. It writes the log and the change set beneath the scratch directory and prints their paths. It refuses a missing or empty brief, an absent or unwritable scratch directory, and a dirty tree.
+The role defaults to `_IMPLEMENTER`. The script builds the command through the runner seam (`/opt/sandbox/lib/dispatch.sh`), so the flag mapping lives in one place, and runs it in the foreground of one call so the worker is never orphaned. It writes the log and the change set beneath the scratch directory and prints the run directory, the log path and the changed-file count. It refuses a missing or empty brief, an absent or unwritable scratch directory, and an unresolvable base revision.
 
-Env overrides: `OPENCODE_DISPATCH_MODEL`, `OPENCODE_DISPATCH_THINKING`, `OPENCODE_DISPATCH_TIMEOUT`.
+Env overrides: `OPENCODE_DISPATCH_MODEL`, `OPENCODE_DISPATCH_THINKING`, `OPENCODE_DISPATCH_TIMEOUT`, `OPENCODE_DISPATCH_BASE`.
 
 The provider `AGENTS.md` defines the container's scratch directory. Pass that directory as the second argument, because the script keeps its run directory and its logs are the evidence.
 
 ## Steps
 
 1. **Name the brief and the scratch directory.** Both are absolute paths. Done when the brief file is non-empty and the scratch directory exists and is writable; the script refuses either case.
-2. **Commit or stash the working tree.** The script refuses a dirty tree, because a change set read against a tree the caller is still editing cannot be attributed to a revision. Done when `git status --porcelain` prints nothing.
+2. **Name the base revision.** The default is `HEAD`. A later pass names the revision the unit started from, so the report covers the whole unit. A dirty tree is allowed, because that is what a later pass needs. Done when the base resolves to a commit.
 3. **Run the script.** Done when the log exists and is non-empty. An empty log with a zero exit code means the worker did no work, and the script reports that as a failure.
 4. **Verify the change set against the tree.** The report is a claim about the tree. Read the diff, run the check the brief named, and confirm the report landed. Done when every changed file is one the brief allowed and the check passes.
 5. **Commit one unit.** The worker returns work; the caller lands it, one commit for one unit.
@@ -53,7 +53,10 @@ The provider `AGENTS.md` defines the container's scratch directory. Pass that di
 
 | Failure | Response |
 |---|---|
-| The working tree is dirty | the script refuses; commit or stash first |
+| The base revision does not resolve | the script refuses and names the value; correct `OPENCODE_DISPATCH_BASE` |
+| The pre-state cannot be captured | the script refuses and names the failure, because a dirty tree must have a recovery point before the worker runs |
+| The worker destroys uncommitted work | a worker runs with `--auto` and can reset the tree; the `pre-state` stash commit recovers tracked changes only, and neither an untracked file nor a submodule's modified content is captured |
+| The worker commits the caller's uncommitted work | a worker running `git add -A && git commit` folds the caller's edits into a worker commit; the `pre-state` still holds the work and the base-relative set still names the files, but the caller unwinds the worker commit before landing the unit |
 | The worker logs nothing | the script exits non-zero and names the log path |
 | The worker exits non-zero | the script exits non-zero and names the log path; read the log before re-running |
 | The scratch directory is absent or unwritable | the script refuses; the provider `AGENTS.md` defines the path |
