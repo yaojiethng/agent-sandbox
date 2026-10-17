@@ -30,6 +30,12 @@ The role defaults to `_IMPLEMENTER`. The script builds the command through the r
 
 Env overrides: `OPENCODE_DISPATCH_MODEL`, `OPENCODE_DISPATCH_THINKING`, `OPENCODE_DISPATCH_TIMEOUT`, `OPENCODE_DISPATCH_BASE`.
 
+## The fallback
+
+A role's line may list several models, separated by `;`. The script tries them in file order and starts the next one only when the attempt failed without adding a change of its own, so a second model never inherits a first model's edits. The caller's own uncommitted work is measured out of that comparison, so a dirty tree does not block the advance. Every failed candidate is reported at the end with its class, whether or not a later one succeeded. `OPENCODE_DISPATCH_MODEL` pins one model and disables the fallback.
+
+The attempt is stopped as soon as its log carries a refusal, and the flags that put the CLI's errors on stderr are part of the command the seam builds. Measured on the pinned CLI: a refusal arrives in under a second, and the process then stays alive on an event subscription it never closes, so a caller that waits for exit waits forever. The CLI also discards the response's `retry-after`; the free tier is a per-IP daily quota that resets at UTC midnight, so the class is reported and the next candidate is tried rather than the request retried. `OPENCODE_DISPATCH_STALL` sets the silence backstop, in seconds, for an attempt that prints nothing at all.
+
 The provider `AGENTS.md` defines the container's scratch directory. Pass that directory as the second argument, because the script keeps its run directory and its logs are the evidence.
 
 ## Steps
@@ -61,4 +67,4 @@ The provider `AGENTS.md` defines the container's scratch directory. Pass that di
 | The worker exits non-zero | the script exits non-zero and names the log path; read the log before re-running |
 | The scratch directory is absent or unwritable | the script refuses; the provider `AGENTS.md` defines the path |
 | The role table is missing or the role is absent | the seam refuses; the change is `$AGENT_HOME/model-recommendations.md` |
-| The free tier refuses the request | the request did not come through the CLI; check `DISPATCH_OPENCODE_BIN` resolves to the real `opencode` |
+| The free tier refuses the request | the attempt stops on the refusal and the role's next model runs; if every model refuses, the run names each one |

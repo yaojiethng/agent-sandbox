@@ -17,6 +17,12 @@
 #     tree
 #   - an unset base resolves to HEAD
 #   - a worker that exits non-zero fails the run and names the log path
+#   - a role listing two models tries the second when the first fails without
+#     touching the tree, and reports the model that worked
+#   - a first attempt that changed the tree is not followed by a second model
+#   - a refused request stops its attempt early, so the fallback runs in seconds
+#   - the failed candidates and their classes are reported at the end of the run
+#     even when a later candidate succeeds
 #
 # Run:   bash tests/test_opencode_dispatch.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -277,6 +283,158 @@ test_a_failing_worker_refuses() {
   assert_contains "$out" "$run_dir/worker.log" "the refusal names the log path"
 }
 
+# write_model_stub BIN LOG EDIT RULES
+#   Writes a worker stub whose behaviour follows the model it was given.
+#   RULES is a space-separated list of `<model>=<action>`, where the action is
+#   `ok` (edit the tree and exit 0), `fail` (print and exit 1), `fail-edit`
+#   (edit the tree, then exit 1), or `refuse` (print the message a spent free
+#   tier returns, then sleep past the run's limit).
+write_model_stub() {
+  local bin="$1" log="$2" edit="$3" rules="$4"
+  mkdir -p "$(dirname "$bin")"
+  cat > "$bin" <<STUB
+#!/usr/bin/env bash
+model=""
+prev=""
+for arg in "\$@"; do
+  [[ "\$prev" == "-m" ]] && model="\$arg"
+  prev="\$arg"
+done
+printf '%s\n' "\$*" >> "$log"
+action="ok"
+for rule in $rules; do
+  [[ "\${rule%%=*}" == "\$model" ]] && action="\${rule#*=}"
+done
+dir=""
+prev=""
+for arg in "\$@"; do
+  [[ "\$prev" == "--dir" ]] && dir="\$arg"
+  prev="\$arg"
+done
+case "\$action" in
+  fail) printf 'the model failed\n'; exit 1 ;;
+  fail-edit) printf 'worker edit\n' >> "\$dir/$edit"; printf 'the model failed\n'; exit 1 ;;
+  refuse)
+    printf 'Error: {\"message\":\"Rate limit exceeded. Please try again later.\"}\n'
+    sleep 60
+    exit 1 ;;
+  hang) printf '> build \xc2\xb7 %s\n' "\$model"; sleep 60; exit 1 ;;
+  *) printf 'worker ran\n'; printf 'worker edit\n' >> "\$dir/$edit"; exit 0 ;;
+esac
+STUB
+  chmod +x "$bin"
+}
+
+test_falls_back_to_the_next_candidate() {
+  local sandbox out rc attempts
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=fail opencode/model-b=ok"
+
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  assert_rc 0 "$rc" "the run succeeds on the fallback"
+  assert_contains "$out" "rc=0" "the run reports success"
+  assert_contains "$out" "model=opencode/model-b" "the report names the model that worked"
+  attempts="$(wc -l < "$sandbox/argv.log")"
+  assert_eq "$attempts" "2" "the primary ran first, then the fallback"
+}
+
+test_a_changed_failure_does_not_fall_back() {
+  local sandbox out rc attempts
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=fail-edit opencode/model-b=ok"
+
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  assert_rc 1 "$rc" "a first attempt that changed the tree stops the run"
+  assert_contains "$out" "the worker exited rc=1 after changing the tree" \
+    "the refusal says the tree holds the attempt"
+  attempts="$(wc -l < "$sandbox/argv.log")"
+  assert_eq "$attempts" "1" "no second model ran over the first model's edits"
+}
+
+test_a_refused_model_is_stopped_early() {
+  local sandbox out rc run_dir elapsed start
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=refuse opencode/model-b=ok"
+
+  start=$(date +%s)
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  elapsed=$(( $(date +%s) - start ))
+  run_dir="$(printf '%s\n' "$out" | sed -n 's/^run dir: //p')"
+  assert_rc 0 "$rc" "the fallback runs after a refused request"
+  assert_contains "$out" "model=opencode/model-b" "the report names the model that worked"
+  assert_contains "$(cat "$run_dir/worker-attempt-1.log" 2>/dev/null)" \
+    "aborted: the model refused the request" "the refused attempt says why it stopped"
+  (( elapsed < 20 )) || fail "the refused attempt should stop in seconds, took ${elapsed}s"
+  pass "the refused attempt stopped in ${elapsed}s, before the 1800s limit"
+}
+
+test_a_silent_attempt_is_stopped_and_falls_back() {
+  local sandbox out rc run_dir elapsed start
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=hang opencode/model-b=ok"
+
+  export OPENCODE_DISPATCH_STALL=3
+  start=$(date +%s)
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  elapsed=$(( $(date +%s) - start ))
+  unset OPENCODE_DISPATCH_STALL
+  run_dir="$(printf '%s\n' "$out" | sed -n 's/^run dir: //p')"
+  assert_rc 0 "$rc" "the fallback runs after a silent attempt"
+  assert_contains "$out" "model=opencode/model-b" "the report names the model that worked"
+  assert_contains "$(cat "$run_dir/worker-attempt-1.log" 2>/dev/null)" \
+    "aborted: no output for 3s" "the silent attempt says why it stopped"
+  (( elapsed < 30 )) || fail "a silent attempt should stop after the stall limit, took ${elapsed}s"
+  pass "the silent attempt stopped in ${elapsed}s"
+}
+
+test_reports_every_failed_candidate_at_the_end() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=refuse opencode/model-b=ok"
+
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  assert_rc 0 "$rc" "the run succeeds on the fallback"
+  assert_contains "$out" "failures: 1" "the run counts the failed candidate"
+  assert_contains "$out" "opencode/model-a (quota)" "the run names the failed candidate and its class"
+}
+
+test_the_callers_own_edits_do_not_block_the_fallback() {
+  local sandbox out rc attempts
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=fail opencode/model-b=ok"
+  printf 'the caller edit\n' >> "$sandbox/repo/README.md"
+
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  assert_rc 0 "$rc" "the caller's uncommitted edit does not stop the fallback"
+  attempts="$(wc -l < "$sandbox/argv.log")"
+  assert_eq "$attempts" "2" "both candidates ran"
+  assert_contains "$out" "model=opencode/model-b" "the report names the model that worked"
+}
+
 # ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
@@ -293,5 +451,11 @@ run_test test_pre_state_recovery_point
 run_test test_the_pre_state_survives_a_destructive_worker
 run_test test_the_base_defaults_to_head
 run_test test_a_failing_worker_refuses
+run_test test_falls_back_to_the_next_candidate
+run_test test_a_changed_failure_does_not_fall_back
+run_test test_a_refused_model_is_stopped_early
+run_test test_a_silent_attempt_is_stopped_and_falls_back
+run_test test_reports_every_failed_candidate_at_the_end
+run_test test_the_callers_own_edits_do_not_block_the_fallback
 
 test_done

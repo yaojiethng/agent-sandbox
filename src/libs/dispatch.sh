@@ -204,7 +204,11 @@ dispatch_command() {
     local bin
     bin="$(dispatch_opencode_bin)"
     local argv
-    argv="${bin} run --auto --dir $(printf '%q' "$dir") -m $(printf '%q' "$pair")"
+    # The CLI's error channel is stderr at ERROR level. Without these flags a
+    # refused request prints only its banner, and the process stays alive on an
+    # event subscription it never closes, so a caller cannot tell a refusal from
+    # a slow run.
+    argv="${bin} run --auto --print-logs --log-level ERROR --title $(printf '%q' "$(basename "$brief")") --dir $(printf '%q' "$dir") -m $(printf '%q' "$pair")"
     if [[ -n "$level" ]]; then
       argv="${argv} --variant $(printf '%q' "$level")"
     fi

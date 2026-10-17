@@ -14,17 +14,27 @@
 # Refuses a missing or empty brief, an absent or unwritable scratch directory,
 # and an unresolvable base revision.
 #
-# Prints the brief, role, model, run directory, base revision and pre-state
-# recovery point, then one line: rc, seconds, changed-file count, log.
+# Prints the brief, role, candidate list, run directory, base revision and
+# pre-state recovery point, one line per attempt, then one line: rc, seconds,
+# changed-file count, the model that produced the change set, and the log.
 #
-# Exit codes: 0 = the worker ran and logged. 1 = a refusal, or a worker that
-# produced no output or exited non-zero.
+# Fallback. The role's line may list several models, separated by `;`. They are
+# tried in file order, and the next one runs only when the attempt failed without
+# touching the tree, so a second model never inherits a first model's edits. An
+# attempt is stopped the moment its log carries a refusal the CLI would retry
+# silently (a rate limit, unfunded access, a disabled model), so a spent free
+# tier costs seconds rather than the whole timeout.
+#
+# Exit codes: 0 = a worker ran and logged. 1 = a refusal, or every candidate
+# failed.
 #
 # Usage: bash dispatch.sh <brief-file> <scratch-dir> [role]
 #
-# Env: OPENCODE_DISPATCH_MODEL     default opencode/deepseek-v4.1-flash-free
+# Env: OPENCODE_DISPATCH_MODEL     pins one model; unset reads the role's line
 #      OPENCODE_DISPATCH_THINKING  default high
-#      OPENCODE_DISPATCH_TIMEOUT   default 1800
+#      OPENCODE_DISPATCH_TIMEOUT   per attempt, default 1800
+#      OPENCODE_DISPATCH_STALL     silence, in seconds, that ends an attempt,
+#                                  default 15
 #      OPENCODE_DISPATCH_BASE      default HEAD
 
 set -euo pipefail
@@ -44,6 +54,112 @@ usage() {
 refuse() {
   printf 'refusing: %s\n  %s\n' "$1" "$2" >&2
   exit 1
+}
+
+# role_candidates ROLE  --  one "<pair> <level>" line per model the role's line
+# names, in file order. The first is the role's primary model; the rest are the
+# fallbacks the operator listed after it. A role with no line, or a line with no
+# value, yields nothing, and the caller falls back to the built-in default.
+role_candidates() {
+  local role="$1" file entry pair level
+  file="$(dispatch_rec_file)" || return 1
+  [[ -f "$file" ]] || return 0
+  while IFS= read -r entry; do
+    entry="$(printf '%s' "$entry" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    [[ -n "$entry" ]] || continue
+    if [[ "$entry" == *" at "* ]]; then
+      pair="${entry%% at *}"
+      level="${entry##* at }"
+    else
+      pair="$entry"
+      level=""
+    fi
+    printf '%s %s\n' "$pair" "${level:-$DEFAULT_THINKING}"
+  done < <(grep -E "^${role}:" "$file" | head -n 1 | cut -d: -f2- | tr ';' '\n')
+}
+
+# refusal_in LOG  --  the refusal the run's own model reported, or empty. The
+# title model's failure is not the run's failure, so its lines are excluded by
+# agent name.
+refusal_in() {
+  { grep -v 'agent=title' "$1" 2>/dev/null \
+      | grep -oE 'Rate limit exceeded|Insufficient account funds|Model access is disabled|FreeTierError' \
+      | head -n 1; } || true
+}
+
+# refusal_class LOG  --  the class of a refusal the CLI printed, or `unknown`.
+# The message is the provider's own text; the client discards the response type
+# and its `retry-after`, so the text is the only classification the log carries.
+refusal_class() {
+  case "$(refusal_in "$1")" in
+    'Rate limit exceeded'|'Insufficient account funds') printf 'quota' ;;
+    'Model access is disabled'|'FreeTierError') printf 'capability' ;;
+    *) printf 'unknown' ;;
+  esac
+}
+
+# run_worker CMD LOG LIMIT  --  run one attempt, and stop it the moment it cannot
+# succeed. A refused request is retried silently by the CLI and prints nothing
+# beyond its banner, so two signals end an attempt early: a refusal signature in
+# the log, and a log that has stopped growing while still holding almost
+# nothing. Without them a spent model would consume the whole limit before the
+# caller could reach a fallback.
+run_worker() {
+  local cmd="$1" log="$2" limit="$3"
+  local stall="${OPENCODE_DISPATCH_STALL:-15}"
+  local launcher=(bash -c)
+  command -v setsid >/dev/null 2>&1 && launcher=(setsid bash -c)
+
+  : >"$log"
+  "${launcher[@]}" "$cmd" >"$log" 2>&1 &
+  local pid=$! rc=0 start size=0 last_size=-1 last_change
+  start=$(date +%s)
+  last_change=$start
+  while kill -0 "$pid" 2>/dev/null; do
+    if [[ -n "$(refusal_in "$log")" ]]; then
+      stop_worker "$pid" "$log" "the model refused the request: $(refusal_in "$log")"
+      return 1
+    fi
+    size=$(wc -c <"$log" 2>/dev/null || printf '0')
+    if (( size != last_size )); then
+      last_size=$size
+      last_change=$(date +%s)
+    elif (( size < 1024 && $(date +%s) - last_change >= stall )); then
+      stop_worker "$pid" "$log" "no output for ${stall}s, which is how the CLI retries a refused request"
+      return 1
+    fi
+    if (( $(date +%s) - start >= limit )); then
+      stop_worker "$pid" "$log" "the time limit of ${limit}s expired"
+      return 1
+    fi
+    sleep 1
+  done
+  wait "$pid" || rc=$?
+  return "$rc"
+}
+
+# stop_worker PID LOG REASON  --  end one attempt and record why in its log, so
+# the caller reads the cause rather than an exit code alone.
+stop_worker() {
+  local pid="$1" log="$2" reason="$3"
+  kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true
+  printf 'aborted: %s\n' "$reason" >>"$log"
+}
+
+# write_change_set ROOT BASE OUT  --  the change set from BASE to the working
+# tree: the working diff, the staged diff and the untracked paths, deduplicated
+# by path. Both diff calls are needed, because the working-tree view misses
+# content the index still holds. Exits non-zero when git fails, so the caller can
+# name the failure instead of reporting an empty set.
+write_change_set() {
+  local root="$1" base="$2" out="$3" err="$4" rc=0
+  {
+    git -C "$root" diff --name-status "$base" || exit
+    git -C "$root" diff --cached --name-status "$base" || exit
+    git -C "$root" ls-files --others --exclude-standard | sed 's/^/??\t/' || exit
+  } 2>"$err" | awk -F'\t' '!seen[$NF]++' >"$out" || rc=$?
+  return "$rc"
 }
 
 main() {
@@ -88,42 +204,87 @@ main() {
     fi
   fi
 
-  local model="${OPENCODE_DISPATCH_MODEL:-$DEFAULT_MODEL}"
-  local level="${OPENCODE_DISPATCH_THINKING:-$DEFAULT_THINKING}"
   local timeout_secs="${OPENCODE_DISPATCH_TIMEOUT:-$DEFAULT_TIMEOUT}"
 
-  local cmd
-  cmd="$(dispatch_command "$role" "$brief" "$repo_root" "$model" "$level")"
+  # The candidates are the role's models in file order: the primary first, the
+  # operator's fallbacks after it. A model named in the environment is the only
+  # candidate, so a caller can pin one model and get no fallback.
+  local -a candidates=()
+  if [[ -n "${OPENCODE_DISPATCH_MODEL:-}" ]]; then
+    candidates=("${OPENCODE_DISPATCH_MODEL} ${OPENCODE_DISPATCH_THINKING:-$DEFAULT_THINKING}")
+  else
+    local candidate
+    while IFS= read -r candidate; do
+      [[ -n "$candidate" ]] && candidates+=("$candidate")
+    done < <(role_candidates "$role")
+    (( ${#candidates[@]} )) || candidates=("$DEFAULT_MODEL $DEFAULT_THINKING")
+  fi
 
   local run_dir
   run_dir="$(mktemp -d "$scratch/opencode-dispatch.XXXXXX")"
-  printf 'brief: %s\nrole: %s\nmodel: %s\nrun dir: %s\nbase: %s\npre-state: %s\ncommand: %s\n' \
-    "$brief" "$role" "$model" "$run_dir" "$base_sha" "$pre" "$cmd"
+  printf 'brief: %s\nrole: %s\ncandidates: %s\nrun dir: %s\nbase: %s\npre-state: %s\n' \
+    "$brief" "$role" "$(printf '%s, ' "${candidates[@]}" | sed 's/, $//')" "$run_dir" "$base_sha" "$pre"
 
-  local rc=0 start elapsed
-  start=$(date +%s)
-  timeout "$timeout_secs" bash -c "$cmd" >"$run_dir/worker.log" 2>&1 || rc=$?
-  elapsed=$(( $(date +%s) - start ))
+  local attempt=0 rc=0 start elapsed chosen="" changed=0 cmd pair level log refused_note=""
+  local -a refused=()
+  for candidate in "${candidates[@]}"; do
+    attempt=$(( attempt + 1 ))
+    pair="${candidate% *}"
+    level="${candidate##* }"
+    [[ "$level" == "$candidate" ]] && level="$DEFAULT_THINKING"
+    cmd="$(dispatch_command "$role" "$brief" "$repo_root" "$pair" "$level")"
+    # The seam baked into the image may predate the flags that put the CLI's
+    # error channel on stderr. Insert them when the builder omits them; a seam
+    # that carries them makes this a no-op.
+    if [[ "$cmd" != *"--print-logs"* ]]; then
+      cmd="${cmd/ run / run --print-logs --log-level ERROR }"
+    fi
 
-  # The change set is the unit's: the diff from the base to the working tree,
-  # plus the staged diff and the untracked paths, deduplicated by path. Both
-  # diff calls are needed, because the working-tree view misses content the
-  # index still holds. A git failure here is caught and routed through refuse,
-  # so the caller reads a named refusal rather than a bare exit.
-  local changes_rc=0
-  {
-    git -C "$repo_root" diff --name-status "$base_sha" || exit
-    git -C "$repo_root" diff --cached --name-status "$base_sha" || exit
-    git -C "$repo_root" ls-files --others --exclude-standard | sed 's/^/??\t/' || exit
-  } 2>"$run_dir/changes.err" | awk -F'\t' '!seen[$NF]++' >"$run_dir/changes.txt" || changes_rc=$?
-  [[ "$changes_rc" -eq 0 ]] \
-    || refuse "the change set could not be computed" "git exited $changes_rc: $(tr '\n' ' ' <"$run_dir/changes.err")"
-  local changed
-  changed="$(awk 'END { print NR }' "$run_dir/changes.txt")"
-  printf 'rc=%s %ss changed=%s log=%s\n' "$rc" "$elapsed" "$changed" "$run_dir/worker.log"
+    log="$run_dir/worker.log"
+    if (( attempt > 1 )); then
+      mv "$log" "$run_dir/worker-attempt-$(( attempt - 1 )).log"
+    fi
+    printf 'attempt %s: model %s at %s\ncommand: %s\n' "$attempt" "$pair" "$level" "$cmd"
 
-  [[ -s "$run_dir/worker.log" ]] || refuse "the worker produced no output" "$run_dir"
-  [[ "$rc" -eq 0 ]] || refuse "the worker exited rc=$rc" "$run_dir/worker.log"
+    # The change set is the unit's, measured from the base. The caller's own
+    # uncommitted work sits in it too, so the attempt's contribution is the
+    # difference between the set before it ran and the set after, and only a
+    # difference means the worker touched the tree.
+    write_change_set "$repo_root" "$base_sha" "$run_dir/changes-before.txt" "$run_dir/changes.err" \
+      || refuse "the change set could not be computed" "git failed before the worker ran: $(tr '\n' ' ' <"$run_dir/changes.err")"
+
+    start=$(date +%s)
+    rc=0
+    run_worker "$cmd" "$log" "$timeout_secs" || rc=$?
+    elapsed=$(( $(date +%s) - start ))
+
+    write_change_set "$repo_root" "$base_sha" "$run_dir/changes.txt" "$run_dir/changes.err" \
+      || refuse "the change set could not be computed" "git failed after the worker ran: $(tr '\n' ' ' <"$run_dir/changes.err")"
+    changed="$(awk 'END { print NR }' "$run_dir/changes.txt")"
+    local touched="no"
+    cmp -s "$run_dir/changes-before.txt" "$run_dir/changes.txt" || touched="yes"
+
+    if [[ "$rc" -eq 0 && -s "$log" ]]; then
+      chosen="$pair"
+      break
+    fi
+    if [[ "$touched" == "yes" ]]; then
+      # The attempt touched the tree, so a second model would mix two workers'
+      # edits. Report the attempt and leave the advance to the caller.
+      refuse "the worker exited rc=$rc after changing the tree" "$log"
+    fi
+    printf 'attempt %s failed: rc=%s %ss changed=0 class=%s log=%s\n' \
+      "$attempt" "$rc" "$elapsed" "$(refusal_class "$log")" "$log"
+    refused+=("$pair ($(refusal_class "$log"))")
+  done
+
+  [[ -n "$chosen" ]] || refused_note="${refused[*]:-none}"
+  if (( ${#refused[@]} )); then
+    printf 'failures: %s\n' "${#refused[@]}"
+    printf '  %s\n' "${refused[@]}"
+  fi
+  [[ -n "$chosen" ]] || refuse "every candidate failed" "${refused_note:-none}"
+  printf 'rc=%s %ss changed=%s model=%s log=%s\n' "$rc" "$elapsed" "$changed" "$chosen" "$log"
 }
 
 main "$@"

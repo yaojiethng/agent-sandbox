@@ -92,14 +92,14 @@ test_command_pi_backend() {
 test_command_opencode_backend_by_role() {
   local RESULT
   RESULT="$(dispatch_command _ADVISOR /tmp/brief.md /work)"
-  assert_contains "$RESULT" "/opt/opencode run --auto --dir /work -m opencode/cat-jam-free --variant high" "the opencode backend maps the pair and the level"
+  assert_contains "$RESULT" "/opt/opencode run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/cat-jam-free --variant high" "the opencode backend maps the pair and the level"
   assert_contains "$RESULT" "\"\$(cat /tmp/brief.md)\"" "the opencode backend passes the brief as the message"
 }
 
 test_command_model_override_selects_backend() {
   local RESULT
   RESULT="$(dispatch_command _IMPLEMENTER /tmp/brief.md /work opencode/cat-jam-free)"
-  assert_contains "$RESULT" "/opt/opencode run --auto --dir /work -m opencode/cat-jam-free" "an override onto an opencode-only provider switches the backend"
+  assert_contains "$RESULT" "/opt/opencode run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/cat-jam-free" "an override onto an opencode-only provider switches the backend"
 }
 
 test_command_thinking_override() {
@@ -197,7 +197,7 @@ EOF
   RC=$?
   ARGV="$(cat "$LOG")"
   EXPECTED="$(printf '%s\n' \
-    run --auto --dir /work -m opencode/cat-jam-free --variant high 'the run brief')"
+    run --auto --print-logs --log-level ERROR --title run-brief.md --dir /work -m opencode/cat-jam-free --variant high 'the run brief')"
   assert_eq "$ARGV" "$EXPECTED" "the run path hands the stub the built argv"
   assert_contains "$ARGV" "the run brief" "the stub received the brief's text, so the brief was read at run time"
   assert_rc 7 "$RC" "the stub's exit code propagates through --run"
