@@ -412,7 +412,7 @@ session_teardown() {
   # SESSION_ID-scoped named volume persists so resume still works. The container
   # is disposable  --  durable state lives in the named volume + bind mounts
   # (see docs/reference/execution_model.md  --  Container State Contract).
-  docker compose "${COMPOSE_ARGS[@]}" down 2>/dev/null || true
+  docker compose "${COMPOSE_ARGS[@]}" down --timeout 10 2>/dev/null || true
 }
 
 # -------------------------
@@ -422,7 +422,7 @@ session_teardown() {
 # Must be called after compose_args has set COMPOSE_ARGS.
 # -------------------------
 session_destroy() {
-  docker compose "${COMPOSE_ARGS[@]}" down -v 2>/dev/null || true
+  docker compose "${COMPOSE_ARGS[@]}" down -v --timeout 10 2>/dev/null || true
 }
 
 # -------------------------

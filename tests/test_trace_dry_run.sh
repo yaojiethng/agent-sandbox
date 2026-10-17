@@ -112,7 +112,7 @@ test_dry_run_always_tears_down_with_volumes() {
   DRY_RUN_RECORD_TIMEOUT=2 invoke_dry_run --delivery=copy || DRY_RC=$?
   assert_rc 0 "$DRY_RC" "dry-run invocation succeeds"
   if [[ $(trace_count "compose down -v") -eq 1 ]] \
-     && [[ $(grep -cE "compose down *$" "$DOCKER_TRACE_LOG") -eq 1 ]]; then
+     && [[ $(grep -cE "compose down --timeout 10$" "$DOCKER_TRACE_LOG") -eq 1 ]]; then
     pass "dry-run: one stop (down, volume kept) + one final teardown (down -v)"
   else
     fail "dry-run teardown sequence wrong: down_count=$(trace_count 'compose down') down_v_count=$(trace_count 'compose down -v')"

@@ -584,7 +584,7 @@ test_rule2_stops_container_before_removing() {
   invoke_prune > /dev/null 2>&1
 
   local stop_line rm_line
-  stop_line="$(grep -n "stop c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
+  stop_line="$(grep -n "stop --time 5 c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
   rm_line="$(grep -n "rm c1" "$DOCKER_TRACE_LOG" | head -1 | cut -d: -f1)"
   if [[ -n "$stop_line" && -n "$rm_line" && "$stop_line" -lt "$rm_line" ]]; then
     pass "Rule 2: the container is stopped before it is removed"

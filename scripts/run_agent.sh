@@ -361,7 +361,7 @@ seed_sandbox_volume() {
       echo "Error: seeder failed (exit $rc)  --  aborting start" >&2
     fi
     echo "  Seeder output above names the failure. Discarding the session volume." >&2
-    docker compose "${COMPOSE_ARGS[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+    docker compose "${COMPOSE_ARGS[@]}" down --volumes --remove-orphans --timeout 10 >/dev/null 2>&1 || true
     return 1
   fi
   echo "Sandbox volume seeded and verified."

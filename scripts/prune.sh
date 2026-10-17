@@ -361,7 +361,10 @@ main() {
       IFS='|' read -r kind id _ <<< "$line"
       case "$kind" in
         container)
-          docker stop "$id" 2>/dev/null || true
+          # Bound stated here, not inherited: prune sweeps containers from older
+          # sessions, which are the ones that can hold SIGTERM and cost the full
+          # default grace each.
+          docker stop --time 5 "$id" 2>/dev/null || true
           docker rm "$id" 2>/dev/null || true
           ;;
         network)

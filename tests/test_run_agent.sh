@@ -996,6 +996,7 @@ test_standard_agent_failure_still_tears_down_and_propagates_rc() {
   local down_count last
   down_count=$(trace_count "compose down")
   last=$(trace_grep "compose " | tail -1)
+  assert_contains "$last" "--timeout 10" "standard: the teardown states its stop bound"
   if [[ "$rc" -eq 42 && "$down_count" -ge 1 && "$last" == *"compose down"* ]]; then
     pass "standard: agent failure (rc=42) still tears down; rc propagated"
   else
