@@ -33,7 +33,6 @@ SOURCES=(
   "docs/policies/documentation_policy.md"
   "docs/development/prompt-authoring-conventions.md"
 )
-KINDS=(rule-gated rule-reviewed judgement model)
 
 usage() { echo "usage: check_norm_ownership.sh [--generate|--check]" >&2; exit 2; }
 
@@ -118,11 +117,13 @@ check() {
     IFS=$'\t' read -r hash file kind obs text <<< "$row"
     seen["$hash"]=1
     count=$((count + 1))
-    if ! printf '%s\n' "${KINDS[@]}" | grep -qx "$kind"; then
-      echo "norm-ownership: $file has kind '$kind' for: ${text:0:70}..." >&2
-      rc=1
-      continue
-    fi
+    case "$kind" in
+      rule-gated|rule-reviewed|judgement|model) : ;;
+      *)
+        echo "norm-ownership: $file has kind '$kind' for: ${text:0:70}..." >&2
+        rc=1
+        continue ;;
+    esac
     if ! observer_known "$obs"; then
       echo "norm-ownership: $file names observer '$obs' that does not run, for: ${text:0:70}..." >&2
       rc=1
