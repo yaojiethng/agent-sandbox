@@ -48,7 +48,7 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 - **Place.** Pick the folder category before drafting. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Folder placement.
 - **Author.** A record-layer document starts with a confirmed skeleton. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Skeleton first for record-layer documents.
 - **Format.** Every `docs/` document opens with the same header block. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Document header format.
-- **Maintain.** A durable record states the current state, not the session that produced it. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Records state, not session history.
+- **Maintain.** A durable record is written for its reader, not for the session that produced it. Judgement: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. Procedure: [`documentation_policy.md`](../policies/documentation_policy.md) -- Subject, not the session.
 - **Check.** A record must satisfy the document lint gate to close. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Tooling checks.
 - **Correct after close.** A closed record's content does not change; it gains its type's marker. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Post-close document corrections.
 - **Reference a missing document.** A missing document is an error unless its link carries `[REMOVED]`. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Missing documents.

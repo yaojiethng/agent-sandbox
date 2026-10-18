@@ -127,13 +127,12 @@ test_build_has_build_command() {
   fi
 }
 
-# Regression (session 20260812-12 / roadmap "set -e test-harness blind spot"):
-# build.sh relies on the caller setting `set -euo pipefail`; a standalone
-# `bash build.sh` (as the trace tests invoke it) previously inherited the
-# harness's no-`-e`, so the production failure-abort semantics were never
+# Regression: build.sh relies on the caller setting `set -euo pipefail`; a
+# standalone `bash build.sh` (as the trace tests invoke it) previously inherited
+# the harness's no-`-e`, so the production failure-abort semantics were never
 # exercised. build.sh now self-enables `-e` on standalone invocation. Under a
 # failing docker build the result must be the descriptive `build_image: ERROR
-# build FAILED` message (the session-03 fix), not a silent bare `set -e` abort.
+# build FAILED` message, not a silent bare `set -e` abort.
 # Given: a stub whose docker build exits 42
 # When:  build.sh runs standalone (its own set -euo pipefail is active)
 # Then:  the output carries the descriptive build_image failure line

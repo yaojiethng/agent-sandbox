@@ -25,12 +25,12 @@
 #    reads them through settings.json keys
 #
 # Historical note:
-#   Named knowledge_provider_config_cycle.sh until session 20260522-04, then
-#   renamed. The copy-in/copy-out tests it once carried were removed in
-#   handover 20261005-05: that mechanism is retired, and the test simulated it
-#   with local `cp -r` helpers rather than exercising the harness. Provider
-#   config now travels as the image's template, seeded into AGENT_HOME at every
-#   start, plus the subdirectories the provider overlay bind-mounts.
+#   This file was named knowledge_provider_config_cycle.sh and was later
+#   renamed. The copy-in/copy-out tests it once carried were removed when that
+#   mechanism was retired; the test simulated it with local `cp -r` helpers
+#   rather than exercising the harness. Provider config now travels as the
+#   image's template, seeded into AGENT_HOME at every start, plus the
+#   subdirectories the provider overlay bind-mounts.
 #
 # Reference:
 #  - src/reasoning/providers/pi/config/agent/settings.json (the image template)

@@ -122,7 +122,7 @@ test_verify_rejects_layer_fail_with_status_pass() {
   assert_contains "$output" "layer.container_network = FAIL" "mixed record names the failed layer"
 }
 
-# --- image-signature (option c) gate ---------------------------------------
+# --- image-signature gate: the record's signature is verified -------------
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
 

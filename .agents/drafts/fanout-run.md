@@ -105,4 +105,4 @@ This brief stays a draft until the next fan-out records these. Each item closes 
 - A subagent never invents a row number; the primary assigns numbers from provisional keys.
 - The integrity check runs after every batch, not at the close.
 - The register is the source of truth; the prose is generated from it.
-- The chat presentation is a digest. Records state, not session history.
+- The chat presentation is a digest. Records follow `communication-principle-write-for-the-reader`: name the thing, not the session.

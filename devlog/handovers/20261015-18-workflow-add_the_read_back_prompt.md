@@ -30,7 +30,7 @@ The operator invoked `/sidequest`. No handover carried `status: Active`, so the 
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| The body takes Option B, prompt-shaped | the given body carried skill frontmatter (`name`, `disable-model-invocation`); the project's prompt convention is `description` plus `argument-hint` and a `> $@` line, and a prompt is operator-invoked by construction so the skill field is inert | this record; the file |
+| The body takes the prompt shape, not the given skill shape | the given body carried skill frontmatter (`name`, `disable-model-invocation`); the project's prompt convention is `description` plus `argument-hint` and a `> $@` line, and a prompt is operator-invoked by construction so the skill field is inert | this record; the file |
 | One term, `operator`, in both the description and the body | the project's vocabulary is `operator`, and one file carries one term; the given sentence said `user` | this record |
 
 ## Decisions pending

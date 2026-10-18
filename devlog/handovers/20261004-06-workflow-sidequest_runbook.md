@@ -45,7 +45,7 @@ Out of scope: changing the handover status vocabulary. The paused parent keeps `
 |---|---|---|
 | The paused parent handover keeps `Active`; the sidequest names it | the handover status vocabulary and the format gate stay unchanged, and the paused iteration is genuinely still open | this record |
 | The operator invokes a sidequest; the agent does not open one unprompted | both precedents were operator-directed, and an agent-opened sidequest is scope drift with a new handover attached | this record |
-| A sidequest raises its roadmap row at close, not at open (option a) | operator, 2026-10-04: the operator's direction is the task, and the sidequest's own scope gate confirms it exactly as a roadmap task's scope is confirmed; a durable outcome raises a row marked `[x]` in the close commit | this record; `iteration_policy.md` `## Sidequests` |
+| A sidequest raises its roadmap row at close, not at open | operator, 2026-10-04: the operator's direction is the task, and the sidequest's own scope gate confirms it exactly as a roadmap task's scope is confirmed; a durable outcome raises a row marked `[x]` in the close commit | this record; `iteration_policy.md` `## Sidequests` |
 
 ## Decisions pending
 

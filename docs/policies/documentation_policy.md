@@ -169,11 +169,11 @@ Pick the folder category before drafting. Update only the sections the change af
 
 Before writing an ADR or a reference document, propose the skeleton in chat -- section list and what each section holds -- and get operator confirmation. Write prose only against the confirmed skeleton. Drafting full prose before the structure is agreed has produced full rewrites. The skeleton costs minutes; a rewrite costs more.
 
-### Records state, not session history
+### Subject, not the session
 
-A durable record states the current state of its subject; the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) classifies what endures. A durable record does not narrate the session that produced it: no session ids, no handover names, no commit hashes, no change-of-mind narration, no "as discussed" pointers. The session's path from disagreement to decision belongs in the handover and the design discussion doc; the durable record holds the settled state. When a reader needs the history, the record links to it once.
+The judgement for a durable record is the `communication-principle-write-for-the-reader` skill at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. That skill is the judgement's only home; the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) classifies what endures.
 
-A design document records the completed design, not the open-questions-and-replies transcript that produced it. When a question is answered during the design, write the answer into the body of the document at the place the answer belongs; do not keep it as a reply. Keep a short section of the designs that were considered and rejected, and why each was rejected. Put the final design at the forefront of the document.
+A design record carries no question-and-reply pair, and every question it lists is still open. Keep a short section of the designs that were considered and rejected, with the reason for each, and put the final design at the forefront of the document.
 
 ---
 

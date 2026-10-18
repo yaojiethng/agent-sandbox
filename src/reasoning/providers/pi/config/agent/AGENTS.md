@@ -85,7 +85,7 @@ General communication guidelines for all agent prose. Full policy: `docs/policie
 - Plain ASCII punctuation. Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. No non-ASCII symbols, no checkmark or cross emoji.
 - Link sparingly. Link what the reader might need next; keep context-only names as plain text. Do not over-link transient documents (handovers, discussion docs, session exports).
 - Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
-- Records state, not session history. A durable record does not narrate the session that produced it: no session ids, no commit hashes, no "as discussed" pointers.
+- A record is written for its reader, not for the session that produced it; apply `communication-principle-write-for-the-reader`.
 
 ## Fresh Subagent Invocation
 
