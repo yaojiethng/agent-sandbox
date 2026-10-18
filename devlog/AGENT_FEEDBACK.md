@@ -30,6 +30,7 @@ Two of four workers dispatched in one parallel call returned rc=124. Both logs h
 The class is a timeout that reads as "nothing happened". The mitigation for an empty log already exists in the provider layer, which treats a `rc=0` with an empty log as failure; the same rule is missing for a non-zero rc with an empty log, where the log proves nothing about the tree. Trust no summary over the artifact cuts both ways: a timed-out run has no summary, so the artifact is the only evidence, and it must be read before the work is re-planned.
 
 Raised by the agent during handover `20261017-01`.
+
 ## [A] 2026-10-17  --  A typed delivery commit landed with no open handover
 
 ```text
