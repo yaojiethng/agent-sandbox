@@ -315,5 +315,6 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
 | `workflow/coding-agent/prompts/merge.md` | Draft-export merging operation |
 | `workflow/coding-agent/prompts/rebase.md` | Stale-branch porting operation |
+| `workflow/coding-agent/prompts/history-cleanup.md` | Rewriting a draft branch so no commit is later undone |
 
 ---
