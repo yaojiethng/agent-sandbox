@@ -76,6 +76,7 @@ General communication guidelines for all agent prose. Full policy: `docs/policie
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
 - Numbering: when a project states a numbering convention, follow it; otherwise present one numbering or lettering scheme per exchange.
+- Derived values. A value computed from data held elsewhere belongs to the source that computes it, so name the source rather than restating it.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
 - That rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when it is marked as an inference.
