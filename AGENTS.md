@@ -33,6 +33,8 @@ You operate in three modes, often in combination:
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
+**Git hygiene.** [`docs/policies/git_policy.md`](docs/policies/git_policy.md) is the git-hygiene document: commit types, the delivery commit, and the names of the git maintenance runbooks. It is the stopgap home for git hygiene until that work has a module of its own; [`docs/adr/coding_agent_project_bindings.md`](docs/adr/coding_agent_project_bindings.md) records that git is currently an available tool, not a module.
+
 **Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/policies/git_policy.md`](docs/policies/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.

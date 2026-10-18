@@ -108,7 +108,7 @@ Completion criterion: the report covers every commit and the backup ref is retai
 
 ## Non-goals
 
-- Not a port. Porting replays intent onto another branch; this rewrite preserves the final content and changes only how the series reads. A port is `rebase.md`.
+- Not a port. Porting replays intent onto another branch; this rewrite preserves the final content and changes only how the series reads. The git policy names the porting operation in its reference table.
 - Not a squash of the whole range. Collapsing every commit into one destroys the record-to-commit pairing the reviewer needs.
 - Not a cleanup of content. If the final tree is wrong, that is a new commit or a new iteration, not a history rewrite.
 

@@ -250,7 +250,7 @@ When and how to create or distill an ADR: see [`adr_policy.md`](adr_policy.md) -
 
 - **Stop -- the correction changes the unit's scope or carries new work.** New work belongs in a new iteration.
 - **Stop -- an edit to a closed record would carry no marker.** An untraceable edit is a rewrite, not a correction.
-- **Smell -- folding the correction needs an interactive rebase with several conflict edits.** Report the smell and stop; the operator rules on it. Past that size the instrument is a port, not a correction: see `workflow/coding-agent/prompts/rebase.md`.
+- **Smell -- folding the correction needs an interactive rebase with several conflict edits.** Report the smell and stop; the operator rules on it. Past that size the instrument is a port, not a correction; the git policy names the operation in its reference table.
 
 **Propagation.** A correction inherits the record set of the unit it corrects. A unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its marker. A correction that leaves a closed record contradicting its successor is incomplete.
 
