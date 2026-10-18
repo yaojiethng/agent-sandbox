@@ -185,7 +185,7 @@ build)
   ;;
 ```
 
-### 1.14 Self-derive repo root for dual-use scripts
+### 1.15 Self-derive repo root for dual-use scripts
 
 Scripts that can be `exec`"d or sourced need to handle both:
 
@@ -194,7 +194,7 @@ _self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
 ```
 
-### 1.15 No `local` at script top level
+### 1.16 No `local` at script top level
 
 `local` is only valid inside a function. At top-level scope it is a runtime error not caught by `bash -n`. Use plain assignment.
 
@@ -203,7 +203,7 @@ AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
 REFRESH_FLAG=""
 ```
 
-### 1.16 Scope `|| true` to the command that needs it
+### 1.17 Scope `|| true` to the command that needs it
 
 Under `set -o pipefail`, `|| true` on the whole pipeline swallows every command's failure. Scope to the individual command with a subshell:
 
@@ -225,7 +225,7 @@ fi
 
 The wrong form prints "Containers stopped and removed." after `docker rm ... || true` caught a failure. The sentence reaches the operator's terminal and every log that reads it, and it asserts work the command did not do.
 
-### 1.17 Shell option flags by file class
+### 1.18 Shell option flags by file class
 
 Every shell file declares its failure regime according to its class. The class is determined by how the file is consumed, not by where it lives.
 
@@ -244,7 +244,7 @@ Notes:
 - `-u` in library code would fire on consumer-controlled environments; libraries validate their inputs explicitly instead.
 - A class change (e.g. a lib growing an entry point) means re-declaring flags for the new class as part of that change.
 
-### 1.18 Bound every external blocking call
+### 1.19 Bound every external blocking call
 
 An external call that can wait on a peer carries an explicit bound, and the bound is a stated duration, not a default inherited from the tool.
 

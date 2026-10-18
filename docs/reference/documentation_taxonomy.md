@@ -8,18 +8,20 @@ This document is the index and view of the documentation ecosystem. It states no
 
 ## What documents exist
 
-| Document | What it is | Durability | Governed by |
-|---|---|---|---|
-| Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | per-file; the rules of rule-hood are in `docs/adr/policy_declarative_framing.md` |
-| ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | [`adr_policy.md`](../policies/adr_policy.md) |
-| Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations |
-| Architecture document (`docs/reference/`) | implementation design and decisions | durable | [`documentation_policy.md`](../policies/documentation_policy.md); the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
-| `readme.md` | entry point for humans and agents: system invariants, architecture layer model, documentation guide path | durable | -- |
-| `AGENTS.md` | provider notes, collaboration protocol, role, read discipline, output format rules | durable | -- |
-| Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | the project's `task-list` convention |
-| Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | the project's `task-list` convention |
-| Handover (`devlog/handovers/`) | one session's record of the work done | transient | the project's `.agents/skills/work-log/SKILL.md` convention |
-| Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | [`discussion_policy.md`](../policies/discussion_policy.md) |
+| Document | What it is | Durability | Identification | Governed by |
+|---|---|---|---|---|
+| Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | sections numbered | per-file; the rules of rule-hood are in `docs/adr/policy_declarative_framing.md` |
+| ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | [`adr_policy.md`](../policies/adr_policy.md) |
+| Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations |
+| Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | [`documentation_policy.md`](../policies/documentation_policy.md); the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
+| `readme.md` | entry point for humans and agents: system invariants, architecture layer model, documentation guide path | durable | no unit numbers | -- |
+| `AGENTS.md` | provider notes, collaboration protocol, role, read discipline, output format rules | durable | no unit numbers | -- |
+| Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | identity `M` and `T` codes; no renumbering | the project's `task-list` convention |
+| Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | append-only; no unit numbers | the project's `task-list` convention |
+| Handover (`devlog/handovers/`) | one session's record of the work done | transient | identity `YYYYMMDD-NN`; `F`, `Q`, `D` units | the project's `.agents/skills/work-log/SKILL.md` convention |
+| Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | identity date, type, slug; `F`, `Q` units | [`discussion_policy.md`](../policies/discussion_policy.md) |
+
+The scheme each class uses is the project convention `.agents/skills/numbering/SKILL.md`; the column above names it and states no rule.
 
 The policy set is every `docs/**/*_policy.md` file, in any folder. The other folders hold no rules.
 
