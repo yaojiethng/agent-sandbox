@@ -27,7 +27,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { loadYaml } from "./yaml-loader.mjs";
+import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
 import { load_manifest, manifest_rows } from "../../src/build/container-interface.mjs";
 
 const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -101,7 +101,8 @@ function frontmatterOf(text) {
   return { body: text.slice(4, end), offset: text.slice(0, 4).split("\n").length - 1 };
 }
 
-const { parse } = loadYaml("Frontmatter gate");
+// Pi's own parser, so the gate accepts exactly the files pi accepts.
+const { parseFrontmatter } = await loadPiFrontmatter("Frontmatter gate");
 // A cell source may contain another cell source -- the pi config home holds its
 // own prompt and skill folders -- so the collected list is de-duplicated by
 // path. Without the Set a file under a nested root is reported twice.
@@ -118,11 +119,11 @@ for (const file of files) {
   const block = frontmatterOf(text0);
   if (block === null) continue;
   try {
-    parse(block.body);
+    parseFrontmatter(text0);
   } catch (error) {
     const rel = file.slice(REPO_ROOT.length + 1);
     const at = error.linePos ? error.linePos[0] : null;
-    // `parse` sees the block body, so its line numbers start at the second
+    // The parser sees the block body, so its line numbers start at the second
     // line of the file; the offset is where the body began.
     const text = at ? text0.split("\n")[block.offset + at.line - 1] : undefined;
     findings.push({ rel, line: at ? block.offset + at.line : 0, text, first: String(error.message).split("\n")[0] });
@@ -165,7 +166,7 @@ for (const file of shippedFiles) {
   }
   let declared;
   try {
-    declared = parse(block.body);
+    declared = parseFrontmatter(text).frontmatter;
   } catch {
     continue; // the parse finding above already covers this file
   }

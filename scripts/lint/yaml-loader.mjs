@@ -1,4 +1,4 @@
-// Shared YAML loader for the lint scanners.
+// YAML loader for the lint scanners that read a file pi never loads.
 //
 // The `yaml` package pi ships is not a dependency of this repository, so it is
 // resolved from pi's own install tree, which the repository pins. The path is
