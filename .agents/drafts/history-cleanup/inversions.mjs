@@ -18,6 +18,10 @@
 // added line differ from every removed one by the leading character, so the
 // report is a confident and wrong "none". That defect was live for one run.
 //
+// Content lines shorter than eight characters are skipped, so a control built
+// from short lines reports the same "none" against a real inversion. Build the
+// control from prose-length lines.
+//
 // Two kinds of hit are not design inversions and the caller has to classify
 // them: a record corrected by a later commit, and a generated file regenerated
 // whole at each commit, whose hash-keyed rows churn without anyone reading them.

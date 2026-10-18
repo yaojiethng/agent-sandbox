@@ -63,6 +63,8 @@ Validate the detector before believing it. Run it against a two-commit fixture w
 
 Strip the diff marker before comparing. Keeping the leading `+` or `-` makes every added line differ from every removed one by that character, so the report is a confident and wrong "none". That defect has been live in this repository once.
 
+A length floor is the same trap in another form. The draft detector skips content lines shorter than eight characters, so a control built from short lines reports a clean range against a real inversion. Build the control from prose-length lines, and state the floor in the detector's own header beside the marker note.
+
 For each hit, name both commits and the exact content replaced. Two hit classes are not design inversions and the caller must classify them rather than count them: a record a later commit corrects, and a generated file regenerated whole at each commit, whose hashed rows churn without any reader seeing them.
 
 Completion criterion: the positive control fires, every inversion is listed with both commits and the replaced content, or the range is reported clean with the control's output attached.
@@ -89,6 +91,16 @@ Completion criterion: the operator releases, or the grant is quoted, and any add
 
 ## Rebuild with the gate on every commit
 
+Before the reset, list every path the range writes more than once, and compare each pair of consecutive versions. A wholesale `git checkout <commit> -- <path>` replaces the file, so a fix applied at an earlier commit is reverted at the later one unless the later version carries it. That revert does not show in the file-set table, and repairing it costs a second rebuild, because by then the range writes a line and later unwrites it.
+
+```bash
+git diff --name-only <base> <tip> | while read -r p; do
+  [ "$(git log --oneline <base>..<tip> -- "$p" | wc -l)" -gt 1 ] && echo "$p"
+done
+```
+
+For each hit, diff consecutive versions of that path and confirm nothing the earlier one carried has disappeared. Apply a fix at every commit that writes the file, or at none of them, because a fix at the first write only is what the second write reverts.
+
 `git reset --soft <base>`, then `git restore --staged .`, then `git checkout <base> -- .` and `git clean -fd` so the working tree holds the base and nothing left over from the old range. Stage by path, never with `git add -A`, because an untracked file from the old range is staged silently by the wildcard and lands in the first commit. Verify each commit with `git show --stat` before moving on.
 
 Stage by path and commit in order, each with the type its patch earns.
@@ -97,7 +109,7 @@ Run the gate as each commit is produced, with `--exec` on a rebase or as a workt
 
 Rewrite the records in the same pass: delete the superseded ones, write one per target commit, and make each record's quoted counts true at its own commit.
 
-Two costs, and the caller decides the grain. The gate is cheap, seconds per commit, and is not optional. The suite is the expensive one; a small repository runs it in about two minutes per commit, so a four-commit series costs about ten minutes. Measure both once at the start and state them, rather than discovering the second cost mid-run.
+Two costs, and the caller decides the grain. The gate is cheap, seconds per commit, and is not optional. The suite is the expensive one, so run the tests a commit's files can break rather than the whole suite. `scripts/run_tests.sh` takes a file or directory selector, so a Markdown-only commit runs the doc and record gates and nothing else, and a commit that changes shell or JavaScript runs the files that cover its subject. Run the full suite once, at the tip, because the tip is what a reviewer reads. Measure both costs once at the start and state them, rather than discovering the second one mid-run.
 
 Completion criterion: `git log --oneline <base>..HEAD` matches the proposal exactly, and every commit was gated when it was produced.
 
@@ -115,13 +127,15 @@ Completion criterion: the blob comparison is empty apart from named additions, a
 
 ## Prove each commit stands
 
-Run the suite over the new series with `git bisect run`, or the equivalent per-commit loop in a worktree. Re-derive every count a record quotes and compare it against that commit, not against the tip.
+Run the tests the commit's files can break, with `git bisect run` or the equivalent per-commit loop in a worktree. A commit that changes only Markdown cannot break a shell test, and running the whole suite per commit spends minutes re-proving behaviour the commit did not touch. Re-derive every count a record quotes and compare it against that commit, not against the tip.
 
 Capture the suite's own exit status. `out=$(cmd | tail)` records the status of `tail`, so redirect to a file and read `$?`, or use `PIPESTATUS`. A loop that reports success for a suite that failed is worse than no loop.
 
-A commit that fails once and passes on re-run at the same commit is a load-dependent failure, not a defect in the commit: record it with the re-run as evidence and move on. A failure that repeats is the commit's, and the series is not done.
+A commit that fails once and passes on re-run at the same commit is a load-dependent failure, not a defect in the commit: re-run the failing file rather than the suite, which is the same evidence at a fraction of the cost, and record it. A failure that repeats is the commit's, and the series is not done.
 
-Completion criterion: every commit is green on its own, every quoted number is true at its commit, and any single-run failure is recorded with its re-run.
+Run the full suite at the tip, once, whether or not the per-commit runs were targeted. The tip is the tree a reviewer reads, and a targeted run per commit does not cover behaviour that more than one commit contributes to.
+
+Completion criterion: every commit is green on the tests its files can break, the tip is green on the full suite, every quoted number is true at its commit, and any single-run failure is recorded with its re-run.
 
 ## Report and retain
 
@@ -146,7 +160,8 @@ Completion criterion: the report covers every commit and the backup ref is retai
 | The gate cannot run at an intermediate commit | Stop. A series whose middle commit does not build is linear and useless. |
 | `range-diff` shows a non-record content change | Undo with the backup ref and redo the staging. The tree may still be right while the series is wrong. |
 | A record contradicts the commit it carries | Fix the record in the same rebuild; a record that disagrees with its commit is worse than none. |
-| The suite fails once and passes on re-run at the same commit | Record it as load-dependent with the re-run as evidence. Do not fix it into the commit. |
+| The suite fails once and passes on re-run at the same commit | Record it as load-dependent, with the failing file's re-run as evidence. Do not fix it into the commit. |
+| A path is written by more than one commit and the later version reverts an earlier fix | Apply the fix at every write of that path, or at none. A fix at the first write only is what the later write reverts. |
 | The suite fails on re-run | The commit is not a unit. Undo with the backup ref. |
 | Content enters the series after release | Stop for a second release naming its commit, or land it outside the series. |
 | The backup ref is deleted before review | The rewrite is now unrecoverable in practice. Retain it until the operator releases. |
