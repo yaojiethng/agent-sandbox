@@ -61,7 +61,7 @@ Phrasing rules (a working subset of the full dictionary, not a replacement for i
 - Define a term the reader has not met first, in its own clause, then apply it ("Negative cases are scope constraints", then "Keep scope constraints in the cell").
 - Avoid thin subjects that rely on a trailing dash clause for their definition; the main clause must not depend on its afterthought.
 - Keep technical nouns the reader needs. STE100 simplifies structure and verbs, not precision.
-- State the allowed form and name the action; do not state only what to avoid. Write "a space-separated hyphen", not "do not use an em-dash"; say "apply the durable fix the entry's `scoped:` row names", not "avoid or re-check those patterns".
+- State the allowed form and name the action. Judgement: `communication-principle-write-for-the-reader`.
 
 Evaluate prose with two tests:
 

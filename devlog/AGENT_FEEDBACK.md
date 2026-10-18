@@ -113,13 +113,15 @@ Raised by the agent during handover `20261014-03`.
 ```text
 state: open
 scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: none
+legacy: 2026-10-05 -- mitigation written into this entry: write the body to the budget before committing, and measure it.
 mitigation: write the body to `git_policy.md`'s budget before committing -- a subject of 50 characters or fewer, a body under 280 characters, no path list, and a pointer to the handover or the ADR rather than its reasoning -- and measure it, with `git log -1 --format=%b | wc -c`, because nothing else does.
 ```
 
 Three of five delivery commits across two sessions exceeded the 280-character body budget: 324, 880 and 1248 characters. The longest repeated its handover's argument, which the policy forbids twice over -- the body does not repeat the handover, and a reason longer than the budget lives in the handover or the ADR with the body pointing there. The bodies also carried file paths, which the paragraph after the budget forbids.
 
 The habit is the cause, not the size of the changes: a commit body reads like a place to record the reason, and the longer the iteration, the more there is to record. No gate reads a commit message, and the operator caught the third by reading the log. The failure is loud to that reader and silent to every check, so it stays a discipline: the review gate already reads the series, and the only part written down as enforced is the type prefix. All three messages were rewritten to the budget in the fold recorded by handover `20261005-08`.
+
+**Recurrence, 2026-10-18.** Two subjects exceeded the 50-character limit in one session, at 56 and 55 characters, and both were amended to 36 after the commit landed. The bodies were inside the budget in both cases, so the failure is narrower than the original entry: the subject is the field that goes unchecked, because the habit measures the body. The mitigation above already said to measure before committing and not after, and it was not followed twice. Measure with `git log -1 --format=%s | wc -c` before the commit, not after it, and subtract one for the newline.
 
 ---
 
