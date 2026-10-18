@@ -1,6 +1,6 @@
 # Closed Record Corrections
 
-**Current:** 2026-09-28
+**Current:** 2026-10-18
 
 ## Requirements
 
@@ -10,8 +10,21 @@
 | R2 | The marker | no closed record's content changes without its type's marker |
 | R3 | The successor entry | a record that tracks state gains the entry that carries the correction |
 | R4 | Propagation | a correction inherits the record set of the unit it corrects |
-| R5 | Operator direction | the agent proposes a correction; it applies one only at the operator's direction |
+| R5 | Operator direction | the agent folds a correction to its own commit while that session is live, and applies one only at the operator's direction after it has ended |
 | R6 | The fold | corrected content rides the unit's own commit, folded, so the history reads as if it had always been that way |
+
+## 2026-10-18 -- The content judgement leaves, and the operator's direction narrows to a closed session
+
+**Decision:** The judgement about what a correction may contain leaves this record for `principle-minimal-corrections`, and `git_policy.md` `## Amending` decides only where a correction lands. R5 governs the landing once the session that made the commit has ended. While that session is live and the commit is the agent's own, the agent folds the correction without asking, whichever actor raised the defect. R1, R2, R3, R4 and R6 are unchanged here and are the subject of the open roadmap row "Assess `closed_record_corrections.md` against the principle".
+
+**Rationale:** R5 named one direction for two decisions. A content instruction then read as a landing instruction, and a correction that should have folded into `582af1eb` landed as `f82d1a0d` twenty minutes later, with its own handover and its own record. Naming the two decisions separately is what closes the case that the single clause could not separate.
+
+**Rejected alternatives:**
+
+- *A pointer to the principle only* -- execution failure. R5 keeps stating that the agent applies a correction only at the operator's direction, which the Amending section no longer holds, so two records disagree in the tree.
+- *Defer both the pointer and the R5 narrowing to the assessment row* -- execution failure, for longer. The contradiction is in the tree already, and the assessment is scoped to decide what survives, not to detect that something changed.
+
+**Edge cases / drivers:** A correction raised after the session that made the commit has ended stays with the operator, and the Amending section's case 2 says so. A correction to a commit that is not the agent's own is untouched by this entry. R2's marker is the sharpest question the assessment faces, because a marker is an artifact standing beside the corrected claim.
 
 ## 2026-09-28 -- The fold target is the unit whose scope the fix fits
 

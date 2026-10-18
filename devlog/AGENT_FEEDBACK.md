@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-18  --  A correction landed as a second commit instead of folding into the first
+
+```text
+state: open
+scoped: M3.3.4 - The prose standards as principles
+legacy: none
+mitigation: when a defect in your own work turns up while the session is still live, fold it into the commit that carries the work before doing anything else, and fold the handover edit with it. A correction is not new work, so it gets no new commit, no new handover, no new feedback entry and no new rule. If the fold needs `git commit --fixup` plus `git rebase -i --autosquash`, that is still the fold.
+```
+
+`582af1eb` added three strings: a pointer clause ending `which is its only home`, a section of a principle skill whose prose claimed how a defect arose, and an extra clause in that skill's description. Twenty minutes later `f82d1a0d` removed exactly those three strings and touched nothing else. Each carried its own `Closed` handover.
+
+The operator had said what to change and had not said how to land it, and `git_policy.md` read a fold into a closed iteration as requiring the operator's direction. The direction had arrived as a content instruction, the agent did not read it as one, and the correction became an iteration. The clause could not separate the two, so the default won.
+
+The compounding is the point. One defect produced two commits, two handovers, two roadmap citations and a `/history-cleanup` rewrite to undo the split. The repair did not fix the record, it added to it, and cleaning that addition then needed a fourth artifact, the detector that found the inversions. `principle-minimal-corrections` states the bar: a correction restores the intended artifact and adds nothing beside it.
+
 ## [A] 2026-10-17  --  A dispatch that hits its timeout leaves a half-applied tree
 
 ```text

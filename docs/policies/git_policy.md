@@ -218,7 +218,12 @@ Amending folds a change into the commit it corrects, so the history reads as if 
 - Never rewrite a commit that has left this container, and never rewrite published history.
 - Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
 
-A correction to the work of a closed iteration folds into that iteration's commit, at the operator's direction, and never opens a new one; the record amendments ride with the fold. What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md); the record forms are in the `record-correction` procedure and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections).
+A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
+
+- Case 1. The commit is the agent's own and the session that made it is still live, whichever actor raised the defect. The agent folds the correction into that commit, without asking.
+- Case 2. The session that made the commit has ended. The operator rules whether the correction folds into that commit or lands as a separate commit.
+
+What may be amended after a close is in [`iteration_policy.md`](iteration_policy.md); the record forms are in the `record-correction` procedure and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections). Which change a correction may contain is the judgement of `principle-minimal-corrections`; this section decides only where it lands.
 
 ---
 
