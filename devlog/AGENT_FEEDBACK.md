@@ -489,10 +489,11 @@ A second form recurred one turn after the first fix. The agent applied the rule 
 ### [O] 2026-09-29  --  Conversational numbering must be unambiguous
 
 ```text
-state: open
-scoped: M3 T1 -- documentation conventions; `documentation_policy.md` `### References`
+state: probation
+scoped: M3 T1 -- documentation conventions; now `## Chat: one token per item` in `.agents/skills/numbering/SKILL.md`
+probation: the fix landed as that section and as the provider `AGENTS.md` fallback. The operator decides dismiss / maintain / escalate at the next review; the observation is an audit report that cites a labelled chat pick without a second axis appearing in the reply.
 legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
-mitigation: when the agent presents several numbered or lettered sets in one exchange -- a review's numbered findings beside lettered option choices -- the operator's index reply can map to the wrong axis, and the agent must guess. Present exactly one indexable axis per presentation, or name each axis so the reply is self-mapping ("finding 1", "option A"). Do not place two independent numbering schemes side by side and let the operator index one of them. The numbering convention in `documentation_policy.md` `### References` must state this rule. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
+mitigation: when the agent presents several numbered or lettered sets in one exchange, the operator's index reply can map to the wrong axis, and the agent must guess. The rule is `## Chat: one token per item` in the project convention `.agents/skills/numbering/SKILL.md`; this entry is the case that rule prevents. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
 ```
 
 ### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed

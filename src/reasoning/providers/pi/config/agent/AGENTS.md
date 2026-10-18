@@ -75,7 +75,7 @@ General communication guidelines for all agent prose. Full policy: `docs/policie
 - Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
-- Numbering: a number holds only where it appears. Present one indexable axis per exchange; if sets must co-exist, name each axis.
+- Numbering: when a project states a numbering convention, follow it; otherwise present one numbering or lettering scheme per exchange.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
 - That rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when it is marked as an inference.

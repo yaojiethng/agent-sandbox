@@ -128,11 +128,11 @@ Place handoff links at the point of use. When a workflow document (such as `iter
 
 Form the link precisely. Step-level references carry a section anchor; document-level references use a plain document link. When an agent may need to locate a section programmatically, give a grep command instead of a link.
 
-### Numbered vs bulleted presentation
+### Numbering
 
-A number is valid only in the conversation or document where it appears. Use a numbered list when order matters or readers refer to items by number; otherwise use bullets. A durable artifact -- a roadmap task, a code comment -- does not take a number from a transient list; give it a descriptive name. When many references point to one item, move it to a heading.
+The numbering scheme is stated once, in the project convention `.agents/skills/numbering/SKILL.md`: which unit takes a number, which takes an identity code, the form of a reference, the chat label, and how a chat pick reaches a record. This section states the one rule the convention does not carry.
 
-**One indexable axis per presentation.** When the operator may refer to items by index, present one numbering or lettering scheme, so a reply is unambiguous. Do not place two numbered or lettered sets side by side (for example a review's numbered findings beside the agent's lettered option choices); the reply then maps to the wrong axis. If several sets must appear together, name each axis so a reply is self-mapping (`finding 1`, `option A`).
+When many references point to one item, move it to a heading.
 
 ### Structure for grep navigation
 

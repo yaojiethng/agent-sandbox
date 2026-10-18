@@ -53,7 +53,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
-**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/policies/documentation_policy.md#numbered-vs-bulleted-presentation).
+**Context-aware numbering.** The numbering rule is the project convention [`.agents/skills/numbering/SKILL.md`](.agents/skills/numbering/SKILL.md): a number for an ordered unit, an identity code for an unordered one, and grouped chat labels so one token names one item. A chat item that becomes a durable artifact is stated, not labelled.
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
