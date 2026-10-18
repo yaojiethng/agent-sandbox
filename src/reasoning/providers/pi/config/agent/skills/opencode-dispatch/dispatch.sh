@@ -80,22 +80,40 @@ role_candidates() {
 
 # refusal_in LOG  --  the refusal the run's own model reported, or empty. The
 # title model's failure is not the run's failure, so its lines are excluded by
-# agent name.
+# agent name. This answers one question, whether the attempt can succeed as it
+# stands, and that includes a rate limit, because the CLI retries a refusal
+# silently and prints nothing, so the attempt is spent either way.
 refusal_in() {
   { grep -v 'agent=title' "$1" 2>/dev/null \
-      | grep -oE 'Rate limit exceeded|Insufficient account funds|Model access is disabled|FreeTierError' \
+      | grep -oE 'Rate limit exceeded|GoUsageLimitError|FreeUsageLimitError|AuthError|authentication_error|api_key_expired|Invalid API key|API key expired|User not found|Insufficient account funds|FreeTierError|can only be used from within|Provider is not configured|Model access is disabled|Model is unavailable|invalid_request_error|Failed to deserialize' \
       | head -n 1; } || true
 }
 
-# refusal_class LOG  --  the class of a refusal the CLI printed, or `unknown`.
-# The message is the provider's own text; the client discards the response type
-# and its `retry-after`, so the text is the only classification the log carries.
-refusal_class() {
+# refusal_verdict LOG  --  "<outcome> <scope>" for that refusal, or empty. The
+# outcome answers a second question, whether the route can succeed later, and
+# the scope names what has to change first: a model takes the next candidate, a
+# provider is abandoned, a request is stopped rather than tried against every
+# candidate, an account needs the operator. A rate limit stops the attempt and
+# is recoverable, which is why the two answers are separate.
+refusal_verdict() {
   case "$(refusal_in "$1")" in
-    'Rate limit exceeded'|'Insufficient account funds') printf 'quota' ;;
-    'Model access is disabled'|'FreeTierError') printf 'capability' ;;
-    *) printf 'unknown' ;;
+    'Rate limit exceeded') printf 'recoverable none' ;;
+    'GoUsageLimitError'|'FreeUsageLimitError'|'Insufficient account funds') printf 'unrecoverable account' ;;
+    'AuthError'|'authentication_error'|'api_key_expired'|'Invalid API key'|'API key expired'|'User not found') printf 'unrecoverable account' ;;
+    'FreeTierError'|'can only be used from within'|'Provider is not configured') printf 'unrecoverable provider' ;;
+    'Model access is disabled'|'Model is unavailable') printf 'unrecoverable model' ;;
+    'invalid_request_error'|'Failed to deserialize') printf 'unrecoverable request' ;;
+    '') printf '' ;;
+    *) printf 'unrecoverable unclassified' ;;
   esac
+}
+
+# refusal_text LOG  --  the first error-bearing line, so a caller reads the
+# provider's own sentence instead of a class name. A summary is lossy: the
+# string that explained the 403 that opened this change was absent from the
+# vocabulary that classified it.
+refusal_text() {
+  { grep -v 'agent=title' "$1" 2>/dev/null | grep -m1 -i 'error' | cut -c1-160; } || true
 }
 
 # run_worker CMD LOG LIMIT  --  run one attempt, and stop it the moment it cannot
@@ -274,9 +292,9 @@ main() {
       # edits. Report the attempt and leave the advance to the caller.
       refuse "the worker exited rc=$rc after changing the tree" "$log"
     fi
-    printf 'attempt %s failed: rc=%s %ss changed=0 class=%s log=%s\n' \
-      "$attempt" "$rc" "$elapsed" "$(refusal_class "$log")" "$log"
-    refused+=("$pair ($(refusal_class "$log"))")
+    printf 'attempt %s failed: rc=%s %ss changed=0 verdict=%s msg=%s log=%s\n' \
+      "$attempt" "$rc" "$elapsed" "$(refusal_verdict "$log")" "$(refusal_text "$log")" "$log"
+    refused+=("$pair ($(refusal_verdict "$log"))")
   done
 
   [[ -n "$chosen" ]] || refused_note="${refused[*]:-none}"

@@ -322,6 +322,10 @@ case "\$action" in
     printf 'Error: {\"message\":\"Rate limit exceeded. Please try again later.\"}\n'
     sleep 60
     exit 1 ;;
+  auth)
+    printf '401: {\"type\":\"AuthError\",\"message\":\"Invalid API key.\"}\n'
+    sleep 60
+    exit 1 ;;
   hang) printf '> build \xc2\xb7 %s\n' "\$model"; sleep 60; exit 1 ;;
   *) printf 'worker ran\n'; printf 'worker edit\n' >> "\$dir/$edit"; exit 0 ;;
 esac
@@ -380,12 +384,30 @@ test_a_refused_model_is_stopped_early() {
   assert_contains "$out" "model=opencode/model-b" "the report names the model that worked"
   assert_contains "$(cat "$run_dir/worker-attempt-1.log" 2>/dev/null)" \
     "aborted: the model refused the request" "the refused attempt says why it stopped"
+  assert_contains "$out" "verdict=recoverable none" "a rate limit is recoverable and names no scope"
+  assert_contains "$out" "Rate limit exceeded" "the provider sentence reaches the caller"
   (( elapsed < 20 )) || fail "the refused attempt should stop in seconds, took ${elapsed}s"
   pass "the refused attempt stopped in ${elapsed}s, before the 1800s limit"
 }
 
+test_an_unrecoverable_refusal_names_its_scope() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  make_workspace "$sandbox"
+  printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
+    > "$sandbox/agenthome/model-recommendations.md"
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" worker.txt \
+    "opencode/model-a=auth opencode/model-b=ok"
+
+  out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
+  assert_rc 0 "$rc" "the fallback runs after an unrecoverable refusal"
+  assert_contains "$out" "verdict=unrecoverable account" "an invalid key names the account as what must change"
+  assert_contains "$out" "Invalid API key" "the provider sentence reaches the caller"
+  pass "an unrecoverable refusal names its scope and prints the provider sentence"
+}
+
 test_a_silent_attempt_is_stopped_and_falls_back() {
-  local sandbox out rc run_dir elapsed start
+  local sandbox out rc run_dir elapsed start stall_value
   sandbox="$(get_fixture_dir)"
   make_workspace "$sandbox"
   printf '_IMPLEMENTER: opencode/model-a at high; opencode/model-b at high\n' \
@@ -394,6 +416,7 @@ test_a_silent_attempt_is_stopped_and_falls_back() {
     "opencode/model-a=hang opencode/model-b=ok"
 
   export OPENCODE_DISPATCH_STALL=2 OPENCODE_DISPATCH_POLL=0.05
+  stall_value="$OPENCODE_DISPATCH_STALL"
   start=$(date +%s)
   out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
   elapsed=$(( $(date +%s) - start ))
@@ -402,7 +425,7 @@ test_a_silent_attempt_is_stopped_and_falls_back() {
   assert_rc 0 "$rc" "the fallback runs after a silent attempt"
   assert_contains "$out" "model=opencode/model-b" "the report names the model that worked"
   assert_contains "$(cat "$run_dir/worker-attempt-1.log" 2>/dev/null)" \
-    "aborted: no output for 3s" "the silent attempt says why it stopped"
+    "aborted: no output for ${stall_value}s" "the silent attempt says why it stopped"
   (( elapsed < 30 )) || fail "a silent attempt should stop after the stall limit, took ${elapsed}s"
   pass "the silent attempt stopped in ${elapsed}s"
 }
@@ -419,7 +442,7 @@ test_reports_every_failed_candidate_at_the_end() {
   out="$(run_dispatch "$sandbox" HEAD "$sandbox/brief.md" "$sandbox/scratch")"; rc=$?
   assert_rc 0 "$rc" "the run succeeds on the fallback"
   assert_contains "$out" "failures: 1" "the run counts the failed candidate"
-  assert_contains "$out" "opencode/model-a (quota)" "the run names the failed candidate and its class"
+  assert_contains "$out" "opencode/model-a (recoverable none)" "the run names the failed candidate and its verdict"
 }
 
 test_the_callers_own_edits_do_not_block_the_fallback() {
@@ -466,6 +489,7 @@ if [[ "$FALLBACK_CASES" == "1" ]]; then
   run_test test_falls_back_to_the_next_candidate
   run_test test_a_changed_failure_does_not_fall_back
   run_test test_a_refused_model_is_stopped_early
+  run_test test_an_unrecoverable_refusal_names_its_scope
   run_test test_a_silent_attempt_is_stopped_and_falls_back
   run_test test_reports_every_failed_candidate_at_the_end
   run_test test_the_callers_own_edits_do_not_block_the_fallback
