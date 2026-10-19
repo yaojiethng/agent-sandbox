@@ -1,6 +1,6 @@
 # Closed Record Corrections
 
-**Current:** 2026-10-18
+**Current:** 2026-10-19
 
 ## Requirements
 
@@ -13,7 +13,19 @@
 | R5 | Operator direction | the agent folds a correction to its own commit while that session is live, and applies one only at the operator's direction after it has ended |
 | R6 | The fold | corrected content rides the unit's own commit, folded, so the history reads as if it had always been that way |
 
-## 2026-10-18 -- The content judgement leaves, and the operator's direction narrows to a closed session
+## 2026-10-19 -- The minimal-corrections principle is assessed against R1 to R6
+
+**Decision:** R1, R2, R3, R4, R5 and R6 all survive the assessment; none is retired. The principle governs what a correction *contains*. R2 and R3 govern the *form* a closed record takes when its content changes, and that form adds no second statement of the correction. R1 is the end-state invariant, R4 the propagation set, R5 the direction (settled on 2026-10-18), and R6 the fold, which is the principle's own mechanic. On a claim record the correction is the rewritten claim under a one-line `[CORRECTION]` tag; the tag names that the record changed and carries no account of the deviation. On a state record the closed row keeps its `[SUPERSEDED]` or `[REMOVED]` marker and the successor entry *is* the correction, because a completed task stays completed and the correction is new work.
+
+**Rationale:** The principle's table pairs "a `[CORRECTION]` paragraph in a record" with "the corrected claim", so its subject is a narrative paragraph, not a one-line state marker. A tag that says only that the record changed adds no account beside the claim; it is the closed record's audit trail, and the git history and the handover carry the reason. R3 likewise is not an artifact beside the correction: a state record cannot be corrected by rewriting its closed row without destroying the state it exists to hold, so the successor entry is the correction's only form. The sharpest case, the `[CORRECTION -- 2026-09-28]` tag on the 2026-09-27 entry of this record, is kept for the same reason: it marks that the entry's edge-case sentence was superseded, and the replacement is the 2026-09-28 entry itself. Retiring R2 or R3 would require rewriting `documentation_policy.md` `### Post-close document corrections`, `task-list` `## Corrections to a closed entry`, `handover-maintenance` Step 8 and `record-correction`, and would leave a closed state record either rewritable or untraceable.
+
+**Rejected alternatives:**
+
+- *Retire R2's marker and R3's successor entry as artifacts beside the claim* -- intent failure. It reads a state marker as commentary. It would also make a closed roadmap row editable in place, which the record exists to prevent.
+- *Retire the `[CORRECTION]` tag on claim-type records and keep only the fold* -- execution failure. The tag is the only signal that a closed claim changed after the fact; the git history records the edit but not that the record was closed when it changed.
+- *Supersede this ADR* -- intent failure. Six requirements survive with reasons, so no successor is needed.
+
+**Edge cases / drivers:** A correction that changes only the commit and no record produces no marker, because no record changed. A correction to a record that is still open carries no tag, because the record is not closed. The tag on this record's 2026-09-27 entry stays; it is the form R2 requires, and the 2026-09-28 entry that supersedes it is the successor entry R3 requires for the edge-case sentence.
 
 **Decision:** The judgement about what a correction may contain leaves this record for `principle-minimal-corrections`, and `git_policy.md` `## Amending` decides only where a correction lands. R5 governs the landing once the session that made the commit has ended. While that session is live and the commit is the agent's own, the agent folds the correction without asking, whichever actor raised the defect. R1, R2, R3, R4 and R6 are unchanged here and are the subject of the open roadmap row "Assess `closed_record_corrections.md` against the principle".
 
