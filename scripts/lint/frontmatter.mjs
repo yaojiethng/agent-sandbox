@@ -131,10 +131,36 @@ for (const file of files) {
 }
 
 for (const f of findings) {
-  if (f.kind === "reader") continue;
+  if (f.kind === "reader" || f.kind === "flag") continue;
   console.log(f.rel + ":" + f.line + " frontmatter does not parse");
   console.log("  " + f.first);
   if (f.text) console.log("  offending line: " + f.text.trim().slice(0, 100));
+}
+
+// A skill hides itself from the model with `disable-model-invocation: true`.
+// Pi's loader tests the value with `=== true`, so a string such as `yes` leaves
+// the skill visible, the opposite of what the author wrote. The field is a
+// boolean or it is a finding.
+const NON_BOOLEAN_FLAG = "disable-model-invocation";
+for (const file of files) {
+  const text0 = readFileSync(file, "utf8");
+  const block = frontmatterOf(text0);
+  if (block === null) continue;
+  let fm;
+  try {
+    fm = parseFrontmatter(text0).frontmatter;
+  } catch {
+    continue; // the parse finding above already covers this file
+  }
+  if (!fm || !(NON_BOOLEAN_FLAG in fm)) continue;
+  const value = fm[NON_BOOLEAN_FLAG];
+  if (typeof value !== "boolean") {
+    findings.push({
+      rel: file.slice(REPO_ROOT.length + 1),
+      kind: "flag",
+      first: NON_BOOLEAN_FLAG + " is " + JSON.stringify(value) + "; use true or false",
+    });
+  }
 }
 
 // A document that ships declares the reader it serves, because the ship set is a
@@ -190,7 +216,7 @@ for (const file of shippedFiles) {
 }
 
 for (const f of findings) {
-  if (f.kind === "reader") {
+  if (f.kind === "reader" || f.kind === "flag") {
     console.log(f.rel + " frontmatter: " + f.first);
   }
 }

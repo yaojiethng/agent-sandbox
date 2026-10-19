@@ -713,6 +713,38 @@ test_frontmatter_gate_accepts_a_declared_reader() {
   assert_contains "$out" "1 shipping document(s) declare a reader" "the verdict counts the shipping documents"
 }
 
+# Given: a fixture root holding a skill whose disable-model-invocation value is a
+#        string rather than a boolean
+# When:  check_frontmatter.sh runs against that root
+# Then:  rc is 1 and the finding names the field and the value
+# Asserts: the field's type. Pi's loader tests the value with `=== true`, so a
+# string such as `yes` leaves the skill visible, the opposite of the author's
+# intent, and no other check reads the field.
+test_frontmatter_gate_rejects_a_non_boolean_disable_field() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_flag_$$_$RANDOM"
+  mkdir -p "$root/.agents/skills/x"
+  printf '%s\n' '---' 'name: x' 'description: a skill' 'disable-model-invocation: yes' '---' '' '# x' \
+    > "$root/.agents/skills/x/SKILL.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a non-boolean disable-model-invocation fails the gate"
+  assert_contains "$out" "disable-model-invocation is" "the finding names the field"
+}
+
+# Given: the same fixture with a boolean value
+# When:  check_frontmatter.sh runs against that root
+# Then:  rc is 0
+# Asserts: the boolean value passes, so the check is not a blanket rejection.
+test_frontmatter_gate_accepts_a_boolean_disable_field() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_flag_ok_$$_$RANDOM"
+  mkdir -p "$root/.agents/skills/x"
+  printf '%s\n' '---' 'name: x' 'description: a skill' 'disable-model-invocation: true' '---' '' '# x' \
+    > "$root/.agents/skills/x/SKILL.md"
+  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  assert_rc 0 "$rc" "a boolean disable-model-invocation passes the gate"
+}
+
 run_test test_markdown_finding_with_zero_status_fails
 run_test test_markdown_gate_runs_at_repo_root
 run_test test_frontmatter_gate_passes_on_a_parsing_block
@@ -726,5 +758,7 @@ run_test test_frontmatter_gate_covers_every_declared_instruction_root
 run_test test_frontmatter_gate_requires_a_reader_on_a_shipping_document
 run_test test_frontmatter_gate_rejects_a_maintainer_only_shipping_document
 run_test test_frontmatter_gate_accepts_a_declared_reader
+run_test test_frontmatter_gate_rejects_a_non_boolean_disable_field
+run_test test_frontmatter_gate_accepts_a_boolean_disable_field
 
 test_done
