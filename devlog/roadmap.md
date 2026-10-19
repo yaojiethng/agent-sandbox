@@ -62,8 +62,8 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;[M5 - Multi-Agent Coordination (post-M4)](roadmap_future.md#m5---multi-agent-coordination-post-m4) | Not started |
 | **Standalone** | |
 | &nbsp;&nbsp;[M7 - Security and Network Hardening (Policy Layer)](roadmap_future.md#m7---security-and-network-hardening-policy-layer) | Not started |
-
 | &nbsp;&nbsp;[M9 - Governance Hardening](roadmap_future.md#m9----governance-hardening) | Not started |
+| &nbsp;&nbsp;[W2 - Communication Domain Taxonomy](roadmap_future.md#w2----communication-domain-taxonomy) | Not started |
 
 ---
 
