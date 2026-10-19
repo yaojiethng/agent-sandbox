@@ -65,7 +65,7 @@ Phrasing rules (a working subset of the full dictionary, not a replacement for i
 
 Evaluate prose with two tests:
 
-- **Delete test.** Can a reader delete a word, phrase, or sentence without changing the required meaning? Delete what the test removes, including empty openers such as "it is worth noting that".
+- **Delete test.** The judgement is the `communication-principle-cut-what-carries-nothing` skill at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`.
 - **Literal-reader test.** A literal reader follows the words exactly and infers no intent. Could the reader turn the sentence into a task, an action, or an inference that was not intended? If yes, rephrase it with the phrasing rules.
 
 ### Reserved terminology

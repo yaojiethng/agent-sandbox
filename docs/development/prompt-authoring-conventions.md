@@ -45,7 +45,7 @@ Co-location is the within-file companion. Keep a concept's definition, rules, an
 
 **Degrees of freedom.** Match the specificity to the task's fragility. A task with many valid approaches gets high-freedom guidance: heuristics, not fixed commands. A task that is fragile and error-prone gets low-freedom guidance: the exact sequence or the exact command, stated without alternatives. Offer a default where multiple approaches exist, then name the alternative for the exception case.
 
-**No magic constants in a snippet.** Do not hardcode a value the agent must choose in a command or snippet. A fixed literal reads as the sanctioned value and disincentivizes the agent from setting its own number, so the guidance does not change behaviour against the default. Name the value as an unbound variable or an explicit agent-chosen field (for example `run_timeout=<seconds>` instead of `timeout 1800`), and state what to set. The agent then reaches for its own value at the point of use.
+**No magic constants in a snippet.** The judgement is the `communication-principle-name-the-value-not-a-literal` skill at `$AGENT_HOME/agent/skills/communication-principle-name-the-value-not-a-literal/SKILL.md`.
 
 ## Runbook versus advisor versus skill
 
@@ -106,10 +106,7 @@ A workflow document is a consumer of the policy documents. It may inline a disti
 
 This is the canonical-owner test applied to prompts and skills. When a rule appears in a workflow document and in a policy document, an agent reads the policy for the authoritative form and the workflow document for the fast path. The policy is the canonical owner.
 
-Construct defensively against two decay modes:
-
-- **No-ops.** An instruction the agent already obeys by default pays load to say nothing. The test is model-relative: does the sentence change behaviour against the default? When a sentence fails, delete the whole sentence rather than trim its words.
-- **Stale accumulation.** Content accumulates because adding feels safe and removing feels risky. A document without pruning keeps obsolete content. Prune by relevance: does each line still bear on what the document does? Shorter documents are easier to keep relevant.
+Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
 The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); the register lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
 
