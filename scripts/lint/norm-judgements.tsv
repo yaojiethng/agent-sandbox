@@ -11,7 +11,6 @@ af6dd32169d1b19644fbdfffd422c7c8a7af00c9	j-write-plainly	candidate:communication
 4b20f258bfa2e80c0d09238427231755fef44670	j-one-term-one-meaning	-
 3638649fb877585a59cd9bb952d9f2fa0afd95d9	j-write-plainly	candidate:communication-principle-write-plainly
 20ec0e2b65257959038fa0cc2c14f534f01540de	j-write-plainly	candidate:communication-principle-write-plainly
-76a93f6796dbada1e883a809f830bb3c1abd1ae4	j-define-before-you-use	candidate:communication-principle-define-before-you-use
 1e263783f27645c84a85f70ea8926b1eaee08e81	j-write-plainly	candidate:communication-principle-write-plainly
 30d2e7cf5553b4deef5319243b4484d9499c34f1	j-reserved-terms	-
 f07586e05ed94a4f2fa384dae11835306f488e0a	j-status-line	-
@@ -69,3 +68,5 @@ ad7459970fb43befb3277b6bfd182c7af31c43f5	j-ungrouped	-
 fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-ungrouped	-
 fbbfd953bb504829f8596975db4bbe685b4747dd	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-ungrouped	-
+ee96dee3e9d3a62b1e87ea2f6646c27a90d0578c	j-sentence-structure	-
+98aafbdf7aa31d6828c03501529796fd59d4fd11	j-define-terminology-before-use	-

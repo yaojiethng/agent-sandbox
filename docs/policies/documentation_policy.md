@@ -46,12 +46,12 @@ New and changed prose meets ASD-STE100.
 
 Phrasing rules (a working subset of the full dictionary, not a replacement for it):
 
-- Sentence structure. Active voice with a named actor, the defined noun before the imperative, and a main clause that does not depend on its afterthought. The judgement is the `communication-principle-attach-as-you-read` skill at `$AGENT_HOME/agent/skills/communication-principle-attach-as-you-read/SKILL.md`.
+- Sentence structure. Active voice with a named actor, and a main clause that does not depend on its afterthought. The judgement is the `communication-principle-attach-as-you-read` skill at `$AGENT_HOME/agent/skills/communication-principle-attach-as-you-read/SKILL.md`.
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it. Rotating synonyms ("volume" / "sandbox" / "workspace" for one object) is a defect.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
-- Define a term the reader has not met first, in its own clause, then apply it ("Negative cases are scope constraints", then "Keep scope constraints in the cell").
+- Define terminology before use. A term that can carry two meanings here, or one the repository does not define, is defined before the work relies on it ("Negative cases are scope constraints", then "Keep scope constraints in the cell"). The judgement is the `principle-define-terminology-before-use` skill at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
 - Keep technical nouns the reader needs. STE100 simplifies structure and verbs, not precision.
 - State the allowed form and name the action. Judgement: `communication-principle-write-for-the-reader`.
 
