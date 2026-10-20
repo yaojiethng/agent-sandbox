@@ -59,6 +59,8 @@ The advisor-role split is explicit: the advisor names its role, states when to r
 
 A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It is a fast path to a rule that lives in policy. A rule that exists only in a skill is not authoritative. An inline distillation of a rule is a convenience copy; it may go stale, and that is acceptable only because it is not the source of truth. A judgement is the other case: it lives in the principle skill that states it and nowhere else, per [`documentation_policy.md`](../policies/documentation_policy.md) `## Rule authority`.
 
+**Where a check goes is a judgement.** A check reads evidence and produces a decision, so its placement is stated in the `principle-check-placement` skill at `$AGENT_HOME/agent/skills/principle-check-placement/SKILL.md`, and a skill that holds checks points there.
+
 Subagents receive `pi -p` with a brief; the same brief-writing rules apply. The `/task-queue` prompt forks a fresh subagent per task with a brief that names the task, its segments, its owned files, its report, and the worker protocol.
 
 ## Structure of a workflow document
