@@ -49,7 +49,7 @@ Co-location is the within-file companion. Keep a concept's definition, rules, an
 
 ## Runbook versus advisor versus skill
 
-A **runbook** is a prompt or skill that holds ordered steps. Each step ends on a completion criterion - the condition that tells the agent the work is done. A clear criterion is sharp and checkable: the agent can tell done from not-done. A vague bound invites premature completion, where the agent ends the step before it is genuinely done. Defend in order: sharpen the bound first; only if it is irreducibly fuzzy do you hide the later steps by splitting the sequence.
+A **runbook** is a prompt or skill that holds ordered steps. Each step ends on a criterion that says when the step is done; the judgement is the `principle-say-what-done-looks-like` skill at `$AGENT_HOME/agent/skills/principle-say-what-done-looks-like/SKILL.md`. The reference region of a prompt is different: it lists rules consulted on demand and has no step to finish.
 
 The loop prompts (`/iter`, `/plan`, `/sidequest`, `/milestone-start`, `/milestone-close`) are runbooks. Their steps map the iteration and milestone workflow procedures, and the rules stay in the policy documents.
 
@@ -80,7 +80,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 1. **The opening template line.** A main-agent prompt opens with `> $@` after the frontmatter, then a title and a `Scope` declaration that states the prompt's boundary. A runbook without this declaration makes a misplaced title indistinguishable from a missing one.
 2. **Purpose** states what the prompt or skill is for and what it is not. The task-queue prompt leads with what it is a primitive for, then names what it is not in its "Not this template" routing, inside "When to use".
 3. **When to use** states the conditions that invoke it and the routing: what it is for, and what replaces it in the cases it is not for. The task-queue prompt names `iter.md` and `fanout-run.md` as the not-this-template cases.
-4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; a reference region lists its rules consulted on demand.
+4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; the judgement is the `principle-say-what-done-looks-like` skill at `$AGENT_HOME/agent/skills/principle-say-what-done-looks-like/SKILL.md`. A reference region lists rules consulted on demand, so it has no step to finish.
 5. **The handoff.** A runbook that ends by handing to another prompt names the boundary. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`. A prompt that ends inside its own scope omits it.
 6. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
 7. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
