@@ -30,8 +30,6 @@
   - "Claude Chat (claude.ai). Artifacts are available. No direct filesystem access."
 -->
 
----
-
 ## Sandbox Context
 
 <!--
@@ -52,8 +50,6 @@ The agent runtime is explicitly untrusted. The operator has final authority over
 
 Every session runs two containers. This container is the **reasoning** layer (agent runtime). A separate **capability** (sandbox) layer container runs the diff pipeline, snapshot, and autosave. Each has its own `/opt/sandbox/lib/` with a different subset of library files  --  a file missing in this container may belong to the other layer.
 
----
-
 ## Input and Output Channels
 
 <!--
@@ -66,8 +62,6 @@ Every session runs two containers. This container is the **reasoning** layer (ag
 | Task input / operator files | `~/workspace/input/` | Read | Bind-mounted read-only at session start |
 | File output | Working directory (`sandbox/`) | Write | Captured as diff on exit |
 | <!--Provider-specific channel, e.g. chat UI--> | <!-- path or N/A --> | <!-- Read/Write --> | <!-- notes --> |
-
----
 
 ## Tools
 
@@ -101,8 +95,6 @@ Every session runs two containers. This container is the **reasoning** layer (ag
   Omit this section if the provider has a fixed, known toolset.
 -->
 
----
-
 ## Output Mechanism
 
 <!--
@@ -114,8 +106,6 @@ Every session runs two containers. This container is the **reasoning** layer (ag
     file. Inline chat prose is not a substitute for an artifact when the output
     is intended for the repository."
 -->
-
----
 
 ## Session Start
 
@@ -131,8 +121,6 @@ Every session runs two containers. This container is the **reasoning** layer (ag
 At session start, read the project-layer `AGENTS.md` at the repository root for the full reading list and workflow conventions.
 
 <!-- Add any provider-specific session start steps below. -->
-
----
 
 ## Constraints
 

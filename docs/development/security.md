@@ -6,8 +6,6 @@ This document summarizes the threat entities, impacted assets, STRIDE categoriza
 
 It defines trust boundaries, threat assumptions, and security invariants.
 
----
-
 ## Scope
 
 - Local, single-user environment
@@ -16,8 +14,6 @@ It defines trust boundaries, threat assumptions, and security invariants.
 - Host repository integrity must be protected from unauthorized direct container mutation
 
 This document defines the security properties of that model.
-
----
 
 ## Trust Boundaries and Mount Models
 
@@ -55,8 +51,6 @@ Worktree backing (agent commits landing in the host object store via `git worktr
 
 - *Mount containment* -- the agent cannot escape the mount boundary to reach the backing filesystem. Container escapes are outside the current threat model, but the assumption's strength erodes over time.
 
----
-
 ## Security Invariants
 
 The following invariants hold in every configuration. Per-mode mount shapes are defined in [Mount modes](#mount-modes).
@@ -78,8 +72,6 @@ Validation procedures for these invariants are defined in operational documentat
 >
 > 2. The seeded sandbox volume must not be mounted into the reasoning layer. Only the capability layer accesses the sandbox content directly.
 
----
-
 ## Execution Model Assumptions
 
 - Docker provides namespace and filesystem isolation.
@@ -88,8 +80,6 @@ Validation procedures for these invariants are defined in operational documentat
 - Network access may be enabled depending on execution mode.
 
 Network policy details are defined by configuration, not by this document.
-
----
 
 ## Non-goals
 
@@ -104,8 +94,6 @@ This sandbox does not attempt to:
 
 Residual risk is acknowledged.
 
----
-
 ## Threat Model Table
 
 | Threat Entity | STRIDE | Mitigations (link to SOP) |
@@ -118,8 +106,6 @@ Residual risk is acknowledged.
 | Secrets / Sensitive Data Leakage | I: High | [Secrets Handling](../development/standard_operating_procedures.md#2-secrets-handling), [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Network Access Rules](../development/standard_operating_procedures.md#3-network-access-rules) |
 | Human / Operational Misuse | T/R: High | [Human / Operational Protocols](../development/standard_operating_procedures.md#5-human--operational-protocols), [Container Build & Deployment](../development/standard_operating_procedures.md#6-container-build--deployment), [Child Agent Output Handling](../development/standard_operating_procedures.md#1-child-agent-output-handling), [Agent Lifecycle Compliance](../development/standard_operating_procedures.md#7-agent-lifecycle-compliance) |
 
----
-
 ## Additional Clarifications
 
 - **Resource Exhaustion** includes compute exhaustion and financial impact from billable services.
@@ -127,8 +113,6 @@ Residual risk is acknowledged.
 - **Secrets and network responses** are treated as untrusted inputs.
 - **Human operational errors** are included as explicit threat entities due to branch protection and review bypass risk.
 - STRIDE mappings reflect primary impact categories; absence of a category does not imply zero risk.
-
----
 
 ## Network Exposure Model
 
@@ -140,8 +124,6 @@ Current model:
 - No implicit firewalling is provided by this document.
 
 Future hardening steps (e.g., outbound whitelisting, proxy enforcement) are tracked in `roadmap.md`.
-
----
 
 ## References
 

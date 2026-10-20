@@ -12,8 +12,6 @@ The sandbox is the unit of isolation. The current implementation uses git for ba
 
 Snapshot functions live in `src/capability/snapshot.sh`; diff functions in `src/libs/diff_export.sh`. `start_agent.sh` sources the snapshot primitive for mount worktree materialization; the capability entrypoint sources both libraries from the baked `/opt/sandbox/lib/` path.
 
----
-
 ## Overview
 
 A capability layer session has three phases:
@@ -21,8 +19,6 @@ A capability layer session has three phases:
 1. **Fork** -- the host project state is replicated into the sandbox before the containers start. The host repository is never modified.
 2. **Work** -- the agent operates exclusively inside the sandbox. The host is untouched.
 3. **Join** -- the agent's changes are packaged as diffs and written to the host for operator review.
-
----
 
 ## Phase 1 -- Fork (Volume Seed Pipeline)
 
@@ -86,17 +82,13 @@ Before any container starts, preflight compares the baked images against current
             previous session, use the split-out `make resume` command.
 ```
 
-**Session resume (`make resume`):** the resume command reads identity from the per-run compose registry (`.compose/<session-id>.yml`) rather than Docker volume labels. `make resume SESSION_ID=<id>` selects exactly one session and resumes silently. `make resume LIST=1` lists registry sessions in an enriched table (`SESSION | PROVIDER | BRANCH | AGE | WORK | STATE`) filtered by an optional `PROVIDER=<n>`, capped at 10 rows per page (same cap as the draft picker; remainder reported in a footer). `AGE` is the wall-clock age of the session's last lifecycle event (`started 2 hours ago`, `stopped 5m ago`), the verb overridden by live docker state when they disagree, and `-` when the session has no events. `WORK` is the newest checkpoint's commit count under `.workspace/session-diffs` (`<N>c`, `+u` when `uncommitted.diff` is non-empty), `--` when the session never exported. `STATE` is how many commits the current project HEAD is ahead of the session's recorded `host-head-sha` (`1 commit ago`, `0 commits ago`, `not in tree`, `-`). The table sorts newest-first by the raw `session-ts`. Staleness is reported exception-only as a warning label rather than an always-present column: `[SANDBOX_STALE]` when the record's `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired -- the record's `*-image-digest` labels are identity, and the list path makes zero docker calls. `make resume INTERACTIVE=1` presents a picker over the inventory and confirms before resuming (also `PROVIDER=<n>`-filterable); the picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. The legacy volume-label resume machinery was removed from `start` (see `20260821-04`).
+**Session resume (`make resume`):** the resume command reads identity from the per-run compose registry (`.compose/<session-id>.yml`) rather than Docker volume labels. `make resume SESSION_ID=<id>` selects exactly one session and resumes silently. `LIST=1` and `INTERACTIVE=1` present the registry inventory newest first, capped at 10 rows, mark a session `[SANDBOX_STALE]` when its recorded `host-head-sha` differs from the current project HEAD, and accept a `PROVIDER=<n>` filter; the column contract is in [`tool_interface.md`](tool_interface.md). Recorded image digests are identity rather than freshness, so the list path makes zero docker calls. The legacy volume-label resume machinery was removed from `start` (see `20260821-04`).
 
 **Session prune (`make prune`):** the registry-based prune (Rules 1+2, `20260821-08`) replaces the legacy volume-label `--stale` + `docker system prune` path. It is always a complete pass: **Rule 1** removes stale `.compose/<session-id>.yml` records (selected by registry-truth sandbox staleness or image-staleness per the `STALE` kind -- default `all` picks a record stale by either dimension -- plus optional `PROVIDER` / `AGE_DAYS` filters); **Rule 2** removes now-orphaned resources (containers, networks, volumes labeled `sandbox-dir` whose `session-id` has no record), delivery-scoped (copy -> volume + containers; mount -> registry resources only; worktrees never touched). `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms. `STALE=sandbox` selects the sandbox-stale criterion; image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness, and no image recomputation runs (`20260911-05`).
-
----
 
 ## Phase 2 -- Work
 
 The agent works exclusively inside `sandbox/`. The host repository is never mounted and cannot be reached from inside the container.
-
----
 
 ## Phase 3 -- Join (Diff Pipeline)
 
@@ -159,7 +151,7 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 
 **`make draft FROM=autosave`** -- shorthand for `--channel=autosave`. Resolves from `session-diffs/autosave/`.
 
-**`make draft INTERACTIVE=1`** -- interactive mode: guides the operator through a two-step numbered picker (channel then bundle) instead of requiring explicit `BUNDLE=` or `FROM=` arguments. After selections are made, the equivalent non-interactive command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`). When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages.
+**`make draft INTERACTIVE=1`** -- interactive mode: guides the operator through a two-step picker (channel, then bundle) instead of requiring `BUNDLE=` or `FROM=`. The flag's full contract is in [`tool_interface.md`](tool_interface.md).
 
 **`make confirm [TARGET_BRANCH=<branch>] [NEW=1]`** -- cleans up the draft branch after the operator has rebased and merged. `NEW=1` creates `TARGET_BRANCH` (a branch that must not exist yet) at the draft tip, leaves the source branch untouched, and prints the `git reset --soft` direction that moves it onto the rebased series.
 
@@ -172,8 +164,6 @@ On the host, `agent-sandbox` dispatches to routers in `routing.sh` which resolve
 **`make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`** -- runs `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<ts>[-<summary>]-<runid>/`. Produces `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. `BASELINE=<sha>` diffs against an explicit SHA instead of the session baseline.
 
 No checkpoint git tags are used. No `git am`. No `docker exec`. All correspondence flows via diff files through the bind-mounted workspace.
-
----
 
 ## References
 

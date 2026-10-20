@@ -2,8 +2,6 @@
 
 Patterns, anti-patterns, templates, and checklists for writing tests in this project. For policy and rules, see [`testing_policy.md`](testing_policy.md).
 
----
-
 ## Fixture Management Patterns
 
 ### Pattern 1: Unique Paths Per Test
@@ -52,8 +50,6 @@ make_session() {
 ### Pattern 3: Cleanup in Reverse Order
 
 When tests create nested state, clean up in reverse order of creation. The `FIXTURE_DIR` trap handles top-level cleanup; helpers clean only what they own.
-
----
 
 ## Common Anti-Patterns
 
@@ -161,8 +157,6 @@ else
 fi
 ```
 
----
-
 ### Anti-Pattern 6: Change-Mirror Test
 
 **Symptom:** A test added in the same change asserts the absence of the exact string the change removed, or states the exact output of a formatter the change introduced. The test fails only if the change is reverted. It mirrors the edit. It does not check the product.
@@ -181,8 +175,6 @@ fi
 
 **Rule:** Never inline production source into a test. Either extract the function from the live source at run time (`sed -n '/^fn()/,/^}/p'`) or drive the real entry point end-to-end. When extracting, the test must state the extraction pattern in a prerequisite gate that fails with one named error when the pattern no longer matches (function renamed, moved, or restructured) -- see `test_provider_entrypoint.sh` for the pattern. A source-grep test that never executes the target is the same anti-pattern in weaker form: the meaningful guard is behavioral coverage of the injection point, not text matching.
 
----
-
 ### Anti-Pattern 8: Whole-Project Scan as a Unit Assertion
 
 **Symptom:** A unit test lints or scans the whole project tree as its assertion (for example "the repository carries zero findings of rule X"). The repo tree is not guaranteed to contain the negative cases the rule must reject, so the assertion checks project identity, not rule behaviour. It also re-does at test time the work the lint gate owns, and it makes the suite slow.
@@ -198,8 +190,6 @@ fi
 **Example:** `tests/test_routing.sh` carries three near-duplicate pairs, among them `test_latest_dir_missing_base_fails` beside `test_resolve_latest_dir_missing_base_fails`, and `test_latest_dir_picks_lexicographically_last` beside `test_resolve_latest_dir_picks_lexicographic_max_ignoring_files`. The pairs do not differ in what they pin, and the second member of each sits in a block appended after the first `run_test` group.
 
 **Rule:** One unit per case. When two units assert the same property, keep one and fold any extra clause into the survivor: the files-ignored clause of the selection pair belongs in the surviving assertion, not in a second unit. A pair that genuinely differs differs in a named behaviour, and each name states its own. A unit that re-covers a rule the repo gate already owns is deleted rather than kept as a second opinion, because the gate is the authority for that rule.
-
----
 
 ## Test Structure Template
 
@@ -270,8 +260,6 @@ Some commands return non-zero as a signal, not an error, and `|| true` after the
 
 Assertion labels carry the meaning, not the string: every `assert_*` call takes a label that names the behavior under test (for example `"serve: up failure still tears down"`), never a restatement of the values. The suite verifies at zero bare calls: no assertion relies on a helper's default label, so a failure names the behavior, not just the mismatch.
 
----
-
 ## Debugging Test Failures
 
 ### Symptom: Test Passes in Isolation, Fails in Sequence
@@ -306,8 +294,6 @@ Assertion labels carry the meaning, not the string: every `assert_*` call takes 
 2. Note which orderings fail
 3. Check for: hardcoded paths, helpers that don't scope paths, global
    variables not reset between tests
-
----
 
 ## Mock Infrastructure for Dispatch Tests
 
@@ -353,8 +339,6 @@ done <<< "$stdout"
 ```
 
 This pattern covers `exec` calls, subprocess scripts, and sourced function calls in one harness.
-
----
 
 ## Checklist for New Tests
 

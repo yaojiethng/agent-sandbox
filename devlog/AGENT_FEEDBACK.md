@@ -16,6 +16,19 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-20  --  A test helper inherited the repository's git state and committed it
+
+```text
+state: open
+scoped: M3.3.4 - The prose standards as principles
+legacy: none
+mitigation: a fixture test changes into its own temporary directory before it writes or stages anything, and the shell that changes directory is the shell that runs `git`, so the change belongs outside a command substitution. Assert the fixture root before the first write: `[[ "$(git rev-parse --show-toplevel)" != "$REPO_ROOT" ]]`. After any test that can commit, run `git log -1` and `git status --short` and compare against the state the call started in.
+```
+
+A new test for the prose measure built its fixture with `dir="$(new_repo)"` and changed directory inside that substitution. The change died with the subshell, so the test ran in the repository root and wrote `a.md` there. Its `git add -A && git commit` then committed the working tree of an in-flight iteration into four commits named `base`, together with the fixture files, and the iteration's own changes stopped being a working-tree diff at all. The damage was recoverable because the branch was local and the four commits were the only thing on top: `git reset --mixed` to the parent commit restored the cuts as unstaged changes, and the fixture files were deleted.
+
+The class is a fixture that escapes its root. The test looked green on the first run because the assertions read the numbers the wrong directory produced, and the commit was the side effect that proved it. Two guards now hold it: the helper refuses a write when the shell is still inside the real repository, and every test changes into the fixture in the calling shell.
+
 ## [A] 2026-10-20  --  `grep -q` in a pipeline under pipefail reported the writer's SIGPIPE
 
 ```text

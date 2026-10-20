@@ -4,8 +4,6 @@ This file is loaded by pi on every session start as the first AGENTS.md layer, v
 
 Project-specific context lives in `sandbox/AGENTS.md` (loaded second, concatenated after this file). See that file for project conventions, commands, and architecture.
 
----
-
 ## Scope
 
 The paths this layer covers. Each is part of the container, so a reference to one of them resolves for any install of this image. The project layer covers the working tree the session runs in.
@@ -22,8 +20,6 @@ The paths this layer covers. Each is part of the container, so a reference to on
 | `/home/agentuser/workspace/input/` | the operator's handover files, read-only |
 | `/home/agentuser/workspace/output/` | where the session writes its result |
 | `/home/agentuser/workspace/session-diffs/` | the session diff output |
-
----
 
 ## Agent Harness
 

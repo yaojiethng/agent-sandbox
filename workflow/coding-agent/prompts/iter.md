@@ -7,14 +7,9 @@ argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus descri
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`. If one is absent or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
 
-- `task-list` - the task list and its companions.
-- `work-log` - the work-unit record and the exploration record.
-- `decision-records` - the architecture decision records.
-- `docs` - the document tree.
-- `git-discipline` - commit types, branch names and the delivery commit.
-- `testing` - the suite and the lint umbrella.
+- `task-list`, `work-log`, `decision-records`, `docs`, `git-discipline`, `testing`
 
 ## Orient
 
@@ -27,15 +22,11 @@ read devlog/roadmap.md
 
 No other files are needed at this stage.
 
----
-
 ## Roadmap maintenance check
 
 Run before creating the handover.
 
 Verify the roadmap reflects the state the prior handover claims. If the roadmap still shows a completed sub-milestone as active, run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md` and apply its report after creating this handover but before presenting the scope proposal at the scope gate. The skill writes nothing, so the row edits are this prompt's. Record the maintenance execution in this handover's Completed table. Present the maintained roadmap state as part of the scope proposal.
-
----
 
 ## Directive
 
@@ -62,15 +53,11 @@ If the directive slot is non-empty:
 
 - Identify the type from the directive using the table above. If the type cannot be determined, stop to ask the operator before continuing.
 
----
-
 ## Create the handover
 
 Before creating the handover, read the iteration invariants in `iteration_policy.md`: `## Iteration Invariants`, and the record-state and close invariants under it. Create the handover per those rules. Set Status to `Active`.
 
 Write the record from the project's template, `.agents/skills/work-log/assets/handover.md`, and set `status` to `Active`. The filename, the vocabulary and the format window are the project's `work-log` convention, in `.agents/skills/work-log/SKILL.md`. Do not write the fields as bold header lines.
-
----
 
 ## Step 2  --  Define the task scope
 
@@ -88,8 +75,6 @@ If scope cannot be confidently derived, ask the operator one question at a time 
 
 This step defines scope but does not stop for a release. The scope gate below confirms it together with the acceptance criteria.
 
----
-
 ## Step 3  --  Design
 
 Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per the project's `task-list` convention. If the design ends in an implementation decision, create an ADR before releasing (see [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md)). Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
@@ -98,13 +83,9 @@ Skip design only if the roadmap entry already carries resolved decisions with re
 
 Exit condition: all design questions resolved and recorded, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
 
----
-
 ## Step 4  --  Information gathering pass
 
 After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate per [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md). (Assessed step: run unless not applicable to the iteration type.)
-
----
 
 ## Scope gate
 
@@ -145,8 +126,6 @@ Everything you present is a proposal: the operator reviews, approves, and commit
 
 Stop here and wait for an explicit release before continuing. On release, update the handover  --  replace `Not yet defined.` with the confirmed acceptance criteria. The handover is the canonical location for AC.
 
----
-
 ## Step 6  --  Implementation and the write-back discipline
 
 Produce changes against the confirmed scope. Write tests alongside per `testing_policy.md`. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
@@ -181,13 +160,9 @@ Every row must carry a status. A deferred or not-started row must be written bac
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 
----
-
 ## Release gate
 
 This is the common acceptance gate the operator-involved workflows share. Present the acceptance criteria status table, the findings queue, and the commit message. Every criterion carries a status, every finding carries a destination, and the commit body stays within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup`. Exit condition: explicit release received.
-
----
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
@@ -198,21 +173,15 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 1. **Step 7 pre-close summary** (above) presents the AC table, roadmap write-back, propagation replay, and commit message to the operator before the release gate -- the operator, not the close, judges the work.
 2. **Findings publication.** The gate decides each destination. The close publishes each destination, and the operator confirms the attribution.
 
----
-
 ## The acceptance gate
 
 `/iter` stops at the acceptance gate. It presents the acceptance criteria table, the roadmap write-back, the propagation replay, and the commit message. It also presents the findings queue and the record-check reports. The operator releases, and [`/wrapup`](wrapup.md) takes the iteration from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
 **Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 
----
-
 ## File Tracking
 
 There is no document registry; the docs tree is the authoritative file list. The iteration's file list is the scope proposal's, presented at the scope gate.
-
----
 
 ## Policy
 

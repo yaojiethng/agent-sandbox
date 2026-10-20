@@ -11,11 +11,9 @@ argument-hint: "[milestone name - for example M3.1 - Backpressure]"
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`. If one is absent or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
 
-- `task-list` - the task list and its companions.
-- `work-log` - the work-unit record and the exploration record.
-- `decision-records` - the architecture decision records.
+- `task-list`, `work-log`, `decision-records`
 
 ## Orient
 

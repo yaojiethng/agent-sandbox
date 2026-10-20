@@ -28,8 +28,6 @@ The workflows run as invocable runbooks under `workflow/coding-agent/prompts/` (
 
 The `scope` field above names the runbooks this policy governs. That list is the single declaration of them: the project layer `AGENTS.md` carries the inventory an agent reads at session start, and `scripts/check_instruction_surfaces.sh` fails when the two disagree.
 
----
-
 ## Sidequests
 
 A sidequest is an operator-directed work item raised while an iteration is open. The operator invokes `workflow/coding-agent/prompts/sidequest.md`, and the open iteration pauses until the sidequest closes. A sidequest runs the standard lifecycle at its own grain: one handover, one scope gate, one delivery commit, one close.
@@ -39,8 +37,6 @@ A sidequest is an operator-directed work item raised while an iteration is open.
 - **One outcome, one commit.** A sidequest is one vertical slice, landed as one typed commit with one handover, like any iteration.
 - **Outside the interrupted scope.** A task inside the open iteration's scope stays that iteration's work; it is a scope amendment, not a sidequest.
 - **Roadmap write-back.** A sidequest whose outcome is durable work writes back a roadmap row and marks it at close. A sidequest whose outcome is a fix, check or record with no roadmap home states that in its close, per the write-back invariant.
-
----
 
 ## Principles
 
@@ -62,13 +58,9 @@ Principles owned by other layers and echoed here:
 - **Roadmap reflects reality** (completed items marked promptly) -- owned by the project's `task-list` convention.
 - **Tests for non-trivial logic** -- owned by `docs/development/testing_policy.md`.
 
----
-
 ## The autonomous agent loop
 
 The agent operates as one loop with a milestone phase and an iteration phase. The loop model, its sequence diagram, and the workflows that drive its transitions are in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md). The milestone phase takes its rules from the project's `task-list` convention  -  a milestone is a node in the roadmap's tree  -  and its procedure from `/milestone-start`, `/plan` and `/milestone-close`. The iteration phase is governed by this policy.
-
----
 
 ## Iteration Invariants
 
@@ -121,9 +113,9 @@ The iteration derives the acceptance criteria; the handover records them. What m
 
 - **Close produces one commit.** At iteration end the iteration is a single commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Every transient commit (`wip:` checkpoints, corrections) and the `Status: Closed` edit fold into it. The commit message matches the iteration type per [`git_policy.md`](git_policy.md). Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`.
 - **Scope reconciliation.** Compare the confirmed scope against the Completed table. Every item that was in scope but is not in Completed must be resolved by the deferred-resolution rule. There must be no unaccounted items.
-- **Defect resolution.** A finding that names a defect in the surface this iteration changed is fixed in this iteration. It is not an incomplete item, and the deferred-resolution rule does not apply to it: a defect reached by review is work the iteration now owns, because shipping the change and filing the repair is how a known break reaches the next reader. Fix it, re-run the gate, and record what was fixed. A finding that names a defect outside the changed surface is new work: file it as an open roadmap row with its reason, or rule it out of scope with one Scope sentence. The distinction is whether the iteration made it reachable.
+- **Defect resolution.** A finding that names a defect in the surface this iteration changed is fixed in this iteration. It is not an incomplete item, and the deferred-resolution rule does not apply: a defect reached by review is work the iteration now owns, because shipping the change and filing the repair is how a known break reaches the next reader. Fix it, re-run the gate, and record what was fixed. A finding that names a defect outside the changed surface is new work: file it as an open roadmap row with its reason, or rule it out of scope with one Scope sentence. The distinction is whether the iteration made it reachable.
 - **Deferred resolution.** Every item in scope but not completed is written back to the roadmap as an open row with its reason, or ruled out of scope with one Scope sentence. No item is left in the handover itself; the handover carries no deferred-item section.
-- **Findings publish.** The gate decides each destination. The close publishes each destination with the attribution the operator confirms, and records what the gate missed. An entry the close records as `late` names the gate that should have asked. The close files a recurring late entry as a roadmap row against the gate that missed it. Destinations are the Decisions table, `roadmap.md` (via a named task entry), or `devlog/AGENT_FEEDBACK.md`. Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, obstacles, technical findings) goes to the existing destinations. The `[A]`/`[O]` tag names who raised the entry. **Attribution is operator-owned.** The agent proposes a class; the operator confirms it. The agent does not classify its own mistakes as another party's.
+- **Findings publish.** The gate decides each destination. The close publishes each destination with the attribution the operator confirms, and records what the gate missed. An entry the close records as `late` names the gate that should have asked. The close files a recurring late entry as a roadmap row against the gate that missed it. Destinations are the Decisions table, `roadmap.md` (via a named task entry), or `devlog/AGENT_FEEDBACK.md`. Class A (agent experience, friction, poor stack design, poor operator prompting) is tagged `[A]`. Class B (recurring agent mistakes and code smells) is tagged `[O]`. Class C (steering, scope, obstacles, technical findings) goes to the existing destinations. **Attribution is operator-owned.** The tag names who raised the entry, the agent proposes a class, and the operator confirms it. The agent does not classify its own mistakes as another party's.
 - **Propagation replay.** When the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears", a row-by-row replay is required: `file | change planned | status`. Every row carries `completed`, `deferred`, or `not started`; every row must be accounted for before the release gate releases: `completed`, or `deferred`/`not started` with the row in Deferred items. When a replay is not required, the summary still covers what was built, tests produced, AC status per criterion, and recommended manual checks.
 - **Scope amendment.** If any implementation gap discovered this iteration affects the scope -- missing flag, unspecified behaviour, ambiguous fixture approach -- amend the scope before closing. Do not leave scope gaps for the next iteration to re-derive.
 - **Write-back, mandatory step, nullable value.** The close performs the write-back step and states its outcome. When the iteration completed or rescoped a roadmap task, that row edit rides this commit, marked with its landing note. An iteration that changed no roadmap task writes back nothing, and the close records that as the outcome. The step is never skipped; its value may be None, so the close raises no row to pair with the handover.
@@ -147,8 +139,6 @@ A clean committed range uses the same fold; `/wrapup` runs the squash where the 
 The milestone's structure, states and close rules are the project's `task-list` convention's; the close procedure runs from `workflow/coding-agent/prompts/milestone-close.md`. This policy does not restate them.
 
 **Probation decisions are operator-owned.** For an entry under `probation` in `devlog/AGENT_FEEDBACK.md`, the operator decides dismiss / maintain / escalate. The agent does not decide a probation entry.
-
----
 
 ## File Tracking
 

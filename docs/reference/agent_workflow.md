@@ -8,8 +8,6 @@ This document describes how work gets done in agent-sandbox -- the principles th
 
 The workflow is expressed through three layers: policy documents (authoritative rules), skill files (execution helpers), and prompt templates (iteration tooling). This document maps what each policy document owns and where the boundaries between them lie.
 
----
-
 ## Core Principles
 
 ### Isolation
@@ -26,15 +24,11 @@ Agents do not modify the repository. All modifications are captured as a diff an
 
 Each agent run is reproducible via a container image version, a specific project state, and the configuration used to start the run. Every change is traceable, every run can be replayed, and every decision can be audited.
 
----
-
 ## System Invariants
 
 The system enforces a set of invariants by construction -- constraints that hold across all agent runs regardless of configuration. These are defined authoritatively in `docs/development/security.md#security-invariants`.
 
 In summary: no unreviewed output reaches the repository; no direct mutation of the host repository occurs from inside either container; every change is traceable to an agent run; the operator initiates every run and has final authority over all outputs.
-
----
 
 ## Agent Context Model
 
@@ -78,9 +72,7 @@ Skills and prompt templates follow a parallel three-layer model with distinct lo
 
 **Why the sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
 
-**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`. The sandbox-layer files are not seeded into these paths by default -- they are baked into the image at `/opt/workflow/`. The `settings.json` `"packages"` key bridges this gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots. One key, and one entry per payload. This makes the sandbox layer critically dependent on that key surviving in `settings.json` across sessions -- see [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes) in `provider_lifecycle.md`.
-
----
+**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`, and the sandbox-layer files are not seeded there by default because the image bakes them at `/opt/workflow/`. The `settings.json` `"packages"` key bridges the gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots, one entry per payload. The sandbox layer therefore depends on that key surviving across sessions, per [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes).
 
 ## How the Workflow is Expressed
 
@@ -130,9 +122,7 @@ This is the one place the kinds are defined. A document that states one locally 
 
 ### Persistent devlog records (interim)
 
-`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface it belongs to is scoped for trim under the `devlog/roadmap.md#t5---archival` task. Its precise end-state form is not yet determined (exact rules TBD).
-
----
+`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim** rather than a durable fixture: a long record signals that a durable fix is due, not an index, and the trim it belongs to is held by the `devlog/roadmap.md#t5---archival` task.
 
 ## Policy Map
 
@@ -166,8 +156,6 @@ Maps each area of the workflow to its canonical governing document, what that do
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
 When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../policies/documentation_policy.md#rule-authority) to resolve which document is authoritative.
-
----
 
 ## References
 

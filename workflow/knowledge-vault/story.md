@@ -4,13 +4,9 @@
 
 **Status:** Superseded -- see above.
 
----
-
 ## Context
 
 An Obsidian vault with no existing git repository. Goal is to onboard the vault into agent-sandbox to enable agent-assisted vault migrations and, eventually, ongoing agent-based vault management. Obsidian Sync is active on the vault.
-
----
 
 ## Pain Points
 
@@ -18,8 +14,6 @@ An Obsidian vault with no existing git repository. Goal is to onboard the vault 
 - Unclear how Obsidian Sync and git coexist without breaking sync state
 - Writeback model for a vault is different from a code project -- operator wants to review a diff before writing back into the vault, not apply a patch to a git branch
 - Concurrency risk: Obsidian Sync may write files during the apply step
-
----
 
 ## Proposed Workflow
 
@@ -33,8 +27,6 @@ The standard agent-sandbox diff model works well for this use case with minimal 
 6. Operator resumes Obsidian Sync -- picks up applied changes on next sync cycle
 
 This keeps the review gate intact and treats Obsidian Sync as an external system that the operator coordinates manually. No harness code changes required for the basic workflow.
-
----
 
 ## Open Questions & Current Thinking
 
@@ -88,15 +80,11 @@ If the M1.5 apply workflow redesign (format-patch + checkpoint branch) lands bef
 
 The standard workflow likely works as-is. One possible gap: if the vault contains binary files (images, attachments), `git apply` behavior on binaries needs to be verified. The current harness uses `git apply --3way` which handles text files cleanly; binary handling depends on whether binary diffs are included in `staged.diff`.
 
----
-
 ## Constraints
 
 - Obsidian Sync must not be disrupted by the git setup or the agent run
 - Writeback must go through the diff review step -- no direct agent writes to the live vault
 - Vault may contain binary attachments; binary diff handling needs verification
-
----
 
 ## Outcomes
 

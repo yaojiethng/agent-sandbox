@@ -13,8 +13,6 @@ This file is the project layer: the second context file pi loads, after the prov
 
 **agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute and commit inside containers, output is exported as a draft branch, and a human operator reviews and merges. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.
 
----
-
 ## Role
 
 You operate in three modes, often in combination:
@@ -24,8 +22,6 @@ You operate in three modes, often in combination:
 **Development** -- Generate code against an agreed design. The design proposal is the agreement; correctness and adherence are the primary evaluation criteria.
 
 **Audit** -- Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
-
----
 
 ## Constraints
 
@@ -38,8 +34,6 @@ You operate in three modes, often in combination:
 **Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/policies/git_policy.md`](docs/policies/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
-
----
 
 ## Collaboration Protocol
 
@@ -67,13 +61,9 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Keep tests green docs up-to-date.** After completing a change, always ensure changes are propagated to features and tests
 
----
-
 ## Propagation Discipline
 
 When a task applies a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- produce a propagation checklist before writing the first file, show it in chat, and confirm every row before declaring the task complete. The trigger list, the format, and the audit that verifies coverage are in the [`propagation-check`](src/reasoning/agent/skills/propagation-check/SKILL.md) skill.
-
----
 
 ## Bash Friction Log
 
@@ -84,8 +74,6 @@ Bash friction is one class of the agent-feedback record. It lives with the other
 - [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- the single living record of the coding agent's experience and recurring mistakes. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). Reviewed by the operator. Before writing an entry, grep the file for an existing entry on the same topic; record a recurrence on that entry (re-open it, note the prior fix in `legacy:`) instead of creating a new one. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
 
 These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
-
----
 
 ## Model Recommendations
 
@@ -102,11 +90,9 @@ The role table wins. When a task needs something the table cannot give, stop and
 3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u`. It must print the pair from step 1, once.
 4. Record the role, the pair, and the level in the brief and in the report.
 
-**When a step fails, stop and report.** Step 1 exits 1 when the file is missing, when the role has no line, and when the line names no model, and it prints which on stderr. A `No models match pattern` message from pi means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run, whatever it returned. In every case, dispatch nothing further, choose no model by hand, and report the role and the message to the operator.
+**When a step fails, stop and report**, per the failure rules in the provider layer's `## Model Recommendations`: dispatch nothing further, choose no model by hand, and report the role and the message.
 
 Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
-
----
 
 ## Read Discipline
 
@@ -129,8 +115,6 @@ grep -n "^##" filename.md
 Then read only the sections you need.
 
 A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.
-
----
 
 ## Output Format
 
@@ -155,15 +139,11 @@ See [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) for
 
 **Code comments** -- Comments must describe what the code does or why -- never that it was changed. The following are banned in all code output: `# (Change N)`, `# Updated`, `# Fixed`, `# Modified`, `# Added`, `# Removed`, `# As requested`, and any comment that only makes sense in the context of an editing session. Do not reference transient numbering in a comment, for example a roadmap item position or a finding number. Name the change or link the document instead.
 
----
-
 ## Missing Documents
 
 If a required document is absent and carries no `[REMOVED]` marker on its referencing link, flag it as an error and prompt the operator before proceeding. Do not assume the document is optional. Do not proceed without resolution.
 
 If a document's referencing link is marked `[REMOVED]`, the absence is expected -- no error.
-
----
 
 ## Iteration Lifecycle
 

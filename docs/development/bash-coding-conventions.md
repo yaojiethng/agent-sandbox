@@ -6,8 +6,6 @@ Rules for writing bash scripts in this project. Supersedes the former `bash-scri
 
 **Linting:** `shellcheck` is installed and run on scripts (see `scripts/run_tests.sh` and the bash-audit skill). Shellcheck warnings beyond documented `# shellcheck disable` disables are treated as defects. Shellcheck does not flag the `grep`-no-match / `|| true` class of `set -e` landmines  --  those are covered by rule 4 below and are caught by review, not the linter.
 
----
-
 ## 1. Language Rules
 
 ### 1.1 Makefile content: `printf`, not heredocs
@@ -276,8 +274,6 @@ grep -q pattern <<< "$files" && echo matched
 
 A producer cut short exits 141 in the same way, so `--files-with-matches` piped into `grep -q .` fails too. Collect the list first, then test it. The symptom is deceptive: the command prints nothing and the branch that should pass takes the failure path, so the cause reads as a broken input rather than a broken pipeline.
 
----
-
 ## 2. Dependency Management
 
 ### 2.1 Control flow graph
@@ -305,8 +301,6 @@ nothing   ---> tests/                    nothing sources tests
 ### 2.3 No circular sourcing
 
 Shared functions live in leaf libraries, never in orchestrators. If `A.sh` sources `B.sh` and `B.sh` needs a function from `A.sh`, extract the shared function to a third library `C.sh` sourced by both.
-
----
 
 ## 3. Library Discipline
 
@@ -357,8 +351,6 @@ A **check** is a call that reads an external capability (a tool, a daemon, a git
 
 Why the family is small and deliberate: bash's `$( )` captures stdout only, so a probe that wants to return both a value and a status has no ergonomic channel and falls back to empty-output-as-sentinel. That sentinel is honestly used most of the time, which is why the defects cluster at a handful of `$( )`/pipe boundaries rather than everywhere. This restraint is a data point for the bash-as-implementation-language boundary review (roadmap rows 135 and 168), not a mandate to retrofit every `|| true`; a `|| true` that absorbs a status that genuinely does not matter is still fine. Each check that can read a silent failure as a success owes a unit for its failed path and, where the capability can be absent, its cannot-run path.
 
----
-
 ## 4. Common Pitfalls
 
 ### 4.1 `local FOO=$(cmd)` swallows exit codes
@@ -404,8 +396,6 @@ ShellCheck parses any comment line whose first token after `#` is the word `shel
 ### 4.7 A process scan must not match the scanning shell
 
 A scan for a process by name matches its own command line, because the pattern text is in the scanner's arguments: a loop that feeds the matching pids to `kill` signals itself, and the calling tool dies with 143. Match on the executable as well as the argument (`node\ *server.mjs`), and exclude the current pid. `pkill` is absent from the runtime image, so a cleanup that uses it removes nothing and reports no error; when the cleanup holds a port, verify the port is closed rather than read the kill as success.
-
----
 
 ## 5. Cross-References
 

@@ -7,10 +7,9 @@ argument-hint: "[intent - optional, e.g. back after a break, easy start] [thorou
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`. If one is absent or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
 
-- `task-list` - the task list and its companions.
-- `work-log` - the work-unit record and the exploration record.
+- `task-list`, `work-log`
 
 gm is a check-in. Run it from the [`check-in`](/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md) skill, given from the repository root. That skill owns the check-in rule, the arguments, the survey, the inventory and its axes, the record-report contract and the commit.
 

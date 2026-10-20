@@ -2,8 +2,6 @@
 
 Day-to-day command reference and troubleshooting for the OpenCode provider. All commands run from `SANDBOX_DIR`.
 
----
-
 ## Build & run
 
 ```sh
@@ -27,8 +25,6 @@ make start PROVIDER=opencode REBUILD=1
 make serve PROVIDER=opencode REBUILD=1
 ```
 
----
-
 ## Apply changes
 
 ```sh
@@ -42,8 +38,6 @@ make apply DIFF=<full path to the exact diff file>
 make apply DIFF=<path> BRANCH=<branch-name>
 ```
 
----
-
 ## Stop
 
 ```sh
@@ -51,8 +45,6 @@ make stop
 ```
 
 Stops all session containers and removes the sandbox volume.
-
----
 
 ## Container inspection
 
@@ -72,8 +64,6 @@ docker run --rm -it opencode-agent-<PROJECT_NAME> bash
 
 `<PROJECT_NAME>` is the value of `PROJECT_NAME` in `SANDBOX_DIR/Makefile`.
 
----
-
 ## Image management
 
 ```sh
@@ -83,8 +73,6 @@ docker images | grep opencode-agent
 # Remove image (forces rebuild on next run)
 docker rmi opencode-agent-<PROJECT_NAME>
 ```
-
----
 
 ## Workspace inspection
 
@@ -99,8 +87,6 @@ cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/autosave/changes
 ls -la .snapshot/
 ```
 
----
-
 ## Operator input channel
 
 ```sh
@@ -110,8 +96,6 @@ cp my-task.md .workspace/input/
 # Clear input between runs
 rm .workspace/input/*
 ```
-
----
 
 ## Troubleshooting
 
@@ -144,8 +128,6 @@ All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 sed -i 's/\r//' <file>
 ```
 
----
-
 ## Recovery
 
 If a bad diff has been applied and the project repo is in a broken state:
@@ -161,8 +143,6 @@ mkdir -p .workspace/session-diffs/
 # Verify
 make dry-run PROVIDER=opencode
 ```
-
----
 
 ## References
 

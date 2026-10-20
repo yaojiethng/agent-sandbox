@@ -8,15 +8,11 @@ Structured process for diagnosing and correcting failures found during acceptanc
 
 Ensure the failure is not a known or transient infrastructure issue (Docker daemon down, disk full). The error output must be available and traceable to specific source lines.
 
----
-
 ## Entry Conditions
 
 - An integration test, dry-run, or acceptance check fails with an unexpected error.
 - The failure is not a known or transient infrastructure issue.
 - The error output is available and can be traced to specific source lines.
-
----
 
 ## Procedure
 
@@ -83,8 +79,6 @@ Document the bug and fix in two places:
 - Confirm the original failing command now passes.
 - If the diagnostic was created as part of this iteration, note it in the `[CORRECTION]` block.
 - Do not alter the handover's `Status`, timestamps, or acceptance criteria markers.
-
----
 
 ## Common Bug Patterns
 

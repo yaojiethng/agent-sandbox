@@ -8,8 +8,6 @@ This document describes the full arc of a reasoning layer session: how provider 
 
 The capability layer lifecycle -- snapshot, diff pipeline -- is in [`sandbox_lifecycle.md`](sandbox_lifecycle.md). How the two layers are wired together -- mount shape, compose generation, start/stop sequencing -- is in [`execution_model.md`](execution_model.md).
 
----
-
 ## Overview
 
 A provider session has three phases:
@@ -30,8 +28,6 @@ An agent cannot tell the two apart while it works. The difference appears at the
 
 A provider config directory cannot be mounted whole, and a single-file mount fails in two ways on a host filesystem: an agent that writes a binary or moves a file from `/tmp` trips a cross-device error on Windows-mounted paths, and an agent that replaces a file with `mv` breaks a file bind mount. So the image bakes the config files, the entrypoint seeds them, and the overlay mounts only the directories that carry state. The model recommendations file is the one deliberate exception: it is a single-file mount because it is operator-owned and must not live in the image, and every writer replaces its content in place instead of moving over it.
 
----
-
 ## Phase 1 -- Provisioning
 
 `src/reasoning/entrypoint.sh` runs before the agent command. When the image carries the config template at `/opt/workflow/agent/config/`, the script copies it into `AGENT_HOME` with `cp -RT --no-preserve=all`. The copy runs at every start and overwrites, so the image's config files always win.
@@ -41,8 +37,6 @@ The provider overlay mounts the persistent subdirectories, and Docker places tho
 `agent-sandbox onboard` seeds the host side -- the config template into `$SANDBOX_DIR/.<provider>/`, the mounted subdirectories as empty directories, and a slug-free skeleton at `$SANDBOX_DIR/.<provider>/model-recommendations.md` -- so the overlay has a source on the first run. See [Onboarding](#onboarding).
 
 When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The hermes and opencode images are in that state.
-
----
 
 ## Phase 2 -- Work
 
@@ -60,15 +54,11 @@ Input channel lifecycle:
 
 **`workspace/output/`** -- the agent's persistent output channel to the host. Text and serialised data only; binaries are prohibited. Accumulates across the session; cleared by the operator between runs if desired.
 
----
-
 ## Phase 3 -- Persistence
 
 Nothing is copied out. The container ends, its writable layer goes with it, and the next session starts from the same two sources: the image's config template and the host's mounted subdirectories.
 
 The consequence is visible in what a session can lose. A session that edits `settings.json` keeps that edit until the container ends, and the next session starts from the image's copy. A session that writes a skill under `$AGENT_HOME/agent/skills/` keeps it, because the host carries that directory.
-
----
 
 ## Onboarding
 
@@ -77,8 +67,6 @@ The consequence is visible in what a session can lose. A session that edits `set
 Two consumers read it. The image bakes it -- a `COPY` line in the provider's `provider.dockerfile` sends it to `/opt/workflow/agent/config/`, and `src/build/container-interface.json` declares that pair with a `provision` row -- and `provider-entrypoint.sh` seeds `AGENT_HOME` from the baked copy at every start. `agent-sandbox onboard` seeds the same tree into `$SANDBOX_DIR/.<provider>/` on the host, renames `env.stub` to `.env` there, and pre-creates the subdirectories the provider overlay mounts.
 
 The operator fills in secrets in `$SANDBOX_DIR/.<provider>/.env` before the first run. Those values reach the container as environment variables; no secret reaches an image.
-
----
 
 ## Config Flow and Fragility Notes
 
@@ -120,8 +108,6 @@ Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in 
 - **User layer** -- files the operator places in `$AGENT_HOME/agent/skills|prompts/`, which the mounts carry. Loaded by pi's discovery from the same directories.
 
 The three-layer model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#skills-and-prompts-layer-model).
-
----
 
 ## References
 

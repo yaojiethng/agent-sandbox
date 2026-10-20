@@ -6,8 +6,6 @@ reader: [maintainer]
 
 **Role:** Defines how code in the agent-sandbox project determines its runtime context -- where it's executing, how to locate its dependencies, and which conventions apply. Establishes a three-layer interface seam that works across host-side execution, container-side execution, and files that bridge both.
 
----
-
 ## The Three Runtime Contexts
 
 The codebase is organised into three deployment contexts. Each determines its identity and locates its neighbours differently.
@@ -63,8 +61,6 @@ The codebase is organised into three deployment contexts. Each determines its id
 │         snapshot.sh, dry_run_*.sh                         │
 └─────────────────────────────────────────────────────────┘
 ```
-
----
 
 ## Context Determination by Layer
 
@@ -134,8 +130,6 @@ source /opt/sandbox/lib/diff_export.sh
 
 These paths are immutable at runtime. The entrypoint files and diagnostic scripts use this convention. The destination paths (`/opt/sandbox/lib/`) are stable across renames of the host-side source tree -- only the COPY source paths in Dockerfiles change when files move.
 
----
-
 ## How Context Propagates
 
 Context is not inherited -- each file declares how it resolves its own location.
@@ -152,8 +146,6 @@ sandbox-entrypoint.sh ── hardcoded /opt/sandbox/lib/
 
 At the seam between host context and ambiguous-context libs, the host's variable (`$AGENT_SANDBOX_REPO`) provides the path to the ambiguous-context file, but once that file loads, it resolves its own siblings via self-resolution. The same ambiguous-context file, when loaded inside a container via a hardcoded path, resolves its siblings identically -- the mechanism is the same, only the starting path differs.
 
----
-
 ## Summary
 
 | Context | Identity mechanism | Convention | Files |
@@ -164,8 +156,6 @@ At the seam between host context and ambiguous-context libs, the host's variable
 | Host -- tests | `$REPO_ROOT` (derived) | Repo-root-relative paths | `tests/test_*.sh` |
 | Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `dirs.sh` |
 | Container | `/opt/sandbox/lib/` (baked) | Absolute paths | `sandbox-entrypoint.sh`, `provider-entrypoint.sh`, `snapshot.sh`, `dry_run_*.sh` |
-
----
 
 ## Control Flow Constraints
 

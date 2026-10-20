@@ -4,26 +4,20 @@ Guidelines for contributing safely and consistently to the agent-sandbox project
 
 Agents: read [`AGENTS.md`](../../AGENTS.md) for the working protocol specific to your interface. This document covers rules that apply to all contributors regardless of type.
 
----
-
 ## General Principles
 
 - All contributions must respect container isolation, staging, and output validation procedures.
 - Agents are **untrusted** -- outputs must always be staged and validated before merging.
 - Link to existing documents rather than duplicating guidance.
 
----
-
 ## Agent Workflow Rules
 
 - The agent runtime is untrusted. Agents operate inside containers; no direct host access.
 - All outputs are proposals. The operator reviews, approves, and commits all changes.
-- Multi-agent coordination (parent/child dispatch) is a future milestone -- not currently active. `task-queue`, the parallel fan-out prompt, is an active M3.2.1 task. See `roadmap_future.md` -- M4 (Multi-Agent Coordination, with M4.1-M4.6).
+- Multi-agent coordination (parent/child dispatch) is planned in `roadmap_future.md` M4. The `task-queue` prompt is its sequencing primitive.
 - Output naming conventions and metadata requirements are defined per milestone as they are implemented.
 
 For the workflow expression model, policy map, and authority hierarchy between policy documents, skill files, and prompt templates, see [`docs/reference/agent_workflow.md`](../reference/agent_workflow.md).
-
----
 
 ## Security and Secrets
 
@@ -32,8 +26,6 @@ For the workflow expression model, policy map, and authority hierarchy between p
 - Network outputs are untrusted and must be validated before use.
 
 See [`docs/development/security.md`](../development/security.md) and [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) -- Secrets Handling.
-
----
 
 ## Workspace and Repository Management
 
@@ -44,8 +36,6 @@ See [`docs/development/security.md`](../development/security.md) and [`docs/deve
 
 See [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) -- Human / Operational Protocols.
 
----
-
 ## Container and Dependency Guidelines
 
 - Use only verified and minimal dependencies.
@@ -55,8 +45,6 @@ See [`docs/development/standard_operating_procedures.md`](../development/standar
 
 See [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) -- Container Build & Deployment.
 
----
-
 ## Documentation and Roadmap
 
 Before making any documentation or roadmap change, read the relevant policy:
@@ -64,8 +52,6 @@ Before making any documentation or roadmap change, read the relevant policy:
 - [`docs/policies/documentation_policy.md`](../policies/documentation_policy.md) -- document structure, folder ownership, enforcement rules
 - `.agents/skills/task-list/SKILL.md` -- roadmap update sequence and cleanup rules
 - [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
-
----
 
 ## References
 

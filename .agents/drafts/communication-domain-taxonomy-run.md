@@ -6,8 +6,6 @@
 
 **Origin:** the operator's scoping request (2026-10-19), the derived principle in [`20261019-design-settled-sentence_structure_principle.md`](../../devlog/discussions/20261019-design-settled-sentence_structure_principle.md), and the spec census in [`20261019-design-draft-prose_standards_specs.md`](../../devlog/discussions/archive/20261019-design-draft-prose_standards_specs.md). This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
----
-
 ## Purpose
 
 The communication domain is sliced by surface rule today: active voice, given-before-new, a whole main clause, and the prompt-authoring structure rules. The slices overlap, and a writer cannot tell why they are one family. A deeper slice is available. The reader's processing architecture supplies cost types, and each cost type is one principle. This run produces the taxonomy, the vocabulary, and the evidence that the vocabulary changes an agent's output.

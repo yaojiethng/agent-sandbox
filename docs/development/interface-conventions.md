@@ -2,8 +2,6 @@
 
 Conventions for all user- and agent-facing interfaces: CLI, TUI, and API contracts.
 
----
-
 ## 1. Required Arguments Must Produce Self-Recovery Errors
 
 When a required argument is missing, the tool **must not** silently use a default or crash with a bare message like "Error: missing --to". It must emit a full error block that lets the caller immediately retry:
@@ -112,8 +110,6 @@ Uncontrolled env var reading leads to invisible state dependencies that are hard
 
 All paths printed by a tool must be absolute. Relative paths are ambiguous when the caller may be in a different working directory.
 
----
-
 ## 8. Makefile Variable Overrides Must Be Validated
 
 Make silently ignores unknown variable overrides. If a user types `make draft CHANNEL=bundles`, Make sets `CHANNEL` but no target reads it -- the command proceeds with incorrect defaults. The user gets no error and the wrong behaviour.
@@ -204,8 +200,6 @@ Stick with the simple comparison.
 | [`tool_interface.md`](../reference/tool_interface.md) | Harness-level CLI contracts |
 | [`package_branch.sh`](../../src/libs/package_branch.sh) | Reference implementation -- error recovery + actionable next step |
 
----
-
 ## 11. Contextual-Knowledge-Light Naming and Value Disambiguation
 
 Name items for what they hold so a reader can act from the value alone.
@@ -216,13 +210,9 @@ Name items for what they hold so a reader can act from the value alone.
 
 Test: can a reader act correctly from the value alone?
 
----
-
 ## TUI Conventions
 
 To be defined. TUI extensions (e.g. interactive pickers, progress displays) share the stdout/stderr discipline and exit-code conventions defined in the CLI section above.
-
----
 
 ## API Contracts
 

@@ -7,23 +7,19 @@ argument-hint: "[optional: a commit range to audit]"
 
 # /wrapup - The Consolidated Close
 
-**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it: milestone-close owns the milestone-record close, and the work runs substitute an autonomous review for the operator gate.
+**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it.
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`. If one is absent or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
 
-- `task-list` - the task list and its companions.
-- `work-log` - the work-unit record and the exploration record.
-- `decision-records` - the architecture decision records.
-- `git-discipline` - commit types, branch names and the delivery commit.
-- `testing` - the suite and the lint umbrella.
+- `task-list`, `work-log`, `decision-records`, `git-discipline`, `testing`
 
 ## Mandate
 
 You run the consolidated close for an active-operator session that ends at its release point. Two jobs share this document: the **commit-discipline checkpoint** runs during the session after each committed task group; the **close** runs once at the session end. Both deliver a HEAD that reads as one coherent delivery commit per unit, with an open handover naming it, and no pile of typed checkpoints left for the operator to untangle.
 
-Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- `git_policy.md` names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause, not the symptom: a detected pile is squashed now and what let it accumulate is recorded -- a recurrence is a feedback or policy gap, catalogued on `devlog/AGENT_FEEDBACK.md` (grep for an existing entry first) or amended in the policy that failed to stop it.
+Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- `git_policy.md` names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the policy that failed to stop it.
 
 ## Called from
 

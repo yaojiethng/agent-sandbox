@@ -12,8 +12,6 @@ The interface contract governs the container boundary. The agent tool surface (C
 
 Implementation detail and command shapes: [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../reference/tool_interface.md) (Commands). Reasoning record: `devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md`.
 
----
-
 ## Contract surfaces
 
 The interface contract has four surfaces. Each is versioned by the same `INTERFACE_CONTRACT_VERSION` constant (see [Version declaration and comparison](#version-declaration-and-comparison)).
@@ -61,8 +59,6 @@ The P0-P3 rollover and the container-sig retirement are recorded in `devlog/disc
 
 The sandbox's `.env` carries a separate host-side marker, `MAKEFILE_VERSION`, stamped at onboard time from the `Makefile.template` version marker. It is a different use case, not part of the interface contract: it is host-internal (template in the repo vs the onboarded project copy), has no container party, and bumps on Makefile-template surface changes (frequent). `INTERFACE_CONTRACT_VERSION` is the cross-boundary contract and bumps only on contract changes (rare). Do not fold the two into one number. As of this writing `MAKEFILE_VERSION` has no consumer -- it is a write-only marker; the stale-onboarded-file detection it was designed for is not wired. Its doc edits and interface surfaces live in [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md).
 
----
-
 ## Core Principle
 
 Git is a tool used independently inside each repo. It is not the correspondence mechanism between sandbox and host. The correspondence mechanism is the diff file -- a git-agnostic unified diff that applies cleanly when the target files are in the expected state.
@@ -70,8 +66,6 @@ Git is a tool used independently inside each repo. It is not the correspondence 
 This separation means the harness does not depend on git history, commit SHAs, or object stores being shared or compatible across the boundary. Any tool that produces or consumes unified diffs participates in the model.
 
 Further reading: the rationale for this mechanism -- git-mediated correspondence as the rejected alternative, and its relation to the worktree rejection -- is recorded in `docs/adr/container_host_correspondence_mechanism.md`.
-
----
 
 ## Primitives
 
@@ -87,8 +81,6 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 | **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/{session,autosave}/` -- `session/` holds per-export directories named `<EXPORT_TIME>-<SESSION_ID>` (exit artefacts), `autosave/` holds the single `<SESSION_ID>/` checkpoint directory, replaced on a successful autosave tick and left intact when a tick fails. |
 | **Session label set** | Docker labels set on containers at session start, baked into the generated compose file (`x-session-labels` anchor). Labels: `agent-sandbox.project-name`, `agent-sandbox.sandbox-dir`, `agent-sandbox.host-head-sha`, `agent-sandbox.host-branch`, `agent-sandbox.session-ts`, `agent-sandbox.session-id`, `agent-sandbox.agent-image-digest`, `agent-sandbox.sandbox-image-digest`, `agent-sandbox.interface-contract-version`. |
 
----
-
 ## Invariants
 
 - The host repo is never modified by the container directly. All changes flow via diff files through the bind-mounted workspace.
@@ -97,8 +89,6 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 - One draft is active per repo at a time. `draft-state` records which branch is staged; `make draft` guards against starting a second draft while one is in progress.
 - The harness does not track which diffs have been applied. The operator selects what to apply via explicit arguments. Defaults cover the common case.
 - Session artefact directories are non-colliding across concurrent sessions: `SESSION_ID` (canonical sandbox dir, host HEAD, session timestamp) is the folder differentiator, and per-export timestamps keep successive exports apart.
-
----
 
 ## Correspondence Cycle
 
@@ -156,15 +146,13 @@ Changes can flow in either direction at any time while the sandbox is live. All 
 
 ### STOPPED -- applying persisted artefacts
 
-The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point (default: `HEAD`; pass `BRANCH_FROM=<sha>` when the host advanced or a rebase moved the branch point), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch; for a rewritten target history, `make confirm TARGET_BRANCH=<new> NEW=1` creates the new branch and prints the soft-reset direction that moves the target onto the series.
+The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point (default: `HEAD`; pass `BRANCH_FROM=<sha>` when the host advanced or a rebase moved the branch point), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch, and its rewritten-history form is in [`tool_interface.md`](tool_interface.md).
 
 On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator runs `make reject`, amends the failing diff in the source export folder, and re-runs `make draft`. The diff series is the source of truth; the draft branch is always derived from it.
 
 ### RESTART -- resetting correspondence
 
-On the next container start, the harness snapshots the current host HEAD -- incorporating all sessions confirmed since the last container -- and establishes a new `init_sha` from that snapshot. What carries over: session artefacts in `session-diffs/` persist in `SANDBOX_DIR` and remain available to the operator; provider config files are copied into the new container at startup. What resets: `init_sha` is recomputed from scratch; agent session context (conversation history, in-progress work) is lost unless the provider supports session resume (M2.6 scope).
-
----
+On the next container start, the harness snapshots the current host HEAD -- incorporating all sessions confirmed since the last container -- and establishes a new `init_sha` from that snapshot. What carries over: session artefacts in `session-diffs/` persist in `SANDBOX_DIR` and remain available to the operator; provider config files are copied into the new container at startup. What resets: `init_sha` is recomputed from scratch, and agent session context is lost unless the provider supports session resume.
 
 ## Diff Format
 
@@ -177,8 +165,6 @@ grep -v '^index ' "$DIFF" | git -C "$TARGET_DIR" apply
 ```
 
 No `git am`, no `format-patch`, no git metadata headers. Works identically in both directions and on both host and container.
-
----
 
 ## Command Map
 
@@ -193,8 +179,6 @@ No `git am`, no `format-patch`, no git metadata headers. Works identically in bo
 | `make confirm [TARGET_BRANCH=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
 | `make reject` | Host | Discards draft branch. Artefacts unchanged. |
 
----
-
 ## Correspondence Across Parallel Sessions
 
 Two sessions against different worktrees maintain independent correspondence with their respective host worktrees. Every token that could collide is scoped per worktree:
@@ -208,15 +192,9 @@ Two sessions against different worktrees maintain independent correspondence wit
 
 Each worktree session runs its correspondence cycle independently. Merging worktree output to the main repo branch is standard git -- the harness does not orchestrate cross-worktree merges.
 
----
-
 ## Model Gaps
 
-**Mixing `make apply` and `make draft` within a single session:** Resolved. Under the current model the two paths are structurally separate: `make apply` applies an exact diff file (`--diff=<path>`, no channel resolution) and lands changes uncommitted in the working tree; `make draft` resolves from the `session` channel (`session-diffs/session/`) or `bundles` channel (`output/bundles/`) and applies committed diffs to a branch. The artefact locations do not overlap and there is no shared application mechanism. No undefined behaviour remains.
-
-**Mixed session types across sessions:** Closed as explicitly out of scope. A project using both the `make apply` channel and the `make draft` channel against the same repo involves intentionally different workflows targeting different artefact channels. The harness makes no claim to coordinate across session types, and doing so is not intended behaviour. If cross-session-type coordination becomes a real use case, it warrants a story at that time.
-
----
+`make apply` and `make draft` are separate paths. `apply` lands an exact diff file uncommitted in the working tree, with no channel resolution. `draft` resolves a committed series from the `session` channel (`session-diffs/session/`) or the `bundles` channel (`output/bundles/`) and applies it to a branch. Their artefacts do not overlap. Coordinating mixed session types is out of scope, and the harness makes no claim over it.
 
 ## References
 

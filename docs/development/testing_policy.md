@@ -7,8 +7,6 @@ scope: ["tests/"]
 
 **When to write tests:** any function with meaningful branching, error handling, or external dependencies gets tests. Tests are produced alongside implementation, not deferred.
 
----
-
 ## Core Principles
 
 ### 1. Test Isolation is Mandatory
@@ -98,8 +96,6 @@ source "$REPO_ROOT/tests/libs/session_fixtures.sh"
 source "$REPO_ROOT/test_draft_workflow.sh"   # ← Executes tests, pollutes state
 ```
 
----
-
 ## Shared Fixtures (`tests/libs/`)
 
 Helpers used by more than one test file live in `tests/libs/` and are sourced explicitly. Four fixture files are established:
@@ -138,8 +134,6 @@ source "$REPO_ROOT/tests/libs/test_common.sh"
 ```
 
 Every test file and knowledge test file must source `test_common.sh` instead of defining `pass()` / `fail()` locally. The only exception is diagnostic scripts (`diagnose_*.sh`) that run inside containers where `tests/libs/` is not available.
-
----
 
 ## Test Placement -- `tests/`, `tests/knowledge/`, `tests/integration/`
 
@@ -253,8 +247,6 @@ A `test_*()` function that is defined but never registered via `run_test` never 
 
 **Check:** `make test-liveness` (or `bash scripts/check_test_liveness.sh`) verifies both directions statically, plus prerequisite liveness for the docker stub and stub libs. Run it alongside `make test` when touching test files; it is advisory like the other static checks, but a finding is a defect to fix in the same change.
 
----
-
 ## Keeping Tests Current
 
 When a lib or script changes behaviour, the corresponding test files must be reviewed for staleness.
@@ -270,8 +262,6 @@ Read each file returned and assess whether any test case is invalidated or no lo
 A handover or finding must not claim a code path that no test exercises. A behaviour branch claimed in a handover or finding is covered by a test, or the handover states why it is untested.
 
 This applies to renames, interface changes, flag additions, and behavioural fixes. It does not apply to internal refactors that produce identical external behaviour - but if in doubt, grep and check.
-
----
 
 ## See Also
 

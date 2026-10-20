@@ -10,8 +10,6 @@ Read a shipped provider before writing one. Each file below is a working example
 | [`opencode`](../../src/reasoning/providers/opencode/) | the minimum: two Dockerfiles and the serve overlay |
 | [`hermes`](../../src/reasoning/providers/hermes/) | a multi-stage build, and a provider with no agent compose overlay |
 
----
-
 ## Step 1 -- Create the directory
 
 ```sh
@@ -93,8 +91,6 @@ make dry-run PROVIDER=<n>
 A pass confirms both images build, both containers start, the capability layer initialises `sandbox/`, the reasoning layer reaches it through the shared volume, and the diff pipeline produces output. Then `make serve PROVIDER=<n>` if the provider serves.
 
 Providers hold no registry. The agent chooses a provider by name at run time, and the provider is available to every onboarded project once its files exist. A project onboarded earlier needs `agent-sandbox onboard --refresh` to pick up the new provider's config.
-
----
 
 ## References
 
