@@ -1,6 +1,6 @@
 ---
 name: principle-own-the-scope-you-declare
-description: Own the scope a workflow document declares, holding everything it owes and describing no work outside it. Use when writing or reviewing a prompt, a skill, a procedure, or a record, and when a document starts explaining a step that belongs to another one.
+description: Own the scope a workflow document declares, holding everything it owes, describing no work outside it, and handing on one artifact to one next step. Use when writing or reviewing a prompt, a skill, a procedure, or a record, and when a document starts explaining a step that belongs to another one.
 disable-model-invocation: true
 ---
 
@@ -11,6 +11,8 @@ A workflow document owns the scope it declares. It holds everything that scope o
 ## The pattern
 
 Read the declared scope first: a prompt's `Scope` declaration, a skill's `description`, a record's `## Scope` section. The agent neither sets it nor infers it. Where no scope is declared, that is the defect to fix before this one applies.
+
+A document hands one artifact to one next step, and every success criterion is met from that scope. A document that hands on two artifacts, or hands one to two next steps, is two documents, or a dispatcher that declares itself one.
 
 The document holds everything its scope owes.
 

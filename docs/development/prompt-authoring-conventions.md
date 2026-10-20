@@ -91,7 +91,7 @@ The workflow-document presentation rules that the `/document` stub defers here c
 
 ## Scope a prompt's subject
 
-One subject per prompt. The subject is the class of work the prompt owns. A prompt that owns two subjects is two prompts, or a runbook that dispatches two sub-cases.
+**One subject per prompt.** The subject is what the prompt hands on: one artifact to one next step. A prompt that hands on two artifacts, or hands one to two next steps, is two prompts, or a runbook that dispatches two sub-cases. The judgement is `principle-own-the-scope-you-declare` at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`.
 
 Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../policies/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
 
