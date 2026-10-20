@@ -13,7 +13,7 @@ The contract is what makes this a reviewer rather than any subagent.
 
 - **Read-only.** No edits, no commits, no test suite. The caller applies what the report names.
 - **One brief, passed verbatim.** The brief is the only variable input. A reviewer that is told something the brief does not say is a second brief.
-- **A pinned pair and its provenance.** A single-role dispatch takes its pair from `dispatch_role_model`, and the brief records the role beside the pair. The reviewer pair is two model families by design, so it is pinned in the script beside this skill, and the brief names the two pairs the run used. The pair agrees or disagrees, and agreement is the signal.
+- **A resolved pair and its provenance.** A seat takes its pair from `dispatch_role_model`, and the brief records the role beside the pair. The two seats take theirs from the `_REVIEWER` line. The line must carry two model families and carries one, so the dispatch reports the gap. It does not close it by pinning a pair here. The pair agrees or disagrees, and agreement is the signal.
 - **A report in the brief's shape**, returned to the caller.
 - **Its own session file and log.** The log is the only evidence the run leaves.
 - **The effective model read back from the session file**, never assumed.

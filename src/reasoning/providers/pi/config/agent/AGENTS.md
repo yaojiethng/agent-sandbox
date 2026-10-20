@@ -146,14 +146,15 @@ A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
-**Which model.** Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. Resolve in this order and stop at the first that answers.
+**Which model.** A dispatched seat takes its pair and level from the role line in `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`), or from a pair the operator named for this run. Resolve in this order.
 
-1. The role's line.
-2. The startup default, read from `$AGENT_HOME/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`).
-3. Stop. State which step answered, and ask the operator.
+1. A pair the operator named for this run, recorded beside the instruction that named it.
+2. The role's line.
 
-The role table wins. A dispatch that needs something the table cannot give stops and asks. It does not leave the table for a preference, and it does not initialise the file before resolving. A multi-seat dispatch that needs a property one line cannot express, such as two model families, is a designed exception: the pair is pinned where the seats are defined, and the reason is stated there.
+A seat with no resolvable pair refuses, naming the role and the table. The startup default in `settings.json` applies to the main session, not to a dispatched seat.
 
-Read the pair with `dispatch_role_model <role>`, never from the file by hand. A non-zero exit stops the dispatch, and its message is the reason.
+The role table takes precedence over the startup default. The agent composes no pair. The brief records the role, the pair and the level beside each seat. A multi-seat dispatch takes each seat's pair from the same role line. If the line cannot carry a seat's constraint, such as two model families, the dispatch reports the gap. It does not pin a pair.
+
+`dispatch_role_model` reads the pair, and a non-zero exit stops the dispatch.
 
 **The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.

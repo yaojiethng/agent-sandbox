@@ -129,6 +129,8 @@ The census lives in the session that wrote this draft and is not committed. To r
 
 Before the contract lands, one sentence in the provider-layer `AGENTS.md` "Which model" block removes the ambiguity that produced the incident: a dispatched seat resolves only from `$AGENT_HOME/model-recommendations.md`, an agent composes no pair, and the brief records the role, the pair and the level. Two mechanical deletions go with it. The reviewer script's pinned pairs and the advisor prompt's dead routing clause both name values the table does not contain. The eight draft lines can wait for the migration unit.
 
+The `_REVIEWER` line carries three candidates from one family, so the reviewer's two-family constraint has no source in the table. The script's pairs are on-list now, and the constraint is a table gap for the migration unit.
+
 ## Records this depends on
 
 - [`single_source_model_recommendations.md`](../../docs/adr/single_source_model_recommendations.md), which owns the role file and its requirements.
