@@ -112,17 +112,9 @@ Construct defensively against two decay modes, both the delete test applied to a
 
 The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); the register lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
 
-## A workflow document owns one step, and owns it whole
+## A workflow document owns the scope it declares
 
-A workflow document's subject is one step of a larger workflow. Taking that step means owning it end to end: its inputs, its outputs, the decisions it can make, the directions the operator receives from it, and the evidence that it ran. A document that describes a step it does not own is out of scope, whether or not the description is accurate.
-
-The test is ownership, not duplication. Ask what the document is responsible for, then check whether its content serves that responsibility.
-
-1. **Does it own the step it describes?** If the document formalizes step *n*, it holds everything step *n* owes: the command it runs, the output it relays, the fields it adds, and the state it leaves behind. Anything a later step owes is not its business.
-2. **Does describing another step make it look like it owns that one?** A document that has to explain step *n+1* in order for step *n* to make sense is carrying another step's responsibility in prose, and it cannot keep it current. Take the step over, or let the flow be documented where the flow lives.
-3. **A top-down view of the whole flow is a different artefact.** The sequence across every step, and why the steps are in that order, is a concept document when a reader needs to understand how the system works, and an ADR when it records a decision and its alternatives. That document names the steps; it does not replace them. See `diff_packaging.md` for a worked case: the export, draft, and confirm sequence is recorded there as a decision, each step prints its own next hop, and `/package-branch` carries none of them.
-
-The failure this rule catches is a document that is locally accurate and globally unreliable: every sentence is true of the moment it was written, and nothing compares it against the steps it describes. A step that changes leaves the copy behind with no signal.
+A workflow document owns the scope it declares, holds everything that scope owes, and describes no work outside it. The judgement is the `principle-own-the-scope-you-declare` skill at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`, which is its only home. A top-down view of the whole flow belongs to a concept document or an ADR, and that document names the steps rather than replacing them.
 
 ## The workflow handoff pattern
 

@@ -60,11 +60,6 @@ b99082ecff306ea9420f608a77909b04986f3c0d	j-brief-owned-file-set	-
 687c53cba30799e1e520c3687cfc36723324391b	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 8e170668178e08d1a76abb3997021080f839b515	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 58421d02387021f426bd6b7f1180deef0a618aca	j-copy-points-to-its-source	skill:principle-one-home-per-rule
-f8f1eda959d53ca378f38b0dca45de6eeda9ad7f	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
-061737c1abe654bd23237549cc11a1cc417cb1aa	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
-984b267eeafe93f9c6c3c537f8138745283b592f	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
-5b9a116d1425051220ff08e77ef16c7d3bad6fee	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
-ce595d55f79547b286c8b7266c2fc0b805964d58	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
 127ed937169dd5ed1a62f93b0282cac050be1234	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 f99cc8bc9cc6212a33e56b075672514fd37fc0ee	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 9a59feb9c7abab8cd8d93cc3e64f035fa15e0f36	j-document-names-its-subject	-
@@ -73,3 +68,4 @@ fca1b924608e45ae368e8c1a16e35dee3f29878d	j-rename-on-scope-change	-
 02186e604292c4ae4faad9c6a608953b8d70eba7	j-quality-pass-per-prompt	-
 e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-ungrouped	-
 985fb3460eaf00dbc523ecdeaa6514de7e84f0f0	j-ungrouped	-
+536a4b6116a70d51bcafcacd801d7d8a0b25b847	j-ungrouped	-
