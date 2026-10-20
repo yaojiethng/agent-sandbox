@@ -52,14 +52,12 @@ New and changed prose meets ASD-STE100.
 
 Phrasing rules (a working subset of the full dictionary, not a replacement for it):
 
-- Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
+- Sentence structure. Active voice with a named actor, the defined noun before the imperative, and a main clause that does not depend on its afterthought. The judgement is the `communication-principle-attach-as-you-read` skill at `$AGENT_HOME/agent/skills/communication-principle-attach-as-you-read/SKILL.md`.
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it. Rotating synonyms ("volume" / "sandbox" / "workspace" for one object) is a defect.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
-- Place the defined noun phrase before the imperative command. The reader must know exactly what object is discussed before being told what to do with it.
 - Define a term the reader has not met first, in its own clause, then apply it ("Negative cases are scope constraints", then "Keep scope constraints in the cell").
-- Avoid thin subjects that rely on a trailing dash clause for their definition; the main clause must not depend on its afterthought.
 - Keep technical nouns the reader needs. STE100 simplifies structure and verbs, not precision.
 - State the allowed form and name the action. Judgement: `communication-principle-write-for-the-reader`.
 
