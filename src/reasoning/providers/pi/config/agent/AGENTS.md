@@ -146,15 +146,13 @@ A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
-**Which model.** A dispatched seat takes its pair and level from the role line in `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`), or from a pair the operator named for this run. Resolve in this order.
+**Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). Every role names `deepseek/deepseek-flash`; there is one model, so a second seat is a second run of the same model, not a second family.
 
-1. A pair the operator named for this run, recorded beside the instruction that named it.
-2. The role's line.
+1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1.
+2. Pass it verbatim, in full: `--provider <provider> --model <provider>/<model> --thinking <level>`.
+3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u` prints the pair from step 1, once.
+4. Record the role, the pair, and the level beside the seat in the brief.
 
-A seat with no resolvable pair refuses, naming the role and the table. The startup default in `settings.json` applies to the main session, not to a dispatched seat.
-
-The role table takes precedence over the startup default. The agent composes no pair. The brief records the role, the pair and the level beside each seat. A multi-seat dispatch takes each seat's pair from the same role line. If the line cannot carry a seat's constraint, such as two model families, the dispatch reports the gap. It does not pin a pair.
-
-`dispatch_role_model` reads the pair, and a non-zero exit stops the dispatch.
+**When a step fails, stop and report.** Step 1 exits 1 for a missing file, a role with no line, and a line naming no model, and it prints which on stderr. `No models match pattern` means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run. In every case, dispatch nothing further, choose no model by hand, and report the role and the message.
 
 **The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.

@@ -28,6 +28,7 @@ source "$REPO_ROOT/src/libs/dispatch.sh"
 # set by test_setup; the allocator behind get_test_dir is not live until
 # run_test, so a file-scope call would leak a redirection error.
 REC_FILE="$FIXTURE_ROOT/model-recommendations.md"
+export DISPATCH_REC_FILE="$FIXTURE_ROOT/model-recommendations.md"
 export AGENT_HOME="$FIXTURE_ROOT"
 cat >"$REC_FILE" <<'EOF'
 _IMPLEMENTER: opencode-go/cat-jam-free at high

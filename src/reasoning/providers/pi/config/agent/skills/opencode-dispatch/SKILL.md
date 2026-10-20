@@ -66,5 +66,5 @@ The provider `AGENTS.md` defines the container's scratch directory. Pass that di
 | The worker logs nothing | the script exits non-zero and names the log path |
 | The worker exits non-zero | the script exits non-zero and names the log path; read the log before re-running |
 | The scratch directory is absent or unwritable | the script refuses; the provider `AGENTS.md` defines the path |
-| The role table is missing or the role is absent | the seam refuses; the change is `$AGENT_HOME/model-recommendations.md` |
+| The role table is missing or the role is absent | the seam refuses; the change is `model-recommendations.md` |
 | The free tier refuses the request | the attempt stops on the refusal and the role's next model runs; if every model refuses, the run names each one |

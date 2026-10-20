@@ -89,13 +89,20 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. The role table is `$AGENT_HOME/model-recommendations.md`. The operator owns it, and it sits outside this repository, so a model change never enters a commit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, and the provider prefix disambiguates a model served by more than one provider. When one model is required but several are listed, use the first in listed order; a routing clause on a value takes precedence.
+A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level. Every role names `deepseek/deepseek-flash`, the only model we dispatch.
 
 The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
 
-The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference.
+The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference, and do not compose a pair from `pi --list-models`.
 
-Resolve a role in this order. The role's line. Then the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`), with a project-level `.pi/settings.json` override taking precedence. Then stop. Initialise the file after the dispatch, never before it. Decide a missing file with `test -f` and print the result. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file.
+**The dispatch procedure.** Four steps, in this order.
+
+1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1. Print the result before dispatching, so the pair is in the transcript.
+2. Pass it verbatim: `pi --provider <provider> --model <provider>/<model> --thinking <level> --session <path> -p "$(cat <brief>)"`. Pass the id in full; `--model` matches as a substring and takes the last id that contains it.
+3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u`. It must print the pair from step 1, once.
+4. Record the role, the pair, and the level in the brief and in the report.
+
+**When a step fails, stop and report.** Step 1 exits 1 when the file is missing, when the role has no line, and when the line names no model, and it prints which on stderr. A `No models match pattern` message from pi means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run, whatever it returned. In every case, dispatch nothing further, choose no model by hand, and report the role and the message to the operator.
 
 Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
 
