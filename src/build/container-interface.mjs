@@ -117,6 +117,22 @@ export function manifest_rows(manifest, name) {
   return Array.isArray(rows) ? rows : [];
 }
 
+// source_roots ROOT KIND -- the repository directories whose payload seeds a
+// cell whose runtime path is that kind's root, deduplicated. `kind` is the
+// folder name the loader scans, `skills` or `prompts`. A gate that resolves an
+// instruction by name reads its subjects here, so a new root is declared once.
+export function source_roots(root, kind) {
+  const manifest = load_manifest(root) || {};
+  const suffix = "/" + kind + "/";
+  const out = [];
+  for (const cell of manifest_rows(manifest, "cells")) {
+    if (typeof cell.runtime_path !== "string" || !cell.runtime_path.endsWith(suffix)) continue;
+    const sources = Array.isArray(cell.sources) ? cell.sources : [];
+    for (const source of sources) out.push(String(source).replace(/\/+$/, ""));
+  }
+  return [...new Set(out)];
+}
+
 // home_of MANIFEST PROVIDER -- the provider's `$AGENT_HOME` value, or empty.
 export function home_of(manifest, provider) {
   const row = manifest_rows(manifest, "env").find(
@@ -689,12 +705,24 @@ function main(argv) {
     for (const path of paths) process.stdout.write(`${path}\n`);
     return paths.length === 0 ? 1 : 0;
   }
+  if (args.command === "roots") {
+    const kind = argv[argv.indexOf("--kind") + 1];
+    if (kind !== "skills" && kind !== "prompts") {
+      process.stderr.write("roots needs --kind skills|prompts\n");
+      return 2;
+    }
+    const dirs = source_roots(args.root, kind);
+    for (const dir of dirs) process.stdout.write(`${dir}\n`);
+    return dirs.length === 0 ? 1 : 0;
+  }
   if (args.command === "check") {
     const findings = check(args.root);
     for (const finding of findings) process.stdout.write(`${finding}\n`);
     return findings.length === 0 ? 0 : 1;
   }
-  process.stderr.write("usage: container-interface.mjs pairs|session|check [--root DIR]\n");
+  process.stderr.write(
+    "usage: container-interface.mjs pairs|session|roots|check [--root DIR] [--kind skills|prompts]\n",
+  );
   return 2;
 }
 

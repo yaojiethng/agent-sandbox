@@ -261,6 +261,21 @@ Notes:
 - A caller that must wait longer than its bound says why in a comment on the command.
 - A timeout is a distinct outcome. `timeout` returns 124, so the caller reports "did not return" rather than reporting success.
 
+### 1.20 The consumer that exits early turns a match into a failure
+
+Under `set -o pipefail`, a reader that stops at its first match sends `SIGPIPE` to the writer, and the pipeline reports the writer's 141 even though the reader succeeded.
+
+```bash
+# Wrong  --  pipefail reports find's SIGPIPE, so the branch takes the failure path
+find "$dir" -name '*.md' | grep -q pattern && echo matched
+
+# Right  --  the list is read once, and the test reads it with no pipeline
+files="$(find "$dir" -name '*.md')"
+grep -q pattern <<< "$files" && echo matched
+```
+
+A producer cut short exits 141 in the same way, so `--files-with-matches` piped into `grep -q .` fails too. Collect the list first, then test it. The symptom is deceptive: the command prints nothing and the branch that should pass takes the failure path, so the cause reads as a broken input rather than a broken pipeline.
+
 ---
 
 ## 2. Dependency Management

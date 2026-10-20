@@ -16,6 +16,15 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-20  --  `grep -q` in a pipeline under pipefail reported the writer's SIGPIPE
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: a reader that stops at its first match kills the writer with SIGPIPE, and `pipefail` hands back 141 even though the reader matched. Collect the list first and test it from a here-string. The norm gate read every observer as unresolvable this way, and the message named the observer rather than the pipeline, so the cause read as a broken tree.
+```
+
 ## [A] 2026-10-19  --  A mining brief asked for a source the records could not supply
 
 ```text

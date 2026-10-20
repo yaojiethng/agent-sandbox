@@ -16,7 +16,7 @@ The document taxonomy -- what document types exist, their durability, and which 
 
 The kinds of norm, and the home each one has, are defined once in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds). This section applies them to this file.
 
-The ledger `scripts/lint/norm-ownership.tsv` records the kind and the observer of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new norm line arrives unclassified and an edited sentence loses its kind.
+The ledger `scripts/lint/norm-ownership.tsv` records the kind, the observer and the home of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new norm line arrives unclassified and an edited sentence loses its kind. A home is derived from the skill path the line cites, and that script rejects a hand-edited one.
 
 Where a norm has its home, and what makes a second copy a defect, is `principle-one-home-per-rule` at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`.
 

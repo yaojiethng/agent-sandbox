@@ -1,16 +1,20 @@
-# Judgement grouping map. Hand-maintained, keyed by the ledger hash.
+# Judgement grouping map. Keyed by the ledger hash.
 # Columns: hash, group, note. Unit: one prose line the ledger classes as a judgement.
-# note is skill:<name> for a group that two or more documents state, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local.
-# A pointer row cites a skill path inside a sentence about a judgement. It joins j-pointer-rows with the note -, and the gate counts no document for it. A group that mixes a pointer with a statement fails.
-# The class is derived by scripts/check_norm_ownership.sh --groups, never written here.
+# A line that cites a skill is homed there. --regroup derives its group as j-home-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails.
+# A line that cites no skill carries a hand row. note is skill:<name> when the home is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local.
+# The scan set is the two source documents, so a judgement a convention skill also states counts one document here. Read a class-1 group with that limit.
 f7f81670644e62e8f534a5e6f9e79fb7394c7938	j-skills-are-not-documentation	-
 2c25130efafe4ecd61410e5f0e629c015a1e0cac	j-folder-taxonomy	-
 3d12d67add6b4e6147ee41cb5e6086cb6165e892	j-frozen-layer	-
 e33c25aaa55264f395d437301170dc4285cbceff	j-workflow-table-cell	-
+c1666c1f6e6c1056bafd5d89c7ace294402ed165	j-home-principle-define-terminology-before-use	skill:principle-define-terminology-before-use
+ee96dee3e9d3a62b1e87ea2f6646c27a90d0578c	j-home-communication-principle-attach-as-you-read	skill:communication-principle-attach-as-you-read
 af6dd32169d1b19644fbdfffd422c7c8a7af00c9	j-write-plainly	candidate:communication-principle-write-plainly
 4b20f258bfa2e80c0d09238427231755fef44670	j-one-term-one-meaning	-
 3638649fb877585a59cd9bb952d9f2fa0afd95d9	j-write-plainly	candidate:communication-principle-write-plainly
 20ec0e2b65257959038fa0cc2c14f534f01540de	j-write-plainly	candidate:communication-principle-write-plainly
+98aafbdf7aa31d6828c03501529796fd59d4fd11	j-home-principle-define-terminology-before-use	skill:principle-define-terminology-before-use
+1a207b372cc775d783ba0f95b88928661ca64b2d	j-ste100-scope	-
 30d2e7cf5553b4deef5319243b4484d9499c34f1	j-reserved-terms	-
 f07586e05ed94a4f2fa384dae11835306f488e0a	j-status-line	-
 5be0476b95740b5d3a8c452cec6f10ecd65429d6	j-redirect-blockquote	-
@@ -23,15 +27,20 @@ f4b171f179b0a63255e29308b64e6ee18973f932	j-many-references-to-a-heading	-
 af58a11dcf356f767201abb0e10c2d40f8ed4374	j-skeleton-over-table	-
 83853989d171b498b3082a44c58f6f7d510aa4c7	j-targeted-edits	-
 9ed283a92c38df7f81dde0f67ec7880c329d7e2a	j-skeleton-in-chat	-
+2b9e615df1398f45d0052e895587d7c586085753	j-home-communication-principle-dont-forecast-undone-work	skill:communication-principle-dont-forecast-undone-work
 ba4b6a88ca06d2d105e795525330fee263cde089	j-per-type-obligations	-
 53969a513cd119b8f9776494fe97013fff874513	j-concept-standalone	-
 6ec5553ff69e2b8309ae79979a38ac40188fbf94	j-restate-as-guarantees	-
+fe969dd73b3ebfdcbc82de6c25708f800d61a3ef	j-document-abstraction-grain	-
 de6a319e16a3f3a6b78a360800192f9c8656bd81	j-archival-is-not-amendment	-
 50cced228dd6f0aff2361fcdd96c848da747d3c8	j-removed-marker-expected	-
 1849444adc7bb0209ca03bb5da681d85fb5c9c81	j-missing-document-error	-
 0cde43de574e99617be38226d24c8f7ec7909ce9	j-reference-states-no-rule	-
 231eddf1e0b792b4f195d76dbab572f0a258df99	j-progressive-disclosure	-
 9dc9f97f59c06a724fa2a76cc14448848059d42b	j-sprawl-cure	-
+514a3b1deb1fa3b86f7db24eafffeab4fb2a806d	j-home-communication-principle-dont-scatter-what-belongs-together	skill:communication-principle-dont-scatter-what-belongs-together
+fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-home-principle-match-precision-to-stakes	skill:principle-match-precision-to-stakes
+ad7459970fb43befb3277b6bfd182c7af31c43f5	j-home-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
 3cd859c088b5cee78631030c43d4168c2d75727f	j-advisor-definition	-
 7d3fe6897f8eb3e8802a97e5045f19350e985425	j-advisor-role-split	-
 a179aaa286baada7fe179da36f7ebffc0956c17a	j-subagent-brief	-
@@ -41,32 +50,24 @@ a179aaa286baada7fe179da36f7ebffc0956c17a	j-subagent-brief	-
 ff611106e693bbc2682a72babe97e0616b892be5	j-prompt-section-order	-
 d154ff782a5c633e49d01102c9a0b14680d33771	j-prompt-section-order	-
 f4e925ade339a642407c42da346a0832c490eb72	j-prompt-section-order	-
+390fbb6dd18996c900fdccb1218d7a81e4ff7f74	j-home-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
+e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-home-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
 4b9bfd62f4d44d07aaae2d1fd57d372ed444896e	j-prompt-section-order	-
 2bcf8fcb6b0ff50887ce7143cd4edbcc1038118e	j-prompt-section-order	-
 186c5118fc5c37062ac901e81660d1e62336c58d	j-project-conventions-block	-
 100f62f4b8271c3ec0b89c4bb34b93f12b24e9eb	j-copy-points-to-its-source	skill:principle-one-home-per-rule
+d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-home-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
 73b1da5d2dcd9b3c50779dd00786bc3f995fd18f	j-scope-discipline-in-prompts	-
 b99082ecff306ea9420f608a77909b04986f3c0d	j-brief-owned-file-set	-
+fbbfd953bb504829f8596975db4bbe685b4747dd	j-home-principle-effective-skill-routing	skill:principle-effective-skill-routing
 687c53cba30799e1e520c3687cfc36723324391b	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 8e170668178e08d1a76abb3997021080f839b515	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 58421d02387021f426bd6b7f1180deef0a618aca	j-copy-points-to-its-source	skill:principle-one-home-per-rule
+536a4b6116a70d51bcafcacd801d7d8a0b25b847	j-home-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
+985fb3460eaf00dbc523ecdeaa6514de7e84f0f0	j-home-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
 127ed937169dd5ed1a62f93b0282cac050be1234	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 f99cc8bc9cc6212a33e56b075672514fd37fc0ee	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 9a59feb9c7abab8cd8d93cc3e64f035fa15e0f36	j-document-names-its-subject	-
 fca1b924608e45ae368e8c1a16e35dee3f29878d	j-rename-on-scope-change	-
 1b5fcf7cba7d0045caa3ec3e55f04de5415ed3fd	j-draft-lives-in-drafts	-
 02186e604292c4ae4faad9c6a608953b8d70eba7	j-quality-pass-per-prompt	-
-e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-pointer-rows	-
-985fb3460eaf00dbc523ecdeaa6514de7e84f0f0	j-pointer-rows	-
-536a4b6116a70d51bcafcacd801d7d8a0b25b847	j-pointer-rows	-
-ad7459970fb43befb3277b6bfd182c7af31c43f5	j-pointer-rows	-
-390fbb6dd18996c900fdccb1218d7a81e4ff7f74	j-pointer-rows	-
-fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-pointer-rows	-
-fbbfd953bb504829f8596975db4bbe685b4747dd	j-pointer-rows	-
-d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-ungrouped	-
-ee96dee3e9d3a62b1e87ea2f6646c27a90d0578c	j-pointer-rows	-
-98aafbdf7aa31d6828c03501529796fd59d4fd11	j-pointer-rows	-
-1a207b372cc775d783ba0f95b88928661ca64b2d	j-ste100-scope	-
-c1666c1f6e6c1056bafd5d89c7ace294402ed165	j-ste100-domain-exception	-
-2b9e615df1398f45d0052e895587d7c586085753	j-pointer-rows	-
-514a3b1deb1fa3b86f7db24eafffeab4fb2a806d	j-pointer-rows	-

@@ -8,7 +8,7 @@ The per-prompt quality passes read this document before they edit a prompt. The 
 
 This document owns the authoring bar for workflow documents. The conceptual model behind them stays in [`agent_workflow.md`](../reference/agent_workflow.md) - the layers, the loading mechanism, and the authority hierarchy. That document says what a prompt or skill is; this document says how to write one. A rule that states a fact about the model, not a rule about writing, lives in `agent_workflow.md`.
 
-The authoring rules borrow from two external references: Claude's Skill authoring best practices (`https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`) and mattpocock's `writing-for-agents` skill (`https://github.com/mattpocock/skills`, under `skills/productivity/writing-for-agents`). Both describe levers for writing documents an agent consumes. The repository's own prompt and skill set is the primary source; the references explain the reasoning. Read this document for the rules.
+The authoring rules borrow from two external references: Claude's Skill authoring best practices (`https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices`) and mattpocock's `writing-for-agents` skill (`https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents`). Both describe levers for writing documents an agent consumes. The repository's own prompt and skill set is the primary source; the references explain the reasoning. Read this document for the rules.
 
 ## Identify the document type
 
