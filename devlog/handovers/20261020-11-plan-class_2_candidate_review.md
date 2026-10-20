@@ -34,7 +34,7 @@ Out of scope, with reason: the grill session itself, and the landing. Both belon
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | One row and one grill session for all ten candidates, not ten iterations | one iteration is one task with one handover; ten sessions ask one question ten times with different subjects | the roadmap row |
-| The accepted candidates land together and directly, not as drafts | the operator pre-approved landing at the grill's close | the roadmap row |
+| The accepted candidates land together and directly, not as drafts | the operator pre-approved landing at the grill's close | the roadmap row. [CORRECTION -- 2026-10-20] Superseded the same day: one landing per candidate, because each carries propagation edits to the ledger's own sources. See `20261020-12`. |
 | Landings run before the filing | a landing converts source lines into pointers and changes their hashes, so the filing's final pass should see settled sources and kinds | the roadmap row |
 | A landing is a ledger and grouping operation, not only a file write | editing a source line orphans its row in both `norm-ownership.tsv` and `norm-judgements.tsv`, and both gates fail until the row is regrouped | the roadmap row |
 | The two fold candidates are read against existing skills first | a second home for a rule `principle-check-placement` or `attach-as-you-read` already holds is the defect the milestone exists to remove | the roadmap row |
