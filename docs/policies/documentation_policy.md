@@ -14,17 +14,11 @@ The document taxonomy -- what document types exist, their durability, and which 
 
 ## Rule authority
 
-A norm is a rule when an observer detects its violation: a gate in `scripts/lint.sh`, a lint rule under `scripts/lint/`, or a reading procedure a prompt dispatches. A norm with no observer is a judgement: it states how a writer decides, and it cannot be enforced, because nothing detects a breach. A judgement belongs in the principle skill that states it, and that skill is the judgement's only home, so a principle carries no gate and no authority claim. A norm that asserts the system's structure and asks the author to do nothing is a model, and belongs in a concept document.
+The kinds of norm, and the home each one has, are defined once in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds). This section applies them to this file.
 
 The ledger `scripts/lint/norm-ownership.tsv` records the kind and the observer of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new norm line arrives unclassified and an edited sentence loses its kind.
 
-**Canonical-owner test.** Duplicate content is a defect. When the same rule appears in two documents, one document is the canonical owner and the other links to it. The canonical owner is the document an agent reads first when it needs the rule.
-
-**Producer owns the definition.** A definition and a record of it are two objects. The document whose workflow produces the thing owns the definition; the record owns its own shape. The acceptance-criteria model is the settled case: `iteration_policy.md` owns the model, and the project's `work-log` convention owns the table that records it.
-
-**No bridge documents.** A bridge document exists only to connect two documents that could reference each other directly. Bridge documents duplicate content across a third document, so they are the same defect as duplicate content. Collapse a bridge document into the more relevant destination and link the two directly.
-
-**Policy membership.** The policy set is every `docs/**/*_policy.md` file, in any folder. Each member carries the policy frontmatter and canonically owns at least one rule. A file that owns no rule is misnamed: fold its content into its canonical owner, give it the name of its kind, or delete it. Membership is a property of the rule set, never a count.
+Where a norm has its home, and what makes a second copy a defect, is `principle-one-home-per-rule` at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`.
 
 ---
 

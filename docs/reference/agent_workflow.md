@@ -98,13 +98,35 @@ Policy documents live in `docs/policies/`. The reference layer is `docs/referenc
 
 Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
-A constraint that exists only in a skill file is not authoritative. If an operator bypasses the skill, the constraint disappears. If the policy document changes, an inlined copy may become stale -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
+A constraint that exists only in a skill file is not authoritative. A judgement is the exception: nothing detects its breach, so it lives with the document that produces it, and `### Norm kinds` below states the rule. If an operator bypasses the skill, the constraint disappears. If the policy document changes, an inlined copy may become stale -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
 ### Prompt templates
 
 Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
 
 Prompt templates do not contain authoritative rules.
+
+### Norm kinds
+
+Every prose sentence in the policy set has one kind and one home. The kind answers whether anything detects a breach. The home answers who produces the content.
+
+**The kind.** Classify in this order.
+
+1. Does the sentence instruct, or does it describe? A sentence that asks the reader to do nothing is a description.
+2. If it instructs, name the artifact that fails when the sentence is broken, and resolve it. That artifact is a gate in `scripts/lint.sh`, a file under `scripts/lint/`, a skill directory a prompt dispatches, or a named step in a prompt file. If it resolves, the sentence is a rule and the artifact is its observer.
+3. If no artifact resolves, the sentence is a judgement. A guessed observer is not an observer.
+
+| Kind | Does | Detected by |
+|---|---|---|
+| rule | instructs | an artifact that resolves today, and fails on a breach |
+| judgement | instructs how to decide a case | nothing |
+| description | states what is | nothing |
+
+**The home.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
+
+A judgement used by more than one document lives in a principle skill, so one home serves them all. That is the only case where a judgement leaves the document that produces it.
+
+This is the one place the kinds are defined. A document that states one locally links here instead.
 
 ### Persistent devlog records (interim)
 

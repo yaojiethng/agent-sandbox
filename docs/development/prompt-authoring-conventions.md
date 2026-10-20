@@ -57,7 +57,7 @@ An **advisor** is a prompt or skill that holds reference and judgement, run agai
 
 The advisor-role split is explicit: the advisor names its role, states when to run it, and constructs a brief. The triage and consensus steps after the advisor returns are part of the runbook that dispatched it.
 
-A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It is a fast path to a rule that lives in policy. A rule that exists only in a skill is not authoritative. An inline distillation of a rule is a convenience copy; it may go stale, and that is acceptable only because it is not the source of truth. A judgement is the other case: it lives in the principle skill that states it and nowhere else, per [`documentation_policy.md`](../policies/documentation_policy.md) `## Rule authority`.
+A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It is a fast path to a rule that lives in policy. A rule that exists only in a skill is not authoritative. An inline distillation of a rule is a convenience copy; it may go stale, and that is acceptable only because it is not the source of truth. A judgement is the other case: nothing detects its breach, and it lives with the document that produces it, per [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds) `### Norm kinds`.
 
 **Where a check goes is a judgement.** A check reads evidence and produces a decision, so its placement is stated in the `principle-check-placement` skill at `$AGENT_HOME/agent/skills/principle-check-placement/SKILL.md`, and a skill that holds checks points there.
 
