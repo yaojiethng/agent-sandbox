@@ -25,6 +25,11 @@
 #                                       line is ungrouped, a grouping row no
 #                                       longer exists, or a group's note does not
 #                                       match the number of documents stating it
+#   check_norm_ownership.sh --regroup    rewrite the grouping file after a source
+#                                       edit: drop rows whose line is gone, and
+#                                       add every judgement line that has no group
+#                                       with a local note, so a landing does not
+#                                       hand-edit the map
 #
 # The ledger is `scripts/lint/norm-ownership.tsv`, five tab-separated columns:
 # hash, source, kind, observer, text. The hash is the line's SHA-1, so an edited
@@ -47,7 +52,7 @@ SOURCES=(
   "docs/development/prompt-authoring-conventions.md"
 )
 
-usage() { echo "usage: check_norm_ownership.sh [--generate|--check|--groups]" >&2; exit 2; }
+usage() { echo "usage: check_norm_ownership.sh [--generate|--check|--groups|--regroup]" >&2; exit 2; }
 
 # candidate_lines FILE  --  print every prose line of FILE, one per output line:
 # non-blank, not a heading, not a frontmatter or rule line, not a table row, and
@@ -198,6 +203,21 @@ check() {
   return $rc
 }
 
+regroup() {
+  [[ -f "$LEDGER" ]] || { echo "norm-ownership: missing ledger $LEDGER" >&2; return 1; }
+  [[ -f "$JUDGEMENTS" ]] || { echo "norm-ownership: missing grouping map $JUDGEMENTS" >&2; return 1; }
+  local alive drops adds out
+  alive="$(mktemp)"; drops="$(mktemp)"; adds="$(mktemp)"; out="$(mktemp)"
+  awk -F'\t' '$0 !~ /^#/ && $3 == "judgement" { print $1 }' "$LEDGER" > "$alive"
+  awk -F'\t' 'NR==FNR { a[$1] = 1; next } $0 !~ /^#/ && $0 != "" && !($1 in a) { print $1 }' "$alive" "$JUDGEMENTS" > "$drops"
+  awk -F'\t' 'NR==FNR { if ($0 !~ /^#/ && $0 != "") m[$1] = 1; next } !($1 in m) { printf "%s\tj-ungrouped\t-\n", $1 }' "$JUDGEMENTS" "$alive" > "$adds"
+  awk -v drops="$drops" 'BEGIN { while ((getline d < drops) > 0) gone[d] = 1 } $0 ~ /^#/ || $0 == "" { print; next } ($1 in gone) { next } { print }' "$JUDGEMENTS" > "$out"
+  cat "$adds" >> "$out"
+  mv "$out" "$JUDGEMENTS"
+  echo "norm-ownership: regrouped, $(grep -c . "$drops" || true) row(s) dropped, $(grep -c . "$adds" || true) row(s) added with a local note"
+  rm -f "$alive" "$drops" "$adds"
+}
+
 groups() {
   local quiet=0
   [[ "${1:-}" == "--quiet" ]] && quiet=1
@@ -259,5 +279,6 @@ case "${1:---check}" in
   --generate) generate ;;
   --check) check ;;
   --groups) groups ;;
+  --regroup) regroup ;;
   *) usage ;;
 esac

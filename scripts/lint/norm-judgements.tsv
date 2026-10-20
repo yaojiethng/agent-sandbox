@@ -49,7 +49,6 @@ ff611106e693bbc2682a72babe97e0616b892be5	j-prompt-section-order	-
 d154ff782a5c633e49d01102c9a0b14680d33771	j-prompt-section-order	-
 f4e925ade339a642407c42da346a0832c490eb72	j-prompt-section-order	-
 9ba300678b8829f323d94290369b94da98ff3851	j-end-a-step-on-a-check	candidate:communication-principle-end-a-step-on-a-check
-10c3c02d04e2daf49aa7c7eb3a14247d81f927d4	j-handoff-by-naming-the-boundary	candidate:communication-principle-hand-off-by-naming-the-boundary
 4b9bfd62f4d44d07aaae2d1fd57d372ed444896e	j-prompt-section-order	-
 2bcf8fcb6b0ff50887ce7143cd4edbcc1038118e	j-prompt-section-order	-
 186c5118fc5c37062ac901e81660d1e62336c58d	j-project-conventions-block	-
@@ -66,14 +65,11 @@ f8f1eda959d53ca378f38b0dca45de6eeda9ad7f	j-own-the-step-you-write	candidate:comm
 984b267eeafe93f9c6c3c537f8138745283b592f	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
 5b9a116d1425051220ff08e77ef16c7d3bad6fee	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
 ce595d55f79547b286c8b7266c2fc0b805964d58	j-own-the-step-you-write	candidate:communication-principle-own-the-step-you-write
-19e46442ae04b0489fb5bef76c93a18fafef729a	j-handoff-by-naming-the-boundary	candidate:communication-principle-hand-off-by-naming-the-boundary
-0250778642679ac52241ef216185268989d3b116	j-handoff-by-naming-the-boundary	candidate:communication-principle-hand-off-by-naming-the-boundary
-cc08603e3a888ebf8087322c6533f68f96d9a405	j-handoff-by-naming-the-boundary	candidate:communication-principle-hand-off-by-naming-the-boundary
-c65b0dc5054eff2a49f4ace7cc454249e20035d7	j-handoff-by-naming-the-boundary	candidate:communication-principle-hand-off-by-naming-the-boundary
-524cd5e0aac17baef7223085e72a4224307c93ee	j-handoff-by-naming-the-boundary	candidate:communication-principle-hand-off-by-naming-the-boundary
 127ed937169dd5ed1a62f93b0282cac050be1234	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 f99cc8bc9cc6212a33e56b075672514fd37fc0ee	j-copy-points-to-its-source	skill:principle-one-home-per-rule
 9a59feb9c7abab8cd8d93cc3e64f035fa15e0f36	j-document-names-its-subject	-
 fca1b924608e45ae368e8c1a16e35dee3f29878d	j-rename-on-scope-change	-
 1b5fcf7cba7d0045caa3ec3e55f04de5415ed3fd	j-draft-lives-in-drafts	-
 02186e604292c4ae4faad9c6a608953b8d70eba7	j-quality-pass-per-prompt	-
+e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-ungrouped	-
+985fb3460eaf00dbc523ecdeaa6514de7e84f0f0	j-ungrouped	-

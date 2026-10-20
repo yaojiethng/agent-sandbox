@@ -81,7 +81,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 2. **Purpose** states what the prompt or skill is for and what it is not. The task-queue prompt leads with what it is a primitive for, then names what it is not in its "Not this template" routing, inside "When to use".
 3. **When to use** states the conditions that invoke it and the routing: what it is for, and what replaces it in the cases it is not for. The task-queue prompt names `iter.md` and `fanout-run.md` as the not-this-template cases.
 4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; a reference region lists its rules consulted on demand.
-5. **The handoff.** A runbook that ends by handing to another prompt states the boundary by the workflow handoff pattern below. A prompt that ends inside its own scope omits it.
+5. **The handoff.** A runbook that ends by handing to another prompt names the boundary. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`. A prompt that ends inside its own scope omits it.
 6. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
 7. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
 
@@ -126,14 +126,7 @@ The failure this rule catches is a document that is locally accurate and globall
 
 ## The workflow handoff pattern
 
-A runbook that ends by handing to another prompt does it in four moves. Four prompts already apply the shape and none of them names it: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close. This section is the one home for the shape, so a prompt applies it rather than restating another prompt's steps.
-
-1. **Name the next prompt and the part that runs.** `/iter` names `/wrapup` Part B, not `/wrapup`. A bare name leaves the reader to work out where to enter a long runbook.
-2. **List what the next prompt owns, and state that this prompt does not restate it.** The list is what makes the handoff checkable: a step absent from both lists is a gap.
-3. **Name what stays, with its reason.** `/iter` keeps its pre-close summary and its findings attribution because they gate the release rather than the close. A step that stays without a reason reads as an oversight.
-4. **State where this prompt stops and who picks it up.** One sentence naming the entry point.
-
-The pattern carries no rule of its own. It is a presentation rule for the boundary between two workflow documents, and the ownership rule it serves is [A workflow document owns one step, and owns it whole](#a-workflow-document-owns-one-step-and-owns-it-whole).
+A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only home. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
 
 ## A reference resolves where the prompt runs
 
