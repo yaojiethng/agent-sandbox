@@ -163,7 +163,7 @@ The handover write-back fires at three moments in the runbook's operation:
 
 ## Step 7  --  Pre-close verification
 
-Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has five sections:
+Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has six sections:
 
 1. **Acceptance criteria** -- the table the project's `work-log` convention states, with `Result` carrying the marking; each criterion marked accepted or pushed. Run verifiable checks and show output.
 2. **Roadmap write-back** -- per task touched, the exact row change and the completed rows it supersedes or invalidates, per the project's `task-list` convention. When a task's sub-rows are all resolved, present the compacted outcome summary here, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
@@ -177,13 +177,15 @@ Every row must carry a status. A deferred or not-started row must be written bac
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md).
 5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
+6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `handover-maintenance` skill over this handover. List every finding with its `Triaged to:` destination, and both reports with what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
+
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 
 ---
 
 ## Release gate
 
-This is the common acceptance gate the operator-involved workflows share. The acceptance criteria status table and the commit message must be visible. Every criterion shown, every status populated, the commit body within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup`. Exit condition: explicit release received.
+This is the common acceptance gate the operator-involved workflows share. Present the acceptance criteria status table, the findings queue, and the commit message. Every criterion carries a status, every finding carries a destination, and the commit body stays within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup`. Exit condition: explicit release received.
 
 ---
 
@@ -194,13 +196,13 @@ After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) P
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
 1. **Step 7 pre-close summary** (above) presents the AC table, roadmap write-back, propagation replay, and commit message to the operator before the release gate -- the operator, not the close, judges the work.
-2. **Findings attribution.** Pass the Findings triage destinations to `/wrapup` B6; attribution stays operator-owned.
+2. **Findings publication.** The gate decides each destination. The close publishes each destination, and the operator confirms the attribution.
 
 ---
 
 ## The acceptance gate
 
-`/iter` stops at the acceptance gate. It presents the AC table, the roadmap write-back, the propagation replay, and the commit message; the operator releases; [`/wrapup`](wrapup.md) picks the iteration up from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
+`/iter` stops at the acceptance gate. It presents the acceptance criteria table, the roadmap write-back, the propagation replay, and the commit message. It also presents the findings queue and the record-check reports. The operator releases, and [`/wrapup`](wrapup.md) takes the iteration from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
 **Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 

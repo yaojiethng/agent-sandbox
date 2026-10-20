@@ -12,7 +12,7 @@ The study does not choose a standard. It measures whether the units to be number
 
 - [`documentation_taxonomy.md`](../../docs/reference/documentation_taxonomy.md) `## Durability`, the three-value lifetime axis.
 - [`documentation_policy.md`](../../docs/policies/documentation_policy.md) `### Numbered vs bulleted presentation`, `### Reference handling`, `### Post-close document corrections`.
-- [`20261005-14-impl-rename_the_frontmatter_gate.md`](../handovers/20261005-14-impl-rename_the_frontmatter_gate.md), the handover-id collision.
+- [`20261005-14-impl-rename_the_frontmatter_gate.md`](../handovers/archive/20261005-14-impl-rename_the_frontmatter_gate.md), the handover-id collision.
 
 ## Summary
 
@@ -100,7 +100,7 @@ Both are allocation failures. Both are silent. Both were found by a reader.
 
 | Case | Evidence | What broke | Owner of the counter |
 |---|---|---|---|
-| Handover id collision | [`20261005-14`](../handovers/20261005-14-impl-rename_the_frontmatter_gate.md) line 69 | Two sessions took `20261005-10`; the second renumbered to `-14`. "nothing checks the sequence, so a collision is silent" | none |
+| Handover id collision | [`20261005-14`](../handovers/archive/20261005-14-impl-rename_the_frontmatter_gate.md) line 69 | Two sessions took `20261005-10`; the second renumbered to `-14`. "nothing checks the sequence, so a collision is silent" | none |
 | gstack D-numbering | `a81be536` (2026-04-23), `docs/askuserquestion-split.md`, `CHANGELOG.md:10237`, `TODOS.md:940` | The scheme shipped with its own defect stated: "D-numbering is a model-level instruction, not a runtime counter ... Drift over long sessions is expected; a registry (deferred to TODOs) is the long-term fix". `TODOS.md:940` records a separate open mismatch, brief letters against host-rendered numbers | the model, per message |
 
 The gstack scheme was introduced 2026-04-23, documented 2026-05-26 in `a6fb3172`, last touched 2026-09-22 in `636175d3`. A search of `TODOS.md` at HEAD for the deferred registry found no row naming it; the deferral itself was not filed.

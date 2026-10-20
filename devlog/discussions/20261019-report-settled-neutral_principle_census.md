@@ -225,7 +225,7 @@ The 51 judgement lines that no group names are all unexercised; they are the rem
 | this report | `devlog/discussions/20261019-report-settled-neutral_principle_census.md` |
 | the U2 filing row | `devlog/roadmap.md`, under M3.3.4 |
 | the corrected design | `devlog/discussions/20261019-design-settled-neutral_principle_census.md` |
-| the iteration record | `devlog/handovers/20261019-11-audit-neutral_principle_census.md` |
+| the iteration record | `devlog/handovers/archive/20261019-11-audit-neutral_principle_census.md` |
 | the corpus, briefs, arm outputs, scripts | session-local `.scratchpad/`, not committed |
 
 ## Resolution status

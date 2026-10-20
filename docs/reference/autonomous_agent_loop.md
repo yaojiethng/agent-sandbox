@@ -49,7 +49,9 @@ ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
       +-- no  --> [it:open]   (operator picks the next task)
 ```
 
-Closing is the work that follows a gate decision, not a state; the close-seam rules are in the `docs/adr/coding_agent_loop_workflow.md#transitions`.
+At the acceptance gate, the agent presents the findings queue, with each entry's destination. It also presents the record-check reports for the records the iteration changed.
+
+Closing is the work that follows a gate decision, not a state. It lands what the gate confirmed and raises what the gate missed. The close-seam rules are in `docs/adr/coding_agent_loop_workflow.md#transitions`.
 
 ## Workflows
 
@@ -67,14 +69,16 @@ Each workflow enforces one group of state transitions in the loop.
 
 `/wrapup` is a shared close runbook, not a standalone loop workflow: `/iter`, `/plan` and `/document` invoke it after their release point. `/milestone-start`, `/sequential-work` and `/parallel-work` do not invoke it.
 
+`/wrapup` closes the handover to the `work-log` convention. The pre-commit handover format gate checks the record's shape.
+
 The `/auto` smart dispatcher and `/goal` loose-goal decomposition are M4's. They are not `/iter` work-loop expansions and they do not drive a transition in this loop yet.
 
 `/backlog-triage` drives no transition either. It sorts the open roadmap rows into the ones a dispatch shape can run and the ones carrying a question, so those questions are answered before a run starts rather than at a mid-run stop. The autonomous rows above consume its output.
 
 ## Skills
 
-A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. `/gm` runs both when the operator asks for an exhaustive check, `/milestone-close` runs `roadmap-maintenance` for the compaction pass, and `/wrapup` runs `handover-maintenance` to close a landed record. `/plan` and `/document` pass their session context to the `grill-me` skill for the interview. A skill owns its procedure; the workflow owns the transition that invokes it.
+A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. `/gm` runs both when the operator asks for an exhaustive check. `/iter` runs both before the release gate, over the records the iteration changed. `/milestone-close` runs `roadmap-maintenance` for the compaction pass, whose input is the whole milestone record. `/plan` and `/document` pass their session context to the `grill-me` skill for the interview. A skill owns its procedure; the workflow owns the transition that invokes it.
 
 ## Responsibilities
 
-A workflow owns its steps and the transitions it drives. Policy owns the invariants those transitions must not break. A gate is a stop-and-wait check that output conforms to the expected state. Details are in the ADR and in the workflow prompts under `workflow/coding-agent/prompts/`.
+A workflow owns its steps and the transitions it drives. Policy owns the invariants those transitions must not break. A gate is a stop-and-wait check that output conforms to the expected state. A finding is a record with a destination from the moment it is written. The handover's Findings section is the one surface it lives on. Details are in the ADR and in the workflow prompts under `workflow/coding-agent/prompts/`.

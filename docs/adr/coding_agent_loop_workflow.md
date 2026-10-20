@@ -1,5 +1,22 @@
 # Coding Agent Loop Workflow
 
+## 2026-10-20 -- Record checks run before the release gate
+
+**Decision:** At the acceptance gate, the agent presents the findings queue with every destination. It also presents the record-check reports for the records the iteration changed, and the commit message. `roadmap-maintenance` and `handover-maintenance` run before that gate, not inside the close. The close lands what the gate released and raises what it finds as `late`, naming the gate that should have asked.
+
+**Rationale:** The finished record exists at the release. A check placed after it can only amend a landed commit. The cost is in the record: 108 corrections across 824 handovers and discussion records, median one day after close.
+
+**Rejected alternatives:**
+
+- *Keep the checks in the close.* One late discovery deserves an amendment. A class of decisions that can be read before the release does not.
+- *Add a third gate.* The record is evidence about the work, so it belongs in the release decision.
+- *Forbid late findings.* A late finding shows a check sits in the wrong place. The close records it, and a recurrence becomes a roadmap row against the gate that missed it.
+
+**Edge cases / drivers:**
+
+- `/milestone-close` keeps its `roadmap-maintenance` run, because its input is the whole milestone record rather than one iteration.
+- The iteration edits the roadmap rows and completes the handover before the gate. The close sets `Status: Closed`, runs the handover format gate over the record, and commits what the gate read.
+
 **Current:** 2026-10-03
 
 ## 2026-10-01 -- The dispatch work-loop expansions move to M3.2.3; `/auto` and `/goal` become M4

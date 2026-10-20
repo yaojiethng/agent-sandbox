@@ -38,6 +38,16 @@ const REQUIRED_SECTIONS = [
   "Decisions", "Decisions pending", "Findings", "Completed",
 ];
 
+/** The body lines of a section, from after its heading to the next `## ` heading. */
+function sectionBody(text, name) {
+  const lines = text.split("\n");
+  const start = lines.findIndex((l) => l.trim() === `## ${name}`);
+  if (start < 0) return null;
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => /^## /.test(l));
+  return { line: start + 1, lines: end < 0 ? rest : rest.slice(0, end) };
+}
+
 /** The sections the policy forbids. */
 const FORBIDDEN_SECTIONS = ["Deferred", "Carried forward", "What's Next"];
 
@@ -151,7 +161,31 @@ for (const file of files) {
   }
   if (fields.status !== undefined && !STATUSES.includes(String(fields.status))) {
     findings.push({ rel, line: 1, msg: `\`status\` is not one of ${STATUSES.join(", ")}: ${fields.status}` });
+  }  if (String(fields.status) === "Closed") {
+    const section = sectionBody(text, "Findings");
+    if (section) {
+      const rows = section.lines
+        .map((line, i) => ({ text: line, line: section.line + 1 + i }))
+        .filter((r) => /^\s*\|/.test(r.text) && !/^\s*\|[\s:|-]+\|\s*$/.test(r.text));
+      const header = rows[0];
+      if (header) {
+        const cells = header.text.split("|").slice(1, -1).map((c) => c.trim().toLowerCase());
+        const index = cells.indexOf("triaged to");
+        if (index < 0) {
+          findings.push({ rel, line: header.line, msg: "Findings table has no `Triaged to` column; every finding carries a destination" });
+        } else {
+          for (const row of rows.slice(1)) {
+            const cell = (row.text.split("|").slice(1, -1)[index] || "").trim();
+            if (cell === "") {
+              const label = (row.text.split("|")[1] || "").trim().slice(0, 60);
+              findings.push({ rel, line: row.line, msg: `Findings row has no \`Triaged to\` destination: ${label}` });
+            }
+          }
+        }
+      }
+    }
   }
+
 
   const found = headings(text);
   const names = found.map((h) => h.name);

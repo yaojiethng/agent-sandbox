@@ -20,7 +20,7 @@ Gain being bought, stated as a property rather than a benefit. Both unified imag
 
 | Fact | Where it came from |
 |---|---|
-| A tier-3-only rebuild costs 1 second wall and 0.1 second of steps, warm | `devlog/handovers/20261016-13-impl-the_host_build_probe.md`, host probe run 20261016T090725Z |
+| A tier-3-only rebuild costs 1 second wall and 0.1 second of steps, warm | `devlog/handovers/archive/20261016-13-impl-the_host_build_probe.md`, host probe run 20261016T090725Z |
 | A base change costs 3 seconds wall and 1.6 seconds of steps, warm | same run |
 | A cold build costs 77 seconds wall and 75.4 seconds of steps | same run |
 | The tiers were triggered 1, 22 and 448 times by commits, tier 1 to tier 3 | `devlog/discussions/20261016-study-settled-invalidation_history.md` |

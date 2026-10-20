@@ -16,6 +16,9 @@
 #   a named file                 --  enforced regardless of date, so the same
 #                                    tool audits history on demand
 #   the staged mode              --  rc 0 when nothing is staged
+#   a closed findings row with no destination -- rc 1; the row is named
+#   a closed findings row triaged `late` -- rc 0, so the late path is legal
+#   an active findings row with no destination -- rc 0
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with HANDOVER_FORMAT_SCAN_ROOT so the repository's own
@@ -150,6 +153,56 @@ test_staged_with_nothing_staged_is_clean() {
   assert_contains "$out" 'Clean' 'and says so'
 }
 
+# write_findings_handover PATH STATUS DEST  --  a handover with one Findings row.
+# DEST is the `Triaged to` cell; an empty value leaves the destination blank.
+write_findings_handover() {
+  local path="$1" status="$2" dest="$3"
+  mkdir -p "$(dirname "$path")"
+  {
+    printf -- '---\n'
+    printf 'date: 2026-10-20\n'
+    printf 'milestone: T1 - Test\n'
+    printf 'type: Workflow\n'
+    printf 'status: %s\n' "$status"
+    printf -- '---\n\n'
+    printf '# Handover - Test\n\n'
+    printf '## Objective\n\nTest.\n\n'
+    printf '## Scope\n\nTest.\n\n'
+    printf '## Acceptance criteria\n\nTest.\n\n'
+    printf '## Decisions\n\nNone.\n\n'
+    printf '## Decisions pending\n\nNone.\n\n'
+    printf '## Findings\n\n'
+    printf '| Finding | Type | Impact | Triaged to |\n'
+    printf '|---|---|---|---|\n'
+    printf '| The gate skipped a row | defect | none | %s |\n\n' "$dest"
+    printf '## Completed\n\nNo file changes this iteration.\n'
+  } > "$path"
+}
+
+test_closed_findings_row_without_destination_fails() {
+  local file="$FIXTURE_DIR/t10/devlog/handovers/20261020-01-workflow-x.md" rc=0 out
+  write_findings_handover "$file" Closed ""
+  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'a closed handover with an undecided finding fails'
+  assert_contains "$out" 'no `Triaged to` destination' 'the row is named'
+}
+
+test_closed_findings_row_triaged_late_passes() {
+  local file="$FIXTURE_DIR/t11/devlog/handovers/20261020-02-workflow-x.md" rc=0 out
+  write_findings_handover "$file" Closed "late"
+  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a finding triaged to the late path passes'
+  assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
+}
+
+test_active_findings_row_without_destination_passes() {
+  local file="$FIXTURE_DIR/t12/devlog/handovers/20261020-03-workflow-x.md" rc=0 out
+  write_findings_handover "$file" Active ""
+  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'an active handover may hold an undecided row'
+  assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
+}
+
 run_test test_conforming_handover_passes
 run_test test_bold_header_flagged
 run_test test_forbidden_section_flagged
@@ -160,5 +213,8 @@ run_test test_default_scan_skips_archive
 run_test test_named_file_ignores_cutover
 run_test test_file_list_without_force_respects_cutover
 run_test test_staged_with_nothing_staged_is_clean
+run_test test_closed_findings_row_without_destination_fails
+run_test test_closed_findings_row_triaged_late_passes
+run_test test_active_findings_row_without_destination_passes
 
 test_done
