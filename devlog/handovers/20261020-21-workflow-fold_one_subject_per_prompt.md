@@ -62,3 +62,5 @@ None.
 | `scripts/lint/norm-ownership.tsv` | the edited line classified as a judgement |
 | `scripts/lint/norm-judgements.tsv` | the orphaned hash dropped, the new one added local |
 | `devlog/handovers/20261020-21-workflow-fold_one_subject_per_prompt.md` | this record |
+
+> [CORRECTION -- 2026-10-20] The amendment first read "A document hands one artifact to one next step". The operator challenged the noun. In this repository `document` means documentation, since `documentation_policy.md` states that skill files and prompt templates are not documentation, so the sentence pointed at the wrong class. `workflow document` and `prompt or skill` were both rejected as the replacement, the first because it includes reference-only principle skills, which hand nothing on. The sentence now takes the declared scope as its subject: the scope names one artifact and one next step, and a scope naming two is two scopes. The scope is a term this skill already defines, so no class noun is needed and a principle skill needs no exemption. The pointer line in `prompt-authoring-conventions.md` is unchanged.

@@ -12,7 +12,7 @@ A workflow document owns the scope it declares. It holds everything that scope o
 
 Read the declared scope first: a prompt's `Scope` declaration, a skill's `description`, a record's `## Scope` section. The agent neither sets it nor infers it. Where no scope is declared, that is the defect to fix before this one applies.
 
-A document hands one artifact to one next step, and every success criterion is met from that scope. A document that hands on two artifacts, or hands one to two next steps, is two documents, or a dispatcher that declares itself one.
+The declared scope names one artifact and one next step, and every success criterion is met from that scope. A scope that names two artifacts, or one artifact and two next steps, is two scopes. Split it, or declare it a dispatcher.
 
 The document holds everything its scope owes.
 
