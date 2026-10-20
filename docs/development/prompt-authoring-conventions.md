@@ -97,7 +97,7 @@ Scope earlier shapes the authoring. A prompt's scope statement must not contradi
 
 A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`.agents/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
-**Context pointers and trigger branches.** A prompt or skill reaches its content through pointers. The pointer's wording, not its target, decides when the agent reaches the material. Each trigger branch is one distinct case the document handles. One branch one trigger: synonyms that rename a single branch are one branch written twice, and collapse into one. A pointer that states one branch in prose holds a trigger word not yet written. Name the branch with one word and use that word.
+**Skill descriptions route a skill.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so the description carries the words that route it. The judgement is the `principle-effective-skill-routing` skill at `$AGENT_HOME/agent/skills/principle-effective-skill-routing/SKILL.md`.
 
 ## Consumers as fast paths, never sources
 
