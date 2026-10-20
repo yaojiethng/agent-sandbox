@@ -21,7 +21,7 @@ Out of scope: running the census, which the new roadmap task owns.
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The plan is a design document | `test -f devlog/discussions/20261019-design-draft-neutral_principle_census.md` | Agent [x] |
+| The plan is a design document | `test -f devlog/discussions/20261019-design-settled-neutral_principle_census.md`; the design was removed in handover `20261020-06` | Agent [x] |
 | A roadmap task points at it | read `devlog/roadmap.md`, the row `The neutral census and the communication-surface filing` | Agent [x] |
 | Codemode is enabled | `jq -e '.defaultTools' $AGENT_HOME/agent/settings.json` returns `["+codemode"]` | Agent [x] |
 | The gates are clean | `bash scripts/lint.sh`, `bash scripts/run_tests.sh` | Agent [x] |
@@ -52,6 +52,10 @@ None.
 
 | File | Change |
 |---|---|
-| `devlog/discussions/20261019-design-draft-neutral_principle_census.md` | new draft design; the four-arm census, the decision rule, Jev's role, the reduced filing, and the blocker |
+| `devlog/discussions/20261019-design-settled-neutral_principle_census.md` | the four-arm census, the decision rule, Jev's role, the reduced filing, and the blocker; the design was removed in handover `20261020-06` |
 | `devlog/roadmap.md` | new row `The neutral census and the communication-surface filing` under M3.3.4, pointing at the design |
 | `$AGENT_HOME/agent/settings.json` | `"defaultTools": ["+codemode"]` |
+
+[CORRECTION -- 2026-10-19: the discussion path now carries its settled name after the status correction in handover 20261019-11.]
+
+[CORRECTION -- 2026-10-20: the neutral-census design named above was removed with its report in handover 20261020-06; the path no longer resolves and the design is not a live plan.]

@@ -63,7 +63,7 @@ The redesigned gate applied to the last ten iterations, from `.scratchpad/diagno
 | `20261019-08-docs-free_tier_quota_in_the_dispatch_skill` | 4 | 2 | the two undecided rows as gate questions |
 | `20261019-09-plan-file_the_requests_per_task_metric` | 2 | 2 | both, before the release |
 | `20261019-10-workflow-file_attach_as_you_read` | 3 | 3 | all three, before the release |
-| `20261019-11-audit-neutral_principle_census` | 10 | 0 | nothing changes; that iteration was ready at its gate |
+| `20261019-11-audit-neutral_principle_census` | 10 | 0 | nothing changes; that iteration was ready at its gate, and its record and report were removed in handover `20261020-06` |
 | `20261020-01-workflow-model_selection_instruction_surface` | 11 | 6 | six destinations, before the release |
 
 The ten closed records hold 49 findings rows. Two cases carry the argument. `20261019-11` scores zero, so the check does not fire on an iteration that was ready. `20261020-01` scores six of eleven, and the two defects its close-time audit found, a row keeping a retired exclusion and a promoted section with no objective, are what a gate-time record check reports.
@@ -120,5 +120,7 @@ None.
 | `devlog/handovers/archive/` | 149 records moved, and the links that named them rewritten in the files that carry them |
 | `.agents/drafts/harness-tier-unification-run.md` | a handover link rewritten to `archive/` |
 | `devlog/discussions/20261018-study-settled-numbering_scheme_census.md` | the same rewrite |
-| `devlog/discussions/20261019-report-settled-neutral_principle_census.md` | the same rewrite |
+| `devlog/discussions/20261019-report-settled-neutral_principle_census.md` | the same rewrite; the report was removed in handover `20261020-06` |
 | `devlog/roadmap.md` | the nested row `The close decisions move to the release gate` |
+
+[CORRECTION -- 2026-10-20: the neutral-census record and report named above were removed in handover 20261020-06; the paths no longer resolve.]

@@ -33,7 +33,7 @@ One entry per incident, five lines: what was asked, what it cost, what came back
 
 ### 2026-10-19 - a probe matrix that no decision read
 
-- **Asked:** whether 21 prose-failure events separated on five properties - a word held in memory, an actor named, a term defined, two readings, a past fact where a current rule belongs. Source: `devlog/discussions/20261019-report-settled-neutral_principle_census.md`.
+- **Asked:** whether 21 prose-failure events separated on five properties - a word held in memory, an actor named, a term defined, two readings, a past fact where a current rule belongs.
 - **Cost:** 21 of the day's 200 `opencode-free` requests, inside a five-dispatch run.
 - **Returned:** seven clusters, the largest holding 9 of 21 events. Two probes were near-constants: the term probe fired on 17 of 21 (median 0.81), the past-fact probe on almost none (median 0.08).
 - **Why it failed although the call was correct:** the method's verdict came from the blind coders and the adversarial coder, and nothing read the probabilities, so no honest result could have moved the decision. The five probes restated the plan's own hypothesis, so agreement with them proved nothing independent. And the 21 events carried no control set, so the clusters partitioned one sample.

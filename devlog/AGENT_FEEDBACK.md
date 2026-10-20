@@ -16,6 +16,28 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-19  --  A mining brief asked for a source the records could not supply
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before asking a mining dispatch for a share of the corpus from a source, run one grep over that source and count the candidate rows; ask for what the source demonstrably holds, and state the shape the rows take.
+```
+
+The census mining brief asked for at least five failure events from the `## Findings` sections of handovers. Six candidates came back and every one was a phrase fragment -- "resume", "Keeping a subagent alive" -- with no sentence and no stated misreading, so the source contributed nothing and the corpus leaned on the other two. The Findings sections state defects about work; they rarely quote the prose that failed. The brief asked for an extraction the source does not carry, and the dispatch answered with the nearest thing it could find instead of an empty result.
+
+## [A] 2026-10-19  --  A dispatch quoted a commit sha it had mistyped
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: resolve every source reference a dispatch returns against the tree before the artifact is accepted; for a sha, `git cat-file -e`, and for a file:line, read the line and compare it with the quoted text.
+```
+
+The corpus mining dispatch returned `aaa1246d` for a commit whose real prefix is `aaa1246f`. Nothing in the returned record looked wrong, and the event text was real; only the reference was invented by one character. The other 27 references resolved. A corpus built on unverified references cannot be re-checked later, which is the whole point of carrying them, so the check belongs in the brief and in the acceptance of the dispatch's output, not in the reader's trust.
+
 ## [A] 2026-10-18  --  A correction landed as a second commit instead of folding into the first
 
 ```text

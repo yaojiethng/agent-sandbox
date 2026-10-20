@@ -76,7 +76,9 @@ None.
 | `~/.pi/agent/AGENTS.md` | installed copy, identical to the repository source |
 | `~/.pi/agent/skills/pi-reviewer-dispatch/SKILL.md` | installed copy, identical to the repository source |
 | `docs/adr/single_source_model_recommendations.md` | `Current:` moves to 2026-10-20 with the resolution entry, its rationale, rejected alternatives and edge cases |
-| `devlog/discussions/20261019-design-settled-neutral_principle_census.md` | arm B corrected to one coder per role line, with its `[CORRECTION]` tag |
+| `devlog/discussions/20261019-design-settled-neutral_principle_census.md` | arm B corrected to one coder per role line, with its `[CORRECTION]` tag; the design was removed in handover `20261020-06` |
 | `devlog/roadmap.md` | M3.6.3 promoted to `In progress`; the owning row amended with the landing note and its remainder |
-| `devlog/discussions/20261019-report-settled-neutral_principle_census.md` | the model attribution gains its provenance paragraph and a `[CORRECTION]` tag; the pairs and results are unchanged |
+| `devlog/discussions/20261019-report-settled-neutral_principle_census.md` | the model attribution gains its provenance paragraph and a `[CORRECTION]` tag; the pairs and results are unchanged; the report was removed in handover `20261020-06` |
 | `devlog/handovers/archive/20261020-01-workflow-model_selection_instruction_surface.md` | this record |
+
+[CORRECTION -- 2026-10-20: the neutral-census design and report named above were removed in handover 20261020-06; the paths no longer resolve.]
