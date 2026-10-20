@@ -6,7 +6,7 @@
 # (check_frontmatter.sh), the handover format gate
 # (check_handover_format.sh), the legacy wrap gate (check_doc_wrap_legacy.sh)
 # and the instruction-surface gate (check_instruction_surfaces.sh);
-# the Markdown gate carries the doc-wrap and record-links rules. BLOCKING: exits 1 when any gate reports
+# the Markdown gate carries the doc-wrap and linking rules. BLOCKING: exits 1 when any gate reports
 # findings or cannot run.
 #
 # All gates always run, so a failure in one never hides the others. The gates

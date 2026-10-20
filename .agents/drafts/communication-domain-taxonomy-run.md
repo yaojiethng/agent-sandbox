@@ -4,7 +4,7 @@
 
 **Scope:** the run directive for the deep communication-domain work: a taxonomy of the reader's processing costs that slices the domain into principles, a controlled vocabulary of the domain terms, and a measured answer to whether those terms signal the domain to an agent. It carries the hypothesis the run tests, the primary material it starts from, the partition and agreement checks, and the stop conditions.
 
-**Origin:** the operator's scoping request (2026-10-19), the derived principle in [`20261019-design-settled-sentence_structure_principle.md`](../../devlog/discussions/20261019-design-settled-sentence_structure_principle.md), and the spec census in [`20261019-design-draft-prose_standards_specs.md`](../../devlog/discussions/20261019-design-draft-prose_standards_specs.md). This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
+**Origin:** the operator's scoping request (2026-10-19), the derived principle in [`20261019-design-settled-sentence_structure_principle.md`](../../devlog/discussions/20261019-design-settled-sentence_structure_principle.md), and the spec census in [`20261019-design-draft-prose_standards_specs.md`](../../devlog/discussions/archive/20261019-design-draft-prose_standards_specs.md). This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
 ---
 

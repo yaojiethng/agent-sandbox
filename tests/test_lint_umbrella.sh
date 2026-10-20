@@ -634,7 +634,7 @@ test_frontmatter_gate_covers_every_declared_instruction_root() {
 # Asserts: the config-coherence property. config.default is false, so a rule
 # registered in customRules but named nowhere in the config never runs and
 # reports nothing: the gate prints a clean verdict over an empty rule set.
-# record-links sat in that state, and the guard in check_markdown.sh checked
+# linking sat in that state, and the guard in check_markdown.sh checked
 # only the opposite direction (enabled but unregistered), so it stayed silent.
 test_every_registered_rule_is_enabled() {
   local out

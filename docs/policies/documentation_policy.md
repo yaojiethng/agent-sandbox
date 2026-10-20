@@ -51,6 +51,7 @@ Phrasing rules (a working subset of the full dictionary, not a replacement for i
 - One term, one meaning. Pick one word for a thing and keep it. Rotating synonyms ("volume" / "sandbox" / "workspace" for one object) is a defect.
 - Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
 - No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
+- The hedging rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when the sentence marks it as an inference.
 - Define terminology before use. A term that can carry two meanings here, or one the repository does not define, is defined before the work relies on it ("Negative cases are scope constraints", then "Keep scope constraints in the cell"). The judgement is the `principle-define-terminology-before-use` skill at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
 - STE100 simplifies structure and verbs, not precision.
 - State the allowed form and name the action. Judgement: `communication-principle-write-for-the-reader`.
@@ -110,21 +111,15 @@ Prose is one paragraph per physical line, however long the line. Never break ins
 
 ### Reference handling
 
-Make references with links. Link what the reader might need next; a well-linked document is a good one. Link a document the reader may need to open; otherwise write its name. Inline code (backticks) is not a substitute for a link.
+How a document points at another is the `linking` convention skill at `.agents/skills/linking/SKILL.md`: what to link and what to name, where a link resolves, where a handoff link belongs, and how to form one.
 
-A link resolves where its document is read. A document under `reference/` or `policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: link a shipped document by its image path, or by the relative form the two bundled folders keep. A document that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. The `record-links` lint rule fails the gate on a link that resolves only in the repository.
-
-Prefer durable targets. Link a durable document to the durable document that records the fact, not to its evidence: documentation and policy link to an ADR, and the ADR links to the handover that evidences its decision. Where the citing document ships and the durable target does not, name the target instead of linking it. When a durable document must name transient evidence, write the name as plain text and do not link it.
-
-Place handoff links at the point of use. When a workflow document (such as `iteration_policy.md`) hands off to a subprocess governed by a child policy document, link that policy where the handoff happens -- not only in a References table -- and name the specific section. A References table is navigation, not a handoff.
-
-Form the link precisely. Step-level references carry a section anchor; document-level references use a plain document link. When an agent may need to locate a section programmatically, give a grep command instead of a link.
+Its check is the `linking` rule in `scripts/lint/linking.mjs`, which the Markdown gate runs. The rule fails on a link that resolves only in the repository, and on a target outside the reach the instruction cell declares.
 
 ### Numbering
 
-The numbering scheme is stated once, in the project convention `.agents/skills/numbering/SKILL.md`: which unit takes a number, which takes an identity code, the form of a reference, the chat label, and how a chat pick reaches a record. This section states the one rule the convention does not carry.
+The numbering scheme is stated once, in the project convention `.agents/skills/numbering/SKILL.md`: which unit takes a number, which takes an identity code, the form of a reference, the chat label, and how a chat pick reaches a record.
 
-When many references point to one item, move it to a heading.
+The judgement behind a numbered list is the `communication-principle-one-addressing-axis` skill at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`, which also carries the rule that a heavily cited item moves to a heading.
 
 ### Structure for grep navigation
 
@@ -193,9 +188,9 @@ The repository holds zero Markdown lint findings. The gate runs `markdownlint-cl
 
 ### The lint rule set
 
-The config enables the rules that match this policy. It disables `MD013` because [`### Line wrapping`](#line-wrapping) forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Three repository rules enforce parts of this policy: `doc-ascii` (plain-ASCII prose, in `scripts/lint/doc-ascii.mjs`, per [`### Character set`](#character-set)), `doc-wrap` (one paragraph per physical line, in `scripts/lint/doc-wrap.mjs`, per [`### Line wrapping`](#line-wrapping)), and `record-links` (link targets exist and fragments name a heading, in `scripts/lint/record-links.mjs`). Do not silence a finding with a per-file disable; fix the text or change the config.
+The config enables the rules that match this policy. It disables `MD013` because [`### Line wrapping`](#line-wrapping) forbids breaking prose at a column limit, and `MD060` because the repository writes compact tables. Three repository rules enforce parts of this policy: `doc-ascii` (plain-ASCII prose, in `scripts/lint/doc-ascii.mjs`, per [`### Character set`](#character-set)), `doc-wrap` (one paragraph per physical line, in `scripts/lint/doc-wrap.mjs`, per [`### Line wrapping`](#line-wrapping)), and `linking` (link targets exist and fragments name a heading, in `scripts/lint/linking.mjs`). Do not silence a finding with a per-file disable; fix the text or change the config.
 
-A rule the config registers but does not enable is a defect. `config.default` is `false`, so a rule named nowhere in the config never runs and reports nothing, and the gate prints a clean verdict over an empty rule set. `record-links` sat in that state: this list named two rules, the config registered three and enabled two, and the link gate reported nothing for the life of the config. Naming a rule here and enabling it there are one obligation.
+A rule the config registers but does not enable is a defect. `config.default` is `false`, so a rule named nowhere in the config never runs and reports nothing, and the gate prints a clean verdict over an empty rule set. `linking` sat in that state: this list named two rules, the config registered three and enabled two, and the link gate reported nothing for the life of the config. Naming a rule here and enabling it there are one obligation.
 
 ---
 

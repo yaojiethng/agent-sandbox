@@ -15,8 +15,8 @@ Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `d
 | Copy-delivery hook | `src/capability/git-hooks/pre-commit.sh` | Markdown and ShellCheck over the staged set; blocks the commit. Mount delivery installs no hook, because its `.git` is a host directory ([`git_hooks.md`](../../docs/adr/git_hooks.md)) |
 | Host hook install | `scripts/manual/install_host_git_hooks.sh` | gives the host checkout the same gate |
 | Lint umbrella | `scripts/lint.sh` | five gates run concurrently: shell, lib-contract, markdown, prompt frontmatter, legacy wrap |
-| Markdown gate | `scripts/check_markdown.sh` | markdownlint-cli2 over the tree; owns the record-links rule, the doc-wrap rule and the unresolved-rule warning |
-| Custom rules | `scripts/lint/*.mjs` | `doc-ascii`, `doc-wrap`, `record-links` |
+| Markdown gate | `scripts/check_markdown.sh` | markdownlint-cli2 over the tree; owns the linking rule, the doc-wrap rule and the unresolved-rule warning |
+| Custom rules | `scripts/lint/*.mjs` | `doc-ascii`, `doc-wrap`, `linking` |
 | Exclusions | `.markdownlint-cli2.mjs` | one `recordTrees` list, read by two rules; a per-rule `legacyFiles` list that expires on the next edit |
 
 ## 2. The proposals

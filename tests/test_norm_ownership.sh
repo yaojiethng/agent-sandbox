@@ -87,7 +87,7 @@ EOF
 #!/usr/bin/env bash
 GATES=(check_norm_ownership.sh)
 EOF
-  printf '# Lint rule\n' > "$root/scripts/lint/record-links.mjs"
+  printf '# Lint rule\n' > "$root/scripts/lint/linking.mjs"
 
   cat > "$root/$POLICY" <<'EOF'
 # Documentation policy

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# tests/test_record_links_rule.sh
-# Behavioural tests for scripts/lint/record-links.mjs -- the link-target and
+# tests/test_linking.sh
+# Behavioural tests for scripts/lint/linking.mjs -- the link-target and
 # heading-fragment custom markdownlint rule. The real markdownlint-cli2 runs
 # against fixture files with a temp config that imports the repo rule; the
 # repo's own .markdownlint-cli2.mjs is never discovered because the fixture dir
@@ -53,18 +53,18 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-RULE="$REPO_ROOT/scripts/lint/record-links.mjs"
+RULE="$REPO_ROOT/scripts/lint/linking.mjs"
 
-# make_cfg [IGNORED_ROOTS_CSV] -- a temp config enabling record-links over the
+# make_cfg [IGNORED_ROOTS_CSV] -- a temp config enabling linking over the
 # fixture dir. The CSV, when given, overrides the rule's default carve-outs.
 make_cfg() {
   local cfg="$FIXTURE_DIR/mdlconfig-$RANDOM.mjs"
   {
     printf 'export default {\n'
     if [[ $# -gt 0 ]]; then
-      printf '  config: { default: false, "record-links": { recordTrees: ["%s"] } },\n' "$1"
+      printf '  config: { default: false, "linking": { recordTrees: ["%s"] } },\n' "$1"
     else
-      printf '  config: { default: false, "record-links": true },\n'
+      printf '  config: { default: false, "linking": true },\n'
     fi
     printf '  customRules: ["%s"],\n' "$RULE"
     printf '  globs: ["**/*.md"],\n'
@@ -95,7 +95,7 @@ test_existing_target_is_clean() {
   printf '[ok](target.md)\n' > "$dir/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a target that exists is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a target that exists is clean'
 }
 
 test_directory_target_is_clean() {
@@ -106,7 +106,7 @@ test_directory_target_is_clean() {
   printf '[ok](tree)\n' >> "$dir/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a directory target is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a directory target is clean'
 }
 
 test_same_file_fragment_resolves() {
@@ -118,7 +118,7 @@ test_same_file_fragment_resolves() {
   } > "$dir/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a same-file fragment that resolves is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a same-file fragment that resolves is clean'
 }
 
 test_missing_target_is_flagged() {
@@ -157,7 +157,7 @@ test_external_targets_are_skipped() {
   printf '[a](https://example.invalid/p) [b](mailto:a@b.invalid)\n' > "$dir/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'external targets are skipped'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'external targets are skipped'
 }
 
 test_link_in_a_fenced_block_is_skipped() {
@@ -170,7 +170,7 @@ test_link_in_a_fenced_block_is_skipped() {
   } > "$dir/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a link in a fenced block is skipped'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a link in a fenced block is skipped'
 }
 
 test_no_carve_out_exempts_nothing() {
@@ -183,7 +183,7 @@ test_no_carve_out_exempts_nothing() {
   out="$(mdl_run "$dir" "$cfg")"
   # The rule carries no list: without recordTrees every file is checked, which
   # is what makes the repository's carve-out visible in the config file.
-  assert_eq_num 2 "$(grep -c 'record-links' <<< "$out")" 'no recordTrees key exempts nothing'
+  assert_eq_num 2 "$(grep -c 'linking' <<< "$out")" 'no recordTrees key exempts nothing'
 }
 
 test_configured_carve_out_exempts_the_named_trees() {
@@ -195,7 +195,7 @@ test_configured_carve_out_exempts_the_named_trees() {
   printf '[live](nope.md)\n' > "$dir/doc.md"
   cfg="$(make_cfg 'devlog/handovers/", "devlog/discussions/')"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 1 "$(grep -c 'record-links' <<< "$out")" 'only the uncarved file is checked'
+  assert_eq_num 1 "$(grep -c 'linking' <<< "$out")" 'only the uncarved file is checked'
 }
 
 test_unreadable_target_is_flagged() {
@@ -226,7 +226,7 @@ test_image_path_from_a_shipped_file_is_clean() {
   printf '[policy](/opt/sandbox/docs/policies/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'an absolute image path that a COPY populates is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'an absolute image path that a COPY populates is clean'
 }
 
 test_image_path_missing_from_the_image_is_flagged() {
@@ -272,7 +272,7 @@ test_link_between_two_bundled_documents_is_clean() {
   out="$(mdl_run "$dir" "$cfg")"
   # The two destinations keep the repository's shape, so a relative link between
   # two bundled documents resolves in the image unchanged.
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a relative link between two bundled documents is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a relative link between two bundled documents is clean'
 }
 
 test_sibling_instruction_root_link_is_clean() {
@@ -285,7 +285,7 @@ test_sibling_instruction_root_link_is_clean() {
   out="$(mdl_run "$dir" "$cfg")"
   # The two prompt roots and the skill root meet in the image, so a link between
   # them resolves as a sibling link rather than by source-tree depth.
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a link between instruction roots resolves in the image'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a link between instruction roots resolves in the image'
 }
 
 test_provider_config_root_resolves_in_the_image() {
@@ -303,7 +303,7 @@ test_provider_config_root_resolves_in_the_image() {
   printf '# Layer\n' > "$file"
   printf '[policy](/opt/sandbox/docs/policies/iteration_policy.md)\n' >> "$file"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'the image path passes from the provider config root'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'the image path passes from the provider config root'
 }
 
 # provision_root NAME -- a fixture root with a prompt in a shipped module root
@@ -335,7 +335,7 @@ test_link_through_a_reachable_row_is_clean() {
   printf '[tpl](/opt/workflow/agent/config/agent/template.md)\n' > "$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a reachable-row target is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a reachable-row target is clean'
 }
 
 test_repository_link_under_a_reachable_row_is_clean() {
@@ -348,8 +348,31 @@ test_repository_link_under_a_reachable_row_is_clean() {
   printf '[roadmap](../../../devlog/roadmap.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'record-links' <<< "$out")" 'a repository path under a reachable row is clean'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a repository path under a reachable row is clean'
 }
+
+linking_skill_rules_cite_a_story() {
+  local skill="$REPO_ROOT/.agents/skills/linking/SKILL.md"
+  local sec missing=""
+  for sec in "## What to link" "## Where the link is read" "## Where the handoff is" "## How to form one"; do
+    awk -v h="$sec" '$0==h{f=1;next} /^## /{f=0} f' "$skill" | grep -qE 'S[0-9]' || missing="$missing [$sec]"
+  done
+  assert_empty "$missing" "every rule section cites a story"
+}
+
+linking_skill_stories_are_served() {
+  local skill="$REPO_ROOT/.agents/skills/linking/SKILL.md"
+  local ids cited id
+  ids="$(grep -oE '^\| S[0-9]+ ' "$skill" | tr -d '| ' | sort -u)"
+  assert_not_empty "$ids" "the story table has rows"
+  cited="$(grep -oE 'S[0-9]+' "$skill" | sort | uniq -c | awk '$1 > 1 { print $2 }')"
+  for id in $ids; do
+    assert_contains "$cited" "$id" "story $id is served by at least one rule"
+  done
+}
+
+run_test linking_skill_rules_cite_a_story
+run_test linking_skill_stories_are_served
 
 run_test test_existing_target_is_clean
 run_test test_directory_target_is_clean

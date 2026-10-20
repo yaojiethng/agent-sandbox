@@ -37,10 +37,10 @@ The pass is not an iteration and does not close one. It is a review sweep with i
 
 | Check | The gate | What it does not decide |
 |---|---|---|
-| A link resolves | `scripts/lint/record-links.mjs`, over the shipped set in the image's path space | whether the target says what the citing line claims it says |
+| A link resolves | `scripts/lint/linking.mjs`, over the shipped set in the image's path space | whether the target says what the citing line claims it says |
 | A shipping document declares its reader | `scripts/lint/frontmatter.mjs` | whether the declared reader matches who reads it |
 | One paragraph per physical line, plain ASCII | `scripts/lint/doc-wrap.mjs`, `scripts/lint/doc-ascii.mjs` | anything about meaning |
-| The heading anchors a link names | `scripts/lint/record-links.mjs` | whether the section carries the fact |
+| The heading anchors a link names | `scripts/lint/linking.mjs` | whether the section carries the fact |
 
 The split is the standing rule for a check: a decidable check belongs in a gate, where it fails the build, and a check that needs a reading belongs here. Do not report what a gate already catches; run the gate first.
 

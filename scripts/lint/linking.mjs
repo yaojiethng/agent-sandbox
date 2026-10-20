@@ -57,7 +57,7 @@ const imageMap = pairs(repoRoot).map((row) => [row.source, row.destination]);
 
 if (imageMap.length === 0) {
   throw new Error(
-    "record-links: src/build/container-interface.json declares no pair; a shipped file's links cannot be resolved",
+    "linking: src/build/container-interface.json declares no pair; a shipped file's links cannot be resolved",
   );
 }
 
@@ -121,7 +121,7 @@ function anchors_of(file) {
 
 export default [
   {
-    names: ["record-links"],
+    names: ["linking"],
     description: "Link targets exist and fragments name a heading",
     tags: ["links"],
     function: function rule(params, onError) {

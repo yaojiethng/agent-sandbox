@@ -13,6 +13,7 @@ af6dd32169d1b19644fbdfffd422c7c8a7af00c9	j-write-plainly	candidate:communication
 4b20f258bfa2e80c0d09238427231755fef44670	j-one-term-one-meaning	-
 3638649fb877585a59cd9bb952d9f2fa0afd95d9	j-write-plainly	candidate:communication-principle-write-plainly
 20ec0e2b65257959038fa0cc2c14f534f01540de	j-write-plainly	candidate:communication-principle-write-plainly
+151f5b1513daa6806f8775ea01c0d6c154b847f6	j-ungrouped	-
 98aafbdf7aa31d6828c03501529796fd59d4fd11	j-home-principle-define-terminology-before-use	skill:principle-define-terminology-before-use
 1a207b372cc775d783ba0f95b88928661ca64b2d	j-ste100-scope	-
 30d2e7cf5553b4deef5319243b4484d9499c34f1	j-reserved-terms	-
@@ -20,9 +21,8 @@ f07586e05ed94a4f2fa384dae11835306f488e0a	j-status-line	-
 5be0476b95740b5d3a8c452cec6f10ecd65429d6	j-redirect-blockquote	-
 79023a1afef6c968eb32fee3ca813cdeefedac40	j-no-status-in-reference	-
 a72c610b1f5a8fba214fde5c9626a74c67383b27	j-heading-depth	-
-924ff317b361a9a5a4cb97527203b99e219992c4	j-copy-points-to-its-source	skill:principle-one-home-per-rule
-368ad37457de001063c597a22c94d325bb0c9e54	j-handoff-links-at-point-of-use	-
-f4b171f179b0a63255e29308b64e6ee18973f932	j-many-references-to-a-heading	-
+85a481e45d9d190e629d6716c2eb86e8fedde392	j-home-linking	skill:linking
+a218743093c8ede4a15efa00699ab2bea2b2c73a	j-home-communication-principle-one-addressing-axis	skill:communication-principle-one-addressing-axis
 166ba6d61faa48e189abdc507557dd47985c36b9	j-section-order-skeleton	-
 af58a11dcf356f767201abb0e10c2d40f8ed4374	j-skeleton-over-table	-
 83853989d171b498b3082a44c58f6f7d510aa4c7	j-targeted-edits	-

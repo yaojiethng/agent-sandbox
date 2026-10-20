@@ -71,26 +71,25 @@ Tools you have access to:
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. Full policy: `docs/policies/documentation_policy.md` in the target repo when present.
+General communication guidelines for all agent prose. The standard is `docs/policies/documentation_policy.md` `## Communication Standards` in the target repo when present: it holds the phrasing rules, and it names the skill that owns each judgement. The judgements a draft reaches for mid-sentence are named here, and each names its home. This section states no rule of its own.
 
-- Meet ASD-STE100. Delete-test every word, phrase, and sentence: if a reader can delete it without losing required meaning, delete it.
-- Plain words, unless the reader works in the domain the work belongs to. There, the domain's terms are the precise words, so use them and no other field's. A word that names a thing in the domain is its term, and no list of banned words overrides it. Define a term the reader may not hold.
-- Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
-- Short sentences. Aim under 20 words; one idea per sentence.
-- One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
-- Numbering: when a project states a numbering convention, follow it; otherwise present one numbering or lettering scheme per exchange.
-- Derived values. A value computed from data held elsewhere belongs to the source that computes it, so name the source rather than restating it.
-- Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
-- No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
-- That rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when it is marked as an inference.
-- No capacity claim without a signal. Stopping work early is a decision, and like any other it needs a reason the reader can check. Do not report being out of room, budget or context unless a signal in the environment says so; with no signal, name the claim as an inference or do not make it.
-- Write so the reader attaches each phrase as it arrives: name the object before you issue the imperative, and keep the main clause independent of its afterthought, per `communication-principle-attach-as-you-read` at `$AGENT_HOME/agent/skills/communication-principle-attach-as-you-read/SKILL.md`.
-- A term the reader may not hold is defined before you use it, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
-- One paragraph per physical line, however long the line. Never break inside a paragraph -- not at sentence boundaries, not at a column limit. Hard breaks separate blocks only.
-- Plain ASCII punctuation. Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. No non-ASCII symbols, no checkmark or cross emoji.
-- Link sparingly. Link what the reader might need next; keep context-only names as plain text. Do not over-link transient documents (handovers, discussion docs, session exports).
-- Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
-- A record is written for its reader, not for the session that produced it; apply `communication-principle-write-for-the-reader`.
+- Keep the sentence that changes a decision and delete the one that does not: `communication-principle-cut-what-carries-nothing`.
+- Write so the reader attaches each phrase as it arrives: `communication-principle-attach-as-you-read`.
+- Define a term before the work relies on it: `principle-define-terminology-before-use`.
+- Write for the reader, not the session that produced it: `communication-principle-write-for-the-reader`.
+- Name a value rather than fixing a literal the reader must set: `communication-principle-name-the-value-not-a-literal`.
+- State the primary data, not a value derived from it: `communication-principle-only-derive-what-you-own`.
+- Print one addressing axis per presentation: `communication-principle-one-addressing-axis`.
+
+Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
+
+The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-dont-scatter-what-belongs-together` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
+
+The numbering scheme and the judgement behind a numbered list: `.agents/skills/numbering/SKILL.md`. How a document points at another: `.agents/skills/linking/SKILL.md`. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
+
+Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
+
+Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
 
 ## Fresh Subagent Invocation
 
