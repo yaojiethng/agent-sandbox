@@ -42,7 +42,7 @@ Workflow table Action cells hold one imperative sentence plus a link to the gove
 
 ### Simplified Technical English
 
-New and changed prose meets ASD-STE100, with one exception. Where the work belongs to a well-specified technical domain and the reader works in that domain, its terms are the precise words, so use them and use no other field's. A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
+New and changed prose meets ASD-STE100, with one exception. Where the work belongs to a well-specified technical domain and the reader works in that domain, its terms are the precise words, so use them and use no other field's. A word that names a thing in the domain is its term, and no list of banned words overrides it. A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
 
 Phrasing rules (a working subset of the full dictionary, not a replacement for it):
 

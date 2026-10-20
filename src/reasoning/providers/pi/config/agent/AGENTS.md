@@ -74,7 +74,7 @@ Tools you have access to:
 General communication guidelines for all agent prose. Full policy: `docs/policies/documentation_policy.md` in the target repo when present.
 
 - Meet ASD-STE100. Delete-test every word, phrase, and sentence: if a reader can delete it without losing required meaning, delete it.
-- Plain words, unless the reader works in the domain the work belongs to. There, the domain's terms are the precise words: use them and no other field's, and define a term the reader may not hold.
+- Plain words, unless the reader works in the domain the work belongs to. There, the domain's terms are the precise words, so use them and no other field's. A word that names a thing in the domain is its term, and no list of banned words overrides it. Define a term the reader may not hold.
 - Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
 - Short sentences. Aim under 20 words; one idea per sentence.
 - One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
