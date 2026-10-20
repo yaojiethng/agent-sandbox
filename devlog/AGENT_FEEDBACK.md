@@ -121,6 +121,7 @@ The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. 
 
 Raised by the agent during handover `20261014-03`.
 
+**Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
 ---
 
 ## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
