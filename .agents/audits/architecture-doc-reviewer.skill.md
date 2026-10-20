@@ -40,7 +40,7 @@ This project's documentation policy establishes the following rules. A finding i
 
 **Header format is consistent.** Discussion documents (story, study, design, report) carry a `Status:` line immediately after the title. Superseded documents carry a blockquote redirect. Architecture and concepts documents carry neither.
 
-**TODOs and speculative content are absent from `reference/`.** They belong in `roadmap.md`.
+**TODOs and speculative content are absent from `reference/`.** They belong in `roadmap.md`. The judgement is the `communication-principle-dont-forecast-undone-work` skill at `$AGENT_HOME/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md`.
 
 ---
 

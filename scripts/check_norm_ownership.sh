@@ -237,11 +237,16 @@ groups() {
         printf "norm-ownership: ungrouped judgement line in %s: %s\n", $2, substr($5, 1, 70) > "/dev/stderr"
         failed = 1; next
       }
-      g = group[$1]; sites[g]++; doc[g SUBSEP $2] = 1; joined[$1] = 1
-      if ($5 ~ /The judgement is the/ && note[$1] != "-") {
-        printf "norm-ownership: pointer row joined group %s, and a pointer states no judgement: %s\n", g, substr($5, 1, 60) > "/dev/stderr"
-        failed = 1
+      g = group[$1]
+      if ($5 ~ /judgement is the/ && $5 ~ /agent\/skills\//) {
+        if (note[$1] != "-") {
+          printf "norm-ownership: pointer row in group %s carries the note %s, and a pointer states no judgement: %s\n", g, note[$1], substr($5, 1, 60) > "/dev/stderr"
+          failed = 1
+        }
+        pointers[g]++; joined[$1] = 1
+        next
       }
+      sites[g]++; doc[g SUBSEP $2] = 1; joined[$1] = 1
       if (g in note_of) {
         if (note[$1] != note_of[g]) {
           printf "norm-ownership: group %s carries two notes, %s and %s\n", g, note_of[g], note[$1] > "/dev/stderr"
@@ -263,6 +268,12 @@ groups() {
           failed = 1
         }
         if (!quiet) printf "%s\t%d\t%d\t%s\t%s\n", g, sites[g], n, class, note_of[g]
+      }
+      for (g in pointers) {
+        if (g in sites) {
+          printf "norm-ownership: group %s holds %d pointer row(s) and %d judgement row(s), so a citation and a statement share one group\n", g, pointers[g], sites[g] > "/dev/stderr"
+          failed = 1
+        } else if (!quiet) printf "%s\t%d\t0\tlocal\t-\n", g, pointers[g]
       }
       for (h in seen_map) if (!(h in joined)) {
         printf "norm-ownership: grouping row names a line the ledger no longer holds: %s\n", h > "/dev/stderr"

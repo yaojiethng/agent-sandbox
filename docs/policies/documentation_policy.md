@@ -173,18 +173,9 @@ A design record carries no question-and-reply pair, and every question it lists 
 
 ### No speculative language or TODO content in `reference/`
 
-Architecture documents carry no speculative design. Do not use words that indicate speculation:
+A reference document describes its layer as built. A sentence that uses one of these words usually marks a forecast: `will` `plan` `future` `later` `eventually` `may support`. A TODO item is one too.
 
-`will` `plan` `future` `later` `eventually` `may support`
-
-Architecture documents carry no TODO items:
-
-```text
-TODO: add sandbox enforcement
-TODO: implement agent queue
-```
-
-Move speculative design and TODO items to `roadmap.md`, the only task list, per the preamble.
+The judgement is the `communication-principle-dont-forecast-undone-work` skill at `$AGENT_HOME/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md`.
 
 ### Stale code examples
 
