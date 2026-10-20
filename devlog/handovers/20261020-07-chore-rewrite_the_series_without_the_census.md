@@ -73,7 +73,7 @@ None.
 | `devlog/discussions/20261018-study-settled-numbering_scheme_census.md` | settled name and status restored |
 | `devlog/discussions/20261019-design-settled-sentence_structure_principle.md` | settled name and status restored |
 | `devlog/discussions/20261019-report-settled-sentence_structure_evidence.md` | settled name and status restored |
-| `devlog/discussions/20261019-design-settled-neutral_principle_census.md` | the design's blocker correction restored from the backup ref |
+| `devlog/discussions/20261019-design-settled-neutral_principle_census.md` | [CORRECTION -- 2026-10-20] The design was deleted with the dead census plans in `20261020-06`, not restored. The row named the wrong file: the restored item is the design's blocker correction, and the file no longer exists. |
 | `devlog/handovers/archive/20261019-05-design-sentence_structure_principle.md` | `[CORRECTION]` tag restored |
 | `devlog/handovers/archive/20261019-07-plan-neutral_census_and_codemode.md` | `[CORRECTION]` tag restored |
 | `devlog/handovers/archive/20261019-10-workflow-file_attach_as_you_read.md` | `[CORRECTION]` tag restored |

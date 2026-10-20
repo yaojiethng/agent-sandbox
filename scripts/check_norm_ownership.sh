@@ -20,21 +20,34 @@
 #                                       a ledger row no longer exists, a kind is
 #                                       outside the vocabulary, or an observer
 #                                       names nothing that runs
+#   check_norm_ownership.sh --groups     print the judgement map derived from the
+#                                       grouping file, and fail when a judgement
+#                                       line is ungrouped, a grouping row no
+#                                       longer exists, or a group's note does not
+#                                       match the number of documents stating it
 #
 # The ledger is `scripts/lint/norm-ownership.tsv`, five tab-separated columns:
 # hash, source, kind, observer, text. The hash is the line's SHA-1, so an edited
 # sentence loses its row and fails the gate until a reader classifies it again.
+#
+# The grouping is `scripts/lint/norm-judgements.tsv`, three tab-separated
+# columns: hash, group, note. It is hand-maintained because which judgement a
+# sentence states is a reading, and the class is derived from it: a group that
+# two or more documents state is class 1 and its every row names a skill; a
+# group that one document states is class 2 when it should generalise, and
+# stays local otherwise.
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LEDGER="$REPO_ROOT/scripts/lint/norm-ownership.tsv"
+JUDGEMENTS="$REPO_ROOT/scripts/lint/norm-judgements.tsv"
 SOURCES=(
   "docs/policies/documentation_policy.md"
   "docs/development/prompt-authoring-conventions.md"
 )
 
-usage() { echo "usage: check_norm_ownership.sh [--generate|--check]" >&2; exit 2; }
+usage() { echo "usage: check_norm_ownership.sh [--generate|--check|--groups]" >&2; exit 2; }
 
 # candidate_lines FILE  --  print every prose line of FILE, one per output line:
 # non-blank, not a heading, not a frontmatter or rule line, not a table row, and
@@ -177,7 +190,67 @@ check() {
     fi
   done < "$LEDGER"
   if [[ $rc -eq 0 ]]; then
+    groups --quiet >/dev/null || rc=1
+  fi
+  if [[ $rc -eq 0 ]]; then
     echo "norm-ownership: clean across $count row(s), $gated gated, $reviewed reviewed, $judge judgement, $description description"
+  fi
+  return $rc
+}
+
+groups() {
+  local quiet=0
+  [[ "${1:-}" == "--quiet" ]] && quiet=1
+  [[ -f "$LEDGER" ]] || { echo "norm-ownership: missing ledger $LEDGER" >&2; return 1; }
+  [[ -f "$JUDGEMENTS" ]] || { echo "norm-ownership: missing grouping map $JUDGEMENTS" >&2; return 1; }
+  local out rc=0
+  out="$(awk -F'\t' -v quiet="$quiet" '
+    FNR==NR {
+      if ($0 ~ /^#/ || $0 == "") next
+      group[$1] = $2; note[$1] = $3; seen_map[$1] = 1; next
+    }
+    $0 ~ /^#/ || $0 == "" { next }
+    $3 != "judgement" { next }
+    {
+      judged++
+      if (!($1 in group)) {
+        printf "norm-ownership: ungrouped judgement line in %s: %s\n", $2, substr($5, 1, 70) > "/dev/stderr"
+        failed = 1; next
+      }
+      g = group[$1]; sites[g]++; doc[g SUBSEP $2] = 1; joined[$1] = 1
+      if (g in note_of) {
+        if (note[$1] != note_of[g]) {
+          printf "norm-ownership: group %s carries two notes, %s and %s\n", g, note_of[g], note[$1] > "/dev/stderr"
+          failed = 1
+        }
+      } else {
+        note_of[g] = note[$1]
+      }
+    }
+    END {
+      for (key in doc) { split(key, parts, SUBSEP); docs[parts[1]]++ }
+      for (g in sites) {
+        n = docs[g] + 0
+        class = (n >= 2) ? "class-1" : (note_of[g] ~ /^candidate/) ? "class-2" : "local"
+        want = (n >= 2) ? "skill:" : "not-skill"
+        has = (note_of[g] ~ /^skill:/) ? "skill:" : "not-skill"
+        if (want != has) {
+          printf "norm-ownership: group %s is stated by %d document(s) but its note is %s\n", g, n, note_of[g] > "/dev/stderr"
+          failed = 1
+        }
+        if (!quiet) printf "%s\t%d\t%d\t%s\t%s\n", g, sites[g], n, class, note_of[g]
+      }
+      for (h in seen_map) if (!(h in joined)) {
+        printf "norm-ownership: grouping row names a line the ledger no longer holds: %s\n", h > "/dev/stderr"
+        failed = 1
+      }
+      if (!quiet) printf "%d judgement line(s), %d grouped\n", judged, length(joined) > "/dev/stderr"
+      exit failed
+    }
+  ' "$JUDGEMENTS" "$LEDGER" | sort -t$'\t' -k4,4 -k1,1)" || rc=$?
+  if [[ $quiet -eq 0 ]]; then
+    printf 'group\tsites\tdocuments\tclass\tnote\n'
+    printf '%s\n' "$out"
   fi
   return $rc
 }
@@ -185,5 +258,6 @@ check() {
 case "${1:---check}" in
   --generate) generate ;;
   --check) check ;;
+  --groups) groups ;;
   *) usage ;;
 esac

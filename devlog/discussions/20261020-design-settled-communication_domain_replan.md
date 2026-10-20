@@ -50,7 +50,7 @@ Four forward plans stayed open at once and no record said which question was ope
 ## Consequences
 
 - The filing's file list is cut from the map, not from this page's prose.
-- `20261019-design-draft-prose_standards_specs.md` was the plan; the map is its successor. It is a `draft`, so its exit is `rejected` with the reason, then archived at the filing's close, with the map carrying the content that survives.
+- `20261019-design-draft-prose_standards_specs.md` was the plan; the map is its successor. [CORRECTION -- 2026-10-20] Its exit is `rejected`, taken when the duplication map landed rather than at the filing's close, because `scripts/lint/norm-judgements.tsv` now carries both the grouping and the twelve proposed names. Archiving waits while the W2 run brief names it.
 - The scaffolder becomes repo-owned, so its future drift is an ordinary record change rather than a container hand-edit.
 - The ledger's kinds do not change in either iteration. Every site edit is a `model` pointer or a unchanged judgement.
 

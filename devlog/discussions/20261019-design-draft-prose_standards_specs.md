@@ -1,11 +1,12 @@
 # The prose-standards principle spec census
 
-**Status:** draft
+**Status:** rejected
+
+> [CORRECTION -- 2026-10-20] Rejected when the duplication map landed: its twelve-group settlement is not the plan, and `scripts/lint/norm-judgements.tsv` now carries the grouping and the proposed names. Archiving waits while the W2 run brief still names it.
 
 ## Context
 
 Milestone M3.3.4 files the prose standards that survive as principles. Two source documents hold them: [`documentation_policy.md`](../../docs/policies/documentation_policy.md) and [`prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md). This design is the plan for that filing; it files no skill.
-
 The norm-ownership ledger `scripts/lint/norm-ownership.tsv` classifies every prose line of both documents into one of four kinds: `rule-gated`, `rule-reviewed`, `judgement` and `model`. Its five tab-separated columns are hash, source, kind, observer, text. A `judgement` line states how a writer decides and has no observer, so it is the candidate for a principle skill; a principle carries no gate and no authority claim, and it is the judgement's only home. The exemplar is [`communication-principle-show-dont-describe`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md).
 
 The census reads 80 judgement rows, 36 from `documentation_policy.md` and 44 from `prompt-authoring-conventions.md`. The rows print with `awk -F'\t' '$3=="judgement"{print $2"\t"$5}' scripts/lint/norm-ownership.tsv`. This design resolves every row to one of two outcomes, then dedupes rows that state one judgement.
