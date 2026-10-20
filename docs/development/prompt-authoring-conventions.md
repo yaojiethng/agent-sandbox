@@ -43,7 +43,7 @@ The failure mode is sprawl: a document too long even when every line is live. At
 
 Co-location is the within-file companion. Keep a concept's definition, rules, and caveats under one heading rather than scattered. The test: the document should read like documentation written for the agent. Grouped material reads that way; scattered material does not.
 
-**Degrees of freedom.** Match the specificity to the task's fragility. A task with many valid approaches gets high-freedom guidance: heuristics, not fixed commands. A task that is fragile and error-prone gets low-freedom guidance: the exact sequence or the exact command, stated without alternatives. Offer a default where multiple approaches exist, then name the alternative for the exception case.
+**Match the precision to the stakes.** An instruction narrows as its stakes rise: how far a wrong move reaches, whether it can be undone, and whether anything reports it. The judgement is the `principle-match-precision-to-stakes` skill at `$AGENT_HOME/agent/skills/principle-match-precision-to-stakes/SKILL.md`.
 
 **No magic constants in a snippet.** The judgement is the `communication-principle-name-the-value-not-a-literal` skill at `$AGENT_HOME/agent/skills/communication-principle-name-the-value-not-a-literal/SKILL.md`.
 
