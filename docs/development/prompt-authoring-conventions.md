@@ -97,7 +97,7 @@ Scope earlier shapes the authoring. A prompt's scope statement must not contradi
 
 A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`.agents/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
-**Skill descriptions route a skill.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so the description carries the words that route it. The judgement is the `principle-effective-skill-routing` skill at `$AGENT_HOME/agent/skills/principle-effective-skill-routing/SKILL.md`.
+**Skill names and descriptions route a skill.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that route it, and the description summarises to the name. The judgement is the `principle-effective-skill-routing` skill at `$AGENT_HOME/agent/skills/principle-effective-skill-routing/SKILL.md`.
 
 ## Consumers as fast paths, never sources
 
