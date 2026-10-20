@@ -89,11 +89,13 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. The role-to-model recommendations live in an operator-owned file at `$AGENT_HOME/model-recommendations.md`, outside this repository, so a model change never enters a commit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, and the provider prefix disambiguates a model served by more than one provider. When one model is required but several are listed, use the first in listed order; a routing clause on a value takes precedence.
+A prompt or skill dispatches subagents for a role. The role table is `$AGENT_HOME/model-recommendations.md`. The operator owns it, and it sits outside this repository, so a model change never enters a commit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, and the provider prefix disambiguates a model served by more than one provider. When one model is required but several are listed, use the first in listed order; a routing clause on a value takes precedence.
 
-The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
+The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
 
-If the file is missing, or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When a prompt is not tied to a role tag, or the role has no value, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`); a project-level `.pi/settings.json` override takes precedence. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file.
+The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference.
+
+Resolve a role in this order. The role's line. Then the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`), with a project-level `.pi/settings.json` override taking precedence. Then stop. Initialise the file after the dispatch, never before it. Decide a missing file with `test -f` and print the result. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file.
 
 Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
 

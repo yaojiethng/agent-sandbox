@@ -103,7 +103,7 @@ The subagent runs in the same container/workspace as the primary agent, with the
 **What any dispatch must hold.**
 
 - **The brief goes to a file**, and the file must be non-empty. Pre-flight it: `[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }`.
-- **Pin the model and the thinking level**, and state both in the brief, because the subagent cannot see its invocation flags.
+- **Pin the role, and the pair its line resolves to**, and state the role, the provider, the model and the thinking level in the brief, because the subagent cannot see its invocation flags. The pair comes from the resolver in `**Which model.**`, never from a hand read of the file.
 - **Give the run a timeout you set**, and record the exit code and the elapsed seconds.
 - **Log to a file, never a pipe.** A run's log is its only evidence.
 
@@ -144,14 +144,16 @@ A run can still be truncated by its own timeout. The signature is a short log wi
 
 A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT_HOME/agent/skills/pi-reviewer-dispatch/SKILL.md`. It states the reviewer contract and runs the pinned pair. Read it before dispatching a review. This section carries only what that skill cannot.
 
-**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices in the operator's recommendations file, never here.
+**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
-**Which model.** Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. If the file is missing or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When the tag has no value, resolve the model in this order:
+**Which model.** Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. Resolve in this order and stop at the first that answers.
 
-1. The `$AGENT_HOME/model-recommendations.md` role value.
-2. The pi default, read from `$AGENT_HOME/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`). Confirm with the operator that this is the model to use.
-3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
+1. The role's line.
+2. The startup default, read from `$AGENT_HOME/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`).
+3. Stop. State which step answered, and ask the operator.
 
-The last two rungs confirm with the operator so a fallback never guesses silently.
+The role table wins. A dispatch that needs something the table cannot give stops and asks. It does not leave the table for a preference, and it does not initialise the file before resolving. A multi-seat dispatch that needs a property one line cannot express, such as two model families, is a designed exception: the pair is pinned where the seats are defined, and the reason is stated there.
+
+Read the pair with `dispatch_role_model <role>`, never from the file by hand. A non-zero exit stops the dispatch, and its message is the reason.
 
 **The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.

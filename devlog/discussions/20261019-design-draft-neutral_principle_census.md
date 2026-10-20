@@ -30,7 +30,9 @@ The existing spec census. It stops being the answer and becomes one arm. Its 12 
 
 ### Arm B, blind open coding
 
-Three coders on three model families, one of them GLM. Each receives only the raw failure events, the sentence and the misreading. No category list, no existing principle, no ledger. Each returns its own named categories and places every event, with a mandatory residual bucket. This is grounded-theory open coding, and it is the only arm that can surface a category the frame lacks.
+Three coders, one per role line, in the order `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`. Report the families dispatched. Each receives only the raw failure events, the sentence and the misreading. No category list, no existing principle, no ledger. Each returns its own named categories and places every event, with a mandatory residual bucket. This is grounded-theory open coding, and it is the only arm that can surface a category the frame lacks.
+
+[CORRECTION -- 2026-10-20: the criterion named three model families, which no role line supplies and which the operator's table did not carry; corrected to one coder per role line, with the families reported as a consequence. The run had already reached three pairs outside the table on this wording.]
 
 ### Arm C, the Jev probe matrix
 
