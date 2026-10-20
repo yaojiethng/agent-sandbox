@@ -1,10 +1,10 @@
 # Sentence-structure study: raw evidence
 
-**Status:** draft
+**Status:** settled
 
 ## Context
 
-The raw artifacts behind [`20261019-design-draft-sentence_structure_principle.md`](20261019-design-draft-sentence_structure_principle.md). This report carries the parts that document does not reproduce, which are the blind-reader transcripts and the scoring. The corpus, the standards quotes and the literature table live in the design.
+The raw artifacts behind [`20261019-design-settled-sentence_structure_principle.md`](20261019-design-settled-sentence_structure_principle.md). This report carries the parts that document does not reproduce, which are the blind-reader transcripts and the scoring. The corpus, the standards quotes and the literature table live in the design.
 
 ## The brief
 

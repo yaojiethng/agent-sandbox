@@ -26,6 +26,8 @@ Out of scope: running the census, which the new roadmap task owns.
 | Codemode is enabled | `jq -e '.defaultTools' $AGENT_HOME/agent/settings.json` returns `["+codemode"]` | Agent [x] |
 | The gates are clean | `bash scripts/lint.sh`, `bash scripts/run_tests.sh` | Agent [x] |
 
+[CORRECTION -- 2026-10-19: the discussion path now carries its settled name after the status correction in handover 20261019-11.]
+
 ## Decisions
 
 | Decision | Rationale | Where recorded |

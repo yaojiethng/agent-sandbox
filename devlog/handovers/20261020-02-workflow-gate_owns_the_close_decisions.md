@@ -40,7 +40,7 @@ Four measurements, each re-derivable by one command in this run. The unit is a d
 |---|---|---|---|
 | `[CORRECTION]` tags dated after their record's own date | 108 tags over 824 records: 49 same day, 26 within 1 to 3 days, 23 within 4 to 30, 9 beyond 30, 1 predating its record | `node .scratchpad/diagnose.mjs` | A correction dated after the record closed is a decision that record's gate did not ask for |
 | Records whose Findings table carries a `Triaged to` column | 35 of 824, and 34 of those 35 have every cell filled | `.scratchpad/diagnose.mjs` reads every table header and its cells | The column exists and is mostly filled where it exists, and 789 records show the policy's requirement was not enforced |
-| Delivery commits amended in this container | 1, today's `e802f13c` | `git reflog --date=iso \| grep -c 'commit (amend)'` | Counts this container only. The accepted history is created by the diff pipeline, so it is not the workflow's amend rate |
+| Delivery commits amended in this container | 1, today's `bf4aa6b9` | `git reflog --date=iso \| grep -c 'commit (amend)'` | Counts this container only. The accepted history is created by the diff pipeline, so it is not the workflow's amend rate |
 | Findings whose destination was decided after the operator's last message before the close | `20261020-01`: 6 of 11. `20261019-11`: 0 of 10 | `.scratchpad/diagnose-turns.mjs` walks the owning session, takes the operator's last message before the close write, and finds each row's first destination | The discriminator. One iteration was ready at its gate and one was not |
 
 **Findings rows in the last ten handovers:** 49. Thirty-five records across the corpus carry the column and 34 fill it, so the form exists and its coverage is 4 percent.
@@ -124,3 +124,5 @@ None.
 | `devlog/roadmap.md` | the nested row `The close decisions move to the release gate` |
 
 [CORRECTION -- 2026-10-20: the neutral-census record and report named above were removed in handover 20261020-06; the paths no longer resolve.]
+
+[CORRECTION -- 2026-10-20: the series rewrite in handover `20261020-07` changed this iteration's id from `e802f13c` to `bf4aa6b9`; the row is updated and the old id no longer resolves.]

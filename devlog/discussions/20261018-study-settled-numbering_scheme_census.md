@@ -1,6 +1,6 @@
 # Numbering scheme census and churn study
 
-**Status:** draft
+**Status:** settled
 
 ## Direction and parent story
 

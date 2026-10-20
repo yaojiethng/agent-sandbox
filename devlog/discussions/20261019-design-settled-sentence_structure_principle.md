@@ -1,6 +1,6 @@
 # Sentence structure: the attach-as-you-read principle
 
-**Status:** draft
+**Status:** settled
 
 ## Context
 

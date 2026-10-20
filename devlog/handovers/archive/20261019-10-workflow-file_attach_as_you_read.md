@@ -19,6 +19,8 @@ Landed ahead of the four-arm neutral census on direct operator direction. The tw
 
 Out of scope: the other proposed principles, the `prompt-authoring-conventions.md` filing, and the `skill-scaffolder` duplicate.
 
+[CORRECTION -- 2026-10-19: the discussion path now carries its settled name after the status correction in handover 20261019-11.]
+
 ## Acceptance criteria
 
 | Criterion | Verification | Result |

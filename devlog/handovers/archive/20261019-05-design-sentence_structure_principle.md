@@ -61,6 +61,8 @@ Out of scope: filing the principle, and the other nine proposed principles.
 
 | File | Change |
 |---|---|
-| `devlog/discussions/20261019-design-draft-sentence_structure_principle.md` | new draft design; the stratum, the principle, the pattern table, the boundary, the corpus, the measurement, the reconciliation, the classification |
-| `devlog/discussions/20261019-report-draft-sentence_structure_evidence.md` | new draft report; the three reader transcripts, the scoring, and the raw corpus, standards and literature |
+| `devlog/discussions/20261019-design-settled-sentence_structure_principle.md` | new draft design; the stratum, the principle, the pattern table, the boundary, the corpus, the measurement, the reconciliation, the classification |
+| `devlog/discussions/20261019-report-settled-sentence_structure_evidence.md` | new draft report; the three reader transcripts, the scoring, and the raw corpus, standards and literature |
 | `devlog/roadmap.md` | the plan row references the study |
+
+[CORRECTION -- 2026-10-19: the discussion path now carries its settled name after the status correction in handover 20261019-11.]

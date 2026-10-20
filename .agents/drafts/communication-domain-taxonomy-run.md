@@ -4,7 +4,7 @@
 
 **Scope:** the run directive for the deep communication-domain work: a taxonomy of the reader's processing costs that slices the domain into principles, a controlled vocabulary of the domain terms, and a measured answer to whether those terms signal the domain to an agent. It carries the hypothesis the run tests, the primary material it starts from, the partition and agreement checks, and the stop conditions.
 
-**Origin:** the operator's scoping request (2026-10-19), the derived principle in [`20261019-design-draft-sentence_structure_principle.md`](../../devlog/discussions/20261019-design-draft-sentence_structure_principle.md), and the spec census in [`20261019-design-draft-prose_standards_specs.md`](../../devlog/discussions/20261019-design-draft-prose_standards_specs.md). This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
+**Origin:** the operator's scoping request (2026-10-19), the derived principle in [`20261019-design-settled-sentence_structure_principle.md`](../../devlog/discussions/20261019-design-settled-sentence_structure_principle.md), and the spec census in [`20261019-design-draft-prose_standards_specs.md`](../../devlog/discussions/20261019-design-draft-prose_standards_specs.md). This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
 ---
 
@@ -22,7 +22,7 @@ An agent produces higher-quality output when its context carries domain-specific
 
 1. The primary works, read or fetched, not summaries. Gibson on Dependency Locality. Haviland and Clark on given-new. Frazier and Rayner on reanalysis. Ferreira on good-enough processing and noncanonical sentences. Bever on the noun-verb-noun strategy. Wasow and Behaghel on weight. Hale and Levy on surprisal. Halliday, Lambrecht and Prince on information structure, theme and rheme, given and new. Mark each citation verified or unverified. Do not invent one.
 
-2. A labelled failure corpus of at least 60 sentences from this repository and its history, each carrying exactly one mechanism label. Expand the 18-sentence corpus in [`20261019-report-draft-sentence_structure_evidence.md`](../../devlog/discussions/20261019-report-draft-sentence_structure_evidence.md).
+2. A labelled failure corpus of at least 60 sentences from this repository and its history, each carrying exactly one mechanism label. Expand the 18-sentence corpus in [`20261019-report-settled-sentence_structure_evidence.md`](../../devlog/discussions/20261019-report-settled-sentence_structure_evidence.md).
 
 3. The existing partition. Read the `kind` column of `scripts/lint/norm-ownership.tsv` and the filed principles under `src/reasoning/providers/pi/config/agent/skills/`. That is the slice the new taxonomy is measured against.
 
