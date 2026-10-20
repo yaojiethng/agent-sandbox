@@ -1,6 +1,7 @@
 # Judgement grouping map. Hand-maintained, keyed by the ledger hash.
 # Columns: hash, group, note. Unit: one prose line the ledger classes as a judgement.
 # note is skill:<name> for a group that two or more documents state, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local.
+# A pointer row names a skill and its path rather than stating a judgement, so it takes the note - and joins no group.
 # The class is derived by scripts/check_norm_ownership.sh --groups, never written here.
 f7f81670644e62e8f534a5e6f9e79fb7394c7938	j-skills-are-not-documentation	-
 2c25130efafe4ecd61410e5f0e629c015a1e0cac	j-folder-taxonomy	-
@@ -64,7 +65,7 @@ e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-ungrouped	-
 ad7459970fb43befb3277b6bfd182c7af31c43f5	j-ungrouped	-
 390fbb6dd18996c900fdccb1218d7a81e4ff7f74	j-ungrouped	-
 fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-ungrouped	-
-fbbfd953bb504829f8596975db4bbe685b4747dd	j-copy-points-to-its-source	skill:principle-one-home-per-rule
+fbbfd953bb504829f8596975db4bbe685b4747dd	j-skill-routing-pointer	-
 d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-ungrouped	-
 ee96dee3e9d3a62b1e87ea2f6646c27a90d0578c	j-sentence-structure	-
 98aafbdf7aa31d6828c03501529796fd59d4fd11	j-define-terminology-before-use	-

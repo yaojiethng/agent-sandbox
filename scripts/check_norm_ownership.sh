@@ -238,6 +238,10 @@ groups() {
         failed = 1; next
       }
       g = group[$1]; sites[g]++; doc[g SUBSEP $2] = 1; joined[$1] = 1
+      if ($5 ~ /The judgement is the/ && note[$1] != "-") {
+        printf "norm-ownership: pointer row joined group %s, and a pointer states no judgement: %s\n", g, substr($5, 1, 60) > "/dev/stderr"
+        failed = 1
+      }
       if (g in note_of) {
         if (note[$1] != note_of[g]) {
           printf "norm-ownership: group %s carries two notes, %s and %s\n", g, note_of[g], note[$1] > "/dev/stderr"
