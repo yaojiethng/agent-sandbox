@@ -6,12 +6,10 @@ f7f81670644e62e8f534a5e6f9e79fb7394c7938	j-skills-are-not-documentation	-
 2c25130efafe4ecd61410e5f0e629c015a1e0cac	j-folder-taxonomy	-
 3d12d67add6b4e6147ee41cb5e6086cb6165e892	j-frozen-layer	-
 e33c25aaa55264f395d437301170dc4285cbceff	j-workflow-table-cell	-
-864839cf55f658b0371428679307407b8e6455f8	j-write-plainly	candidate:communication-principle-write-plainly
 af6dd32169d1b19644fbdfffd422c7c8a7af00c9	j-write-plainly	candidate:communication-principle-write-plainly
 4b20f258bfa2e80c0d09238427231755fef44670	j-one-term-one-meaning	-
 3638649fb877585a59cd9bb952d9f2fa0afd95d9	j-write-plainly	candidate:communication-principle-write-plainly
 20ec0e2b65257959038fa0cc2c14f534f01540de	j-write-plainly	candidate:communication-principle-write-plainly
-1e263783f27645c84a85f70ea8926b1eaee08e81	j-write-plainly	candidate:communication-principle-write-plainly
 30d2e7cf5553b4deef5319243b4484d9499c34f1	j-reserved-terms	-
 f07586e05ed94a4f2fa384dae11835306f488e0a	j-status-line	-
 5be0476b95740b5d3a8c452cec6f10ecd65429d6	j-redirect-blockquote	-
@@ -70,3 +68,5 @@ fbbfd953bb504829f8596975db4bbe685b4747dd	j-copy-points-to-its-source	skill:princ
 d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-ungrouped	-
 ee96dee3e9d3a62b1e87ea2f6646c27a90d0578c	j-sentence-structure	-
 98aafbdf7aa31d6828c03501529796fd59d4fd11	j-define-terminology-before-use	-
+2f5efccab840fce6946c3218eba2498b973ee5a8	j-ste100-domain-exception	-
+1a207b372cc775d783ba0f95b88928661ca64b2d	j-ste100-scope	-
