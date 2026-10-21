@@ -19,7 +19,7 @@ The word changes where it names where a norm or a durable artifact lives. A file
 
 The unit also retires one surviving carrier of the ban that the previous unit removed: `doc-maintenance`'s diagnostic register reads `A rule in a skill or a prompt with no home in a policy: a consumer with no source`, which states the doctrine in words that no grep for its phrasing finds. It is inside the files this pass rewrites, so it is part of the task.
 
-Ruled out of scope with a destination each. Records keep the names their time held, so closed handovers, discussions, ADRs and the changelog are not edited, and the closed roadmap rows that name the old skill keep the name they landed under. The drafts under `.agents/drafts/` keep the doctrine they state, because the finding filed against them covers it, but their pointers to the renamed skill do move. The drafts under `.agents/drafts/` keep the doctrine they will be distilled from, and the finding already filed against them covers it.
+Ruled out of scope with a destination each. Records keep the names their time held, so closed handovers, discussions, ADRs and the changelog are not edited, and the closed roadmap rows that name the old skill keep the name they landed under. The drafts under `.agents/drafts/` keep the doctrine they state, because the finding filed against them covers it, but their pointers to the renamed skill do move.
 
 ## Acceptance criteria
 

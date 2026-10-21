@@ -110,8 +110,8 @@ Raised by the agent during handover `20261017-02`.
 ```text
 state: open
 scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: none
-mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing.
+legacy: 2026-10-21 -- the same class recurred in a prose sweep. Two word passes ran `grep` over a hand-listed set of six roots, and both left live carriers outside it: the provider `AGENTS.md`, the advisor prompt, and a roadmap row. Each pass reported the surface clean until an auditor read a file the pattern never opened.
+mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing. For a sweep, the declaration is the tree itself: sweep from the repository root and filter the hits, rather than naming the folders to look in.
 ```
 
 `scripts/lint/frontmatter.mjs` listed the folders it scanned by hand. The list held the workflow module, the pi provider config and the agent skills, and it omitted `.agents/skills/`, the project convention-skill tree pi loads. A `description` value in `.agents/skills/task-list/SKILL.md` held a colon-space (`changelog: their shape`), which YAML reads as a nested mapping, so the whole block failed to parse and pi dropped the skill. The gate reported clean across 57 files throughout.
