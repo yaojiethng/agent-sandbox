@@ -292,4 +292,4 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | the `work-log` convention's type vocabulary | Iteration types that map to commit types |
 | `docs/development/standard_operating_procedures.md#5-human--operational-protocols` | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
-| git maintenance runbooks | Three operations: `merge.md` merges a draft export, `rebase.md` ports a stale branch, `history-cleanup.md` rewrites a draft branch so no commit is later undone. This table is where the three are named; each runbook states its own procedure, and the loop prompts do not list them. |
+| git maintenance runbooks | Three operations: `merge.md` merges a draft export, `rebase.md` ports a stale branch, and the `history-cleanup` skill rewrites a draft branch so no commit is later undone. This table is where the three are named; each runbook states its own procedure, and the loop prompts do not list them. The first two are prompts; the third is a skill, because it ships a detector beside itself and a prompt is one file. |

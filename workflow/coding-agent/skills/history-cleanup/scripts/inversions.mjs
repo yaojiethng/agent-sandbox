@@ -6,8 +6,8 @@
 // occurrence cancelling the first. It cannot be read off commit subjects, which
 // describe intent, so it is computed from the patches.
 //
-//   node .agents/drafts/history-cleanup/inversions.mjs <base> [tip]
-//   VERBOSE=1 node ... <base> [tip]     also prints each line in full
+//   node scripts/inversions.mjs <base> [tip]
+//   VERBOSE=1 node scripts/inversions.mjs <base> [tip]     also prints each line in full
 //
 // Reads added and removed content lines per commit per file, then reports every
 // ordered pair where a line added by the earlier commit is removed by the later
@@ -16,7 +16,7 @@
 //
 // The diff marker must be stripped before comparing. Keeping it makes every
 // added line differ from every removed one by the leading character, so the
-// report is a confident and wrong "none". That defect was live for one run.
+// report is a confident and wrong "none".
 //
 // Content lines shorter than eight characters are skipped, so a control built
 // from short lines reports the same "none" against a real inversion. Build the
@@ -24,7 +24,7 @@
 //
 // Two kinds of hit are not design inversions and the caller has to classify
 // them: a record corrected by a later commit, and a generated file regenerated
-// whole at each commit, whose hash-keyed rows churn without anyone reading them.
+// whole at each commit, whose rows change while no reader sees a difference.
 
 import { execFileSync } from "node:child_process";
 
@@ -39,9 +39,15 @@ const per = shas.map((sha) => {
   const files = new Map();
   let file = null;
   for (const line of out.split("\n")) {
-    if (line.startsWith("+++ b/")) { file = line.slice(6); if (!files.has(file)) files.set(file, { added: new Set(), removed: new Set() }); continue; }
-    if (line.startsWith("--- ")) continue;
-    if (!file || line.startsWith("@@")) continue;
+    if (line.startsWith("diff --git ")) {
+      const m = line.match(/^diff --git a\/(.+) b\/(.+)$/);
+      file = m ? m[2] : null;
+      if (file && !files.has(file)) files.set(file, { added: new Set(), removed: new Set() });
+      continue;
+    }
+    if (line.startsWith("@@")) continue;
+    if (line.startsWith("--- ") || line.startsWith("+++ ")) continue;
+    if (!file) continue;
     const body = line.slice(1).trim();
     if (body.length < 8) continue;
     if (line.startsWith("+")) files.get(file).added.add(body);
