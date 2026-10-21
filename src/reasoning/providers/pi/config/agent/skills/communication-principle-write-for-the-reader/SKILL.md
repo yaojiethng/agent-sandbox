@@ -3,7 +3,7 @@ name: communication-principle-write-for-the-reader
 description: "Apply when writing a commit message, a code comment, a document, a record, a note, a skill or a prompt. The reader has the artifact, not your session and not its own earlier draft. Name the thing, not the chat label, the option letter, the session id, the narration of how the writing went, or the text this version replaced."
 ---
 
-# Write for the Reader
+# Write for the reader
 
 An artifact is written for its reader, not for the session that produced it.
 

@@ -7,7 +7,7 @@ description: "A definition, its rules, and its caveats sit together, so a reader
 
 Keep a definition, its rules, and its caveats in one place, with each caveat beside the rule it qualifies.
 
-## The pattern
+**The pattern.**
 
 | Instead of | Give |
 |---|---|
@@ -16,18 +16,12 @@ Keep a definition, its rules, and its caveats in one place, with each caveat bes
 | a caveat recorded only in a second document | the caveat beside the rule it qualifies |
 | parts ordered as the author wrote them | parts ordered as the reader needs them: definition, rule, caveat |
 
-## Why
-
-A reader who meets a rule without its caveat applies the rule too widely. The reader then meets the caveat, and no longer holds the rule.
+**Why.** A reader who meets a rule without its caveat applies the rule too widely. The reader then meets the caveat, and no longer holds the rule.
 
 Nothing reports the split. Each half reads as complete.
 
-## Where another rule wins
-
-A second copy is a different defect: the norm then has two homes. `principle-one-home-per-rule` owns that defect, at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`, and the copy points at the home.
+**Where another rule wins.** A second copy is a different defect: the norm then has two homes. `principle-one-home-per-rule` owns that defect, at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`, and the copy points at the home.
 
 This rule covers the other case: one home, with parts the reader does not reach.
 
-## The test
-
-Read the document in the order it is written. At each caveat, ask whether the reader still holds the rule it qualifies. A caveat that reaches back further than one section means the parts are apart.
+**The test.** Read the document in the order it is written. At each caveat, ask whether the reader still holds the rule it qualifies. A caveat that reaches back further than one section means the parts are apart.

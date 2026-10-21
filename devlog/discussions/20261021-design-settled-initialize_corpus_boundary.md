@@ -1,6 +1,6 @@
 # Seeded corpus and shipped surfaces: which layer names which path
 
-**Status:** draft
+**Status:** settled
 
 ## Context
 

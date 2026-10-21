@@ -13,7 +13,7 @@ Remove every shipped pointer to a project-scoped convention path, give the refer
 
 ## Scope
 
-The roadmap row **The seeded convention corpus is short of the project's own**, closed on its second ending: the difference between the seeded set and this project's set is stated where a receiving project reads it, and no stub is added. The design is [`20261021-design-draft-initialize_corpus_boundary.md`](../discussions/20261021-design-draft-initialize_corpus_boundary.md), which decides the split between the judgement and the project's structure.
+The roadmap row **The seeded convention corpus is short of the project's own**, closed on its second ending: the difference between the seeded set and this project's set is stated where a receiving project reads it, and no stub is added. The design is [`20261021-design-settled-initialize_corpus_boundary.md`](../discussions/20261021-design-settled-initialize_corpus_boundary.md), which decides the split between the judgement and the project's structure.
 
 Ruled out of scope with a reason each. The reach axis of the documentation taxonomy is its own row, because it delivers an outcome of its own and would take a value for the two document bundles while the open row **Drop the policy bundle** disputes whether they ship. The unit that ships the wiki is its own row, blocked on what M3.3.2's retirement leaves behind. Checks on the wording of a project convention are not written here: the rule reads the corpus's directory names and its stub marker, not its prose.
 
@@ -31,12 +31,11 @@ Ruled out of scope with a reason each. The reach axis of the documentation taxon
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| Remove the six shipped pointers rather than seed the two stubs | the shipped carriers outnumber the local ones, and seeding grows every project's convention set to answer two documents this project wrote for itself | `devlog/discussions/20261021-design-draft-initialize_corpus_boundary.md` |
+| Remove the six shipped pointers rather than seed the two stubs | the shipped carriers outnumber the local ones, and seeding grows every project's convention set to answer two documents this project wrote for itself | `devlog/discussions/20261021-design-settled-initialize_corpus_boundary.md` |
 | Ship the reference judgement as `communication-principle-link-what-the-reader-can-open`, and keep the structure in the project's `linking` convention | the split criterion of M3.3.4: a judgement is a principle and resolves wherever it ships, a structure stays with the project convention that holds it | the same record |
 | `.agents/` holds project-scoped content only, and a wider-reach document names a path there only where a mechanism that ships guarantees it | operator ruling; it makes the rule decidable, and `.agents/prompts/` already satisfies it because its cell's runtime path stays inside this project's tree | the same record, and `docs/reference/documentation_taxonomy.md` `## Boundary` |
 | Reach is named by the declaring unit, not by shipping. `agent-sandbox` is the default module - the always-enabled unit that defines the container, whose wiki `/agent-sandbox` already points at `/opt/sandbox/docs/` - and a plugin module is the same kind of unit enabled by its own `packages` entry. Enablement is a second property, not a scope | a module is a class the tree declares and gates, and `scripts/check_container_layout.sh` refuses a module root no settings entry enables, so naming the default module describes the system as built. `ships` stays a verb | the design record; the axis row owns the definitions |
 | File the scope axis as its own row instead of writing it here | it delivers an outcome of its own, and it would take a value for `docs/policies/` and `docs/reference/` while the open row **Drop the policy bundle** disputes whether those bundles ship | `devlog/roadmap.md` at close |
-
 | The remaining workflow and policy milestones are ordered on the record. M3.3.4 phase A, M3.3.2's retirements, M3.3.4 phase B, M3.5, M3.3.3, M3.2.2, M3.2.3, with M3.1.2 interleaved and M3.6.3 in parallel | subtraction precedes addition, and the reach premise is decided before the instance repairs that assume it | `devlog/roadmap.md`, one `Sequencing:` line per milestone section and ordering clauses on five open rows |
 | Three sub-milestones move to `Not started`: M3.2.2, M3.2.3 and M3.3.3 | 58 open rows across five in-progress sub-milestones is the set-nobody-holds-whole defect this iteration removed from the shipped text | `devlog/roadmap.md` Milestone Summary |
 
@@ -65,7 +64,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20261021-design-draft-initialize_corpus_boundary.md`](../discussions/20261021-design-draft-initialize_corpus_boundary.md) | the design record: two surfaces declare the corpus, the six pointers are the defect, and the reach vocabulary |
+| [`devlog/discussions/20261021-design-settled-initialize_corpus_boundary.md`](../discussions/20261021-design-settled-initialize_corpus_boundary.md) | the design record: two surfaces declare the corpus, the six pointers are the defect, and the reach vocabulary |
 | `src/reasoning/providers/pi/config/agent/skills/communication-principle-link-what-the-reader-can-open/SKILL.md` | new shipped principle: the reference judgement in the exemplar's shape, plus its `MAINTENANCE.md`, installed to the agent config home |
 | `src/reasoning/providers/pi/config/agent/AGENTS.md` | the numbering and reference pointer line names the two principle skills and no project path |
 | `src/reasoning/providers/pi/config/agent/skills/communication-principle-one-addressing-axis/SKILL.md` | the scheme clause names the project's convention instead of the repository path |
@@ -79,3 +78,5 @@ None.
 | `scripts/lint/norm-ownership.tsv`, `scripts/lint/norm-judgements.tsv` | regenerated and regrouped for the two edited policy lines |
 | [`devlog/changelog.md`](../changelog.md) | the preamble names the `task-list` convention instead of the retired `roadmap_policy.md` |
 | [`devlog/roadmap.md`](../roadmap.md) | the corpus row closed on its second ending, its premise corrected; four rows filed; three `Blocked on` clauses rewritten as ordering clauses; the closed `AGENTS.md` row's false claim corrected in place; the accepted milestone ordering written as nine `Sequencing:` lines, five row ordering clauses, three parked milestones and one decision line |
+
+[CORRECTION -- 2026-10-21: the two milestone-ordering rows were reattached to the Decisions table; a blank line had detached them. The design record is `20261021-design-settled-initialize_corpus_boundary.md`, renamed and settled at handover `20261021-03`.]

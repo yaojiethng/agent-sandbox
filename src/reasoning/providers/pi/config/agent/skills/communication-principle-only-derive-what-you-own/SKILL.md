@@ -3,7 +3,7 @@ name: communication-principle-only-derive-what-you-own
 description: "Apply when a sentence states a total, a percentage, a count, or any value computed from data held elsewhere. The document stating a derived value does not own it, so an update to the underlying data misses the copy and the staleness is silent. State the primary data, or name the source that derives the value."
 ---
 
-# Only Derive What You Own
+# Only derive what you own
 
 A derived value is a copy of data held elsewhere, and the copy is what an update misses.
 
@@ -27,3 +27,5 @@ A derived value is a copy of data held elsewhere, and the copy is what an update
 **Where many texts need the value.** The source owns it and every other text points at the source. A record of rows plus a deterministic reader over them is the durable form. A number typed into each record is one copy per record, and every copy but the last is wrong by the end.
 
 **Where the value describes another artifact.** That artifact owns it. Name the artifact and let the reader look, or print the value beside the command that produced it. Never restate a value the artifact owns.
+
+**The test.** Point at where each value comes from. A value the sentence cannot recompute from the text beside it needs a named source or the command that prints it, and a value whose source is named stays current when the source moves.

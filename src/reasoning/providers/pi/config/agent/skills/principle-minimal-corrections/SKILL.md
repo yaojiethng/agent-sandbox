@@ -3,7 +3,7 @@ name: principle-minimal-corrections
 description: "A correction restores the intended artifact and adds nothing beside it. Apply when fixing a defect in your own work, a record, a rule, or a commit."
 ---
 
-# Minimal Corrections
+# Minimal corrections
 
 A correction restores the intended artifact and adds nothing beside it.
 

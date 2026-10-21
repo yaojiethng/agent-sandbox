@@ -8,13 +8,13 @@ disable-model-invocation: true
 
 A norm has one home, and every other place that carries it points at that home.
 
-**Why.** Two copies of one norm drift. The reader then holds a version that no observer checks and no author updates, and the drift is silent, because each copy reads as current. A duplicate also forces the reader to decide which copy governs, and no record answers that.
-
 **The pattern.**
 
 1. Name the norm's kind, per `docs/reference/agent_workflow.md` `### Norm kinds`.
 2. Put it in the home that kind carries.
 3. Make every other carrier a pointer to that home.
+
+**Why.** Two copies of one norm drift. The reader then holds a version that no observer checks and no author updates, and the drift is silent, because each copy reads as current. A duplicate also forces the reader to decide which copy governs, and no record answers that.
 
 **A fast path is not a second home.** A workflow document may inline a short form of a rule for context efficiency. It stays a fast path while the rule keeps its home and the inline names the home. Remove either and the inline becomes a second home.
 
@@ -25,3 +25,5 @@ A norm has one home, and every other place that carries it points at that home.
 **A definition and its record are two objects.** The document whose workflow produces the thing owns the definition. The record owns its own shape.
 
 **A policy file owns a rule.** The policy set is every `docs/**/*_policy.md` file, in any folder. A file of that name that owns no rule is misnamed: fold its content into its owner, give it the name of its kind, or delete it.
+
+**The test.** Point at the norm's home, and at every carrier that names it. A carrier that states the norm without pointing at its home is a second home, and the next edit reaches one of the two.

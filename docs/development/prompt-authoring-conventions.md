@@ -89,6 +89,25 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only home of a rule.
 
+## The principle shape
+
+A principle skill states one judgement, and every principle in the corpus carries the same parts, file by file, so a writer filing a new one copies a single exemplar. The decision and its rejected alternatives are in [`principle_skill_shape.md`](../adr/principle_skill_shape.md), and `scripts/check_skill_shape.sh` holds the shape against every file the name selects.
+
+The subject is the name. A skill whose directory name carries `principle-` carries the shape. A skill that holds ordered steps is a runbook, keeps the runbook shape, and sits outside this section.
+
+| Part | What it carries |
+|---|---|
+| `# <the judgement as a sentence>` | the title, in sentence case, and the file's only heading |
+| one sentence | the judgement, stated plainly, before the pattern |
+| `**The pattern.**` | the wrong form beside the right form, as a table where a contrast exists and a list where the parts are steps |
+| `**Why.**` | the reason the wrong form fails |
+| `**<label>.**` | zero or more named parts, each named for the situation it addresses |
+| `**The test.**` | the question the writer asks their own draft |
+
+The order is fixed: the pattern, the why, the named parts, the test. A label ends on a period, so a reader scanning the file sees the parts as one set. A bullet that opens with a bold label is not a part, because the list marker opens it.
+
+The exemplar is `communication-principle-show-dont-describe`, at `$AGENT_HOME/agent/skills/communication-principle-show-dont-describe/SKILL.md`.
+
 ## Scope a prompt's subject
 
 **One subject per prompt.** The subject is what the prompt hands on: one artifact to one next step. A prompt that hands on two artifacts, or hands one to two next steps, is two prompts, or a runbook that dispatches two sub-cases. The judgement is `principle-own-the-scope-you-declare` at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`.

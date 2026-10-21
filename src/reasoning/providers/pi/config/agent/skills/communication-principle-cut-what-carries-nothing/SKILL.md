@@ -3,7 +3,7 @@ name: communication-principle-cut-what-carries-nothing
 description: "Apply when writing or editing prose, a prompt, a skill, or a document. Keep the sentence that changes a decision; delete the sentence that does not."
 ---
 
-# Cut What Carries Nothing
+# Cut what carries nothing
 
 Keep the sentence that changes a decision, and delete the sentence that does not.
 

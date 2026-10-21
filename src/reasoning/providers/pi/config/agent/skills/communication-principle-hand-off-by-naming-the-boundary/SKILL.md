@@ -8,9 +8,7 @@ disable-model-invocation: true
 
 A runbook that hands work to another prompt names the boundary, so a reader can see where one document ends and the next begins.
 
-## The pattern
-
-Four moves, in order.
+**The pattern.** Four moves, in order.
 
 1. Name the next prompt and the part that runs. `/iter` names `/wrapup` Part B, not `/wrapup`.
 2. List what the next prompt owns, and say that this one does not restate it. A step absent from both lists is a gap.
@@ -19,10 +17,6 @@ Four moves, in order.
 
 A prompt that ends inside its own scope omits the handoff.
 
-## Why
+**Why.** Four prompts apply this shape and none of them used to name it, so each restatement was a copy that drifts. A bare name leaves the reader to work out where to enter a long runbook, and an owned step left off both lists falls between the two documents.
 
-Four prompts apply this shape and none of them used to name it, so each restatement was a copy that drifts. A bare name leaves the reader to work out where to enter a long runbook, and an owned step left off both lists falls between the two documents.
-
-## The test
-
-Read the last step. Can a reader name the next prompt, its entry part, what it owns, what stays, and the stopping point? Any gap is an unwritten handoff.
+**The test.** Read the last step. Can a reader name the next prompt, its entry part, what it owns, what stays, and the stopping point? Any gap is an unwritten handoff.

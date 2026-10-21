@@ -3,7 +3,7 @@ name: communication-principle-link-what-the-reader-can-open
 description: "Apply when writing or editing a document, a prompt, a skill, a record, an `AGENTS.md` layer, or a reply that points at another document. A pointer claims a target is reachable where the citing text is read, so link what that reader can open and name what they may not."
 ---
 
-# Link What the Reader Can Open
+# Link what the reader can open
 
 A pointer claims a target exists and is reachable from where the citing text is read. Link what the reader can reach; name what they cannot.
 
