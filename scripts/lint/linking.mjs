@@ -26,6 +26,12 @@
 //     is a finding even when the image carries it, because it names a tree the
 //     surface cannot reach. The reach is read from the same declaration, so a
 //     new cell changes the check with no edit here.
+//   - a shipped document that names a project convention-skill path names one
+//     the receiving project has. The shipped corpus of `initialize` is the set
+//     a fresh project receives, so a concrete `.agents/skills/<name>/SKILL.md`
+//     naming anything else sends the reader to a file that may not exist. The
+//     generic `<name>` form claims no specific convention and passes. The names
+//     are derived from the corpus directory, not listed here.
 //
 // What it skips: external targets (http, https, mailto, tel), links inside
 // fenced code blocks, and whatever the config exempts.
@@ -37,7 +43,7 @@
 //
 // ESM form: `.markdownlint-cli2.mjs` imports this as a custom rule.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -60,6 +66,31 @@ if (imageMap.length === 0) {
     "linking: src/build/container-interface.json declares no pair; a shipped file's links cannot be resolved",
   );
 }
+
+// The convention-skill corpus `initialize` seeds into a project. A shipped
+// document may name one of these, because a project that has run `initialize`
+// holds it. The set is derived from the corpus directory so a new stub joins it
+// with no edit here, and an unreadable corpus is a hard failure rather than an
+// empty set, which would silently pass every name.
+const corpusDir = resolve(repoRoot, "workflow/coding-agent/skills/initialize/assets/conventions");
+const seededConventions = (() => {
+  let names = [];
+  try {
+    names = readdirSync(corpusDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    names = [];
+  }
+  if (names.length === 0) {
+    throw new Error(
+      "linking: the initialize corpus is empty or unreadable at " +
+        corpusDir +
+        "; a shipped document's convention name cannot be checked",
+    );
+  }
+  return new Set(names);
+})();
 
 // A file that ships is read by an agent in a container, so its links resolve in
 // the image's path space. That covers every instruction surface and every
@@ -152,6 +183,20 @@ export default [
         }
         if (inFence) {
           return;
+        }
+        if (imageFile !== "") {
+          for (const convention of line.matchAll(
+            /\.agents\/skills\/([a-z0-9][a-z0-9-]*)\/SKILL\.md/g,
+          )) {
+            if (!seededConventions.has(convention[1])) {
+              onError({
+                lineNumber: index + 1,
+                detail:
+                  "shipped document names a convention the seeded corpus lacks: " +
+                  convention[0],
+              });
+            }
+          }
         }
         for (const match of line.matchAll(/\]\(([^)\s]+)\)/g)) {
           const target = match[1].replace(/^</, "").replace(/>$/, "");

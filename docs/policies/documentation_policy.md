@@ -97,11 +97,11 @@ Prose is one paragraph per physical line, however long the line. Never break ins
 
 ### Reference handling
 
-How a document points at another is the `linking` convention skill at `.agents/skills/linking/SKILL.md`: what to link and what to name, where a link resolves, where a handoff link belongs, and how to form one.
+The judgement behind a pointer is `communication-principle-link-what-the-reader-can-open` at `$AGENT_HOME/agent/skills/communication-principle-link-what-the-reader-can-open/SKILL.md`: link what the reader can open, name what they cannot, and resolve the pointer where the text is read. The structure - what a document kind links, where a handoff link belongs, and how to form one - belongs to the project's reference convention, where the project states one.
 
 ### Numbering
 
-The numbering scheme is stated once, in the project convention `.agents/skills/numbering/SKILL.md`: which unit takes a number, which takes an identity code, the form of a reference, the chat label, and how a chat pick reaches a record. The judgement behind a numbered list is `communication-principle-one-addressing-axis` at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`, which also carries the rule that a heavily cited item moves to a heading.
+The numbering scheme - which unit takes a number, which takes an identity code, the form of a reference, the chat label, and how a chat pick reaches a record - is stated once, in the project's numbering convention, where the project states one. The judgement behind a numbered list is `communication-principle-one-addressing-axis` at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`, which also carries the rule that a heavily cited item moves to a heading.
 
 ### Structure for grep navigation
 

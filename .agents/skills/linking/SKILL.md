@@ -1,17 +1,11 @@
 ---
 name: linking
-description: "Apply when writing or editing a document, a prompt, a skill, a record, an `AGENTS.md` layer, or a reply that points at another document. A link claims a target exists and is reachable where the citing text is read: link what the reader may open, name what they may not, and let the gate settle whether the target resolves."
+description: "agent-sandbox's linking convention - the structure a pointer takes in this repository: what each document kind links, where a handoff link belongs, how to form one, and the gate that checks it. The judgement behind it is `communication-principle-link-what-the-reader-can-open`."
 ---
 
 # linking
 
-A link claims a target exists and is reachable from where the citing text is read. Link a target the reader may open; name one they may not. Every rule below names the user story it serves.
-
-## Why
-
-Two readers take a broken pointer differently. A reader of the repository can still find the file by hand. An agent reading the same line in a container has no repository to search, so the pointer returns nothing and the agent stops. Nothing reports the difference: the sentence reads normally either way.
-
-A pointer also outlives the reason it was written. A link into a session export, a handover or a discussion names a transient target, so the citation breaks at the point the target leaves the tree.
+This convention holds the structure a pointer takes in this repository. The judgement behind it - link what the reader can open, name what they may not, and resolve the pointer where the text is read - is `communication-principle-link-what-the-reader-can-open`, which ships and is stated nowhere here. Every rule below names the user story it serves.
 
 ## What to link
 
@@ -46,7 +40,7 @@ A step-level reference carries a section anchor. A document-level reference is a
 
 ## The check
 
-`scripts/lint/linking.mjs` runs as a custom rule under the Markdown gate, `scripts/check_markdown.sh`, which [`scripts/lint.sh`](../../../scripts/lint.sh) runs. It fails when a relative target or a heading fragment does not resolve, when a shipped file's link reaches only a repository path, and when a link lands outside the reach its instruction cell declares. It reads its subject set from the interface manifest, so a new surface joins the check with no edit to it.
+`scripts/lint/linking.mjs` runs as a custom rule under the Markdown gate, `scripts/check_markdown.sh`, which [`scripts/lint.sh`](../../../scripts/lint.sh) runs. It fails when a relative target or a heading fragment does not resolve, when a shipped file's link reaches only a repository path, when a link lands outside the reach its instruction cell declares, and when a shipped document names a `.agents/skills/<name>/SKILL.md` path for a convention the seeded corpus does not hold. It reads its subject set from the interface manifest and its convention names from the `initialize` corpus, so a new surface joins the check with no edit to it.
 
 The check has no `check_linking.sh` of its own, because the Markdown gate is its entry. A reply's pointers are not in the tree, so the author applies them while writing.
 

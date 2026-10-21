@@ -81,7 +81,7 @@ Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
 
 The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-dont-scatter-what-belongs-together` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
 
-The numbering scheme and the judgement behind a numbered list: `.agents/skills/numbering/SKILL.md`. How a document points at another: `.agents/skills/linking/SKILL.md`. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
+The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
 
 Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
 

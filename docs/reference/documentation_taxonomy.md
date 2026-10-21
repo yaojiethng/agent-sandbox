@@ -21,7 +21,7 @@ This document is the index and view of the documentation ecosystem. It states no
 | Handover (`devlog/handovers/`) | one session's record of the work done | transient | identity `YYYYMMDD-NN`; `F`, `Q`, `D` units | the project's `.agents/skills/work-log/SKILL.md` convention |
 | Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | identity date, type, slug; `F`, `Q` units | [`discussion_policy.md`](../policies/discussion_policy.md) |
 
-The scheme each class uses is the project convention `.agents/skills/numbering/SKILL.md`; the column above names it and states no rule.
+The scheme each class uses belongs to the project's numbering convention, where the project states one; the column above names the scheme and states no rule. The judgement behind a numbered list is `communication-principle-one-addressing-axis` at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`.
 
 The policy set is every `docs/**/*_policy.md` file, in any folder. The other folders hold no rules.
 
@@ -66,6 +66,8 @@ Documents promote along a path, and each step is an obligation with one policy h
 ## Boundary
 
 Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority. The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
+
+Everything under a project's `.agents/` is project-scoped: that project's sessions read it and no other project's session does. A document read more widely names a path there only where a mechanism that ships guarantees the path exists, so a shipped document names the convention a project may state rather than the one it has.
 
 ## Audience dispatch
 

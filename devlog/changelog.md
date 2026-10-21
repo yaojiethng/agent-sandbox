@@ -2,7 +2,7 @@
 
 Completed milestones extracted from `roadmap.md`. Each entry describes what the system can now do and the mechanisms built to enable it.
 
-New entries are appended. Format is defined in `roadmap_policy.md`.
+New entries are appended. Format is defined in the project's `.agents/skills/task-list/SKILL.md` convention.
 
 ---
 

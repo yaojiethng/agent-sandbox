@@ -35,6 +35,13 @@
 #   a repository link under a reachable row -- clean: the cell reads it there
 #   a repository path, from a bundled document -- clean: only the instruction
 #                                 roots resolve in the image's path space
+#   a shipped document naming an unseeded convention -- flagged: the name is
+#                                 derived from the `initialize` corpus, so a
+#                                 convention it does not seed cannot be read
+#   a shipped document naming a seeded convention -- clean
+#   a shipped document using the generic `<name>` form -- clean: it claims no
+#                                 specific convention
+#   a project-scoped document naming its own convention -- clean
 #
 # The image-space cases need a fixture that looks like the repository from the
 # rule's point of view, because the rule keys on the file's repository-relative
@@ -395,5 +402,51 @@ run_test test_provider_config_root_resolves_in_the_image
 run_test test_link_outside_the_cell_reach_is_flagged
 run_test test_link_through_a_reachable_row_is_clean
 run_test test_repository_link_under_a_reachable_row_is_clean
+
+# The seeded-convention cases. The names are read from the repository's own
+# `initialize` corpus, so `work-log` is seeded and `numbering` is not. The
+# fixture supplies only the document and its shipped-ness; the corpus is the
+# real one the rule reads.
+
+test_shipped_document_naming_an_unseeded_convention_is_flagged() {
+  local dir cfg out
+  dir="$(shipped_root unseeded_convention)"
+  printf 'See `.agents/skills/numbering/SKILL.md` for the scheme.\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_contains "$out" 'shipped document names a convention the seeded corpus lacks: .agents/skills/numbering/SKILL.md' 'an unseeded convention is flagged'
+}
+
+test_shipped_document_naming_a_seeded_convention_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root seeded_convention)"
+  printf 'Read `.agents/skills/work-log/SKILL.md` for the vocabulary.\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a seeded convention is clean'
+}
+
+test_shipped_document_with_the_generic_form_is_clean() {
+  local dir cfg out
+  dir="$(shipped_root generic_convention)"
+  printf 'Read each convention at `.agents/skills/<name>/SKILL.md`.\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'the generic <name> form claims no convention and is clean'
+}
+
+test_project_scoped_document_naming_an_unseeded_convention_is_clean() {
+  local dir cfg out
+  dir="$(fixture_root project_convention)"
+  printf 'See `.agents/skills/numbering/SKILL.md` for the scheme.\n' > "$dir/doc.md"
+  cfg="$(make_cfg)"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a project-scoped document may name its own convention'
+}
+
+run_test test_shipped_document_naming_an_unseeded_convention_is_flagged
+run_test test_shipped_document_naming_a_seeded_convention_is_clean
+run_test test_shipped_document_with_the_generic_form_is_clean
+run_test test_project_scoped_document_naming_an_unseeded_convention_is_clean
 
 test_done

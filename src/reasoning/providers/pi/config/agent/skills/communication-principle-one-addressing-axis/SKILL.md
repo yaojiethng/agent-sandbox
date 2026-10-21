@@ -20,7 +20,7 @@ A numbered list asserts a relation between its items. A bullet asserts none, so 
 
 **Why.** The operator answers with one short token, so a reply has to land on the item meant. Two unnamed axes give one token two readings, and the agent then guesses which set the answer addressed. A number also asserts an order the reader will act on, so a numbered list of unranked options reads as a ranking.
 
-**Where a number earns its place.** Order matters, or a reader addresses an item by index. Which unit takes a number and which takes an identity code, the chat token form, and how a chat pick reaches a record are the project convention at `.agents/skills/numbering/SKILL.md`.
+**Where a number earns its place.** Order matters, or a reader addresses an item by index. Which unit takes a number and which takes an identity code, the chat token form, and how a chat pick reaches a record belong to the project's numbering convention, where the project states one. This skill states the judgement; the scheme is the project's.
 
 **Where several sets appear together.** Print one axis. Where two sets must appear, name each, so a reply is self-mapping: "finding 1" and "option A".
 
