@@ -20,7 +20,7 @@ A norm has one home, and every other place that carries it points at that home.
 
 **A fast path is not a second home.** A workflow document may inline a short form of a rule for context efficiency. It stays a fast path while the rule keeps its home and the inline names the home. Remove either and the inline becomes a second home.
 
-**One rule's parts sitting apart is a different defect.** `communication-principle-dont-scatter-what-belongs-together` owns it, at `$AGENT_HOME/agent/skills/communication-principle-dont-scatter-what-belongs-together/SKILL.md`.
+**One rule's parts sitting apart is a different defect.** `communication-principle-keep-a-subject-near` owns it, at `$AGENT_HOME/agent/skills/communication-principle-keep-a-subject-near/SKILL.md`.
 
 **A bridge document is a duplicate with extra steps.** A document whose only job is to connect two others duplicates content across a third place. Collapse it into the more relevant of the two and link them directly.
 

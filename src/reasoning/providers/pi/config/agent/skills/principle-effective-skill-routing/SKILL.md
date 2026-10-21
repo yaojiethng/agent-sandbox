@@ -20,7 +20,7 @@ A phrase that names how the skill is built spends space with no keyword in it. T
 
 **The name.** The name is read by three readers: the agent, which sees it advertised beside the description; the operator, who recalls it when the work calls for it; and another document, which cites it.
 
-Make the name state the judgement or the defect it prevents. Keep it to five words or fewer, and use the word the domain already holds. A property name states a quality and leaves the writer to invent the act. `locality` names a quality, and `keep a subject local` names the act.
+Make the name state the judgement or the defect it prevents. Keep it to five words or fewer, and use the word the domain already holds. A property name states a quality and leaves the writer to invent the act. `proximity` names a quality, and `keep a subject near` names the act.
 
 A name another skill already holds does not load, because the first skill discovered keeps it. A name that understates the skill is not recalled, and one that overstates it is recalled for the wrong situation.
 

@@ -41,7 +41,7 @@ Progressive disclosure is the move down the ladder, out of the main file and beh
 
 The failure mode is sprawl: a document too long even when every line is live. Attention thins across the excess. The cure is the ladder: disclose reference behind pointers and split by branch so each path carries only what it needs.
 
-**Co-location is the within-file companion of progressive disclosure.** The judgement is the `communication-principle-dont-scatter-what-belongs-together` skill at `$AGENT_HOME/agent/skills/communication-principle-dont-scatter-what-belongs-together/SKILL.md`.
+**Co-location is the within-file companion of progressive disclosure.** The judgement is the `communication-principle-keep-a-subject-near` skill at `$AGENT_HOME/agent/skills/communication-principle-keep-a-subject-near/SKILL.md`.
 
 **Match the precision to the stakes.** An instruction narrows as its stakes rise: how far a wrong move reaches, whether it can be undone, and whether anything reports it. The judgement is the `principle-match-precision-to-stakes` skill at `$AGENT_HOME/agent/skills/principle-match-precision-to-stakes/SKILL.md`.
 

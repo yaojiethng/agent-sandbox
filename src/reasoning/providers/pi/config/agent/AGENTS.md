@@ -79,7 +79,7 @@ General communication guidelines for all agent prose. The standard is `docs/poli
 
 Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
 
-The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-dont-scatter-what-belongs-together` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
+The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-keep-a-subject-near` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
 
 The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
 
