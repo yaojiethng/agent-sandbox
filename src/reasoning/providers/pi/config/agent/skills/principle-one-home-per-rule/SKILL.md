@@ -2,6 +2,8 @@
 name: principle-one-home-per-rule
 description: "A norm has one home. Apply when writing, moving or copying a rule, a judgement or a definition across documents. A second copy is a defect unless it points at the home."
 disable-model-invocation: true
+metadata:
+  claim: source
 ---
 
 # One home per rule

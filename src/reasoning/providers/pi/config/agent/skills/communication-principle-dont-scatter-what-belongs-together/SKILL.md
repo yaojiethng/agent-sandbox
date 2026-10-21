@@ -1,6 +1,8 @@
 ---
 name: communication-principle-dont-scatter-what-belongs-together
 description: "A definition, its rules, and its caveats sit together, so a reader who needs one meets the others. Apply when writing or moving a caveat or a definition, or when a caveat sits away from the rule it qualifies."
+metadata:
+  claim: reader
 ---
 
 # Don't scatter what belongs together

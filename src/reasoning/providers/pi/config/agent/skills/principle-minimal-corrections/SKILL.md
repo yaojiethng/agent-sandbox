@@ -1,6 +1,8 @@
 ---
 name: principle-minimal-corrections
 description: "A correction restores the intended artifact and adds nothing beside it. Apply when fixing a defect in your own work, a record, a rule, or a commit."
+metadata:
+  claim: authority
 ---
 
 # Minimal corrections

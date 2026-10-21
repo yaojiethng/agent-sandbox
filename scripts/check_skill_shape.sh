@@ -16,6 +16,9 @@
 # Test seam: SKILL_SHAPE_SCAN_ROOT points the scan at a fixture root that mirrors
 # the repository layout.
 #
+# Options: `--map` prints the corpus grouped by claim, which is the derived family
+# view. Any other argument reaches the scanner unchanged.
+#
 # Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 # finding count is printed, never encoded in the exit code (see
 # docs/development/bash-coding-conventions.md 3.2).
@@ -40,7 +43,7 @@ fi
 
 cd "$REPO_ROOT" || exit 1
 
-SKILL_SHAPE_SCAN_ROOT="$SCAN_ROOT" node "$SCAN_SCRIPT"
+SKILL_SHAPE_SCAN_ROOT="$SCAN_ROOT" node "$SCAN_SCRIPT" "$@"
 rc=$?
 
 if (( rc == 0 )); then

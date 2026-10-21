@@ -2,6 +2,8 @@
 name: principle-match-precision-to-stakes
 description: Set an instruction's precision by what you can establish about it, from the assumption it rests on to how far a wrong move reaches, whether the move can be undone, and whether anything reports it. Use when writing a procedure, a prompt, or a skill, and when deciding between an exact command and a range of approaches.
 disable-model-invocation: true
+metadata:
+  claim: authority
 ---
 
 # Match precision to stakes

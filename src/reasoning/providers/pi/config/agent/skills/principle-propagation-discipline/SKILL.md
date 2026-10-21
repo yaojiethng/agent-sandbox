@@ -1,6 +1,8 @@
 ---
 name: principle-propagation-discipline
 description: Apply when a change removes or renames something, or lands across more than one file. Every carrier of the old state is part of the task, and a deletion's carriers include the descriptions as well as the references.
+metadata:
+  claim: source
 ---
 
 # Propagation discipline

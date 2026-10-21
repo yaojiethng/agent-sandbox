@@ -2,6 +2,8 @@
 name: principle-effective-skill-routing
 description: Spend a skill's name and description on words an agent matches and an operator recalls, so they route the skill to the situations that need it, and name what the skill does and when it applies rather than how it is built. Use when writing or reviewing a skill's name, its description, its frontmatter, or the list entry an operator searches.
 disable-model-invocation: true
+metadata:
+  claim: reader
 ---
 
 # Spend the name and the description on routing

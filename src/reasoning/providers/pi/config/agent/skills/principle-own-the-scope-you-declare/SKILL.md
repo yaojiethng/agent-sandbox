@@ -2,6 +2,8 @@
 name: principle-own-the-scope-you-declare
 description: Own the scope a workflow document declares, holding everything it owes, describing no work outside it, and handing on one artifact to one next step. Use when writing or reviewing a prompt, a skill, a procedure, or a record, and when a document starts explaining a step that belongs to another one.
 disable-model-invocation: true
+metadata:
+  claim: authority
 ---
 
 # Own the scope you declare

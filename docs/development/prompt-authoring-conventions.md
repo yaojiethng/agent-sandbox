@@ -108,6 +108,22 @@ The order is fixed: the pattern, the why, the named parts, the test. A label end
 
 The exemplar is `communication-principle-show-dont-describe`, at `$AGENT_HOME/agent/skills/communication-principle-show-dont-describe/SKILL.md`.
 
+## The principle claims
+
+Every principle applies one claim, and the claim is how a reader finds the family of principles that bears on a problem they cannot name yet. A principle declares its claim in its frontmatter, under the `metadata` key pi documents for extra fields: `metadata:` then `claim: <name>`. `scripts/check_skill_shape.sh` reads the declaration and fails a principle that carries none or names one this table does not state, and its `--map` mode prints the corpus grouped by claim.
+
+| Claim | The claim a skill of this family makes |
+|---|---|
+| `evidence` | a claim carries the artifact that proves it, or the sentence says it is an inference |
+| `source` | a restated fact is a copy and the source owns it, so a copy goes wrong when the source changes and nothing reports it |
+| `scope` | a pointer, a label or a literal names something the reader finds only where the text is read |
+| `reader` | the reader holds what the text gives them, in the order it arrives |
+| `authority` | a document owns the scope it declares and no more |
+
+Two skills may apply one claim when they act on different objects, because each states a different test. `only-derive-what-you-own` and `one-home-per-rule` both apply `source`, and one asks whether the reader can recompute a number while the other asks whether every copy of a rule points at one home. Two skills may not state the same rule.
+
+This table is the only place that decides the set, and the gate reads the set from here. The gate decides that a claim is stated and that the table holds it; which claim a given skill picks stays a judgement, so no gate reads it.
+
 ## Scope a prompt's subject
 
 **One subject per prompt.** The subject is what the prompt hands on: one artifact to one next step. A prompt that hands on two artifacts, or hands one to two next steps, is two prompts, or a runbook that dispatches two sub-cases. The judgement is `principle-own-the-scope-you-declare` at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`.

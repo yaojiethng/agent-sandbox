@@ -1,6 +1,8 @@
 ---
 name: principle-approval-writes-the-artifact
 description: Write an approved artifact into its home file in the same unit of work as the approval, so the decision never lives only in the conversation. Use when a design, a scope, a plan, or a set of items will be produced later.
+metadata:
+  claim: evidence
 ---
 
 # An approval writes the artifact

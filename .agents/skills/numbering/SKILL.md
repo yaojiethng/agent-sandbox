@@ -39,7 +39,7 @@ A section is dotted and hierarchical, arabic, no trailing dot. A unit is its let
 
 A reply that presents choices groups them. Each group takes the next letter, `A`, `B`, `C`. Each item takes its group's letter and its position in that group, `A1`, `A2`, `B1`. Continue the letter across the reply; do not restart it per section.
 
-`A1` is unique inside its reply and means one item. A reply is the scope, so a second reply starts again at `A1`. When the operator answers with a label, it resolves against the reply that carried it. If two replies could hold the same label, quote the one meant or ask; never guess.
+`A1` is unique inside its reply and means one item. A reply is the scope, so a second reply starts again at `A1`. Two unnamed axes would give one token two readings, which is `communication-principle-one-addressing-axis` at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`; this convention states the scheme that keeps one. When the operator answers with a label, it resolves against the reply that carried it. If two replies could hold the same label, quote the one meant or ask; never guess.
 
 A group of one keeps its letter: `C1`, not a bare `C`.
 
@@ -56,7 +56,7 @@ D2. Bind the naming check to the commit, not the draft.
 
 ## Insertion
 
-In an open document, insert where it belongs and renumber what follows. That is one pass and it costs nothing else. In a closed record, numbers are allocation order: place the unit where it belongs and give it the next free number, so `F7` may sit above `F2`. A closed record's numbers are frozen because another document may already quote them. The roadmap never renumbers: the `T3` slot was retired without a section, and the series runs `T1`, `T2`, `T4` onward.
+In an open document, insert where it belongs and renumber what follows. That is one pass and it costs nothing else. In a closed record, numbers are allocation order: place the unit where it belongs and give it the next free number, so `F7` may sit above `F2`. A closed record's numbers are frozen because another document may already quote them, and a durable artifact takes a descriptive name rather than a number carried out of a list, which is `communication-principle-one-addressing-axis`. The roadmap never renumbers: the `T3` slot was retired without a section, and the series runs `T1`, `T2`, `T4` onward.
 
 ## Direction of flow
 

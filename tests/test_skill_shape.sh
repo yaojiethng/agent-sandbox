@@ -12,6 +12,11 @@
 #   a title-case title            --  flagged, naming the word
 #   a skill with no `principle-`  --  clean, and its departure is not read
 #   a root with no principle      --  the gate fails closed rather than over nothing
+#   a declared claim              --  clean, and the map names the skill under it
+#   no claim declared             --  flagged: a principle carries one
+#   a claim the table lacks       --  flagged, naming the set the table states
+#   --map                         --  prints one row per skill and a total that
+#                                     matches the skills read
 #
 # The subject is derived from the directory name, so the non-principle case is
 # the rule's boundary: a runbook skill departs from the shape on purpose and the
@@ -53,6 +58,8 @@ conforming() {
   printf '%s' "---
 name: principle-example
 description: \"fixture\"
+metadata:
+  claim: evidence
 ---
 
 # One example judgement
@@ -165,6 +172,35 @@ description: \"fixture\"
   assert_contains "$GATE_OUT" 'the gate would pass over nothing' 'the failure names why it could not run'
 }
 
+test_declared_claim_is_clean_and_mapped() {
+  local root out
+  root="$(make_root claimed)"
+  write_skill "$root" principle-example "$(conforming)"
+  run_gate "$root"
+  assert_eq_num 0 "$GATE_RC" 'a declared claim passes'
+  out="$(SKILL_SHAPE_SCAN_ROOT="$root" bash "$GATE" --map 2>&1)"
+  assert_contains "$out" "evidence	principle-example" 'the map names the skill under its claim'
+  assert_contains "$out" 'claim map: 1 skill(s) across 1 claim(s) of 1' 'the map totals what it read'
+}
+
+test_missing_claim_is_flagged() {
+  local root
+  root="$(make_root no_claim)"
+  write_skill "$root" principle-example "$(conforming | sed '/^metadata:$/,+1d')"
+  run_gate "$root"
+  assert_ne 0 "$GATE_RC" 'a principle with no claim fails the gate'
+  assert_contains "$GATE_OUT" 'no claim declared' 'the finding names the missing declaration'
+}
+
+test_unknown_claim_is_flagged() {
+  local root
+  root="$(make_root unknown_claim)"
+  write_skill "$root" principle-example "$(conforming | sed 's|^  claim: evidence|  claim: vibes|')"
+  run_gate "$root"
+  assert_ne 0 "$GATE_RC" 'a claim the table lacks fails the gate'
+  assert_contains "$GATE_OUT" 'claim `vibes` is not in the authoring convention' 'the finding names the claim and its home'
+}
+
 run_test test_conforming_principle_is_clean
 run_test test_heading_below_the_title_is_flagged
 run_test test_missing_test_is_flagged
@@ -173,5 +209,8 @@ run_test test_named_part_after_the_test_is_flagged
 run_test test_title_case_title_is_flagged
 run_test test_skill_without_the_name_segment_is_not_read
 run_test test_root_with_no_principle_fails_closed
+run_test test_declared_claim_is_clean_and_mapped
+run_test test_missing_claim_is_flagged
+run_test test_unknown_claim_is_flagged
 
 test_done

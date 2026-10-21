@@ -7,6 +7,13 @@
 // `**Where ... .**` parts, and `**The test.**`, in that order. The title is the
 // file's only heading.
 //
+// A principle also declares the claim it applies, in the frontmatter's documented
+// `metadata` key: `metadata:` then `claim: <name>`. The claim set is read from
+// docs/development/prompt-authoring-conventions.md `## The principle claims`, so
+// the set has one home and this gate names no claim of its own. `--map` prints
+// the corpus grouped by claim, which is a derived view: a written map would restate
+// the skills and go out of date.
+//
 // The subject is derived from the name, never listed: a new principle enters the
 // gate the day its directory exists. A skill whose subject is a procedure rather
 // than a judgement keeps the runbook shape and does not carry the segment.
@@ -26,6 +33,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { load_manifest, manifest_rows } from "../../src/build/container-interface.mjs";
+import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
 
 const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -69,6 +77,36 @@ function skillDirs() {
   }
   return out;
 }
+
+// The claim set is declared once, in the authoring convention's table. Reading it
+// from there keeps a claim name out of this file, so widening the set is one edit
+// to the document a writer already opens.
+const CLAIMS_DOC = join(MODULE_ROOT, "docs/development/prompt-authoring-conventions.md");
+const CLAIMS_HEADING = "## The principle claims";
+
+function declaredClaims() {
+  const text = readFileSync(CLAIMS_DOC, "utf8");
+  const start = text.indexOf(CLAIMS_HEADING);
+  if (start < 0) return [];
+  const rest = text.slice(start + CLAIMS_HEADING.length);
+  const end = rest.search(/\n## /);
+  const body = end < 0 ? rest : rest.slice(0, end);
+  const claims = [];
+  for (const line of body.split("\n")) {
+    const m = line.match(/^\| `([a-z][a-z-]*)` \|/);
+    if (m) claims.push(m[1]);
+  }
+  return claims;
+}
+
+const CLAIMS = declaredClaims();
+if (CLAIMS.length === 0) {
+  console.error("skill shape: " + CLAIMS_DOC + " carries no table under `" + CLAIMS_HEADING + "`; the claim set has no home.");
+  process.exit(1);
+}
+
+const MAP = process.argv.includes("--map");
+const { parseFrontmatter } = await loadPiFrontmatter("Skill shape gate");
 
 const PATTERN = "**The pattern.**";
 const WHY = "**Why.**";
@@ -157,8 +195,30 @@ if (targets.length === 0) {
 }
 
 const findings = [];
-for (const { rel, path } of targets) {
-  findings.push(...inspect(rel, readFileSync(path, "utf8")));
+const groups = new Map(CLAIMS.map((claim) => [claim, []]));
+for (const { name, rel, path } of targets) {
+  const text = readFileSync(path, "utf8");
+  findings.push(...inspect(rel, text));
+  const parsed = parseFrontmatter(text);
+  const claim = parsed?.frontmatter?.metadata?.claim;
+  if (claim === undefined || claim === "") {
+    findings.push({ rel, line: 1, msg: "no claim declared; a principle carries `metadata:` then `claim: <name>`" });
+  } else if (!CLAIMS.includes(claim)) {
+    findings.push({ rel, line: 1, msg: "claim `" + claim + "` is not in the authoring convention's table; the set is " + CLAIMS.join(", ") });
+  } else {
+    groups.get(claim).push(name);
+  }
+}
+
+if (MAP) {
+  for (const [claim, skills] of groups) {
+    for (const skill of skills.sort()) console.log(claim + "\t" + skill);
+  }
+  for (const finding of findings) console.log(`${finding.rel}:${finding.line} ${finding.msg}`);
+  const used = [...groups.values()].filter((list) => list.length > 0);
+  const mapped = used.reduce((sum, list) => sum + list.length, 0);
+  console.log(`claim map: ${mapped} skill(s) across ${used.length} claim(s) of ${targets.length}`);
+  process.exit(findings.length === 0 && mapped === targets.length ? 0 : 1);
 }
 
 for (const finding of findings) {

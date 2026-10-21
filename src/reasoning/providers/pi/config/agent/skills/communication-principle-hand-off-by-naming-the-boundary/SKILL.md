@@ -2,6 +2,8 @@
 name: communication-principle-hand-off-by-naming-the-boundary
 description: Name the boundary when a runbook hands work to another prompt, by stating the next prompt and its entry part, the set it owns, what stays, and where this one stops. Use when writing or reviewing a prompt or skill whose last step sends the reader to another document.
 disable-model-invocation: true
+metadata:
+  claim: authority
 ---
 
 # Name the handoff boundary

@@ -1,6 +1,8 @@
 ---
 name: communication-principle-one-addressing-axis
 description: "Apply when a reply or a document presents a list, or when a reader may address an item by number or letter. A numbered or lettered list asserts a relation between its items, so incur that claim only where it holds: print one axis per presentation, and name each axis when two sets appear together."
+metadata:
+  claim: scope
 ---
 
 # One addressing axis
