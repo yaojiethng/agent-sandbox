@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
+
+```text
+state: open
+scoped: M3.3.4 - The prose standards as principles
+legacy: none
+mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards.
+```
+
+One iteration set `metadata: leitwort:` on all twenty-five principle skills in a single pass. The operator rejected the set as poorly chosen and asked for a revert. Two declarations stand, `proximity` and `leverage`, each of which names its own skill's subject and was already committed.
+
+The class is a name chosen because it sounded right rather than because the artifact already uses it. `mapping`, `train`, `delete` and `artifact` each acquired a defence in prose written after the choice, and a defence written after the choice cannot fail. The corpus states the test that was skipped: the word that leads is the word the body teaches, and a candidate the body never says is the wrong word. The one honest signal in the pass was the swap from `carry` to `delete`, and it read as an exception rather than as evidence that the rest were guesses.
+
+The cost was a reverted unit and a row returned to open with its deferral recorded. The durable fix is the destination, not the discipline: the judging pass belongs to the communication-principle consolidation, where the territory is settled before anyone names a part of it.
+
 ## [A] 2026-10-20  --  A test helper inherited the repository's git state and committed it
 
 ```text
