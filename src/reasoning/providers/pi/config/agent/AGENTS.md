@@ -67,7 +67,7 @@ Tools you have access to:
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. The standard is `docs/policies/documentation_policy.md` `## Communication Standards` in the target repo when present: it holds the phrasing rules, and it names the skill that owns each judgement. The judgements a draft reaches for mid-sentence are named here, and each names its source of truth. This section states no rule of its own.
+General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below names the skill that holds it, and this section states no rule of its own.
 
 - Keep the sentence that changes a decision and delete the one that does not: `communication-principle-cut-what-carries-nothing`.
 - Write so the reader attaches each phrase as it arrives: `communication-principle-attach-as-you-read`.
@@ -76,6 +76,9 @@ General communication guidelines for all agent prose. The standard is `docs/poli
 - Name a value rather than fixing a literal the reader must set: `communication-principle-name-the-value-not-a-literal`.
 - State the primary data, not a value derived from it: `communication-principle-only-derive-what-you-own`.
 - Print one addressing axis per presentation: `communication-principle-one-addressing-axis`.
+- Choose the word that carries the most distinction and loses none: `communication-principle-maximize-conceptual-leverage`.
+- Give every word one meaning and every thing one word: `communication-principle-align-the-mental-model`.
+- Carry one line of reasoning through the document: `communication-principle-single-train-of-thought`.
 
 Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
 

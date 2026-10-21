@@ -36,22 +36,20 @@ A workflow table Action cell holds one imperative sentence and a link to the gov
 
 ### Simplified Technical English
 
-New and changed prose meets ASD-STE100, with one exception. Where the work belongs to a well-specified technical domain and the reader works in that domain, its terms are the precise words, so use them and use no other field's. A word that names a thing in the domain is its term, and no list of banned words overrides it. A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
+Each phrasing rule this repository applies is a judgement, and a skill states it. This section names the skills and restates no rule.
 
-Phrasing rules, a working subset of the full dictionary rather than a replacement for it:
+- The word that carries the most distinction for the least reader effort, with no distinction lost, including the domain's own term where a plainer word would drop one: `communication-principle-maximize-conceptual-leverage` at `$AGENT_HOME/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md`.
+- Every word mapped to one thing, and every thing to one word: `communication-principle-align-the-mental-model` at `$AGENT_HOME/agent/skills/communication-principle-align-the-mental-model/SKILL.md`.
+- One line of reasoning through a document, with no detour the reader has to carry: `communication-principle-single-train-of-thought` at `$AGENT_HOME/agent/skills/communication-principle-single-train-of-thought/SKILL.md`.
+- Sentence structure, an active voice and a main clause that does not depend on its afterthought: `communication-principle-attach-as-you-read` at `$AGENT_HOME/agent/skills/communication-principle-attach-as-you-read/SKILL.md`.
+- The allowed form stated, and the action named: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`.
 
-- Sentence structure. Active voice with a named actor, and a main clause that does not depend on its afterthought. Judgement: `communication-principle-attach-as-you-read`.
-- Short sentences. Aim under 20 words, one idea per sentence.
-- One term, one meaning. Pick one word for a thing and keep it. Rotating synonyms ("volume" / "sandbox" / "workspace" for one object) is a defect.
-- Common verbs. Prefer is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
-- No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably"). The hedging rule governs what you checked, not what you cannot check, so a claim about an unobservable state is not hedging when the sentence marks it as an inference.
-- STE100 simplifies structure and verbs, not precision.
-- State the allowed form and name the action. Judgement: `communication-principle-write-for-the-reader`.
+A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
 
-The judgements named above are skills under `$AGENT_HOME/agent/skills/`. Evaluate prose with two tests:
+Two tests decide whether a sentence meets these judgements:
 
-- **Delete test.** Judgement: `communication-principle-cut-what-carries-nothing`.
-- **Literal-reader test.** A literal reader follows the words exactly and infers no intent. Could the reader turn the sentence into a task, an action, or an inference that was not intended? If yes, rephrase it with the phrasing rules.
+- **Delete test.** Drop the sentence a reader can lose without losing an action, per `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`.
+- **Literal-reader test.** A literal reader follows the words exactly and infers no intent. Could the reader turn the sentence into a task, an action, or an inference that was not intended? If yes, rephrase it with the phrasing rules above.
 
 ### Reserved terminology
 

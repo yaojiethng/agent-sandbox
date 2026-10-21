@@ -1,6 +1,6 @@
 ---
 name: principle-effective-skill-routing
-description: Put a skill's name and description to work as a signpost, so an agent matches the situation that needs the skill and an operator recalls it. Carry one leading word, drawn from the skill's domain, through the name, the description and the body. Use when writing or reviewing a skill's name, its description, its leading word, or the list entry an operator searches.
+description: Put a skill's name and description to work as a signpost, so an agent matches the situation that needs the skill and an operator recalls it. Place the leading word its domain supplies through the name, the description and the body. Use when writing or reviewing a skill's name or description.
 disable-model-invocation: true
 metadata:
   claim: reader
@@ -30,20 +30,13 @@ A rename reaches every document that cites the name, so a rename is a change wit
 
 Put one leading word on the signpost, and repeat it through the name, the description and the body. The word steers. An agent that repeats it has taken the direction the skill gives. `deep modules`, `test seams` and `tracer bullets` each carry a whole judgement in two or three tokens.
 
-Draw the word from the domain the skill works in, because the domain supplies its carrying power. A skill about code takes a word from programming or domain modelling. A skill about prose takes one from rhetoric or linguistics, where `signposting` names the cues that direct a reader.
+Which word leads is not this skill's question. `communication-principle-maximize-conceptual-leverage` at `$AGENT_HOME/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md` chooses it, and this skill decides where the choice goes. Placement is the routing question, and the word is the word.
 
 Point the signpost at the situation, and name the situation in the words a reader would use for it. Do not advertise how the skill is built, because that sends the reader past the sign.
 
-Carry the domain's precision, and deliver it in words the reader already holds. `principle-define-terminology-before-use` owns defining a term the reader may not hold. No gate checks whether a word leads, because no gate sees a thinking trace, so a reviewer judges it.
+No gate checks whether a word leads, because no gate sees a thinking trace, so a reviewer judges it.
 
-**Linguistic fidelity.** Two errors degrade a skill equally, and each has its own repair.
-
-- **Invented jargon.** A technical word the domain does not hold hides the concept. Replace it with the exact domain term.
-- **Vague generalities.** A generic word where the domain holds a precise one dilutes the concept. Replace it with the precise domain term.
-
-**The domain exception.** When a skill works within a well-specified domain, the domain's native vocabulary is the precise language. No arbitrary list of banned words overrides the established terms of the field.
-
-**What it does not cover.** What the skill does once it is loaded, and how its body is written. The frontmatter is not the documentation. The signpost is the one exception, because it sets the word the body keeps.
+**What it does not cover.** Which word leads, which is the leverage judgement above. What the skill does once it is loaded, and how its body is written. The frontmatter is not the documentation. The signpost is the one exception, because it sets the word the body keeps.
 
 For a skill only the operator invokes, the description is read from the operator's list, so its words are the words that operator searches with.
 

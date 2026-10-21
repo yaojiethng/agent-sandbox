@@ -110,7 +110,7 @@ The exemplar is `communication-principle-show-dont-describe`, at `$AGENT_HOME/ag
 
 ## The principle claims
 
-Every principle applies one claim, and the claim is how a reader finds the family of principles that bears on a problem they cannot name yet. A principle declares its claim in its frontmatter, under the `metadata` key pi documents for extra fields: `metadata:` then `claim: <name>`. `scripts/check_skill_shape.sh` reads the declaration and fails a principle that carries none or names one this table does not state, and its `--map` mode prints the corpus grouped by claim.
+Every principle applies one claim, and the claim is how a reader finds the family of principles that bears on a problem they cannot name yet. The five claims serve one goal, alignment. A text succeeds when the reader holds the model the writer holds, and each claim names a kind of gap between the two. A principle declares its claim in its frontmatter, under the `metadata` key pi documents for extra fields: `metadata:` then `claim: <name>`. `scripts/check_skill_shape.sh` reads the declaration and fails a principle that carries none or names one this table does not state, and its `--map` mode prints the corpus grouped by claim.
 
 | Claim | The claim a skill of this family makes |
 |---|---|
