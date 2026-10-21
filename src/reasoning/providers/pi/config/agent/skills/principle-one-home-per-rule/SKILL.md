@@ -1,6 +1,6 @@
 ---
 name: principle-one-home-per-rule
-description: "A norm has one home. Apply when writing, moving or copying a rule, a judgement or a definition across documents. A second copy is a defect unless it points at the home."
+description: "A norm has one home, so you do not repeat yourself. Apply when writing, moving or copying a rule, a judgement or a definition across documents. A second copy is a defect unless it points at the home."
 disable-model-invocation: true
 metadata:
   claim: source
@@ -8,7 +8,7 @@ metadata:
 
 # One home per rule
 
-A norm has one home, and every other place that carries it points at that home.
+A norm has one authoritative home, and every other place that carries it points at that home.
 
 **The pattern.**
 
@@ -17,6 +17,8 @@ A norm has one home, and every other place that carries it points at that home.
 3. Make every other carrier a pointer to that home.
 
 **Why.** Two copies of one norm drift. The reader then holds a version that no observer checks and no author updates, and the drift is silent, because each copy reads as current. A duplicate also forces the reader to decide which copy governs, and no record answers that.
+
+The field states the prohibition as do not repeat yourself, and the target as a single source of truth. The half that carries the load is knowledge rather than text, so a second copy of the words is a defect while it states the same knowledge twice, and not otherwise. An inline that names the home states no second knowledge, which is the exception the next part states.
 
 **A fast path is not a second home.** A workflow document may inline a short form of a rule for context efficiency. It stays a fast path while the rule keeps its home and the inline names the home. Remove either and the inline becomes a second home.
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_linking.sh
+# TEST_DEADLINE: 30
 # Behavioural tests for scripts/lint/linking.mjs -- the link-target and
 # heading-fragment custom markdownlint rule. The real markdownlint-cli2 runs
 # against fixture files with a temp config that imports the repo rule; the
