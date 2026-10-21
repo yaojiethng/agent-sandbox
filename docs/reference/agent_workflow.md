@@ -6,7 +6,7 @@ reader: [agent]
 
 This document describes how work gets done in agent-sandbox -- the principles the system is built on, the invariants it enforces, and the map of where each part of the workflow is governed. It is the conceptual entry point to the policy system.
 
-The workflow is expressed through three layers: policy documents (authoritative rules), skill files (execution helpers), and prompt templates (iteration tooling). This document maps what each policy document owns and where the boundaries between them lie.
+The workflow is expressed through three layers: policy documents, skill files (execution helpers), and prompt templates (iteration tooling). This document maps what each policy document owns and where the boundaries between them lie.
 
 ## Core Principles
 
@@ -80,23 +80,19 @@ The agent-sandbox workflow is expressed across three layers with a strict author
 
 ### Policy documents
 
-Policy documents are the authoritative source for workflow rules. They describe the current system reality -- what the system does, how iterations run, what constraints hold. They are complete in themselves: an agent following only the policy documents should produce correct behaviour.
+Policy documents describe the current system reality -- what the system does, how iterations run, what constraints hold. They hold the rules an observer detects, and the judgements their own workflow produces; `### Norm kinds` states where a judgement that several documents use lives instead. Duplicate rules across documents are a defect -- one document is the home and the other links to it.
 
-Rules live in the policy document where they will be read and are most valuable contextually. Duplicate rules across documents are a defect -- one document is the canonical owner and the other links to it.
-
-Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the canonical owner for each area of the workflow.
+Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the document that specifies each area of the workflow.
 
 ### Skill files
 
-Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
+Skill files are execution helpers, and one of them may be the home of a judgement that more than one document uses; `### Norm kinds` below places it there so one home serves them all. A skill may also inline a distillation of a rule whose home is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that home, and it names the home. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
-A constraint that exists only in a skill file is not authoritative. A judgement is the exception: nothing detects its breach, so it lives with the document that produces it, and `### Norm kinds` below states the rule. If an operator bypasses the skill, the constraint disappears. If the policy document changes, an inlined copy may become stale -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
+An inline may become stale when its home changes -- this is acceptable because the inline is explicitly a convenience copy, not the home.
 
 ### Prompt templates
 
-Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
-
-Prompt templates do not contain authoritative rules.
+Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the home of every rule it borrows. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
 
 ### Norm kinds
 
@@ -126,9 +122,9 @@ This is the one place the kinds are defined. A document that states one locally 
 
 ## Policy Map
 
-Maps each area of the workflow to its canonical governing document, what that document owns, and what it explicitly does not own. When two documents seem to cover the same area, this table names the canonical owner.
+Maps each area of the workflow to the document that specifies it, what that document owns, and what it explicitly does not own. When two documents seem to cover the same area, this table names the home.
 
-| Workflow area | Canonical document | Owns | Does not own |
+| Workflow area | Document | Owns | Does not own |
 |---|---|---|---|
 | Iteration sequencing and loop structure | [`iteration_policy.md`](../policies/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
 | Handover lifecycle | the project's `.agents/skills/work-log/SKILL.md` convention | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
@@ -155,7 +151,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../policies/documentation_policy.md#rule-authority) to resolve which document is authoritative.
+When a rule appears to exist in two documents in this map, decide its home by the kind, per `### Norm kinds`: a resolving observer makes it a rule, and the document that produces the content owns it.
 
 ## References
 

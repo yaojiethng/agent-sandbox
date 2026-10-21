@@ -14,16 +14,16 @@ The authoring rules borrow from two external references: Claude's Skill authorin
 
 A document an agent consumes is one of three types. The type determines where it lives and how it is written.
 
-**Policy** documents hold the authoritative rules. Write a rule only into a policy document in `docs/policies/`, `docs/reference/`, `docs/reference/`, or `docs/development/`.
+**Policy** documents hold the rules an observer detects, and the judgements their own workflow produces. A policy document lives in `docs/policies/`, `docs/reference/`, or `docs/development/`.
 
-**Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states no rule; it serves the rules that live in policy.
+**Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states facts; a rule it stated would make it a policy document, per the type test below.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They are consumers of the policy documents: they reference the rules there, or inline a distillation for context efficiency. A workflow document never carries an authoritative rule. It may carry a judgement, in a principle skill, and that skill is the judgement's only home. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the home of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only home. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
 
 Two tests identify a workflow document:
 
 1. **Who invokes it.** A prompt runs at the operator's word (`/iter`, `/plan`). A skill runs at the model's or the operator's invocation. A policy or reference document is read, not invoked.
-2. **Does it carry authoritative rules?** If removing the document leaves a rule unstated anywhere, the document carries that rule and is policy, not workflow. A workflow document that is the only home of a rule is miswritten.
+2. **Who observes it?** A document that a gate, a lint rule or a routine read observes is policy. A document whose rules its own steps run is workflow.
 
 A third test separates the forms a workflow document takes. Is it steps, reference, or judgement? A runbook holds ordered steps. A reference holds facts. An advisor holds judgements and a diagnostic checklist. This distinction shapes the structure, described below.
 
@@ -51,13 +51,13 @@ The failure mode is sprawl: a document too long even when every line is live. At
 
 A **runbook** is a prompt or skill that holds ordered steps. Each step ends on a criterion that says when the step is done; the judgement is the `principle-say-what-done-looks-like` skill at `$AGENT_HOME/agent/skills/principle-say-what-done-looks-like/SKILL.md`. The reference region of a prompt is different: it lists rules consulted on demand and has no step to finish.
 
-The loop prompts (`/iter`, `/plan`, `/sidequest`, `/milestone-start`, `/milestone-close`) are runbooks. Their steps map the iteration and milestone workflow procedures, and the rules stay in the policy documents.
+The loop prompts (`/iter`, `/plan`, `/sidequest`, `/milestone-start`, `/milestone-close`) are runbooks. Their steps map the iteration and milestone workflow procedures, and each rule they state belongs to the procedure.
 
-An **advisor** is a prompt or skill that holds reference and judgement, run against a document or a code change to find defects. It is a diagnostic checklist: it identifies what has gone wrong, not what to do instead. The corresponding prescriptive rules live in the policy and the conventions. An audit prompt must not carry an authoritative rule, because a skill is a fast path, not a source of truth.
+An **advisor** is a prompt or skill that holds reference and judgement, run against a document or a code change to find defects. It is a diagnostic checklist: it identifies what has gone wrong, not what to do instead. The corresponding prescriptive rules live in the policy and the conventions, so an advisor names the rule a document broke rather than restating it.
 
 The advisor-role split is explicit: the advisor names its role, states when to run it, and constructs a brief. The triage and consensus steps after the advisor returns are part of the runbook that dispatched it.
 
-A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It is a fast path to a rule that lives in policy. A rule that exists only in a skill is not authoritative. An inline distillation of a rule is a convenience copy; it may go stale, and that is acceptable only because it is not the source of truth. A judgement is the other case: nothing detects its breach, and it lives with the document that produces it, per [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds) `### Norm kinds`.
+A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It may be the home of a rule its own procedure runs, and it may inline a distillation of a rule whose home is elsewhere: the inline is a convenience copy, it may go stale, and it names the home. A judgement used by more than one document lives in a principle skill, per `### Norm kinds` in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds).
 
 **Where a check goes is a judgement.** A check reads evidence and produces a decision, so its placement is stated in the `principle-check-placement` skill at `$AGENT_HOME/agent/skills/principle-check-placement/SKILL.md`, and a skill that holds checks points there.
 
@@ -134,18 +134,15 @@ A prompt that hands off to a sub-agent states the target's whole owned-file set,
 
 **Skill names and descriptions route a skill.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that route it, and the description summarises to the name. The judgement is the `principle-effective-skill-routing` skill at `$AGENT_HOME/agent/skills/principle-effective-skill-routing/SKILL.md`.
 
-## Consumers as fast paths, never sources
+## A fast path names its home
 
-A workflow document is a consumer of the policy documents. It may inline a distillation of a rule for context efficiency, under two constraints:
+A workflow document may inline a distillation of a rule for context efficiency: the inline names the home, and where staleness would mislead it is labelled a convenience copy. The judgement and the fast path are `principle-one-home-per-rule` at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`, which is their only home.
 
-1. The rule still exists in a policy document. The inline is a fast path to it, never a replacement.
-2. The inline is labelled as a convenience copy where its staleness would mislead. An inlined rule that a reader takes as current must carry its pointer to the policy.
-
-This is the canonical-owner test applied to prompts and skills. When a rule appears in a workflow document and in a policy document, an agent reads the policy for the authoritative form and the workflow document for the fast path. The policy is the canonical owner.
+The home is decided by the kind, not by the layer, per `### Norm kinds` in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds).
 
 Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
-The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); the register lists the signs to look for. The canonical-owner test appears in both, by design: the two registers serve different readers.
+The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); the register lists the signs to look for.
 
 ## A workflow document owns the scope it declares
 

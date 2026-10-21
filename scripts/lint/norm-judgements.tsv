@@ -3,7 +3,7 @@
 # A line that cites a skill is homed there. --regroup derives its group as j-home-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails.
 # A line that cites no skill carries a hand row. note is skill:<name> when the home is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local.
 # The scan set is the two source documents, so a judgement a convention skill also states counts one document here. Read a class-1 group with that limit.
-b39e11f6660f087900715178bf863ae7c6fce6f9	j-skills-are-not-documentation	-
+1e5a88453ed9d92805162103f42a114f10bb12d5	j-skills-are-not-documentation	-
 acdad8515bec1050448e6729fe80313efd845612	j-folder-taxonomy	-
 cf7534d209fea5cb9da959cacc08fa41fea13936	j-frozen-layer	-
 cc8b788b03caa6c8a914d5f96eea3ccf96f53eeb	j-workflow-table-cell	-
@@ -32,13 +32,13 @@ eafe1c72dcfdebf2d3ea318b617e453813836285	j-concept-standalone	-
 748a074ba12be3b37f542d4365e7191976aac9f2	j-document-abstraction-grain	-
 de6a319e16a3f3a6b78a360800192f9c8656bd81	j-archival-is-not-amendment	-
 9993f424384d017df47573da51498a410f60162c	j-ungrouped	-
-0cde43de574e99617be38226d24c8f7ec7909ce9	j-reference-states-no-rule	-
+5266c958be3051d0854e570ec3b862671b1369a2	j-reference-states-no-rule	-
 231eddf1e0b792b4f195d76dbab572f0a258df99	j-progressive-disclosure	-
 9dc9f97f59c06a724fa2a76cc14448848059d42b	j-sprawl-cure	-
 40e3a0bd0131e8d899a7de9764b4900a3992344b	j-home-communication-principle-keep-a-subject-near	skill:communication-principle-keep-a-subject-near
 fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-home-principle-match-precision-to-stakes	skill:principle-match-precision-to-stakes
 ad7459970fb43befb3277b6bfd182c7af31c43f5	j-home-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
-3cd859c088b5cee78631030c43d4168c2d75727f	j-advisor-definition	-
+419ac1f421015f6f8a343bd74f1310ff430eaebe	j-advisor-definition	-
 7d3fe6897f8eb3e8802a97e5045f19350e985425	j-advisor-role-split	-
 a179aaa286baada7fe179da36f7ebffc0956c17a	j-subagent-brief	-
 7ead3e1889432999e9e88d25e35cd00c91e5178d	j-argument-hint	-
@@ -57,9 +57,7 @@ d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-home-principle-own-the-scope-you-decl
 73b1da5d2dcd9b3c50779dd00786bc3f995fd18f	j-scope-discipline-in-prompts	-
 b99082ecff306ea9420f608a77909b04986f3c0d	j-brief-owned-file-set	-
 fbbfd953bb504829f8596975db4bbe685b4747dd	j-home-principle-effective-skill-routing	skill:principle-effective-skill-routing
-687c53cba30799e1e520c3687cfc36723324391b	j-copy-points-to-its-source	skill:principle-one-home-per-rule
-8e170668178e08d1a76abb3997021080f839b515	j-copy-points-to-its-source	skill:principle-one-home-per-rule
-58421d02387021f426bd6b7f1180deef0a618aca	j-copy-points-to-its-source	skill:principle-one-home-per-rule
+46743808bdef419dee7bdbbf12d186c59734f264	j-home-principle-one-home-per-rule	skill:principle-one-home-per-rule
 536a4b6116a70d51bcafcacd801d7d8a0b25b847	j-home-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
 985fb3460eaf00dbc523ecdeaa6514de7e84f0f0	j-home-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
 127ed937169dd5ed1a62f93b0282cac050be1234	j-copy-points-to-its-source	skill:principle-one-home-per-rule
