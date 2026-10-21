@@ -34,7 +34,7 @@ A caller on another harness follows the contract above and supplies its own invo
 
 ## The scratch directory
 
-The provider `AGENTS.md` defines the container's scratch directory. This skill follows that definition and carries no value of its own, so the path has one home.
+The provider `AGENTS.md` defines the container's scratch directory. This skill follows that definition and carries no value of its own, so the path has one source of truth.
 
 Pass that directory as the second argument. The script creates the run directory beneath it with `mktemp -d`, and keeps it, printing the path, because the logs are the reviewer's only evidence.
 

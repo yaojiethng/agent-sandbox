@@ -62,7 +62,7 @@ Present the pre-close summary and wait for the release gate, per `/iter` Step 7 
 
 Run the consolidated close from [`/wrapup`](wrapup.md) Part B, as `/iter` Steps 8-9 do. The sidequest is one delivery commit.
 
-**Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per the project's `task-list` convention. A fix, check or record with no roadmap home states that as the write-back outcome; the step is never skipped.
+**Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per the project's `task-list` convention. A fix, check or record that belongs in no roadmap row states that as the write-back outcome; the step is never skipped.
 
 ## Return
 

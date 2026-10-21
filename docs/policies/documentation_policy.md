@@ -6,17 +6,17 @@ reader: [agent]
 
 # Documentation Policy
 
-Skill files and prompt templates are not documentation. They hold the rules their own procedure runs, and they point at the home of every rule they borrow, per [`agent_workflow.md`](../reference/agent_workflow.md#how-the-workflow-is-expressed).
+Skill files and prompt templates are not documentation. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, per [`agent_workflow.md`](../reference/agent_workflow.md#how-the-workflow-is-expressed).
 
 The document taxonomy, meaning the document types, their durability, and the policy or ADR that governs each, is the concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md). Compliance checklists live in the `doc-maintenance` skill at `workflow/coding-agent/skills/doc-maintenance/SKILL.md`.
 
 ## Rule authority
 
-The kinds of norm and the home each has are defined once in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds). This section applies them to this file.
+The kinds of norm and the source of truth each has are defined once in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds). This section applies them to this file.
 
-`scripts/lint/norm-ownership.tsv` records the kind, observer and home of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new line arrives unclassified and an edited sentence loses its kind. The script derives a home from the skill path the line cites and rejects a hand-edited one.
+`scripts/lint/norm-ownership.tsv` records the kind, observer and source of truth of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new line arrives unclassified and an edited sentence loses its kind. The script derives a source of truth from the skill path the line cites and rejects a hand-edited one.
 
-A norm's home, and what makes a second copy a defect, is `principle-one-home-per-rule` at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`.
+A norm's source of truth, and what makes a second copy a defect, is `principle-single-source-of-truth` at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`.
 
 ## Folder Structure
 
@@ -136,7 +136,7 @@ Before writing an ADR or a reference document, propose the skeleton in chat, mea
 
 ### Subject, not the session
 
-The judgement for a durable record is `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`, which is the judgement's only home. The concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) classifies what endures.
+The judgement for a durable record is `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`, which is the judgement's only source of truth. The concept document [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) classifies what endures.
 
 A design record carries no question-and-reply pair, and every question it lists is still open. Keep a short section of the designs considered and rejected, with the reason for each, and put the final design at the forefront.
 

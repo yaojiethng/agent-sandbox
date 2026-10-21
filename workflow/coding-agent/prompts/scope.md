@@ -21,7 +21,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 A brief is what a run reads. It carries the premise under test, the material to start from, the method, the check that proves the result, and the work units the run is cut into.
 
-The deliverable is one brief at `.agents/drafts/`. The home is stated once, here; `docs/development/prompt-authoring-conventions.md` owns the draft gate and its root.
+The deliverable is one brief at `.agents/drafts/`. The source of truth is stated once, here; `docs/development/prompt-authoring-conventions.md` owns the draft gate and its root.
 
 ## When to use
 

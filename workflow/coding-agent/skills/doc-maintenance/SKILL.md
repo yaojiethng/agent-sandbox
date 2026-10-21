@@ -113,7 +113,7 @@ Completion criterion: the report covers every document in scope, every finding, 
 
 **Canonical owner test.** When one rule appears in two documents, ask which document an agent reads when it needs the rule. That document owns it; the other links to it and does not restate it. The test is stated in both registers on purpose -- the policy states it to prescribe, this register to diagnose.
 
-**Signs of duplication.** The same constraint in a workflow table cell and in a child policy section. An exit condition in one policy that restates a rule in another. A rule in a skill or a prompt with no home in a policy: a consumer is a fast path to a rule, never its source.
+**Signs of duplication.** The same constraint in a workflow table cell and in a child policy section. An exit condition in one policy that restates a rule in another. A rule in a skill or a prompt that names no source of truth: either it is that rule's source of truth, or it is a copy that lost its pointer.
 
 **Signs of misplaced content.** Future language in a shipped document. A TODO item in a shipped document. A prescriptive rule with no policy entry. A record argument restated in a shipped document, where the record is the place the decision is argued.
 

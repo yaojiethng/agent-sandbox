@@ -31,8 +31,8 @@ Nothing reports either failure. Each half reads as complete, and so does each se
 - **Attention.** A section carrying a second subject spends attention nobody asked to spend.
 - **The next edit.** A writer who cannot see the whole subject edits part of it.
 
-**Where another rule wins.** A second copy is a different defect: the norm then has two homes. `principle-one-home-per-rule` owns that defect, at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`, and the copy points at the home.
+**Where another rule wins.** A second copy is a different defect: the norm then has two sources of truth. `principle-single-source-of-truth` owns that defect, at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, and the copy points at the source of truth.
 
-This rule covers the other two cases: one home whose parts the reader never reaches, and one place that carries a second subject.
+This rule covers the other two cases: one source of truth whose parts the reader never reaches, and one place that carries a second subject.
 
 **The test.** Read the document in the order it is written. At each caveat, ask whether the reader still holds the rule it qualifies. At each section, ask what one subject it serves. A caveat that reaches back further than one section means the parts are apart. A section that serves two subjects means one of them belongs elsewhere.

@@ -96,7 +96,7 @@ Gates read the declaration through [`src/build/container-interface.mjs`](../../s
 
 [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, and the loop inventory against the policy's `scope`.
 
-[`scripts/check_norm_ownership.sh`](../../scripts/check_norm_ownership.sh) reads the same declaration for the skill and prompt roots. Every observer it admits, and every skill a judgement cites as its home, has to resolve to a skill directory: a root the declaration carries, or the project convention corpus at `.agents/skills`, which is not a container surface. A new skill root is declared once, and a skill no prompt names cannot observe a rule.
+[`scripts/check_norm_ownership.sh`](../../scripts/check_norm_ownership.sh) reads the same declaration for the skill and prompt roots. Every observer it admits, and every skill a judgement cites as its source of truth, has to resolve to a skill directory: a root the declaration carries, or the project convention corpus at `.agents/skills`, which is not a container surface. A new skill root is declared once, and a skill no prompt names cannot observe a rule.
 
 [`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, holds the files to their cell's reach. A link in a cell's file must land inside the set the declaration grants that cell: every instruction root, the `session` paths, and the cell's own `reachable` rows. A target outside that set fails even when the image carries it, because it names a tree the surface cannot reach. A repository link under a `reachable` row resolves there instead of in the image.
 

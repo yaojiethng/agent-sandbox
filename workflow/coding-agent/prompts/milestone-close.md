@@ -68,7 +68,7 @@ In `devlog/roadmap.md`:
 
 ## Escalate deferred work
 
-Give every item the milestone leaves open a recorded home before the close:
+Give every item the milestone leaves open a recorded source of truth before the close:
 
 - An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md).
 - An item that will not be picked up next goes to `roadmap.md` as a named task under the `task-list` convention's `**Roadmap task placement**`; the operator names the destination milestone.

@@ -149,7 +149,7 @@ Tests live in one of three homes based on **who owns the seam under test** and *
 
 Knowledge tests and integration tests are **not** run by `make test`. The runner glob is `tests/test_*.sh` (non-recursive), so `tests/knowledge/` and `tests/integration/` are excluded.
 
-**Do not treat the knowledge test as a primitive for testing our own code.** If the seam is our maintained code, it is testable by definition -- write a unit test under `tests/` and run it in `make test`. A knowledge test is a *last resort for unmodifiable seams*, not a home for internal behaviour.
+**Do not treat the knowledge test as a primitive for testing our own code.** If the seam is our maintained code, it is testable by definition -- write a unit test under `tests/` and run it in `make test`. A knowledge test is a *last resort for unmodifiable seams*, not a source of truth for internal behaviour.
 
 ### The file and the unit
 
@@ -195,7 +195,7 @@ End-to-end or environment-gated tests that cannot run deterministically in the `
 
 **Purpose:** Preserve valuable coverage of flows the unit harness cannot exercise, while keeping `make test` a fully-green, deterministic assertion of **failed 0**.
 
-**Rule:** If an integration flow's seam becomes unit-testable (e.g. via a mock), promote it to `tests/test_*.sh`. Do not use `integration/` as a permanent home for code our own unit suite *could* cover.
+**Rule:** If an integration flow's seam becomes unit-testable (e.g. via a mock), promote it to `tests/test_*.sh`. Do not use `integration/` as a permanent place for code our own unit suite *could* cover.
 
 ### The `make test` invariant
 

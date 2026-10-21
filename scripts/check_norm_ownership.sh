@@ -2,50 +2,50 @@
 # scripts/check_norm_ownership.sh
 # The norm ledger and its gate: every prose line of the two prose standards
 # carries a kind, every rule names an observer that runs, and every line that
-# cites a skill is held to that skill as its home.
+# cites a skill is held to that skill as its source of truth.
 #
 # A norm is a rule when an observer catches its violation. An observer is a gate
 # in scripts/lint.sh, a lint rule under scripts/lint/, a prompt, or a maintenance
 # skill a prompt dispatches. A norm with no observer is a judgement: it states
 # how a writer decides, and nothing detects a breach. A judgement that more than
 # one document uses lives in a skill, and the line cites that skill. The cited
-# skill is the line's `home`; it is derived from the text, never typed.
+# skill is the line's `source_of_truth`; it is derived from the text, never typed.
 #
 # Usage:
 #   check_norm_ownership.sh --generate   rewrite the ledger from the sources,
 #                                       preserving the kind and observer already
 #                                       recorded for a line whose text is
-#                                       unchanged, deriving the home, and marking
+#                                       unchanged, deriving the source of truth, and marking
 #                                       a new line UNCLASSIFIED
 #   check_norm_ownership.sh --check      fail when a source line is unclassified,
 #                                       a ledger row no longer exists, a kind is
 #                                       outside the reference table, an observer
-#                                       names nothing that runs, a home is stale
+#                                       names nothing that runs, a source of truth is stale
 #                                       or names a skill that does not exist, or a
 #                                       line cites two skills
 #   check_norm_ownership.sh --groups     print the judgement map, one row per
 #                                       group, and fail when a judgement line has
 #                                       no group, a group's note names a skill
-#                                       that does not exist, a row's home
+#                                       that does not exist, a row's source of truth
 #                                       disagrees with its group, or two notes
 #                                       claim one group
 #   check_norm_ownership.sh --regroup    rewrite the grouping file: group every
-#                                       homed judgement under `j-home-<skill>`,
+#                                       sourced judgement under `j-source-of-truth-<skill>`,
 #                                       keep the group of a line that names no
-#                                       home, and drop a row whose line is gone
+#                                       source of truth, and drop a row whose line is gone
 #
 # Test seam: NORM_OWNERSHIP_SCAN_ROOT points the scan at a fixture root that
 # mirrors the repository layout.
 #
 # The ledger is `scripts/lint/norm-ownership.tsv`, six tab-separated columns:
-# hash, source, kind, observer, home, text. The hash is the line's SHA-1, so an
+# hash, source, kind, observer, source_of_truth, text. The hash is the line's SHA-1, so an
 # edited sentence loses its row and fails the gate until a reader classifies it
-# again. The home is `none` or `skill:<name>`, derived from the skill path the
+# again. The source of truth is `none` or `skill:<name>`, derived from the skill path the
 # sentence cites.
 #
 # The grouping is `scripts/lint/norm-judgements.tsv`, three tab-separated
 # columns: hash, group, note. It is hand-maintained only for a judgement that
-# names no home, because which judgement a line states is a reading. A homed
+# names no source of truth, because which judgement a line states is a reading. A sourced
 # line needs no row here: its group is derived, and a map row that disagrees
 # with the derivation fails.
 #
@@ -148,11 +148,11 @@ candidate_lines() {
 # to the sentence retires the old row and demands a new classification.
 line_hash() { printf '%s' "$1" | sha1sum | cut -d' ' -f1; }
 
-# derive_home TEXT  --  `none`, `skill:NAME` for the one skill the line cites,
+# derive_source_of_truth TEXT  --  `none`, `skill:NAME` for the one skill the line cites,
 # or `ambiguous:A,B` when it cites more than one. A citation is the path form
 # `skills/<name>/`, which every local skill path in the corpus carries. A URL is
-# stripped first, so an upstream project's own skill folder is not a home.
-derive_home() {
+# stripped first, so an upstream project's own skill folder is not a source of truth.
+derive_source_of_truth() {
   local rest="$1" name names=""
   while [[ "$rest" =~ (https?://[^\ \)\`]+) ]]; do rest="${rest/"${BASH_REMATCH[1]}"/}"; done
   while [[ "$rest" =~ skills/([A-Za-z0-9._-]+)/ ]]; do
@@ -225,14 +225,14 @@ observer_resolves() {
 }
 
 generate() {
-  local tmp file text hash kind obs home prior
+  local tmp file text hash kind obs source_of_truth prior
   tmp="$(mktemp)"
   {
     echo "# Norm ledger. Generated by scripts/check_norm_ownership.sh --generate."
-    echo "# Columns: hash, source, kind, observer, home, text. Unit: one prose line."
+    echo "# Columns: hash, source, kind, observer, source_of_truth, text. Unit: one prose line."
     echo "# kind is rule, judgement or description, per docs/reference/agent_workflow.md ### Norm kinds. UNCLASSIFIED fails --check."
     echo "# observer is none, gate:<script>, lint:<file>, prompt:<name> or review:<skill>. A review skill must be one a prompt names, at a word boundary."
-    echo "# home is none or skill:<name>, derived for a judgement from the skill path it cites. --check rejects a hand edit."
+    echo "# source_of_truth is none or skill:<name>, derived for a judgement from the skill path it cites. --check rejects a hand edit."
   } > "$tmp"
   for file in "${SOURCES[@]}"; do
     while IFS= read -r text; do
@@ -245,13 +245,13 @@ generate() {
           obs="${prior#*$'\t'}"
         fi
       fi
-      home="$(derive_home "$text")"
-      [[ "$kind" == judgement ]] || home=none
-      case "$home" in
+      source_of_truth="$(derive_source_of_truth "$text")"
+      [[ "$kind" == judgement ]] || source_of_truth=none
+      case "$source_of_truth" in
         ambiguous:*)
-          echo "norm-ownership: $file cites two skills (${home#ambiguous:}); reword the line so it names one, or --check will reject it: ${text:0:70}..." >&2 ;;
+          echo "norm-ownership: $file cites two skills (${source_of_truth#ambiguous:}); reword the line so it names one, or --check will reject it: ${text:0:70}..." >&2 ;;
       esac
-      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$hash" "$file" "$kind" "$obs" "$home" "$text" >> "$tmp"
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$hash" "$file" "$kind" "$obs" "$source_of_truth" "$text" >> "$tmp"
     done < <(candidate_lines "$file")
   done
   mv "$tmp" "$LEDGER"
@@ -266,7 +266,7 @@ kinds_from_reference() {
 check() {
   with_skill_names
   [[ -f "$LEDGER" ]] || { echo "norm-ownership: missing ledger $LEDGER" >&2; return 1; }
-  local rc=0 file text hash kind obs home derived count=0 gated=0 reviewed=0 judge=0 description=0 homed=0
+  local rc=0 file text hash kind obs source_of_truth derived count=0 gated=0 reviewed=0 judge=0 description=0 sourced=0
   local KINDS
   KINDS="$(kinds_from_reference | paste -sd'|' -)"
   if [[ -z "$KINDS" ]]; then
@@ -287,7 +287,7 @@ check() {
   done
   while IFS= read -r row; do
     [[ "$row" == \#* || -z "$row" ]] && continue
-    IFS=$'\t' read -r hash file kind obs home text <<< "$row"
+    IFS=$'\t' read -r hash file kind obs source_of_truth text <<< "$row"
     unset "unclassified[${file}${TAB}${hash}]"
     count=$((count + 1))
     if ! printf '%s' "$KINDS" | tr '|' '\n' | grep -qx -- "$kind"; then
@@ -295,10 +295,10 @@ check() {
       rc=1
       continue
     fi
-    derived="$(derive_home "$text")"
+    derived="$(derive_source_of_truth "$text")"
     if [[ "$kind" != judgement ]]; then
-      if [[ "$home" != none ]]; then
-        echo "norm-ownership: $file derives a home only for a judgement, and records '$home': ${text:0:70}..." >&2
+      if [[ "$source_of_truth" != none ]]; then
+        echo "norm-ownership: $file derives a source of truth only for a judgement, and records '$source_of_truth': ${text:0:70}..." >&2
         rc=1
         continue
       fi
@@ -306,17 +306,17 @@ check() {
     fi
     case "$derived" in
       ambiguous:*)
-        echo "norm-ownership: $file cites more than one skill (${derived#ambiguous:}), so its home is ambiguous: ${text:0:70}..." >&2
+        echo "norm-ownership: $file cites more than one skill (${derived#ambiguous:}), so its source of truth is ambiguous: ${text:0:70}..." >&2
         rc=1
         continue ;;
     esac
-    if [[ "$home" != "$derived" ]]; then
-      echo "norm-ownership: $file records home '$home' but its text derives '$derived'; rerun --generate, do not hand-edit the ledger: ${text:0:70}..." >&2
+    if [[ "$source_of_truth" != "$derived" ]]; then
+      echo "norm-ownership: $file records source of truth '$source_of_truth' but its text derives '$derived'; rerun --generate, do not hand-edit the ledger: ${text:0:70}..." >&2
       rc=1
       continue
     fi
-    if [[ "$home" != none ]] && [[ " $SKILL_NAME_LIST " != *" ${home#skill:} "* ]]; then
-      echo "norm-ownership: $file has home '${home#skill:}', which no declared skill root holds, for: ${text:0:70}..." >&2
+    if [[ "$source_of_truth" != none ]] && [[ " $SKILL_NAME_LIST " != *" ${source_of_truth#skill:} "* ]]; then
+      echo "norm-ownership: $file has source of truth '${source_of_truth#skill:}', which no declared skill root holds, for: ${text:0:70}..." >&2
       rc=1
       continue
     fi
@@ -332,7 +332,7 @@ check() {
       rc=1
       continue
     fi
-    [[ "$home" != none ]] && homed=$((homed + 1))
+    [[ "$source_of_truth" != none ]] && sourced=$((sourced + 1))
     case "$kind-$obs" in
       rule-gate:*) gated=$((gated + 1)) ;;
       rule-lint:*) gated=$((gated + 1)) ;;
@@ -360,7 +360,7 @@ check() {
     groups --quiet >/dev/null || rc=1
   fi
   if [[ $rc -eq 0 ]]; then
-    echo "norm-ownership: clean across $count row(s), $gated gated, $reviewed reviewed, $judge judgement, $description description, $homed homed"
+    echo "norm-ownership: clean across $count row(s), $gated gated, $reviewed reviewed, $judge judgement, $description description, $sourced sourced"
   fi
   return $rc
 }
@@ -373,8 +373,8 @@ regroup() {
   {
     echo "# Judgement grouping map. Keyed by the ledger hash."
     echo "# Columns: hash, group, note. Unit: one prose line the ledger classes as a judgement."
-    echo "# A line that cites a skill is homed there. --regroup derives its group as j-home-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails."
-    echo "# A line that cites no skill carries a hand row. note is skill:<name> when the home is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local."
+    echo "# A line that cites a skill is sourced there. --regroup derives its group as j-source-of-truth-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails."
+    echo "# A line that cites no skill carries a hand row. note is skill:<name> when the source of truth is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local."
     echo "# The scan set is the two source documents, so a judgement a convention skill also states counts one document here. Read a class-1 group with that limit."
   } > "$out"
   awk -F'\t' '
@@ -382,7 +382,7 @@ regroup() {
     $0 ~ /^#/ || $0 == "" { next }
     $3 != "judgement" { next }
     {
-      if ($5 != "none") printf "%s\tj-home-%s\t%s\n", $1, substr($5, 7), $5
+      if ($5 != "none") printf "%s\tj-source-of-truth-%s\t%s\n", $1, substr($5, 7), $5
       else if ($1 in group) printf "%s\t%s\t%s\n", $1, group[$1], note[$1]
       else printf "%s\tj-ungrouped\t-\n", $1
     }
@@ -413,12 +413,12 @@ groups() {
       if ($5 != "none") {
         name = substr($5, 7)
         if (!skill_ok(name)) {
-          printf "norm-ownership: home %s does not resolve to a skill, for: %s\n", $5, substr($6, 1, 70) > "/dev/stderr"
+          printf "norm-ownership: source of truth %s does not resolve to a skill, for: %s\n", $5, substr($6, 1, 70) > "/dev/stderr"
           failed = 1
         }
-        g = "j-home-" name; n = $5
+        g = "j-source-of-truth-" name; n = $5
         if ($1 in mapped && (group[$1] != g || note[$1] != n)) {
-          printf "norm-ownership: ledger row %s is homed in %s but its map row says %s; rerun --regroup\n", substr($1, 1, 8), g, group[$1] > "/dev/stderr"
+          printf "norm-ownership: ledger row %s is sourced in %s but its map row says %s; rerun --regroup\n", substr($1, 1, 8), g, group[$1] > "/dev/stderr"
           failed = 1
         }
       } else {
@@ -430,7 +430,7 @@ groups() {
         if (n ~ /^skill:/) {
           name = substr(n, 7)
           if (!skill_ok(name)) {
-            printf "norm-ownership: group %s names home %s, which no declared skill root holds\n", g, name > "/dev/stderr"
+            printf "norm-ownership: group %s names source of truth %s, which no declared skill root holds\n", g, name > "/dev/stderr"
             failed = 1
           }
         }
@@ -446,15 +446,15 @@ groups() {
         note_of[g] = n
       }
       joined[$1] = 1
-      if ($5 != "none") homed_count++
+      if ($5 != "none") sourced_count++
     }
     END {
       for (key in doc) { split(key, parts, SUBSEP); docs[parts[1]]++ }
       for (g in sites) {
         d = docs[g] + 0
-        cls = (d >= 2) ? "class-1" : (note_of[g] ~ /^candidate/) ? "class-2" : (note_of[g] ~ /^skill:/) ? "homed" : "local"
+        cls = (d >= 2) ? "class-1" : (note_of[g] ~ /^candidate/) ? "class-2" : (note_of[g] ~ /^skill:/) ? "sourced" : "local"
         if (cls == "class-1" && note_of[g] !~ /^skill:/) {
-          printf "norm-ownership: group %s is stated by %d documents, so it needs a home: give it a skill note, or repoint its sites at one\n", g, d > "/dev/stderr"
+          printf "norm-ownership: group %s is stated by %d documents, so it needs a source of truth: give it a skill note, or repoint its sites at one\n", g, d > "/dev/stderr"
           failed = 1
         }
         if (cls == "class-1") wide++
@@ -464,7 +464,7 @@ groups() {
         printf "norm-ownership: grouping row names a line the ledger no longer holds: %s\n", h > "/dev/stderr"
         failed = 1
       }
-      if (!quiet) printf "%d judgement line(s), %d of them homed, %d group(s) stated by 2+ document(s)\n", judged, homed_count, wide + 0 > "/dev/stderr"
+      if (!quiet) printf "%d judgement line(s), %d of them sourced, %d group(s) stated by 2+ document(s)\n", judged, sourced_count, wide + 0 > "/dev/stderr"
       exit failed
     }
     ' "$JUDGEMENTS" "$LEDGER" | sort -t$'\t' -k4,4 -k1,1)" || rc=$?

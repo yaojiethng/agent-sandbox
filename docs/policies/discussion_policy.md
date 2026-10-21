@@ -181,7 +181,7 @@ Section order:
 <the reflection on the operation and the process changes that follow>
 
 ## Final output artifacts
-<the durable outputs the operation produced, each with its home>
+<the durable outputs the operation produced, each with its source of truth>
 
 ## Resolution status
 <what is closed vs open, and the follow-ups by track>

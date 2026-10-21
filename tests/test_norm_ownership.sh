@@ -5,19 +5,19 @@
 #
 # The ledger holds every prose line of the two source documents to a kind, a
 # running observer where the kind is a rule, and the skill its text cites as the
-# line's home. The grouping map holds the judgement lines that cite no home.
+# line's source of truth. The grouping map holds the judgement lines that cite none.
 #
-#   a conforming tree                            --  rc 0; the summary carries a home count
+#   a conforming tree                            --  rc 0; the summary carries a sourced count
 #   a new prose line                             --  rc 1; the line is named unclassified
 #   a rule marked with no observer               --  rc 1; the kind is named
 #   a reviewer no prompt dispatches              --  rc 1; the observer is named
 #   a reviewer a prompt dispatches               --  rc 0
-#   a cited skill no root holds                  --  rc 1; the home is named
-#   a hand-edited home column                    --  rc 1; the derivation is named
+#   a cited skill no root holds                  --  rc 1; the source of truth is named
+#   a hand-edited source-of-truth column         --  rc 1; the derivation is named
 #   a line citing two skills                     --  rc 1; the ambiguity is named
 #   a group whose note names no skill            --  rc 1; the group is named
-#   --generate derives the home from the citation--  the row carries skill:<name>
-#   --regroup groups a homed line under its skill--  the map carries j-home-<name>
+#   --generate derives the source of truth       --  the row carries skill:<name>
+#   --regroup groups a sourced line under its skill--  the map carries j-source-of-truth-<name>
 #
 # The fixtures sit under $FIXTURE_DIR and the scan is pointed at them with
 # NORM_OWNERSHIP_SCAN_ROOT, so the repository's own documents are never the
@@ -122,13 +122,13 @@ classify() {
   mv "$FIXTURE_DIR/$LEDGER.tmp" "$FIXTURE_DIR/$LEDGER"
 }
 
-# set_home TEXT HOME  --  overwrite a row's derived home, standing in for a hand
+# set_source_of_truth TEXT SOURCE  --  overwrite a row's derived source of truth, standing in for a hand
 # edit the gate must reject.
-set_home() {
-  local text="$1" home="$2"
-  awk -F'\t' -v text="$text" -v home="$home" 'BEGIN { OFS = "\t" }
+set_source_of_truth() {
+  local text="$1" source="$2"
+  awk -F'\t' -v text="$text" -v source="$source" 'BEGIN { OFS = "\t" }
     $0 ~ /^#/ || $0 == "" { print; next }
-    index($6, text) == 1 { $5 = home }
+    index($6, text) == 1 { $5 = source }
     { print }
   ' "$FIXTURE_DIR/$LEDGER" > "$FIXTURE_DIR/$LEDGER.tmp"
   mv "$FIXTURE_DIR/$LEDGER.tmp" "$FIXTURE_DIR/$LEDGER"
@@ -144,9 +144,9 @@ map_row() {
 
 # classify_fixture  --  build the fixture, generate its ledger, and classify the
 # four lines so the tree is conforming. The judgement lines cite principle-x and
-# carry no home, so each takes a grouping row.
-# regenerate  --  derive the home column after a kind changed. `--generate`
-# preserves a recorded kind and observer by hash, and derives the home from the
+# carry no source of truth, so each takes a grouping row.
+# regenerate  --  derive the source-of-truth column after a kind changed. `--generate`
+# preserves a recorded kind and observer by hash, and derives the source of truth from the
 # text, so it runs once to create the rows and again once they are classified.
 regenerate() {
   ( cd "$FIXTURE_DIR" && NORM_OWNERSHIP_SCAN_ROOT="$FIXTURE_DIR" bash "$GATE" --generate >/dev/null )
@@ -164,7 +164,7 @@ classify_fixture() {
   regenerate
   printf '# Judgement grouping map.\n' > "$FIXTURE_DIR/$JUDGEMENTS"
   map_row "A writer keeps the sentence" j-delete-test -
-  map_row "A writer applies" j-home-principle-x skill:principle-x
+  map_row "A writer applies" j-source-of-truth-principle-x skill:principle-x
   map_row "A writer states the fact" j-local-fact -
   map_row "A prompt states its subject once" j-one-subject -
 }
@@ -180,7 +180,7 @@ test_conforming_tree_passes() {
   classify_fixture
   run_gate --check
   assert_rc 0 "$RC" "conforming tree passes"
-  assert_contains "$OUT" "homed" "the summary reports the home count"
+  assert_contains "$OUT" "sourced" "the summary reports the sourced count"
 }
 
 test_new_line_is_unclassified() {
@@ -222,14 +222,14 @@ test_cited_skill_must_exist() {
   regenerate
   run_gate --check
   assert_rc 1 "$RC" "a cited skill no root holds fails the gate"
-  assert_contains "$OUT" "which no declared skill root holds" "the home is named"
+  assert_contains "$OUT" "which no declared skill root holds" "the source of truth is named"
 }
 
-test_hand_edited_home_is_rejected() {
+test_hand_edited_source_of_truth_is_rejected() {
   classify_fixture
-  set_home "A writer keeps the sentence" skill:principle-x
+  set_source_of_truth "A writer keeps the sentence" skill:principle-x
   run_gate --check
-  assert_rc 1 "$RC" "a hand-edited home fails the gate"
+  assert_rc 1 "$RC" "a hand-edited source of truth fails the gate"
   assert_contains "$OUT" "do not hand-edit" "the derivation is named"
 }
 
@@ -248,24 +248,24 @@ test_group_note_must_resolve() {
   classify_fixture
   sed -i 's/\(.*\)\tj-local-fact\t-$/\1\tj-local-fact\tskill:ghost/' "$FIXTURE_DIR/$JUDGEMENTS"
   run_gate --groups
-  assert_rc 1 "$RC" "a group home no root holds fails the gate"
+  assert_rc 1 "$RC" "a group source of truth no root holds fails the gate"
   assert_contains "$OUT" "no declared skill root holds" "the group is named"
 }
 
-test_generate_derives_the_home() {
+test_generate_derives_the_source_of_truth() {
   classify_fixture
   local row
   row="$(awk -F'\t' '$0 !~ /^#/ && index($6, "A writer applies") == 1 { print $5 }' "$FIXTURE_DIR/$LEDGER")"
-  assert_eq "$row" "skill:principle-x" "--generate derives the home from the citation"
+  assert_eq "$row" "skill:principle-x" "--generate derives the source of truth from the citation"
 }
 
-test_regroup_groups_a_homed_line() {
+test_regroup_groups_a_sourced_line() {
   classify_fixture
   printf '%s\n' "$(head -1 "$FIXTURE_DIR/$JUDGEMENTS")" > "$FIXTURE_DIR/$JUDGEMENTS"
   ( cd "$FIXTURE_DIR" && NORM_OWNERSHIP_SCAN_ROOT="$FIXTURE_DIR" bash "$GATE" --regroup >/dev/null )
   local groups
-  groups="$(awk -F'\t' '$2 ~ /^j-home-/ { print $2 }' "$FIXTURE_DIR/$JUDGEMENTS" | sort -u | paste -sd, -)"
-  assert_eq "$groups" "j-home-principle-x" "--regroup derives a homed line's group"
+  groups="$(awk -F'\t' '$2 ~ /^j-source-of-truth-/ { print $2 }' "$FIXTURE_DIR/$JUDGEMENTS" | sort -u | paste -sd, -)"
+  assert_eq "$groups" "j-source-of-truth-principle-x" "--regroup derives a sourced line's group"
 }
 
 test_row_source_is_checked() {
@@ -289,17 +289,17 @@ test_observer_name_matches_whole() {
   assert_contains "$OUT" "observer 'review:doc' that does not run" "the fragment is named"
 }
 
-test_class_one_group_needs_a_home() {
+test_class_one_group_needs_a_source_of_truth() {
   classify_fixture
   sed -i 's/\tj-local-fact\t-/\tj-dup\t-/; s/\tj-one-subject\t-/\tj-dup\t-/' "$FIXTURE_DIR/$JUDGEMENTS"
   run_gate --groups
-  assert_rc 1 "$RC" "a judgement two documents state needs a home"
-  assert_contains "$OUT" "so it needs a home" "the group is named"
+  assert_rc 1 "$RC" "a judgement two documents state needs a source of truth"
+  assert_contains "$OUT" "so it needs a source of truth" "the group is named"
 }
 
-test_stale_map_row_for_a_homed_line() {
+test_stale_map_row_for_a_sourced_line() {
   classify_fixture
-  sed -i 's/\tj-home-principle-x\tskill:principle-x/\tj-home-principle-x\tskill:ghost/' "$FIXTURE_DIR/$JUDGEMENTS"
+  sed -i 's/\tj-source-of-truth-principle-x\tskill:principle-x/\tj-source-of-truth-principle-x\tskill:ghost/' "$FIXTURE_DIR/$JUDGEMENTS"
   run_gate --groups
   assert_rc 1 "$RC" "a map row that disagrees with the derivation fails"
   assert_contains "$OUT" "rerun --regroup" "the stale row is named"
@@ -320,15 +320,15 @@ run_test test_rule_without_observer_fails
 run_test test_review_observer_must_be_dispatched
 run_test test_review_observer_dispatched_passes
 run_test test_cited_skill_must_exist
-run_test test_hand_edited_home_is_rejected
+run_test test_hand_edited_source_of_truth_is_rejected
 run_test test_two_cited_skills_are_ambiguous
 run_test test_group_note_must_resolve
-run_test test_generate_derives_the_home
-run_test test_regroup_groups_a_homed_line
+run_test test_generate_derives_the_source_of_truth
+run_test test_regroup_groups_a_sourced_line
 run_test test_row_source_is_checked
 run_test test_observer_name_matches_whole
-run_test test_class_one_group_needs_a_home
-run_test test_stale_map_row_for_a_homed_line
+run_test test_class_one_group_needs_a_source_of_truth
+run_test test_stale_map_row_for_a_sourced_line
 run_test test_regroup_drops_a_gone_row
 
 test_done "$(basename "${BASH_SOURCE[0]}")"

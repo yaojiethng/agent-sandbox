@@ -93,7 +93,7 @@ Exit condition: every in-scope document is written, every propagation row carrie
 
 The standards check reads each produced document against the standard its type selects.
 
-- **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and its rule-home test per `### Norm kinds` in `agent_workflow.md`. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
+- **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and the kind test that decides each rule's source of truth, per `### Norm kinds` in `agent_workflow.md`. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
 - **A policy, concept, or architecture document.** Read [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) and check the folder placement, the header format, and the section map.
 - **A record document.** Check it against the record-state invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Record-state invariants`, and against the project's `work-log` convention for a handover, [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md), or [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). For a discussion or design record, confirm that no question-and-reply pair remains, that every question still listed is still open, and that the designs considered and rejected are a short section carrying the reason for each. An answered question belongs in the body at the place its answer belongs, not in a reply, so fold it there when it closes.
 Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in [`doc-maintenance`](../skills/doc-maintenance/SKILL.md).
@@ -137,7 +137,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 - **Not the milestone-record close.** That belongs to [`/milestone-close`](milestone-close.md).
 - **Not the shared close procedure.** [`/wrapup`](wrapup.md) Part B owns it.
 - **Not the per-prompt standards checks for the loop prompt family.** Each of those is a separate roadmap task. The standards check in Step 6 applies to the document this session produced.
-- **Not the rule home.** A rule that governs documents lives in a policy document under `docs/`. This prompt names such a rule by link. Where the body carries a copy of one, the copy is a fast path and the linked policy document governs.
+- **Not a rule's source of truth.** A rule that governs documents lives in a policy document under `docs/`. This prompt names such a rule by link. Where the body carries a copy of one, the copy is a fast path and the linked policy document governs.
 
 ## Failure modes and invariants
 
@@ -146,7 +146,7 @@ Failure modes:
 - **A criterion states a judgement.** "Accurate", "clear", and "complete" are not observations. The operator cannot run them, so the criterion is rewritten around the command that settles it.
 - **A criterion verifies by reading source.** The iteration-policy rule against source-reading criteria still holds for a documentation session. The operator runs a command on the produced document; the agent does not read a token and report it as verification.
 - **A rewrite changes meaning with no record.** Step 3 settles the requirements and records the change in the handover Decisions table, and in an ADR when it moves a settled design.
-- **A borrowed rule is stated without its home.** A produced document states a rule its own workflow does not produce without naming that rule's home, per `### Norm kinds` in `agent_workflow.md`. A prompt keeps a pointer to every rule it borrows.
+- **A borrowed rule is stated without its source of truth.** A produced document states a rule its own workflow does not produce without naming that rule's source of truth, per `### Norm kinds` in `agent_workflow.md`. A prompt keeps a pointer to every rule it borrows.
 - **A workflow document is written without the type test.** A prompt written against the wrong rule set is reworked at Step 6, not left for the reader.
 
 Invariants:
@@ -154,4 +154,4 @@ Invariants:
 - Every acceptance criterion names an observable delta the operator checks by running a command, per [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `## Principles`.
 - The handover holds the canonical acceptance criteria, and no criterion lives only in the conversation, per [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`.
 - One iteration is one unit, landing as one delivery commit per [`git_policy.md](/opt/sandbox/docs/policies/git_policy.md).
-- Each rule this prompt copies inline names the home that governs it, per `### Norm kinds` in `agent_workflow.md`.
+- Each rule this prompt copies inline names the source of truth that governs it, per `### Norm kinds` in `agent_workflow.md`.

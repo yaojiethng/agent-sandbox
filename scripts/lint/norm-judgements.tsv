@@ -1,14 +1,14 @@
 # Judgement grouping map. Keyed by the ledger hash.
 # Columns: hash, group, note. Unit: one prose line the ledger classes as a judgement.
-# A line that cites a skill is homed there. --regroup derives its group as j-home-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails.
-# A line that cites no skill carries a hand row. note is skill:<name> when the home is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local.
+# A line that cites a skill is sourced there. --regroup derives its group as j-source-of-truth-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails.
+# A line that cites no skill carries a hand row. note is skill:<name> when the source of truth is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local.
 # The scan set is the two source documents, so a judgement a convention skill also states counts one document here. Read a class-1 group with that limit.
-1e5a88453ed9d92805162103f42a114f10bb12d5	j-skills-are-not-documentation	-
+05c73e47464416b5828f5744ed6151e0923e944c	j-skills-are-not-documentation	-
 acdad8515bec1050448e6729fe80313efd845612	j-folder-taxonomy	-
 cf7534d209fea5cb9da959cacc08fa41fea13936	j-frozen-layer	-
 cc8b788b03caa6c8a914d5f96eea3ccf96f53eeb	j-workflow-table-cell	-
-c1666c1f6e6c1056bafd5d89c7ace294402ed165	j-home-principle-define-terminology-before-use	skill:principle-define-terminology-before-use
-d6c27f22f5d323fe7f220b66308559212360621d	j-home-communication-principle-attach-as-you-read	skill:communication-principle-attach-as-you-read
+c1666c1f6e6c1056bafd5d89c7ace294402ed165	j-source-of-truth-principle-define-terminology-before-use	skill:principle-define-terminology-before-use
+d6c27f22f5d323fe7f220b66308559212360621d	j-source-of-truth-communication-principle-attach-as-you-read	skill:communication-principle-attach-as-you-read
 1280faa86a0e55974a59e7639ccd6a1eb7cdcd98	j-write-plainly	candidate:communication-principle-write-plainly
 4b20f258bfa2e80c0d09238427231755fef44670	j-one-term-one-meaning	-
 9a5c0a8b6cea53b802d021c377825daf418917f0	j-write-plainly	candidate:communication-principle-write-plainly
@@ -20,12 +20,12 @@ d64e72c0d1ed205a2fb544ec3f0a161c1b6afc50	j-reserved-terms	-
 310a1887ebbcc59a4ab5f25bf9a208e31ff0dca3	j-redirect-blockquote	-
 c2e654266a7f468a568f4d407258878f7e650e04	j-no-status-in-reference	-
 c651864b6635406b27366c26420ca903ceb7d32d	j-heading-depth	-
-2813f0f396c479edbb9b4b48c2323052fac33c7c	j-home-communication-principle-link-what-the-reader-can-open	skill:communication-principle-link-what-the-reader-can-open
+2813f0f396c479edbb9b4b48c2323052fac33c7c	j-source-of-truth-communication-principle-link-what-the-reader-can-open	skill:communication-principle-link-what-the-reader-can-open
 166ba6d61faa48e189abdc507557dd47985c36b9	j-section-order-skeleton	-
 9d4efa327e3349215faa3e527b472a4bf76ad3c4	j-skeleton-over-table	-
 5cd02fd4f3652018de238dcd0a251d5bea5e86f5	j-targeted-edits	-
 6d8cd11373967a911d0a29d9568292ffa69ce983	j-skeleton-in-chat	-
-831f01001afe9dc51fab279a95d452a1afcc5b99	j-home-communication-principle-dont-forecast-undone-work	skill:communication-principle-dont-forecast-undone-work
+831f01001afe9dc51fab279a95d452a1afcc5b99	j-source-of-truth-communication-principle-dont-forecast-undone-work	skill:communication-principle-dont-forecast-undone-work
 45d3657480dd3d9302bf213f9547fe461f4f783b	j-per-type-obligations	-
 eafe1c72dcfdebf2d3ea318b617e453813836285	j-concept-standalone	-
 2983b75b2814fe2e858f3f496f51d4342483c527	j-restate-as-guarantees	-
@@ -35,33 +35,33 @@ de6a319e16a3f3a6b78a360800192f9c8656bd81	j-archival-is-not-amendment	-
 5266c958be3051d0854e570ec3b862671b1369a2	j-reference-states-no-rule	-
 231eddf1e0b792b4f195d76dbab572f0a258df99	j-progressive-disclosure	-
 9dc9f97f59c06a724fa2a76cc14448848059d42b	j-sprawl-cure	-
-40e3a0bd0131e8d899a7de9764b4900a3992344b	j-home-communication-principle-keep-a-subject-near	skill:communication-principle-keep-a-subject-near
-fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-home-principle-match-precision-to-stakes	skill:principle-match-precision-to-stakes
-ad7459970fb43befb3277b6bfd182c7af31c43f5	j-home-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
+40e3a0bd0131e8d899a7de9764b4900a3992344b	j-source-of-truth-communication-principle-keep-a-subject-near	skill:communication-principle-keep-a-subject-near
+fe6260f6188a5179f88fe7937530fac7cb6f2dcb	j-source-of-truth-principle-match-precision-to-stakes	skill:principle-match-precision-to-stakes
+ad7459970fb43befb3277b6bfd182c7af31c43f5	j-source-of-truth-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
 419ac1f421015f6f8a343bd74f1310ff430eaebe	j-advisor-definition	-
 7d3fe6897f8eb3e8802a97e5045f19350e985425	j-advisor-role-split	-
 a179aaa286baada7fe179da36f7ebffc0956c17a	j-subagent-brief	-
 7ead3e1889432999e9e88d25e35cd00c91e5178d	j-argument-hint	-
 78386c94a6a467570c075af52a522cc3a130bd50	j-skill-frontmatter	-
-61dd06d7a88b837a141fe7864a08974e81595f8c	j-home-principle-effective-skill-routing	skill:principle-effective-skill-routing
+61dd06d7a88b837a141fe7864a08974e81595f8c	j-source-of-truth-principle-effective-skill-routing	skill:principle-effective-skill-routing
 ff611106e693bbc2682a72babe97e0616b892be5	j-prompt-section-order	-
 d154ff782a5c633e49d01102c9a0b14680d33771	j-prompt-section-order	-
 f4e925ade339a642407c42da346a0832c490eb72	j-prompt-section-order	-
-390fbb6dd18996c900fdccb1218d7a81e4ff7f74	j-home-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
-e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-home-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
+390fbb6dd18996c900fdccb1218d7a81e4ff7f74	j-source-of-truth-principle-say-what-done-looks-like	skill:principle-say-what-done-looks-like
+e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-source-of-truth-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
 4b9bfd62f4d44d07aaae2d1fd57d372ed444896e	j-prompt-section-order	-
 2bcf8fcb6b0ff50887ce7143cd4edbcc1038118e	j-prompt-section-order	-
 186c5118fc5c37062ac901e81660d1e62336c58d	j-project-conventions-block	-
-100f62f4b8271c3ec0b89c4bb34b93f12b24e9eb	j-copy-points-to-its-source	skill:principle-one-home-per-rule
-d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-home-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
+40c0e0adda9501d3358c8418d540a5d5a1118457	j-copy-points-to-its-source	skill:principle-single-source-of-truth
+d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-source-of-truth-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
 73b1da5d2dcd9b3c50779dd00786bc3f995fd18f	j-scope-discipline-in-prompts	-
 b99082ecff306ea9420f608a77909b04986f3c0d	j-brief-owned-file-set	-
-fbbfd953bb504829f8596975db4bbe685b4747dd	j-home-principle-effective-skill-routing	skill:principle-effective-skill-routing
-46743808bdef419dee7bdbbf12d186c59734f264	j-home-principle-one-home-per-rule	skill:principle-one-home-per-rule
-536a4b6116a70d51bcafcacd801d7d8a0b25b847	j-home-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
-985fb3460eaf00dbc523ecdeaa6514de7e84f0f0	j-home-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
-127ed937169dd5ed1a62f93b0282cac050be1234	j-copy-points-to-its-source	skill:principle-one-home-per-rule
-f99cc8bc9cc6212a33e56b075672514fd37fc0ee	j-copy-points-to-its-source	skill:principle-one-home-per-rule
+fbbfd953bb504829f8596975db4bbe685b4747dd	j-source-of-truth-principle-effective-skill-routing	skill:principle-effective-skill-routing
+dccc3caad891ffbad404fdc3867e8152d7b3951c	j-source-of-truth-principle-single-source-of-truth	skill:principle-single-source-of-truth
+59ed9eb413ec72be93bbf73776f2615e9868746e	j-source-of-truth-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
+7b7983ba179e3e4b73d5990220a3a6bfcaa3b51e	j-source-of-truth-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
+127ed937169dd5ed1a62f93b0282cac050be1234	j-copy-points-to-its-source	skill:principle-single-source-of-truth
+11a6d99a47a24e8168833d22bf4ee7a3788ca7ec	j-copy-points-to-its-source	skill:principle-single-source-of-truth
 9a59feb9c7abab8cd8d93cc3e64f035fa15e0f36	j-document-names-its-subject	-
 fca1b924608e45ae368e8c1a16e35dee3f29878d	j-rename-on-scope-change	-
 1b5fcf7cba7d0045caa3ec3e55f04de5415ed3fd	j-draft-lives-in-drafts	-

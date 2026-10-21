@@ -48,7 +48,7 @@ Project-layer content is stable across iterations. It is not per-iteration state
 
 ### Model recommendations
 
-The role-to-model recommendations are operator-owned and do not travel with the project. They live at `model-recommendations.md`, mounted from `$SANDBOX_DIR/.<provider>/model-recommendations.md` and never committed. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and an unset role falls back to the pi startup default in `settings.json`. The home decision is recorded in the ADR `single_source_model_recommendations.md`.
+The role-to-model recommendations are operator-owned and do not travel with the project. They live at `model-recommendations.md`, mounted from `$SANDBOX_DIR/.<provider>/model-recommendations.md` and never committed. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and an unset role falls back to the pi startup default in `settings.json`. The decision's source of truth is the ADR `single_source_model_recommendations.md`.
 
 ### Reference template
 
@@ -80,23 +80,23 @@ The agent-sandbox workflow is expressed across three layers with a strict author
 
 ### Policy documents
 
-Policy documents describe the current system reality -- what the system does, how iterations run, what constraints hold. They hold the rules an observer detects, and the judgements their own workflow produces; `### Norm kinds` states where a judgement that several documents use lives instead. Duplicate rules across documents are a defect -- one document is the home and the other links to it.
+Policy documents describe the current system reality -- what the system does, how iterations run, what constraints hold. They hold the rules an observer detects, and the judgements their own workflow produces; `### Norm kinds` states where a judgement that several documents use lives instead. Duplicate rules across documents are a defect -- one document is the source of truth and the other links to it.
 
 Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the document that specifies each area of the workflow.
 
 ### Skill files
 
-Skill files are execution helpers, and one of them may be the home of a judgement that more than one document uses; `### Norm kinds` below places it there so one home serves them all. A skill may also inline a distillation of a rule whose home is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that home, and it names the home. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
+Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Norm kinds` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
-An inline may become stale when its home changes -- this is acceptable because the inline is explicitly a convenience copy, not the home.
+An inline may become stale when its source of truth changes -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
 ### Prompt templates
 
-Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the home of every rule it borrows. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
+Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the source of truth of every rule it borrows. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
 
 ### Norm kinds
 
-Every prose sentence in the policy set has one kind and one home. The kind answers whether anything detects a breach. The home answers who produces the content.
+Every prose sentence in the policy set has one kind and one source of truth. The kind answers whether anything detects a breach. The source of truth answers who produces the content.
 
 **The kind.** Classify in this order.
 
@@ -110,9 +110,9 @@ Every prose sentence in the policy set has one kind and one home. The kind answe
 | judgement | instructs how to decide a case | nothing |
 | description | states what is | nothing |
 
-**The home.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
+**The source of truth.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
 
-A judgement used by more than one document lives in a principle skill, so one home serves them all. That is the only case where a judgement leaves the document that produces it.
+A judgement used by more than one document lives in a principle skill, so one source of truth serves them all. That is the only case where a judgement leaves the document that produces it.
 
 This is the one place the kinds are defined. A document that states one locally links here instead.
 
@@ -122,7 +122,7 @@ This is the one place the kinds are defined. A document that states one locally 
 
 ## Policy Map
 
-Maps each area of the workflow to the document that specifies it, what that document owns, and what it explicitly does not own. When two documents seem to cover the same area, this table names the home.
+Maps each area of the workflow to the document that specifies it, what that document owns, and what it explicitly does not own. When two documents seem to cover the same area, this table names the source of truth.
 
 | Workflow area | Document | Owns | Does not own |
 |---|---|---|---|
@@ -151,7 +151,7 @@ Maps each area of the workflow to the document that specifies it, what that docu
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, decide its home by the kind, per `### Norm kinds`: a resolving observer makes it a rule, and the document that produces the content owns it.
+When a rule appears to exist in two documents in this map, decide its source of truth by the kind, per `### Norm kinds`: a resolving observer makes it a rule, and the document that produces the content owns it.
 
 ## References
 

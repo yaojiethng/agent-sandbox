@@ -41,7 +41,7 @@ The placement rule (each document in exactly one category) is in [`documentation
 
 ## Durability
 
-A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: it stays as a reference for future work units for the course of the implementation it describes, then becomes subsumable and may be cleaned up or subsumed. A handover decays; a tmp file or chat record is never kept. The durable home of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
+A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: it stays as a reference for future work units for the course of the implementation it describes, then becomes subsumable and may be cleaned up or subsumed. A handover decays; a tmp file or chat record is never kept. The durable source of truth of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
 
 ## Record lifecycle view
 
@@ -57,7 +57,7 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 
 ## Promotion topology
 
-Documents promote along a path, and each step is an obligation with one policy home.
+Documents promote along a path, and each step is an obligation whose source of truth is a policy.
 
 - **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: [`adr_policy.md`](../policies/adr_policy.md) -- When an ADR begins.
 - **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: [`adr_policy.md`](../policies/adr_policy.md) -- Relationship to other records.
@@ -76,7 +76,7 @@ Everything under a project's `.agents/` is project-scoped: that project's sessio
 | "I am new here -- what documents exist and which do I need?" | this document |
 | "What is a concept document against an ADR or a discussion?" | Promotion topology |
 | "Where does this file go?" | Folder taxonomy (this document); the placement rule is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Folder Structure |
-| "Is this statement a rule or a description? Where is the canonical home of a rule?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority |
+| "Is this statement a rule or a description? Where is the source of truth of a rule?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority |
 | "How do I write the prose?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Communication Standards |
 | "What content is forbidden in an architecture document?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Prohibited content |
 | "What does the lint check? What must a record satisfy?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Tooling checks |

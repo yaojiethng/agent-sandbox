@@ -33,7 +33,7 @@ Only what nothing else holds:
 | Cutting the word that does no work | `communication-principle-cut-what-carries-nothing` |
 | Writing for the reader rather than the session | `communication-principle-write-for-the-reader` |
 | Showing the artifact instead of describing it | `communication-principle-show-dont-describe` |
-| A copy points at its source, and a fast path is labelled | `principle-one-home-per-rule` |
+| A copy points at its source, and a fast path is labelled | `principle-single-source-of-truth` |
 | Which document type a document is, and the four layers of prose | `/technical-writing`, until it is subsumed |
 | Punctuation, ASCII, numbering, line wrapping | the gates under `scripts/lint/`, not a skill |
 | Slop patterns and AI vocabulary | `unslop` |

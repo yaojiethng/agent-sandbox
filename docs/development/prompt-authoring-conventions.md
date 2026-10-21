@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This document states the authoring rules for prompts and skills. It answers four questions: what structure a workflow document has, what belongs in a runbook versus an advisor, how to scope a prompt's subject, and how to identify a workflow document. It is the home for the workflow-document presentation rules that the `/document` stub defers here.
+This document states the authoring rules for prompts and skills. It answers four questions: what structure a workflow document has, what belongs in a runbook versus an advisor, how to scope a prompt's subject, and how to identify a workflow document. It is the source of truth for the workflow-document presentation rules that the `/document` stub defers here.
 
 The per-prompt quality passes read this document before they edit a prompt. The `fanout` doc pass reads it before it edits that prompt. Any session that writes a new prompt or skill reads it first.
 
@@ -18,7 +18,7 @@ A document an agent consumes is one of three types. The type determines where it
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states facts; a rule it stated would make it a policy document, per the type test below.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the home of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only home. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
 
 Two tests identify a workflow document:
 
@@ -57,7 +57,7 @@ An **advisor** is a prompt or skill that holds reference and judgement, run agai
 
 The advisor-role split is explicit: the advisor names its role, states when to run it, and constructs a brief. The triage and consensus steps after the advisor returns are part of the runbook that dispatched it.
 
-A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It may be the home of a rule its own procedure runs, and it may inline a distillation of a rule whose home is elsewhere: the inline is a convenience copy, it may go stale, and it names the home. A judgement used by more than one document lives in a principle skill, per `### Norm kinds` in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds).
+A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It may be the source of truth for a rule its own procedure runs, and it may inline a distillation of a rule whose source of truth is elsewhere: the inline is a convenience copy, it may go stale, and it names that source. A judgement used by more than one document lives in a principle skill, per `### Norm kinds` in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds).
 
 **Where a check goes is a judgement.** A check reads evidence and produces a decision, so its placement is stated in the `principle-check-placement` skill at `$AGENT_HOME/agent/skills/principle-check-placement/SKILL.md`, and a skill that holds checks points there.
 
@@ -87,7 +87,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 **The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 
-The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only home of a rule.
+The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only source of truth for a rule.
 
 ## The principle shape
 
@@ -120,7 +120,7 @@ Every principle applies one claim, and the claim is how a reader finds the famil
 | `reader` | the reader holds what the text gives them, in the order it arrives |
 | `authority` | a document owns the scope it declares and no more |
 
-Two skills may apply one claim when they act on different objects, because each states a different test. `only-derive-what-you-own` and `one-home-per-rule` both apply `source`, and one asks whether the reader can recompute a number while the other asks whether every copy of a rule points at one home. Two skills may not state the same rule.
+Two skills may apply one claim when they act on different objects, because each states a different test. `only-derive-what-you-own` and `single-source-of-truth` both apply `source`, and one asks whether the reader can recompute a number while the other asks whether every copy of a rule points at one source of truth. Two skills may not state the same rule.
 
 This table is the only place that decides the set, and the gate reads the set from here. The gate decides that a claim is stated and that the table holds it; which claim a given skill picks stays a judgement, so no gate reads it.
 
@@ -134,11 +134,11 @@ A prompt that hands off to a sub-agent states the target's whole owned-file set,
 
 **Skill names and descriptions route a skill.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that route it, and the description summarises to the name. The judgement is the `principle-effective-skill-routing` skill at `$AGENT_HOME/agent/skills/principle-effective-skill-routing/SKILL.md`.
 
-## A fast path names its home
+## A fast path names its source of truth
 
-A workflow document may inline a distillation of a rule for context efficiency: the inline names the home, and where staleness would mislead it is labelled a convenience copy. The judgement and the fast path are `principle-one-home-per-rule` at `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md`, which is their only home.
+A workflow document may inline a distillation of a rule for context efficiency: the inline names the source of truth, and where staleness would mislead it is labelled a convenience copy. The judgement and the fast path are `principle-single-source-of-truth` at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, which is their only source of truth.
 
-The home is decided by the kind, not by the layer, per `### Norm kinds` in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds).
+The source of truth is decided by the kind, not by the layer, per `### Norm kinds` in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds).
 
 Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
@@ -146,11 +146,11 @@ The diagnostic register for these checks is `## The diagnostic register` in the 
 
 ## A workflow document owns the scope it declares
 
-A workflow document owns the scope it declares, holds everything that scope owes, and describes no work outside it. The judgement is the `principle-own-the-scope-you-declare` skill at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`, which is its only home. A top-down view of the whole flow belongs to a concept document or an ADR, and that document names the steps rather than replacing them.
+A workflow document owns the scope it declares, holds everything that scope owes, and describes no work outside it. The judgement is the `principle-own-the-scope-you-declare` skill at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`, which is its only source of truth. A top-down view of the whole flow belongs to a concept document or an ADR, and that document names the steps rather than replacing them.
 
 ## The workflow handoff pattern
 
-A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only home. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
+A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
 
 ## A reference resolves where the prompt runs
 
@@ -162,7 +162,7 @@ A prompt names a document that does not ship -- a record, a draft, an ADR, a dev
 
 When the content behind the reference matters to the agent working in the container, it belongs in the prompt or in a shipped file, and the record is the place the decision is argued -- not the place the running agent is sent.
 
-The same rule covers the inverse: a rule whose only home is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
+The same rule covers the inverse: a rule whose only source of truth is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
 
 The rule holds for a bundled document too. A document under `docs/reference/` or `docs/policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between the two bundled folders resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`linking.mjs`](../../scripts/lint/linking.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
 

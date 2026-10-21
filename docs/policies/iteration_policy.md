@@ -36,7 +36,7 @@ A sidequest is an operator-directed work item raised while an iteration is open.
 - **The open iteration pauses; it does not close.** The sidequest's Scope opens with a continuation line naming the interrupted handover. That handover keeps its `Active` status and records the interruption in its Findings. `workflow/coding-agent/prompts/iter.md` resumes the named handover after the sidequest closes.
 - **One outcome, one commit.** A sidequest is one vertical slice, landed as one typed commit with one handover, like any iteration.
 - **Outside the interrupted scope.** A task inside the open iteration's scope stays that iteration's work; it is a scope amendment, not a sidequest.
-- **Roadmap write-back.** A sidequest whose outcome is durable work writes back a roadmap row and marks it at close. A sidequest whose outcome is a fix, check or record with no roadmap home states that in its close, per the write-back invariant.
+- **Roadmap write-back.** A sidequest whose outcome is durable work writes back a roadmap row and marks it at close. A sidequest whose outcome is a fix, check or record that belongs in no roadmap row states that in its close, per the write-back invariant.
 
 ## Principles
 

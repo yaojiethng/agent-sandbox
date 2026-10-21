@@ -5,7 +5,7 @@ description: Populate the project's role-to-model recommendations at /home/agent
 
 # Setup model recommendations
 
-Write `model-recommendations.md`, the single home for the role-to-model recommendations this project dispatches by.
+Write `model-recommendations.md`, the single source of truth for the role-to-model recommendations this project dispatches by.
 
 The file is committed at `.agents/model-recommendations.md`. The operator sets the values; the agent writes it only when the operator asks, and pi never rewrites it. A role line with no value is uninitialized and resolves to the pi startup default in `$AGENT_HOME/agent/settings.json`.
 
