@@ -27,7 +27,7 @@ Substitute the slice's file set for `<files>`, and pass the text below unchanged
 > - `docs/policies/documentation_policy.md`, the Communication Standards. The operative rule is the delete test. If a reader can delete a word, phrase or sentence without losing required meaning, delete it.
 > - `docs/development/prompt-authoring-conventions.md`. The runbook, advisor, reference and completion-criterion bars, and the rule that a borrowed rule names its source of truth.
 > - `docs/development/instruction-surface-conventions.md`. What a convention-skill is, and how it differs from a procedure.
-> - `/home/agentuser/.pi/agent/skills/skill-scaffolder/SKILL.md`. The expected SKILL.md shape and frontmatter contract.
+> - The project's `skill-scaffolder` skill. The expected SKILL.md shape and frontmatter contract. It sits in the project tree rather than the seeded convention corpus, so this line names it without a path.
 >
 > **The lenses, in priority order.**
 >

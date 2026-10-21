@@ -11,15 +11,15 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 
 1. **Clarify Intent:** Ask the user what specific workflow, constraints, or task they want the new skill to specialize in.
 2. **Determine Target Path:** Ask if this skill should be local to the current project or global.
-   - Project Path: `skills/<kebab-case-name>/SKILL.md`
+   - Project Path: `.agents/skills/<kebab-case-name>/SKILL.md`
    - Global Path: `~/.pi/agent/skills/<kebab-case-name>/SKILL.md`
 3. **Draft the Frontmatter:** Construct the mandatory YAML frontmatter using the exact template schema below.
-4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per [`principle-check-placement`](../principle-check-placement/SKILL.md).
+4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill.
 5. **Write File:** Use file system tools to create the folder and write the final `SKILL.md` file automatically.
 
 ## Standard SKILL.md Output Template
 
-The frontmatter below is a convenience copy of what the frontmatter gate requires; the gate is authoritative. The body's section shape is stated in `docs/development/prompt-authoring-conventions.md` `## The prompt and skill structure`, and this skill reads it there rather than restating it.
+The frontmatter below is a convenience copy of what the frontmatter gate requires; the gate is authoritative.
 
 ```markdown
 ---
@@ -30,7 +30,7 @@ description: <Clear explanation of when the agent should automatically trigger t
 
 ## The body's sections
 
-Take the section shape from `docs/development/prompt-authoring-conventions.md`. When that document is not reachable from the tree the skill is scaffolding, ask the operator for it rather than writing a shape from memory: a restated shape is the copy that drifts.
+The body's order is in `docs/development/prompt-authoring-conventions.md` `## Structure of a workflow document`, which lists the parts a skill carries and the parts that only a prompt carries. This skill lives in the project tree, so that document resolves wherever the skill runs.
 
 ## How to Use the Generated Skill
 
