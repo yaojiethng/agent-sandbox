@@ -42,7 +42,7 @@ ad7459970fb43befb3277b6bfd182c7af31c43f5	j-source-of-truth-principle-say-what-do
 a179aaa286baada7fe179da36f7ebffc0956c17a	j-subagent-brief	-
 7ead3e1889432999e9e88d25e35cd00c91e5178d	j-argument-hint	-
 78386c94a6a467570c075af52a522cc3a130bd50	j-skill-frontmatter	-
-61dd06d7a88b837a141fe7864a08974e81595f8c	j-source-of-truth-principle-effective-skill-routing	skill:principle-effective-skill-routing
+d26888aa4370b1061017ea79a3a5f22d775810aa	j-source-of-truth-principle-skill-signposting	skill:principle-skill-signposting
 ff611106e693bbc2682a72babe97e0616b892be5	j-prompt-section-order	-
 d154ff782a5c633e49d01102c9a0b14680d33771	j-prompt-section-order	-
 f4e925ade339a642407c42da346a0832c490eb72	j-prompt-section-order	-
@@ -55,7 +55,7 @@ e3acd601592f8d9905ed0d38dbe25b8282e2a66e	j-source-of-truth-communication-princip
 d93fa35ce9e765e83caa598fdc7bbfafadb2e9eb	j-source-of-truth-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
 73b1da5d2dcd9b3c50779dd00786bc3f995fd18f	j-scope-discipline-in-prompts	-
 b99082ecff306ea9420f608a77909b04986f3c0d	j-brief-owned-file-set	-
-fbbfd953bb504829f8596975db4bbe685b4747dd	j-source-of-truth-principle-effective-skill-routing	skill:principle-effective-skill-routing
+cf0617e61b613366d461b703c24137d143ec70d2	j-source-of-truth-principle-skill-signposting	skill:principle-skill-signposting
 dccc3caad891ffbad404fdc3867e8152d7b3951c	j-source-of-truth-principle-single-source-of-truth	skill:principle-single-source-of-truth
 59ed9eb413ec72be93bbf73776f2615e9868746e	j-source-of-truth-principle-own-the-scope-you-declare	skill:principle-own-the-scope-you-declare
 7b7983ba179e3e4b73d5990220a3a6bfcaa3b51e	j-source-of-truth-communication-principle-hand-off-by-naming-the-boundary	skill:communication-principle-hand-off-by-naming-the-boundary
