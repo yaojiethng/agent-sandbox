@@ -13,7 +13,7 @@ Turn one rough ask into one executable brief. The ask arrives as the operator's 
 
 ## Project conventions
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`. If one is absent or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
 - `task-list` - the task list and its companions.
 

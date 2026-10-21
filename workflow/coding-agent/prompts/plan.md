@@ -13,7 +13,7 @@ Run a plan session for planning and design work. Run `/iter` for feature work.
 
 ## Project conventions
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`. If one is absent or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
 - `task-list`, `decision-records`
 
