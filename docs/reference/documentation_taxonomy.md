@@ -43,6 +43,25 @@ The placement rule (each document in exactly one category) is in [`documentation
 
 A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: it stays as a reference for future work units for the course of the implementation it describes, then becomes subsumable and may be cleaned up or subsumed. A handover decays; a tmp file or chat record is never kept. The durable source of truth of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
 
+## Reach
+
+Reach is who reads a document: every session, or the sessions that hold this repository's tree. Reach belongs to the root that carries the document, so every file under that root inherits one value and no document declares its own.
+
+How a document arrives in front of that reader is a second fact, delivery, and the two do not move together. An image-mounted root and a root the project's own setup fills reach the same reader by different routes.
+
+| Delivered by | The roots it carries | Reach |
+|---|---|---|
+| the image, as a module payload | the roots the manifest mounts at `/opt/sandbox/` | every session |
+| the image, as a provider's config | the roots the manifest mounts at `/opt/workflow/agent/config/` | every session |
+| the project's own setup | `workflow/coding-agent/skills/initialize/assets/conventions/`, copied into `.agents/skills/<name>/` | every session, once the project has run `initialize` |
+| nothing | the repository-only folders, `docs/adr/`, `docs/development/`, `devlog/`, and the tree itself | a session with the repository tree present |
+
+Which root the manifest mounts where is the manifest's, in `src/build/container-interface.json`, and this document copies no list of roots.
+
+Enablement is a property of a module and not a reach value.
+
+A pointer states reach in two values, `every session` and `this project`, because the first three routes reach every session and every reading of them happens inside a provisioned project.
+
 ## Record lifecycle view
 
 A record moves through stages. Each stage is a readable summary; the rule that governs it lives in the policy it names.

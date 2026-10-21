@@ -10,9 +10,12 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 ## Workflow Steps
 
 1. **Clarify Intent:** Ask the user what specific workflow, constraints, or task they want the new skill to specialize in.
-2. **Determine Target Path:** Ask if this skill should be local to the current project or global.
-   - Project Path: `.agents/skills/<kebab-case-name>/SKILL.md`
-   - Global Path: `~/.pi/agent/skills/<kebab-case-name>/SKILL.md`
+2. **Determine Target Path:** Ask where the skill is delivered from.
+   - Every session, from the config home: `src/reasoning/providers/pi/config/agent/skills/<kebab-case-name>/SKILL.md`. The image seeds it to `$AGENT_HOME/agent/skills/` at every start.
+   - Every session, from a module's payload: `workflow/<module>/skills/<kebab-case-name>/SKILL.md`.
+   - This project only: `.agents/skills/<kebab-case-name>/SKILL.md`.
+
+   Do not write in `$AGENT_HOME/agent/skills/` directly. The config home is seeded from the image at every start, so a file written there is lost on the next start, and no gate reads it while it lives.
 3. **Draft the Frontmatter:** Construct the mandatory YAML frontmatter using the exact template schema below.
 4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill.
 5. **Write File:** Use file system tools to create the folder and write the final `SKILL.md` file automatically.

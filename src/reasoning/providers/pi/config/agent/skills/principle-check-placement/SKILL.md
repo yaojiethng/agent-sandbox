@@ -25,7 +25,7 @@ A check reads evidence and produces a decision. Put the check where the evidence
 
 - Place the check by the order of the evidence, not by the order of the sections.
 - Ship a check only where the violation can occur. A violation that cannot occur reports zero on every run and costs a run every time.
-- Put a rule that a lint can check with the lint. `docs/reference/agent_workflow.md` `### Norm kinds` states the kinds and their homes.
+- Put a rule that a lint can check with the lint. `/opt/sandbox/docs/reference/agent_workflow.md` `### Norm kinds` states the kinds and their homes.
 
 **The test.** Name the record the check reads and the gate that owns its decision. If you cannot name both, the check is misplaced.
 

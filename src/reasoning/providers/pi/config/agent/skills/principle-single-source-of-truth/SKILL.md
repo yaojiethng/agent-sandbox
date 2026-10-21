@@ -12,7 +12,7 @@ A norm has one source of truth, and every other place that carries it points at 
 
 **The pattern.**
 
-1. Name the norm's kind, per `docs/reference/agent_workflow.md` `### Norm kinds`.
+1. Name the norm's kind, per `/opt/sandbox/docs/reference/agent_workflow.md` `### Norm kinds`.
 2. Put it in the source of truth that kind carries.
 3. Make every other carrier a pointer to that source.
 
