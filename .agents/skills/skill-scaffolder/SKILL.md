@@ -9,7 +9,7 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 
 ## Workflow Steps
 
-1. **Clarify Intent:** Ask the user what specific workflow, constraints, or task they want the new skill to specialize in.
+1. **Clarify Intent:** Ask the user what specific workflow, constraints, or task they want the new skill to specialize in. When the new skill wraps a script or a command, read [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md): the skill turns an underspecified intent into a call and stops at the command line; the script owns the call.
 2. **Determine Target Path:** Ask where the skill is delivered from.
    - Every session, from the config home: `src/reasoning/providers/pi/config/agent/skills/<kebab-case-name>/SKILL.md`. The image seeds it to `$AGENT_HOME/agent/skills/` at every start.
    - Every session, from a module's payload: `workflow/<module>/skills/<kebab-case-name>/SKILL.md`.
@@ -42,6 +42,7 @@ A skill may carry siblings beside `SKILL.md`. The `SKILL.md` index names each on
 | File | Open when |
 |---|---|
 | [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | the content grows past one body and you must decide what stays inline and what becomes a sibling |
+| [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | the new skill wraps a script or a command with a fixed call shape |
 
 ## How to Use the Generated Skill
 
