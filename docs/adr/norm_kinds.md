@@ -1,10 +1,21 @@
 # Norm kinds
 
-**Current:** 2026-10-17
+**Current:** 2026-10-22
+
+## 2026-10-22 -- The kind test stands, and its ledger does not
+
+**Decision:** The test above is unchanged and the instrument that held it is retired. `scripts/check_norm_ownership.sh` and its two data files are deleted. The test is applied by a reader against `## Norm kinds` in `docs/reference/agent_workflow.md`, as it was before the ledger existed.
+
+**Rationale:** The ledger stored one typed pair per sentence, the mark and the observer, and generated nothing that carried meaning: the four derived cells came from the tree and the two meaningful ones could only be typed. Its gate asked whether a named observer exists, never whether it fires on the sentence. Of 99 rows, 22 named an observer and 46 were the negation "nothing catches this", which no check can settle. The cost was a reclassification of every sentence a person edited, paid at the moment of the edit, and the return was one census line. A record that announces itself as generated while its only meaningful cells are typed is worse than no record, because a reader cannot tell the two apart.
+
+**Rejected alternatives:**
+
+- *Keep the ledger and demote its gate to a report* -- the report still needs the typed pair per sentence, so the maintenance stays and only the red build goes.
+- *Prove the 22 observers by perturbation and keep the rest as assertions* -- that would make the classification measured rather than typed, and it is the only version worth building, but it is a different tool: it needs a perturbation per sentence and it cannot cover the 46 negations, so the uniform file it replaces is not the same artifact.
 
 ## 2026-10-17 -- A norm is a rule when an observer detects its violation; a judgement is its principle skill's own
 
-**Decision:** Classify a norm by what detects a breach of it, not by where the sentence sits. A norm is a rule when a gate, a lint rule or a dispatched reading procedure fails on a violation, and it is a judgement when nothing does. A judgement lives in the principle skill that states it, and that skill is its only home, so a principle carries no gate and no authority claim. A norm that asserts structure and asks the author for nothing is a model. The ledger `scripts/lint/norm-ownership.tsv` records the kind and observer of every prose line in `.agents/skills/docs/SKILL.md` and `prompt-authoring-conventions.md`, and `scripts/check_norm_ownership.sh` holds it both ways.
+**Decision:** Classify a norm by what detects a breach of it, not by where the sentence sits. A norm is a rule when a gate, a lint rule or a dispatched reading procedure fails on a violation, and it is a judgement when nothing does. A judgement lives in the principle skill that states it, and that skill is its only home, so a principle carries no gate and no authority claim. A norm that asserts structure and asks the author for nothing is a model. A ledger recorded the kind and observer of every prose line of the two prose standards until 2026-10-22, when it was retired for the reasons recorded above.
 
 **Rationale:** The 2026-09-30 framing made the policy home the test of authority, and its definition of a rule presupposed an obligation. A judgement imposes none, so the doctrine never reached one, and a reader meeting a judgement had to file it as a rule and then satisfy a requirement the judgement could not meet. The principle corpus inherited that contradiction. Observation replaces the semantic test because it is the only one two readers can apply and get the same answer, and the ledger makes the answer checkable: 99 lines, 16 gated, 6 reviewed, 46 judgement, 31 description, 12 sourced at the 2026-10-22 regenerate.
 
