@@ -12,7 +12,7 @@ reader: [agent]
 type: short description
 ```
 
-Lower-case type prefix, colon, space, imperative summary. No scope field for now -- scope may be introduced later when component boundaries are clearer.
+Lower-case type prefix, colon, space, imperative summary. No scope field.
 
 The short description completes the sentence "this commit will..." -- e.g. `feat: add snapshot validation gate`, not `feat: added snapshot validation gate`.
 
@@ -23,8 +23,6 @@ Keep the subject at 50 characters or fewer. The body states the reason in one se
 The short description summarises *why* and *what category* changed, not *what changed line by line*. The diff is visible in `git show`. No file paths or line numbers in the description -- that is the diff's job.
 
 Every delivery commit (at iteration end) must use one of the types defined below. Intermediate commits -- wip checkpoints, corrections, test rollbacks, amends -- are not subject to this rule, but a delivery type is reserved for the delivery commit: do not give an intermediate commit a prefix other than `wip:`, because a typed commit reads as a closed deliverable. Delivery commits without a valid prefix are rejected at review gate.
-
----
 
 ## Active Types
 
@@ -56,8 +54,6 @@ A commit that changes both code and documentation uses the type of the primary c
 
 `plan` vs `docs`: a plan commit performs roadmap and milestone bookkeeping -- scoping a milestone or a task, assigning work to iterations, compacting a completed task list, closing a milestone. A docs commit records the system or its decisions. `plan` was an iteration type before the 2026-09-20 taxonomy reframe dropped it from the type table; commit `1c11267` (`plan: close M2.7 and collapse sub milestones`) is the historical precedent.
 
----
-
 ## Future Types
 
 Parked until the project has a use case. Introduce them when the first commit would naturally use them -- not before.
@@ -68,8 +64,6 @@ Parked until the project has a use case. Introduce them when the first commit wo
 | `revert` | Reverts a previous commit | When the first revert is needed |
 | `ci` | CI/CD pipeline changes (distinct from `workflow` -- `ci` is pipeline plumbing, `workflow` is governance) | When CI/CD is introduced (M3+) |
 | `style` | Code formatting, whitespace -- no logic change | When a formatter or linter is enforced |
-
----
 
 ## Branch Naming
 
@@ -96,8 +90,6 @@ When a change is not tied to a specific sub-milestone (e.g. a cross-cutting poli
 ### Protected branches
 
 `main` is the only long-lived branch. All work happens on type-prefixed branches and merges via review. Branch protection rules are defined in `docs/development/standard_operating_procedures.md#5-human--operational-protocols`.
-
----
 
 ## Branching Strategy
 
@@ -146,8 +138,6 @@ If none of these apply, the simple single-branch model is preferred.
 
 A session branch is merged or discarded when its work is complete. An integration branch is merged when the sub-milestone is complete. Stale branches with no activity for two milestones are deleted.
 
----
-
 ## Multi-File Commits
 
 A single commit should be a coherent unit of change. Prefer fewer, meaningful commits over many granular ones. Guidelines:
@@ -155,8 +145,6 @@ A single commit should be a coherent unit of change. Prefer fewer, meaningful co
 - A policy restructuring iteration that touches six policy files is one `workflow` commit, not six.
 - An implementation that adds a script and its tests is one `feat` commit, not separate `feat` + `test`.
 - An iteration that produces both a feature and an unrelated chore fix is two commits -- do not bundle unrelated changes.
-
----
 
 ## Checkpointing
 
@@ -171,8 +159,6 @@ An iteration that ends with uncommitted work is a risk -- the handover records i
 - On integration branches, session branches should be merged (not left dangling) before the session ends, even if the integration branch itself is not ready for `main`.
 
 This is the git-level equivalent of the `autosave.diff` pattern in the execution model -- a checkpoint that preserves state without implying completeness.
-
----
 
 ## WIP Commits
 
@@ -189,8 +175,6 @@ Use `wip:` when:
 
 The delivery commit at iteration end always carries a type prefix from the Active Types table, however many wip commits preceded it. wip commits are implementation detail; the delivery commit replaces them.
 
----
-
 ## Transient commits fold into the delivery commit
 
 One delivery commit carries each iteration. Transient commits during the iteration fold into it. Three kinds exist:
@@ -202,8 +186,6 @@ One delivery commit carries each iteration. Transient commits during the iterati
 Each kind resolves to the single delivery commit; the delivery commit is the sole reviewable surface.
 
 **Stuck procedure.** When the iteration's history already holds the work commit and the close edit is still outstanding, fold the edit into the work commit: set `Status: Closed`, apply the write-back, then amend (`git commit --amend`) or, for a non-HEAD delivery commit, `git commit --fixup=<hash>` plus `git rebase -i --autosquash`. The end state is one commit per iteration.
-
----
 
 ## Amending
 
@@ -218,9 +200,12 @@ Amending folds a change into the commit it corrects, so the history reads as if 
 - Never rewrite a commit that has left this container, and never rewrite published history.
 - Reach for a temporary commit when that is simpler: `fixup!`, `squash!` or a `wip:` commit, then fold it. The end state is what matters, and the end state is one commit per unit.
 
-A correction to the work of a closed iteration folds into that iteration's commit, at the operator's direction, and never opens a new one; the record amendments ride with the fold. What may be amended, and at whose direction, is in [`iteration_policy.md`](iteration_policy.md); the record forms are in the `record-correction` procedure and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections).
+A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
 
----
+- Case 1. The commit is the agent's own and the session that made it is still live, whichever actor raised the defect. The agent folds the correction into that commit, without asking.
+- Case 2. The session that made the commit has ended. The operator rules whether the correction folds into that commit or lands as a separate commit.
+
+What may be amended after a close is in [`iteration_policy.md`](iteration_policy.md); the record forms are in the `record-correction` procedure and [`documentation_policy.md`](documentation_policy.md#post-close-document-corrections). Which change a correction may contain is the judgement of `principle-minimal-corrections`; this section decides only where it lands.
 
 ## Recovery
 
@@ -271,11 +256,9 @@ No branch merges to `main` without operator review and approval. This restates t
 
 The operator resolves conflicts. When two session branches on the same integration branch touch overlapping files, the second branch to merge resolves conflicts against the integration branch before merging. Conflicts on merge to `main` are resolved on the integration branch, not on `main`.
 
----
-
 ## Tagging
 
-**Status:** Convention defined. Adopt when the first use case arises -- currently parked.
+**Status:** Convention defined, parked until the first use case arises.
 
 Tags mark major milestone boundaries on `main`. The tag is placed on the merge commit that completes the milestone.
 
@@ -298,13 +281,9 @@ Lower-case `m`, milestone number, dot-separated sub-milestone. No `v` prefix -- 
 
 Until one of these applies, tagging is optional. The changelog and handover chain provide the same historical record in prose form.
 
----
-
 ## Scope Field
 
 Not adopted. When component boundaries are stable enough to name consistently (e.g. `snapshot`, `diff`, `mcp`, `entrypoint`), scope can be introduced as `type(scope): description`. Until then, the short description carries enough context.
-
----
 
 ## References
 
@@ -313,7 +292,4 @@ Not adopted. When component boundaries are stable enough to name consistently (e
 | the `work-log` convention's type vocabulary | Iteration types that map to commit types |
 | `docs/development/standard_operating_procedures.md#5-human--operational-protocols` | Human / Operational Protocols |
 | [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) | Upstream specification this policy draws from |
-| `workflow/coding-agent/prompts/merge.md` | Draft-export merging operation |
-| `workflow/coding-agent/prompts/rebase.md` | Stale-branch porting operation |
-
----
+| git maintenance runbooks | Three operations: `merge.md` merges a draft export, `rebase.md` ports a stale branch, and the `history-cleanup` skill rewrites a draft branch so no commit is later undone. This table is where the three are named; each runbook states its own procedure, and the loop prompts do not list them. The first two are prompts; the third is a skill, because it ships a detector beside itself and a prompt is one file. |

@@ -2,8 +2,6 @@
 
 Getting agent-sandbox running on a new machine for the first time. Covers install, onboarding, and verifying the setup. For day-to-day commands and troubleshooting, see the provider quickstart for your provider (e.g. `providers/opencode/quickstart.md`).
 
----
-
 ## Prerequisites
 
 - Linux or WSL on Windows
@@ -12,8 +10,6 @@ Getting agent-sandbox running on a new machine for the first time. Covers instal
 - agent-sandbox repository cloned locally
 
 Full host-tool requirements and the macOS setup (bash 4.0+ and the GNU toolchain): `docs/development/host_requirements.md`. Enforced by `scripts/install.sh` at install time.
-
----
 
 ## 1. Install the CLI
 
@@ -28,8 +24,6 @@ Installs `agent-sandbox` to `/usr/local/bin`. To install elsewhere:
 ```sh
 make install PREFIX=~/.local/bin
 ```
-
----
 
 ## 2. Onboard a project
 
@@ -56,8 +50,6 @@ After onboarding, `SANDBOX_DIR` contains:
 
 See [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md) for the full procedure.
 
----
-
 ## 3. Complete the setup
 
 **Edit `.env`** -- set `SERVE_PORT` and any provider-specific variables flagged in the file comments. Path variables are derived automatically; do not edit them.
@@ -66,8 +58,6 @@ See [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md) fo
 
 - `.env` is covered by `.gitignore`
 - Project has at least one git commit
-
----
 
 ## 4. Build images
 
@@ -81,8 +71,6 @@ Builds the capability layer image and all provider images. To build a single pro
 make build TARGETS=<provider>
 ```
 
----
-
 ## 5. Verify
 
 ```sh
@@ -90,8 +78,6 @@ make dry-run PROVIDER=<provider>
 ```
 
 A passing dry-run confirms both containers start, `sandbox/` initialises, and the diff pipeline produces output. See [Dry-Run Guarantees](../reference/tool_interface.md#dry-run-guarantees).
-
----
 
 ## Pre-run checklist
 
@@ -102,8 +88,6 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 - [ ] `PROJECT_DIR` is a git repo with at least one commit
 - [ ] Docker running (`docker info`)
 - [ ] `make dry-run PROVIDER=<provider>` passes
-
----
 
 ## Session persistence
 
@@ -116,8 +100,6 @@ The sandbox directory persists across `make start` / `make stop` cycles via a na
 - **Prune stale/orphaned sessions:** `make prune` removes stale `.compose` records and now-orphaned resources (containers/volumes whose session has no record). Always a complete pass; `STALE=sandbox`/`PROVIDER`/`AGE_DAYS` narrow the stale-record selection, `DRY_RUN=1` simulates, `INTERACTIVE=1` confirms.
 
 The session identity (SESSION_ID, SESSION_TS) is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and reused across resumes. This ensures container labels, error logs, and export paths remain consistent.
-
----
 
 ## Recovery
 
@@ -144,8 +126,6 @@ To recover to a specific checkpoint:
 ```bash
 git reset --hard agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
 ```
-
----
 
 ## References
 

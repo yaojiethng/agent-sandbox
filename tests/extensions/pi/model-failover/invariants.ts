@@ -47,7 +47,7 @@ const TRANSITION_INVARIANTS: readonly Omit<Invariant, "family">[] = [
 const GUARD_INVARIANTS: readonly Omit<Invariant, "family">[] = GUARDS.filter((guard) => guard.id.startsWith("G")).map((guard) => ({ id: guard.id, statement: guard.statement }));
 
 const CLASSIFICATION_INVARIANTS: readonly Omit<Invariant, "family">[] = [
-	{ id: "C1", statement: "a measured quota text classifies as limited, a measured transient text as transient, and an unmatched text as transient" },
+	{ id: "C1", statement: "a measured quota text classifies as limited, a measured transient text as transient, and an unmatched text as unrecoverable" },
 ];
 
 function withFamily(rows: readonly Omit<Invariant, "family">[], family: InvariantFamily): readonly Invariant[] {

@@ -12,7 +12,8 @@
 # enforced regardless of date, which is the on-demand audit mode
 # handover-maintenance uses. `--staged` enforces the handovers staged for
 # commit but keeps the cutover, so a commit correcting an old record is not
-# blocked.
+# blocked. Staged paths under `archive/` are excluded, as the default scan
+# excludes them.
 #
 # Test seam: HANDOVER_FORMAT_SCAN_ROOT points the scan at a fixture root, and
 # HANDOVER_FORMAT_CUTOVER moves the cutover the default scan applies.
@@ -48,7 +49,7 @@ while (( $# > 0 )); do
       STAGED=1
       while IFS= read -r -d '' file; do
         FILES+=("$file")
-      done < <(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- 'devlog/handovers/*.md')
+      done < <(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- 'devlog/handovers/*.md' ':(exclude)devlog/handovers/archive/**')
       shift
       ;;
     *)

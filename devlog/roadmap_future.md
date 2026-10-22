@@ -30,6 +30,21 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 ---
 
+## W2 -- Communication Domain Taxonomy
+
+**Status:** Not started. Scoped 2026-10-19.
+
+**Objective:** A consolidated workflow section for the deep approach to the communication domain: a taxonomy of the reader's processing costs that slices the domain into principles, a controlled vocabulary of the domain terms, and a measured answer to whether those terms signal the domain to an agent. The output is one communication surface that owns the domain.
+
+**Depends on:** the eval module, so the signalling experiment can run; and M3.3.4's principle cleanup, at minimum the removal of the duplicate declaration locations across `documentation_policy.md` `## Communication Standards`, `prompt-authoring-conventions.md`, and the `skill-scaffolder` skill.
+
+**Tasks:**
+
+- [ ] Run the communication-domain taxonomy. Run brief: [`.agents/drafts/communication-domain-taxonomy-run.md`](../.agents/drafts/communication-domain-taxonomy-run.md).
+- [ ] **Populate the leading words across the corpus.** `metadata: leitwort:` is declared on the principle skills and the words are blank. M3.3.4 ran a pass that produced one word per skill, the operator rejected the set, and it was reverted, so `proximity` and `leverage` stand, each naming its own skill's subject. What a leading word is, and which word leads, is `communication-principle-maximize-conceptual-leverage`; where it goes is `principle-skill-signposting`. The judging pass belongs with this sub-milestone's controlled vocabulary, where the territory is settled before a part of it is named. A gate over the field is unfiled, because presence is all a gate can read and no gate sees a thinking trace. Evidence: [`AGENT_FEEDBACK.md`](AGENT_FEEDBACK.md) **A vocabulary was chosen for flavour and reverted**.
+
+---
+
 ## Multi-Agent Coordination
 
 ### M4 - Multi-Agent Coordination
@@ -204,6 +219,10 @@ The volume is seeded host-side before the sandbox container starts, so the entry
 ### M2.6.7 -- Interface Contract Compatibility (complete)
 
 One version constant, one image label, one warn-only preflight check, and a hard stop on a container-to-container mismatch; a missing record key still warns, which is the upgrade path. Interface concept doc `docs/reference/sandbox_host_interface.md`, lifecycle architecture doc `docs/reference/sandbox_lifecycle.md`, ADR `docs/adr/interface_contract_compatibility.md`. Handovers `20260919-03` (design), `20260919-04` (implementation) and `20260919-05` (documentation); design record [`20260919-design-settled-interface_contract_compatibility.md`](./discussions/archive/20260919-design-settled-interface_contract_compatibility.md). The `container-sig` mechanism this sub-milestone superseded was retired at `20260919-08`.
+
+### The Unit That Ships the Wiki (permanently deferred)
+
+**Permanently deferred (M3.3.4, 2026-10-21).** `agent-sandbox.md` is a prompt whose body sends the reader to `/opt/sandbox/docs/`, so the wiki is real and its corpus is `docs/reference/` and `docs/policies/`. A unit named `agent-sandbox` would group that entry point with its corpus, but the entry point sits in `src/reasoning/agent/prompts/` beside the harness commands, and the default unit is that folder, `src/reasoning/agent/skills/` and the two document bundles together, so the split produces two module-shaped units where one was wanted. A module also earns its existence by being enableable, and this one would be enabled by every provider image always. The row was raised by the `20261021-02` iteration and deferred rather than decided, so the unit model stays unstated and the wiki's membership stays undecided.
 
 ### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
 

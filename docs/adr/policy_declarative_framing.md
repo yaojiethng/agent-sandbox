@@ -1,6 +1,17 @@
 # Policy Declarative Framing
 
-**Current:** 2026-09-30
+**Current:** 2026-10-17
+
+## 2026-10-17 -- A norm is a rule when an observer detects its violation; a judgement is its principle skill's own
+
+**Decision:** Classify a norm by what detects a breach of it, not by where the sentence sits. A norm is a rule when a gate, a lint rule or a dispatched reading procedure fails on a violation, and it is a judgement when nothing does. A judgement lives in the principle skill that states it, and that skill is its only home, so a principle carries no gate and no authority claim. A norm that asserts structure and asks the author for nothing is a model. The ledger `scripts/lint/norm-ownership.tsv` records the kind and observer of every prose line in `documentation_policy.md` and `prompt-authoring-conventions.md`, and `scripts/check_norm_ownership.sh` holds it both ways.
+
+**Rationale:** The 2026-09-30 framing made the policy home the test of authority, and its definition of a rule presupposed an obligation. A judgement imposes none, so the doctrine never reached one, and a reader meeting a judgement had to file it as a rule and then satisfy a requirement the judgement could not meet. The principle corpus inherited that contradiction. Observation replaces the semantic test because it is the only one two readers can apply and get the same answer, and the ledger makes the answer checkable: 167 lines, 21 gated, 8 reviewed, 97 judgement, 41 model at this entry.
+
+**Rejected alternatives:**
+
+- *Keep the policy-home test and exempt judgements.* The exemption is a second test with no observer either, and the exemption's own boundary is the question that failed.
+- *Delete the authority section at the judgement carriers.* It removed the canonical-owner test, the producer rule, the no-bridge rule and policy membership to answer a question the definition of a rule never raised.
 
 ## 2026-09-30 -- Discussion-family records are reference-durable; the ADR is the durable home of record
 
@@ -16,6 +27,8 @@
 **Edge cases / drivers:** More than one record overlapping, content more stale than current, and a naming conflict each justify cleanup and subsumption. The concept document is the single owner of the durability classification; the ADR records why.
 
 ## 2026-09-30 -- Rules are authoritative only where a policy canonically states them; concepts and ADRs describe but do not bind
+
+**Reason superseded by 2026-10-17:** the test of authority moved from the document that hosts a norm to the observer that detects its violation, because a judgement imposes no obligation and the hosting test could not classify one.
 
 **Decision:** A rule is authoritative only where a policy document canonically states it. A concept document or ADR may describe a rule in readable form, but it links to the policy and is not the rule's home. A rule with no policy home is descriptive, not binding. Separate the two by kind: a statement is a rule when it imposes an obligation a document or its author must meet, and belongs in policy; a statement is a model when it describes the system's structure as a consequence of earlier decisions, and belongs in a concept document, which states it readably and links the rules behind it.
 

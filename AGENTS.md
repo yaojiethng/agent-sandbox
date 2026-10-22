@@ -13,8 +13,6 @@ This file is the project layer: the second context file pi loads, after the prov
 
 **agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute and commit inside containers, output is exported as a draft branch, and a human operator reviews and merges. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.
 
----
-
 ## Role
 
 You operate in three modes, often in combination:
@@ -25,19 +23,17 @@ You operate in three modes, often in combination:
 
 **Audit** -- Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
 
----
-
 ## Constraints
 
 **Sandbox boundary.** Work exclusively inside your working directory. Do not attempt to access paths outside it. The host repository is not mounted and is not reachable.
 
 **No push.** Do not run `git push`, or any command that mutates remote git history.
 
+**Git hygiene.** [`docs/policies/git_policy.md`](docs/policies/git_policy.md) is the git-hygiene document: commit types, the delivery commit, and the names of the git maintenance runbooks. It is the stopgap home for git hygiene until that work has a module of its own; [`docs/adr/coding_agent_project_bindings.md`](docs/adr/coding_agent_project_bindings.md) records that git is currently an available tool, not a module.
+
 **Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per [`docs/policies/git_policy.md`](docs/policies/git_policy.md). Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
 **No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
-
----
 
 ## Collaboration Protocol
 
@@ -53,7 +49,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
-**Context-aware numbering.** A number in chat is valid only in the conversation where it appears. Use a numbered list in chat when the operator refers to items by number. When a chat item becomes a durable artifact, give it a descriptive name, not the chat number. See the full convention in [`documentation_policy.md`](docs/policies/documentation_policy.md#numbered-vs-bulleted-presentation).
+**Context-aware numbering.** The numbering rule is the project convention [`.agents/skills/numbering/SKILL.md`](.agents/skills/numbering/SKILL.md): a number for an ordered unit, an identity code for an unordered one, and grouped chat labels so one token names one item. A chat item that becomes a durable artifact is stated, not labelled.
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
@@ -65,13 +61,9 @@ These principles are stable. The operating workflow and policy documents are the
 
 **Keep tests green docs up-to-date.** After completing a change, always ensure changes are propagated to features and tests
 
----
-
 ## Propagation Discipline
 
 When a task applies a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- produce a propagation checklist before writing the first file, show it in chat, and confirm every row before declaring the task complete. The trigger list, the format, and the audit that verifies coverage are in the [`propagation-check`](src/reasoning/agent/skills/propagation-check/SKILL.md) skill.
-
----
 
 ## Bash Friction Log
 
@@ -83,19 +75,24 @@ Bash friction is one class of the agent-feedback record. It lives with the other
 
 These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
 
----
-
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. The role-to-model recommendations live in an operator-owned file at `$AGENT_HOME/model-recommendations.md`, outside this repository, so a model change never enters a commit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, and the provider prefix disambiguates a model served by more than one provider. When one model is required but several are listed, use the first in listed order; a routing clause on a value takes precedence.
+A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level. Every role names `deepseek/deepseek-flash`, the only model we dispatch.
 
-The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`.
+The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
 
-If the file is missing, or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When a prompt is not tied to a role tag, or the role has no value, resolve the startup default from `~/.pi/agent/settings.json` with `jq` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`); a project-level `.pi/settings.json` override takes precedence. When a recommendation names no thinking level, use `defaultThinkingLevel` from the same settings file.
+The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference, and do not compose a pair from `pi --list-models`.
+
+**The dispatch procedure.** Four steps, in this order.
+
+1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1. Print the result before dispatching, so the pair is in the transcript.
+2. Pass it verbatim: `pi --provider <provider> --model <provider>/<model> --thinking <level> --session <path> -p "$(cat <brief>)"`. Pass the id in full; `--model` matches as a substring and takes the last id that contains it.
+3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u`. It must print the pair from step 1, once.
+4. Record the role, the pair, and the level in the brief and in the report.
+
+**When a step fails, stop and report**, per the failure rules in the provider layer's `## Model Recommendations`: dispatch nothing further, choose no model by hand, and report the role and the message.
 
 Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
-
----
 
 ## Read Discipline
 
@@ -119,15 +116,13 @@ Then read only the sections you need.
 
 A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.
 
----
-
 ## Output Format
 
 Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
 
 Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in [`documentation_policy.md`](docs/policies/documentation_policy.md).
 
-**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: records state, not session history; skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
+**Documents** -- Markdown, one file per document, correct folder per `documentation_policy.md`. Drafting rules: write for the reader, not the session (`communication-principle-write-for-the-reader`); skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
@@ -144,15 +139,11 @@ See [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) for
 
 **Code comments** -- Comments must describe what the code does or why -- never that it was changed. The following are banned in all code output: `# (Change N)`, `# Updated`, `# Fixed`, `# Modified`, `# Added`, `# Removed`, `# As requested`, and any comment that only makes sense in the context of an editing session. Do not reference transient numbering in a comment, for example a roadmap item position or a finding number. Name the change or link the document instead.
 
----
-
 ## Missing Documents
 
 If a required document is absent and carries no `[REMOVED]` marker on its referencing link, flag it as an error and prompt the operator before proceeding. Do not assume the document is optional. Do not proceed without resolution.
 
 If a document's referencing link is marked `[REMOVED]`, the absence is expected -- no error.
-
----
 
 ## Iteration Lifecycle
 

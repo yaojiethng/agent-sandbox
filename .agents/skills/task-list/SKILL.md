@@ -101,12 +101,12 @@ Changelog entries live in `devlog/changelog.md`, appended in milestone order. Ea
 
 *{One sentence: what the system can now do.}*
 
-{Two to four sentences: what was built - mechanisms, key decisions, concrete outcomes. No file lists. No future language. Capability first, mechanism second.}
+{Two to four sentences: what was built - mechanisms, key decisions, concrete outcomes. No file lists. Capability first, mechanism second.}
 
 ---
 ```
 
-The italicised summary is the capability sentence: what an operator or agent can now do that they could not before. Name concrete components without listing files. Use no future language (`will`, `plan`, `eventually`): the changelog describes completed work only. An entry that states only abstract capability is too thin; one that recounts the implementation is too heavy.
+The italicised summary is the capability sentence: what an operator or agent can now do that they could not before. Name concrete components without listing files. The changelog describes completed work only. An entry that states only abstract capability is too thin; one that recounts the implementation is too heavy. The judgement is the `communication-principle-dont-forecast-undone-work` skill at `$AGENT_HOME/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md`.
 
 ## Corrections to a closed entry
 

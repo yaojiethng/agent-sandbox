@@ -6,8 +6,6 @@
 
 **Origin:** the operator's scoping request (2026-10-15), the measured evidence in the T7 row `Expose a capacity signal to the agent`, and the T2 telemetry rows. This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
----
-
 ## Purpose
 
 Model cost is recorded and unread. The harness pays for every dispatch and cannot say what a skill costs, which model it should have used, or which free model it could have reached. A free model inventory exists that the harness cannot see at all.

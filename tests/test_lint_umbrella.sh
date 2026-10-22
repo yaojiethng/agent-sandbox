@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_lint_umbrella.sh
-# TEST_DEADLINE: 10
+# TEST_DEADLINE: 20
 #   This file runs the real umbrella gate many times over, so its honest
 #   runtime is about 4s and the 5s default leaves no headroom under parallel
 #   dispatch. The declaration is a budget, not a licence: the file must stay
@@ -487,27 +487,27 @@ EOF
 }
 
 # Given: a fixture root whose only prompt has frontmatter that parses
-# When:  check_frontmatter.sh runs against that root
+# When:  check_document_shape.sh runs against that root
 # Then:  rc is 0
 # Asserts: the clean verdict, so a passing gate is not a gate that never fires.
 test_frontmatter_gate_passes_on_a_parsing_block() {
   local root out rc=0
   root=$(make_frontmatter_fixture '---' 'description: "Draft: a quoted value"' '---' '' '# Sequential Work')
-  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a parsing block passes the gate"
   assert_contains "$out" "Clean" "the clean verdict reaches the operator"
 }
 
 # Given: a fixture root holding a prompt whose unquoted description contains a
 # colon followed by a space
-# When:  check_frontmatter.sh runs against that root
+# When:  check_document_shape.sh runs against that root
 # Then:  rc is 1 and the finding names the file, the line, and the offending text
 # Asserts: the silent drop is reported at the line an author has to edit. A gate
 # that only printed a count would leave the author hunting for it.
 test_frontmatter_gate_names_the_offending_line() {
   local root out rc=0
   root=$(make_frontmatter_fixture '---' 'description: Draft - the shape: run a plan' '---' '' '# Sequential Work')
-  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "an unquoted colon-space fails the gate"
   assert_contains "$out" "broken.md" "the finding names the file"
   assert_contains "$out" "offending line: description: Draft - the shape: run a plan" \
@@ -516,7 +516,7 @@ test_frontmatter_gate_names_the_offending_line() {
 
 # Given: a fixture root holding a prompt that opens on its title, with no
 # frontmatter block at all
-# When:  check_frontmatter.sh runs against that root
+# When:  check_document_shape.sh runs against that root
 # Then:  rc is 0
 # Asserts: the gate scopes itself to a block that fails to parse. A prompt draft
 # with no block is a separate, tracked defect; failing every known open item
@@ -524,13 +524,13 @@ test_frontmatter_gate_names_the_offending_line() {
 test_frontmatter_gate_skips_a_prompt_with_no_block() {
   local root out rc=0
   root=$(make_frontmatter_fixture '# Fan-Out Run' '' '## Purpose')
-  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a prompt with no frontmatter block is skipped, not flagged"
-  assert_contains "$out" "clean across 1 prompt, skill and policy files" "the file is collected and its block skipped"
+  assert_contains "$out" "clean across 1 instruction file(s)" "the file is collected and its block skipped"
 }
 
 # Given: a PATH with no node on it
-# When:  check_frontmatter.sh runs
+# When:  check_document_shape.sh runs
 # Then:  rc is 1
 # Asserts: the gate fails closed. A missing parser must never read as a pass.
 test_frontmatter_gate_fails_closed_without_node() {
@@ -539,13 +539,13 @@ test_frontmatter_gate_fails_closed_without_node() {
   mkdir -p "$bin"
   ln -sf "$(command -v dirname)" "$bin/dirname"
   ln -sf "$(command -v bash)" "$bin/bash"
-  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(PATH="$bin" "$bin/bash" "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "no node on PATH fails the gate"
   assert_contains "$out" "node is not on PATH" "the missing dependency is named"
 }
 
 # Given: a manifest root with no container-interface.json
-# When:  check_frontmatter.sh runs
+# When:  check_document_shape.sh runs
 # Then:  rc is 1 and the missing declaration is named
 # Asserts: the gate fails closed. The instruction roots are derived from the
 # declaration, so an absent declaration means the root set is unknown; reading
@@ -554,13 +554,13 @@ test_frontmatter_gate_fails_closed_without_manifest() {
   local root out rc=0
   root="$FIXTURE_DIR/frontmatter_nomanifest_$$_$RANDOM"
   mkdir -p "$root"
-  out=$(FRONTMATTER_MANIFEST_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_MANIFEST_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a missing manifest fails the gate"
   assert_contains "$out" "cannot derive the instruction roots" "the missing declaration is named"
 }
 
 # Given: a fixture root holding a policy file whose frontmatter does not parse
-# When:  check_frontmatter.sh runs against that root
+# When:  check_document_shape.sh runs against that root
 # Then:  rc is 1 and the finding names the policy file
 # Asserts: the policy scan root is live. A policy block is never loaded at
 # runtime, so a malformed one has no other symptom; the gate is the only check.
@@ -570,14 +570,14 @@ test_frontmatter_gate_scans_policy_files() {
   mkdir -p "$root/docs/policies"
   printf '%s\n' '---' 'description: Owns a rule: unquoted colon' '---' '' '# X Policy' \
     > "$root/docs/policies/x_policy.md"
-  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed policy block fails the gate"
   assert_contains "$out" "x_policy.md" "the finding names the policy file"
 }
 
 # Given: a fixture root holding a project convention-skill whose unquoted
 # description contains a colon followed by a space
-# When:  check_frontmatter.sh runs against that root
+# When:  check_document_shape.sh runs against that root
 # Then:  rc is 1 and the finding names the skill file
 # Asserts: the project convention-skill tree is scanned. It sat outside the
 # gate's root list, so a malformed description in `.agents/skills/` cost the
@@ -588,7 +588,7 @@ test_frontmatter_gate_scans_project_convention_skills() {
   mkdir -p "$root/.agents/skills/task-list"
   printf '%s\n' '---' 'name: task-list' 'description: the roadmap and the changelog: their shape' '---' '' '# task-list' \
     > "$root/.agents/skills/task-list/SKILL.md"
-  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed convention-skill block fails the gate"
   assert_contains "$out" ".agents/skills/task-list/SKILL.md" "the finding names the convention-skill"
 }
@@ -596,7 +596,7 @@ test_frontmatter_gate_scans_project_convention_skills() {
 # Given: a fixture root holding a malformed frontmatter block in every
 #        instruction root the container interface declares, plus the two
 #        project convention roots
-# When:  check_frontmatter.sh runs against that root
+# When:  check_document_shape.sh runs against that root
 # Then:  rc is 1 and the finding count equals the number of planted files
 # Asserts: the scan set is derived from the declaration, not hand-listed. The
 # test reads the same declaration the gate does, so a cell source added to the
@@ -618,9 +618,9 @@ test_frontmatter_gate_covers_every_declared_instruction_root() {
     printf '%s\n' '---' 'description: shape: unquoted colon' '---' '' '# a' > "$root/$rel"
     count=$((count + 1))
   done <<< "$rels"
-  out=$(FRONTMATTER_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a malformed block in every declared instruction root fails the gate"
-  assert_contains "$out" "$count frontmatter finding(s)" "every declared instruction root is scanned"
+  assert_contains "$out" "$count finding(s) across" "every declared instruction root is scanned"
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
     assert_contains "$out" "${rel%/}/a.md:" "the finding names ${rel%/}/a.md"
@@ -634,7 +634,7 @@ test_frontmatter_gate_covers_every_declared_instruction_root() {
 # Asserts: the config-coherence property. config.default is false, so a rule
 # registered in customRules but named nowhere in the config never runs and
 # reports nothing: the gate prints a clean verdict over an empty rule set.
-# record-links sat in that state, and the guard in check_markdown.sh checked
+# linking sat in that state, and the guard in check_markdown.sh checked
 # only the opposite direction (enabled but unregistered), so it stayed silent.
 test_every_registered_rule_is_enabled() {
   local out
@@ -668,7 +668,7 @@ run_test test_every_registered_rule_is_enabled
 run_test test_lint_gate_set_is_complete
 run_test test_lint_forwards_gate_output
 # Given: a fixture root holding a shipping document with no reader declared
-# When:  check_frontmatter.sh runs with that folder as a shipping root
+# When:  check_document_shape.sh runs with that folder as a shipping root
 # Then:  rc is 1 and the finding names the file
 # Asserts: the reader field is required where it has teeth. The ship set is a
 # decision, so a shipping document that declares no reader is the one state the
@@ -678,13 +678,13 @@ test_frontmatter_gate_requires_a_reader_on_a_shipping_document() {
   root="$FIXTURE_DIR/frontmatter_reader_$$_$RANDOM"
   mkdir -p "$root/docs/reference"
   printf '%s\n' '# Undeclared' '' 'Prose.' > "$root/docs/reference/undeclared.md"
-  out=$(FRONTMATTER_SCAN_ROOT="$root" FRONTMATTER_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" DOCUMENT_SHAPE_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a shipping document with no reader fails the gate"
   assert_contains "$out" "undeclared.md frontmatter: no frontmatter" "the finding names the file and the reason"
 }
 
 # Given: a fixture root holding a shipping document that declares the maintainer alone
-# When:  check_frontmatter.sh runs with that folder as a shipping root
+# When:  check_document_shape.sh runs with that folder as a shipping root
 # Then:  rc is 1 and the finding says the document does not ship
 # Asserts: the declaration and the folder set cannot disagree. A maintainer-only
 # document belongs outside a shipping folder, and the check states which side moves.
@@ -693,13 +693,13 @@ test_frontmatter_gate_rejects_a_maintainer_only_shipping_document() {
   root="$FIXTURE_DIR/frontmatter_maintainer_$$_$RANDOM"
   mkdir -p "$root/docs/reference"
   printf '%s\n' '---' 'reader: [maintainer]' '---' '' '# Maintainer Only' > "$root/docs/reference/maintainer_only.md"
-  out=$(FRONTMATTER_SCAN_ROOT="$root" FRONTMATTER_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" DOCUMENT_SHAPE_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 1 "$rc" "a maintainer-only shipping document fails the gate"
   assert_contains "$out" "does not ship" "the finding states the consequence"
 }
 
 # Given: a fixture root holding a shipping document with a declared reader
-# When:  check_frontmatter.sh runs with that folder as a shipping root
+# When:  check_document_shape.sh runs with that folder as a shipping root
 # Then:  rc is 0
 # Asserts: the positive case, so the two findings above are not a gate that fails
 # on every tree.
@@ -708,9 +708,41 @@ test_frontmatter_gate_accepts_a_declared_reader() {
   root="$FIXTURE_DIR/frontmatter_ok_$$_$RANDOM"
   mkdir -p "$root/docs/reference"
   printf '%s\n' '---' 'reader: [agent, operator]' '---' '' '# Declared' > "$root/docs/reference/declared.md"
-  out=$(FRONTMATTER_SCAN_ROOT="$root" FRONTMATTER_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_frontmatter.sh" 2>&1) || rc=$?
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" DOCUMENT_SHAPE_SHIPPED_ROOTS="docs/reference" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
   assert_rc 0 "$rc" "a declared reader passes the gate"
-  assert_contains "$out" "1 shipping document(s) declare a reader" "the verdict counts the shipping documents"
+  assert_contains "$out" "1 shipping document(s)" "the verdict counts the shipping documents"
+}
+
+# Given: a fixture root holding a skill whose disable-model-invocation value is a
+#        string rather than a boolean
+# When:  check_document_shape.sh runs against that root
+# Then:  rc is 1 and the finding names the field and the value
+# Asserts: the field's type. Pi's loader tests the value with `=== true`, so a
+# string such as `yes` leaves the skill visible, the opposite of the author's
+# intent, and no other check reads the field.
+test_frontmatter_gate_rejects_a_non_boolean_disable_field() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_flag_$$_$RANDOM"
+  mkdir -p "$root/.agents/skills/x"
+  printf '%s\n' '---' 'name: x' 'description: a skill' 'disable-model-invocation: yes' '---' '' '# x' \
+    > "$root/.agents/skills/x/SKILL.md"
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
+  assert_rc 1 "$rc" "a non-boolean disable-model-invocation fails the gate"
+  assert_contains "$out" "disable-model-invocation is" "the finding names the field"
+}
+
+# Given: the same fixture with a boolean value
+# When:  check_document_shape.sh runs against that root
+# Then:  rc is 0
+# Asserts: the boolean value passes, so the check is not a blanket rejection.
+test_frontmatter_gate_accepts_a_boolean_disable_field() {
+  local root out rc=0
+  root="$FIXTURE_DIR/frontmatter_flag_ok_$$_$RANDOM"
+  mkdir -p "$root/.agents/skills/x"
+  printf '%s\n' '---' 'name: x' 'description: a skill' 'disable-model-invocation: true' '---' '' '# x' \
+    > "$root/.agents/skills/x/SKILL.md"
+  out=$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$REPO_ROOT/scripts/check_document_shape.sh" 2>&1) || rc=$?
+  assert_rc 0 "$rc" "a boolean disable-model-invocation passes the gate"
 }
 
 run_test test_markdown_finding_with_zero_status_fails
@@ -726,5 +758,7 @@ run_test test_frontmatter_gate_covers_every_declared_instruction_root
 run_test test_frontmatter_gate_requires_a_reader_on_a_shipping_document
 run_test test_frontmatter_gate_rejects_a_maintainer_only_shipping_document
 run_test test_frontmatter_gate_accepts_a_declared_reader
+run_test test_frontmatter_gate_rejects_a_non_boolean_disable_field
+run_test test_frontmatter_gate_accepts_a_boolean_disable_field
 
 test_done

@@ -16,8 +16,6 @@ The harness separates into two layers with different responsibilities and differ
 
 The layers are separate because they vary independently. The capability layer varies by project type -- the tool surface and sandbox contents are determined by what the project requires. The reasoning layer varies by operator preference -- model, interface, cost profile. Fusing them coupled both concerns into the same container image and Dockerfile.
 
----
-
 ## Capability Layer Configurations
 
 The capability layer container is always present. What varies is whether an MCP server process runs inside it and how working content is exposed to the reasoning layer.
@@ -30,21 +28,15 @@ The capability layer container is always present. What varies is whether an MCP 
 
 **Hooks and audit trail** attach to the MCP server when present. They have no attachment point in the sandbox-only configuration. If a workflow requires them, the appropriate MCP configuration is selected.
 
----
-
 ## Why the Layers Are Separate
 
 Further reading: the rationale for the separation -- the fused single-container model as the rejected alternative, and the MCP-server investigation that surfaced it -- is recorded in `docs/adr/agent_sandbox_two_container_separation.md`.
 
 The capability layer must always be isolated per project; the reasoning layer needs isolation from the host but not per-project isolation. The MCP protocol is the interface when a capability layer MCP server is present. Any MCP-compatible reasoning layer is a conforming client without custom integration work. When no MCP server is present, the interface is the volume mount alone. Either way, the reasoning layer is swappable without changing the capability layer configuration.
 
----
-
 ## Diff Pipeline
 
 The diff pipeline runs post-session against the sandbox in the capability layer container. The harness generates the diff after the session ends and writes it to the output channel for operator review. The operator workflow -- review diff, apply to host repository -- is unchanged from M1.x. Implementation details are in `execution_model.md`.
-
----
 
 ## Architecture Documents
 

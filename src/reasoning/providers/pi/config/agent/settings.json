@@ -18,6 +18,7 @@
     "baseDelayMs": 1000,
     "maxAgentDelayMs": 3600000
   },
+  "defaultTools": ["+codemode"],
   "tools": {
     "web_fetch": {
       "enabled": true,

@@ -35,7 +35,7 @@ For each policy, subtract the mechanism (owned by the procedure that already run
 **The fates.** The remainder decides the fate, on one rule: a rule that a procedure enforces is stated where it is enforced; a rule that binds the procedures to each other is a protocol and keeps a document.
 
 - **`iteration_policy` keeps a document**, its protocol half: the Principles and the Iteration Invariants bind every runbook, so no single procedure can hold them. It is no longer a policy; it is the runbooks' contract.
-- **`documentation_policy`'s Communication Standards keep a document**, the `communication` standard: they govern every text, so no one procedure holds them. The rest dissolves.
+- **`documentation_policy`'s Communication Standards keep a document**, the `communication` standard: they govern every text, so no one procedure holds them. The rest dissolves. **Revised 2026-10-21:** the judgements became `communication-principle-*` skills, which hold them as a corpus rather than a document; the amendment is in `docs/adr/coding_agent_project_bindings.md`.
 - **The other six dissolve.** Their remainder is a rule a procedure enforces, so it is stated there.
 
 **The order.** One slice per policy, each its own iteration, ordered so the pattern is set on the most self-contained document and the protocol moves last: `handover_policy`, `roadmap_policy`, `adr_policy`, `discussion_policy`, `git_policy`, `documentation_policy`, `testing_policy`, `iteration_policy`.

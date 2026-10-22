@@ -6,8 +6,6 @@ Rules for writing bash scripts in this project. Supersedes the former `bash-scri
 
 **Linting:** `shellcheck` is installed and run on scripts (see `scripts/run_tests.sh` and the bash-audit skill). Shellcheck warnings beyond documented `# shellcheck disable` disables are treated as defects. Shellcheck does not flag the `grep`-no-match / `|| true` class of `set -e` landmines  --  those are covered by rule 4 below and are caught by review, not the linter.
 
----
-
 ## 1. Language Rules
 
 ### 1.1 Makefile content: `printf`, not heredocs
@@ -185,7 +183,7 @@ build)
   ;;
 ```
 
-### 1.14 Self-derive repo root for dual-use scripts
+### 1.15 Self-derive repo root for dual-use scripts
 
 Scripts that can be `exec`"d or sourced need to handle both:
 
@@ -194,7 +192,7 @@ _self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
 ```
 
-### 1.15 No `local` at script top level
+### 1.16 No `local` at script top level
 
 `local` is only valid inside a function. At top-level scope it is a runtime error not caught by `bash -n`. Use plain assignment.
 
@@ -203,7 +201,7 @@ AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
 REFRESH_FLAG=""
 ```
 
-### 1.16 Scope `|| true` to the command that needs it
+### 1.17 Scope `|| true` to the command that needs it
 
 Under `set -o pipefail`, `|| true` on the whole pipeline swallows every command's failure. Scope to the individual command with a subshell:
 
@@ -225,7 +223,7 @@ fi
 
 The wrong form prints "Containers stopped and removed." after `docker rm ... || true` caught a failure. The sentence reaches the operator's terminal and every log that reads it, and it asserts work the command did not do.
 
-### 1.17 Shell option flags by file class
+### 1.18 Shell option flags by file class
 
 Every shell file declares its failure regime according to its class. The class is determined by how the file is consumed, not by where it lives.
 
@@ -244,7 +242,7 @@ Notes:
 - `-u` in library code would fire on consumer-controlled environments; libraries validate their inputs explicitly instead.
 - A class change (e.g. a lib growing an entry point) means re-declaring flags for the new class as part of that change.
 
-### 1.18 Bound every external blocking call
+### 1.19 Bound every external blocking call
 
 An external call that can wait on a peer carries an explicit bound, and the bound is a stated duration, not a default inherited from the tool.
 
@@ -261,7 +259,20 @@ Notes:
 - A caller that must wait longer than its bound says why in a comment on the command.
 - A timeout is a distinct outcome. `timeout` returns 124, so the caller reports "did not return" rather than reporting success.
 
----
+### 1.20 The consumer that exits early turns a match into a failure
+
+Under `set -o pipefail`, a reader that stops at its first match sends `SIGPIPE` to the writer, and the pipeline reports the writer's 141 even though the reader succeeded.
+
+```bash
+# Wrong  --  pipefail reports find's SIGPIPE, so the branch takes the failure path
+find "$dir" -name '*.md' | grep -q pattern && echo matched
+
+# Right  --  the list is read once, and the test reads it with no pipeline
+files="$(find "$dir" -name '*.md')"
+grep -q pattern <<< "$files" && echo matched
+```
+
+A producer cut short exits 141 in the same way, so `--files-with-matches` piped into `grep -q .` fails too. Collect the list first, then test it. The symptom is deceptive: the command prints nothing and the branch that should pass takes the failure path, so the cause reads as a broken input rather than a broken pipeline.
 
 ## 2. Dependency Management
 
@@ -290,8 +301,6 @@ nothing   ---> tests/                    nothing sources tests
 ### 2.3 No circular sourcing
 
 Shared functions live in leaf libraries, never in orchestrators. If `A.sh` sources `B.sh` and `B.sh` needs a function from `A.sh`, extract the shared function to a third library `C.sh` sourced by both.
-
----
 
 ## 3. Library Discipline
 
@@ -342,8 +351,6 @@ A **check** is a call that reads an external capability (a tool, a daemon, a git
 
 Why the family is small and deliberate: bash's `$( )` captures stdout only, so a probe that wants to return both a value and a status has no ergonomic channel and falls back to empty-output-as-sentinel. That sentinel is honestly used most of the time, which is why the defects cluster at a handful of `$( )`/pipe boundaries rather than everywhere. This restraint is a data point for the bash-as-implementation-language boundary review (roadmap rows 135 and 168), not a mandate to retrofit every `|| true`; a `|| true` that absorbs a status that genuinely does not matter is still fine. Each check that can read a silent failure as a success owes a unit for its failed path and, where the capability can be absent, its cannot-run path.
 
----
-
 ## 4. Common Pitfalls
 
 ### 4.1 `local FOO=$(cmd)` swallows exit codes
@@ -389,8 +396,6 @@ ShellCheck parses any comment line whose first token after `#` is the word `shel
 ### 4.7 A process scan must not match the scanning shell
 
 A scan for a process by name matches its own command line, because the pattern text is in the scanner's arguments: a loop that feeds the matching pids to `kill` signals itself, and the calling tool dies with 143. Match on the executable as well as the argument (`node\ *server.mjs`), and exclude the current pid. `pkill` is absent from the runtime image, so a cleanup that uses it removes nothing and reports no error; when the cleanup holds a port, verify the port is closed rather than read the kill as success.
-
----
 
 ## 5. Cross-References
 

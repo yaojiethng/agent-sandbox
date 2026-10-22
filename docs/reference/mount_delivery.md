@@ -6,8 +6,6 @@ reader: [operator]
 
 Mount delivery (M2.6.6) is the second sandbox delivery: the agent works directly on a bind-mounted host directory instead of a copied volume. Runnable end-to-end (flatten-style materialization verified live `20260912-10`; full-history materialization host-test-verified with the `--flatten` feature, `20260912-14`). Companion model: [`copy_delivery.md`](copy_delivery.md). Rationale for the delivery-model axis: `docs/adr/sandbox_delivery_model.md`.
 
----
-
 ## Model
 
 - A host directory (`.worktree/` under the sandbox, default; custom mount point as a `make start` arg) is bind-mounted into the capability layer. The agent's working content lives on the host filesystem.
@@ -27,8 +25,6 @@ Settled during the M2.6.6 design walks (`20260818-02`, `20260821-02`, `20260828`
 ## Out of scope
 
 Copy-delivery pipeline work (host-side volume seeding) does not apply to this delivery -- it has no snapshot staging and no RO mount.
-
----
 
 ## References
 

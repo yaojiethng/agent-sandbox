@@ -9,7 +9,7 @@ description: "Checks the documentation set against documentation_policy.md and r
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
 - `docs` - the document tree.
 
@@ -37,10 +37,10 @@ The pass is not an iteration and does not close one. It is a review sweep with i
 
 | Check | The gate | What it does not decide |
 |---|---|---|
-| A link resolves | `scripts/lint/record-links.mjs`, over the shipped set in the image's path space | whether the target says what the citing line claims it says |
+| A link resolves | `scripts/lint/linking.mjs`, over the shipped set in the image's path space | whether the target says what the citing line claims it says |
 | A shipping document declares its reader | `scripts/lint/frontmatter.mjs` | whether the declared reader matches who reads it |
 | One paragraph per physical line, plain ASCII | `scripts/lint/doc-wrap.mjs`, `scripts/lint/doc-ascii.mjs` | anything about meaning |
-| The heading anchors a link names | `scripts/lint/record-links.mjs` | whether the section carries the fact |
+| The heading anchors a link names | `scripts/lint/linking.mjs` | whether the section carries the fact |
 
 The split is the standing rule for a check: a decidable check belongs in a gate, where it fails the build, and a check that needs a reading belongs here. Do not report what a gate already catches; run the gate first.
 
@@ -113,7 +113,7 @@ Completion criterion: the report covers every document in scope, every finding, 
 
 **Canonical owner test.** When one rule appears in two documents, ask which document an agent reads when it needs the rule. That document owns it; the other links to it and does not restate it. The test is stated in both registers on purpose -- the policy states it to prescribe, this register to diagnose.
 
-**Signs of duplication.** The same constraint in a workflow table cell and in a child policy section. An exit condition in one policy that restates a rule in another. A rule in a skill or a prompt with no home in a policy: a consumer is a fast path to a rule, never its source.
+**Signs of duplication.** The same constraint in a workflow table cell and in a child policy section. An exit condition in one policy that restates a rule in another. A rule in a skill or a prompt that names no source of truth: either it is that rule's source of truth, or it is a copy that lost its pointer.
 
 **Signs of misplaced content.** Future language in a shipped document. A TODO item in a shipped document. A prescriptive rule with no policy entry. A record argument restated in a shipped document, where the record is the place the decision is argued.
 

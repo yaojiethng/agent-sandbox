@@ -17,7 +17,7 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { loadYaml } from "./yaml-loader.mjs";
+import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -38,6 +38,16 @@ const REQUIRED_SECTIONS = [
   "Decisions", "Decisions pending", "Findings", "Completed",
 ];
 
+/** The body lines of a section, from after its heading to the next `## ` heading. */
+function sectionBody(text, name) {
+  const lines = text.split("\n");
+  const start = lines.findIndex((l) => l.trim() === `## ${name}`);
+  if (start < 0) return null;
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => /^## /.test(l));
+  return { line: start + 1, lines: end < 0 ? rest : rest.slice(0, end) };
+}
+
 /** The sections the policy forbids. */
 const FORBIDDEN_SECTIONS = ["Deferred", "Carried forward", "What's Next"];
 
@@ -56,7 +66,9 @@ const force = args.includes("--force");
 // is a finding rather than history. A named file list keeps the cutover.
 const defaultScan = named.length === 0;
 
-const { parse } = loadYaml("Handover format gate");
+// Pi's parser is `yaml`'s `parse` behind the product's own block extractor, so a
+// handover's block is read by the same rules a prompt's is.
+const { parseFrontmatter } = await loadPiFrontmatter("Handover format gate");
 
 /** The frontmatter block, or null when the file does not open with one. */
 function frontmatterOf(text) {
@@ -126,7 +138,7 @@ for (const file of files) {
 
   let fields;
   try {
-    fields = parse(block.body) || {};
+    fields = parseFrontmatter(text).frontmatter || {};
   } catch (error) {
     checked += 1;
     findings.push({ rel, line: 1, msg: `frontmatter does not parse: ${String(error.message).split("\n")[0]}` });
@@ -151,7 +163,31 @@ for (const file of files) {
   }
   if (fields.status !== undefined && !STATUSES.includes(String(fields.status))) {
     findings.push({ rel, line: 1, msg: `\`status\` is not one of ${STATUSES.join(", ")}: ${fields.status}` });
+  }  if (String(fields.status) === "Closed") {
+    const section = sectionBody(text, "Findings");
+    if (section) {
+      const rows = section.lines
+        .map((line, i) => ({ text: line, line: section.line + 1 + i }))
+        .filter((r) => /^\s*\|/.test(r.text) && !/^\s*\|[\s:|-]+\|\s*$/.test(r.text));
+      const header = rows[0];
+      if (header) {
+        const cells = header.text.split("|").slice(1, -1).map((c) => c.trim().toLowerCase());
+        const index = cells.indexOf("triaged to");
+        if (index < 0) {
+          findings.push({ rel, line: header.line, msg: "Findings table has no `Triaged to` column; every finding carries a destination" });
+        } else {
+          for (const row of rows.slice(1)) {
+            const cell = (row.text.split("|").slice(1, -1)[index] || "").trim();
+            if (cell === "") {
+              const label = (row.text.split("|")[1] || "").trim().slice(0, 60);
+              findings.push({ rel, line: row.line, msg: `Findings row has no \`Triaged to\` destination: ${label}` });
+            }
+          }
+        }
+      }
+    }
   }
+
 
   const found = headings(text);
   const names = found.map((h) => h.name);

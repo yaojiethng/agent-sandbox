@@ -11,11 +11,9 @@ argument-hint: "[milestone name - for example M3.1 - Backpressure]"
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list` - the task list and its companions.
-- `work-log` - the work-unit record and the exploration record.
-- `decision-records` - the architecture decision records.
+- `task-list`, `work-log`, `decision-records`
 
 ## Orient
 
@@ -70,7 +68,7 @@ In `devlog/roadmap.md`:
 
 ## Escalate deferred work
 
-Give every item the milestone leaves open a recorded home before the close:
+Give every item the milestone leaves open a recorded source of truth before the close:
 
 - An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md).
 - An item that will not be picked up next goes to `roadmap.md` as a named task under the `task-list` convention's `**Roadmap task placement**`; the operator names the destination milestone.

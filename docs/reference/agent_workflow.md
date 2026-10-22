@@ -6,9 +6,7 @@ reader: [agent]
 
 This document describes how work gets done in agent-sandbox -- the principles the system is built on, the invariants it enforces, and the map of where each part of the workflow is governed. It is the conceptual entry point to the policy system.
 
-The workflow is expressed through three layers: policy documents (authoritative rules), skill files (execution helpers), and prompt templates (iteration tooling). This document maps what each policy document owns and where the boundaries between them lie.
-
----
+The workflow is expressed through three layers: policy documents, skill files (execution helpers), and prompt templates (iteration tooling). This document maps what each policy document owns and where the boundaries between them lie.
 
 ## Core Principles
 
@@ -26,15 +24,11 @@ Agents do not modify the repository. All modifications are captured as a diff an
 
 Each agent run is reproducible via a container image version, a specific project state, and the configuration used to start the run. Every change is traceable, every run can be replayed, and every decision can be audited.
 
----
-
 ## System Invariants
 
 The system enforces a set of invariants by construction -- constraints that hold across all agent runs regardless of configuration. These are defined authoritatively in `docs/development/security.md#security-invariants`.
 
 In summary: no unreviewed output reaches the repository; no direct mutation of the host repository occurs from inside either container; every change is traceable to an agent run; the operator initiates every run and has final authority over all outputs.
-
----
 
 ## Agent Context Model
 
@@ -54,7 +48,7 @@ Project-layer content is stable across iterations. It is not per-iteration state
 
 ### Model recommendations
 
-The role-to-model recommendations are operator-owned and do not travel with the project. They live at `$AGENT_HOME/model-recommendations.md`, mounted from `$SANDBOX_DIR/.<provider>/model-recommendations.md` and never committed. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and an unset role falls back to the pi startup default in `settings.json`. The home decision is recorded in the ADR `single_source_model_recommendations.md`.
+The role-to-model recommendations are operator-owned and do not travel with the project. They live at `model-recommendations.md`, mounted from `$SANDBOX_DIR/.<provider>/model-recommendations.md` and never committed. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and an unset role falls back to the pi startup default in `settings.json`. The decision's source of truth is the ADR `single_source_model_recommendations.md`.
 
 ### Reference template
 
@@ -78,9 +72,7 @@ Skills and prompt templates follow a parallel three-layer model with distinct lo
 
 **Why the sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
 
-**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`. The sandbox-layer files are not seeded into these paths by default -- they are baked into the image at `/opt/workflow/`. The `settings.json` `"packages"` key bridges this gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots. One key, and one entry per payload. This makes the sandbox layer critically dependent on that key surviving in `settings.json` across sessions -- see [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes) in `provider_lifecycle.md`.
-
----
+**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`, and the sandbox-layer files are not seeded there by default because the image bakes them at `/opt/workflow/`. The `settings.json` `"packages"` key bridges the gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots, one entry per payload. The sandbox layer therefore depends on that key surviving across sessions, per [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes).
 
 ## How the Workflow is Expressed
 
@@ -88,35 +80,53 @@ The agent-sandbox workflow is expressed across three layers with a strict author
 
 ### Policy documents
 
-Policy documents are the authoritative source for workflow rules. They describe the current system reality -- what the system does, how iterations run, what constraints hold. They are complete in themselves: an agent following only the policy documents should produce correct behaviour.
+Policy documents describe the current system reality -- what the system does, how iterations run, what constraints hold. They hold the rules an observer detects, and the judgements their own workflow produces; `### Norm kinds` states where a judgement that several documents use lives instead. Duplicate rules across documents are a defect -- one document is the source of truth and the other links to it.
 
-Rules live in the policy document where they will be read and are most valuable contextually. Duplicate rules across documents are a defect -- one document is the canonical owner and the other links to it.
+Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the document that specifies each area of the workflow.
 
-Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the canonical owner for each area of the workflow.
+The map is the mechanism's, and two of its subjects name this repository's own tree: the three documents under `docs/development/`, and `devlog/AGENT_FEEDBACK.md`. A provisioned project maps the same subjects to the documents it keeps, and `docs/reference/documentation_taxonomy.md` `## Reach` states which folders reach a session.
 
 ### Skill files
 
-Skill files are execution helpers. They are consumers of policy documents -- they reference the rules defined there, or in specific cases inline a distillation of those rules for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the rule must still exist in a policy document; the inline is a fast path to it. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
+Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Norm kinds` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
-A constraint that exists only in a skill file is not authoritative. If an operator bypasses the skill, the constraint disappears. If the policy document changes, an inlined copy may become stale -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
+An inline may become stale when its source of truth changes -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
 ### Prompt templates
 
-Prompt templates are iteration tooling. Like skill files, they are consumers of policy documents. They structure operator input, reduce iteration startup cost, and direct the agent to the right policy sections at the right moment. They may reference policy sections by link or inline a distillation for context efficiency, under the same constraints as skill files. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
+Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the source of truth of every rule it borrows. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
 
-Prompt templates do not contain authoritative rules.
+### Norm kinds
+
+Every prose sentence in the policy set has one kind and one source of truth. The kind answers whether anything detects a breach. The source of truth answers who produces the content.
+
+**The kind.** Classify in this order.
+
+1. Does the sentence instruct, or does it describe? A sentence that asks the reader to do nothing is a description.
+2. If it instructs, name the artifact that fails when the sentence is broken, and resolve it. That artifact is a gate in `scripts/lint.sh`, a file under `scripts/lint/`, a skill directory a prompt dispatches, or a named step in a prompt file. If it resolves, the sentence is a rule and the artifact is its observer.
+3. If no artifact resolves, the sentence is a judgement. A guessed observer is not an observer.
+
+| Kind | Does | Detected by |
+|---|---|---|
+| rule | instructs | an artifact that resolves today, and fails on a breach |
+| judgement | instructs how to decide a case | nothing |
+| description | states what is | nothing |
+
+**The source of truth.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
+
+A judgement used by more than one document lives in a principle skill, so one source of truth serves them all. That is the only case where a judgement leaves the document that produces it.
+
+This is the one place the kinds are defined. A document that states one locally links here instead.
 
 ### Persistent devlog records (interim)
 
-`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim**, not a durable fixture of the workflow-expression model: a long record signals a durable fix is due (not an index), and the accumulating handover/discussion surface it belongs to is scoped for trim under the `devlog/roadmap.md#t5---archival` task. Its precise end-state form is not yet determined (exact rules TBD).
-
----
+`devlog/AGENT_FEEDBACK.md` records the agent's feedback and gotchas -- a non-authoritative living record populated at the close review/publish step, distinct from policy documents (authoritative) and from ephemeral per-iteration handovers. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). The record is **interim** rather than a durable fixture: a long record signals that a durable fix is due, not an index, and the trim it belongs to is held by the `devlog/roadmap.md#t5---archival` task.
 
 ## Policy Map
 
-Maps each area of the workflow to its canonical governing document, what that document owns, and what it explicitly does not own. When two documents seem to cover the same area, this table names the canonical owner.
+Maps each area of the workflow to the document that specifies it, what that document owns, and what it explicitly does not own. When two documents seem to cover the same area, this table names the source of truth.
 
-| Workflow area | Canonical document | Owns | Does not own |
+| Workflow area | Document | Owns | Does not own |
 |---|---|---|---|
 | Iteration sequencing and loop structure | [`iteration_policy.md`](../policies/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
 | Handover lifecycle | the project's `.agents/skills/work-log/SKILL.md` convention | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
@@ -124,7 +134,8 @@ Maps each area of the workflow to its canonical governing document, what that do
 | Milestone planning | the project's `task-list` convention and the `/milestone-start` and `/plan` prompts | Milestone states, the record shape, scoping criteria, and the close rules | Iteration execution |
 | Agent feedback and gotchas | routing: [`iteration_policy.md`](../policies/iteration_policy.md) (close review/publish invariants); record: `devlog/AGENT_FEEDBACK.md` | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
 | Discussion record types | [`discussion_policy.md`](../policies/discussion_policy.md) | Story, study, design, and report section order, statuses, naming, and closure | Iteration sequencing, roadmap entry format, ADR authoring |
-| Documentation rules | [`documentation_policy.md`](../policies/documentation_policy.md) | Folder ownership, rule placement, linking conventions, grep navigation, policy-vs-skill separation | Workflow sequencing |
+| Documentation rules | [`documentation_policy.md`](../policies/documentation_policy.md) | Folder ownership, rule placement, grep navigation, policy-vs-skill separation | Workflow sequencing |
+| Document references | `communication-principle-link-what-the-reader-can-open`, and the project's reference convention where it states one | What to link and what to name, where a link resolves, handoff links, link form | Documentation rules |
 | Security model and invariants | `docs/development/security.md` | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
 | Execution mechanics | [`execution_model.md`](../reference/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
 | External contract | [`tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
@@ -142,9 +153,7 @@ Maps each area of the workflow to its canonical governing document, what that do
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, apply the canonical owner test from [`documentation_policy.md`](../policies/documentation_policy.md#rule-authority) to resolve which document is authoritative.
-
----
+When a rule appears to exist in two documents in this map, decide its source of truth by the kind, per `### Norm kinds`: a resolving observer makes it a rule, and the document that produces the content owns it.
 
 ## References
 

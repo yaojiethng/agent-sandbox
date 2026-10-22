@@ -1,10 +1,6 @@
 # Knowledge Vault Onboarding
 
-> **Note:** This guide reflects the M1.4 harness layout. The M1.5 directory restructuring will move harness artefacts (`.bootstrap/`, `.workspace/`, `Makefile`, `.env`) out of the vault root into a sibling `SANDBOX_DIR`. Vault content remains untouched. This guide will be updated after M1.5 is implemented. Until then, the workflow described here is correct.
-
 This document covers preparing an Obsidian vault for use with agent-sandbox. There are two distinct phases: **onboarding** (file setup, run once via CLI) and **initialization** (git + LFS preparation, run via `make initialize`). Both must complete before using `make start`.
-
----
 
 ## Obsidian Sync -- Read First
 
@@ -13,8 +9,6 @@ Git operations run on the designated desktop machine only. Mobile devices are Sy
 Before running any commands: in Obsidian, go to **Settings -> Sync -> Excluded files** and add `.git`. This prevents Sync from uploading the git object store to mobile devices.
 
 During migrations: pause Sync before applying a diff, resume after committing.
-
----
 
 ## Setup
 
@@ -63,8 +57,6 @@ bash .vault/tests/vault-lfs-test.sh --vault=/path/to/vault
 
 The vault is now `make start`-ready.
 
----
-
 ## Checkpoint Reference
 
 Checkpoints are dated git branches used as rollback points. Create one before every agent session.
@@ -99,8 +91,6 @@ Keeps N most recent checkpoint branches. Prompts before deleting.
 git -C /path/to/vault branch --list 'checkpoint/*'
 ```
 
----
-
 ## Migration Workflow
 
 1. Ensure working tree is clean
@@ -112,8 +102,6 @@ git -C /path/to/vault branch --list 'checkpoint/*'
 7. Rejected: `checkpoint-rollback.sh`, resume Sync
 
 Migration plans, agent briefs, and scripts go in `.vault/migrations/`.
-
----
 
 ## Backup Files
 

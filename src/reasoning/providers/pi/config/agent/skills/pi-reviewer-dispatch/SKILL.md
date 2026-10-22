@@ -13,7 +13,7 @@ The contract is what makes this a reviewer rather than any subagent.
 
 - **Read-only.** No edits, no commits, no test suite. The caller applies what the report names.
 - **One brief, passed verbatim.** The brief is the only variable input. A reviewer that is told something the brief does not say is a second brief.
-- **A pinned model and thinking level.** The caller chooses both. The pair agrees or disagrees, and agreement is the signal.
+- **A resolved pair and its provenance.** A seat takes its pair from `dispatch_role_model`, and the brief records the role beside the pair. The two seats take theirs from the `_REVIEWER` line. The line names one model, `deepseek/deepseek-flash`, so both seats take the same pair and the second run is a repeat rather than an independent family. The pair agrees or disagrees, and agreement is the signal.
 - **A report in the brief's shape**, returned to the caller.
 - **Its own session file and log.** The log is the only evidence the run leaves.
 - **The effective model read back from the session file**, never assumed.
@@ -34,7 +34,7 @@ A caller on another harness follows the contract above and supplies its own invo
 
 ## The scratch directory
 
-The provider `AGENTS.md` defines the container's scratch directory. This skill follows that definition and carries no value of its own, so the path has one home.
+The provider `AGENTS.md` defines the container's scratch directory. This skill follows that definition and carries no value of its own, so the path has one source of truth.
 
 Pass that directory as the second argument. The script creates the run directory beneath it with `mktemp -d`, and keeps it, printing the path, because the logs are the reviewer's only evidence.
 

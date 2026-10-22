@@ -78,4 +78,4 @@ Per iteration_policy Step 7 and git_policy:
 - A fresh subagent per round; no session reuse.
 - No blocker is closed by argument -- only by a fix in a commit the next round can verify.
 - The verdict contract is mandatory; a round without an explicit verdict did not happen.
-- Records state, not session history: the handover names the mechanism and outcome, not the round numbers' drama.
+- Records follow `communication-principle-write-for-the-reader`: the handover names the mechanism and outcome, not the round numbers' drama.

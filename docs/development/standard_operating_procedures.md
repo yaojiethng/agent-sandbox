@@ -4,8 +4,6 @@
 
 This document defines Standard Operating Procedures (SOPs) for operating the agent-sandbox system. These procedures cover mitigations that cannot be fully enforced via Dockerfile or code and ensure workflow compliance with the threat model defined in [`threat_model_stride.md`](threat_model_stride.md).
 
----
-
 ## STRIDE Mitigation Index
 
 Maps each threat category to its primary SOP mitigations. Impact ratings use STRIDE initials: S T R I D E.
@@ -20,16 +18,12 @@ Maps each threat category to its primary SOP mitigations. Impact ratings use STR
 | 6. Secrets / Sensitive Data Leakage | Low | High | Med | Med | Med | Med | [Secrets Handling](#2-secrets-handling), [Output Handling](#1-child-agent-output-handling), [Network Access Rules](#3-network-access-rules) |
 | 7. Human / Operational Misuse | Med | Med/High | High | High | Low/Med | Low/Med | [Human Protocols](#5-human--operational-protocols), [Container Build](#6-container-build--deployment), [Output Handling](#1-child-agent-output-handling), [Agent Lifecycle](#7-agent-lifecycle-compliance) |
 
----
-
 ## 1. Child Agent Output Handling
 
 - All child agent outputs must be staged in a temporary workspace.
 - Only **text files** or approved non-executable binaries are allowed.
 - Outputs are validated before merging into parent agent workspace.
 - Pull-request style review may be applied for critical branches.
-
----
 
 ## 2. Secrets Handling
 
@@ -38,16 +32,12 @@ Maps each threat category to its primary SOP mitigations. Impact ratings use STR
 - Secrets must **never** be committed or transmitted over untrusted channels.
 - Access to secrets must be audited and logged.
 
----
-
 ## 3. Network Access Rules
 
 - **Safe Mode**: No network access.
 - **Unsafe Mode**: Read-only network access; all outputs must be staged and validated.
 - Only approved tasks can enable network access.
 - Network outputs are always treated as untrusted; do not blindly execute returned code.
-
----
 
 ## 4. API / Billable Resource Control
 
@@ -56,16 +46,12 @@ Maps each threat category to its primary SOP mitigations. Impact ratings use STR
 - Ensure logs provide attribution to specific agents or tasks to mitigate repudiation risk.
 - Agents cannot directly execute billing operations; orchestration enforces all usage policies.
 
----
-
 ## 5. Human / Operational Protocols
 
 - Protect key branches with Git branch protection rules.
 - Use CI/CD pipelines to validate merges; automate checks for sensitive data.
 - Educate operators on minimal manual intervention and safe container usage.
 - Log all manual operations that interact with agents or workspaces.
-
----
 
 ## 6. Container Build & Deployment
 
@@ -75,16 +61,12 @@ Maps each threat category to its primary SOP mitigations. Impact ratings use STR
 - Use unprivileged containers and drop unnecessary capabilities.
 - Do not mount sensitive host directories into containers.
 
----
-
 ## 7. Agent Lifecycle Compliance
 
 - Parent agents spawn at most two layers (parent + child).
 - Child agents cannot spawn additional children.
 - All outputs from child agents must be staged and validated.
 - Agents are retired after completing their assigned task.
-
----
 
 ## Notes
 

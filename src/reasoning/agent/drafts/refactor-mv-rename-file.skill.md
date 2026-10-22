@@ -9,8 +9,6 @@
 - Splitting a file into multiple files (e.g. `big.sh` -> `part_a.sh` + `part_b.sh`)
 - Merging files into one
 
----
-
 ## Preflight  --  Freeze the Convention
 
 Before touching any file, verify the naming convention against every filename in scope:
@@ -24,8 +22,6 @@ find . -name '*.sh' -name '*-*' -not -path './.git/*' | grep -v agent-sandbox
 ```
 
 Decision on naming convention (dashes vs underscores, directories, extensions) must be made before implementation begins. Changing convention mid-iteration guarantees missed references.
-
----
 
 ## Step 1  --  Catalogue Every Reference
 
@@ -57,8 +53,6 @@ Produce a **propagation table**:
 | `src/capability/Dockerfile` | 28 | `COPY target.sh /opt/lib/target.sh` | `COPY src/libs/target.sh /opt/lib/target.sh` |
 ```
 
----
-
 ## Step 2  --  Create the New File
 
 ```bash
@@ -78,8 +72,6 @@ grep -n 'source' new/path/target.sh
 
 **Do not delete the old file yet.**
 
----
-
 ## Step 3  --  Update All References
 
 Process every hit from Step 1's propagation table. Use bulk sed for simple path substitutions:
@@ -95,8 +87,6 @@ grep -rn 'old/path/target\.sh' . --include="*.sh" --include="*.yml" --include="*
 # Expected: zero matches (or only intentional comment references)
 ```
 
----
-
 ## Step 4  --  Run Tests
 
 ```bash
@@ -104,8 +94,6 @@ make test
 ```
 
 All tests must pass. Both the old and new files exist  --  old paths still resolve, so tests should not break at this stage.
-
----
 
 ## Step 5  --  Remove the Old File
 
@@ -121,16 +109,12 @@ make test
 
 If tests fail, the old file had remaining references. Restore the old file (`git checkout old/path/target.sh`), return to Step 1, and fix the missed references.
 
----
-
 ## Step 6  --  Commit
 
 ```bash
 git add -A
 git commit -m "refactor: move/rename target_file.sh -> new/path/target_file.sh"
 ```
-
----
 
 ## Composition: Folder Refactor
 
@@ -145,8 +129,6 @@ To move/rename an entire directory, apply the single-file workflow to every file
 3. After all files are moved: batch-remove old files, run full test suite, commit
 
 For a folder refactor, the catalogue phase can be done once for all files in scope, but the copy-update-verify-remove cycle per file prevents cascading errors.
-
----
 
 ## Composition: Structural Cleanup
 

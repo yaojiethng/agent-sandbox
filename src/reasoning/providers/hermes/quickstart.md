@@ -2,8 +2,6 @@
 
 Day-to-day command reference and troubleshooting for the Hermes provider. All commands run from `SANDBOX_DIR`.
 
----
-
 ## Build & run
 
 ```sh
@@ -27,8 +25,6 @@ make start PROVIDER=hermes REBUILD=1
 make serve PROVIDER=hermes REBUILD=1
 ```
 
----
-
 ## Apply changes
 
 ```sh
@@ -42,8 +38,6 @@ make apply DIFF=<full path to the exact diff file>
 make apply DIFF=<path> BRANCH=<branch-name>
 ```
 
----
-
 ## Stop
 
 ```sh
@@ -51,8 +45,6 @@ make stop
 ```
 
 Stops all session containers and removes the sandbox volume.
-
----
 
 ## Serve mode
 
@@ -70,8 +62,6 @@ open http://localhost:46553
 First run: Hermes may redirect to an interactive setup flow. Complete setup, exit to bash, then run `hermes chat` manually. On subsequent runs setup is skipped.
 
 Config and credentials persist across runs in `.workspace/output/.hermes/`. See [Provider config](#provider-config) below.
-
----
 
 ## Container inspection
 
@@ -91,8 +81,6 @@ docker run --rm -it hermes-agent-<PROJECT_NAME> bash
 
 `<PROJECT_NAME>` is the value of `PROJECT_NAME` in `SANDBOX_DIR/Makefile`.
 
----
-
 ## Image management
 
 ```sh
@@ -105,8 +93,6 @@ docker rmi hermes-agent-<PROJECT_NAME>
 # Remove base image (forces full rebuild  --  slow)
 docker rmi hermes-base
 ```
-
----
 
 ## Workspace inspection
 
@@ -121,8 +107,6 @@ cat .workspace/session-diffs/<SESSION_TS>-<BRANCH>-<SESSION_ID>/autosave/changes
 ls -la .snapshot/
 ```
 
----
-
 ## Operator input channel
 
 ```sh
@@ -132,8 +116,6 @@ cp my-task.md .workspace/input/
 # Clear input between runs
 rm .workspace/input/*
 ```
-
----
 
 ## Provider config
 
@@ -147,8 +129,6 @@ $EDITOR .workspace/output/.env
 ```
 
 Changes take effect on the next `make start` or `make serve` -- no rebuild required.
-
----
 
 ## Troubleshooting
 
@@ -180,8 +160,6 @@ All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 ```sh
 sed -i 's/\r//' <file>
 ```
-
----
 
 ## Serve mode troubleshooting
 
@@ -243,8 +221,6 @@ environment:
 **Open WebUI shows no models**
 Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI <-> Hermes connection has not been established  --  work through the connectivity steps above.
 
----
-
 ## Recovery
 
 If a bad diff has been applied and the project repo is in a broken state:
@@ -260,8 +236,6 @@ mkdir -p .workspace/session-diffs/
 # Verify
 make dry-run PROVIDER=hermes
 ```
-
----
 
 ## References
 

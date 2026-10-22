@@ -11,11 +11,11 @@
 # Uses .markdownlint-cli2.mjs at the repo root. The config enables the
 # rule subset that matches docs/policies/documentation_policy.md plus
 # the custom doc-ascii rule (plain-ASCII prose), the doc-wrap rule
-# (one paragraph per physical line) and the record-links rule (link targets
+# (one paragraph per physical line) and the linking rule (link targets
 # and heading fragments resolve). MD013 and MD060 are
 # disabled because they contradict written policy (see config header).
 #
-# Every clean run prints the record-links coverage line: how many Markdown
+# Every clean run prints the linking coverage line: how many Markdown
 # files were checked and how many the config exempts. A carve-out nobody
 # counts is a carve-out that grows without anyone noticing, and the count is
 # the only cheap signal that the exempt set is shrinking. The list itself is
@@ -30,7 +30,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 # print_link_coverage -- one line naming the checked and exempt file counts for
-# the record-links rule, read from .markdownlint-cli2.mjs so the number and the
+# the linking rule, read from .markdownlint-cli2.mjs so the number and the
 # carve-out list share one source. Prints nothing when the config carries no
 # recordTrees list: a rule that exempts nothing has no coverage line and says
 # nothing by staying quiet.
@@ -39,7 +39,7 @@ cd "$REPO_ROOT" || exit 1
 # customRules never runs: doc-wrap sat enabled and unregistered for the life of
 # this config. A rule exported by customRules but named nowhere in the config
 # also never runs, because default:false suppresses every rule not named, and no
-# count moves: record-links sat registered and unenabled, and the gate reported
+# count moves: linking sat registered and unenabled, and the gate reported
 # 800 files clean over an empty rule set. Both directions warn and do not block:
 # a config disagreement is a signal, and the gate that owns the rule decides.
 # Built-in rules (MD*) resolve by name and are not checked here.
@@ -125,7 +125,7 @@ print_link_coverage() {
       }
     }
     process.stdout.write(
-      "record-links coverage: " + roots.length + " exempt tree(s), " + exempt +
+      "linking coverage: " + roots.length + " exempt tree(s), " + exempt +
       " Markdown file(s) exempt (file count, not link health)\n"
     );
   '

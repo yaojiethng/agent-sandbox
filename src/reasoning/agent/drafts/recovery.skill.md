@@ -13,8 +13,6 @@ Confirm which scenario applies:
 - **Recovery process**  --  container or filesystem state was reset, losing committed work
 - **Recovery verification audit**  --  recovery is complete and needs verification
 
----
-
 ## Recovery Process
 
 ### Entry Conditions
@@ -90,8 +88,6 @@ bash libs/package_branch.sh --to=$HOME/workspace/output --bundle-summary=<snake_
 
 Read `agent/prompts/package-branch.md` for the correct invocation.
 
----
-
 ## Recovery Verification Audit
 
 ### Entry Conditions
@@ -164,8 +160,6 @@ Confirm the commit sequence makes sense and no fixup or repair commits remain.
 ### Exit Conditions
 
 All checks pass. The history is clean  --  no working documents, no wrong prefix, no missing handovers, no fixup commits.
-
----
 
 ## Known Gaps
 

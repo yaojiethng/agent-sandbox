@@ -8,15 +8,11 @@ How to onboard a new project into agent-sandbox. Onboarding creates `SANDBOX_DIR
 
 For Obsidian vault projects, follow `workflow/knowledge-vault/onboarding.md` instead.
 
----
-
 ## Prerequisites
 
 - `agent-sandbox` CLI installed on the host (`make install` in the agent-sandbox repo)
 - `PROJECT_DIR` is a git repository with at least one commit
 - All paths are WSL/Linux format (`/mnt/c/...` or `/home/...`). Convert Windows paths with `wslpath 'C:\your\path'`
-
----
 
 ## Step 1 -- Create `SANDBOX_DIR`
 
@@ -26,7 +22,7 @@ Create the sandbox directory alongside the project. By convention it is named `<
 mkdir /path/to/<project>-sandbox
 ```
 
-After onboarding, the layout will be:
+The layout after onboarding is:
 
 ```text
 WORKDIR/
@@ -36,8 +32,6 @@ WORKDIR/
     ├── .env                    ← machine-specific vars; never committed
     └── .workspace/             ← created at run time by harness
 ```
-
----
 
 ## Step 2 -- Run onboard
 
@@ -54,8 +48,6 @@ This produces:
 
 Provider-specific `.env` stubs are appended automatically from each `src/reasoning/providers/<n>/config/env.stub` present in the repo at onboard time; `onboard.sh` renames the stub to `.env`.
 
----
-
 ## Step 3 -- Review `.env`
 
 Open `SANDBOX_DIR/.env` and set:
@@ -67,8 +59,6 @@ Open `SANDBOX_DIR/.env` and set:
 The delivery model is not an `.env` variable: pass `SANDBOX_TYPE=copy|mount` on the command (`make start SANDBOX_TYPE=mount`), which the Makefile forwards as `--delivery`. `make resume` never takes it -- the delivery is recovered from the session record.
 
 Machine-specific variables are never committed. Confirm `.env` is covered by `.gitignore` in `PROJECT_DIR`.
-
----
 
 ## Step 4 -- Build images and verify
 
@@ -86,8 +76,6 @@ make dry-run PROVIDER=<n>
 
 See [Dry-Run Guarantees](../reference/tool_interface.md#dry-run-guarantees) for what a passing dry-run proves.
 
----
-
 ## Verification checklist
 
 - [ ] `SANDBOX_DIR` is not inside `PROJECT_DIR` -- they must be siblings, not nested
@@ -95,8 +83,6 @@ See [Dry-Run Guarantees](../reference/tool_interface.md#dry-run-guarantees) for 
 - [ ] `.env` has `SERVE_PORT` and all provider-specific variables filled in
 - [ ] `.env` is gitignored in `PROJECT_DIR`
 - [ ] `make dry-run PROVIDER=<n>` passes
-
----
 
 ## Session checkpointing
 
@@ -109,8 +95,6 @@ git reset --hard "$(cat .workspace/checkpoint-latest.ref)"
 ```
 
 See [`../reference/sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) for full details on checkpoint tags and session lifecycle.
-
----
 
 ## References
 

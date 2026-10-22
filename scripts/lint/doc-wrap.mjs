@@ -12,7 +12,7 @@
 // fenced-code and table-row exemptions.
 //
 // Progressive scope, in two lists, both declared in .markdownlint-cli2.mjs.
-// `recordTrees` is the shared exclusion list, the same one record-links reads
+// `recordTrees` is the shared exclusion list, the same one linking reads
 // under the same key: whole trees of closed records, whose prose is read as
 // history rather than maintained. `legacyFiles` names individual live files not
 // yet reflowed; those are exempt from the tree-wide run, and

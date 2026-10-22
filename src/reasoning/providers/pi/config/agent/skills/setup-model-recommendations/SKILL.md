@@ -1,13 +1,13 @@
 ---
 name: setup-model-recommendations
-description: Populate the project's role-to-model recommendations at $AGENT_HOME/model-recommendations.md. Detects the models this pi session can dispatch and writes one line per role. Use for /setup-model-recommendations, "initialize model recommendations", "set the role models", or when a dispatch reports an uninitialized role.
+description: Populate the project's role-to-model recommendations at /home/agentuser/sandbox/.agents/model-recommendations.md. Detects the models this pi session can dispatch and writes one line per role. Use for /setup-model-recommendations, "initialize model recommendations", "set the role models", or when a dispatch reports an uninitialized role.
 ---
 
 # Setup model recommendations
 
-Write `$AGENT_HOME/model-recommendations.md`, the single home for the role-to-model recommendations this project dispatches by.
+Write `model-recommendations.md`, the single source of truth for the role-to-model recommendations this project dispatches by.
 
-The file is operator-owned. It lives outside version control and outside pi's own `agent/` config root, and pi never rewrites it. A role line with no value is uninitialized and resolves to the pi startup default in `$AGENT_HOME/agent/settings.json`.
+The file is committed at `.agents/model-recommendations.md`. The operator sets the values; the agent writes it only when the operator asks, and pi never rewrites it. A role line with no value is uninitialized and resolves to the pi startup default in `$AGENT_HOME/agent/settings.json`.
 
 ## Roles
 
@@ -28,7 +28,7 @@ A slug is the model's **full** id, provider prefix included. `--model` is a subs
 
 ### 2. Load current state
 
-Read `$AGENT_HOME/model-recommendations.md`. Keep every value already present. A line for a role not in the table above is from a retired role: drop it. If a role line is missing, add it empty.
+Read `model-recommendations.md`. Keep every value already present. A line for a role not in the table above is from a retired role: drop it. If a role line is missing, add it empty.
 
 ### 3. Choose a value per role
 
@@ -42,7 +42,7 @@ Every real slug written must be in the detected set, and must be the full id: a 
 
 ### 5. Write the file in place
 
-Write `$AGENT_HOME/model-recommendations.md` with the same header, format and role lines, preserving the values. The file is a single-file bind mount: replace its content in place, never with `mv` or by deleting and recreating it, because that breaks the mount.
+Write `model-recommendations.md` with the same header, format and role lines, preserving the values. Write the file in place. The retired `~/.pi/model-recommendations.md` is a bind mount the container cannot remove, so the repository copy is the one to edit.
 
 ### 6. Confirm
 

@@ -8,8 +8,6 @@
 
 **Vocabulary:** the system is the Task List Mechanism. A task is the record of work that will need to be done, and a task list is the collection of tasks. Work item is the wider term for a task once it is picked up and expands through scoping, design or planning. The two name different subdomains and are not synonyms.
 
----
-
 ## Purpose
 
 The operator runs two development threads and the roadmap permits one. A task has no identity, so every rename propagates into prose. Every semantic rule about the record is a review duty rather than a gate. The churn study measured all three and derived requirements, and no design exists.

@@ -4,8 +4,6 @@ Provider-specific quirks and conventions discovered during integration.
 Add entries as they surface; periodic cleanup/refactoring expected once
 enough patterns emerge.
 
----
-
 ## Directory Convention
 
 **`AGENT_HOME` is the dot-directory in the agent's root:**

@@ -8,8 +8,6 @@ External contract between the agent-sandbox harness and onboarded projects: what
 
 Internal implementation is in [`execution_model.md`](execution_model.md).
 
----
-
 ## Image Naming
 
 | Image | Name pattern | Purpose |
@@ -20,8 +18,6 @@ Internal implementation is in [`execution_model.md`](execution_model.md).
 
 `<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `hermes`). Base images contain no project-specific content and are built once per provider; the reasoning layer image inherits from the base and is built per project.
 
----
-
 ## Container Naming
 
 Container names match image names exactly -- `container_name:` is set explicitly; Docker Compose does not append an index suffix. One session per project can run at a time. `docker inspect`, `docker logs`, and `docker stop` address containers by name directly.
@@ -30,8 +26,6 @@ Container names match image names exactly -- `container_name:` is set explicitly
 |---|---|
 | Capability layer | `sandbox-<project>` |
 | Reasoning layer | `<provider>-agent-<project>` |
-
----
 
 ## Commands
 
@@ -50,32 +44,24 @@ Stops any running session for this project, builds missing images if needed, see
 
 **Leaves behind:** `session/` (per-export `<EXPORT_TIME>-<SESSION_ID>/`) and `autosave/` (single `<SESSION_ID>/`, replaced on a successful tick) subfolders in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
 
----
-
 ### `make resume SESSION_ID=<id>`
 
 Resumes a previously-started session. The session inventory is the `.compose/<session-id>.yml` registry; each `start`/`stop` records the session it created/stopped. Resume always continues the session in standard mode (agent TUI attached); it never starts a new session, never rebuilds missing images, and never resets the volume.
 
 - `SESSION_ID=<id>` -- resume that specific session silently (recommended).
-- `LIST=1` -- list resumable sessions as an enriched table (`SESSION | PROVIDER | BRANCH | AGE | WORK | STATE`), newest first (by raw `session-ts`), capped at 10 rows per page (same cap as the draft picker; a footer reports any remainder). The `PROVIDER` cell shows the bare provider name. `AGE` is the wall-clock age of the session's last lifecycle event (`started 3m ago`, `stopped 1D ago`), read from the per-session `.compose/<session-id>.log` activity log, the verb overridden by live docker state when they disagree, and `-` when the session has no events. `WORK` is a host-side checkpoint proxy: the newest checkpoint for the session under `.workspace/session-diffs` (`<N>c` commits, `+u` when `uncommitted.diff` is non-empty), `--` when the session never exported. `STATE` is the commit distance: how many commits the current project HEAD is ahead of the session's recorded `host-head-sha` (`1 commit ago`, `0 commits ago`, `not in tree` when the recorded sha is not a resolvable commit in the current project, `-` when the record has no host-head sha). Staleness is shown exception-only as a warning label: `[SANDBOX_STALE]` appended to the branch cell when the session's recorded `host-head-sha` differs from the current project HEAD (worktree identity, ADR harness_versioning.md); no label when fresh or unknown. Image staleness is retired -- the record's `*-image-digest` labels are identity, and the list path makes zero docker calls. Dry-run records are excluded from the listing (session_is_dry_run): their volume is destroyed at dry-run teardown, so they are not resumable; prune still reaches them. Accepts an optional `PROVIDER=<n>` filter.
+- `LIST=1` -- list resumable sessions newest first by raw `session-ts` in a table (`SESSION | PROVIDER | BRANCH | AGE | WORK | STATE`), capped at 10 rows with a footer naming the remainder. `PROVIDER` is the bare provider name. `AGE` is the age of the last lifecycle event (`started 3m ago`), read from `.compose/<session-id>.log` and overridden by live docker state, and `-` with no events. `WORK` is the newest checkpoint under `.workspace/session-diffs` (`<N>c`, plus `+u` when `uncommitted.diff` is non-empty), or `--` when the session never exported. `STATE` is how many commits the project HEAD is ahead of the recorded `host-head-sha` (`1 commit ago`, `not in tree` when the sha does not resolve, `-` when unrecorded). A `[SANDBOX_STALE]` label joins the branch cell when that sha differs from HEAD, and none appears when the record is fresh or unknown. Recorded image digests are identity rather than freshness, so the list makes zero docker calls. Dry-run records are excluded because teardown destroys their volume, and prune still reaches them. Accepts `PROVIDER=<n>`.
 - `INTERACTIVE=1` -- interactive picker over the session inventory + confirmation before resuming; the deliberately slow mode. Picker marks `[SANDBOX_STALE]` sessions and paginates at 10 rows. Accepts an optional `PROVIDER=<n>` filter.
 - `PROVIDER=<n>` -- filter the session inventory by provider; use with `LIST=1` or `INTERACTIVE=1`.
 
 `--interactive` always shows the picker and asks for confirmation, even when only one session matches -- explicit interactivity is deliberate, not a shortcut.
 
----
-
 ### `make dry-run PROVIDER=<provider>`
 
-Always rebuilds both images from current source first (cache layers used where they exist), then runs TWO passes against one seeded volume: pass 1 (fresh) starts the bearers, verifies their diagnostics records and the image-identity roundtrip, then stops with the volume kept (the same sequence as `make stop`); pass 2 (resume) starts the bearers again on the kept volume without re-seeding (the same sequence as `make resume`) and verifies again. A final teardown destroys containers, network, and volume. No agent is started; no user input is accepted. Produces no diff output.
-
-`PROVIDER` is required. `FAST=1` skips the rebuild and runs existing images (looser check). The run never silently reuses stale images: without `FAST=1`, a dry-run is an e2e of current source. Because pass 2 re-runs the readiness probes against already-initialized session state, a passing dry-run also proves the resume path.
+Rebuilds both images from current source first, then runs two passes against one seeded volume. Pass 1 starts the bearers, verifies their diagnostics records and the image-identity roundtrip, then stops with the volume kept, as `make stop` does. Pass 2 starts them again on that volume without re-seeding, as `make resume` does, and verifies again. A final teardown destroys containers, network and volume. No agent starts and no input is accepted, so the run produces no diff. `PROVIDER` is required. `FAST=1` skips the rebuild and runs the existing images, a looser check. Without it, a dry-run is an end-to-end run of current source, and a passing one also proves the resume path because pass 2 re-runs the probes against initialized session state.
 
 Dry-run machinery self-identifies: its session id is prefixed `dryrun-`, which flows into the compose project, container, network, and volume names and the registry record filename. Use the prefix to attribute leftover resources after an abnormal exit; orphaned dry-run resources are swept by `make prune` (registry-truth Rule 2).
 
 The check set and the bearer/orchestration responsibility split are defined in `devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md`.
-
----
 
 ### `make build [TARGETS=<target>[,<target>...]]`
 
@@ -93,27 +79,23 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 `REBUILD=1` forces a full rebuild from scratch (including base images). Without it, cached layers are reused when nothing has changed.
 
-**Note:** `make start` also triggers builds implicitly via `REFRESH` or `REBUILD`, but with different semantics -- it always builds the sandbox alongside the provider because a run session depends on both. `make build TARGETS=pi` leaves the sandbox image unchanged.
+`make start` also builds implicitly through `REFRESH` or `REBUILD`, and always builds the sandbox alongside the provider because a session needs both. `make build TARGETS=pi` leaves the sandbox image alone.
 
-**Note on the dispatch model:** The `build` subcommand is dispatched to `scripts/build.sh` as an independent process (`exec`). The workflow subcommands (`apply`, `draft`, `confirm`, `reject`) are similarly dispatched to their own scripts in `scripts/workflows/`. Each receives its flags directly from the dispatcher and handles its own argument parsing and execution. This means each subcommand script can also be invoked directly for testing or debugging: `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
-
----
+Each subcommand runs as its own process: `build` through `scripts/build.sh`, and the workflow verbs (`apply`, `draft`, `confirm`, `reject`) through `scripts/workflows/`. Each parses its own flags, so each one also runs directly, as in `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
 
 ### `make prune [STALE=sandbox] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
 
 Registry-based prune (Rules 1+2) over the `.compose/<session-id>.yml` session registry. Prune is **always a complete pass** -- Rule 1 removes stale records, Rule 2 removes resources whose session now has no record (orphaned); simulation is `DRY_RUN=1`, confirmation is `INTERACTIVE=1`. There is no partial/`SCORE` split.
 
-**Rule 1 -- stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the active `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness: the record's `host-head-sha` differs from the current project HEAD (registry-truth, see `docs/reference/terminology.md` `## staleness`). Image staleness is retired (ADR harness_versioning.md) -- recorded digests are identity, not freshness. Removing a record does not touch its resources directly; those become orphaned and are cleaned by Rule 2.
+**Rule 1 -- stale records.** A `.compose/<session-id>.yml` record is selected when it is stale by the `STALE` criterion and older than `AGE_DAYS` (default 3). The only criterion is sandbox staleness, meaning the record's `host-head-sha` differs from the current project HEAD (registry-truth, `docs/reference/terminology.md` `## staleness`); recorded image digests are identity rather than freshness. Removing a record leaves its resources to Rule 2, which cleans what a missing record orphans.
 
-- `STALE=sandbox` -- the only accepted kind (repo out of date -- the session's `host-head-sha` != current HEAD); unset behaves the same. Any other value errors.
+- `STALE=sandbox` -- the only accepted kind, and unset behaves the same. Any other value errors.
 - `PROVIDER=<n>` -- narrow Rule 1's selection to records of that provider (same filter as `make resume`).
 
 **Rule 2 -- orphaned resources.** Resources labeled `agent-sandbox.sandbox-dir` whose `session-id` has no matching `.compose` record are removed: containers (`docker stop`+`rm`), networks, and volumes. Delivery-scoped: copy -> volume + containers; mount -> registry resources only. Worktrees are **never** touched.
 
 - `INTERACTIVE=1` (flag `--interactive`) -- show the prune plan (records + orphaned resources), print the equivalent non-interactive command, then confirm with a y/N prompt before acting.
 - `DRY_RUN=1` (flag `--dry-run`) -- print the plan without acting.
-
----
 
 ### `make apply DIFF=<path> [BRANCH=<branch>] [FORCE=1]`
 
@@ -124,8 +106,6 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 `BRANCH` is optional. If supplied, checks out or creates the named branch before applying. `FORCE=1` applies with `--reject`, creating `.rej` files for conflicts.
 
 **Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) prints a git-oneline-style preview of the changes (the files the diff touches and the total file count), then asks for confirmation with a single y/N prompt before applying.
-
----
 
 ### `make draft [BUNDLE=<name>] [CHANNEL=<channel>] [BRANCH_SUMMARY=<slug>] [DIFFS=<start>..<end>]`
 
@@ -143,8 +123,6 @@ The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channe
 
 **Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in; a non-interactive run requires an explicit `BUNDLE=<name>`.
 
----
-
 ### `make confirm [TARGET_BRANCH=<branch>] [NEW=1]`
 
 Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
@@ -156,21 +134,15 @@ git switch <source-branch>
 git reset --soft <TARGET_BRANCH>
 ```
 
----
-
 ### `make reject`
 
 Discards the current `draft/` branch, returns to the source branch. Artefacts unchanged.
-
----
 
 ### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
 
 Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted.diff`, `all-changes.diff`, and `changed-files/`. Delegates to `agent-sandbox package-branch`, which writes to `OUTPUT_DIR/bundles/<EXPORT_TIME>-[-<LABEL>-]<SESSION_ID>/`.
 
 `BASELINE=<sha>` diffs against an explicit SHA. Without it, the baseline is `git merge-base <init_sha> HEAD`: `init_sha` without a rebase, and the branch point after one -- the commit the host still holds, so the exported diffs apply onto it.
-
----
 
 ## Execution Modes
 
@@ -187,8 +159,6 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | `opencode` | OpenCode runs in server mode; port exposed at `SERVE_PORT` on `127.0.0.1`; `OPENCODE_SERVER_PASSWORD` controls authentication |
 | `hermes` | Open WebUI launched as a companion service; port exposed at `SERVE_PORT` on `127.0.0.1` |
 
----
-
 ## Mount Shape Guarantees
 
 | Host path | Capability layer path | Reasoning layer path | Mode | Owner |
@@ -200,8 +170,6 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker -- owned by capability layer; shared via `--volumes-from`; persists across `compose down` |
 
 `PROJECT_DIR` is never mounted. `sandbox/` is a named volume filled by the seeder at session start; it survives `docker compose down` (named volumes are kept) so session state supports resume, and is removed by `down -v` or prune Rule 2. The reasoning layer can only access it while the capability layer is running.
-
----
 
 ## Onboarding
 
@@ -217,8 +185,6 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `.<provider>/` | Copied from `src/reasoning/providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
 `docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned templates -- never written to `SANDBOX_DIR`. The merged result of `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and persists after the session (see [`execution_model.md` -- Compose Generation](execution_model.md#compose-generation)). The delivery overlays (`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the caller's `--delivery` (`copy|mount`) at generation time -- see the delivery-overlay note in [`execution_model.md`](execution_model.md#compose-generation).
-
----
 
 ## `.env` Runtime Variables
 
@@ -243,8 +209,6 @@ These paths are derived from `SANDBOX_DIR` at run time by `dirs_resolve` in `lib
 
 Inside the container, the workspace directory is named `workspace/` (visible) instead of `.workspace/` (hidden). The `WORKSPACE_DIR_NAME` override (`workspace`) is set in `sandbox-entrypoint.sh` and `dry_run.sh` before calling `dirs_resolve`.
 
----
-
 ## Capability Layer Contract
 
 Guarantees the capability layer makes to the reasoning layer. Enforced by the harness -- a conforming provider does not need to re-verify them.
@@ -258,8 +222,6 @@ Guarantees the capability layer makes to the reasoning layer. Enforced by the ha
 1. Had its volume seeded by the one-shot seeder service -- repository (`.git` copied natively) plus the git-enumerated working tree
 2. Received `SESSION_STATE` from the seeder, carrying `init_sha` (HEAD at seed time -- the fixed lower boundary for `package-branch`)
 3. Validated the volume itself: git state and `SESSION_STATE` must exist, or the container start aborts with a readable error
-
----
 
 ## Provider Interface
 
@@ -286,8 +248,6 @@ A `provider.dockerfile` sends a repository directory to an image directory with 
 
 The same manifest declares the instruction surfaces in its `cells` section, one row per prompt or skill folder: the source folders that land there, the runtime path, and the condition under which the agent can load a file from it. Its `session` section holds the paths a session reads whatever surface it is reading from. A workflow module's payload ships to its own root under `/opt/workflow/agent/modules/<module>/` and is enabled by a package entry in the provider's settings, so nothing merges into the harness roots. The model is in `docs/adr/instruction_surface_declaration.md` and `docs/adr/module_instruction_payload.md`, and the declaration rules in `docs/development/instruction-surface-conventions.md`.
 
----
-
 ## Dry-Run Guarantees
 
 A successful `make dry-run` proves:
@@ -302,8 +262,6 @@ A successful `make dry-run` proves:
 - The resume path works: pass 2 re-runs the readiness probes on the kept volume with no re-seed, mirroring `make stop` + `make resume`
 
 A dry-run does not prove agent correctness -- it proves the harness containers start to a ready state with correct link-up.
-
----
 
 ## References
 

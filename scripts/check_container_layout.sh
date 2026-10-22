@@ -17,7 +17,7 @@
 #
 # The manifest exists so a consumer reads one declaration instead of deriving
 # its own: scripts/check_instruction_surfaces.sh asks this module for the
-# session rows, and scripts/lint/record-links.mjs imports it for the pairs and
+# session rows, and scripts/lint/linking.mjs imports it for the pairs and
 # the instruction surfaces that resolve a shipped file's references.
 #
 # Test seam: CONTAINER_INTERFACE_SCAN_ROOT points the scan at a fixture root

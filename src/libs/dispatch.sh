@@ -4,9 +4,9 @@
 # The runner seam: one command builder with two backends, so a brief names a
 # role and not a runtime.
 #
-# A role is a line in $AGENT_HOME/model-recommendations.md:
+# A role is a line in `.agents/model-recommendations.md`:
 #
-#   _IMPLEMENTER: opencode-go/cat-jam-free at high
+#   _IMPLEMENTER: deepseek/deepseek-flash at high
 #
 # The seam resolves the role to a `provider/model` pair and a thinking level,
 # then chooses the backend that can reach that pair:
@@ -26,9 +26,22 @@
 # No set -euo pipefail here  --  this file is always sourced, never executed
 # directly. Safety settings are inherited from the parent script.
 
-# The role table, beside the agent config home.
+# The role table: the repository copy first, the retired agent-home mount second.
 dispatch_rec_file() {
-  printf '%s/model-recommendations.md' "${AGENT_HOME:-$HOME/.pi}"
+  if [[ -n "${DISPATCH_REC_FILE:-}" ]]; then
+    printf "%s" "$DISPATCH_REC_FILE"
+    return 0
+  fi
+  # The role table is version controlled with the repository, so it is read
+  # from the tree this script lives in. The retired agent-home path is read
+  # only when the repository copy is absent, because it arrives as a
+  # single-file bind mount that the container cannot remove.
+  local repo_root="${DISPATCH_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+  if [[ -f "$repo_root/.agents/model-recommendations.md" ]]; then
+    printf "%s/.agents/model-recommendations.md" "$repo_root"
+    return 0
+  fi
+  printf "%s/model-recommendations.md" "${AGENT_HOME:-$HOME/.pi}"
 }
 
 # The OpenCode CLI. The pi image installs `opencode-ai` globally, so it

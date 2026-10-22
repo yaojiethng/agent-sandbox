@@ -135,17 +135,17 @@ test_dispatches_the_pair_and_reports_both() {
 
   out="$( (cd "$sandbox/repo" && PATH="$sandbox/bin:$PATH" bash "$DISPATCH" "$sandbox/brief.md" "$sandbox/scratch") 2>&1 )"; rc=$?
   assert_rc 0 "$rc" "the pair runs and the run succeeds"
-  assert_contains "$out" "glm" "the report names the first reviewer"
-  assert_contains "$out" "step5" "the report names the second reviewer"
-  assert_contains "$out" "model=z-ai/glm-5.3-flash" "the first requested model is read back"
-  assert_contains "$out" "model=step-5-preview-free" "the second requested model is read back"
+  assert_contains "$out" "fast" "the report names the first reviewer"
+  assert_contains "$out" "flash" "the report names the second reviewer"
+  assert_contains "$out" "model=deepseek-v4.1-flash" "the first requested model is read back"
+  assert_contains "$out" "model=deepseek-flash" "the second requested model is read back"
 
   run_dir="$(printf '%s\n' "$out" | sed -n 's/^run dir: //p')"
   assert_dir_exists "$run_dir" "the run directory is created"
   assert_contains "$(printf '%s' "$run_dir")" "$sandbox/scratch/review-dispatch." "the run directory is created under the directed scratch directory"
-  assert_file_exists "$run_dir/glm.log" "the first log exists"
-  assert_file_exists "$run_dir/step5.log" "the second log exists"
-  assert_not_empty "$(cat "$run_dir/glm.log")" "the first log holds the report"
+  assert_file_exists "$run_dir/fast.log" "the first log exists"
+  assert_file_exists "$run_dir/flash.log" "the second log exists"
+  assert_not_empty "$(cat "$run_dir/fast.log")" "the first log holds the report"
 }
 
 test_a_silent_reviewer_fails_the_run() {

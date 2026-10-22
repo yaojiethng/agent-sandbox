@@ -4,8 +4,6 @@ This file is loaded by pi on every session start as the first AGENTS.md layer, v
 
 Project-specific context lives in `sandbox/AGENTS.md` (loaded second, concatenated after this file). See that file for project conventions, commands, and architecture.
 
----
-
 ## Scope
 
 The paths this layer covers. Each is part of the container, so a reference to one of them resolves for any install of this image. The project layer covers the working tree the session runs in.
@@ -23,8 +21,6 @@ The paths this layer covers. Each is part of the container, so a reference to on
 | `/home/agentuser/workspace/output/` | where the session writes its result |
 | `/home/agentuser/workspace/session-diffs/` | the session diff output |
 
----
-
 ## Agent Harness
 
 You are running inside the **agent-sandbox** harness. Your working directory (`sandbox/`) contains a git-initialised snapshot of the project repository. All changes you make are captured as diffs and reviewed by a human operator before being applied.
@@ -41,6 +37,8 @@ Key behavioral rules:
 ## Write Discipline
 
 Code changes should be self-contained within a single iteration. The operator reviews per-iteration diffs  --  fragmented or half-applied changes across iterations create review burden.
+
+An approval that produces an artifact edits the file that is its source of truth, in the same unit of work, per `principle-approval-writes-the-artifact` at `$AGENT_HOME/agent/skills/principle-approval-writes-the-artifact/SKILL.md`. With version control the write is cheap to undo; a decision held in the conversation cannot be reverted, resumed or checked. A decision kept only in the conversation is re-derived later, and its re-derivation fails no gate.
 
 Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) `### Line wrapping`.
 
@@ -69,23 +67,28 @@ Tools you have access to:
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. Full policy: `docs/policies/documentation_policy.md` in the target repo when present.
+General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below names the skill that holds it, and this section states no rule of its own.
 
-- Meet ASD-STE100. Delete-test every word, phrase, and sentence: if a reader can delete it without losing required meaning, delete it.
-- Active voice. Name the actor: "the seeder copies the repository", never "the repository is copied".
-- Short sentences. Aim under 20 words; one idea per sentence.
-- One term, one meaning. Pick one word for a thing and keep it; do not rotate synonyms.
-- Numbering: a number holds only where it appears. Present one indexable axis per exchange; if sets must co-exist, name each axis.
-- Common verbs. Prefer: is, has, uses, copies, reads, writes, runs, starts, stops, shows, checks, rejects. Avoid ornate verbs ("leverages", "facilitates", "encompasses").
-- No idioms, no metaphors, no hedging ("somewhat", "fairly", "arguably").
-- That rule governs what you checked, not what you cannot check. A claim about an unobservable state is not hedging when it is marked as an inference.
-- No capacity claim without a signal. Stopping work early is a decision, and like any other it needs a reason the reader can check. Do not report being out of room, budget or context unless a signal in the environment says so; with no signal, name the claim as an inference or do not make it.
-- Place the defined noun phrase before the imperative command: the reader must know exactly what object is being discussed before being told what to do with it. If the sentence uses a term the reader has not met, define it first, in its own clause, then apply it. Avoid thin subjects that rely on a trailing dash clause for definition; the main clause must not depend on its afterthought.
-- One paragraph per physical line, however long the line. Never break inside a paragraph -- not at sentence boundaries, not at a column limit. Hard breaks separate blocks only.
-- Plain ASCII punctuation. Write a dash as a space-separated hyphen (` - `), or as a double hyphen (`--`) in prose. No non-ASCII symbols, no checkmark or cross emoji.
-- Link sparingly. Link what the reader might need next; keep context-only names as plain text. Do not over-link transient documents (handovers, discussion docs, session exports).
-- Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
-- Records state, not session history. A durable record does not narrate the session that produced it: no session ids, no commit hashes, no "as discussed" pointers.
+- Keep the sentence that changes a decision and delete the one that does not: `communication-principle-cut-what-carries-nothing`.
+- Write so the reader attaches each phrase as it arrives: `communication-principle-attach-as-you-read`.
+- Define a term before the work relies on it: `principle-define-terminology-before-use`.
+- Write for the reader, not the session that produced it: `communication-principle-write-for-the-reader`.
+- Name a value rather than fixing a literal the reader must set: `communication-principle-name-the-value-not-a-literal`.
+- State the primary data, not a value derived from it: `communication-principle-only-derive-what-you-own`.
+- Print one addressing axis per presentation: `communication-principle-one-addressing-axis`.
+- Choose the word that carries the most distinction and loses none: `communication-principle-maximize-conceptual-leverage`.
+- Give every word one meaning and every thing one word: `communication-principle-align-the-mental-model`.
+- Carry one line of reasoning through the document: `communication-principle-single-train-of-thought`.
+
+Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
+
+The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-keep-a-subject-near` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
+
+The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
+
+Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
+
+Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
 
 ## Fresh Subagent Invocation
 
@@ -102,7 +105,7 @@ The subagent runs in the same container/workspace as the primary agent, with the
 **What any dispatch must hold.**
 
 - **The brief goes to a file**, and the file must be non-empty. Pre-flight it: `[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }`.
-- **Pin the model and the thinking level**, and state both in the brief, because the subagent cannot see its invocation flags.
+- **Pin the role, and the pair its line resolves to**, and state the role, the provider, the model and the thinking level in the brief, because the subagent cannot see its invocation flags. The pair comes from the resolver in `**Which model.**`, never from a hand read of the file.
 - **Give the run a timeout you set**, and record the exit code and the elapsed seconds.
 - **Log to a file, never a pipe.** A run's log is its only evidence.
 
@@ -143,14 +146,15 @@ A run can still be truncated by its own timeout. The signature is a short log wi
 
 A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT_HOME/agent/skills/pi-reviewer-dispatch/SKILL.md`. It states the reviewer contract and runs the pinned pair. Read it before dispatching a review. This section carries only what that skill cannot.
 
-**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Recommend model choices in the operator's recommendations file, never here.
+**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
-**Which model.** Read the recommendation by role tag from `$AGENT_HOME/model-recommendations.md` (for example `_REVIEWER`); each value names the provider, model, and thinking level. If the file is missing or the role's line carries no value, initialize it with the `setup-model-recommendations` skill before dispatching. When the tag has no value, resolve the model in this order:
+**Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). Every role names `deepseek/deepseek-flash`; there is one model, so a second seat is a second run of the same model, not a second family.
 
-1. The `$AGENT_HOME/model-recommendations.md` role value.
-2. The pi default, read from `$AGENT_HOME/agent/settings.json` with `jq` (`.defaultProvider`, `.defaultModel`, `.defaultThinkingLevel`). Confirm with the operator that this is the model to use.
-3. The provider, model, and thinking level the current chat is using, stated explicitly. Confirm with the operator before dispatching.
+1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1.
+2. Pass it verbatim, in full: `--provider <provider> --model <provider>/<model> --thinking <level>`.
+3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u` prints the pair from step 1, once.
+4. Record the role, the pair, and the level beside the seat in the brief.
 
-The last two rungs confirm with the operator so a fallback never guesses silently.
+**When a step fails, stop and report.** Step 1 exits 1 for a missing file, a role with no line, and a line naming no model, and it prints which on stderr. `No models match pattern` means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run. In every case, dispatch nothing further, choose no model by hand, and report the role and the message.
 
 **The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.

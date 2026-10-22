@@ -1,6 +1,6 @@
 # Single-Source Model Recommendations
 
-**Current:** 2026-10-14
+**Current:** 2026-10-20
 **Status:** active
 
 ## Requirements
@@ -17,9 +17,24 @@
 | R8 | Operator-owned | The live recommendation values are not committed; the repository carries the mechanism and a slug-free skeleton, never a model choice |
 | R9 | Initializable | A file with no values is observable as uninitialized, and one skill populates it from the models the session can dispatch |
 
+## 2026-10-20 -- Resolution binds to the role table
+
+**Decision:** A subagent dispatch names a role, and the pair comes from the role table in this order: the role's line, then the startup default from `settings.json`, then a stop. A dispatch that fits no role uses the `_IMPLEMENTER` line. A dispatch that needs a property one line cannot express, such as two model families, is a designed exception whose pair is pinned where its seats are defined, with the reason stated there. The table wins over a preference. Initialisation of the file happens after the dispatch, never before it. The resolver is `dispatch_role_model <role>`; a hand read of the file is not a resolution.
+
+**Rationale:** The 2026-10-14 entry left two openings. An untagged dispatch resolved to the startup default, which read as permission to compose a pair instead. And a missing file routed to initialise-before-dispatch, which turned one wrong path into a blocked resolution, because its only exit is an operator confirmation an unattended run cannot get. On 2026-10-20 a census dispatch reached three pairs outside the table through that second opening and reported them as the enabled families. Resolution now runs first and stops, so an absent file cannot block the fallback and a composed pair has no rung to hide in.
+
+**Rejected alternatives:**
+
+- Restrict the capability, so that only the resolver can reach a model: the operator ruled it out and kept the free `pi -p` invocation (2026-10-20).
+- Keep the startup-default rung for an untagged dispatch: it is the exemption that licensed the composition.
+- Confirm a fallback with the operator at dispatch time: unexecutable in an unattended run, and the block is what produced the improvised fourth rung.
+- Give the reviewer pair a role line: one line names one pair, and the reviewer contract needs two families.
+
+**Edge cases / drivers:** the role table is operator-owned and gitignored, so a wrong path is indistinguishable from a change of model unless `test -f` decides it. The startup default names one pair, not a family, and cannot satisfy a multi-seat requirement. `dispatch_role_model` reads only the first entry of a repeated line, which is a known seam defect, so a fallback inside a line is a record rather than a route on that path.
+
 ## 2026-10-14 -- The recommendations leave the project AGENTS.md
 
-**Decision:** The role-to-model recommendations live in an operator-owned file at `$AGENT_HOME/model-recommendations.md`, outside version control and outside pi's own `agent/` config root. The host file is `<SANDBOX_DIR>/.pi/model-recommendations.md`, gitignored, mounted by the pi compose overlay and pre-created as a slug-free skeleton when absent. The project `AGENTS.md` carries the role vocabulary (`_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, `_ORCHESTRATOR`) and an initialize-before-dispatch clause instead of the table. A new pi skill, `setup-model-recommendations`, detects the models the session can dispatch and writes the values. An unset role resolves to the pi startup default in `settings.json`, which stays the bootstrap default pi needs to start. `workflow/coding-agent/skills/eval/scripts/run_case.sh` takes its default from the `_ORCHESTRATOR` role instead of a literal slug.
+**Decision:** The role-to-model recommendations live in an operator-owned file at [model-recommendations.md](../../.agents/model-recommendations.md), outside version control and outside pi's own `agent/` config root. The host file is `<SANDBOX_DIR>/.pi/model-recommendations.md`, gitignored, mounted by the pi compose overlay and pre-created as a slug-free skeleton when absent. The project `AGENTS.md` carries the role vocabulary (`_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, `_ORCHESTRATOR`) and an initialize-before-dispatch clause instead of the table. A new pi skill, `setup-model-recommendations`, detects the models the session can dispatch and writes the values. An unset role resolves to the pi startup default in `settings.json`, which stays the bootstrap default pi needs to start. `workflow/coding-agent/skills/eval/scripts/run_case.sh` takes its default from the `_ORCHESTRATOR` role instead of a literal slug.
 
 **Rationale:** The table is a committed project file, and the models change faster than the rest of the agent context, so an update edits the project layer and leaves a tree that describes a model the operator no longer uses. Moving the values to an operator-owned file edits one place, reaches the container on the next start, and keeps the repository free of a model choice. The file is outside pi's `agent/` config root, so pi never rewrites it. Only the reasoning container mounts it, so the two containers cannot desync. The requirements hold: one home (R1), resolved per sandbox directory rather than globally (R2), readable by any agent in the session (R3), ordered as before (R4), the default left to `settings.json` (R5), the level and provider carried in each token (R6, R7). The skeleton is slug-free, so an uninitialized file is decidable (R8, R9).
 

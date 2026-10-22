@@ -124,6 +124,6 @@ describe("the invariant report", () => {
 	it(`INV C1 -- ${statement("C1")}`, () => {
 		assert.equal(classifyError("GoUsageLimitError: Go usage limit exceeded"), "limited");
 		assert.equal(classifyError("429: Endpoint is unavailable"), "transient");
-		assert.equal(classifyError("a failure nobody has seen"), "transient");
+		assert.equal(classifyError("a failure nobody has seen"), "limited", "an unmatched text is unrecoverable, the loud direction");
 	});
 });

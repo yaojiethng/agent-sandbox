@@ -1,9 +1,11 @@
 ---
 name: communication-principle-show-dont-describe
 description: "Hand over the artifact a reader acts on, or the output that proves a rule was followed, instead of a description or an assumption. Apply when writing an instruction, a prompt, a doc, a reply, or a comment."
+metadata:
+  claim: evidence
 ---
 
-# Show, Don't Describe
+# Show, don't describe
 
 A description asks the reader to interpret. An artifact asks them to copy. Give the artifact.
 

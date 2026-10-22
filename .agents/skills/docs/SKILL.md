@@ -10,7 +10,7 @@ This project's document tree lives at `docs/`, in four folders.
 | Folder | Holds | Ships |
 |---|---|---|
 | `docs/reference/` | how the harness works: contracts, states and sequences, the glossary | yes |
-| `docs/policies/` | the rules the loop obeys | until they move into the module |
+| `docs/policies/` | the rules the loop obeys | yes |
 | `docs/development/` | contributor workflow and the procedures for changing the harness | no |
 | `docs/adr/` | settled decisions | no |
 

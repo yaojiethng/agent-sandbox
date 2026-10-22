@@ -7,23 +7,19 @@ argument-hint: "[optional: a commit range to audit]"
 
 # /wrapup - The Consolidated Close
 
-**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it: milestone-close owns the milestone-record close, and the work runs substitute an autonomous review for the operator gate.
+**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it.
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list` - the task list and its companions.
-- `work-log` - the work-unit record and the exploration record.
-- `decision-records` - the architecture decision records.
-- `git-discipline` - commit types, branch names and the delivery commit.
-- `testing` - the suite and the lint umbrella.
+- `task-list`, `work-log`, `decision-records`, `git-discipline`, `testing`
 
 ## Mandate
 
 You run the consolidated close for an active-operator session that ends at its release point. Two jobs share this document: the **commit-discipline checkpoint** runs during the session after each committed task group; the **close** runs once at the session end. Both deliver a HEAD that reads as one coherent delivery commit per unit, with an open handover naming it, and no pile of typed checkpoints left for the operator to untangle.
 
-Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- `git_policy.md` names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause, not the symptom: a detected pile is squashed now and what let it accumulate is recorded -- a recurrence is a feedback or policy gap, catalogued on `devlog/AGENT_FEEDBACK.md` (grep for an existing entry first) or amended in the policy that failed to stop it.
+Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- `git_policy.md` names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the policy that failed to stop it.
 
 ## Called from
 
@@ -103,7 +99,7 @@ Run the scope-reconciliation invariant in [`iteration_policy.md`](/opt/sandbox/d
 
 ### B4. Roadmap write-back
 
-Run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md` and apply its report.
+Apply the row changes the release gate released. The record-check report from the gate is this step's evidence. A finding the gate missed is recorded as `late`, naming the gate that should have asked.
 
 Run the write-back step and state its outcome. This step is the moment the iteration marks its tasks done, and it is what satisfies the task list's invariant that a completed task is marked and the mark is committed. A task is marked `[x]` at the close that resolves it, not by a later cleanup pass. When every sub-row of a task is resolved, this step closes that task, in the form the `/milestone-close` compaction procedure, step 1, states. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates. A session that drew a brief from `/scope` files its work-unit table here, one row per unit, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing, and records that outcome. The step is mandatory; its value may be None. The write-back rides the delivery commit; it never forms its own commit. Compacting a sub-milestone to a paragraph, the upward cascade, the summary table update and any top-level milestone close are milestone-grain and belong to [`/milestone-close`](milestone-close.md), not to this runbook.
 
@@ -113,7 +109,7 @@ Run the deferred-resolution invariant in [`iteration_policy.md`](/opt/sandbox/do
 
 ### B6. Findings review/publish
 
-Run the findings-review/publish invariant in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) (Close invariants): route each entry to its destination; attribution is operator-owned (the agent proposes a class) and the Findings section is empty or holds only entries with a triage destination before the close.
+The gate decided the destinations; this step publishes them. Write each destination to its record: the Decisions table, a named `roadmap.md` row, or `devlog/AGENT_FEEDBACK.md`. Record the `[A]` or `[O]` class the operator confirmed. A finding discovered here is recorded as `late`, names the gate that should have asked, and stays in the handover. A recurring late entry becomes a roadmap row against the gate that missed it.
 
 ### B7. Pending-decision resolution
 
@@ -123,11 +119,11 @@ A row left open here is a question the operator meets twice, which is the cost t
 
 ### B8. Close ADRs and discussion docs whose work landed
 
-When a `docs/adr/` or `devlog/discussions/` document's work landed this session, run the [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) skill against it, and apply its report. The skill writes nothing: it reports the `[CORRECTION]` or `[AMENDMENT]` form each finding needs, and this prompt writes the block. A document whose recorded work shipped but that stays open after the session is a stale record; close it here.
+Close the `docs/adr/` and `devlog/discussions/` documents whose work landed this session. The record-check report from the release gate names the `[CORRECTION]` or `[AMENDMENT]` form each finding needs; this step writes the block. A document whose recorded work shipped but that stays open after the session is a stale record, so close it here. A finding the gate missed is recorded as `late`, naming the gate that should have asked.
 
 ### B9. Prepare all files for the commit
 
-Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Set `Status: Closed`. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
+Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Set `Status: Closed`. The handover format gate checks the record's shape at the commit. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
 
 ### B10. Land the single commit
 

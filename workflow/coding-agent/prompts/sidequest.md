@@ -11,11 +11,9 @@ argument-hint: "<what the sidequest does - required>"
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `work-log` - the work-unit record and the exploration record.
-- `task-list` - the task list and its companions.
-- `decision-records` - the architecture decision records.
+- `work-log`, `task-list`, `decision-records`
 
 ## When to use
 
@@ -64,7 +62,7 @@ Present the pre-close summary and wait for the release gate, per `/iter` Step 7 
 
 Run the consolidated close from [`/wrapup`](wrapup.md) Part B, as `/iter` Steps 8-9 do. The sidequest is one delivery commit.
 
-**Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per the project's `task-list` convention. A fix, check or record with no roadmap home states that as the write-back outcome; the step is never skipped.
+**Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per the project's `task-list` convention. A fix, check or record that belongs in no roadmap row states that as the write-back outcome; the step is never skipped.
 
 ## Return
 

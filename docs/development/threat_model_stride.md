@@ -6,8 +6,6 @@ This document provides a detailed STRIDE threat model for the agent-sandbox syst
 
 Operational responses to each threat category are defined in [`../development/standard_operating_procedures.md`](../development/standard_operating_procedures.md).
 
----
-
 ## 1. Resource Exhaustion
 
 **Definition:** Runaway or buggy code, orchestration misbehavior, or malicious agents consume CPU, memory, disk, or other resources, potentially causing denial-of-service or financial impact (billable services).
@@ -43,8 +41,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Safe termination without corrupting key branches
 - Logging and alerts for resource spikes
 - Rate-limit billable API usage
-
----
 
 ## 2. Orchestration / Agent Runtime Compromise
 
@@ -84,8 +80,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Scoped secrets management
 - Logging & monitoring of orchestration actions
 
----
-
 ## 3. Container Misconfiguration / Image Compromise
 
 **Definition:** Errors in Dockerfiles or malicious prebuilt images introduce privileges, insecure mounts, or code execution risks.
@@ -122,8 +116,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Automate linting and security checks
 - Treat container build as part of TCB
 
----
-
 ## 4. External Network Threats
 
 **Definition:** Untrusted network actors, APIs, or websites accessed by agents may exfiltrate data, inject instructions, or disrupt execution.
@@ -158,8 +150,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Rate-limit requests
 - Proxy/filter connections
 - Treat all network data as untrusted
-
----
 
 ## 5. Package / Dependency Compromise
 
@@ -197,8 +187,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Unprivileged execution
 - Immutable container images
 
----
-
 ## 6. Secrets / Sensitive Data Leakage
 
 **Definition:** Accidental or malicious exposure of API keys, private data, or workspace files.
@@ -234,8 +222,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Audit logs for secret access
 - Never expose secrets externally
 
----
-
 ## 7. Human / Operational Misuse
 
 **Definition:** Accidental or intentional mistakes by operators compromising workflow, repository, or host.
@@ -270,8 +256,6 @@ Operational responses to each threat category are defined in [`../development/st
 - Workspace staging
 - Logging and audits
 - Operator training and minimal manual intervention
-
----
 
 ## References
 

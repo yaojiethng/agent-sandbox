@@ -16,6 +16,80 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
+
+```text
+state: open
+scoped: W2 - Communication Domain Taxonomy
+legacy: none
+mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards.
+```
+
+One iteration set `metadata: leitwort:` on all twenty-five principle skills in a single pass. The operator rejected the set as poorly chosen and asked for a revert. Two declarations stand, `proximity` and `leverage`, each of which names its own skill's subject and was already committed.
+
+The class is a name chosen because it sounded right rather than because the artifact already uses it. `mapping`, `train`, `delete` and `artifact` each acquired a defence in prose written after the choice, and a defence written after the choice cannot fail. The corpus states the test that was skipped: the word that leads is the word the body teaches, and a candidate the body never says is the wrong word. The one honest signal in the pass was the swap from `carry` to `delete`, and it read as an exception rather than as evidence that the rest were guesses.
+
+The cost was a reverted unit and a row returned to open with its deferral recorded. The durable fix is the destination, not the discipline: the judging pass belongs to the communication-principle consolidation, where the territory is settled before anyone names a part of it.
+
+## [A] 2026-10-20  --  A test helper inherited the repository's git state and committed it
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: a fixture test changes into its own temporary directory before it writes or stages anything, and the shell that changes directory is the shell that runs `git`, so the change belongs outside a command substitution. Assert the fixture root before the first write: `[[ "$(git rev-parse --show-toplevel)" != "$REPO_ROOT" ]]`. After any test that can commit, run `git log -1` and `git status --short` and compare against the state the call started in.
+```
+
+A new test for the prose measure built its fixture with `dir="$(new_repo)"` and changed directory inside that substitution. The change died with the subshell, so the test ran in the repository root and wrote `a.md` there. Its `git add -A && git commit` then committed the working tree of an in-flight iteration into four commits named `base`, together with the fixture files, and the iteration's own changes stopped being a working-tree diff at all. The damage was recoverable because the branch was local and the four commits were the only thing on top: `git reset --mixed` to the parent commit restored the cuts as unstaged changes, and the fixture files were deleted.
+
+The class is a fixture that escapes its root. The test looked green on the first run because the assertions read the numbers the wrong directory produced, and the commit was the side effect that proved it. Two guards now hold it: the helper refuses a write when the shell is still inside the real repository, and every test changes into the fixture in the calling shell.
+
+## [A] 2026-10-20  --  `grep -q` in a pipeline under pipefail reported the writer's SIGPIPE
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: a reader that stops at its first match kills the writer with SIGPIPE, and `pipefail` hands back 141 even though the reader matched. Collect the list first and test it from a here-string. The norm gate read every observer as unresolvable this way, and the message named the observer rather than the pipeline, so the cause read as a broken tree.
+```
+
+## [A] 2026-10-19  --  A mining brief asked for a source the records could not supply
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before asking a mining dispatch for a share of the corpus from a source, run one grep over that source and count the candidate rows; ask for what the source demonstrably holds, and state the shape the rows take.
+```
+
+The census mining brief asked for at least five failure events from the `## Findings` sections of handovers. Six candidates came back and every one was a phrase fragment -- "resume", "Keeping a subagent alive" -- with no sentence and no stated misreading, so the source contributed nothing and the corpus leaned on the other two. The Findings sections state defects about work; they rarely quote the prose that failed. The brief asked for an extraction the source does not carry, and the dispatch answered with the nearest thing it could find instead of an empty result.
+
+## [A] 2026-10-19  --  A dispatch quoted a commit sha it had mistyped
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: resolve every source reference a dispatch returns against the tree before the artifact is accepted; for a sha, `git cat-file -e`, and for a file:line, read the line and compare it with the quoted text.
+```
+
+The corpus mining dispatch returned `aaa1246d` for a commit whose real prefix is `aaa1246f`. Nothing in the returned record looked wrong, and the event text was real; only the reference was invented by one character. The other 27 references resolved. A corpus built on unverified references cannot be re-checked later, which is the whole point of carrying them, so the check belongs in the brief and in the acceptance of the dispatch's output, not in the reader's trust.
+
+## [A] 2026-10-18  --  A correction landed as a second commit instead of folding into the first
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: when a defect in your own work turns up while the session is still live, fold it into the commit that carries the work before doing anything else, and fold the handover edit with it. A correction is not new work, so it gets no new commit, no new handover, no new feedback entry and no new rule. If the fold needs `git commit --fixup` plus `git rebase -i --autosquash`, that is still the fold.
+```
+
+`582af1eb` added three strings: a pointer clause ending `which is its only home`, a section of a principle skill whose prose claimed how a defect arose, and an extra clause in that skill's description. Twenty minutes later `f82d1a0d` removed exactly those three strings and touched nothing else. Each carried its own `Closed` handover.
+
+The operator had said what to change and had not said how to land it, and `git_policy.md` read a fold into a closed iteration as requiring the operator's direction. The direction had arrived as a content instruction, the agent did not read it as one, and the correction became an iteration. The clause could not separate the two, so the default won.
+
+The compounding is the point. One defect produced two commits, two handovers, two roadmap citations and a `/history-cleanup` rewrite to undo the split. The repair did not fix the record, it added to it, and cleaning that addition then needed a fourth artifact, the detector that found the inversions. `principle-minimal-corrections` states the bar: a correction restores the intended artifact and adds nothing beside it.
+
 ## [A] 2026-10-17  --  A dispatch that hits its timeout leaves a half-applied tree
 
 ```text
@@ -30,6 +104,7 @@ Two of four workers dispatched in one parallel call returned rc=124. Both logs h
 The class is a timeout that reads as "nothing happened". The mitigation for an empty log already exists in the provider layer, which treats a `rc=0` with an empty log as failure; the same rule is missing for a non-zero rc with an empty log, where the log proves nothing about the tree. Trust no summary over the artifact cuts both ways: a timed-out run has no summary, so the artifact is the only evidence, and it must be read before the work is re-planned.
 
 Raised by the agent during handover `20261017-01`.
+
 ## [A] 2026-10-17  --  A typed delivery commit landed with no open handover
 
 ```text
@@ -50,8 +125,8 @@ Raised by the agent during handover `20261017-02`.
 ```text
 state: open
 scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: none
-mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing.
+legacy: 2026-10-21 -- the same class recurred in a prose sweep. Two word passes ran `grep` over a hand-listed set of six roots, and both left live carriers outside it: the provider `AGENTS.md`, the advisor prompt, and a roadmap row. Each pass reported the surface clean until an auditor read a file the pattern never opened.
+mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing. For a sweep, the declaration is the tree itself: sweep from the repository root and filter the hits, rather than naming the folders to look in.
 ```
 
 `scripts/lint/frontmatter.mjs` listed the folders it scanned by hand. The list held the workflow module, the pi provider config and the agent skills, and it omitted `.agents/skills/`, the project convention-skill tree pi loads. A `description` value in `.agents/skills/task-list/SKILL.md` held a colon-space (`changelog: their shape`), which YAML reads as a nested mapping, so the whole block failed to parse and pi dropped the skill. The gate reported clean across 57 files throughout.
@@ -105,6 +180,7 @@ The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. 
 
 Raised by the agent during handover `20261014-03`.
 
+**Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
 ---
 
 ## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
@@ -112,13 +188,15 @@ Raised by the agent during handover `20261014-03`.
 ```text
 state: open
 scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: none
+legacy: 2026-10-05 -- mitigation written into this entry: write the body to the budget before committing, and measure it.
 mitigation: write the body to `git_policy.md`'s budget before committing -- a subject of 50 characters or fewer, a body under 280 characters, no path list, and a pointer to the handover or the ADR rather than its reasoning -- and measure it, with `git log -1 --format=%b | wc -c`, because nothing else does.
 ```
 
 Three of five delivery commits across two sessions exceeded the 280-character body budget: 324, 880 and 1248 characters. The longest repeated its handover's argument, which the policy forbids twice over -- the body does not repeat the handover, and a reason longer than the budget lives in the handover or the ADR with the body pointing there. The bodies also carried file paths, which the paragraph after the budget forbids.
 
 The habit is the cause, not the size of the changes: a commit body reads like a place to record the reason, and the longer the iteration, the more there is to record. No gate reads a commit message, and the operator caught the third by reading the log. The failure is loud to that reader and silent to every check, so it stays a discipline: the review gate already reads the series, and the only part written down as enforced is the type prefix. All three messages were rewritten to the budget in the fold recorded by handover `20261005-08`.
+
+**Recurrence, 2026-10-18.** Two subjects exceeded the 50-character limit in one session, at 56 and 55 characters, and both were amended to 36 after the commit landed. The bodies were inside the budget in both cases, so the failure is narrower than the original entry: the subject is the field that goes unchecked, because the habit measures the body. The mitigation above already said to measure before committing and not after, and it was not followed twice. Measure with `git log -1 --format=%s | wc -c` before the commit, not after it, and subtract one for the newline.
 
 ---
 
@@ -488,10 +566,11 @@ A second form recurred one turn after the first fix. The agent applied the rule 
 ### [O] 2026-09-29  --  Conversational numbering must be unambiguous
 
 ```text
-state: open
-scoped: M3 T1 -- documentation conventions; `documentation_policy.md` `### References`
+state: probation
+scoped: M3 T1 -- documentation conventions; now `## Chat: one token per item` in `.agents/skills/numbering/SKILL.md`
+probation: the fix landed as that section and as the provider `AGENTS.md` fallback. The operator decides dismiss / maintain / escalate at the next review; the observation is an audit report that cites a labelled chat pick without a second axis appearing in the reply.
 legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
-mitigation: when the agent presents several numbered or lettered sets in one exchange -- a review's numbered findings beside lettered option choices -- the operator's index reply can map to the wrong axis, and the agent must guess. Present exactly one indexable axis per presentation, or name each axis so the reply is self-mapping ("finding 1", "option A"). Do not place two independent numbering schemes side by side and let the operator index one of them. The numbering convention in `documentation_policy.md` `### References` must state this rule. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
+mitigation: when the agent presents several numbered or lettered sets in one exchange, the operator's index reply can map to the wrong axis, and the agent must guess. The rule is `## Chat: one token per item` in the project convention `.agents/skills/numbering/SKILL.md`; this entry is the case that rule prevents. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
 ```
 
 ### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed
@@ -609,7 +688,7 @@ The tar feasibility probes landed in `tests/knowledge/` as `discovery_tar_*.sh`,
 state: open
 scoped: M3 T8 -- STE-clean sweep / record-layer drafting discipline
 legacy: none
-mitigation: First drafts of the seed-transport ADR and concept doc mirrored the session's reasoning: narrative history, transient identifiers (session ids, commit hashes, handover names), implementation command dumps, and rationale-as-argument instead of rationale-as-mapping. The operator steer (records state, not session history; problem / solution / rejected-with-failure-locus / follow-up; requirements as behavioral contracts in concept docs; interface-level descriptions, commands only for external interactions) required full rewrites of both. Mitigation for next time: before writing a record-layer document, propose its skeleton (section list + what each section holds) in chat and get the structure confirmed; write prose only against the confirmed skeleton. Findings F8-F14 in handover 20260904-01-design-start_resume_rsync_stall.md carry the policy-amendment candidates.
+mitigation: First drafts of the seed-transport ADR and concept doc mirrored the session's reasoning: narrative history, transient identifiers (session ids, commit hashes, handover names), implementation command dumps, and rationale-as-argument instead of rationale-as-mapping. The operator steer (records follow `communication-principle-write-for-the-reader`; problem / solution / rejected-with-failure-locus / follow-up; requirements as behavioral contracts in concept docs; interface-level descriptions, commands only for external interactions) required full rewrites of both. Mitigation for next time: before writing a record-layer document, propose its skeleton (section list + what each section holds) in chat and get the structure confirmed; write prose only against the confirmed skeleton. Findings F8-F14 in handover 20260904-01-design-start_resume_rsync_stall.md carry the policy-amendment candidates.
 ```
 
 ## Agent experience  --  session 20260918-10 (thermo-nuclear review pass)

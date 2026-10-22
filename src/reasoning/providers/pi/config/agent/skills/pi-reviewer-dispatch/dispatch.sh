@@ -30,8 +30,8 @@ readonly DEFAULT_TIMEOUT=900
 
 # label|provider|model|thinking level
 readonly REVIEWERS=(
-  "glm|openrouter|z-ai/glm-5.3-flash|high"
-  "step5|opencode-go|step-5-preview-free|high"
+  "fast|opencode-go|deepseek-v4.1-flash|high"
+  "flash|deepseek|deepseek-flash|high"
 )
 
 usage() {

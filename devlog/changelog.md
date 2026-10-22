@@ -2,7 +2,7 @@
 
 Completed milestones extracted from `roadmap.md`. Each entry describes what the system can now do and the mechanisms built to enable it.
 
-New entries are appended. Format is defined in `roadmap_policy.md`.
+New entries are appended. Format is defined in the project's `.agents/skills/task-list/SKILL.md` convention.
 
 ---
 
@@ -203,6 +203,16 @@ The minor and major loop procedures moved out of `iteration_policy.md` and `road
 *An instruction surface now declares where it runs, what it can reach and what loads it, and every reference it carries resolves in the image it runs in.*
 
 The contract between prompts, skills and the two `AGENTS.md` layers is settled and structural. The surfaces are declared once as data in `src/build/container-interface.json`, one reader serves every gate, and a link in a surface's file must land inside the reach its cell grants; a reference now takes the absolute path its document has in the image, so the repository-relative form fails the gate. The policy form is designed away, each policy splitting into a mechanism a procedure runs and a convention the project's convention-skill holds, with a default convention-skill corpus that `initialize` installs and a handoff at `.agents/skills/<convention>/SKILL.md`. The five hand-maintained `CONTEXT.md` files are gone, the harness and the workflow module each ship as one declared payload, and the reviewer dispatch became one provider-layer skill with a script and a stub-`pi` test.
+
+---
+
+## M3.3.4 - The prose standards as principles
+
+*A writer reaches one principle whose name states the judgement it holds, and every principle says which claim it applies and what test finds a breach.*
+
+The prose standards left the policy documents and became convention skills. Each carries one judgement, a name that states it, a claim drawn from a single declared table, and a pattern that shows the wrong form beside the right one. The corpus holds one shape, and a gate reads it, so a principle written next year meets the same six parts as the exemplar a writer copies.
+
+The rules that outlived their documents landed where they are enforced. The norm ledger records an observer for every prose line and derives the label from it, so a rule states its observer and a judgement states that it has none. The reach axis became a property of the root a document ships in, held to the manifest by a gate, and the two shipped reference documents state whose tree they describe. One gate now covers every instruction document's frontmatter, its declared reader and, where it is a principle, its shape.
 
 ---
 

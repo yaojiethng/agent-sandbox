@@ -10,8 +10,6 @@ reader: [agent, operator]
 
 These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
----
-
 ## session
 
 One container lifecycle, from container start to teardown. The harness unit of execution. Has a resume path and a persisted state file.
@@ -31,8 +29,6 @@ Session-scoped resources: the container lifecycle, the compose project, the name
 
 **Last updated:** 2026-08-19
 
----
-
 ## iteration
 
 One work cycle that produces a handover and a commit. The operator unit of governance. Targets one sub-milestone step; recorded in `devlog/handovers/`.
@@ -51,8 +47,6 @@ Iteration-scoped resources: a draft branch, a diff bundle.
 - The `iter` prompt (formerly `new-iteration`, formerly `new-session`) opens an iteration.
 
 **Last updated:** 2026-08-19
-
----
 
 ## staleness
 

@@ -163,4 +163,4 @@ The close does not close a milestone. The milestone closes only after the operat
 - No row is merged, renumbered, or deleted once another document cites it.
 - No claim survives on argument alone: the failing unit name and the re-run are the evidence.
 - The register is the source of truth; the prose sections are generated from it.
-- The chat presentation is a digest. Records state, not session history.
+- The chat presentation is a digest. Records follow `communication-principle-write-for-the-reader`: name the thing, not the session.

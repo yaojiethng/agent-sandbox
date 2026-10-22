@@ -13,7 +13,7 @@ Turn one rough ask into one executable brief. The ask arrives as the operator's 
 
 ## Project conventions
 
-This step reads and writes project records through the project's conventions. For each convention below, read `.agents/skills/<name>/SKILL.md` for this project's structure. If that file is absent, or holds the seeded stub, state the failure and hand control to the agent, which decides with the steering it has loaded; the workflow prescribes no fallback.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
 - `task-list` - the task list and its companions.
 
@@ -21,7 +21,7 @@ This step reads and writes project records through the project's conventions. Fo
 
 A brief is what a run reads. It carries the premise under test, the material to start from, the method, the check that proves the result, and the work units the run is cut into.
 
-The deliverable is one brief at `.agents/drafts/`. The home is stated once, here; `docs/development/prompt-authoring-conventions.md` owns the draft gate and its root.
+The deliverable is one brief at `.agents/drafts/`. The source of truth is stated once, here; `docs/development/prompt-authoring-conventions.md` owns the draft gate and its root.
 
 ## When to use
 
