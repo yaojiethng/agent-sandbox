@@ -403,7 +403,7 @@ A scan for a process by name matches its own command line, because the pattern t
 |---|---|
 | `interface-conventions.md` | CLI/TUI/API rules (this doc covers bash, not interface) |
 | `.agents/skills/testing/SKILL.md` | Test judgements and patterns |
-| `testing_policy.md` | Test placement and suite rules (migration bridge) |
+| `test_harness_mechanism.md` | The suite's runner, contract and gates |
 | `.agents/audits/bash-audit.skill.md` | Automated audit skill |
 | `devlog/AGENT_FEEDBACK.md` Gotchas section `[O]` | Original `exit` vs `return` finding |
 | `devlog/AGENT_FEEDBACK.md` Bash section | Historical bash friction records |

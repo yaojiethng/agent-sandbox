@@ -11,7 +11,7 @@
 # applyable while stripping cosmetic text index lines.
 #
 # Promoted from tests/knowledge/knowledge_binary_diff_apply.sh  --  the
-# seams are deterministic (git only), so per testing_policy.md this
+# seams are deterministic (git only), so per the `testing` skill this
 # belongs in the discovered suite, not in knowledge/.
 #
 # Origin: handover 20260503-02-study-binary_file_handling_in_patch_pipeline.md;

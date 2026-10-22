@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This document describes how the unit-test harness runs: discovery, parallel dispatch, the result protocol, and the gates around the suite. It is the mechanism layer. The judgements and patterns for writing a test live in [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md); the placement and suite rules in [`testing_policy.md`](testing_policy.md).
+This document describes how the unit-test harness runs: discovery, parallel dispatch, the result protocol, and the gates around the suite. It is the mechanism layer. The judgements, patterns and completion lists for writing a test live in [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md).
 
 The harness guarantees one invariant: a trustworthy green or red signal. Every unit result must be counted exactly once, and a failure must never look green. The design satisfies this by carrying counts over a self-describing report, not by re-parsing the test's printed noise.
 
@@ -23,6 +23,10 @@ Dispatch runs every file through a child copy of the runner: `printf '%s\n' "$TE
 The deadline is pure bash: `run_with_deadline DEADLINE OUT FILE` backgrounds the file, polls it at 0.1 second, kills it on expiry with SIGTERM, and returns 124. No external `timeout` binary is needed, which keeps the runner safe on the GNU and BSD `sleep` variants. The deadline is `TEST_TIMEOUT` (default 10 seconds), and a file may declare its own with a `# TEST_DEADLINE: <seconds>` line in its first ten lines; the declaration overrides the default for that file only, so a heavy harness file states its own budget instead of raising the deadline for every file. The declaration is a budget, not a licence: the file must stay near the cost it declares.
 
 The parent summarizes the workers' records, prints the aggregate line, lists the failing test names in one `Failed tests:` block, and exits 1 when any unit failed or timed out.
+
+## The suite contract
+
+The suite reports `failed 0`. A failing unit fails the run, and a test that cannot run deterministically moves to `tests/knowledge/` or `tests/integration/` rather than being skipped in place. A skip is a temporary warning, never the resting place for a seam the unit harness cannot reach.
 
 ## The unit contract (`tests/libs/test_common.sh`)
 
@@ -74,6 +78,8 @@ Why drift is loud by construction: the failure count rides the file's real exit 
 
 The gate accepts a directory argument, defaulting to the real suite. The runner calls it before dispatch with the real suite directory on every run. The self-test calls it directly against a fixture for the dead-registration case; its runner invocations skip the gate with `RUN_TESTS_SELFTEST=1`.
 
+A liveness finding is a defect to fix in the same change. The check is advisory like the other static checks, but a finding is not a note.
+
 `scripts/check_test_smoke.sh` syntax-checks the excluded `tests/knowledge/` and `tests/integration/` scripts with `bash -n`, so excluded scripts cannot rot silently. It is non-gating.
 
 `scripts/check_test_coverage.sh` is an ad hoc helper: given changed file paths, it prints which test files reference each. It is not a gate.
@@ -116,7 +122,5 @@ A green suite is not evidence that one of these guards still earns its place, an
 
 ## See also
 
-- [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) -- the judgements and patterns for writing a test.
-- [`testing-conventions.md`](testing-conventions.md) -- the debugging guide and the two checklists (migration bridge).
-- [`testing_policy.md`](testing_policy.md) -- test placement and the `make test` invariant.
+- [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) -- the judgements, patterns, test homes and completion lists.
 - [`docs/adr/test_harness.md`](../adr/test_harness.md) -- the harness decision record.

@@ -37,7 +37,7 @@
 #  - src/reasoning/entrypoint.sh (_provision_agent_home)
 #  - src/build/container-interface.json (the template's source and image path)
 #  - docs/reference/provider_lifecycle.md ("Config Flow and Fragility Notes")
-#  - docs/development/testing_policy.md (knowledge test format)
+#  - .agents/skills/testing/references/test-homes.md (knowledge test format)
 #
 # Not run by make test. Run manually:
 #   bash tests/knowledge/knowledge_pi_config_cycle.sh

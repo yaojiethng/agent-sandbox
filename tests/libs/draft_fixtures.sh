@@ -6,7 +6,7 @@
 #   tests/test_draft_workflow.sh
 #   tests/test_confirm_workflow.sh
 #   tests/test_reject_workflow.sh
-# and are therefore filed here per testing_policy.md "Shared Fixtures"
+# and are therefore filed here per the `testing` skill's fixture pattern
 # (a helper belongs in tests/libs/ if and only if it is used by two or more
 # test files).
 #

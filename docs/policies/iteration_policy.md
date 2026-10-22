@@ -56,7 +56,7 @@ Principles owned by other layers and echoed here:
 - **Resolve open questions before advancing** (surface explicitly; the iteration does not advance past an unanswered scope or design question) -- owned by `workflow/coding-agent/prompts/iter.md` as the iteration variant.
 - **Scope is fixed at confirmation** (adjacent issues go to Findings, deferred) -- owned by `workflow/coding-agent/prompts/iter.md`.
 - **Roadmap reflects reality** (completed items marked promptly) -- owned by the project's `task-list` convention.
-- **Tests for non-trivial logic** -- owned by `docs/development/testing_policy.md`.
+- **Tests for non-trivial logic** -- owned by the `testing` convention-skill, `.agents/skills/testing/SKILL.md`.
 
 ## The autonomous agent loop
 

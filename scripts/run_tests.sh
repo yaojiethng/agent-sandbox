@@ -36,7 +36,7 @@ FILE_COUNT=0
 # check_prerequisites
 #   Verifies the suite's prerequisites before any test runs. A broken docker
 #   stub would otherwise fail dozens of tests with unrelated 126/127 errors;
-#   report it once, by name (testing_policy.md prerequisite rule).
+#   report it once, by name (the prerequisite rule in `test_harness_mechanism.md`).
 #   PREREQ_STUB overrides the path for the runner self-test.
 check_prerequisites() {
   local stub="${PREREQ_STUB:-$REAL_TESTS_DIR/stubs/docker}"

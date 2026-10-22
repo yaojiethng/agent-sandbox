@@ -108,7 +108,7 @@ When the handover's `## Decisions` table is not empty, or the iteration created 
 
 **Pre-verify every criterion the agent can verify now.** For each criterion whose `Verification` is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`.
 
-**When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs  --  they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see `testing_policy.md`).
+**When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs  --  they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see the `testing` skill's test homes).
 
 Present together:
 
@@ -128,7 +128,7 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 ## Step 6  --  Implementation and the write-back discipline
 
-Produce changes against the confirmed scope. Write tests alongside per `testing_policy.md`. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
+Produce changes against the confirmed scope. Write tests alongside per the `testing` skill. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 
 The record-state invariants live in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md); this step applies them to the handover. The policy owns the rules; this step is their operational face. Satisfy each record-state invariant as you produce deliverables: record decisions where they are made, write findings as they arise, and verify every record write landed in the same turn (grep the row key or content you claim to have written -- the write is not done until the grep finds it).
 

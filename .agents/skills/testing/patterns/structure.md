@@ -8,6 +8,10 @@ The shape is mandatory, not advisory. A test file opens with `test_setup` at fil
 
 Copy [`../assets/test-file-template.md`](../assets/test-file-template.md) to start a file.
 
+## The file is named for its subject
+
+A test file is named for its subject and holds that subject's units: `tests/test_A.sh` tests `A.sh`, and the file name is the lookup for where that subject is covered. Keep no roster of which file covers what - it goes stale as soon as a subject moves, and it is one more thing to keep true.
+
 ## Document an untested branch at the code
 
 When a function has a documented branch with no test, state why in the function's header comment at the point of the code. There is no central known-gaps file; the comment travels with the code.

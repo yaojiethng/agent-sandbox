@@ -8,7 +8,7 @@ non-recursive, so this directory is not picked up by `scripts/run_tests.sh`.
 
 ## When a test lives here
 
-Per `docs/development/testing_policy.md` (Test Placement), a test belongs here
+Per the `testing` skill's test homes, a test belongs here
 only when the seam under test is **not deterministically runnable** in the unit
 harness:
 

@@ -104,6 +104,10 @@ source "$REPO_ROOT/test_draft_workflow.sh"
 source "$REPO_ROOT/tests/libs/git_fixtures.sh"
 ```
 
+## Where a helper belongs
+
+A `tests/libs/` file holds helper functions and no test execution. A helper belongs there if and only if two or more test files use it; otherwise it lives in the test file that uses it. A new file needs a category boundary: if the helper fits no existing file, name the new file for its distinct scope. Every helper follows the judgements above.
+
 ## Where the helpers live
 
 Helpers used by more than one test file live in `tests/libs/` and are sourced explicitly. The directory is the source of truth; this table is a reading of it.
@@ -115,8 +119,22 @@ Helpers used by more than one test file live in `tests/libs/` and are sourced ex
 | `tests/libs/session_fixtures.sh` | the session fixture: `make_session_fixture()`, the unified session directory creator with optional patches and `uncommitted.diff` |
 | `tests/libs/draft_fixtures.sh` | draft workflow fixtures: the helpers shared by the draft, confirm and reject tests |
 
-Every test file sources `test_common.sh` instead of defining `pass()` and `fail()` inline. The only exception is a diagnostic script that runs where `tests/libs/` is unavailable.
+Every test file sources `test_common.sh` instead of defining `pass()` and `fail()` inline.
 
 ```bash
 source "$REPO_ROOT/tests/libs/test_common.sh"
 ```
+
+## In knowledge, workflow and diagnostic files
+
+A `knowledge_*.sh` or `workflow_*.sh` file sources the shared fixtures instead of defining the accounting inline:
+
+| Boilerplate | Source instead | Files |
+|---|---|---|
+| `pass()`, `fail()`, `PASS=0`, `FAIL=0` | `tests/libs/test_common.sh` | every `knowledge_*.sh` and `workflow_*.sh` |
+| `make_repo()`, `make_committed_repo()` | `tests/libs/git_fixtures.sh` | any file that creates git repositories |
+| `make_session_fixture()`, `make_draft_fixture()` | `tests/libs/session_fixtures.sh` | workflow tests needing session or draft fixtures |
+
+A domain-specific helper one file uses stays local; do not add it to a shared library until a second consumer exists.
+
+A diagnostic script that runs in a container keeps inline `pass()` and `fail()`: `tests/libs/` is not on the container filesystem.

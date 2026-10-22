@@ -47,9 +47,9 @@ MUTATIONS_BUDGET="${MUTATIONS_BUDGET:-900}"
 MUTATIONS_PER_TEST="${MUTATIONS_PER_TEST:-60}"
 SECONDS=0
 
-# The subject-to-tests lookup. The test-file naming rule ("the file and the
-# unit", testing_policy.md) is the source: each test file is named for the
-# subject it covers. Where a subject has more than one suite, list them all.
+# The subject-to-tests lookup. The test-file naming rule in the `testing`
+# skill ("the file is named for its subject") is the source: each test file
+# is named for the subject it covers. Where a subject has more than one suite, list them all.
 declare -A SUBJECT_TESTS=(
   [scripts/agent-sandbox.sh]="test_dispatch.sh"
   [scripts/build.sh]="test_build_context.sh"
