@@ -44,7 +44,7 @@ The agent operates as one loop with a milestone phase and an iteration phase. Th
 
 The iteration runs from `workflow/coding-agent/prompts/iter.md`. The prompt owns the procedure: the step sequence, the entry and exit conditions, and the templates. This section holds the invariants the procedure must not break -- the state the repository must be in at every point a commit lands. It is organized by invariant, not by procedure step: the procedure in `/iter` may evolve, and the invariant set below should not change when the runbook changes, only when the system is redesigned.
 
-The principle behind this shape -- a document's invariants must not couple to its runbook, and a loose procedure belongs in the runbook -- is `docs/adr/policy_declarative_framing.md`'s. This document states its invariants and does not restate it.
+The principle behind this shape -- a document's invariants must not couple to its runbook, and a loose procedure belongs in the runbook -- is `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`'s. That decision retired with the policy form it wrote for, and the shape outlived it: this document states its invariants and does not restate an argument it no longer owns.
 
 ### Unit and scope invariants
 

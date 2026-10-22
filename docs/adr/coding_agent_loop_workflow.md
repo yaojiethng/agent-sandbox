@@ -36,7 +36,7 @@
 
 [CORRECTION -- 2026-10-03: the diagram's home is the concept document, not this ADR. The state diagram is drawn in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md#the-loop), and this section states the transition rules behind it. The decision above otherwise stands.]
 
-**Rationale:** The loop workflows previously lived as step-by-step procedure interleaved with policy rules in `iteration_protocol.md` and `milestone_policy.md`, which made the governance surface large and forced every change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a workflow's steps reviewable in one prompt, and lets the workflows evolve without a policy change. The separation itself is already ruled by [`policy_declarative_framing.md`](policy_declarative_framing.md): policy states rules declaratively and execution guidance does not belong in policy. This ADR records the loop-specific consequence of that rule and names the loop set.
+**Rationale:** The loop workflows previously lived as step-by-step procedure interleaved with policy rules in `iteration_protocol.md` and `milestone_policy.md`, which made the governance surface large and forced every change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a workflow's steps reviewable in one prompt, and lets the workflows evolve without a policy change. The separation itself is already ruled by `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`, retired with the policy form: rules are stated declaratively and execution guidance does not belong in the rule's own document. This ADR records the loop-specific consequence of that rule and names the loop set.
 
 **Rejected alternatives:**
 
@@ -92,5 +92,5 @@ The explanatory loop content moves to `docs/reference/autonomous_agent_loop.md`:
 
 - Design record: [`20260928-design-settled-loop_workflows_migration.md`](../../devlog/discussions/archive/20260928-design-settled-loop_workflows_migration.md)
 - Planning handover: `20260928-04`
-- Separation rule: [`policy_declarative_framing.md`](policy_declarative_framing.md)
+- Separation rule: [`norm_kinds.md`](norm_kinds.md), and the retired framing at `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`
 - Framework loop workflow: `docs/reference/autonomous_agent_loop.md`

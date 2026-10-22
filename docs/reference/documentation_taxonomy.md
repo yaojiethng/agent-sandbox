@@ -10,7 +10,7 @@ This document is the index and view of the documentation ecosystem. It states no
 
 | Document | What it is | Durability | Identification | Governed by |
 |---|---|---|---|---|
-| Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | sections numbered | per-file; the rules of rule-hood are in `docs/adr/policy_declarative_framing.md` |
+| Policy document (`docs/**/*_policy.md`) | retired 2026-10-22: a rule set for the whole workflow, which no document holds now. A rule is stated where its procedure enforces it, and a convention in `.agents/skills/` | -- | -- | `docs/adr/norm_kinds.md` states what counts as a rule |
 | ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` |
 | Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | the `docs` convention, `.agents/skills/docs/SKILL.md` -- What each document type owes |
 | Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | the `docs` convention, `.agents/skills/docs/SKILL.md`; the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
