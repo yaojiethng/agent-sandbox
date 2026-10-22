@@ -14,6 +14,7 @@ argument-hint: "[documentation goal or target document - optional]"
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
 - `docs` - the document tree.
+- `decision-records` - the architecture decision records.
 
 ## Purpose
 
@@ -57,7 +58,7 @@ Exit condition: the target's type is named in the handover `## Scope` section, w
 
 When a rewrite changes what an existing document means to the sessions that read it, settle the requirements before any prose is written. Pass the session context -- the recorded goal and problem, the gathered context, and the confirmed scope -- to the `grill-me` skill for this interview. The interview resolves each branch of the decision tree: what the document must say after the session, what it must stop saying, and which readers depend on the part that changes.
 
-Record the settled requirements where the work lives, per the record-state rules in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `## Iteration Invariants`. A meaning change to a settled design is an ADR, per [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md).
+Record the settled requirements where the work lives, per the record-state rules in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `## Iteration Invariants`. A meaning change to a settled design edits its ADR in place, per the `decision-records` convention.
 
 Exit condition: every requirement the rewrite must satisfy is written down, each meaning change to an existing document is recorded in the handover Decisions table with the record that holds it, and the handover Decisions pending table holds its canonical marker.
 
@@ -95,7 +96,7 @@ The standards check reads each produced document against the standard its type s
 
 - **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and the kind test that decides each rule's source of truth, per `### Norm kinds` in `agent_workflow.md`. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
 - **A policy, concept, or architecture document.** Read [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) and check the folder placement, the header format, and the section map.
-- **A record document.** Check it against the record-state invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Record-state invariants`, and against the project's `work-log` convention for a handover, [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md), or [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). For a discussion or design record, confirm that no question-and-reply pair remains, that every question still listed is still open, and that the designs considered and rejected are a short section carrying the reason for each. An answered question belongs in the body at the place its answer belongs, not in a reply, so fold it there when it closes.
+- **A record document.** Check it against the record-state invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Record-state invariants`, and against the project's `work-log` convention for a handover, the `decision-records` convention for an ADR, or [`discussion_policy.md`](/opt/sandbox/docs/policies/discussion_policy.md). For a discussion or design record, confirm that no question-and-reply pair remains, that every question still listed is still open, and that the designs considered and rejected are a short section carrying the reason for each. An answered question belongs in the body at the place its answer belongs, not in a reply, so fold it there when it closes.
 Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in [`doc-maintenance`](../skills/doc-maintenance/SKILL.md).
 
 Exit condition: each produced document has been read against its governing standard, every finding is fixed or recorded as a finding in the handover, and the lint gate is clean.
@@ -137,7 +138,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 - **Not the milestone-record close.** That belongs to [`/milestone-close`](milestone-close.md).
 - **Not the shared close procedure.** [`/wrapup`](wrapup.md) Part B owns it.
 - **Not the per-prompt standards checks for the loop prompt family.** Each of those is a separate roadmap task. The standards check in Step 6 applies to the document this session produced.
-- **Not a rule's source of truth.** A rule that governs documents lives in a policy document under `docs/`. This prompt names such a rule by link. Where the body carries a copy of one, the copy is a fast path and the linked policy document governs.
+- **Not a rule's source of truth.** A rule that governs documents lives in a policy document under `docs/` or in a project convention-skill. This prompt names such a rule by link. Where the body carries a copy of one, the copy is a fast path and the linked home governs.
 
 ## Failure modes and invariants
 

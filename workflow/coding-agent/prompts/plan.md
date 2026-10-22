@@ -59,7 +59,7 @@ Route the interview result to a write-back target. Choose one: a written report 
 
 ## Write back
 
-Write the plan to the confirmed target: decisions and ADRs. The decomposition into work units is not written here. Hand it to [`scope.md`](scope.md), whose brief carries the work-unit table, and let the close file it per the project's `task-list` convention. Apply the binding rules in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) [Iteration Invariants](/opt/sandbox/docs/policies/iteration_policy.md#iteration-invariants), the project's `task-list` convention, and [`adr_policy.md`](/opt/sandbox/docs/policies/adr_policy.md). When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check`](/opt/workflow/agent/skills/propagation-check/SKILL.md).
+Write the plan to the confirmed target: decisions and ADRs. The decomposition into work units is not written here. Hand it to [`scope.md`](scope.md), whose brief carries the work-unit table, and let the close file it per the project's `task-list` convention. Apply the binding rules in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) [Iteration Invariants](/opt/sandbox/docs/policies/iteration_policy.md#iteration-invariants), the project's `task-list` and `decision-records` conventions. When one decision crosses several `roadmap.md` rows, run a propagation checklist per [`propagation-check`](/opt/workflow/agent/skills/propagation-check/SKILL.md).
 
 A plan is complete when the operator confirms the written plan. Stop and wait for that confirmation.
 

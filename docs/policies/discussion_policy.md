@@ -6,7 +6,7 @@ reader: [agent]
 
 # Discussion Policy
 
-For ADRs, see [`adr_policy.md`](adr_policy.md).
+For ADRs, see the `decision-records` convention, `.agents/skills/decision-records/SKILL.md`.
 
 ## Naming
 
@@ -147,7 +147,7 @@ Section order:
 <what this changes, enables, or forecloses>
 ```
 
-When a design settles with an implementation decision, record the decision as an ADR per [`adr_policy.md`](adr_policy.md) and set the design's status to `settled`. The design doc remains the exploration record; the ADR is the authoritative decision record.
+When a design settles with an implementation decision, record the decision as an ADR per the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` and set the design's status to `settled`. The design doc remains the exploration record; the ADR is the authoritative decision record.
 
 ### Reports (`report`)
 

@@ -190,7 +190,7 @@ Read these in addition to the above when opening a milestone planning iteration.
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | What sub-milestones are planned but not yet active? |
 | [`devlog/changelog.md`](devlog/changelog.md) | Is the prior milestone fully closed? |
 
-### Policy documents - read before the relevant task type, not at iteration start
+### Policy documents and convention-skills - read before the relevant task type, not at iteration start
 
 | Document | Read before |
 |---|---|
@@ -200,4 +200,4 @@ Read these in addition to the above when opening a milestone planning iteration.
 | [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
 | [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover |
 | [`docs/policies/discussion_policy.md`](docs/policies/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
-| [`docs/policies/adr_policy.md`](docs/policies/adr_policy.md) | Creating or superseding an ADR in `docs/adr/` |
+| [`.agents/skills/decision-records/SKILL.md`](.agents/skills/decision-records/SKILL.md) | Creating or superseding an ADR in `docs/adr/` |

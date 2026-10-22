@@ -75,7 +75,7 @@ Rules:
 - `**Status:**` is the first line after the title on every discussion document (story, study, design, report), with no preamble before it.
 - A superseded or resolved document carries a blockquote redirect immediately after the status line, naming the target document.
 - Reference and policy documents carry no status line, because the layer-freeze table in `system_overview.md` governs them.
-- ADR headers and entry structure are defined in [`adr_policy.md`](adr_policy.md).
+- ADR headers and entry structure are defined in the `decision-records` convention, `.agents/skills/decision-records/SKILL.md`.
 - Top-level sections use `##` and subsections use `###`. Use `####` only inside a long task list where grouping is genuinely needed.
 - Policy files (`docs/**/*_policy.md`) open with YAML frontmatter holding a `description` and a `scope`, then a blank line, then the title. `description` is one quoted line naming the rules the file owns, and `scope` is a single-line flow list of the records and runbooks it governs.
 - `reader` names who must read the document to do their job: one or more of `agent`, `operator` and `maintainer`. A document serving only the maintainer does not ship, so the frontmatter gate fails one that sits in `docs/reference/` or `docs/policies/`.
@@ -180,7 +180,7 @@ Describe components as interfaces, contracts, or diagrams. Exact commands and va
 
 ### ADR obligations
 
-When and how to create or distill an ADR is in [`adr_policy.md`](adr_policy.md) -- When an ADR begins.
+When and how to create or distill an ADR is in the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins.
 
 ## Record maintenance
 

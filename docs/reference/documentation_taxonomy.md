@@ -11,7 +11,7 @@ This document is the index and view of the documentation ecosystem. It states no
 | Document | What it is | Durability | Identification | Governed by |
 |---|---|---|---|---|
 | Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | sections numbered | per-file; the rules of rule-hood are in `docs/adr/policy_declarative_framing.md` |
-| ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | [`adr_policy.md`](../policies/adr_policy.md) |
+| ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` |
 | Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations |
 | Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | [`documentation_policy.md`](../policies/documentation_policy.md); the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
 | `readme.md` | entry point for humans and agents: system invariants, architecture layer model, documentation guide path | durable | no unit numbers | -- |
@@ -78,10 +78,10 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 
 ## Promotion topology
 
-Documents promote along a path, and each step is an obligation whose source of truth is a policy.
+Documents promote along a path, and each step is an obligation whose source of truth is a policy or a convention-skill.
 
-- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: [`adr_policy.md`](../policies/adr_policy.md) -- When an ADR begins.
-- **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: [`adr_policy.md`](../policies/adr_policy.md) -- Relationship to other records.
+- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins.
+- **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- The record set.
 - **Concept to architecture.** The concept states the model; the architecture document carries the implementation design. What a concept document describes is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations.
 
 ## Boundary
