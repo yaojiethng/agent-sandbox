@@ -53,7 +53,7 @@ cp -- "$file" "$dest"
 
 ```bash
 # Right  --  emit per-line, load with mapfile, expand as array
-list_files() { printf "%s\n" "src/libs" "docs/reference" "docs/policies"; }
+list_files() { printf "%s\n" "src/libs" "docs/reference" "docs/adr"; }
 mapfile -t SOURCES < <(list_files)
 compute_hash "${SOURCES[@]}"
 

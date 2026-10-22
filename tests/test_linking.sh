@@ -223,15 +223,15 @@ test_unreadable_target_is_flagged() {
 shipped_root() {
   local name="$1"
   local dir="$FIXTURE_DIR/$name"
-  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/docs/policies"
-  printf '# Policy\n' > "$dir/docs/policies/iteration_policy.md"
+  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/docs/reference"
+  printf '# Policy\n' > "$dir/docs/reference/iteration_protocol.md"
   printf '%s' "$dir"
 }
 
 test_image_path_from_a_shipped_file_is_clean() {
   local dir cfg out
   dir="$(shipped_root image_path)"
-  printf '[policy](/opt/sandbox/docs/policies/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  printf '[policy](/opt/sandbox/docs/reference/iteration_protocol.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
   assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'an absolute image path that a COPY populates is clean'
@@ -249,7 +249,7 @@ test_image_path_missing_from_the_image_is_flagged() {
 test_repository_path_from_a_shipped_file_is_flagged() {
   local dir cfg out
   dir="$(shipped_root repo_form)"
-  printf '[policy](../../../docs/policies/iteration_policy.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  printf '[policy](../../../docs/reference/iteration_protocol.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
   # The target exists in the repository, and the file never runs there: the old
@@ -262,7 +262,7 @@ test_repository_path_from_a_bundled_document_is_flagged() {
   dir="$(shipped_root bundled_doc)"
   mkdir -p "$dir/docs/adr"
   printf '# Record\n' > "$dir/docs/adr/x.md"
-  printf '[adr](../adr/x.md)\n' > "$dir/docs/policies/iteration_policy.md"
+  printf '[adr](../adr/x.md)\n' > "$dir/docs/reference/iteration_protocol.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
   # A bundled document ships as well, so its own tree's relative links face the
@@ -275,7 +275,7 @@ test_link_between_two_bundled_documents_is_clean() {
   dir="$(shipped_root bundled_pair)"
   mkdir -p "$dir/docs/reference"
   printf '# Reference\n' > "$dir/docs/reference/page.md"
-  printf '[page](../reference/page.md)\n' > "$dir/docs/policies/iteration_policy.md"
+  printf '[page](../reference/page.md)\n' > "$dir/docs/reference/iteration_protocol.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
   # The two destinations keep the repository's shape, so a relative link between
@@ -303,13 +303,13 @@ test_provider_config_root_resolves_in_the_image() {
   local file="$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
   printf '# Layer\n' > "$file"
 
-  printf '[policy](../../../../../../docs/policies/iteration_policy.md)\n' >> "$file"
+  printf '[policy](../../../../../../docs/reference/iteration_protocol.md)\n' >> "$file"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
   assert_contains "$out" 'does not exist in the image' 'the repository form fails from the provider config root'
 
   printf '# Layer\n' > "$file"
-  printf '[policy](/opt/sandbox/docs/policies/iteration_policy.md)\n' >> "$file"
+  printf '[policy](/opt/sandbox/docs/reference/iteration_protocol.md)\n' >> "$file"
   out="$(mdl_run "$dir" "$cfg")"
   assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'the image path passes from the provider config root'
 }

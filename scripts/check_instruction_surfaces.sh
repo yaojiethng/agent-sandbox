@@ -12,8 +12,8 @@
 #      provider layer covers the container, the project layer the working tree.
 #      Each layer's `## Scope` table names runtime paths, and every session row
 #      is covered by exactly one layer.
-#   2. The loop inventory. docs/policies/iteration_policy.md's frontmatter
-#      `scope` names the runbooks it governs; the project layer's `### Loop
+#   2. The loop inventory. docs/reference/iteration_protocol.md's frontmatter
+#      `scope` names the runbooks it governs; the project layer.s `### Loop
 #      prompts` table is the inventory an agent reads. One declaration, two
 #      readers, checked both ways.
 #
@@ -43,9 +43,9 @@ LAYER_FILES=(
   "project:AGENTS.md"
 )
 
-# The loop inventory. The policy's `scope` is the declaration; the layer's table
-# is the inventory an agent reads.
-ITERATION_POLICY_REL="docs/policies/iteration_policy.md"
+# The loop inventory. The protocol's `scope` is the declaration; the layer's
+# table is the inventory an agent reads.
+ITERATION_POLICY_REL="docs/reference/iteration_protocol.md"
 INVENTORY_REL="AGENTS.md"
 INVENTORY_HEADING="### Loop prompts"
 
@@ -248,5 +248,5 @@ if (( FINDINGS == 0 )); then
 fi
 
 echo "Instruction-surface gate: $FINDINGS finding(s)" >&2
-echo "Blocking gate: align the two AGENTS.md layer tables with the manifest's session rows, or the loop inventory with the policy's scope (see docs/development/instruction-surface-conventions.md)." >&2
+echo "Blocking gate: align the two AGENTS.md layer tables with the manifest's session rows, or the loop inventory with the protocol's scope (see docs/development/instruction-surface-conventions.md)." >&2
 exit 1

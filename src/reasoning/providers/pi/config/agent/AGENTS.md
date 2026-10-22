@@ -14,7 +14,6 @@ The paths this layer covers. Each is part of the container, so a reference to on
 | `/opt/workflow/agent/prompts/` | the harness prompts and the coding-agent workflow prompts, merged into one root |
 | `/opt/workflow/agent/skills/` | the skill root |
 | `/opt/sandbox/docs/reference/` | the reference layer: contracts, states and sequences, the interface index |
-| `/opt/sandbox/docs/policies/` | the policy corpus the loop obeys |
 | `/opt/sandbox/lib/` | the harness libraries |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts |
 | `/home/agentuser/workspace/input/` | the operator's handover files, read-only |

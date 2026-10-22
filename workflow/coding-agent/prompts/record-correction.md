@@ -23,7 +23,7 @@ First, verify the fold, never assume it. `git rebase --autosquash` reports succe
 
 Second, a correction that changes what kind of commit it is does not fold. If the correction would change the target's type, or would make it need a handover it does not have, it is its own commit with its own iteration and handover. Folding is for a correction that belongs to the commit it names.
 
-Report and stop when the fold needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port, [`/rebase`](rebase.md). What may be amended after a close is in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md); which change a correction may contain is the judgement of `principle-minimal-corrections`, and this runbook decides only where it lands.
+Report and stop when the fold needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port, [`/rebase`](rebase.md). What may be amended after a close is in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md); which change a correction may contain is the judgement of `principle-minimal-corrections`, and this runbook decides only where it lands.
 
 ## Input contract
 

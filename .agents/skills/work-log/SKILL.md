@@ -123,7 +123,7 @@ Hyphens delimit and underscores separate words. A name carries no emoji, no unic
 
 A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention and its inbound links are updated.
 
-A file under `docs/policies/` is not a discussion record and does not take this name.
+A file under `docs/` is not a discussion record and does not take this name.
 
 ### Statuses
 

@@ -55,7 +55,7 @@ If the directive slot is non-empty:
 
 ## Create the handover
 
-Before creating the handover, read the iteration invariants in `iteration_policy.md`: `## Iteration Invariants`, and the record-state and close invariants under it. Create the handover per those rules. Set Status to `Active`.
+Before creating the handover, read the iteration invariants in `iteration_protocol.md`: `## Iteration Invariants`, and the record-state and close invariants under it. Create the handover per those rules. Set Status to `Active`.
 
 Write the record from the project's template, `.agents/skills/work-log/assets/handover.md`, and set `status` to `Active`. The filename, the vocabulary and the format window are the project's `work-log` convention, in `.agents/skills/work-log/SKILL.md`. Do not write the fields as bold header lines.
 
@@ -102,7 +102,16 @@ Define the acceptance criteria in the table the project's `work-log` convention 
 | Criterion | Verification | Result |
 |---|---|---|
 
-The authoring standards are [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`: what qualifies as a criterion, the delta and traceability rules, the three-way `Operator` / `Agent [x]` / `Agent [ ]` marking, and the `Not yet defined.` gate. Apply them here; this step adds only what the scope-gate presentation needs beyond them. Every iteration that touches architecture includes *"Architecture documents in scope describe the system as built."*, and a criterion may be one line when it is specific.
+An acceptance criterion describes a delta: something observable that was false or absent before the iteration and true or present after it. These rules decide whether one is well-formed.
+
+- **Universal preconditions are not criteria.** `make test passes clean` and `bash -n` gate every iteration equally and add no iteration-specific information. Verify them as prerequisites instead; they do not take a row.
+- **Every criterion is traceable.** For a bugfix the delta is implicit and the original error log is the anchor. For a feature or rework the delta traces to a story pain point, a requirement, or a design decision. A criterion that traces to nothing concrete is likely not needed.
+- **Verify at the weakest sufficient level.** Preference order: unit test, then integration test, then manual script, then an operator-run command with documented expected output. Use the minimal level that reliably asserts the delta.
+- **A rename or delete carries a paired negative check.** The positive check asserts the new path exists; the negative asserts the old one does not. Both are required.
+- **A rename checks its companion files.** Grep for tests, knowledge tests and fixtures matching the old path pattern, and include or defer each explicitly.
+- **A recurring bug class gets one generic guard.** A bug representing a class -- a bash trap, a common mis-pattern, something review often misses -- gets one repo-wide check, not a per-file test. A one-off logic error does not need one.
+
+The `Result` marking and the `Not yet defined.` gate are the project's `work-log` convention's, which owns the table. Every iteration that touches architecture includes *"Architecture documents in scope describe the system as built."*, and a criterion may be one line when it is specific.
 
 When the handover's `## Decisions` table is not empty, or the iteration created an ADR entry, the acceptance-criteria table carries this criterion: *every decision this iteration recorded is realized in the files.* `wrapup` B1 verifies it with the others at the close.
 
@@ -130,7 +139,12 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 Produce changes against the confirmed scope. Write tests alongside per the `testing` skill. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 
-The record-state invariants live in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md); this step applies them to the handover. The policy owns the rules; this step is their operational face. Satisfy each record-state invariant as you produce deliverables: record decisions where they are made, write findings as they arise, and verify every record write landed in the same turn (grep the row key or content you claim to have written -- the write is not done until the grep finds it).
+The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) holds the invariants this step runs. Four of them are about records, and each fires while the work is produced rather than at the close.
+
+- **Record decisions live.** A decision is recorded in the handover's Decisions table as it is made, with the document where it was recorded. A decision that lives only in chat does not exist for the next iteration.
+- **Record a document-relevant change when you make it.** A change to an invariant, interface or contract is recorded when it is made, not at the close; a record that waits lets a stale document govern the work in the meantime.
+- **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when it resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes the record is provisional; commit it as `wip:` per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
+- **Verify record writes landed.** When announcing a record write -- a finding row, a decision, a task, a roadmap row -- grep the row key or content claimed. A claimed record that is not verified to exist is a defect: the write is not done until the grep finds it.
 
 The handover write-back fires at three moments in the runbook's operation:
 
@@ -177,7 +191,7 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 `/iter` stops at the acceptance gate. It presents the acceptance criteria table, the roadmap write-back, the propagation replay, and the commit message. It also presents the findings queue and the record-check reports. The operator releases, and [`/wrapup`](wrapup.md) takes the iteration from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
-**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
+**Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 
 ## File Tracking
 
@@ -185,4 +199,4 @@ There is no document registry; the docs tree is the authoritative file list. The
 
 ## Policy
 
-The invariants these steps must not break are in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) and the separation is recorded in the ADR `coding_agent_loop_workflow.md`.
+The invariants these steps must not break are in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) and the separation is recorded in the ADR `coding_agent_loop_workflow.md`.

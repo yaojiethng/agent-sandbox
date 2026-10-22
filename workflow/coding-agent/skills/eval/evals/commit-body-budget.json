@@ -20,7 +20,7 @@
       "id": "delivery-commit-body",
       "prompt": "the working tree holds a policy change i made earlier; have a look and land it as the delivery commit",
       "expected_output": "One commit whose body is at most 280 characters, carries no list of file paths, and states the reason in one or two sentences.",
-      "fixture": "the trimmed repository with two documents left uncommitted, a new `## Correction Folding` section in the skill and one sentence in iteration_policy.md. The baseline fixture drops the budget row and the AGENTS.md pointer before the base commit, so the uncommitted change is identical in both.",
+      "fixture": "the trimmed repository with two documents left uncommitted, a new `## Correction Folding` section in the skill and one sentence in iteration_protocol.md. The baseline fixture drops the budget row and the AGENTS.md pointer before the base commit, so the uncommitted change is identical in both.",
       "assertions": [
         "The commit body is at most 280 characters",
         "The commit body carries no list of file paths",

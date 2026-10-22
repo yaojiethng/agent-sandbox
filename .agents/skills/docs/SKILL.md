@@ -12,7 +12,6 @@ This project's document tree lives at `docs/`, in four folders, beside the `devl
 | Folder | Holds | Ships |
 |---|---|---|
 | `docs/reference/` | how the harness works: contracts, states and sequences, the glossary | yes |
-| `docs/policies/` | the rules the loop obeys; the iteration protocol is its last member | yes |
 | `docs/development/` | contributor workflow and the procedures for changing the harness | no |
 | `docs/adr/` | settled decisions, with superseded ones under `adr/archive/` | no |
 | `devlog/` | the roadmap, the changelog, the handovers and the discussion records | no |

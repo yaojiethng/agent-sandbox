@@ -28,7 +28,7 @@ This pass writes no document and applies no correction. It reports.
 | Trigger | Scope |
 |---|---|
 | A loop close, per `workflow/coding-agent/prompts/iter.md` | the documents the iteration changed, plus every document that cites them |
-| A milestone close, per `workflow/coding-agent/prompts/milestone-close.md` | the shipped set: `docs/reference/` and `docs/policies/` |
+| A milestone close, per `workflow/coding-agent/prompts/milestone-close.md` | the shipped set: `docs/reference/` |
 | The operator's request | the set the operator names |
 
 The pass is not an iteration and does not close one. It is a review sweep with its own scope, and it may run inside a session that owns another outcome.

@@ -7,7 +7,7 @@ argument-hint: "<what the sidequest does - required>"
 
 # Sidequest - Operator-Directed Interruption
 
-**Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#sidequests)'s.
+**Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md#sidequests)'s.
 
 ## Project conventions
 

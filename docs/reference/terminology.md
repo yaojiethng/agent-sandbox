@@ -35,7 +35,7 @@ One work cycle that produces a handover and a commit. The operator unit of gover
 
 ### Identity
 
-- Handover `YYYYMMDD-NN`; governed by `iteration_policy.md`
+- Handover `YYYYMMDD-NN`; governed by `iteration_protocol.md`
 
 ### Scope
 

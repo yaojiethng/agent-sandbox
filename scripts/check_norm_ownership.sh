@@ -193,7 +193,7 @@ observer_known() {
 # a table of 17 reviewed rows does not grep the prompt corpus 17 times.
 # named_in NAME FILE  --  NAME appears in FILE as a whole name, not as a
 # fragment of a longer name, a path segment or a URL. A prompt that names a
-# skill is the evidence that it dispatches it; `docs` inside `docs/policies/`
+# skill is the evidence that it dispatches it; `docs` inside `docs/reference/`
 # is not a dispatch of a skill called `docs`.
 named_in() {
   local name="${1//./\\.}"

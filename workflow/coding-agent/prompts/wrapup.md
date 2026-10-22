@@ -19,7 +19,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 You run the consolidated close for an active-operator session that ends at its release point. Two jobs share this document: the **commit-discipline checkpoint** runs during the session after each committed task group; the **close** runs once at the session end. Both deliver a HEAD that reads as one coherent delivery commit per unit, with an open handover naming it, and no pile of typed checkpoints left for the operator to untangle.
 
-Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- the `git-discipline` convention names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_policy.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the policy that failed to stop it.
+Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- the `git-discipline` convention names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_protocol.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the policy that failed to stop it.
 
 ## Called from
 
@@ -69,7 +69,15 @@ Present the boundary and the squash plan. For a multi-unit split, the operator d
 
 ### A5. Squash to one delivery commit
 
-Run the canonical squash procedure in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) (Canonical procedures -- squash to one delivery commit). The canonical block is the single source; do not restate it here. The close edit and write-back are staged into the same commit, never a separate one.
+Run the canonical squash. Given a commit range `base..HEAD`, land one delivery commit:
+
+```bash
+git reset --soft <base>          # keep the work staged
+git add -A
+git commit -m "<type>: ..."      # one typed commit
+```
+
+A clean committed range uses the same fold. The close edit and write-back are staged into the same commit, never a separate one.
 
 Three kinds of transient commit fold into it: `wip:` checkpoints, a correction commit, and the close edit with its roadmap write-back.
 
@@ -89,7 +97,7 @@ bash scripts/lint.sh             # pre-close gate clean
 
 ## Part B - The close (end of session, shared)
 
-Run this once when the session reaches its end. It follows the unit's release point. There is one release: the operator's forward signal on the release gate (per [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) gate invariants) is the release for this part; Part B does not add a second operator approval. The close steps below run the close invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md); a step states the invariant it satisfies and links it, rather than redefining it.
+Run this once when the session reaches its end. It follows the unit's release point. There is one release: the operator's forward signal on the release gate (per [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) gate invariants) is the release for this part; Part B does not add a second operator approval. The close steps below run the close invariants in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md); a step states the invariant it satisfies and links it, rather than redefining it.
 
 ### B1. AC verification
 
@@ -97,11 +105,11 @@ Read the acceptance criteria from the session's handover. For each criterion, st
 
 ### B2. Propagation replay
 
-Run the propagation-replay invariant in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row written back to the roadmap) before the release gate releases.
+Run the propagation-replay invariant in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) (Close invariants): when the session applied a naming, structural, or interface change across more than two files, or used "all", "every", "throughout", or "wherever X appears", produce a `file | change planned | status` table with every row accounted for (`completed`, or `deferred`/`not started` with the row written back to the roadmap) before the release gate releases.
 
 ### B3. Scope reconciliation
 
-Run the scope-reconciliation invariant in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed is resolved by the deferred-resolution rule; no unaccounted items.
+Run the scope-reconciliation invariant in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) (Close invariants): compare the confirmed scope against the Completed table; every in-scope item not completed is resolved by the deferred-resolution rule; no unaccounted items.
 
 ### B4. Roadmap write-back
 
@@ -111,7 +119,7 @@ Run the write-back step and state its outcome. This step is the moment the itera
 
 ### B5. Carry-forward resolution
 
-Run the deferred-resolution invariant in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) (Close invariants): every item in scope but not completed is written back to the roadmap as an open row with its reason, or ruled out of scope with one Scope sentence. The handover carries no carried-forward or deferred-items section.
+Run the deferred-resolution invariant in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) (Close invariants): every item in scope but not completed is written back to the roadmap as an open row with its reason, or ruled out of scope with one Scope sentence. The handover carries no carried-forward or deferred-items section.
 
 ### B6. Findings review/publish
 
@@ -139,7 +147,7 @@ Generate the commit message per the `git-discipline` convention, `.agents/skills
 
 ### B11. Post-commit compliance self-check
 
-Re-read the session's commits against the rules before reporting success. Run `git log` over the session's range and check it against the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md): (1) the range's squash state holds exactly one delivery-typed commit per unit and its handover -- read the amended history, not pre-amend hashes; (2) every subject's type is in the Active Types table; (3) no subject carries a scope field; (4) no commit's only path is a handover file, unless the unit's deliverable was the record change itself; (5) no close edit or roadmap write-back is separated from its unit's work -- a standalone `plan:` commit is bookkeeping, not this violation; (6) roadmap and milestone bookkeeping is typed `plan:`; (7) one handover bounds the range; (8) the delivery commit matches the handover's scope -- one work unit lands as one commit, no scope item outside the commit and no commit content outside the scope; (9) the range left a roadmap write-back -- one row event per the unconditional write-back invariant, either the session's own task marked with its landing note or a subtask row raised under the owning parent. A unit whose work is not a roadmap task still writes back: the row that records what landed, or a Decision entry in the changelog when no task row applies. A `wip:` commit in the range is not a violation: it is legal and folds at the close. A violation found here is fixed before B12 -- by amending, folding, or retyping -- or recorded as a deliberate deviation with its reason. This check is agent-side; it adds no operator stop beyond the release gate the unit already passed.
+Re-read the session's commits against the rules before reporting success. Run `git log` over the session's range and check it against the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): (1) the range's squash state holds exactly one delivery-typed commit per unit and its handover -- read the amended history, not pre-amend hashes; (2) every subject's type is in the Active Types table; (3) no subject carries a scope field; (4) no commit's only path is a handover file, unless the unit's deliverable was the record change itself; (5) no close edit or roadmap write-back is separated from its unit's work -- a standalone `plan:` commit is bookkeeping, not this violation; (6) roadmap and milestone bookkeeping is typed `plan:`; (7) one handover bounds the range; (8) the delivery commit matches the handover's scope -- one work unit lands as one commit, no scope item outside the commit and no commit content outside the scope; (9) the range left a roadmap write-back -- one row event per the unconditional write-back invariant, either the session's own task marked with its landing note or a subtask row raised under the owning parent. A unit whose work is not a roadmap task still writes back: the row that records what landed, or a Decision entry in the changelog when no task row applies. A `wip:` commit in the range is not a violation: it is legal and folds at the close. A violation found here is fixed before B12 -- by amending, folding, or retyping -- or recorded as a deliberate deviation with its reason. This check is agent-side; it adds no operator stop beyond the release gate the unit already passed.
 
 ### B12. Report the wrapup
 

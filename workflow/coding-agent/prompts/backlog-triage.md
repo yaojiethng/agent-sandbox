@@ -67,7 +67,7 @@ Where the row is parked on a decision the operator already made but the agent ha
 
 ## Step 4 - Check each runnable row against the run's own rules
 
-A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md): one commit, one context, one verification, disjoint files.
+A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): one commit, one context, one verification, disjoint files.
 
 - A row that fails one commit is over-scoped. Park it with the question of which slice comes first.
 - A row that needs two contexts splits, and each half is its own candidate. Present the split as two rows.

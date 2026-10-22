@@ -14,7 +14,7 @@ The authoring rules borrow from two external references: Claude's Skill authorin
 
 A document an agent consumes is one of three types. The type determines where it lives and how it is written.
 
-**Policy** documents hold the rules an observer detects, and the judgements their own workflow produces. A policy document lives in `docs/policies/`, `docs/reference/`, or `docs/development/`.
+**Convention-skill** documents hold the rules an observer detects, and the judgements a workflow produces; they live under `.agents/skills/`, one skill per convention. The policy form is retired, so no document holds a rule set for the whole workflow.
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states facts; a rule it stated would make it a policy document, per the type test below.
 
@@ -128,7 +128,7 @@ This table is the only place that decides the set, and the gate reads the set fr
 
 **One subject per prompt.** The subject is what the prompt hands on: one artifact to one next step. A prompt that hands on two artifacts, or hands one to two next steps, is two prompts, or a runbook that dispatches two sub-cases. The judgement is `principle-own-the-scope-you-declare` at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`.
 
-Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../policies/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
+Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_protocol.md`](../reference/iteration_protocol.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
 
 A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`.agents/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
@@ -158,7 +158,7 @@ A reference is legal when its target is delivered to the reader the citing docum
 
 A prompt runs at its image path. A skill runs from the root that carries it, `$AGENT_HOME/agent/skills/<name>/` for a provider-scoped skill and `.agents/skills/<name>/` for a project-scoped one. The harness prompts run from `/opt/workflow/agent/prompts/`, from `src/reasoning/agent/prompts/`. A workflow module's prompts run from the module's own root, `/opt/workflow/agent/modules/<module>/prompts/`, from `workflow/<module>/prompts/`, because the module is the unit a provider enables or leaves out. A provider's own prompt runs from that provider's root: pi's `pi-agent.md` runs from `$AGENT_HOME/agent/prompts/` -- `/home/agentuser/.pi/agent/prompts/` -- which the image seeds from `src/reasoning/providers/pi/config/agent/prompts/` through the config template. The repository tree is not there. The link check resolves a link in an instruction file in the image's path space rather than the repository's, so a target that exists only in the repository is a finding, and a link in the old repository-relative form no longer passes.
 
-A prompt links a document that ships. The policy corpus ships at `/opt/sandbox/docs/policies/`, and the reference layer ships beside it at `/opt/sandbox/docs/reference/`. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
+A prompt links a document that ships. The reference layer ships at `/opt/sandbox/docs/reference/`, and the iteration protocol ships with it. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
 
 A prompt names a document that does not ship -- a record, a draft, an ADR, a development document -- in plain text or a code span. Name it by the path a reader can find, and do not link it: the link would pass no reader in the container and fail the check. A reference to a project file, such as the project `AGENTS.md` or `devlog/roadmap.md`, is the same case, because the project tree is the reader's working directory rather than the prompt's.
 
@@ -166,7 +166,7 @@ When the content behind the reference matters to the agent working in the contai
 
 The same rule covers the inverse: a rule whose only source of truth is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
 
-The rule holds for a bundled document too. A document under `docs/reference/` or `docs/policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between the two bundled folders resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`linking.mjs`](../../scripts/lint/linking.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
+The rule holds for a bundled document too. A document under `docs/reference/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between two shipped documents resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`linking.mjs`](../../scripts/lint/linking.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
 
 ## Naming
 

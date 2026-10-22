@@ -44,7 +44,7 @@ Provider-layer content is narrow and environment-specific. It does not carry pro
 
 Each project commits an `AGENTS.md` at its repository root. This file is discovered by the agent through working-directory lookup at iteration start. It carries everything project-specific: iteration workflow, navigation instructions (what to read and in what order), durable operational decisions, and collaboration principles scoped to this project.
 
-Project-layer content is stable across iterations. It is not per-iteration state -- that is carried by the handover. It is not policy -- that is carried by the policy documents in `docs/policies/`. It is the orienting layer between the two.
+Project-layer content is stable across iterations. It is not per-iteration state -- that is carried by the handover. It is not a rule set -- that is carried by the convention corpus under `.agents/skills/`. It is the orienting layer between the two.
 
 ### Model recommendations
 
@@ -78,11 +78,11 @@ Skills and prompt templates follow a parallel three-layer model with distinct lo
 
 The agent-sandbox workflow is expressed across three layers with a strict authority hierarchy.
 
-### Policy documents
+### Where the rules live
 
-Policy documents describe the current system reality -- what the system does, how iterations run, what constraints hold. They hold the rules an observer detects, and the judgements their own workflow produces; `### Norm kinds` states where a judgement that several documents use lives instead. Duplicate rules across documents are a defect -- one document is the source of truth and the other links to it.
+The policy form is retired: no document holds a rule set for the whole workflow. A rule is stated where its procedure enforces it, a convention is stated in the project's convention-skill under `.agents/skills/`, and a judgement used by more than one document is stated in a skill; `### Norm kinds` gives the test for which one a sentence is. Duplicate rules across documents are a defect still -- one place is the source of truth and every other links to it.
 
-Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the document that specifies each area of the workflow.
+The convention corpus is `.agents/skills/`, the reference layer is `docs/reference/`, and the contributor and maintenance documents are `docs/development/`. The protocol that binds the loop's runbooks to each other is [`iteration_protocol.md`](iteration_protocol.md), the one document of the retired form that survived, and the policy map below names the place that specifies each area of the workflow.
 
 The map is the mechanism's, and two of its subjects name this repository's own tree: the three documents under `docs/development/`, and `devlog/AGENT_FEEDBACK.md`. A provisioned project maps the same subjects to the documents it keeps, and `docs/reference/documentation_taxonomy.md` `## Reach` states which folders reach a session.
 
@@ -128,11 +128,11 @@ Maps each area of the workflow to the document that specifies it, what that docu
 
 | Workflow area | Document | Owns | Does not own |
 |---|---|---|---|
-| Iteration sequencing and loop structure | [`iteration_policy.md`](../policies/iteration_policy.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
+| Iteration sequencing and loop structure | [`iteration_protocol.md`](../reference/iteration_protocol.md) | Step order, gate definitions, tag semantics, information gathering pass rules | Handover population rules, roadmap update mechanics |
 | Handover lifecycle | the project's `.agents/skills/work-log/SKILL.md` convention | Handover format, naming, population rules at each step, scope confirmation rules, pre-close verification | Step sequencing, roadmap update rules |
 | Roadmap maintenance | the `roadmap-maintenance` skill and the project's `task-list` convention | Roadmap update sequence, task compaction, roadmap maintenance, top-level milestone close, changelog format, milestone promotion | Handover format, iteration step definitions |
 | Milestone planning | the project's `task-list` convention and the `/milestone-start` and `/plan` prompts | Milestone states, the record shape, scoping criteria, and the close rules | Iteration execution |
-| Agent feedback and gotchas | routing: [`iteration_policy.md`](../policies/iteration_policy.md) (close review/publish invariants); record: `devlog/AGENT_FEEDBACK.md` | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
+| Agent feedback and gotchas | routing: [`iteration_protocol.md`](../reference/iteration_protocol.md) (close review/publish invariants); record: `devlog/AGENT_FEEDBACK.md` | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
 | Discussion record types | the `work-log` convention, `.agents/skills/work-log/SKILL.md` | The four types, their statuses, their names and their closure | Iteration sequencing, roadmap entry format, ADR authoring |
 | Documentation rules | the `docs` convention, `.agents/skills/docs/SKILL.md` | Folder ownership, the header, the content rules, grep navigation, the per-type obligations | Workflow sequencing |
 | Document references | `communication-principle-link-what-the-reader-can-open`, and the project's reference convention where it states one | What to link and what to name, where a link resolves, handoff links, link form | Documentation rules |
@@ -143,9 +143,9 @@ Maps each area of the workflow to the document that specifies it, what that docu
 
 ### Boundary notes
 
-**iteration_policy.md and the record's shape** are the most adjacent pair. iteration_policy owns the step sequence and gate definitions -- when steps run and what makes them complete. The project's `work-log` convention owns the handover's shape, and together they own what happens within each step from the handover's perspective: what to populate, what format to use, what constitutes a valid handover at each stage. An agent executing a step reads iteration_policy to know the step exists and what its exit condition is; it reads the convention to know how to produce a conforming handover for that step.
+**iteration_protocol.md and the record's shape** are the most adjacent pair. iteration protocol owns the step sequence and gate definitions -- when steps run and what makes them complete. The project's `work-log` convention owns the handover's shape, and together they own what happens within each step from the handover's perspective: what to populate, what format to use, what constitutes a valid handover at each stage. An agent executing a step reads iteration protocol to know the step exists and what its exit condition is; it reads the convention to know how to produce a conforming handover for that step.
 
-**The roadmap's rules and the iteration protocol** share the iteration boundary. The transition procedures -- compaction, the top-level close and the promotion invariant -- live in the `roadmap-maintenance` skill. The record's shape, its states, its numbering, its filing rules and its changelog form live in the project's `task-list` convention. The close invariants live in `iteration_policy.md`. An agent updating the roadmap reads the convention and the maintenance skill; an agent opening an iteration reads `iteration_policy.md`, which directs it to both at the moments a roadmap update is required.
+**The roadmap's rules and the iteration protocol** share the iteration boundary. The transition procedures -- compaction, the top-level close and the promotion invariant -- live in the `roadmap-maintenance` skill. The record's shape, its states, its numbering, its filing rules and its changelog form live in the project's `task-list` convention. The close invariants live in `iteration_protocol.md`. An agent updating the roadmap reads the convention and the maintenance skill; an agent opening an iteration reads `iteration_protocol.md`, which directs it to both at the moments a roadmap update is required.
 
 **The `docs` convention** owns the rules for how documents should be written and structured. It does not maintain a file registry; the docs tree itself is the authoritative list of what exists. Layer freeze status is owned by system_overview.md.
 
@@ -163,6 +163,6 @@ When a rule appears to exist in two documents in this map, decide its source of 
 | Security invariants and trust boundaries | `docs/development/security.md` |
 | Container lifecycle and execution mechanics | [`../reference/execution_model.md`](../reference/execution_model.md) |
 | External contract: commands, naming, guarantees | [`../reference/tool_interface.md`](../reference/tool_interface.md) |
-| Iteration workflow (authoritative) | [`../policies/iteration_policy.md`](../policies/iteration_policy.md) |
+| Iteration workflow (authoritative) | [`../reference/iteration_protocol.md`](../reference/iteration_protocol.md) |
 | Provider AGENTS.md contract and reference template | `docs/development/provider_onboarding_guide.md` |
 | Onboarding and running guide | `docs/development/quickstart.md` |

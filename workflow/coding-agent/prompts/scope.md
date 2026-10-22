@@ -65,7 +65,7 @@ A brief carries these parts. Omit one only when the run genuinely has none.
 | The rulings | the lines the run must not cross, stated with the reason |
 | The phases | each phase's question, deliverable and dependency order |
 | The run shape | which phases fan out, which compete, and the widest wave |
-| The work units | one row per unit: the unit, its commit type, the owned files, its handover. This is the table [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#unit-and-scope-invariants) defines. |
+| The work units | one row per unit: the unit, its commit type, the owned files, its handover. This is the table [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md#unit-and-scope-invariants) defines. |
 | The model assignment | a seat per role, with why, and the seats known to be dead |
 | Verification | the checks, each naming the artifact that proves it |
 | Constraints and invariants | what the run must not do, and what must stay true across it |
@@ -79,7 +79,7 @@ The brief carries a work-unit table, because a task decomposed into units is a r
 
 A unit is one concern, not one file class and not one commit type. Several concerns that happen to share a commit type are several units, and one concern crossing a data file, a prompt and a policy clause is one unit.
 
-Filing is the caller's. Where a row lands is the project's `task-list` convention's, and when it lands is [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#close-invariants)'s write-back invariant: in the commit the session already owns, at its close. `/scope` writes no roadmap row, because a brief is drawn before a run and the timing rule puts rows at a close.
+Filing is the caller's. Where a row lands is the project's `task-list` convention's, and when it lands is [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md#close-invariants)'s write-back invariant: in the commit the session already owns, at its close. `/scope` writes no roadmap row, because a brief is drawn before a run and the timing rule puts rows at a close.
 
 ## Close
 

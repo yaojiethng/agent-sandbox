@@ -67,4 +67,4 @@ When several milestones exist, select one as next active with the operator. Upda
 
 Follow the record's shape in the project's `task-list` convention when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
 
-**The milestone phase's design step is [`plan.md`](plan.md)'s.** [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md)'s milestone phase opens or revises stories, investigates or designs, and resolves the stories before Gate 3 releases the sub-milestone. That step runs at milestone grain, so it is `/plan`'s rather than `/iter`'s. This prompt names the route; it does not run the step.
+**The milestone phase's design step is [`plan.md`](plan.md)'s.** [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md)'s milestone phase opens or revises stories, investigates or designs, and resolves the stories before Gate 3 releases the sub-milestone. That step runs at milestone grain, so it is `/plan`'s rather than `/iter`'s. This prompt names the route; it does not run the step.

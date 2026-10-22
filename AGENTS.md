@@ -131,7 +131,7 @@ Every output class -- chat, prompts, documentation, roadmap items, code comments
 - **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at the scope gate.
 - **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
 
-See [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) for the criteria and the close mechanics.
+See [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) for the criteria and the close mechanics.
 
 **Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
 
@@ -147,15 +147,15 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and the Markdown lint gate in [`doc-maintenance`](workflow/coding-agent/skills/doc-maintenance/SKILL.md) `## The lint rule set`. Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/policies/iteration_policy.md#iteration-invariants).
+The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and the Markdown lint gate in [`doc-maintenance`](workflow/coding-agent/skills/doc-maintenance/SKILL.md) `## The lint rule set`. Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/reference/iteration_protocol.md#iteration-invariants).
 
-The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_policy.md`](docs/policies/iteration_policy.md)) before any further output.
+The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_protocol.md`](docs/reference/iteration_protocol.md)) before any further output.
 
-**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention.
+**Handover rules.** Type the handover from the dominant activity at close, and rename it if that diverged. Give an implementation its own handover; a design handover does not cover implementation commits, per [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md). Mark a roadmap task `- [x]` in the same iteration its resolving handover closes, per the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention.
 
 ### Loop prompts
 
-The runbooks the loop runs, each seeded into the container. The list is the `scope` of [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md), which holds the invariants each runbook must not break.
+The runbooks the loop runs, each seeded into the container. The list is the `scope` of [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md), which holds the invariants each runbook must not break.
 
 | Prompt | Runs from |
 |---|---|
@@ -197,6 +197,6 @@ Read these in addition to the above when opening a milestone planning iteration.
 | [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or freeze status checks |
 | [`.agents/skills/docs/SKILL.md`](.agents/skills/docs/SKILL.md) | Any documentation task |
 | [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
-| [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
+| [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
 | [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover or a record in `devlog/discussions/` |
 | [`.agents/skills/decision-records/SKILL.md`](.agents/skills/decision-records/SKILL.md) | Creating or superseding an ADR in `docs/adr/` |
