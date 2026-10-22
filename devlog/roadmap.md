@@ -224,7 +224,7 @@ The design is settled at handover `20261014-08` and the binding ADR. This sub-mi
 
 **Acceptance criteria:**
 
-- No policy document remains as a form. The iteration protocol is the one survivor, because its Principles and Iteration Invariants bind every runbook, and every other policy's remainder is stated where its owner enforces it. The census decides it, not a reading: `awk -F'\t' '$3=="judgement" && $5=="none" && $2 ~ /^docs\/policies\//' scripts/lint/norm-ownership.tsv` returns nothing.
+- No policy document remains as a form. The iteration protocol is the one survivor, because its Principles and Iteration Invariants bind every runbook, and every other policy's remainder is stated where its owner enforces it. The folder decides it, not a reading: `test ! -e docs/policies` returns 0.
 - Every row this milestone lists is closed. The two largest own their own end states, `Declare the maintenance surface` and `Drop the policy bundle`, and this criterion adds none of them.
 - `bash scripts/lint.sh` and `bash scripts/run_tests.sh` are clean.
 
