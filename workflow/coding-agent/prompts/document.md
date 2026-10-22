@@ -20,7 +20,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 A documentation session has no runtime to run. The acceptance criteria of [`/iter`](iter.md) ask the operator to run the system and observe an output, which a documentation session has no way to produce.
 
-A documentation session is one iteration, closed by [`/wrapup`](wrapup.md) Part B.
+A documentation session is one iteration, closed by [`/wrapup`](wrapup.md) and committed by [`/commit`](commit.md).
 
 ## When to run
 
@@ -119,7 +119,7 @@ Exit condition: the operator released the pre-close summary, and every acceptanc
 
 ### Step 9 -- Close
 
-Run [`/wrapup`](wrapup.md) Part B, which owns the close steps. Its acceptance criteria verification step B1 re-runs each criterion's command against the committed tree.
+Run [`/wrapup`](wrapup.md), which owns the close steps. Its acceptance criteria verification step B1 re-runs each criterion's command against the committed tree. [`/commit`](commit.md) then prepares the handover, lands the delivery commit and runs the post-commit check.
 
 Exit condition: the delivery commit landed, the handover is closed, and the roadmap write-back is in that commit.
 
@@ -136,7 +136,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 - **Not the document-maintenance sweep.** The [doc-maintenance skill](../skills/doc-maintenance/SKILL.md) owns the review sweep and reports what it finds; this prompt owns the document it produces. Do not hand-run an improvised sweep inside a session and record the result as this prompt's work.
 - **Not runtime-behaviour work.** That belongs to [`/iter`](iter.md).
 - **Not the milestone-record close.** That belongs to [`/milestone-close`](milestone-close.md).
-- **Not the shared close procedure.** [`/wrapup`](wrapup.md) Part B owns it.
+- **Not the shared close procedure.** [`/wrapup`](wrapup.md) owns the close and [`/commit`](commit.md) owns the commit.
 - **Not the per-prompt standards checks for the loop prompt family.** Each of those is a separate roadmap task. The standards check in Step 6 applies to the document this session produced.
 - **Not a rule's source of truth.** A rule that governs documents lives in a policy document under `docs/` or in a project convention-skill. This prompt names such a rule by link. Where the body carries a copy of one, the copy is a fast path and the linked home governs.
 

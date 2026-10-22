@@ -138,14 +138,14 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 
 ## 2026-10-14 -- The split test is cross-cutting, and a record's shape is its template
 
-**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `check-in` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
+**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `commit`, `check-in` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
 
 No artifact states the contract as a whole. Each procedure states the part it reads or writes, and nothing restates the whole:
 
 | Part | Stated by |
 |---|---|
 | the four keys, the `type` vocabulary and its commit mapping | `iter`, the writer |
-| the `status` value it sets | `wrapup` and `milestone-close` |
+| the `status` value it sets | `commit` and `milestone-close` |
 | the `status` values it reads | `check-in` |
 | the keys and roles it validates | `handover-maintenance`, as checks, restating no vocabulary |
 

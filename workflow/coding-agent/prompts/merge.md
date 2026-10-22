@@ -74,7 +74,7 @@ Each conflict gets one verdict, decided against the accumulated tree.
 - Live: the change is absent and uncontradicted. Replay it as-is.
 - Divergent: two designs contradict each other within or across drafts. Stop and ask; this verdict never resolves itself.
 
-Fold current-state corrections into the commit that owns the subject: counts, suite totals, status lines. Never create a commit that only repairs an earlier replay; amend or fixup into the owning commit, per the `git-discipline` convention's fold rules and `/wrapup` Part A.
+Fold current-state corrections into the commit that owns the subject: counts, suite totals, status lines. Never create a commit that only repairs an earlier replay; amend or fixup into the owning commit, per the `git-discipline` convention's fold rules and [`/commit`](commit.md) Part A.
 
 ## Verify
 

@@ -1,6 +1,6 @@
 ---
 description: "Owns the iteration grain: the two gates, the unit and close invariants the runbooks must not break, and the sidequest rule. The procedures live in the runbooks this document governs."
-scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/document", "/wrapup"]
+scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/document", "/wrapup", "/commit"]
 reader: [agent]
 ---
 
@@ -59,7 +59,7 @@ The principle behind this shape -- a document's invariants must not couple to it
 
 ### Gate invariants
 
-- **Two gates.** The iteration has two gates: the **scope gate** and the **release gate**. The scope gate confirms scope and acceptance criteria together on a single operator approval. The release gate is the common acceptance gate the operator-involved workflows share, and after its release the close hands off to `workflow/coding-agent/prompts/wrapup.md` Part B.
+- **Two gates.** The iteration has two gates: the **scope gate** and the **release gate**. The scope gate confirms scope and acceptance criteria together on a single operator approval. The release gate is the common acceptance gate the operator-involved workflows share, and after its release the close hands off to `workflow/coding-agent/prompts/wrapup.md`, whose commit step is `workflow/coding-agent/prompts/commit.md`'s.
 - **The release gate reads the decisions, not only the work.** The gate reads the findings queue with every destination. It also reads each record check's report on the records this iteration changed. Run `roadmap-maintenance` and `handover-maintenance` before this gate, when the records they read are finished.
 - **Gates stop for explicit operator release.** Each gate stops the loop until the operator sends a forward signal. A message that reviews output without a clear forward signal does not release a gate. Packaging changes (`/package-branch`) do not release the release gate -- iteration-end actions do not begin until the operator explicitly confirms after testing.
 - **AC satisfiability.** Every criterion is re-read and verified satisfiable given the confirmed scope; a criterion that would fail on a correct implementation is a specification bug -- resolve it now, not at pre-close.

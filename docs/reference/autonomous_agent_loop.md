@@ -42,7 +42,7 @@ ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
                                                                     |
                                                              /iter Step 7
                                                                     v
-  [it:closed] <--operator decision-- [it:acceptance-gate] --/wrapup--> (Part B)
+  [it:closed] <--operator decision-- [it:acceptance-gate] --/wrapup, /commit--> (close, commit)
       |
       |  all tasks complete? /wrapup recommends
       +-- yes --> ms:close-gate
@@ -63,13 +63,14 @@ Each workflow enforces one group of state transitions in the loop.
 | `/plan` | scopes a milestone; commissions stories and investigations; produces the roadmap entry |
 | `/iter` | runs one iteration: scope, design, implementation, documentation, handover |
 | `/sidequest` | pauses an open iteration for operator-directed work, then returns to the handover it interrupted |
-| `/wrapup` | lands the delivery commit and closes the handover; the shared close runbook |
+| `/wrapup` | closes the handover, writes back the roadmap task and seeds the next iteration; the shared close runbook |
+| `/commit` | lands the unit's delivery commit; the shared commit runbook |
 | `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, owned and refined by M3.2.3 |
 | `/milestone-close` | records a milestone or sub-milestone close: compaction, the changelog, the close boundary |
 
-`/wrapup` is a shared close runbook, not a standalone loop workflow: `/iter`, `/plan` and `/document` invoke it after their release point. `/milestone-start`, `/sequential-work` and `/parallel-work` do not invoke it.
+`/wrapup` and `/commit` are shared runbooks, not standalone loop workflows. `/iter`, `/plan` and `/document` invoke `/wrapup` after their release point, and the close hands the commit to `/commit`. `/commit` is also reached directly by `/sidequest`, which lands its own delivery commit, and by `/merge`, which folds a replay's corrections. `/milestone-start`, `/sequential-work` and `/parallel-work` do not invoke either -- the milestone-record close is `/milestone-close` and lands its own bookkeeping commit.
 
-`/wrapup` closes the handover to the `work-log` convention. The pre-commit handover format gate checks the record's shape.
+`/wrapup` closes the handover to the `work-log` convention, and `/commit` lands the work, the status flip and the write-back as one delivery commit. The pre-commit handover format gate checks the record's shape.
 
 The `/auto` smart dispatcher and `/goal` loose-goal decomposition are M4's. They are not `/iter` work-loop expansions and they do not drive a transition in this loop yet.
 

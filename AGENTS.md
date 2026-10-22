@@ -167,6 +167,7 @@ The runbooks the loop runs, each seeded into the container. The list is the `sco
 | `/scope` | [`scope.md`](workflow/coding-agent/prompts/scope.md) |
 | `/document` | [`document.md`](workflow/coding-agent/prompts/document.md) |
 | `/wrapup` | [`wrapup.md`](workflow/coding-agent/prompts/wrapup.md) |
+| `/commit` | [`commit.md`](workflow/coding-agent/prompts/commit.md) |
 
 ## Iteration Start
 

@@ -176,11 +176,11 @@ The operator's explicit forward signal on this pre-close summary is the release 
 
 ## Release gate
 
-This is the common acceptance gate the operator-involved workflows share. Present the acceptance criteria status table, the findings queue, and the commit message. Every criterion carries a status, every finding carries a destination, and the commit body stays within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup`. Exit condition: explicit release received.
+This is the common acceptance gate the operator-involved workflows share. Present the acceptance criteria status table, the findings queue, and the commit message. Every criterion carries a status, every finding carries a destination, and the commit body stays within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup` and the commit to `/commit`. Exit condition: explicit release received.
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
-After the release gate, run the consolidated close from [`/wrapup`](wrapup.md) Part B. `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. `/wrapup` B4 and B9 keep the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
+After the release gate, run the consolidated close from [`/wrapup`](wrapup.md). `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, closing ADRs and discussion docs whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. It hands the commit to [`/commit`](commit.md), which keeps the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
 
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 
@@ -189,7 +189,7 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 
 ## The acceptance gate
 
-`/iter` stops at the acceptance gate. It presents the acceptance criteria table, the roadmap write-back, the propagation replay, and the commit message. It also presents the findings queue and the record-check reports. The operator releases, and [`/wrapup`](wrapup.md) takes the iteration from there. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
+`/iter` stops at the acceptance gate. It presents the acceptance criteria table, the roadmap write-back, the propagation replay, and the commit message. It also presents the findings queue and the record-check reports. The operator releases, [`/wrapup`](wrapup.md) takes the iteration through the close, and [`/commit`](commit.md) lands the delivery commit. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
 
 **Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 

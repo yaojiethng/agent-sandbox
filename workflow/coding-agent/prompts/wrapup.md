@@ -1,13 +1,13 @@
 ---
-description: "Close an active-operator session: consolidate the close into one shared runbook that /iter, /plan and /document invoke, landing the single delivery commit, writing back the roadmap task, closing ADRs and discussion docs whose work landed, and seeding the next iteration. Also run the commit-discipline checkpoint after each committed task group -- confirm the accumulated commits read as one delivery commit and one open handover, squash any pile of wip checkpoints and typed intermediates, and surface the missing-record signal before it reaches the operator."
-argument-hint: "[optional: a commit range to audit]"
+description: "Close an active-operator session: consolidate the close into one shared runbook that /iter, /plan and /document invoke, writing back the roadmap task, closing ADRs and discussion docs whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
+argument-hint: "[optional: a session to close]"
 ---
 
 > $@
 
 # /wrapup - The Consolidated Close
 
-**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: land the single delivery commit, keep one open handover naming the session, write back the roadmap task, close the ADRs and discussion docs whose work landed, and seed the next iteration. During a session it also owns the commit-discipline checkpoint that runs after each committed task group. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it.
+**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: write back the roadmap task, close the ADRs and discussion docs whose work landed, close the handover, and seed the next iteration. It does not land the commit; [`/commit`](commit.md) owns the checkpoint, the preparation, the landing and the post-commit verification. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it.
 
 ## Project conventions
 
@@ -17,15 +17,15 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Mandate
 
-You run the consolidated close for an active-operator session that ends at its release point. Two jobs share this document: the **commit-discipline checkpoint** runs during the session after each committed task group; the **close** runs once at the session end. Both deliver a HEAD that reads as one coherent delivery commit per unit, with an open handover naming it, and no pile of typed checkpoints left for the operator to untangle.
+You run the consolidated close for an active-operator session that ends at its release point. The close delivers a HEAD that reads as one coherent delivery commit per unit, with a closed handover naming it, and no pile of typed checkpoints left for the operator to untangle.
 
-Four commit rules govern both jobs. First, one commit per unit: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- the `git-discipline` convention names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, a typed intermediate reads as a closed deliverable that later folds away, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_protocol.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the policy that failed to stop it.
+One commit per unit governs the close: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back; every `wip:` checkpoint and typed intermediate commit folds into it -- the `git-discipline` convention names the delivery commit the sole reviewable surface. The status flip and the write-back never form their own commit. [`/commit`](commit.md) states the commit rules and runs them; this runbook does not restate them.
 
 ## Called from
 
 Each active-operator prompt invokes the part of this runbook that applies:
 
-- `/iter` and `/document` run the commit-discipline checkpoint during the session and the close at the end.
+- `/iter` and `/document` run the close at the end of the session.
 - `/plan` runs the close at the end of a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit.
 - `milestone-start` does not invoke it -- `/milestone-close` owns the milestone-record close, distinct from the unit close.
 - `sequential-work` and `parallel-work` do not invoke it -- their run review substitutes for the operator gate (roadmap row `/auto` bypasses the two operator-acceptance points).
@@ -34,66 +34,8 @@ Each active-operator prompt invokes the part of this runbook that applies:
 
 | Input | Meaning |
 |---|---|
-| commit range | The unit's commits. Defaults to the commits since the last known delivery commit (the last commit with a delivery type that carried its own handover). If no base is identifiable, use the current branch tip range back to the previous merge base. |
+| session scope | The handover and roadmap rows the session changed, as the release gate released them. |
 | current branch | The branch holding the unit's work, normally `feat/*` or `milestone/*`. |
-
-## Part A - Commit-discipline checkpoint (in-session, recurring)
-
-Run this after each committed task group within the session. It is a hygiene pass, not a release point; it does not stop the session.
-
-Commit the unit's work before its boundary, even when incomplete: a `wip:` checkpoint folds at the close, and a stash is not a record. `wip:` is a prefix and not a type, so it never reads as a delivered unit.
-
-### A1. Enumerate the unit's commits
-
-```bash
-git log --oneline <base>..HEAD
-```
-
-List the commits. Identify each by kind: the delivery commit, `wip:` checkpoints, typed intermediate commits, and the close edit.
-
-### A2. Count the failure signals
-
-- How many commits are in the range, and how many carry a delivery type?
-- Is there an open handover? `grep -l "Status: Active" devlog/handovers/*.md`
-- Does any commit look like a close-edit-only commit (only the `Status` flip or write-back)?
-
-More than one delivery-typed commit, or any `wip:` not yet folded, or no open handover are each a missing-record signal. Report them all.
-
-### A3. Determine the unit boundary
-
-Read the commit subjects and the roadmap. Decide whether the range is one unit or several. If a single deliverable group (for example "close the register"), it is one unit and folds to one commit. If the range spans distinct deliverables, split at the boundaries into one delivery commit per unit, each with its own handover.
-
-### A4. Confirm with the operator before touching history
-
-Present the boundary and the squash plan. For a multi-unit split, the operator decides the count and the type prefix per delivery commit. Do not rewrite history before the operator releases.
-
-### A5. Squash to one delivery commit
-
-Run the canonical squash. Given a commit range `base..HEAD`, land one delivery commit:
-
-```bash
-git reset --soft <base>          # keep the work staged
-git add -A
-git commit -m "<type>: ..."      # one typed commit
-```
-
-A clean committed range uses the same fold. The close edit and write-back are staged into the same commit, never a separate one.
-
-Three kinds of transient commit fold into it: `wip:` checkpoints, a correction commit, and the close edit with its roadmap write-back.
-
-When the work commit has already landed and the close edit is still outstanding, fold the edit into that commit rather than adding one. The end state is one commit per iteration.
-
-### A6. Confirm an open handover names the unit
-
-If none is open, create it (naming per the project's `work-log` convention) or fold the existing one. Mark `Status: Closed` only when the unit genuinely closes.
-
-### A7. Verify the result
-
-```bash
-git log --oneline <base>..HEAD   # exactly one commit
-git status --short               # clean
-bash scripts/lint.sh             # pre-close gate clean
-```
 
 ## Part B - The close (end of session, shared)
 
@@ -135,34 +77,27 @@ A row left open here is a question the operator meets twice, which is the cost t
 
 Close the `docs/adr/` and `devlog/discussions/` documents whose work landed this session. The record-check report from the release gate names the `[CORRECTION]` or `[AMENDMENT]` form each finding needs; this step writes the block. A document whose recorded work shipped but that stays open after the session is a stale record, so close it here. A finding the gate missed is recorded as `late`, naming the gate that should have asked.
 
-### B9. Prepare all files for the commit
+## Hand the commit to /commit
 
-Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Set `Status: Closed`. The handover format gate checks the record's shape at the commit. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
+The close stops here; the commit begins at [`/commit`](commit.md) Part C.
 
-A working tree holding changes from more than one iteration is split before the commit: save the diff, reset the file, and apply only the hunks that belong to each commit. Where the changes interleave inside one section, split the file or restructure so each iteration's work is disjoint.
+- **What `/commit` owns.** Preparing the handover, marking each AC accepted or pushed, setting `Status: Closed`, landing the work, the status flip and the roadmap write-back as one delivery commit, and the post-commit compliance self-check. It also owns the in-session checkpoint that runs after each committed task group.
+- **What stays here.** Every close step above: AC verification, propagation replay, scope reconciliation, the roadmap write-back, carry-forward resolution, findings publication, pending-decision resolution, and closing ADRs and discussion docs. The evidence `/commit` stages is the evidence these steps produced.
+- **Why the split.** The commit is one operation with one set of rules, and five prompts perform it; the close is another, and it edits records rather than history. Keeping them in one runbook made the commit rules reachable only through a runbook a caller did not always need.
+- **Where this runbook stops.** At this handoff. `/commit` runs, reports the landed commit, and returns here for the close report below.
 
-### B10. Land the single commit
+### B9. Report the close
 
-Generate the commit message per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`: a valid type prefix from the active types table, an imperative subject that completes "this commit will", and a body that carries the reason without restating the diff or duplicating the handover. Commit the work, the `Status: Closed` edit, and the roadmap write-back as one commit.
-
-### B11. Post-commit compliance self-check
-
-Re-read the session's commits against the rules before reporting success. Run `git log` over the session's range and check it against the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): (1) the range's squash state holds exactly one delivery-typed commit per unit and its handover -- read the amended history, not pre-amend hashes; (2) every subject's type is in the Active Types table; (3) no subject carries a scope field; (4) no commit's only path is a handover file, unless the unit's deliverable was the record change itself; (5) no close edit or roadmap write-back is separated from its unit's work -- a standalone `plan:` commit is bookkeeping, not this violation; (6) roadmap and milestone bookkeeping is typed `plan:`; (7) one handover bounds the range; (8) the delivery commit matches the handover's scope -- one work unit lands as one commit, no scope item outside the commit and no commit content outside the scope; (9) the range left a roadmap write-back -- one row event per the unconditional write-back invariant, either the session's own task marked with its landing note or a subtask row raised under the owning parent. A unit whose work is not a roadmap task still writes back: the row that records what landed, or a Decision entry in the changelog when no task row applies. A `wip:` commit in the range is not a violation: it is legal and folds at the close. A violation found here is fixed before B12 -- by amending, folding, or retyping -- or recorded as a deliberate deviation with its reason. This check is agent-side; it adds no operator stop beyond the release gate the unit already passed.
-
-### B12. Report the wrapup
-
-State that the wrapup succeeded: the commit, the lint and suite results, the write-back, and any deviation B11 recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. The recommendation is advisory context for the operator, not a task list; the roadmap stays the sole task list, and a fresh session starts from [`gm.md`](gm.md).
+State that the close succeeded: the write-back, the records closed, and any deviation the post-commit self-check recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. The recommendation is advisory context for the operator, not a task list; the roadmap stays the sole task list, and a fresh session starts from [`gm.md`](gm.md).
 
 ## Failure modes
 
-- **A pile reaches the close unsquashed.** The checkpoint missed a task group, or a `wip:` chain was never folded. Squash into the delivery commit before landing, and record what let it accumulate.
-- **The close duplicates the caller's own close steps.** Each invoking prompt must carry its own gates and presentation, and leave the shared close steps to `/wrapup`. A caller that re-states the close is the duplication this document exists to remove.
+- **The close restates the commit.** `/commit` owns the commit rules, the squash, the status flip and the self-check. A caller that re-states them is the duplication this split removes.
+- **The commit is skipped because the close ran.** A close that reports success without a landed commit leaves the record closed in the tree and open in history. Hand off to `/commit` and report its result.
 - **An ADR or discussion doc stays open after its work shipped.** A stale open record misleads the next session. Close it in B8, or name the reason it stays open in the handover's Scope.
 - **The write-back lands as its own commit.** The roadmap write-back and the `Status: Closed` edit belong in the delivery commit, never a separate one.
 
 ## When to stop and ask
 
-- If the unit boundary is not clear, ask before splitting.
-- If a typed intermediate commit already landed on a shared branch and cannot be freely rewritten, ask before rebasing.
-- If the operator wants the pile kept for review, stop and record the deliberate deviation instead of squashing.
 - If any AC fails or an in-scope item is unaccounted, stop and resolve it before the close.
+- If the handover's `Decisions pending` table holds a question only the operator can answer, stop and ask it before B9.

@@ -69,8 +69,9 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 | `/milestone-close` | closes a milestone or sub-milestone | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | milestone planning | `workflow/coding-agent/prompts/plan.md` |
 | `/sidequest` | operator-directed interruption of an open iteration | `workflow/coding-agent/prompts/sidequest.md` |
+| `/commit` | the shared commit runbook: the in-session checkpoint and the unit's delivery commit | `workflow/coding-agent/prompts/commit.md` |
 
-`/wrapup` is a shared close runbook, not a workflow prompt: the active-operator prompts (`/iter`, `/plan`, `/document`) invoke its Part B close rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
+`/wrapup` and `/commit` are shared runbooks, not workflow prompts. The active-operator prompts (`/iter`, `/plan`, `/document`) invoke `/wrapup`'s close after their release point rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt; `/wrapup` hands the commit to `workflow/coding-agent/prompts/commit.md`, which holds the checkpoint and the commit rules once for every caller. `/sidequest` and `/merge` reach `/commit` directly. `milestone-start`, `sequential-work` and `parallel-work` do not invoke either -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
 
 ## Transitions
 
@@ -82,7 +83,7 @@ Three gate states, each an arrow's source rather than a resting place for closin
 
 One milestone is modelled, the active one. Its successors are handwaved behind `ms:successor?`, so a per-milestone state set does not appear, and several milestones may be shaped at once without the diagram growing. The autonomous-run prompts -- `/auto`, `/goal`, `/sequential-work`, `/parallel-work` -- are out of the diagram until the milestone that lands them; the two built prompts among them live in the drafts tree, and `/backlog-triage` drives no transition of its own.
 
-`/iter` runs one iteration and stops at the acceptance gate; `/wrapup` takes it from there, lands the commit and closes the handover. The next iteration opens only after the operator picks a task, and when the milestone has no open row left the operator calls `/milestone-close` instead.
+`/iter` runs one iteration and stops at the acceptance gate; `/wrapup` closes the handover and `/commit` lands the commit. The next iteration opens only after the operator picks a task, and when the milestone has no open row left the operator calls `/milestone-close` instead.
 
 ## Concept offload map
 

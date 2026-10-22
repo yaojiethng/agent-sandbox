@@ -87,10 +87,10 @@ Stop after the brief. The operator reviews it, then says whether to commit. A br
 
 Then hand over by the workflow handoff pattern, the same shape `/iter` and `/plan` use.
 
-- **Next prompt.** `/wrapup` Part B, the `Roadmap write-back` step, files the unit table.
-- **What it owns.** AC verification, propagation replay, scope reconciliation, the roadmap write-back, carry-forward resolution, findings review, closing ADRs and discussion docs, closing the handover, and the commit. `/scope` does not restate any of it.
+- **Next prompt.** `/wrapup`, the `Roadmap write-back` step, files the unit table, and hands the commit to [`/commit`](commit.md).
+- **What it owns.** AC verification, propagation replay, scope reconciliation, the roadmap write-back, carry-forward resolution, findings review, closing ADRs and discussion docs, and closing the handover. The delivery commit is [`/commit`](commit.md)'s. `/scope` does not restate any of it.
 - **What stays here.** The four questions, the brief, and the work-unit table, because they are what the run is cut from.
-- **Where `/scope` stops.** At the brief. The operator releases it, `/wrapup` files the units and lands the commit, and `/iter` consumes one unit.
+- **Where `/scope` stops.** At the brief. The operator releases it, `/wrapup` files the units, `/commit` lands the commit, and `/iter` consumes one unit.
 
 ## Non-goals
 
