@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/test_doc_wrap_rule.sh
 # Behavioural tests for scripts/lint/doc-wrap.mjs -- the one-paragraph-per-
-# physical-line custom markdownlint rule (documentation_policy.md ### Line
+# physical-line custom markdownlint rule (`.agents/skills/docs/SKILL.md` ### Line
 # wrapping). The real markdownlint-cli2 runs against fixture files with a
 # temp config that imports the repo rule; the repo's own .markdownlint-cli2.mjs
 # is never discovered because the fixture dir sits outside the repo tree.

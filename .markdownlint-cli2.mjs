@@ -1,12 +1,12 @@
 // markdownlint-cli2 configuration for the agent-sandbox repository.
 // Enables the subset of markdownlint rules that align with
-// docs/policies/documentation_policy.md, plus two custom rules:
+// `.agents/skills/docs/SKILL.md`, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
 // physical line) and linking (link targets and heading fragments
 // resolve). Both exempt the record trees declared below, under one key.
 //
 // Deliberately DISABLED (they contradict written policy):
-//   MD013 line-length -- documentation_policy.md `### Line wrapping`
+//   MD013 line-length -- the docs skill's one-paragraph-per-line rule
 //       forbids breaking prose at a column limit
 //   MD060 table-column-style -- the repo writes compact tables; MD060
 //       pads cells to a uniform width and makes tables unreadable

@@ -7,8 +7,8 @@
 # The three claims share one file set, one walk and one parser, so they share one
 # gate. Enforced documents are docs/development/prompt-authoring-conventions.md
 # `## Structure of a workflow document`, `## The principle shape` and `## The
-# principle claims`, docs/policies/documentation_policy.md `### Document header
-# format`, and the decision in docs/adr/principle_skill_shape.md. The scanner is
+# principle claims`, `.agents/skills/docs/SKILL.md` `## How a document opens`,
+# and the decision in docs/adr/principle_skill_shape.md. The scanner is
 # scripts/lint/document-shape.mjs.
 #
 # A prompt whose frontmatter does not parse is dropped by pi at load time with no
@@ -57,6 +57,6 @@ rc=$?
 if (( rc == 0 )); then
   echo "Clean (${SECONDS}s)"
 else
-  echo "Blocking gate: fix the findings above (see docs/development/prompt-authoring-conventions.md and docs/policies/documentation_policy.md)." >&2
+  echo "Blocking gate: fix the findings above (see docs/development/prompt-authoring-conventions.md and `.agents/skills/docs/SKILL.md`)." >&2
 fi
 exit "$rc"
