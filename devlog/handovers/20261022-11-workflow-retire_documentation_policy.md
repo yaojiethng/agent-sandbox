@@ -41,8 +41,8 @@ The slice is three units, each landing a usable state.
 |---|---|---|
 | The `docs` skill holds the convention | `grep` each of: folder tree, header block, character set, line wrapping, numbering, grep-navigation, skeleton-first | Agent [x] |
 | The five gate headers cite the skill, not the policy | `grep -l documentation_policy` over `scripts/check_document_shape.sh scripts/check_markdown.sh scripts/lint/doc-ascii.mjs scripts/lint/document-shape.mjs .markdownlint-cli2.mjs` prints nothing | Agent [x] |
-| `doc-maintenance` carries the lint rule set obligation as a check | `grep` the registered-but-unenabled rule | Agent [ ] |
-| `record-correction` carries the post-close correction form, including the per-type table | `grep` the five forms | Agent [ ] |
+| `doc-maintenance` carries the lint rule set obligation as a check | `grep` the registered-but-unenabled rule | Agent [x] |
+| `record-correction` carries the post-close correction form, including the per-type table | `grep` the five forms | Agent [x] |
 | The literal-reader test is stated in the provider `AGENTS.md`, both copies | `grep -c` the phrase in the repo source and in `~/.pi/agent/AGENTS.md` | Agent [ ] |
 | The ledger's `SOURCES` names the new homes and the ledger is regenerated | `grep` the `SOURCES` array; `scripts/check_norm_ownership.sh --check` is clean | Agent [ ] |
 | The policy file is deleted | `test ! -e docs/policies/documentation_policy.md` | Agent [ ] |
@@ -84,3 +84,5 @@ None.
 | `scripts/lint/document-shape.mjs` | the header-format citation retargets |
 | `.markdownlint-cli2.mjs` | the two citations retarget |
 | `tests/test_doc_wrap_rule.sh` | the wrapping citation retargets |
+| [`workflow/coding-agent/skills/doc-maintenance/SKILL.md`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) | the lint rule set section, and its two policy citations retarget to the `docs` convention |
+| [`workflow/coding-agent/prompts/record-correction.md`](../../workflow/coding-agent/prompts/record-correction.md) | the post-close correction form, its per-type table, propagation and archival, with both policy citations replaced |

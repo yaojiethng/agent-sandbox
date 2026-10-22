@@ -15,7 +15,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 You are correcting a record that has already been closed. The operator named the commit the correction belongs to. Your deliverable is that commit rewritten to carry the correction, with no other commit touched, no commit added, and no port artifact left behind.
 
-A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, owns that rule, and [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md#post-close-document-corrections) owns the record principle behind it. This prompt owns the mechanics.
+A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. The `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, owns that rule. This prompt owns the record principle behind it and the mechanics that apply it.
 
 Two rules govern the run.
 
@@ -115,6 +115,26 @@ Three forms qualify:
 
 An omission is not a place to record work the iteration never did, and it is not a place to state a limit the iteration set only afterwards. Both are new work, and a new record carries them.
 
+A closed record's content does not change; what changes is the account, and only where the account is wrong. The agent may notice a correction and propose it in one line, and never deletes a record, because deletion is an operator action.
+
+### The form follows the record's purpose
+
+A record that states what is true is corrected in place. A record that tracks open and closed tasks is corrected by addition, with a successor entry. A type's durability, and the marker it carries, is [`documentation_taxonomy.md`](/opt/sandbox/docs/reference/documentation_taxonomy.md#durability).
+
+| Record | Nature | Form |
+|---|---|---|
+| Handover | states what the iteration did | rewrite the paragraph, or reopen and close it again; either way the tag at the end of the corrected section |
+| Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry |
+| Changelog entry | tracks closed tasks, archived | as a roadmap entry |
+| Discussion record | states reasoning and evidence | rewrite, tag |
+| ADR, concept, architecture, policy | states what the system does | rewrite, tag |
+
+**Propagation.** A correction inherits the record set of the unit it corrects: a unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its marker. A correction that leaves a closed record contradicting its successor is incomplete.
+
+**Archival is not amendment.** Moving a closed milestone's entries from the roadmap to the changelog is a length boundary, not a correction, and carries no marker.
+
+**Two stops bound the work.** A correction that changes the unit's scope, or that carries new work, is a new iteration. A correction whose edit would carry no marker is a rewrite, and it stops too.
+
 ### Procedure
 
 1. Confirm the operator's direction and identify the paragraph or section.
@@ -133,8 +153,6 @@ Keep the blank line before the closing fence. Without it, the tag paragraph pars
 4. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
 5. Do not alter the `status`, the date, or any other frontmatter field in the corrected record. A reopen and re-close cycle is a procedure step, not a record edit: the record ends `Closed`, with the date and metadata it carried before.
 6. **Findings triage.** If the correction surfaces a new finding, route it before the correction is finalised: to the active handover's `## Findings`, to a new roadmap row, or to the document the finding concerns. The correction tag states where the finding was routed.
-
-The correction principle, the propagation rule and the two correction stops and one smell are in [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md#post-close-document-corrections).
 
 ### What this is not
 
