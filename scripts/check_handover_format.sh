@@ -4,7 +4,9 @@
 # over any file named on the command line.
 #
 # Enforces the work-log convention's record shape: the frontmatter
-# fields and the section set. The scanner is scripts/lint/handover-format.mjs.
+# fields and the section set, and, for an Active record, that an `Agent [x]`
+# criteria mark names a command or a path. The scanner is
+# scripts/lint/handover-format.mjs.
 #
 # Scope: the default scan reads the live handover folder, which the archive
 # keeps free of every record written before the frontmatter rule. A live record

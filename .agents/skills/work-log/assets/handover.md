@@ -19,6 +19,12 @@ status: Active
 
 <Table: criterion | verification | result. One row per criterion. At iteration end, mark each criterion accepted or pushed; both stay visible.>
 
+- `Agent [x]` - a command or a path decides it, and the row names that command or path.
+- `Agent [ ]` - open.
+- `Reviewed` - read and accepted, no runnable check.
+- `Operator [x]` - read and accepted by the operator.
+- `Operator [ ]` - open with the operator.
+
 Not yet defined.
 
 ## Decisions

@@ -2,7 +2,9 @@
 //
 // Enforces the work-log convention's record shape over handovers: the
 // frontmatter fields (date, milestone, type, status) and the section set (the
-// required sections present, the forbidden ones absent).
+// required sections present, the forbidden ones absent), and, for a record
+// whose status is Active, that an `Agent [x]` criteria mark names a command or
+// a path in its Verification cell.
 //
 // Scope: the default scan reads the live handover folder, which the archive
 // keeps free of every record written before the cutover; a record there that
@@ -18,6 +20,7 @@ import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
+import { classify, criteriaRows } from "./criteria-form.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -188,6 +191,28 @@ for (const file of files) {
     }
   }
 
+
+  // An `Agent [x]` mark claims this project decided the criterion, so the
+  // cell must name something that decides it: a command to run or a path to
+  // check. A record whose status is not Active is history, and the archive
+  // holds 68 such records with prose marks, so the rule reaches live work
+  // only. The classifier is imported rather than restated, so the gate and
+  // the replay script call the same form `mixed` and `prose`.
+  if (String(fields.status) === "Active") {
+    const criteria = sectionBody(text, "Acceptance criteria");
+    if (criteria) {
+      for (const row of criteriaRows(criteria.lines.join("\n"))) {
+        if (!/Agent\s*\[x\]/i.test(row.result)) continue;
+        const form = classify(row.verification).form;
+        if (form === "command" || form === "path") continue;
+        findings.push({
+          rel,
+          line: criteria.line + row.line,
+          msg: `criteria: \`${row.criterion}\` is marked \`Agent [x]\` with a ${form} verification; mark it \`Reviewed\`, or state the command that decides it`,
+        });
+      }
+    }
+  }
 
   const found = headings(text);
   const names = found.map((h) => h.name);
