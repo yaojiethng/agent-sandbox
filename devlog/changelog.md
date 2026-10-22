@@ -206,6 +206,16 @@ The contract between prompts, skills and the two `AGENTS.md` layers is settled a
 
 ---
 
+## M3.3.4 - The prose standards as principles
+
+*A writer reaches one principle whose name states the judgement it holds, and every principle says which claim it applies and what test finds a breach.*
+
+The prose standards left the policy documents and became convention skills. Each carries one judgement, a name that states it, a claim drawn from a single declared table, and a pattern that shows the wrong form beside the right one. The corpus holds one shape, and a gate reads it, so a principle written next year meets the same six parts as the exemplar a writer copies.
+
+The rules that outlived their documents landed where they are enforced. The norm ledger records an observer for every prose line and derives the label from it, so a rule states its observer and a judgement states that it has none. The reach axis became a property of the root a document ships in, held to the manifest by a gate, and the two shipped reference documents state whose tree they describe. One gate now covers every instruction document's frontmatter, its declared reader and, where it is a principle, its shape.
+
+---
+
 ## M3.6.1 - Disable and ship OpenCode dispatch
 
 *An agent can now dispatch a read-write worker onto the free OpenCode tier that pi cannot reach, and a later pass over the same unit runs in place against a named revision.*

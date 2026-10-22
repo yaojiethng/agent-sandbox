@@ -20,7 +20,7 @@ If this file grows too long, find a durable resolution (for example, fold the re
 
 ```text
 state: open
-scoped: M3.3.4 - The prose standards as principles
+scoped: W2 - Communication Domain Taxonomy
 legacy: none
 mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards.
 ```
@@ -35,7 +35,7 @@ The cost was a reverted unit and a row returned to open with its deferral record
 
 ```text
 state: open
-scoped: M3.3.4 - The prose standards as principles
+scoped: none
 legacy: none
 mitigation: a fixture test changes into its own temporary directory before it writes or stages anything, and the shell that changes directory is the shell that runs `git`, so the change belongs outside a command substitution. Assert the fixture root before the first write: `[[ "$(git rev-parse --show-toplevel)" != "$REPO_ROOT" ]]`. After any test that can commit, run `git log -1` and `git status --short` and compare against the state the call started in.
 ```
@@ -79,7 +79,7 @@ The corpus mining dispatch returned `aaa1246d` for a commit whose real prefix is
 
 ```text
 state: open
-scoped: M3.3.4 - The prose standards as principles
+scoped: none
 legacy: none
 mitigation: when a defect in your own work turns up while the session is still live, fold it into the commit that carries the work before doing anything else, and fold the handover edit with it. A correction is not new work, so it gets no new commit, no new handover, no new feedback entry and no new rule. If the fold needs `git commit --fixup` plus `git rebase -i --autosquash`, that is still the fold.
 ```
