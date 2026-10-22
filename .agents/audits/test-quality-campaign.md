@@ -2,11 +2,10 @@
 
 ## Authority
 
-The repo testing convention is the authority. This prompt links to it and does not restate it. Before any action, read all three:
+The repo testing convention is the authority. This prompt links to it and does not restate it. Before any action, read both:
 
-- `.agents/skills/testing/SKILL.md` - the judgements and patterns for writing a test, especially the change-mirror form in `patterns/assertions.md`.
-- `docs/development/testing_policy.md` - placement, the `make test` invariant, the prerequisite rule, the `knowledge_` and `diagnose_` prefixes, the untested-behaviour-branch rule.
-- `docs/development/testing-conventions.md` - the debugging guide and the two checklists.
+- `.agents/skills/testing/SKILL.md` - the judgements, the patterns, the test homes and the completion lists, especially the change-mirror form in `patterns/assertions.md`.
+- `docs/development/test_harness_mechanism.md` - the runner, the suite contract, the result protocol and the gates.
 
 Where this prompt and the convention disagree, the convention wins.
 
