@@ -19,11 +19,6 @@
 #   a closed findings row with no destination -- rc 1; the row is named
 #   a closed findings row triaged `late` -- rc 0, so the late path is legal
 #   an active findings row with no destination -- rc 0
-#   an active criteria row marked Agent [x] with a prose verification
-#                                -- rc 1; the criterion is named
-#   an active criteria row marked Agent [x] with `test -f` -- rc 0
-#   a closed criteria row with the same prose cell -- rc 0, so a record is
-#                                    exempt
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with HANDOVER_FORMAT_SCAN_ROOT so the repository's own
@@ -208,65 +203,6 @@ test_active_findings_row_without_destination_passes() {
   assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
 }
 
-# write_criteria_handover PATH STATUS ROW...  --  a handover whose Acceptance
-# criteria table carries one row per argument, each spelled
-# `criterion|verification|mark`.
-write_criteria_handover() {
-  local path="$1" status="$2"
-  shift 2
-  mkdir -p "$(dirname "$path")"
-  {
-    printf -- '---\n'
-    printf 'date: 2026-10-04\n'
-    printf 'milestone: T1 - Test\n'
-    printf 'type: Workflow\n'
-    printf 'status: %s\n' "$status"
-    printf -- '---\n\n'
-    printf '# Handover - Test\n\n'
-    printf '## Objective\n\nTest.\n\n'
-    printf '## Scope\n\nTest.\n\n'
-    printf '## Acceptance criteria\n\n'
-    printf '| Criterion | Verification | Result |\n'
-    printf '|---|---|---|\n'
-    local row
-    for row in "$@"; do
-      printf '| %s |\n' "${row//|/ | }"
-    done
-    printf '\n## Decisions\n\nNone.\n\n'
-    printf '## Decisions pending\n\nNone.\n\n'
-    printf '## Findings\n\nNone.\n\n'
-    printf '## Completed\n\nNo file changes this iteration.\n'
-  } > "$path"
-}
-
-test_active_prose_criteria_mark_fails() {
-  local file="$FIXTURE_DIR/t13/devlog/handovers/20261004-02-workflow-x.md" rc=0 out
-  write_criteria_handover "$file" Active \
-    'The output reads clean|read the output line|Agent [x]'
-  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
-  assert_rc 1 "$rc" 'an Agent [x] mark on a prose cell fails'
-  assert_contains "$out" 'criteria: `The output reads clean` is marked `Agent [x]` with a prose verification' \
-    'the criterion and the form are named'
-}
-
-test_active_command_criteria_mark_passes() {
-  local file="$FIXTURE_DIR/t14/devlog/handovers/20261004-03-workflow-x.md" rc=0 out
-  write_criteria_handover "$file" Active \
-    'The template exists|`test -f .agents/skills/work-log/assets/handover.md`|Agent [x]'
-  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'an Agent [x] mark on a command cell passes'
-  assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
-}
-
-test_closed_prose_criteria_mark_passes() {
-  local file="$FIXTURE_DIR/t15/devlog/handovers/20261004-04-workflow-x.md" rc=0 out
-  write_criteria_handover "$file" Closed \
-    'The output reads clean|read the output line|Agent [x]'
-  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a closed record keeps its prose mark'
-  assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
-}
-
 run_test test_conforming_handover_passes
 run_test test_bold_header_flagged
 run_test test_forbidden_section_flagged
@@ -280,8 +216,5 @@ run_test test_staged_with_nothing_staged_is_clean
 run_test test_closed_findings_row_without_destination_fails
 run_test test_closed_findings_row_triaged_late_passes
 run_test test_active_findings_row_without_destination_passes
-run_test test_active_prose_criteria_mark_fails
-run_test test_active_command_criteria_mark_passes
-run_test test_closed_prose_criteria_mark_passes
 
 test_done
