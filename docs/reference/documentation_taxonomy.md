@@ -37,6 +37,8 @@ A document lives in exactly one `docs/` folder or in `devlog/`. Each folder hold
 | `adr/` | the rationale behind standing principles, interface shapes, and contracts; superseded or awaiting-review ADRs live in `adr/archive/` |
 | `devlog/` | the session-facing records: the roadmap, the changelog, handovers, and discussion documents |
 
+The table describes this repository's tree. `reference/` and `policies/` reach every session because the image mounts them; `adr/`, `development/` and `devlog/` are this project's, so a session in a provisioned project reads that project's own. `## Reach` states the axis and `scripts/check_reach.sh` holds it to the manifest.
+
 The placement rule (each document in exactly one category) is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Folder Structure.
 
 ## Durability

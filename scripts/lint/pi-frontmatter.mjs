@@ -6,9 +6,9 @@
 // with, and the gate calls that function rather than reimplementing it.
 //
 // The package is resolved from the `pi` on PATH rather than hardcoded, so a
-// moved install fails the gate loudly instead of silently skipping it. Same
-// resolution shape as `yaml-loader.mjs`, which serves the scanners that read a
-// file pi never loads.
+// moved install fails the gate loudly instead of silently skipping it. Every
+// scanner that reads frontmatter goes through here, so a handover's block is
+// read by the same parser a prompt's block is.
 
 import { execFileSync } from "child_process";
 import { existsSync, realpathSync } from "fs";

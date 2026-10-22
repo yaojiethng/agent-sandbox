@@ -17,7 +17,7 @@
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { loadYaml } from "./yaml-loader.mjs";
+import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -66,7 +66,9 @@ const force = args.includes("--force");
 // is a finding rather than history. A named file list keeps the cutover.
 const defaultScan = named.length === 0;
 
-const { parse } = loadYaml("Handover format gate");
+// Pi's parser is `yaml`'s `parse` behind the product's own block extractor, so a
+// handover's block is read by the same rules a prompt's is.
+const { parseFrontmatter } = await loadPiFrontmatter("Handover format gate");
 
 /** The frontmatter block, or null when the file does not open with one. */
 function frontmatterOf(text) {
@@ -136,7 +138,7 @@ for (const file of files) {
 
   let fields;
   try {
-    fields = parse(block.body) || {};
+    fields = parseFrontmatter(text).frontmatter || {};
   } catch (error) {
     checked += 1;
     findings.push({ rel, line: 1, msg: `frontmatter does not parse: ${String(error.message).split("\n")[0]}` });

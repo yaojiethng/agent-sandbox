@@ -84,6 +84,8 @@ Policy documents describe the current system reality -- what the system does, ho
 
 Policy documents live in `docs/policies/`. The reference layer is `docs/reference/`, the contributor and maintenance documents are `docs/development/`. The policy map below names the document that specifies each area of the workflow.
 
+The map is the mechanism's, and two of its subjects name this repository's own tree: the three documents under `docs/development/`, and `devlog/AGENT_FEEDBACK.md`. A provisioned project maps the same subjects to the documents it keeps, and `docs/reference/documentation_taxonomy.md` `## Reach` states which folders reach a session.
+
 ### Skill files
 
 Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Norm kinds` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
