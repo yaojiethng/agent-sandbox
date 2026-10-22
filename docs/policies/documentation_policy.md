@@ -14,7 +14,7 @@ The document taxonomy, meaning the document types, their durability, and the pol
 
 The kinds of norm and the source of truth each has are defined once in [`agent_workflow.md`](../reference/agent_workflow.md#norm-kinds). This section applies them to this file.
 
-`scripts/lint/norm-ownership.tsv` records the kind, observer and source of truth of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new line arrives unclassified and an edited sentence loses its kind. The script derives a source of truth from the skill path the line cites and rejects a hand-edited one.
+`scripts/lint/norm-ownership.tsv` records the observer of every prose line in this file and in `docs/development/prompt-authoring-conventions.md`, and the skill a line cites as its source of truth. Rule and judgement are read off the observer, and the ledger marks only whether a line states what is rather than how to decide. `scripts/check_norm_ownership.sh` holds the ledger against both files in both directions, so a new line arrives unclassified and an edited sentence loses its row. The script derives a source of truth from the skill path the line cites and rejects a hand-edited one.
 
 A norm's source of truth, and what makes a second copy a defect, is `principle-single-source-of-truth` at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`.
 

@@ -3,13 +3,15 @@
 # tests/test_norm_ownership.sh
 # Behavioural tests for scripts/check_norm_ownership.sh -- the norm ledger gate.
 #
-# The ledger holds every prose line of the two source documents to a kind, a
-# running observer where the kind is a rule, and the skill its text cites as the
-# line's source of truth. The grouping map holds the judgement lines that cite none.
+# The ledger holds every prose line of the two source documents to an observer and a
+# mark, and the skill its text cites as the line's source of truth. Rule and judgement
+# are read off the observer, so no row states them. The grouping map holds the
+# judgement lines that cite no skill.
 #
 #   a conforming tree                            --  rc 0; the summary carries a sourced count
 #   a new prose line                             --  rc 1; the line is named unclassified
-#   a rule marked with no observer               --  rc 1; the kind is named
+#   a norm with no observer                       --  rc 0; it counts as a judgement
+#   a description carrying an observer            --  rc 1; the mark is named
 #   a reviewer no prompt dispatches              --  rc 1; the observer is named
 #   a reviewer a prompt dispatches               --  rc 0
 #   a cited skill no root holds                  --  rc 1; the source of truth is named
@@ -42,13 +44,13 @@ LEDGER="scripts/lint/norm-ownership.tsv"
 JUDGEMENTS="scripts/lint/norm-judgements.tsv"
 
 # build_fixture  --  a tree the gate can read: the manifest with one skill root
-# and one prompt root, the two source documents, the kind table the gate reads
-# its vocabulary from, one dispatched skill, one undispatched skill, and the
-# lint umbrella the gate resolves a `gate:` observer against.
+# and one prompt root, the two source documents, one dispatched skill, one
+# undispatched skill, and the lint umbrella the gate resolves a `gate:` observer
+# against.
 build_fixture() {
   local root="$FIXTURE_DIR"
   mkdir -p "$root/src/build" "$root/docs/policies" "$root/docs/development" \
-    "$root/docs/reference" "$root/skills/doc-maintenance" "$root/skills/principle-x" \
+    "$root/skills/doc-maintenance" "$root/skills/principle-x" \
     "$root/prompts" "$root/scripts/lint"
 
   cat > "$root/src/build/container-interface.json" <<'EOF'
@@ -58,18 +60,6 @@ build_fixture() {
     { "sources": ["prompts/"], "runtime_path": "/opt/workflow/agent/prompts/" }
   ]
 }
-EOF
-
-  cat > "$root/docs/reference/agent_workflow.md" <<'EOF'
-# Workflow
-
-### Norm kinds
-
-| Kind | Does | Detected by |
-|---|---|---|
-| rule | instructs | an artifact that resolves today |
-| judgement | instructs how to decide | nothing |
-| description | states what is | nothing |
 EOF
 
   cat > "$root/skills/doc-maintenance/SKILL.md" <<'EOF'
@@ -109,14 +99,14 @@ A prompt states its subject once.
 EOF
 }
 
-# classify TEXT KIND OBSERVER  --  set the kind and observer of the ledger row
+# classify TEXT MARK OBSERVER  --  set the mark and observer of the ledger row
 # whose text is TEXT. The text is matched as a prefix so a long line is easy to
 # name in a test.
 classify() {
-  local text="$1" kind="$2" obs="$3"
-  awk -F'\t' -v text="$text" -v kind="$kind" -v obs="$obs" 'BEGIN { OFS = "\t" }
+  local text="$1" mark="$2" obs="$3"
+  awk -F'\t' -v text="$text" -v mark="$mark" -v obs="$obs" 'BEGIN { OFS = "\t" }
     $0 ~ /^#/ || $0 == "" { print; next }
-    index($6, text) == 1 { $3 = kind; $4 = obs }
+    index($6, text) == 1 { $3 = mark; $4 = obs }
     { print }
   ' "$FIXTURE_DIR/$LEDGER" > "$FIXTURE_DIR/$LEDGER.tmp"
   mv "$FIXTURE_DIR/$LEDGER.tmp" "$FIXTURE_DIR/$LEDGER"
@@ -145,8 +135,8 @@ map_row() {
 # classify_fixture  --  build the fixture, generate its ledger, and classify the
 # four lines so the tree is conforming. The judgement lines cite principle-x and
 # carry no source of truth, so each takes a grouping row.
-# regenerate  --  derive the source-of-truth column after a kind changed. `--generate`
-# preserves a recorded kind and observer by hash, and derives the source of truth from the
+# regenerate  --  derive the source-of-truth column after a mark changed. `--generate`
+# preserves a recorded mark and observer by hash, and derives the source of truth from the
 # text, so it runs once to create the rows and again once they are classified.
 regenerate() {
   ( cd "$FIXTURE_DIR" && NORM_OWNERSHIP_SCAN_ROOT="$FIXTURE_DIR" bash "$GATE" --generate >/dev/null )
@@ -155,12 +145,12 @@ regenerate() {
 classify_fixture() {
   build_fixture
   regenerate
-  classify "A writer keeps the sentence" judgement none
-  classify "A writer applies \`skills/principle-x/SKILL.md\`" judgement none
-  classify "A writer states the fact" judgement none
-  classify "The gate reads the reference" rule gate:check_norm_ownership.sh
+  classify "A writer keeps the sentence" norm none
+  classify "A writer applies \`skills/principle-x/SKILL.md\`" norm none
+  classify "A writer states the fact" norm none
+  classify "The gate reads the reference" norm gate:check_norm_ownership.sh
   classify "A prompt opens with frontmatter" description none
-  classify "A prompt states its subject once" judgement none
+  classify "A prompt states its subject once" norm none
   regenerate
   printf '# Judgement grouping map.\n' > "$FIXTURE_DIR/$JUDGEMENTS"
   map_row "A writer keeps the sentence" j-delete-test -
@@ -191,17 +181,26 @@ test_new_line_is_unclassified() {
   assert_contains "$OUT" "unclassified line" "the unclassified line is named"
 }
 
-test_rule_without_observer_fails() {
+test_norm_without_observer_is_a_judgement() {
   classify_fixture
-  classify "The gate reads the reference" rule none
+  classify "The gate reads the reference" norm none
+  map_row "The gate reads the reference" j-local-fact -
   run_gate --check
-  assert_rc 1 "$RC" "a rule with no observer fails the gate"
-  assert_contains "$OUT" "marks a rule with no observer" "the kind is named"
+  assert_rc 0 "$RC" "a norm with no observer is not an inconsistency"
+  assert_contains "$OUT" "judgement" "the line counts as a judgement once it is grouped"
+}
+
+test_description_with_observer_fails() {
+  classify_fixture
+  classify "A prompt opens with frontmatter" description gate:check_norm_ownership.sh
+  run_gate --check
+  assert_rc 1 "$RC" "a description carrying an observer fails the gate"
+  assert_contains "$OUT" "marks a description with an observer" "the mark is named"
 }
 
 test_review_observer_must_be_dispatched() {
   classify_fixture
-  classify "The gate reads the reference" rule review:principle-x
+  classify "The gate reads the reference" norm review:principle-x
   run_gate --check
   assert_rc 1 "$RC" "a skill no prompt dispatches cannot observe a rule"
   assert_contains "$OUT" "observer 'review:principle-x' that does not run" "the observer is named"
@@ -209,7 +208,7 @@ test_review_observer_must_be_dispatched() {
 
 test_review_observer_dispatched_passes() {
   classify_fixture
-  classify "The gate reads the reference" rule review:doc-maintenance
+  classify "The gate reads the reference" norm review:doc-maintenance
   run_gate --check
   assert_rc 0 "$RC" "a dispatched skill observes a rule"
 }
@@ -218,7 +217,7 @@ test_cited_skill_must_exist() {
   classify_fixture
   printf 'A writer applies `skills/ghost/SKILL.md` before drafting.\n' >> "$FIXTURE_DIR/$POLICY"
   run_gate --generate
-  classify "A writer applies \`skills/ghost/SKILL.md\`" judgement none
+  classify "A writer applies \`skills/ghost/SKILL.md\`" norm none
   regenerate
   run_gate --check
   assert_rc 1 "$RC" "a cited skill no root holds fails the gate"
@@ -237,7 +236,7 @@ test_two_cited_skills_are_ambiguous() {
   classify_fixture
   printf 'A writer reads `skills/doc-maintenance/SKILL.md` and `skills/principle-x/SKILL.md`.\n' >> "$FIXTURE_DIR/$POLICY"
   run_gate --generate
-  classify "A writer reads \`skills/doc-maintenance" judgement none
+  classify "A writer reads \`skills/doc-maintenance" norm none
   regenerate
   run_gate --check
   assert_rc 1 "$RC" "a line citing two skills fails the gate"
@@ -283,7 +282,7 @@ test_row_source_is_checked() {
 
 test_observer_name_matches_whole() {
   classify_fixture
-  classify "The gate reads the reference" rule review:doc
+  classify "The gate reads the reference" norm review:doc
   run_gate --check
   assert_rc 1 "$RC" "a fragment of a skill name is not a dispatch of it"
   assert_contains "$OUT" "observer 'review:doc' that does not run" "the fragment is named"
@@ -316,7 +315,8 @@ test_regroup_drops_a_gone_row() {
 
 run_test test_conforming_tree_passes
 run_test test_new_line_is_unclassified
-run_test test_rule_without_observer_fails
+run_test test_norm_without_observer_is_a_judgement
+run_test test_description_with_observer_fails
 run_test test_review_observer_must_be_dispatched
 run_test test_review_observer_dispatched_passes
 run_test test_cited_skill_must_exist
