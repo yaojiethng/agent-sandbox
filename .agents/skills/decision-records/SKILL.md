@@ -12,7 +12,7 @@ An ADR records the reasoning behind one standing principle. It states the chosen
 - **Unit of record.** One ADR per standing principle. A local design choice rides under an existing ADR; it spawns a file only when its principle governs more than one local choice, or when no existing ADR covers it. A component may host several independent principles, each its own ADR, because an ADR belongs to a principle rather than to a file or module.
 - **When one begins.** A design settles a principle whose consequences reach beyond the change that introduced it: a contract other components must match to stay compatible, or a rule that stabilizes a convention for future work. Reach, not size. A choice that affects one implementation detail in one file does not spawn an ADR.
 - **Change the principle, change the record.** When a local choice outgrows its governing ADR, redesign the ADR. Do not carve out an exception inside it.
-- **The record is current.** An ADR holds the live decision and its history. When the principle changes, edit the ADR in place and keep the timeline in the file.
+- **The record is current.** An ADR holds the live decision and its history. When the principle changes, edit it in place.
 
 ## Where to look
 
@@ -24,7 +24,7 @@ An ADR records the reasoning behind one standing principle. It states the chosen
 
 ## The record set
 
-A concept document states a model. The ADR states why that model was chosen over its alternatives. The concept links to its ADRs as further reading and is the parent; the ADR explains, and it does not restate the model.
+A concept document states a model; its ADR states why that model beat its alternatives. The concept is the parent and links its ADRs as further reading. The ADR does not restate the model.
 
 ## What an entry holds
 
@@ -37,7 +37,7 @@ The newest entry sits at the top. The entry marked `Current:` is the live decisi
 
 ## Current and historical
 
-A file has no single status. A living file holds current and historical entries, and each dated entry has a status.
+A file has no single status: each dated entry carries its own.
 
 | Entry status | Meaning |
 |---|---|

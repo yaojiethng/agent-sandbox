@@ -104,7 +104,7 @@ The `milestone` field names the task group the iteration belongs to. The task li
 
 ## The exploration record
 
-`devlog/discussions/` holds one record per line of enquiry. A record is one of four types, and the type decides what the record answers, its status path and its shape.
+`devlog/discussions/` holds one record per line of enquiry. The type decides what the record answers, its status path and its shape.
 
 ### A discussion record's filename
 

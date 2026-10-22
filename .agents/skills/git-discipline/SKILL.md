@@ -5,7 +5,7 @@ description: agent-sandbox's git-discipline convention - the commit message, the
 
 # git-discipline
 
-A commit is the unit a reviewer reads. This file states what a commit message carries, where a change lands when it corrects earlier work, and which runbook runs each history operation. `merge`, `rebase`, `record-correction` and `history-cleanup` each open by naming this convention, and the runbook table below is where the family is named as one set.
+A commit is the unit a reviewer reads. This file states the message, where a correction lands, and which runbook runs each history operation.
 
 ## The commit message
 
@@ -23,9 +23,9 @@ A lower-case type prefix, a colon, a space, and an imperative summary that compl
 
 The description states why the change happened and what category it is, not what changed line by line. A reason longer than 280 characters lives in the handover or the ADR, and the body points there. Drop a reference added for completeness, and never cite a transient identifier such as a session id.
 
-The type-prefixed shape follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+The shape follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): where this file is silent, that specification decides. The project narrows it in two ways, and neither is a gap: the type set is the nine active types, and there is no scope field.
 
-**The delivery commit carries an active type. An intermediate commit never does.** A typed intermediate reads as a closed deliverable that later folds away, a false delivery surface. An intermediate is a `wip:` commit, a fixup, or an amend. The type is chosen from the diff alone, so the record's type and the commit's type are independent judgements.
+**The delivery commit carries an active type. An intermediate commit never does.** A typed intermediate reads as a closed deliverable that later folds away, a false delivery surface. An intermediate is a `wip:` commit, a fixup, or an amend.
 
 ## The fold
 
@@ -43,7 +43,7 @@ Two cases decide who rules on a correction:
 - **The session that made the commit is still live.** The agent folds the correction into that commit, whichever actor raised the defect, without asking.
 - **That session has ended.** The operator rules whether the correction folds into that commit or lands as a separate commit.
 
-[`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact; the mechanics are there. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
+[`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
 
 ## Grouping
 
@@ -51,21 +51,17 @@ A commit is a coherent unit of change, and fewer meaningful commits beat many gr
 
 ## The branch name
 
-```text
-type/milestone_description
-```
-
-The type matches the commit type, the milestone is the sub-milestone ID with dots replaced by underscores, and the description is lowercase and hyphen-separated, with the underscore reserved for the milestone separator. A change not tied to a sub-milestone omits the milestone, as in `workflow/git-policy`.
+A branch name carries the commit type, the milestone and a slug, in that order. [`references/branching.md`](references/branching.md) states the parts, the two models and tagging.
 
 ## Runbooks
 
 | Runbook | Runs when |
 |---|---|
-| [`merge`](../../../workflow/coding-agent/prompts/merge.md) | a reviewed draft export lands on a branch as one commit per iteration, or a session branch lands on an integration branch |
-| [`rebase`](../../../workflow/coding-agent/prompts/rebase.md) | a stale branch is ported onto a changed target, one commit per iteration |
+| [`merge`](../../../workflow/coding-agent/prompts/merge.md) | an export is corrupted or partial and its changes must be replayed onto the current branch, one commit per iteration |
+| [`rebase`](../../../workflow/coding-agent/prompts/rebase.md) | a stale export must be ported onto the current branch, with the agent resolving conflicts and dropping what it no longer needs |
 | [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a draft branch's series holds an inversion, before the branch is packaged for review |
 
-The first two are prompts and the third is a skill, because it ships a detector beside itself and a prompt is one file. Each runbook states its own procedure.
+Each runbook states its own procedure.
 
 ## Where to look
 

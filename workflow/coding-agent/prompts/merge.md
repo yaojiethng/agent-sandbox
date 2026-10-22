@@ -74,7 +74,7 @@ Each conflict gets one verdict, decided against the accumulated tree.
 - Live: the change is absent and uncontradicted. Replay it as-is.
 - Divergent: two designs contradict each other within or across drafts. Stop and ask; this verdict never resolves itself.
 
-Fold current-state corrections into the commit that owns the subject: counts, suite totals, status lines. Never create a commit that only repairs an earlier replay; amend or fixup into the owning commit, following the repo's transient-commit rules.
+Fold current-state corrections into the commit that owns the subject: counts, suite totals, status lines. Never create a commit that only repairs an earlier replay; amend or fixup into the owning commit, per the `git-discipline` convention's fold rules and `/wrapup` Part A.
 
 ## Verify
 
@@ -82,7 +82,7 @@ Fold current-state corrections into the commit that owns the subject: counts, su
 - The branch carries no merge commit and no scaffolding commit.
 - `.draft-state` is absent from the result.
 - No conflict markers remain anywhere in the tree.
-- The suite is green under the repo runner: `bash scripts/run_tests.sh`. The test-liveness gate and the lint gate pass too: `bash scripts/lint.sh`.
+- The suite is green under the repo runner: `bash scripts/run_tests.sh`. The lint gate passes: `bash scripts/lint.sh`.
 - `git status` is clean apart from operator-owned strays you flagged.
 - The tree diff against each draft shows only intended content: excluded artifacts, target-side content, and applied corrections.
 

@@ -14,7 +14,7 @@
 | `test` | Adding or updating tests or test infrastructure: runner, stubs, harness, `tests/libs/` |
 | `build` | Changes to the Dockerfile, build scripts, or the image pipeline |
 
-The type is read off the diff, not off the record. A documentation iteration that only touches an ADR is `docs`; any behaviour change is `feat`, `fix` or `refactor` according to the diff. Both are evaluated at close: the commit type names what the change is, and the record's type names the deliverable.
+The type is read off the diff, not off the record: a documentation iteration that only touches an ADR is `docs`, and any behaviour change is `feat`, `fix` or `refactor` according to its diff.
 
 ## Choosing between types
 

@@ -41,6 +41,8 @@ Each active-operator prompt invokes the part of this runbook that applies:
 
 Run this after each committed task group within the session. It is a hygiene pass, not a release point; it does not stop the session.
 
+Commit the unit's work before its boundary, even when incomplete: a `wip:` checkpoint folds at the close, and a stash is not a record. `wip:` is a prefix and not a type, so it never reads as a delivered unit.
+
 ### A1. Enumerate the unit's commits
 
 ```bash
@@ -68,6 +70,10 @@ Present the boundary and the squash plan. For a multi-unit split, the operator d
 ### A5. Squash to one delivery commit
 
 Run the canonical squash procedure in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) (Canonical procedures -- squash to one delivery commit). The canonical block is the single source; do not restate it here. The close edit and write-back are staged into the same commit, never a separate one.
+
+Three kinds of transient commit fold into it: `wip:` checkpoints, a correction commit, and the close edit with its roadmap write-back.
+
+When the work commit has already landed and the close edit is still outstanding, fold the edit into that commit rather than adding one. The end state is one commit per iteration.
 
 ### A6. Confirm an open handover names the unit
 
@@ -124,6 +130,8 @@ Close the `docs/adr/` and `devlog/discussions/` documents whose work landed this
 ### B9. Prepare all files for the commit
 
 Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Set `Status: Closed`. The handover format gate checks the record's shape at the commit. Confirm the roadmap write-back from B4 is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
+
+A working tree holding changes from more than one iteration is split before the commit: save the diff, reset the file, and apply only the hunks that belong to each commit. Where the changes interleave inside one section, split the file or restructure so each iteration's work is disjoint.
 
 ### B10. Land the single commit
 

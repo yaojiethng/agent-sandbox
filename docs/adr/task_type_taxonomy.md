@@ -35,7 +35,7 @@ produces a report or a non-content reordering sweep; code changes from a sweep
 are `refactor`.
 
 **Why the link was removed.** An earlier taxonomy version forced a one-to-one
-"iteration type mapping" column onto the `git_policy` commit-type table
+"iteration type mapping" column onto the `git-discipline` commit-type table
 (`docs` -> `design`, `feat`/`fix`/`refactor` -> `impl`). That alignment
 misclassified a user-facing help-text pass as `workflow`, because the two
 single-word vocabularies did not carry the boundary. The failure mode was the
@@ -46,7 +46,7 @@ from the diff; the handover type is judged from the deliverable.
 
 **Links.** The operational tables live in the type vocabulary of the
 `work-log` convention (`.agents/skills/work-log/SKILL.md`) and
-[`docs/policies/git_policy.md`](../policies/git_policy.md) (Active Types).
+the `git-discipline` convention, `.agents/skills/git-discipline/references/commit-types.md` (the active types).
 This ADR records the principle; those tables record the current sets. The
 AGENTS.md guard carries the single chore carveout: a chore commit may land
 with no handover when the operator explicitly requires it.
