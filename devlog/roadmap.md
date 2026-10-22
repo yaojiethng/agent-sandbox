@@ -1,5 +1,5 @@
 ---
-active-milestone: M3.3 - Instruction Surface
+active-milestone: M3.3.2 - Retire the policy form
 active-milestone-status: in-progress
 ---
 
@@ -218,9 +218,9 @@ The sub-milestone that settled the contract between prompts, skills and the two 
 
 The design is settled at handover `20261014-08` and the binding ADR. This sub-milestone is the execution: one slice per policy, ordered so the pattern sets on the most self-contained document and the protocol moves last. It also carries the two facts the split leaves behind, the maintenance-surface declaration and the bundle drop, because both depend on where the retired content lands.
 
-**Depends on:** M3.3.1, which settles the contract this executes. The design records are [`20261014-design-settled-retire_the_policy_form.md`](discussions/20261014-design-settled-retire_the_policy_form.md) and [`20261014-design-settled-coding_agent_binding_surface.md`](discussions/20261014-design-settled-coding_agent_binding_surface.md); the ADR is [`coding_agent_project_bindings.md`](../docs/adr/coding_agent_project_bindings.md).
+**Depends on:** M3.3.1, which settles the contract this executes, and M3.3.4, whose judgement split the `documentation_policy` slice consumes; both are closed. The design records are [`20261014-design-settled-retire_the_policy_form.md`](discussions/20261014-design-settled-retire_the_policy_form.md) and [`20261014-design-settled-coding_agent_binding_surface.md`](discussions/20261014-design-settled-coding_agent_binding_surface.md); the ADR is [`coding_agent_project_bindings.md`](../docs/adr/coding_agent_project_bindings.md).
 
-**Sequencing:** the first M3.3 child after M3.3.4 phase A. Internally, the policy-member row runs first, then the slices in the design record's order: `adr_policy`, `discussion_policy`, `git_policy`, `documentation_policy` once the plain-wording family has filed the rules `### Simplified Technical English` carries, then `testing_policy`, and `iteration_policy` last because the protocol binds every runbook. The three maintenance-surface rows follow, and `Drop the policy bundle` is re-read last.
+**Sequencing:** opens after M3.3.4, which closed at handover `20261021-23`. Internally, the policy-member row runs first, then the slices in the design record's order: `adr_policy`, `discussion_policy`, `git_policy`, `documentation_policy` once the plain-wording family has filed the rules `### Simplified Technical English` carries, then `testing_policy`, and `iteration_policy` last because the protocol binds every runbook. The three maintenance-surface rows follow, and `Drop the policy bundle` is re-read last.
 
 **Acceptance criteria:**
 
