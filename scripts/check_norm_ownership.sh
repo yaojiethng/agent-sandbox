@@ -72,7 +72,7 @@ INTERFACE="$REPO_ROOT/src/build/container-interface.mjs"
 LEDGER="$SCAN_ROOT/scripts/lint/norm-ownership.tsv"
 JUDGEMENTS="$SCAN_ROOT/scripts/lint/norm-judgements.tsv"
 SOURCES=(
-  "docs/policies/documentation_policy.md"
+  ".agents/skills/docs/SKILL.md"
   "docs/development/prompt-authoring-conventions.md"
 )
 # The project convention corpus is read from the repository, not shipped as a

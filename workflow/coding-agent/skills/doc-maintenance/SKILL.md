@@ -1,6 +1,6 @@
 ---
 name: doc-maintenance
-description: "Checks the documentation set against documentation_policy.md and reports what the tree contradicts: a claim the implementation no longer holds, a link whose target does not say what the citing line claims, and a fact two documents state differently. Use at a loop or milestone close, or when the operator asks for a documentation pass. Writes no document."
+description: "Checks the documentation set against the `docs` convention and reports what the tree contradicts: a claim the implementation no longer holds, a link whose target does not say what the citing line claims, and a fact two documents state differently. Use at a loop or milestone close, or when the operator asks for a documentation pass. Writes no document."
 ---
 
 # doc-maintenance

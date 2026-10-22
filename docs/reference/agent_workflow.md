@@ -134,7 +134,7 @@ Maps each area of the workflow to the document that specifies it, what that docu
 | Milestone planning | the project's `task-list` convention and the `/milestone-start` and `/plan` prompts | Milestone states, the record shape, scoping criteria, and the close rules | Iteration execution |
 | Agent feedback and gotchas | routing: [`iteration_policy.md`](../policies/iteration_policy.md) (close review/publish invariants); record: `devlog/AGENT_FEEDBACK.md` | Entry classification (A/B/C, tagged `[A]`/`[O]`), routing at close, record format and lifecycle (declared in the record file) | Rule authoring, iteration-step sequencing |
 | Discussion record types | the `work-log` convention, `.agents/skills/work-log/SKILL.md` | The four types, their statuses, their names and their closure | Iteration sequencing, roadmap entry format, ADR authoring |
-| Documentation rules | [`documentation_policy.md`](../policies/documentation_policy.md) | Folder ownership, rule placement, grep navigation, policy-vs-skill separation | Workflow sequencing |
+| Documentation rules | the `docs` convention, `.agents/skills/docs/SKILL.md` | Folder ownership, the header, the content rules, grep navigation, the per-type obligations | Workflow sequencing |
 | Document references | `communication-principle-link-what-the-reader-can-open`, and the project's reference convention where it states one | What to link and what to name, where a link resolves, handoff links, link form | Documentation rules |
 | Security model and invariants | `docs/development/security.md` | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
 | Execution mechanics | [`execution_model.md`](../reference/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
@@ -147,7 +147,7 @@ Maps each area of the workflow to the document that specifies it, what that docu
 
 **The roadmap's rules and the iteration protocol** share the iteration boundary. The transition procedures -- compaction, the top-level close and the promotion invariant -- live in the `roadmap-maintenance` skill. The record's shape, its states, its numbering, its filing rules and its changelog form live in the project's `task-list` convention. The close invariants live in `iteration_policy.md`. An agent updating the roadmap reads the convention and the maintenance skill; an agent opening an iteration reads `iteration_policy.md`, which directs it to both at the moments a roadmap update is required.
 
-**documentation_policy.md** owns the rules for how documents should be written and structured. It does not maintain a file registry; the docs tree itself is the authoritative list of what exists. Layer freeze status is owned by system_overview.md.
+**The `docs` convention** owns the rules for how documents should be written and structured. It does not maintain a file registry; the docs tree itself is the authoritative list of what exists. Layer freeze status is owned by system_overview.md.
 
 **security.md and execution_model.md** are adjacent but non-overlapping. security.md defines what must be true -- the invariants and trust boundaries. execution_model.md defines how the system achieves those properties -- the mechanisms. A change to execution_model.md must be validated against security.md's invariants; a change to security.md's invariants may require changes to execution_model.md.
 

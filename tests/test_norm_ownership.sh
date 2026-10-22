@@ -39,7 +39,7 @@ source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
 GATE="$REPO_ROOT/scripts/check_norm_ownership.sh"
-POLICY="docs/policies/documentation_policy.md"
+PROSE=".agents/skills/docs/SKILL.md"
 CONVENTIONS="docs/development/prompt-authoring-conventions.md"
 LEDGER="scripts/lint/norm-ownership.tsv"
 JUDGEMENTS="scripts/lint/norm-judgements.tsv"
@@ -50,7 +50,7 @@ JUDGEMENTS="scripts/lint/norm-judgements.tsv"
 # against.
 build_fixture() {
   local root="$FIXTURE_DIR"
-  mkdir -p "$root/src/build" "$root/docs/policies" "$root/docs/development" \
+  mkdir -p "$root/src/build" "$root/.agents/skills/docs" "$root/docs/development" \
     "$root/skills/doc-maintenance" "$root/skills/principle-x" \
     "$root/prompts" "$root/scripts/lint"
 
@@ -80,8 +80,8 @@ GATES=(check_norm_ownership.sh)
 EOF
   printf '# Lint rule\n' > "$root/scripts/lint/linking.mjs"
 
-  cat > "$root/$POLICY" <<'EOF'
-# Documentation policy
+  cat > "$root/$PROSE" <<'EOF'
+# docs
 
 A writer keeps the sentence that changes a decision.
 
@@ -175,7 +175,7 @@ test_conforming_tree_passes() {
 
 test_new_line_is_unclassified() {
   classify_fixture
-  printf 'A writer never repeats the same sentence.\n' >> "$FIXTURE_DIR/$POLICY"
+  printf 'A writer never repeats the same sentence.\n' >> "$FIXTURE_DIR/$PROSE"
   run_gate --check
   assert_rc 1 "$RC" "a new line fails the gate"
   assert_contains "$OUT" "unclassified line" "the unclassified line is named"
@@ -215,7 +215,7 @@ test_review_observer_dispatched_passes() {
 
 test_cited_skill_must_exist() {
   classify_fixture
-  printf 'A writer applies `skills/ghost/SKILL.md` before drafting.\n' >> "$FIXTURE_DIR/$POLICY"
+  printf 'A writer applies `skills/ghost/SKILL.md` before drafting.\n' >> "$FIXTURE_DIR/$PROSE"
   run_gate --generate
   classify "A writer applies \`skills/ghost/SKILL.md\`" norm none
   regenerate
@@ -234,7 +234,7 @@ test_hand_edited_source_of_truth_is_rejected() {
 
 test_two_cited_skills_are_ambiguous() {
   classify_fixture
-  printf 'A writer reads `skills/doc-maintenance/SKILL.md` and `skills/principle-x/SKILL.md`.\n' >> "$FIXTURE_DIR/$POLICY"
+  printf 'A writer reads `skills/doc-maintenance/SKILL.md` and `skills/principle-x/SKILL.md`.\n' >> "$FIXTURE_DIR/$PROSE"
   run_gate --generate
   classify "A writer reads \`skills/doc-maintenance" norm none
   regenerate

@@ -40,7 +40,7 @@ Code changes should be self-contained within a single iteration. The operator re
 
 An approval that produces an artifact edits the file that is its source of truth, in the same unit of work, per `principle-approval-writes-the-artifact` at `$AGENT_HOME/agent/skills/principle-approval-writes-the-artifact/SKILL.md`. With version control the write is cheap to undo; a decision held in the conversation cannot be reverted, resumed or checked. A decision kept only in the conversation is re-derived later, and its re-derivation fails no gate.
 
-Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) `### Line wrapping`.
+Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See the `docs` convention, `.agents/skills/docs/SKILL.md` `## What a document may contain`.
 
 When writing code, always take into account the following:
 
@@ -84,11 +84,13 @@ Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
 
 The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-keep-a-subject-near` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
 
-The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
+The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: the `docs` convention's `## What a document may contain`, which the `doc-wrap` and `doc-ascii` lint rules catch.
 
 Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
 
 Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
+
+Read a finished instruction as a literal reader: if the words allow the reader to infer a task, an action or a conclusion the writer did not intend, one of the judgements above failed, and the sentence is rephrased with that one.
 
 ## Fresh Subagent Invocation
 

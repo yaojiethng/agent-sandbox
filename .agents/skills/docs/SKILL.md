@@ -5,6 +5,8 @@ description: agent-sandbox's docs convention - which folder a document belongs t
 
 # docs
 
+## Folder tree
+
 This project's document tree lives at `docs/`, in four folders, beside the `devlog/` record set.
 
 | Folder | Holds | Ships |

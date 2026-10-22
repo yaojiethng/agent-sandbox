@@ -24,7 +24,7 @@ Substitute the slice's file set for `<files>`, and pass the text below unchanged
 >
 > **The bars, read each before you judge.**
 >
-> - `docs/policies/documentation_policy.md`, the Communication Standards. The operative rule is the delete test. If a reader can delete a word, phrase or sentence without losing required meaning, delete it.
+> - `AGENTS.md`, the Communication Standards and the corpus it indexes. The operative rule is the delete test in `communication-principle-cut-what-carries-nothing`; the literal-reader test beside it catches an instruction that permits more than the writer intended.
 > - `docs/development/prompt-authoring-conventions.md`. The runbook, advisor, reference and completion-criterion bars, and the rule that a borrowed rule names its source of truth.
 > - `docs/development/instruction-surface-conventions.md`. What a convention-skill is, and how it differs from a procedure.
 > - The project's `skill-scaffolder` skill. The expected SKILL.md shape and frontmatter contract. It sits in the project tree rather than the seeded convention corpus, so this line names it without a path.

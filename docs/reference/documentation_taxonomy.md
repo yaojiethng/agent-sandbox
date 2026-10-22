@@ -12,8 +12,8 @@ This document is the index and view of the documentation ecosystem. It states no
 |---|---|---|---|---|
 | Policy document (`docs/**/*_policy.md`) | rules for how the harness runs: workflows, handovers, iterations, roadmaps, documentation | durable | sections numbered | per-file; the rules of rule-hood are in `docs/adr/policy_declarative_framing.md` |
 | ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` |
-| Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations |
-| Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | [`documentation_policy.md`](../policies/documentation_policy.md); the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
+| Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | the `docs` convention, `.agents/skills/docs/SKILL.md` -- What each document type owes |
+| Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | the `docs` convention, `.agents/skills/docs/SKILL.md`; the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
 | `readme.md` | entry point for humans and agents: system invariants, architecture layer model, documentation guide path | durable | no unit numbers | -- |
 | `AGENTS.md` | provider notes, collaboration protocol, role, read discipline, output format rules | durable | no unit numbers | -- |
 | Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | identity `M` and `T` codes; no renumbering | the project's `task-list` convention |
@@ -39,7 +39,7 @@ A document lives in exactly one `docs/` folder or in `devlog/`. Each folder hold
 
 The table describes this repository's tree. `reference/` and `policies/` reach every session because the image mounts them; `adr/`, `development/` and `devlog/` are this project's, so a session in a provisioned project reads that project's own. `## Reach` states the axis and `scripts/check_reach.sh` holds it to the manifest.
 
-The placement rule (each document in exactly one category) is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Folder Structure.
+The placement rule (each document in exactly one category) is in the `docs` convention, `.agents/skills/docs/SKILL.md` -- Folder tree.
 
 ## Durability
 
@@ -68,13 +68,13 @@ A pointer states reach in two values, `every session` and `this project`, becaus
 
 A record moves through stages. Each stage is a readable summary; the rule that governs it lives in the policy it names.
 
-- **Place.** Pick the folder category before drafting. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Folder placement.
-- **Author.** A record-layer document starts with a confirmed skeleton. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Skeleton first for record-layer documents.
-- **Format.** Every `docs/` document opens with the same header block. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Document header format.
-- **Maintain.** A durable record is written for its reader, not for the session that produced it. Judgement: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. Procedure: [`documentation_policy.md`](../policies/documentation_policy.md) -- Subject, not the session.
-- **Check.** A record must satisfy the document lint gate to close. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Tooling checks.
-- **Correct after close.** A closed record's content does not change; it gains its type's marker. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Post-close document corrections.
-- **Reference a missing document.** A missing document is an error unless its link carries `[REMOVED]`. Rule: [`documentation_policy.md`](../policies/documentation_policy.md) -- Missing documents.
+- **Place.** Pick the folder category before drafting. Rule: the `docs` convention, `.agents/skills/docs/SKILL.md` -- Drafting.
+- **Author.** A record-layer document starts with a confirmed skeleton. Rule: the `docs` convention, `.agents/skills/docs/SKILL.md` -- Drafting.
+- **Format.** Every `docs/` document opens with the same header block. Rule: the `docs` convention, `.agents/skills/docs/SKILL.md` -- How a document opens.
+- **Maintain.** A durable record is written for its reader, not for the session that produced it. Judgement: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. Procedure: the `docs` convention, `.agents/skills/docs/SKILL.md` -- Drafting.
+- **Check.** A record must satisfy the document lint gate to close. Rule: the `doc-maintenance` procedure, `workflow/coding-agent/skills/doc-maintenance/SKILL.md` -- The lint rule set.
+- **Correct after close.** A closed record's content does not change; it gains its type's marker. Rule: the `record-correction` procedure, `workflow/coding-agent/prompts/record-correction.md` -- Correcting a record.
+- **Reference a missing document.** A missing document is an error unless its link carries `[REMOVED]`. Rule: the project `AGENTS.md` -- Missing Documents.
 
 ## Promotion topology
 
@@ -82,11 +82,11 @@ Documents promote along a path, and each step is an obligation whose source of t
 
 - **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins.
 - **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- The record set.
-- **Concept to architecture.** The concept states the model; the architecture document carries the implementation design. What a concept document describes is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Concept document obligations.
+- **Concept to architecture.** The concept states the model; the architecture document carries the implementation design. What a concept document describes is in the `docs` convention, `.agents/skills/docs/SKILL.md` -- What each document type owes.
 
 ## Boundary
 
-Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority. The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
+Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`agent_workflow.md`](agent_workflow.md#norm-kinds). The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
 
 Everything under a project's `.agents/` is project-scoped: that project's sessions read it and no other project's session does. A document read more widely names a path there only where a mechanism that ships guarantees the path exists, so a shipped document names the convention a project may state rather than the one it has.
 
@@ -96,9 +96,9 @@ Everything under a project's `.agents/` is project-scoped: that project's sessio
 |---|---|
 | "I am new here -- what documents exist and which do I need?" | this document |
 | "What is a concept document against an ADR or a discussion?" | Promotion topology |
-| "Where does this file go?" | Folder taxonomy (this document); the placement rule is in [`documentation_policy.md`](../policies/documentation_policy.md) -- Folder Structure |
-| "Is this statement a rule or a description? Where is the source of truth of a rule?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Rule authority |
-| "How do I write the prose?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Communication Standards |
-| "What content is forbidden in an architecture document?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Prohibited content |
-| "What does the lint check? What must a record satisfy?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Tooling checks |
-| "How do I correct a closed record?" | [`documentation_policy.md`](../policies/documentation_policy.md) -- Post-close document corrections |
+| "Where does this file go?" | Folder taxonomy (this document); the placement rule is in the `docs` convention, `.agents/skills/docs/SKILL.md` -- Folder tree |
+| "Is this statement a rule or a description? Where is the source of truth of a rule?" | [`agent_workflow.md`](agent_workflow.md#norm-kinds) |
+| "How do I write the prose?" | the `communication-principle-*` corpus, indexed in the provider `AGENTS.md` |
+| "What content is forbidden in an architecture document?" | `communication-principle-dont-forecast-undone-work`; the `doc-maintenance` register names the symptom |
+| "What does the lint check? What must a record satisfy?" | `workflow/coding-agent/skills/doc-maintenance/SKILL.md` -- The lint rule set |
+| "How do I correct a closed record?" | `workflow/coding-agent/prompts/record-correction.md` -- Correcting a record |

@@ -39,7 +39,7 @@
 
 **Rejected alternatives:** kept the session-open primer with the durable skill as the elevation home (the prior model) -- rejected because the primer read as a task and added no reliable value the mistake-as-Finding capture already provides.
 
-**Edge cases / drivers:** the writing rules now carry a literal-reader test (`documentation_policy.md`): encode a rule as an instruction that names the object and the action, not a prohibition. That test is a driver for this decision. When the reader model changes, both the raw record file and the policy pointer must change together; the raw `GOTCHAS.md` was the last surface to move in the sweep.
+**Edge cases / drivers:** the writing rules now carry a literal-reader test (the provider `AGENTS.md`): encode a rule as an instruction that names the object and the action, not a prohibition. That test is a driver for this decision. When the reader model changes, both the raw record file and the policy pointer must change together; the raw `GOTCHAS.md` was the last surface to move in the sweep.
 
 ## 2026-08-09 -- Session-open primer reader model
 

@@ -1,5 +1,5 @@
 // markdownlint custom rule: one paragraph per physical line.
-// Enforces docs/policies/documentation_policy.md `### Line wrapping`:
+// Enforces `.agents/skills/docs/SKILL.md` `## What a document may contain`:
 // prose is one paragraph per physical line, however long the line;
 // hard breaks separate blocks only (paragraphs, headings, list items).
 //
@@ -19,7 +19,7 @@
 // scripts/check_doc_wrap_legacy.sh fails the commit that next touches one, so a
 // file's grandfathering lasts exactly until somebody edits it. One setting, one
 // home: neither list is repeated here, and neither uses a per-file disable
-// comment (documentation_policy.md `### Markdown lint gate`).
+// comment (the `doc-maintenance` skill's `### The lint rule set`).
 
 import { relative, resolve } from "node:path";
 
@@ -61,7 +61,7 @@ export default [
           lineNumber: token.map[0] + 1,
           detail: "paragraph spans " + lines +
             " physical lines; keep one paragraph per physical line" +
-            " (documentation_policy.md ### Line wrapping)",
+            " (`.agents/skills/docs/SKILL.md` ### What a document may contain)",
         });
       }
     },

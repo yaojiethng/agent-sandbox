@@ -125,4 +125,4 @@ A closed roadmap or changelog entry does not change: it keeps its text, gains on
 
 A correction that cannot be finished leaves the record as it was, with the metadata it carried before. A correction that does finish reopens the record and closes it again with the successor entry; the changelog is corrected the same way.
 
-The shared principle, the direction, the propagation rule and the agent's checks are in [`documentation_policy.md`](../../../docs/policies/documentation_policy.md#post-close-document-corrections). The decisions behind the correction form are in `docs/adr/closed_record_corrections.md`.
+The shared principle, the direction, the propagation rule and the form per record type are in the [`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) procedure, `## Correcting a record`. The decisions behind the correction form are in `docs/adr/closed_record_corrections.md`.
