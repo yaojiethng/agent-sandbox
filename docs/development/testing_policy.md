@@ -1,5 +1,5 @@
 ---
-description: "Owns the testing standards for the agent-sandbox test suite: test isolation, fixture handling, test placement, and the anti-patterns the suite rejects."
+description: "Owns the testing rules not yet moved: test placement, the `make test` invariant, registration liveness, and keeping tests current. The judgements and patterns for writing a test live in the `testing` convention-skill; this document is the migration bridge for the rest."
 scope: ["tests/"]
 ---
 
@@ -7,133 +7,17 @@ scope: ["tests/"]
 
 **When to write tests:** any function with meaningful branching, error handling, or external dependencies gets tests. Tests are produced alongside implementation, not deferred.
 
-## Core Principles
-
-### 1. Test Isolation is Mandatory
-
-Every test must be independent and reproducible. Tests must not depend on:
-
-- State from previous tests
-- User's home directory or working directory
-- Any path outside the test's temporary fixture directory
-
-**Rule:** All test fixtures must live under a temporary directory. `test_setup` at file scope and `run_test` allocate a fresh per-test `FIXTURE_DIR`; extras come from `get_fixture_dir`; the allocator cleans up on exit. A test must never use a bare `mktemp -d`.
-
-```bash
-# ✓ Correct: isolated per-test fixture directory
-test_setup   # file scope; also sets FIXTURE_ROOT for shared scaffolding
-
-test_example() {
-  local P="$FIXTURE_DIR/test_project"
-  local S="$FIXTURE_DIR/test_sandbox"   # FIXTURE_DIR is fresh for this test
-  ...
-}
-```
-
-### 2. Fixtures Must Be Cleaned Before Use
-
-Helper functions that create fixtures must explicitly remove existing state before creating new state. Silent accumulation of state causes non-deterministic test failures.
-
-```bash
-# ✓ Correct: explicit cleanup before creation
-make_project() {
-  local DIR="$1"
-  rm -rf "$DIR"              # ← Clean first
-  mkdir -p "$DIR"
-  git -C "$DIR" init --quiet
-  ...
-}
-
-# ✗ Wrong: assumes directory is empty
-make_project() {
-  local DIR="$1"
-  mkdir -p "$DIR"            # ← May contain stale state
-  git -C "$DIR" init --quiet
-  ...
-}
-```
-
-### 3. Avoid Shared State Between Test Calls
-
-When a test calls a helper function multiple times (e.g., to create multiple sessions), each call must not destroy state created by previous calls unless that is the explicit purpose of the test.
-
-```bash
-# ✓ Correct: preserves other sessions, cleans only its own
-make_session() {
-  local SANDBOX_DIR="$1"
-  local SESSION="$2"
-  mkdir -p "$SANDBOX_DIR/.workspace"          # ← Create if needed, don't destroy
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
-  rm -rf "$SESSION_DIR"                       # ← Clean only this session
-  mkdir -p "$SESSION_DIR/patches"
-  ...
-}
-
-# ✗ Wrong: destroys all sessions including ones just created
-make_session() {
-  local SANDBOX_DIR="$1"
-  local SESSION="$2"
-  rm -rf "$SANDBOX_DIR/.workspace"            # ← Destroys previous sessions!
-  mkdir -p "$SANDBOX_DIR/.workspace"
-  local SESSION_DIR="$SANDBOX_DIR/.workspace/session-diffs/$SESSION"
-  ...
-}
-```
-
-### 4. Test Files Must Be Self-Contained
-
-A test file may only source helpers from `tests/libs/`. It must never source another test file, and must never depend on another test file having run first.
-
-`tests/libs/` files contain only helper functions - no test execution, no `run_test` calls, no pass/fail counters. A `tests/libs/` file sourced in isolation must produce no output and have no side effects.
-
-```bash
-# ✓ Correct: source only from tests/libs/
-source "$REPO_ROOT/tests/libs/test_common.sh"
-source "$REPO_ROOT/tests/libs/git_fixtures.sh"
-source "$REPO_ROOT/tests/libs/session_fixtures.sh"
-
-# ✗ Wrong: sourcing another test file
-source "$REPO_ROOT/test_draft_workflow.sh"   # ← Executes tests, pollutes state
-```
-
 ## Shared Fixtures (`tests/libs/`)
 
-Helpers used by more than one test file live in `tests/libs/` and are sourced explicitly. Four fixture files are established:
-
-| File | Contains |
-|---|---|
-| `tests/libs/test_common.sh` | Per-test unit accounting and isolation: `pass()`, `fail()`, `run_test()`, `test_done()`, `get_fixture_dir()` |
-| `tests/libs/git_fixtures.sh` | Git repo setup helpers: `make_repo()`, `make_committed_repo()`, `make_sandbox_fixture()`, `get_init_sha()`, `write_session_state()`, `commit_change()` |
-| `tests/libs/session_fixtures.sh` | Session fixture: `make_session_fixture()` -- unified session directory creator with optional patches and uncommitted.diff |
+Helpers used by more than one test file live in `tests/libs/` and are sourced explicitly; the `testing` skill's fixture pattern lists the files and the sourcing rule.
 
 **Rules for `tests/libs/` files:**
 
 - Helper functions only - no test execution
-- Every helper must follow Core Principles 1-3 (isolation, clean-before-create, no shared state)
+- Every helper follows the `testing` skill's judgements: isolation, clean before create, and no shared state
 - A new helper belongs in `tests/libs/` if and only if it is used by two or more test files; otherwise it lives in the test file itself
 
 Do not add a new `tests/libs/` file without a clear category boundary. If a helper does not fit an existing file, name the new file to reflect its distinct scope.
-
-### Using `test_common.sh`
-
-Always source `test_common.sh` instead of defining `pass()`, `fail()`, and counter variables inline. It provides:
-
-- `pass()` / `fail()` -- identical formatting across all test files
-- `skip()` -- marks the current test as temporarily absent when its subject is not ready (an unstubbed operation, a missing dependency); reported as a warning, resolved short-term so skips trend back to zero
-- `run_test()` -- test runner that continues on failure
-- `test_done()` -- summary reporter that exits with failure count. The count-as-exit-code is the documented exemption to the verdict-only rule in [`bash-coding-conventions.md`](bash-coding-conventions.md) 3.2: the count is the report, and every consumer reads only zero versus non-zero.
-
-`run_test` invokes the test function as `$1 || true`. Bash suppresses `set -e` for a command in a `||` list, and that suppression covers the whole test function body -- nested function calls and any background subshell the body starts are also exempt. Consequences for writing tests:
-
-- A test cannot observe whether a production `set -e` guard exists by calling the production function directly in the test body; the guard is never exercised.
-- Assert the observable outcome instead: a call count, a marker file, a captured artefact.
-- When the abort itself is the contract, run the probe in a fresh `bash` process outside the harness, as `tests/test_routing.sh::test_autosave_tick_absorbs_status_under_real_set_e` does -- the probe sources the production libraries, starts its own `set -euo pipefail`, and the test asserts on a marker the probe writes.
-
-```bash
-source "$REPO_ROOT/tests/libs/test_common.sh"
-```
-
-Every test file and knowledge test file must source `test_common.sh` instead of defining `pass()` / `fail()` locally. The only exception is diagnostic scripts (`diagnose_*.sh`) that run inside containers where `tests/libs/` is not available.
 
 ## Test Placement -- `tests/`, `tests/knowledge/`, `tests/integration/`
 
@@ -265,10 +149,8 @@ This applies to renames, interface changes, flag additions, and behavioural fixe
 
 ## See Also
 
-[`testing-conventions.md`](testing-conventions.md) -- fixture patterns, anti-patterns, templates, checklists, and debug steps.
+[`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) -- the judgements and patterns for writing a test.
 
-[`read-through-run.md`](../../.agents/drafts/read-through-run.md) -- the brief for a periodic whole-tree read-through pass: pair each production file with its covering tests, mutate the behaviour, and record the findings.
+[`testing-conventions.md`](testing-conventions.md) -- the debugging guide and the two checklists (migration bridge).
 
-[`churn-analysis-run.md`](../../.agents/drafts/churn-analysis-run.md) -- the brief for the churn-analysis pass: rank the tracked files by commit count with a pinned command and window, separate mechanical churn from functional churn, and cross-reference the read-through register.
-
-[`fanout-run.md`](../../.agents/drafts/fanout-run.md) -- the draft brief for fanning a large pass out to parallel subagents: a frozen snapshot per batch, one owner per file, a serialized test suite, and a scripted register integrity check.
+[`test_harness_mechanism.md`](test_harness_mechanism.md) -- the runner, the unit contract, the result protocol and the gates.

@@ -95,7 +95,7 @@ for F in "$TESTS_DIR"/test_*.sh; do
     /^[[:space:]]*test_done([[:space:]]|$)/ { seen = 1 }
     /^[[:space:]]*run_test[[:space:]]+test_[A-Za-z0-9_]+([[:space:]]|$)/ { if (seen) exit 1 }
   ' "$F"; then
-    echo "DEAD-REGISTRATION: $NAME: run_test registered after test_done -- the registration is dead code (testing-conventions.md, Test Structure Template)" >&2
+    echo "DEAD-REGISTRATION: $NAME: run_test registered after test_done -- the registration is dead code (.agents/skills/testing/patterns/structure.md, one file one registration block)" >&2
     FINDINGS=$((FINDINGS + 1))
   fi
 done

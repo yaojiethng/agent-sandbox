@@ -328,7 +328,7 @@ A function that cannot determine its answer must not return the same status as o
 
 An in-process function may carry a distinguishing status when one helper owns its dispatch. The rule is about the boundary a caller sees: a process exit status carries a verdict only, and a caller that would otherwise have to switch on several codes is better served by a single helper that maps them to a boolean and prints the diagnostic. Prefer that helper over repeating a `case` at every call site.
 
-One standing exemption: a test harness may exit with its failure count, because the count is the point of the report, every consumer reads only zero versus non-zero, and a suite that reaches 256 failures has a problem the exit code cannot express anyway. See [`testing_policy.md`](testing_policy.md).
+One standing exemption: a test harness may exit with its failure count, because the count is the point of the report, every consumer reads only zero versus non-zero, and a suite that reaches 256 failures has a problem the exit code cannot express anyway. See [`test_harness_mechanism.md`](test_harness_mechanism.md) -- The result protocol.
 
 **Renumbering note (2026-09-19):** this section was inserted as 3.2, so the former 3.2 (dual-use scripts) is now 3.3 and the former 3.3 (no speculative flags) is now 3.4. A record written before that date that cites rule 3.2 for the dual-use guard means 3.3, and one that cites 3.3 for no-speculative-flags means 3.4. Nothing else moved.
 
@@ -402,8 +402,8 @@ A scan for a process by name matches its own command line, because the pattern t
 | Source | Relationship |
 |---|---|
 | `interface-conventions.md` | CLI/TUI/API rules (this doc covers bash, not interface) |
-| `testing-conventions.md` | Test patterns and anti-patterns |
-| `testing_policy.md` | Testing policy and rules |
+| `.agents/skills/testing/SKILL.md` | Test judgements and patterns |
+| `testing_policy.md` | Test placement and suite rules (migration bridge) |
 | `.agents/audits/bash-audit.skill.md` | Automated audit skill |
 | `devlog/AGENT_FEEDBACK.md` Gotchas section `[O]` | Original `exit` vs `return` finding |
 | `devlog/AGENT_FEEDBACK.md` Bash section | Historical bash friction records |

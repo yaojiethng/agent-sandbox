@@ -19,7 +19,7 @@
 # The rule's live whole-tree behaviour is the Markdown lint gate's job
 # (`check_markdown.sh`), not a fixture unit test's: the repo tree is not
 # guaranteed to hold the negative cases, and this test would re-lint the
-# project inside the suite. See testing-conventions.md Anti-Pattern 8.
+# project inside the suite. See .agents/skills/testing/patterns/assertions.md, the whole-tree scan pattern.
 # Run:   bash tests/test_doc_wrap_rule.sh
 # Exit:  0 = all passed, non-zero = failure count
 

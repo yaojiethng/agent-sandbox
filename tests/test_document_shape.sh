@@ -26,8 +26,8 @@
 # gate must not read it.
 #
 # The whole-tree behaviour is the lint umbrella's job (check_document_shape.sh in
-# scripts/lint.sh), not a fixture unit test's: see testing-conventions.md
-# Anti-Pattern 8.
+# scripts/lint.sh), not a fixture unit test's: see .agents/skills/testing/patterns/assertions.md,
+# the whole-tree scan pattern.
 
 set -uo pipefail
 

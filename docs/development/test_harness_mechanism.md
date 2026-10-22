@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This document describes how the unit-test harness runs: discovery, parallel dispatch, the result protocol, and the gates around the suite. It is the mechanism layer. Authoring rules live in [`testing-conventions.md`](testing-conventions.md) and policy in [`testing_policy.md`](testing_policy.md).
+This document describes how the unit-test harness runs: discovery, parallel dispatch, the result protocol, and the gates around the suite. It is the mechanism layer. The judgements and patterns for writing a test live in [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md); the placement and suite rules in [`testing_policy.md`](testing_policy.md).
 
 The harness guarantees one invariant: a trustworthy green or red signal. Every unit result must be counted exactly once, and a failure must never look green. The design satisfies this by carrying counts over a self-describing report, not by re-parsing the test's printed noise.
 
@@ -39,6 +39,8 @@ A unit is one of three outcomes:
 - SKIP: the test called `skip()` because its subject is not ready (an unstubbed operation, a missing dependency). A skip is a warning, not a failure. `skip()` ends the test immediately and counts the unit as skipped; the cause is resolved so skips trend back to zero.
 
 `test_done` prints the per-file report: `Results: N passed, M failed, K skipped`. It exits with the failing-unit count, so a file's exit status carries the number of failures. It also emits the `UNIT:` report line described next.
+
+`run_test` invokes the test function as `$1 || true`. Bash suppresses `set -e` for a command in a `||` list, and that suppression covers the whole test function body - nested function calls and any background subshell the body starts are also exempt. The consequences for a test: it cannot observe whether a production `set -e` guard exists by calling the production function directly, because the guard is never exercised. Assert the observable outcome instead - a call count, a marker file, a captured artefact. When the abort itself is the contract, run the probe in a fresh `bash` process outside the harness, as `tests/test_routing.sh::test_autosave_tick_absorbs_status_under_real_set_e` does: the probe sources the production libraries, starts its own `set -euo pipefail`, and the test asserts on a marker the probe writes.
 
 ## The result protocol
 
@@ -114,6 +116,7 @@ A green suite is not evidence that one of these guards still earns its place, an
 
 ## See also
 
-- [`testing-conventions.md`](testing-conventions.md) -- the authoring bar and the test structure template.
+- [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) -- the judgements and patterns for writing a test.
+- [`testing-conventions.md`](testing-conventions.md) -- the debugging guide and the two checklists (migration bridge).
 - [`testing_policy.md`](testing_policy.md) -- test placement and the `make test` invariant.
 - [`docs/adr/test_harness.md`](../adr/test_harness.md) -- the harness decision record.

@@ -51,7 +51,7 @@
 #
 # The rule's live whole-tree behaviour is the Markdown gate's job
 # (`check_markdown.sh`), not a fixture unit test's: see
-# testing-conventions.md Anti-Pattern 8.
+# .agents/skills/testing/patterns/assertions.md, the whole-tree scan pattern.
 
 set -uo pipefail
 
