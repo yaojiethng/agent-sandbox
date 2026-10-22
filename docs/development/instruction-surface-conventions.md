@@ -98,6 +98,8 @@ Gates read the declaration through [`src/build/container-interface.mjs`](../../s
 
 [`scripts/check_norm_ownership.sh`](../../scripts/check_norm_ownership.sh) reads the same declaration for the skill and prompt roots. Every observer it admits, and every skill a judgement cites as its source of truth, has to resolve to a skill directory: a root the declaration carries, or the project convention corpus at `.agents/skills`, which is not a container surface. A new skill root is declared once, and a skill no prompt names cannot observe a rule.
 
+[`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the reach axis to the declaration from the other side: the mount rows the manifest carries against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`. It reads both, so neither copies the other's list. A mount row added and not routed fails the row; a route with nothing behind it fails the route; a folder the table states repository-only fails when a manifest path reaches it.
+
 [`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, holds the files to their cell's reach. A link in a cell's file must land inside the set the declaration grants that cell: every instruction root, the `session` paths, and the cell's own `reachable` rows. A target outside that set fails even when the image carries it, because it names a tree the surface cannot reach. A repository link under a `reachable` row resolves there instead of in the image.
 
 The gates are why a stale claim cannot survive. A `COPY` line added or removed fails the cell that described the old map, and a path that changes in the manifest and not in a layer table fails as a drift.

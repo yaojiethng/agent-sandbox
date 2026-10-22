@@ -51,12 +51,12 @@ How a document arrives in front of that reader is a second fact, delivery, and t
 
 | Delivered by | The roots it carries | Reach |
 |---|---|---|
-| the image, as a module payload | the roots the manifest mounts at `/opt/sandbox/` | every session |
+| the image, as a module payload | the roots the manifest mounts at `/opt/sandbox/`, `/opt/workflow/agent/skills/`, `/opt/workflow/agent/prompts/` and `/opt/workflow/agent/modules/` | every session |
 | the image, as a provider's config | the roots the manifest mounts at `/opt/workflow/agent/config/` | every session |
 | the project's own setup | `workflow/coding-agent/skills/initialize/assets/conventions/`, copied into `.agents/skills/<name>/` | every session, once the project has run `initialize` |
 | nothing | the repository-only folders, `docs/adr/`, `docs/development/`, `devlog/`, and the tree itself | a session with the repository tree present |
 
-Which root the manifest mounts where is the manifest's, in `src/build/container-interface.json`, and this document copies no list of roots.
+Which root the manifest mounts where is the manifest's, in `src/build/container-interface.json`, and this document copies no list of roots. `scripts/check_reach.sh` holds the two together: every mount the manifest carries is one this table's routes cover, every mount point here carries something, a folder stated repository-only is reached by no manifest path, and a delivered folder exists in the tree.
 
 Enablement is a property of a module and not a reach value.
 
