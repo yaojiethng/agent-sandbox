@@ -17,7 +17,7 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 
    Do not write in `$AGENT_HOME/agent/skills/` directly. The config home is seeded from the image at every start, so a file written there is lost on the next start, and no gate reads it while it lives.
 3. **Draft the Frontmatter:** Construct the mandatory YAML frontmatter using the exact template schema below.
-4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill.
+4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill. When the content carries more than one kind, or a code-bearing form, split it per [`patterns/nested-patterns.md`](patterns/nested-patterns.md).
 5. **Write File:** Use file system tools to create the folder and write the final `SKILL.md` file automatically.
 
 ## Standard SKILL.md Output Template
@@ -34,6 +34,14 @@ description: <Clear explanation of when the agent should automatically trigger t
 ## The body's sections
 
 The body's order is in `docs/development/prompt-authoring-conventions.md` `## Structure of a workflow document`, which lists the parts a skill carries and the parts that only a prompt carries. This skill lives in the project tree, so that document resolves wherever the skill runs.
+
+## Nested files
+
+A skill may carry siblings beside `SKILL.md`. The `SKILL.md` index names each one and the situation that opens it; a sibling it does not name is never loaded.
+
+| File | Open when |
+|---|---|
+| [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | the content grows past one body and you must decide what stays inline and what becomes a sibling |
 
 ## How to Use the Generated Skill
 
