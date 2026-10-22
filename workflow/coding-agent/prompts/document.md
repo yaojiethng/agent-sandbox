@@ -128,7 +128,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 - **The handover is the record of the criteria.** It follows the project's `work-log` convention.
 - **At the scope gate**, present the intent restatement, the in-scope files, the acceptance criteria table the project's `work-log` convention states, with the pre-verification output, the deferred items, and the open questions. This is the table [`/iter`](iter.md) `### Step 5` requires.
 - **At pre-close**, present the same table with `Result` carrying the marking.
-- **At the close**, one delivery commit carries the documents, the closed handover, and the roadmap write-back, per [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md).
+- **At the close**, one delivery commit carries the documents, the closed handover, and the roadmap write-back, per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
 - **Findings and deferred items** carry their destinations before the handover closes, per the close invariants in [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md).
 
 ## Non-goals
@@ -154,5 +154,5 @@ Invariants:
 
 - Every acceptance criterion names an observable delta the operator checks by running a command, per [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `## Principles`.
 - The handover holds the canonical acceptance criteria, and no criterion lives only in the conversation, per [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md) `### Acceptance-criteria invariants`.
-- One iteration is one unit, landing as one delivery commit per [`git_policy.md](/opt/sandbox/docs/policies/git_policy.md).
+- One iteration is one unit, landing as one delivery commit per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
 - Each rule this prompt copies inline names the source of truth that governs it, per `### Norm kinds` in `agent_workflow.md`.

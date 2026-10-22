@@ -2,7 +2,7 @@
 # run_case.sh -- run one eval case against one instruction-set candidate, then score the runs.
 #
 # The candidate is a directory holding the two files under test, AGENTS.md and
-# git_policy.md. Every run gets its own clone of the base bundle, its own copy of
+# .agents/skills/git-discipline/SKILL.md. Every run gets its own clone of the base bundle, its own copy of
 # the candidate files, and an identical uncommitted workload.
 #
 # The clone is scratch and lives in a work root: a temp directory removed when the
@@ -40,7 +40,7 @@ if [[ "$MEASURE_ONLY" == false ]]; then
   [[ -f "$PATCH" ]] || { echo "patch not found: $PATCH" >&2; exit 2; }
 fi
 [[ -n "$OUT" ]] || { echo "--out is required" >&2; exit 2; }
-[[ -f "$CANDIDATE/AGENTS.md" && -f "$CANDIDATE/git_policy.md" ]] || { echo "candidate needs AGENTS.md and git_policy.md: $CANDIDATE" >&2; exit 2; }
+[[ -f "$CANDIDATE/AGENTS.md" && -f "$CANDIDATE/.agents/skills/git-discipline/SKILL.md" ]] || { echo "candidate needs AGENTS.md and .agents/skills/git-discipline/SKILL.md: $CANDIDATE" >&2; exit 2; }
 
 WORK_KEPT=false
 if [[ -n "$WORK_ROOT" ]]; then
@@ -114,7 +114,8 @@ for i in $(seq 1 "$RUNS"); do
   mkdir -p "$RUN_DIR"
   git clone -q "$BUNDLE" "$PROJ" || { echo "clone failed for run $i" >&2; exit 1; }
   cp "$CANDIDATE/AGENTS.md" "$PROJ/AGENTS.md"
-  cp "$CANDIDATE/git_policy.md" "$PROJ/docs/policies/git_policy.md"
+  mkdir -p "$PROJ/.agents/skills/git-discipline"
+  cp "$CANDIDATE/.agents/skills/git-discipline/SKILL.md" "$PROJ/.agents/skills/git-discipline/SKILL.md"
   git -C "$PROJ" apply "$PATCH" || { echo "patch failed for run $i" >&2; exit 1; }
   git -C "$PROJ" rev-list --count HEAD >"$RUN_DIR/base-count"
   git -C "$PROJ" rev-parse HEAD >"$RUN_DIR/base-sha"

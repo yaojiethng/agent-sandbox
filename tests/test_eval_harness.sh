@@ -11,17 +11,17 @@ trap 'rm -rf "$TMP"' EXIT
 
 make_repo_with_base() {
   local dir="$1"
-  mkdir -p "$dir/docs/policies"
+  mkdir -p "$dir/.agents/skills/git-discipline"
   git -C "$dir" init -q
   printf '# agents\n' >"$dir/AGENTS.md"
-  printf '## Amending\n' >"$dir/docs/policies/git_policy.md"
+  printf '## The fold\n' >"$dir/.agents/skills/git-discipline/SKILL.md"
   git -C "$dir" add -A
   git -C "$dir" -c user.email=t@t -c user.name=t commit -q -m "fixture state"
 }
 
 commit_with() {
   local dir="$1" subject="$2" body="$3"
-  printf 'change\n' >>"$dir/docs/policies/git_policy.md"
+  printf 'change\n' >>"$dir/.agents/skills/git-discipline/SKILL.md"
   git -C "$dir" add -A
   if [[ -n "$body" ]]; then
     git -C "$dir" -c user.email=t@t -c user.name=t commit -q -m "$subject" -m "$body"
@@ -81,7 +81,7 @@ test_measure_rejects_long_body() {
 test_measure_rejects_path_list() {
   local dir="$TMP/pathlist"
   make_repo_with_base "$dir"
-  commit_with "$dir" "docs: state the fold rule" "It touches docs/policies/git_policy.md and devlog/roadmap.md."
+  commit_with "$dir" "docs: state the fold rule" "It touches .agents/skills/git-discipline/SKILL.md and devlog/roadmap.md."
   assert_eq "$(jq -r '.no_path_list' <<<"$(bash "$MEASURE" "$dir" 1)")" "false" "paths in the body fail"
 }
 
@@ -106,11 +106,12 @@ make_stub_workspace() {
   mkdir -p "$work/bin" "$work/candidate"
   make_repo_with_base "$base"
   git -C "$base" bundle create "$work/base.bundle" --all >/dev/null 2>&1
-  printf 'change\n' >>"$base/docs/policies/git_policy.md"
+  printf 'change\n' >>"$base/.agents/skills/git-discipline/SKILL.md"
   git -C "$base" diff >"$work/change.patch"
   git -C "$base" checkout -q -- .
   cp "$base/AGENTS.md" "$work/candidate/AGENTS.md"
-  cp "$base/docs/policies/git_policy.md" "$work/candidate/git_policy.md"
+  mkdir -p "$work/candidate/.agents/skills/git-discipline"
+  cp "$base/.agents/skills/git-discipline/SKILL.md" "$work/candidate/.agents/skills/git-discipline/SKILL.md"
   printf '%s\n' "$stub_body" >"$work/bin/pi"
   chmod +x "$work/bin/pi"
 }
@@ -121,7 +122,7 @@ git -c user.email=t@t -c user.name=t commit -q -m "docs: land the policy change"
 exit 0'
 
 DIRTY_STUB='#!/usr/bin/env bash
-printf "not committed\n" >> git_policy.md
+printf "not committed\n" >> .agents/skills/git-discipline/SKILL.md
 exit 0'
 
 run_stub_case() {
