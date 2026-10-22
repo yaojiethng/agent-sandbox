@@ -32,10 +32,10 @@
 #                                       that does not exist, a row's source of truth
 #                                       disagrees with its group, or two notes
 #                                       claim one group
-#   check_norm_ownership.sh --regroup    rewrite the grouping file: group every
-#                                       sourced judgement under `j-source-of-truth-<skill>`,
-#                                       keep the group of a line that names no
-#                                       source of truth, and drop a row whose line is gone
+#   check_norm_ownership.sh --regroup    rewrite the grouping file: keep the group
+#                                       of a line that names no source of truth, and
+#                                       drop a row whose line is gone or whose line
+#                                       is sourced, since a sourced group is derived
 #
 # Test seam: NORM_OWNERSHIP_SCAN_ROOT points the scan at a fixture root that
 # mirrors the repository layout.
@@ -50,10 +50,11 @@
 # sentence cites.
 #
 # The grouping is `scripts/lint/norm-judgements.tsv`, three tab-separated
-# columns: hash, group, note. It is hand-maintained only for a judgement that
-# names no source of truth, because which judgement a line states is a reading. A sourced
-# line needs no row here: its group is derived, and a map row that disagrees
-# with the derivation fails.
+# columns: hash, group, note. It holds one row per judgement that names no source
+# of truth, because which judgement a line states is a reading. A sourced line
+# needs no row: its group is `j-source-of-truth-<skill>` and its note is
+# `skill:<skill>`, both derived from the line, and a row that stores either is a
+# copy of the derivation rather than a reading, so it fails.
 #
 # The scan set is the two source documents. A judgement that a convention skill
 # also states is outside this ledger, because the independence of that skill is
@@ -372,8 +373,8 @@ regroup() {
   {
     echo "# Judgement grouping map. Keyed by the ledger hash."
     echo "# Columns: hash, group, note. Unit: one prose line the ledger classes as a judgement."
-    echo "# A line that cites a skill is sourced there. --regroup derives its group as j-source-of-truth-<skill> and its note as skill:<skill>, so no hand edit is needed and a map row that disagrees fails."
-    echo "# A line that cites no skill carries a hand row. note is skill:<name> when the source of truth is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local."
+    echo "# A line that cites a skill is sourced there, and no row is stored for it: --regroup derives its group as j-source-of-truth-<skill> and its note as skill:<skill>, so a stored row would be a copy of the derivation and fails."
+    echo "# A line that cites no skill carries a row here. note is skill:<name> when the source of truth is a skill the line does not name, candidate[:<name>] for one document's judgement that should generalise, or - for a judgement that stays local."
     echo "# The scan set is the two source documents, so a judgement a convention skill also states counts one document here. Read a class-1 group with that limit."
   } > "$out"
   awk -F'\t' '
@@ -381,8 +382,8 @@ regroup() {
     $0 ~ /^#/ || $0 == "" { next }
     !($3 == "norm" && $4 == "none") { next }
     {
-      if ($5 != "none") printf "%s\tj-source-of-truth-%s\t%s\n", $1, substr($5, 7), $5
-      else if ($1 in group) printf "%s\t%s\t%s\n", $1, group[$1], note[$1]
+      if ($5 != "none") next
+      if ($1 in group) printf "%s\t%s\t%s\n", $1, group[$1], note[$1]
       else printf "%s\tj-ungrouped\t-\n", $1
     }
   ' "$JUDGEMENTS" "$LEDGER" >> "$out"
@@ -416,8 +417,8 @@ groups() {
           failed = 1
         }
         g = "j-source-of-truth-" name; n = $5
-        if ($1 in mapped && (group[$1] != g || note[$1] != n)) {
-          printf "norm-ownership: ledger row %s is sourced in %s but its map row says %s; rerun --regroup\n", substr($1, 1, 8), g, group[$1] > "/dev/stderr"
+        if ($1 in mapped) {
+          printf "norm-ownership: ledger row %s is sourced in %s, so its group is derived and no map row holds it; rerun --regroup to drop it\n", substr($1, 1, 8), g > "/dev/stderr"
           failed = 1
         }
       } else {

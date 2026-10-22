@@ -19,7 +19,8 @@
 #   a line citing two skills                     --  rc 1; the ambiguity is named
 #   a group whose note names no skill            --  rc 1; the group is named
 #   --generate derives the source of truth       --  the row carries skill:<name>
-#   --regroup groups a sourced line under its skill--  the map carries j-source-of-truth-<name>
+#   --regroup derives a sourced group            --  the map stores no row for it
+#   a stored row for a sourced line               --  rc 1; the derivation is named as its home
 #
 # The fixtures sit under $FIXTURE_DIR and the scan is pointed at them with
 # NORM_OWNERSHIP_SCAN_ROOT, so the repository's own documents are never the
@@ -154,7 +155,6 @@ classify_fixture() {
   regenerate
   printf '# Judgement grouping map.\n' > "$FIXTURE_DIR/$JUDGEMENTS"
   map_row "A writer keeps the sentence" j-delete-test -
-  map_row "A writer applies" j-source-of-truth-principle-x skill:principle-x
   map_row "A writer states the fact" j-local-fact -
   map_row "A prompt states its subject once" j-one-subject -
 }
@@ -258,13 +258,26 @@ test_generate_derives_the_source_of_truth() {
   assert_eq "$row" "skill:principle-x" "--generate derives the source of truth from the citation"
 }
 
-test_regroup_groups_a_sourced_line() {
+test_regroup_derives_a_sourced_group_and_stores_no_row() {
   classify_fixture
-  printf '%s\n' "$(head -1 "$FIXTURE_DIR/$JUDGEMENTS")" > "$FIXTURE_DIR/$JUDGEMENTS"
   ( cd "$FIXTURE_DIR" && NORM_OWNERSHIP_SCAN_ROOT="$FIXTURE_DIR" bash "$GATE" --regroup >/dev/null )
-  local groups
-  groups="$(awk -F'\t' '$2 ~ /^j-source-of-truth-/ { print $2 }' "$FIXTURE_DIR/$JUDGEMENTS" | sort -u | paste -sd, -)"
-  assert_eq "$groups" "j-source-of-truth-principle-x" "--regroup derives a sourced line's group"
+  local stored derived
+  stored="$(awk -F'\t' '$2 ~ /^j-source-of-truth-/ { print $2 }' "$FIXTURE_DIR/$JUDGEMENTS" | paste -sd, -)"
+  assert_eq "$stored" "" "--regroup stores no row for a sourced line"
+  run_gate --groups
+  derived="$(printf '%s\n' "$OUT" | awk -F'\t' '$1 ~ /^j-source-of-truth-/ { print $1 }' | sort -u | paste -sd, -)"
+  assert_eq "$derived" "j-source-of-truth-principle-x" "--groups derives a sourced line's group at read time"
+}
+
+test_a_stored_sourced_row_fails() {
+  classify_fixture
+  ( cd "$FIXTURE_DIR" && NORM_OWNERSHIP_SCAN_ROOT="$FIXTURE_DIR" bash "$GATE" --regroup >/dev/null )
+  local hash
+  hash="$(awk -F'\t' '$0 !~ /^#/ && $5 != "none" { print $1 }' "$FIXTURE_DIR/$LEDGER")"
+  printf '%s\tj-source-of-truth-principle-x\tskill:principle-x\n' "$hash" >> "$FIXTURE_DIR/$JUDGEMENTS"
+  run_gate --check
+  assert_ne 0 "$RC" "a stored row for a sourced line fails the check"
+  assert_contains "$OUT" "its group is derived and no map row holds it" "the finding says why the row cannot exist"
 }
 
 test_row_source_is_checked() {
@@ -296,14 +309,6 @@ test_class_one_group_needs_a_source_of_truth() {
   assert_contains "$OUT" "so it needs a source of truth" "the group is named"
 }
 
-test_stale_map_row_for_a_sourced_line() {
-  classify_fixture
-  sed -i 's/\tj-source-of-truth-principle-x\tskill:principle-x/\tj-source-of-truth-principle-x\tskill:ghost/' "$FIXTURE_DIR/$JUDGEMENTS"
-  run_gate --groups
-  assert_rc 1 "$RC" "a map row that disagrees with the derivation fails"
-  assert_contains "$OUT" "rerun --regroup" "the stale row is named"
-}
-
 test_regroup_drops_a_gone_row() {
   classify_fixture
   printf 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\tj-gone\t-\n' >> "$FIXTURE_DIR/$JUDGEMENTS"
@@ -324,11 +329,11 @@ run_test test_hand_edited_source_of_truth_is_rejected
 run_test test_two_cited_skills_are_ambiguous
 run_test test_group_note_must_resolve
 run_test test_generate_derives_the_source_of_truth
-run_test test_regroup_groups_a_sourced_line
+run_test test_regroup_derives_a_sourced_group_and_stores_no_row
+run_test test_a_stored_sourced_row_fails
 run_test test_row_source_is_checked
 run_test test_observer_name_matches_whole
 run_test test_class_one_group_needs_a_source_of_truth
-run_test test_stale_map_row_for_a_sourced_line
 run_test test_regroup_drops_a_gone_row
 
 test_done "$(basename "${BASH_SOURCE[0]}")"
