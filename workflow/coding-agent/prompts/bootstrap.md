@@ -34,7 +34,7 @@ Harness records - record each as present, missing, or stale:
 
 - Repo-root `AGENTS.md`, the project layer
 - `devlog/roadmap.md`, including its `active-milestone` frontmatter
-- `docs/policies/` policy set: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`, plus `discussion_policy.md`
+- `docs/policies/` policy set: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`
 - `devlog/handovers/`
 - `devlog/AGENT_FEEDBACK.md`
 - `devlog/discussions/`
@@ -91,7 +91,7 @@ Answer these four during this iteration.
 
 Only after the decisions. One iteration. In this order.
 
-1. `docs/policies/` - copy the minimum policy set verbatim from `/opt/sandbox/docs/policies/`: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`. Add `discussion_policy.md`. The repository owns its copies; the policies are generic by design. These files are the link targets and wording authority for what follows.
+1. `docs/policies/` - copy the minimum policy set verbatim from `/opt/sandbox/docs/policies/`: `iteration_policy.md`, `git_policy.md`, `documentation_policy.md`. The repository owns its copies; the policies are generic by design. These files are the link targets and wording authority for what follows.
 2. Repo-root `AGENTS.md` - the project layer. Contains the primer from decision 3, links to the policy set, the verification contract from decision 5, and the workflow intent from decision 1. Follow the wording rules of `documentation_policy.md`.
 3. `devlog/roadmap.md` - the `active-milestone` frontmatter, the goal and definition of done from decision 4, and the first task row: the setup iteration itself, closing with handover 1.
 4. `devlog/handovers/` - the directory, ready for handover 1 at this wrap-up.

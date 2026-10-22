@@ -152,7 +152,7 @@ One suite runs at a time. V4 and V6 both run the suite, so they serialize even t
 
 ### Phase 7, the proposal
 
-One design record at `devlog/discussions/` in the `design` section order from [`discussion_policy.md`](../../docs/policies/discussion_policy.md), one ADR, and the roadmap write-back. The writer is the strongest prose seat. A different family reviews it.
+One design record at `devlog/discussions/` in the `design` section order from [`work-log`](../../.agents/skills/work-log/assets/design.md), one ADR, and the roadmap write-back. The writer is the strongest prose seat. A different family reviews it.
 
 ## The dispatch plan
 

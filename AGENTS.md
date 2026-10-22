@@ -198,6 +198,5 @@ Read these in addition to the above when opening a milestone planning iteration.
 | [`docs/policies/documentation_policy.md`](docs/policies/documentation_policy.md) | Any documentation task |
 | [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
 | [`docs/policies/iteration_policy.md`](docs/policies/iteration_policy.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
-| [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover |
-| [`docs/policies/discussion_policy.md`](docs/policies/discussion_policy.md) | Creating or renaming any file in `devlog/discussions/` |
+| [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover or a record in `devlog/discussions/` |
 | [`.agents/skills/decision-records/SKILL.md`](.agents/skills/decision-records/SKILL.md) | Creating or superseding an ADR in `docs/adr/` |

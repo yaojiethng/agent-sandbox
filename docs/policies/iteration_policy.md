@@ -16,9 +16,9 @@ Read this document at the start of any iteration.
 | | **Gate 1** | select next milestone |
 | | 2. Orient to next milestone | `roadmap.md` |
 | | **Gate 2** | select sub-milestone (also entry point from roadmap maintenance when a sub-milestone closes) |
-| | 3. Open or revise stories | [`discussion_policy.md`](discussion_policy.md#stories-story) |
-| | 4. Investigate or design | [`discussion_policy.md`](discussion_policy.md) |
-| | 5. Resolve stories | [`discussion_policy.md`](discussion_policy.md) -- Stories |
+| | 3. Open or revise stories | the `work-log` convention, `.agents/skills/work-log/SKILL.md` -- The four types |
+| | 4. Investigate or design | the `work-log` convention, `.agents/skills/work-log/SKILL.md` -- The four types |
+| | 5. Resolve stories | the `work-log` convention, `.agents/skills/work-log/SKILL.md` -- A story graduates |
 | | **Gate 3** | release sub-milestone for execution |
 | **Iteration** | 1. Open handover ... 9. Seed, with the scope gate and the release gate | `workflow/coding-agent/prompts/iter.md` runs the steps; [Iteration Invariants](#iteration-invariants) holds the rules |
 
