@@ -51,7 +51,7 @@ When writing code, always take into account the following:
 6. One line?                  -> one line
 7. Only then: the minimum that works
 
-Run throwaway verification in `.scratchpad/`, the session-local scratch, never elsewhere in the repo tree. `.scratchpad/` is gitignored, so a stray file there does not surface in `git status` or pollute the diff. A throwaway file is any file you create only to check something and do not keep.
+Run throwaway verification in `.scratchpad/`, the session-local scratch, never elsewhere in the repo tree. `.scratchpad/` is gitignored, so a stray file there does not surface in `git status` or pollute the diff. A throwaway file is any file you create only to check something and do not keep; an instrument a later session has to reuse is not throwaway, and where each kind belongs is the [`write-locations`](/opt/workflow/agent/skills/write-locations/SKILL.md) skill.
 
 Prefer the `edit` tool for in-place text changes. The `edit` tool reports a miss when its `oldText` does not match; a `sed` one-liner run through the `bash` tool with a missing file operand silently writes nothing. After a `sed` change, verify the write landed.
 

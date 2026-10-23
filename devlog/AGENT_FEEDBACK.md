@@ -21,15 +21,15 @@ If this file grows too long, find a durable resolution (for example, fold the re
 ```text
 state: open
 scoped: none
-legacy: none
-mitigation: before writing a pointer in a shipped document, ask whether the target ships. A reference document is read at its image path, so a relative target the repository resolves may not resolve where the text is read; the fix is the target's repository path in a code span, which the `linking` convention's `Name a target the citing text cannot reach` already states.
+legacy: the same session's second instance, below, reached the opposite error from the same cause: a gate verdict predicted from reading the manifest by hand instead of run.
+mitigation: before writing a pointer in a shipped document, ask whether the target ships. A reference document is read at its image path, so a relative target the repository resolves may not resolve where the text is read; the fix is the target's repository path in a code span, which the `linking` convention's `Name a target the citing text cannot reach` already states. Where the question is a link's legality rather than its target's existence, change the line and run the gate: it answers in one cycle, and a hand read of one manifest field answers confidently and wrongly.
 ```
 
 `docs/reference/dispatch.md` gained a paragraph citing a new ADR as a relative link, `../adr/pi_subagent_dispatch.md`. The linking rule failed it with `link target does not exist in the image`. A reference document ships into the container at `/opt/sandbox/docs/reference/`, so every relative target in it resolves at its image path, and `docs/adr/` does not ship. The sentence above the new one already named an ADR in a code span, one line away from the mistake.
 
-The class is a pointer written from the writer's position rather than the reader's. Both files sit under `docs/`, so the relative path is correct on disk and wrong where the file is read. The rule that settles it is stated in the `linking` convention and enforced by `scripts/lint/linking.mjs`, which reads the shipped set from `src/build/container-interface.json`, so a new surface joins the check with no edit to the rule.
+**The second instance, later the same session.** The provider `AGENTS.md` needed a pointer to a new skill at `/opt/workflow/agent/skills/write-locations/SKILL.md`. Reading the citing instruction cell's `reachable` rows, which name `/opt/workflow/agent/config/` and the pi install, the agent concluded the link was illegal and wrote a code span instead. It was legal: `instruction_reach` assembles the image set from every cell's runtime path, plus the session paths, plus the cell's own rows, so any instruction root in the image is reachable from any shipped surface. One `bash scripts/check_markdown.sh` returned 0 findings on the link. The cost was larger than the first instance's: the wrong conclusion was written into the handover as a decision and a finding, so the record had to be corrected as well as the line.
 
-The cost was one gate cycle, in a session that had already run the gate three times and read the convention's own summary earlier. The durable half is the gate and it worked. What the agent carries is the reading rule: the citing text is the wrong place to learn what ships, and the neighbour line that names a target instead of linking it is the pattern to copy.
+The class is the same in both directions: a rule about where a pointer resolves was settled by reasoning about it instead of by running the check that owns it. The first instance reasoned about the target and the second about the gate, and both reads felt decisive.
 
 ## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
 
