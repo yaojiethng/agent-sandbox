@@ -62,6 +62,23 @@ A worker run adds the tree to that decision. It requires `--run` and refuses `--
 
 A worker attempt is supervised. It ends early when its log carries a sentence the classifier reads as a refusal, because the CLI retries a refused request silently and stays alive on a subscription it never closes. It ends when its log has stopped growing below a small size, which is the same silent retry seen from outside. It ends at `DISPATCH_TIMEOUT`, default 1800 seconds, and `DISPATCH_STALL`, default 15, sets the silence window. A worker that exits zero with an empty log is a failure, because the log is the only evidence that it ran.
 
+## Seats
+
+A request may name a role and a number of seats, and the seats read that role's candidates concurrently. The [role](terminology.md#role) supplies the candidates: its assignments filtered to those the route memory allows at the moment the run starts, so a cooling or dead route is never dealt. Seats fill by rotating through them, seat i taking candidate `((i - 1) mod m) + 1`, which makes the first m seats distinct models and repeats them in written order beyond that.
+
+Seats fire in turns. A turn launches its seats concurrently and ends when its slowest attempt does, so the turn costs one attempt rather than the sum of them, and the candidate set has one writer per turn. Each outcome is read at that boundary:
+
+| Outcome at the boundary | What the seat does next |
+|---|---|
+| success | the seat is finished |
+| transient or quota | the seat keeps its assignment, and the memory decides when the next turn may attempt it |
+| capability | the candidate is dropped and the seat takes the next in the remaining rotation, wrapping to the first |
+| timeout or unknown | the run stops, because the outcome says nothing about the route |
+
+A turn that can start no remaining seat ends the run `blocked` and names the earliest wait, and it does not sleep. A seat whose every candidate is dead makes the run `unroutable`. A run whose seats all finished on a working model exits zero, including a seat that was reassigned before it succeeded.
+
+A seat is not a role. The role is the name the caller gives; the seats are the attempts the run makes over that role's candidates.
+
 ## Invariants
 
 A failure never moves the next possible attempt earlier than the memory already holds.
@@ -77,6 +94,8 @@ The clock is the only way out of cooling. No dispatch attempt, and no other even
 ## The Launch Sites
 
 One entrypoint reaches a model on behalf of a caller. It prints the command it would run, runs one attempt and records it, or runs one read-write worker and reports its change set. It also answers three inspection questions: which assignments a role resolves to, what the route memory holds now, and whether the role's runtimes are present on this host.
+
+The mechanism is two halves that meet at one command. The library, TypeScript under `src/libs/dispatch/`, holds the vocabulary, the route state and every decision over it, including the seating. The entrypoint, `scripts/dispatch.sh`, holds the process: it fires an attempt, watches it and hands its outcome back. Neither half decides what the other owns, so a caller reading a refusal, a state file or an exit code is reading the library, and a caller reading a kill, a log or a timeout is reading the entrypoint.
 
 A skill or a prompt carries the instruction that turns an intent into that invocation, and reads back what ran. A launch site may not carry its own resolver, restate the role table, or substitute a model the table does not name. Each of those existed beside this mechanism at one point, and each read as agreement with a table it had never seen. `scripts/check_launch_sites.sh` holds the rule instead of the reader: it fails a source file that names a launcher's own flags outside the library, the entrypoint and the reviewer's fixed run, so a call site added later cannot reopen the door it closes.
 

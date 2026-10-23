@@ -1022,7 +1022,113 @@ run_test test_worker_a_changed_failure_does_not_fall_back
 # on request:
 #
 #   DISPATCH_WORKER_FALLBACK_CASES=1 bash tests/test_dispatch.sh
+# ---------------------------------------------------------------------------
+# Seats: the rotation, the reassignment and the retry
+# ---------------------------------------------------------------------------
+
+# seat_setup SANDBOX TABLE
+#   A clean fixture repository with the given role table, a brief and a stub
+#   directory, so a seat case measures the seating rather than a real model.
+seat_setup() {
+  local sandbox="$1" table="$2"
+  make_committed_repo "$sandbox/repo"
+  mkdir -p "$sandbox/scratch" "$sandbox/bin" "$sandbox/agenthome"
+  printf 'the brief\n' > "$sandbox/brief.md"
+  printf '%s\n' "$table" > "$sandbox/agenthome/model-recommendations.md"
+}
+
+# run_seats SANDBOX ARGS...
+#   One seat run over the fixture, with the stub on DISPATCH_OPENCODE_BIN.
+run_seats() {
+  local sandbox="$1"; shift
+  worker_env "$sandbox" bash "$REPO_ROOT/scripts/dispatch.sh" \
+    --brief "$sandbox/brief.md" --dir "$sandbox/repo" --run "$@"
+}
+
+# Seat i takes candidate ((i - 1) mod m) + 1: two candidates fill three seats as
+# the first, the second, then the first again, in one turn.
+test_seats_rotate_over_the_candidates() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high; opencode/s2-free at high'
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
+    "opencode/s1-free=ok opencode/s2-free=ok"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 3)"; rc=$?
+  assert_rc 0 "$rc" "every seat succeeded"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log")" "2" \
+    "the first candidate fills seats 1 and 3"
+  assert_eq "$(grep -c -- '-m opencode/s2-free' "$sandbox/argv.log")" "1" \
+    "the second candidate fills seat 2"
+  assert_eq "$(printf '%s' "$out" | grep -c '^seat [0-9] turn 1:')" "3" \
+    "the run reads three seats at one turn boundary"
+}
+
+# A capability failure says the model is gone, so that candidate is dropped and
+# the seat takes the next in the remaining rotation.
+test_a_seat_drops_a_dead_candidate_and_rotates() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high; opencode/s2-free at high; opencode/s3-free at high'
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
+    "opencode/s1-free=auth opencode/s2-free=ok opencode/s3-free=ok"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 2)"; rc=$?
+  assert_rc 0 "$rc" "both seats end on a working model"
+  assert_contains "$out" "seat 1 ended capability (account)" "the dead candidate ends seat 1's first turn"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log")" "1" \
+    "the dead candidate is attempted once and dropped"
+  assert_eq "$(grep -c -- '-m opencode/s2-free' "$sandbox/argv.log")" "2" \
+    "seat 1 takes the next candidate, which seat 2 already held"
+}
+
+# A retryable outcome keeps the seat on its assignment, and the route memory
+# decides when the next attempt may start; a turn that cannot start it ends the
+# run as blocked rather than spinning.
+test_a_retryable_outcome_keeps_the_seat_and_blocks() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high'
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
+    "opencode/s1-free=refuse"
+
+  out="$(DISPATCH_STALL=1 run_seats "$sandbox" --role _SEAT --seats 1)"; rc=$?
+  assert_rc 3 "$rc" "a cooling route ends the run as blocked"
+  assert_contains "$out" "blocked" "the refusal names the wait"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log")" "1" \
+    "the seat is not re-fired while its route cools"
+}
+
+# The seat surface refuses the three combinations that contradict it.
+test_seats_refuse_the_contradictory_forms() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high'
+
+  out="$(worker_env "$sandbox" bash "$REPO_ROOT/scripts/dispatch.sh" \
+    --role _SEAT --brief "$sandbox/brief.md" --dir "$sandbox/repo" --seats 2)"; rc=$?
+  assert_rc 2 "$rc" "a seat count without --run is refused"
+  assert_contains "$out" "--seats requires --run" "the refusal names the flag it needs"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 2 --worker)"; rc=$?
+  assert_rc 2 "$rc" "a seat count on a worker is refused"
+  assert_contains "$out" "not a worker flag" "the refusal names the mode it contradicts"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 2 --model opencode/s1-free)"; rc=$?
+  assert_rc 2 "$rc" "a seat count with a pin is refused"
+  assert_contains "$out" "cannot be pinned" "the refusal says a pin names one assignment"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 0)"; rc=$?
+  assert_rc 2 "$rc" "a zero seat count is refused"
+  assert_contains "$out" "at least 1" "the refusal names the floor"
+}
+
 WORKER_FALLBACK_CASES="${DISPATCH_WORKER_FALLBACK_CASES:-0}"
+
+run_test test_seats_rotate_over_the_candidates
+run_test test_a_seat_drops_a_dead_candidate_and_rotates
+run_test test_a_retryable_outcome_keeps_the_seat_and_blocks
+run_test test_seats_refuse_the_contradictory_forms
 
 if [[ "$WORKER_FALLBACK_CASES" == "1" ]]; then
   run_test test_worker_falls_back_to_the_next_candidate

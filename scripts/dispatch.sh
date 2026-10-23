@@ -55,10 +55,13 @@ THINKING=""
 SESSION=""
 RUN=0
 WORKER=0
+SEATS=1
+SEATS_GIVEN=0
 DIR_GIVEN=0
 BASE="HEAD"
 RUN_DIR=""
-WORKER_ONLY_FLAG=0
+BASE_GIVEN=0
+RUNDIR_GIVEN=0
 LIST_ROLES=0
 STATUS=0
 STATUS_JSON=0
@@ -73,6 +76,15 @@ while [[ $# -gt 0 ]]; do
     --thinking) THINKING="${2:-}"; shift 2 ;;
     --session) SESSION="${2:-}"; shift 2 ;;
     --run) RUN=1; shift ;;
+    --seats)
+      if [[ -z "${2:-}" ]]; then
+        echo "dispatch: --seats requires a value" >&2
+        exit 2
+      fi
+      SEATS="$2"
+      SEATS_GIVEN=1
+      shift 2
+      ;;
     --worker) WORKER=1; shift ;;
     --base)
       if [[ -z "${2:-}" ]]; then
@@ -80,7 +92,7 @@ while [[ $# -gt 0 ]]; do
         exit 2
       fi
       BASE="$2"
-      WORKER_ONLY_FLAG=1
+      BASE_GIVEN=1
       shift 2
       ;;
     --run-dir)
@@ -89,7 +101,7 @@ while [[ $# -gt 0 ]]; do
         exit 2
       fi
       RUN_DIR="$2"
-      WORKER_ONLY_FLAG=1
+      RUNDIR_GIVEN=1
       shift 2
       ;;
     --list-roles) LIST_ROLES=1; shift ;;
@@ -111,8 +123,28 @@ if (( WORKER && ! RUN )); then
   echo "dispatch: --worker requires --run" >&2
   exit 2
 fi
-if (( WORKER_ONLY_FLAG && ! WORKER )); then
-  echo "dispatch: --base and --run-dir are worker mode only" >&2
+if (( BASE_GIVEN && ! WORKER )); then
+  echo "dispatch: --base is worker mode only" >&2
+  exit 2
+fi
+if (( RUNDIR_GIVEN && ! WORKER && ! SEATS_GIVEN )); then
+  echo "dispatch: --run-dir is worker or seat mode only" >&2
+  exit 2
+fi
+if ! [[ "$SEATS" =~ ^[0-9]+$ ]] || (( SEATS < 1 )); then
+  echo "dispatch: --seats needs a count of at least 1" >&2
+  exit 2
+fi
+if (( SEATS_GIVEN )) && (( ! RUN )); then
+  echo "dispatch: --seats requires --run" >&2
+  exit 2
+fi
+if (( SEATS_GIVEN )) && (( WORKER )); then
+  echo "dispatch: --seats is not a worker flag; a worker returns one change set" >&2
+  exit 2
+fi
+if (( SEATS_GIVEN )) && [[ -n "$MODEL" ]]; then
+  echo "dispatch: --seats cannot be pinned; a pin names one assignment" >&2
   exit 2
 fi
 
@@ -307,6 +339,103 @@ build_command() {
   CMD="$("${build[@]}" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"})"
 }
 
+# report_failures -- print the attempts of this walk that failed, with the
+# verdict each ended in, so a caller reads every candidate even when a later one
+# succeeded. Only a worker attempt is recorded here, so a general run prints
+# nothing and its output is unchanged.
+report_failures() {
+  (( ${#FAILED[@]} )) || return 0
+  printf 'failures: %d\n' "${#FAILED[@]}"
+  printf '  %s\n' "${FAILED[@]}"
+}
+
+# seat_run -- a review-shaped run: n seats over the role's candidates.
+#
+# The seating, the rotation and what an outcome does to it are the library's
+# (src/libs/dispatch/seats.ts). This function is the process half: it fires the
+# seats the library orders, in one turn, and hands each attempt's outcome back.
+# A turn ends when its slowest attempt does, so the turn costs one attempt rather
+# than the sum and the candidate set has one writer per turn. Nothing sleeps: a
+# turn the library cannot fill ends the run as blocked and names the wait.
+seat_run() {
+  local state="$RUN_DIR/seats.json" out="$RUN_DIR/seats.start" i line seat runtime entry log rc turn=0
+  local -a fire_seat=() fire_rt=() fire_entry=() pidof=() results=()
+
+  node "$DISPATCH_CLI" seats start --state "$state" --role "$ROLE" \
+    --seats "$SEATS" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} >"$out" || return $?
+
+  while :; do
+    fire_seat=(); fire_rt=(); fire_entry=(); pidof=()
+    while read -r line; do
+      case "$line" in
+        turn*) turn="${line#turn }" ;;
+        fire*)
+          read -r _ seat runtime entry <<<"$line"
+          fire_seat+=("$seat"); fire_rt+=("$runtime"); fire_entry+=("$entry")
+          ;;
+        blocked*)
+          printf 'dispatch: blocked: %s\n' "${line#blocked }" >&2
+          return 3
+          ;;
+        finished)
+          printf 'seat run: %s seats over role %s\n' "$SEATS" "$ROLE"
+          return 0
+          ;;
+      esac
+    done < "$out"
+
+    if (( ${#fire_seat[@]} == 0 )); then
+      printf 'dispatch: blocked: no seat may be attempted now\n' >&2
+      return 3
+    fi
+
+    for i in "${!fire_seat[@]}"; do
+      seat="${fire_seat[i]}"; runtime="${fire_rt[i]}"; ENTRY="${fire_entry[i]}"
+      build_command || return 1
+      log="$RUN_DIR/seat$seat-turn$turn.log"
+      dispatch_run_supervised "$CMD" "$log" "$TIMEOUT" "$DISPATCH_CLI" \
+        "$(dispatch_stall_window "$runtime")" </dev/null &
+      pidof[i]=$!
+    done
+
+    results=()
+    for i in "${!fire_seat[@]}"; do
+      seat="${fire_seat[i]}"
+      log="$RUN_DIR/seat$seat-turn$turn.log"
+      rc=0
+      wait "${pidof[i]}" || rc=$?
+      printf 'seat %s turn %s: %s rc=%s log=%s\n' "$seat" "$turn" "${fire_entry[i]}" "$rc" "$log"
+      results+=(--result "$seat:$rc:$log")
+    done
+
+    out="$RUN_DIR/seats.turn$turn"
+    rc=0
+    node "$DISPATCH_CLI" seats turn --state "$state" \
+      ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} "${results[@]}" >"$out" || rc=$?
+    if (( rc != 0 )); then
+      if (( rc == 3 )); then
+        printf 'dispatch: blocked: %s\n' "$(sed -n 's/^blocked //p' "$out")" >&2
+      fi
+      return "$rc"
+    fi
+  done
+}
+
+if (( SEATS_GIVEN )); then
+  TIMEOUT="${DISPATCH_TIMEOUT:-1800}"
+  if (( RUNDIR_GIVEN )); then
+    if [[ ! -d "$RUN_DIR" || ! -w "$RUN_DIR" ]]; then
+      printf 'dispatch: run directory is not a writable directory: %s\n' "$RUN_DIR" >&2
+      exit 2
+    fi
+  else
+    RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dispatch-seats.XXXXXX")"
+  fi
+  printf 'role: %s\nseats: %s\nrun dir: %s\n' "$ROLE" "$SEATS" "$RUN_DIR"
+  seat_run
+  exit $?
+fi
+
 choose_entry
 build_command
 
@@ -356,15 +485,6 @@ may_advance() {
   return 0
 }
 
-# report_failures -- print the attempts of this walk that failed, with the
-# verdict each ended in, so a caller reads every candidate even when a later one
-# succeeded. Only a worker attempt is recorded here, so a general run prints
-# nothing and its output is unchanged.
-report_failures() {
-  (( ${#FAILED[@]} )) || return 0
-  printf 'failures: %d\n' "${#FAILED[@]}"
-  printf '  %s\n' "${FAILED[@]}"
-}
 
 # The walk: run the attempt, record what it ended in, and advance only when the
 # outcome says another attempt can help.

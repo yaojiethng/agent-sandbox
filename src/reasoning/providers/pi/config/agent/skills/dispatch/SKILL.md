@@ -31,6 +31,8 @@ The entrypoint resolves the role, derives the runtime from the assignment, build
 
 Without `--worker`, the entrypoint prints the command a role resolves to and records nothing. That form takes `--dir` instead of `--run-dir`, and it is how a caller checks what a role resolves to before spending an attempt.
 
+A review takes seats. `--seats <n> --run` runs n read-only attempts over the role's candidates and reports each seat's outcome, and `dispatch.md` holds the seating and the turns. A seat run takes `--dir` and refuses `--worker` and `--model`: a pin names one assignment, and a worker returns one change set.
+
 Resolution, the runtime rule, the walk and the failure vocabulary belong to [`dispatch.md`](/opt/sandbox/docs/reference/dispatch.md), and this skill points there rather than restating them. What the caller acts on is in one place, the exit code: zero means the worker ran, one a refusal before any attempt, three blocked with the earliest wait named, and any other code is the worker's own.
 
 Env overrides: `DISPATCH_TIMEOUT` for the attempt's limit, `DISPATCH_STALL` for the silence window and `DISPATCH_POLL` for the poll interval.

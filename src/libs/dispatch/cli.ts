@@ -8,9 +8,12 @@
 //
 // Exit codes: 0 run, 2 usage, 3 blocked, 4 unroutable.
 
+import { readFileSync, writeFileSync } from 'node:fs';
 import { classify } from './classify.ts';
 import { binaryRuns, commandFor, opencodeBin } from './launch.ts';
 import { applyClock, applyOutcome, select } from './machine.ts';
+import { seatCandidates, seatOrders, seatResult, startSeats, seatVerdict } from './seats.ts';
+import type { SeatState } from './seats.ts';
 import { defaultPath, load, save } from './state.ts';
 import { DispatchError, firstAssignment, parseAssignment, roleAssignments, tableAssignments } from './table.ts';
 import type { OutcomeClass, Reason, Scope, State } from './types.ts';
@@ -246,6 +249,117 @@ function cmdTable(argv: string[]): never {
   });
 }
 
+// seats start|turn -- the seat run's two steps.
+//
+// start reads the role's candidates from the route memory, seats them by the
+// rotation and writes the run to --state. turn takes one outcome per fired seat,
+// records it into the memory, applies the seat rule and prints the next turn's
+// orders or the run's verdict. The entrypoint fires the attempts; this decides
+// them.
+function printStep(state: SeatState, orders: { seat: number; entry: string; runtime: string }[]): never {
+  process.stdout.write(`turn ${state.turn}\n`);
+  orders.forEach((order) => {
+    process.stdout.write(`fire ${order.seat} ${order.runtime} ${order.entry}\n`);
+  });
+  process.exit(0);
+}
+
+function cmdSeats(argv: string[]): never {
+  const [step, ...rest] = argv;
+  const map = args(rest);
+  const statePath = one(map, '--state') || fail('seats needs --state');
+  const at = Number(one(map, '--at') ?? now());
+  const path = defaultPath();
+  const memory = load(path, session());
+
+  refusing(() => {
+    if (step === 'start') {
+      const role = one(map, '--role') || fail('seats start needs --role');
+      const count = Number(one(map, '--seats') ?? '1');
+      const candidates = seatCandidates(roleAssignments(role, one(map, '--file')), memory.routes, at);
+      if (candidates.length === 0) {
+        fail(`unroutable: ${role} names no candidate that may be attempted now`, 4);
+      }
+      const state = startSeats(role, count, candidates);
+      writeFileSync(statePath, `${JSON.stringify(state)}\n`);
+      const orders = seatOrders(state, memory.routes, at);
+      state.turn = 1;
+      writeFileSync(statePath, `${JSON.stringify(state)}\n`);
+      printStep(state, orders.orders);
+    }
+
+    if (step === 'turn') {
+      const state: SeatState = JSON.parse(readFileSync(statePath, 'utf8'));
+      const results = map.get('--result') ?? [];
+      for (const result of results) {
+        const [seatText, rcText, logPath] = result.split(':');
+        const seat = Number(seatText);
+        const rc = Number(rcText);
+        const text = tail(logPath, 4000);
+        const applied = seatResult(state, seat, rc, text, at);
+        const record = applied.record;
+        if (record !== undefined) {
+          memory.routes[record.route] = applyOutcome(memory.routes[record.route] ?? { state: 'untried' }, {
+            at,
+            class: record.class as OutcomeClass,
+            scope: record.scope as Scope,
+            reason: record.reason as Reason | undefined,
+            refreshAt: record.refreshAt,
+            text,
+            metered: record.metered,
+          });
+          if (record.metered) memory.usage[record.route] = (memory.usage[record.route] ?? 0) + 1;
+        }
+        if (applied.outcome !== 'done' && record !== undefined) {
+          process.stderr.write(`dispatch: seat ${seat} ended ${record.class} (${record.scope})\n`);
+        }
+        if (applied.outcome === 'stop') {
+          save(path, memory);
+          writeFileSync(statePath, `${JSON.stringify(state)}\n`);
+          process.stderr.write(`dispatch: seat ${seat} ended ${record?.class} (${record?.scope}), so the run stops\n`);
+          process.exit(applied.exit);
+        }
+      }
+      save(path, memory);
+
+      if (state.stop !== 0) {
+        writeFileSync(statePath, `${JSON.stringify(state)}\n`);
+        process.exit(state.stop);
+      }
+
+      state.turn += 1;
+      const next = seatOrders(state, memory.routes, at);
+      writeFileSync(statePath, `${JSON.stringify(state)}\n`);
+      if (next.orders.length === 0 && next.waiting > 0) {
+        const held = state.slots.find((slot) => slot.state === 'active');
+        const key = held === undefined ? '' : state.candidates[held.idx].key;
+        const decided = select([key], memory.routes, at);
+        const why = decided.kind === 'blocked' ? `${iso(decided.earliest)} ${decided.reason}` : 'no attempt left';
+        process.stdout.write(`blocked ${why}\n`);
+        process.exit(3);
+      }
+      const verdict = seatVerdict(state);
+      if (verdict.done) {
+        if (verdict.code === 0) process.stdout.write('finished\n');
+        else process.stderr.write(`dispatch: unroutable: ${verdict.why}\n`);
+        process.exit(verdict.code);
+      }
+      printStep(state, next.orders);
+    }
+
+    fail(`unknown seats step: ${step ?? '(none)'}`);
+  });
+}
+
+function tail(file: string, limit: number): string {
+  try {
+    const text = readFileSync(file, 'utf8');
+    return text.slice(-limit);
+  } catch {
+    return '';
+  }
+}
+
 function cmdCommand(argv: string[]): never {
   const map = args(argv);
   const role = one(map, '--role') ?? '';
@@ -287,6 +401,9 @@ switch (command) {
     break;
   case 'command':
     cmdCommand(rest);
+    break;
+  case 'seats':
+    cmdSeats(rest);
     break;
   default:
     fail(`unknown command: ${command ?? '(none)'}`);
