@@ -566,6 +566,7 @@ case "\$action" in
     sleep 60
     exit 1 ;;
   hang) printf '> build \xc2\xb7 %s\n' "\$model"; sleep 60; exit 1 ;;
+  silent) exit 0 ;;
   *) printf 'worker ran\n'; printf 'worker edit\n' >> "\$dir/$edit"; exit 0 ;;
 esac
 STUB
@@ -1099,6 +1100,41 @@ test_a_retryable_outcome_keeps_the_seat_and_blocks() {
     "the seat is not re-fired while its route cools"
 }
 
+# A seat that logs nothing says nothing about the route. The log is the only
+# evidence the seat ran, so a silent zero exit stops the run rather than counting
+# as a success.
+test_a_silent_seat_stops_the_run() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high; opencode/s2-free at high'
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
+    "opencode/s1-free=silent"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 1)"; rc=$?
+  assert_rc 1 "$rc" "a silent seat fails the run"
+  assert_contains "$out" "seat 1 produced no output" "the refusal names the seat and the reason"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log")" "1" \
+    "the run does not reach for another candidate on a silent exit"
+}
+
+# A review reads one revision, so a dirty tree is refused before the first
+# attempt: a finding against content the caller is still editing cannot be
+# attributed to a commit.
+test_a_dirty_tree_is_refused() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high'
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
+    "opencode/s1-free=ok"
+  printf 'uncommitted\n' > "$sandbox/repo/dirty.txt"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 1)"; rc=$?
+  assert_rc 1 "$rc" "a dirty tree is refused"
+  assert_contains "$out" "the working tree is dirty" "the refusal states the condition"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log" 2>/dev/null || echo 0)" "0" \
+    "no attempt is spent on an unattributable tree"
+}
+
 # The seat surface refuses the three combinations that contradict it.
 test_seats_refuse_the_contradictory_forms() {
   local sandbox out rc
@@ -1128,6 +1164,8 @@ WORKER_FALLBACK_CASES="${DISPATCH_WORKER_FALLBACK_CASES:-0}"
 run_test test_seats_rotate_over_the_candidates
 run_test test_a_seat_drops_a_dead_candidate_and_rotates
 run_test test_a_retryable_outcome_keeps_the_seat_and_blocks
+run_test test_a_silent_seat_stops_the_run
+run_test test_a_dirty_tree_is_refused
 run_test test_seats_refuse_the_contradictory_forms
 
 if [[ "$WORKER_FALLBACK_CASES" == "1" ]]; then

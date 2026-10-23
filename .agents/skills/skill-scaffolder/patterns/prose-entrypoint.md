@@ -10,7 +10,7 @@ Open this when you write a skill that wraps a script, a command, or any mechanis
 | a script with no prose surface | the script for a caller who knows the call, the skill for one who does not |
 | a skill that performs the mechanism itself | a skill that stops at the command line |
 | a second copy of the call inside each consumer | one script, called by every consumer |
-| a fixed run's values hidden inside the skill | the pin stated at the call site, visible in the invocation |
+| a run's values hidden inside the skill | the pin stated at the call site, visible in the invocation |
 
 ## Why
 

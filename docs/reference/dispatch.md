@@ -25,7 +25,7 @@ The value is a fact with an owner. A model id written at a call site is measured
 - The route memory is session-scoped and dies with the container. It is one small file named by the session, overridable with `DISPATCH_STATE_FILE`, and it is never a bind-mounted path: a memory that outlives the session is a record, and this one is not a record.
 - Only a recorded outcome writes to the memory. The clock is applied when the memory is read, so expiry needs no writer, and a missing or unreadable file loads as an empty memory rather than an error.
 - A read-write worker attributes its change set to a named base revision, and a second model never runs over a first model's edits.
-- A fixed run pins its assignment at its call site. It is not routed, and the route memory never learns from it.
+- A caller may pin an assignment with `--model`. A pinned run resolves nothing, so the route memory never learns from it, and a seat run refuses a pin because a review's seats are the rotation over the role.
 
 ## The Resolution Path
 
@@ -75,6 +75,8 @@ Seats fire in turns. A turn launches its seats concurrently and ends when its sl
 | capability | the candidate is dropped and the seat takes the next in the remaining rotation, wrapping to the first |
 | timeout or unknown | the run stops, because the outcome says nothing about the route |
 
+A seat run is read-only and reads one revision, so the entrypoint refuses a dirty tree before the first attempt. A seat that exits zero with an empty log stops the run, because the log is the only evidence it ran; the route keeps whatever the memory already held, since a silent exit says nothing about it.
+
 A turn that can start no remaining seat ends the run `blocked` and names the earliest wait, and it does not sleep. A seat whose every candidate is dead makes the run `unroutable`. A run whose seats all finished on a working model exits zero, including a seat that was reassigned before it succeeded.
 
 A seat is not a role. The role is the name the caller gives; the seats are the attempts the run makes over that role's candidates.
@@ -97,9 +99,9 @@ One entrypoint reaches a model on behalf of a caller. It prints the command it w
 
 The mechanism is two halves that meet at one command. The library, TypeScript under `src/libs/dispatch/`, holds the vocabulary, the route state and every decision over it, including the seating. The entrypoint, `scripts/dispatch.sh`, holds the process: it fires an attempt, watches it and hands its outcome back. Neither half decides what the other owns, so a caller reading a refusal, a state file or an exit code is reading the library, and a caller reading a kill, a log or a timeout is reading the entrypoint.
 
-A skill or a prompt carries the instruction that turns an intent into that invocation, and reads back what ran. A launch site may not carry its own resolver, restate the role table, or substitute a model the table does not name. Each of those existed beside this mechanism at one point, and each read as agreement with a table it had never seen. `scripts/check_launch_sites.sh` holds the rule instead of the reader: it fails a source file that names a launcher's own flags outside the library, the entrypoint and the reviewer's fixed run, so a call site added later cannot reopen the door it closes.
+A skill or a prompt carries the instruction that turns an intent into that invocation, and reads back what ran. A launch site may not carry its own resolver, restate the role table, or substitute a model the table does not name. Each of those existed beside this mechanism at one point, and each read as agreement with a table it had never seen. `scripts/check_launch_sites.sh` holds the rule instead of the reader: it fails a source file that names a launcher's own flags outside the library and the entrypoint, so a call site added later cannot reopen the door it closes.
 
-A fixed run is not a launch site. It pins one assignment because its contract fixes it, and it is reproducible precisely because no route decision is available to it.
+A pinned run is not a launch site. It names one assignment because its caller fixed it, and it is reproducible precisely because no route decision is available to it.
 
 ## Failure and Its Vocabulary
 

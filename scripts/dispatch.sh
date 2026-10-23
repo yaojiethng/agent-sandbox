@@ -17,8 +17,9 @@
 #
 # A brief names a role, not a runtime: the shell resolves the role's ordered
 # entries, the machine decides which entry may be attempted now, and this script
-# builds the command. `--model` is the pin a fixed run states at its call site;
-# a pin bypasses selection because a pinned run is not routed.
+# builds the command. `--model` is the caller's pin;
+# a pin bypasses selection because a pinned run is not routed, and a seat run
+# refuses one because a review's seats are the rotation over the role.
 #
 # `--worker` is the read-write mode: one delegated run that edits the tree and
 # returns a change set. It attributes that set to `--base`, captures one
@@ -423,6 +424,13 @@ seat_run() {
 
 if (( SEATS_GIVEN )); then
   TIMEOUT="${DISPATCH_TIMEOUT:-1800}"
+  # A seat run is read-only, and a review reads one revision: a dirty tree makes
+  # the report unattributable to a commit, which is the check the reviewer's old
+  # runner made in code.
+  if [[ -n "$(git -C "${DIR:-.}" status --porcelain 2>/dev/null)" ]]; then
+    printf 'dispatch: the working tree is dirty; a review reads one revision: %s\n' "${DIR:-.}" >&2
+    exit 1
+  fi
   if (( RUNDIR_GIVEN )); then
     if [[ ! -d "$RUN_DIR" || ! -w "$RUN_DIR" ]]; then
       printf 'dispatch: run directory is not a writable directory: %s\n' "$RUN_DIR" >&2

@@ -12,7 +12,7 @@
 
 ### A per-runtime skill crafts its own invocation
 
-Rejected on intent. A skill that builds its own invocation holds the runtime rule and a copy of the table's data, so a model move becomes a code change in every skill, and the caller's choice of skill decides the runtime before the table is read. It remains the right form where a contract fixes the assignment, which is the reviewer's fixed run and not a general worker.
+Rejected on intent. A skill that builds its own invocation holds the runtime rule and a copy of the table's data, so a model move becomes a code change in every skill, and the caller's choice of skill decides the runtime before the table is read. The tree carries no such skill today: the reviewer's runner was the last one, and it retired into the seat path.
 
 ### A skill owns construction and contract together
 
@@ -25,6 +25,6 @@ Rejected on intent. Isolation is one caller's need, not the problem's shape: a w
 **Edge cases / drivers:**
 
 - The free tier is a shared daily quota that resets at UTC midnight, so an exhausted route is the normal path and the advance is not an error path.
-- A fixed run resolves nothing, which is what makes it reproducible; its behaviour is not evidence of how dispatch routes.
+- A run that pins its assignment resolves nothing, which is what makes it reproducible; its behaviour is not evidence of how dispatch routes.
 - Route state is session-scoped and lost with the container, so a later session learns a route's outcome rather than trusting a remainder.
 - Four scope changes re-decide this record: a third runtime becomes a dispatch target; a dispatch needs a worktree or a branch per attempt, which the task queue owns today and which a scheduler subsumes rather than this mechanism; a caller that is not an agent running in pi becomes a first-class caller rather than reusing the same question; and selection optimises cost per attempt instead of following the written order.

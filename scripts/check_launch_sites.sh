@@ -18,8 +18,6 @@
 #
 #   src/libs/dispatch/launch.ts   the only builder of a launch argv
 #   scripts/dispatch.sh           the entrypoint that prints or runs it
-#   config/agent/bin/review-dispatch.sh  the reviewer's runner, which takes its assignment
-#                                      from its caller and resolves nothing
 #
 # Test seam: LAUNCH_SITE_SCAN_ROOT points the scan at a fixture root that mirrors
 # the repository layout, so the gate's branches run without touching the real tree.
@@ -35,7 +33,6 @@ SCAN_ROOT="${LAUNCH_SITE_SCAN_ROOT:-$REPO_ROOT}"
 ALLOWED=(
   "src/libs/dispatch/launch.ts"
   "scripts/dispatch.sh"
-  "src/reasoning/providers/pi/config/agent/bin/review-dispatch.sh"
   "scripts/check_launch_sites.sh"
 )
 
@@ -92,7 +89,7 @@ while IFS= read -r rel; do
 done < <(candidate_files)
 
 if (( findings > 0 )); then
-  printf '\nlaunch sites: %d finding(s). A launch belongs behind the library, so the\nprovider, the model and the runtime come from one assignment. Add the file to\nthe allowlist only when it is a declared fixed run.\n' "$findings"
+  printf '\nlaunch sites: %d finding(s). A launch belongs behind the library, so the\nprovider, the model and the runtime come from one assignment. Add the file to\nthe allowlist only when it is the mechanism itself.\n' "$findings"
   exit 1
 fi
 

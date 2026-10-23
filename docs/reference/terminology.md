@@ -213,16 +213,15 @@ A place that starts a worker.
 
 - The entrypoint: `scripts/dispatch.sh`, which prints the command for a role or runs it with `--run`.
 - The library it calls: `src/libs/dispatch/`, which resolves a role and derives the runtime.
-- A fixed run's script, such as `review-dispatch.sh`, which takes its assignment from its caller and resolves nothing.
 
 ### Scope
 
-A site may resolve, launch, or both. Only the library resolves a [role](#role). A site that resolves is dispatching. A site that takes its assignments from its caller instead, for a run that must not move when the table changes, is a fixed run and is not dispatching: its input is its own contract, stated in one place.
+A site may resolve, launch, or both. Only the library resolves a [role](#role). A site that resolves is dispatching. A run that pins its assignment instead, for an invocation that must not move when the table changes, resolves nothing and is not dispatching: its input is its own contract, stated in one place.
 
 ### Relationships
 
 - A site that launches calls the library for the assignment, so one role resolves one way everywhere.
-- A site that takes its assignments from its caller resolves nothing, so it is not a dispatch site and its behaviour is not evidence of how dispatch routes.
+- A run that pins its assignment resolves nothing, so it is not a dispatch site and its behaviour is not evidence of how dispatch routes.
 - A runtime-specific launcher beside the entrypoint is a duplicate of it, not a fourth kind of site.
 - Not a **carrier**, which is a file that states dispatch behaviour in prose.
 - Two sites that disagree about one step are drift, not two mechanisms.

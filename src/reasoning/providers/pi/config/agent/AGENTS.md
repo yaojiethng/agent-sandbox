@@ -143,21 +143,20 @@ A run can still be truncated by its own timeout. The signature is a short log wi
 
 ## Running Review Subagents
 
-A review dispatch has one mechanism: the runner at `$AGENT_HOME/agent/bin/review-dispatch.sh`, provisioned beside this file. It runs the two seats in the foreground of one call and prints one line per seat.
+A review has one mechanism: the dispatch entrypoint with a seat count. It runs its seats in the foreground of one call and prints one line per seat at each turn boundary.
 
 **A reviewer is a delegated read-only run.** It edits nothing, commits nothing and runs no suite, so the caller applies what the report names. It takes one brief, passed verbatim, and keeps its own session file and log. Its report comes back in the brief's shape.
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the assignment. Recommend model choices in the role table, never here.
 
-**Which model.** Every dispatch takes its assignment and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). The line orders its assignments, and the resolver walks them. The reviewer takes the assignment its caller resolved and the runner carries no model; both seats run that assignment, so a second seat is a repeat rather than an independent family, and agreement between the two reports is the signal.
+**Which model.** Every dispatch takes its assignments from the role line in `model-recommendations.md`, for example `_REVIEWER`. The entrypoint resolves the role, keeps the assignments the route memory allows at that moment, and seats them by rotation, so a role naming two assignments gives two families and agreement between the two reports is the signal. A review that named its own model would be a run the table did not route, so the pin is refused here.
 
-1. Resolve the assignment: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1.
-2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <assignment> <level>`. The runner passes the id in full. It refuses a malformed assignment, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.
-3. Read its lines, one per seat: the model read back from the session file against the assignment from step 1, and the log path. `model=unverified` means the session file named none.
-4. Record the role, the assignment, and the level beside the seat in the brief.
+1. **Name the role and the seat count.** `_REVIEWER` for source, `_ADVISOR_DOCS` for prose, and two seats unless the caller says otherwise.
+2. **Commit or stash first.** A seat run refuses a dirty tree, because a review reads one revision: a finding against content the caller is still editing cannot be attributed to a commit.
+3. **Run it in the foreground of one call**, `bash scripts/dispatch.sh --role _REVIEWER --brief <brief-file> --dir <repo-root> --seats 2 --run --run-dir <scratch-dir>`. It prints the role, the seat count and the run directory, then one line per seat per turn: the seat, the turn, the assignment it ran, its exit code and its log path.
+4. **Read the logs**, one per seat, and record the role, the seat's assignment and its level in the brief.
+5. **Read the exit code.** Zero means every seat finished on a working model, three is blocked with the earliest wait named, four is a seat with no candidate left, and one is a refusal.
 
-**When a step fails, stop and report.** Step 1 exits 1 for a missing file, a role with no line, and a line naming no model, and it prints which on stderr. `No models match pattern` means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run. In every case, dispatch nothing further, choose no model by hand, and report the role and the message.
+**When a step fails, stop and report.** A role the table does not name, a role naming no model, and a role whose runtime is absent from this host are each refused by name on stderr. A seat that logged nothing, or that ended on a sentence the classifier reads as a timeout or an unclassified failure, stops the run with that attempt's exit code: report the seat and the message rather than re-running it on another model.
 
-**The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.
-
-**A worker fan-out is not this.** A dispatch that writes, holds a worktree and returns work is the harness's `taskq_*` shape, and it is not a review.
+**A worker fan-out is not this.** A dispatch that writes, holds a worktree and returns work is the harness's `taskq_*` shape, and it is not a review. A worker takes `--worker` and returns one change set; a review takes seats and returns n reports.

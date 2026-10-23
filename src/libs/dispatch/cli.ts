@@ -310,14 +310,15 @@ function cmdSeats(argv: string[]): never {
           });
           if (record.metered) memory.usage[record.route] = (memory.usage[record.route] ?? 0) + 1;
         }
-        if (applied.outcome !== 'done' && record !== undefined) {
-          process.stderr.write(`dispatch: seat ${seat} ended ${record.class} (${record.scope})\n`);
-        }
         if (applied.outcome === 'stop') {
           save(path, memory);
           writeFileSync(statePath, `${JSON.stringify(state)}\n`);
-          process.stderr.write(`dispatch: seat ${seat} ended ${record?.class} (${record?.scope}), so the run stops\n`);
+          const why = record === undefined ? 'produced no output' : `ended ${record.class} (${record.scope})`;
+          process.stderr.write(`dispatch: seat ${seat} ${why}, so the run stops\n`);
           process.exit(applied.exit);
+        }
+        if (applied.outcome !== 'done') {
+          process.stderr.write(`dispatch: seat ${seat} ended ${record.class} (${record.scope})\n`);
         }
       }
       save(path, memory);

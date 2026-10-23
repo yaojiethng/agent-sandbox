@@ -131,7 +131,9 @@ export type SeatResult = {
  * the seat on its assignment and lets the memory set the next attempt's moment.
  * A capability failure says the model is gone, so the candidate is dropped and
  * the seat takes the next one in the remaining rotation. A timeout or an
- * unclassified sentence stops the run rather than guessing at a second model.
+ * unclassified sentence stops the run rather than guessing at a second model,
+ * and so does a zero exit with an empty log: the log is the only evidence the
+ * seat ran, so a silent one is a failure and not a success.
  */
 export function seatResult(
   state: SeatState,
@@ -146,6 +148,10 @@ export function seatResult(
   const metered = candidate.runtime === 'opencode';
 
   if (rc === 0) {
+    if (logText.trim() === '') {
+      state.stop = 1;
+      return { state, outcome: 'stop', exit: 1 };
+    }
     slot.state = 'done';
     return {
       state,

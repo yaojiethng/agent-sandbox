@@ -93,11 +93,19 @@ test('a timeout stops the run rather than reassigning', () => {
 test('every seat on a working model finishes the run at zero', () => {
   const state = startSeats('_R', 2, [candidate('p/a', 0), candidate('p/b', 1)]);
   seatResult(state, 1, 1, '401: {"type":"AuthError","message":"Invalid API key."}', AT);
-  seatResult(state, 2, 0, '', AT);
-  seatResult(state, 1, 0, '', AT);
+  seatResult(state, 2, 0, 'report\n', AT);
+  seatResult(state, 1, 0, 'report\n', AT);
   const verdict = seatVerdict(state);
   assert.equal(verdict.done, true);
   assert.equal(verdict.code, 0, 'a seat that was reassigned and then succeeded does not fail the run');
+});
+
+test('a seat that logs nothing stops the run', () => {
+  const state = startSeats('_R', 1, [candidate('p/a', 0), candidate('p/b', 1)]);
+  const applied = seatResult(state, 1, 0, '   \n', AT);
+  assert.equal(applied.outcome, 'stop', 'a silent exit says nothing about the route');
+  assert.equal(applied.exit, 1);
+  assert.deepEqual(state.dropped, [], 'no candidate is blamed');
 });
 
 test('an attemptable seat is ordered to fire with its runtime', () => {
