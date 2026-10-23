@@ -145,17 +145,21 @@ A run can still be truncated by its own timeout. The signature is a short log wi
 
 ## Running Review Subagents
 
-A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT_HOME/agent/skills/pi-reviewer-dispatch/SKILL.md`. It states the reviewer contract and runs the pinned pair. Read it before dispatching a review. This section carries only what that skill cannot.
+A review dispatch has one mechanism: the runner at `$AGENT_HOME/agent/bin/review-dispatch.sh`, provisioned beside this file. It runs the two seats in the foreground of one call and prints one line per seat.
+
+**A reviewer is a delegated read-only run.** It edits nothing, commits nothing and runs no suite, so the caller applies what the report names. It takes one brief, passed verbatim, and keeps its own session file and log. Its report comes back in the brief's shape.
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
 **Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). Every role names `deepseek/deepseek-flash`; there is one model, so a second seat is a second run of the same model, not a second family.
 
 1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1.
-2. Pass it verbatim, in full: `--provider <provider> --model <provider>/<model> --thinking <level>`.
-3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u` prints the pair from step 1, once.
+2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <pair> <level>`. The runner passes the id in full. It refuses a malformed pair, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.
+3. Read its lines, one per seat: the model read back from the session file against the pair from step 1, and the log path. `model=unverified` means the session file named none.
 4. Record the role, the pair, and the level beside the seat in the brief.
 
 **When a step fails, stop and report.** Step 1 exits 1 for a missing file, a role with no line, and a line naming no model, and it prints which on stderr. `No models match pattern` means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run. In every case, dispatch nothing further, choose no model by hand, and report the role and the message.
 
 **The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.
+
+**A worker fan-out is not this.** A dispatch that writes, holds a worktree and returns work is the harness's `taskq_*` shape, and it is not a review.
