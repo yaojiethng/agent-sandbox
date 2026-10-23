@@ -97,7 +97,7 @@ Present the handover's `Decisions pending` table with the scope. Design runs bef
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
-Define the acceptance criteria in the table the project's `work-log` convention states, one row per criterion:
+Run the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbook/content.md) of `handover-maintenance` over this handover and apply what it reports, then define the acceptance criteria in the table the project's `work-log` convention states, one row per criterion:
 
 | Criterion | Verification | Result |
 |---|---|---|
@@ -170,7 +170,7 @@ Every row must carry a status. A deferred or not-started row must be written bac
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
 5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
-6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `handover-maintenance` skill over this handover. List every finding with its `Triaged to:` destination, and both reports with what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
+6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbook/content.md) of `handover-maintenance` over this handover. List every finding with its `Triaged to:` destination, and both reports with what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 
