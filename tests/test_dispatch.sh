@@ -422,7 +422,7 @@ test_cli_a_role_with_no_line_names_the_role() {
     "the library's own message reaches the caller instead of a later usage error"
 }
 
-test_cli_a_pinned_run_teaches_the_memory_nothing() {
+test_cli_a_pinned_run_records_its_outcome() {
   local BIN BRIEF REC STATE RESULT RC
   BIN="$FIXTURE_DIR/pin-stub"
   BRIEF="$FIXTURE_DIR/pin-brief.md"
@@ -443,8 +443,8 @@ STUB
       --brief "$BRIEF" --dir /work --run 2>&1)" || RC=$?
   assert_rc 0 "$RC" "a pinned run succeeds"
   assert_contains "$RESULT" "ran" "the pinned model ran"
-  assert_not_contains "$(cat "$STATE" 2>/dev/null)" "opencode/x" \
-    "a pin writes no route, so it cannot revive a route the router had cooled"
+  assert_contains "$(cat "$STATE" 2>/dev/null)" "opencode/x" \
+    "a pin reads no route and still records what its attempt ended in"
 }
 
 
@@ -999,7 +999,7 @@ run_test test_check_passes_on_a_runnable_fallback
 run_test test_cli_run_walks_to_the_fallback
 run_test test_cli_run_stops_on_a_malformed_request
 run_test test_cli_a_role_with_no_line_names_the_role
-run_test test_cli_a_pinned_run_teaches_the_memory_nothing
+run_test test_cli_a_pinned_run_records_its_outcome
 run_test test_cli_worker_flags_are_worker_mode_only
 run_test test_worker_requires_run
 run_test test_worker_refuses_a_bad_brief
@@ -1118,8 +1118,10 @@ test_a_pin_seats_every_seat_on_one_assignment() {
     "the role's first entry is not dealt"
   assert_eq "$(printf '%s' "$out" | grep -c 'opencode/s2-free at low')" "2" \
     "the pinned level reaches every seat"
-  assert_eq "$(grep -c 's2-free' "$sandbox/state.json" 2>/dev/null || true)" "0" \
-    "a pinned run records nothing in the route memory"
+  assert_contains "$(cat "$sandbox/state.json" 2>/dev/null)" '"opencode/s2-free"' \
+    "a pinned seat records its route"
+  assert_contains "$(cat "$sandbox/state.json" 2>/dev/null)" '"state": "ready"' \
+    "a pinned success readies the route, like any other attempt"
 }
 
 # A seat that logs nothing says nothing about the route. The log is the only

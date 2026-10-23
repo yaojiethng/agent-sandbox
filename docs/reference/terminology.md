@@ -216,12 +216,12 @@ A place that starts a worker.
 
 ### Scope
 
-A site may resolve, launch, or both. Only the library resolves a [role](#role). A site that resolves is dispatching. A run that pins its assignment instead, for an invocation that must not move when the table changes, still goes through the door and resolves nothing: its input is its own contract, stated in one place, and its behaviour is not evidence of how resolution routes.
+A site may resolve, launch, or both. Only the library resolves a [role](#role). A site that resolves is dispatching. A run that pins its assignment instead, for an invocation that must not move when the table changes, still goes through the door and resolves nothing: its input is its own contract, stated in one place. Its attempt is recorded, so it is evidence about the route and not about how resolution chooses.
 
 ### Relationships
 
 - A site that launches calls the library for the assignment, so one role resolves one way everywhere.
-- Resolution is the default, and a pin is the caller's override of it: a pinned run resolves nothing, so its behaviour is not evidence of how dispatch routes.
+- Resolution is the default, and a pin is the caller's override of it: a pinned run resolves nothing, so it says nothing about how the resolver chooses, while its recorded attempt still teaches the memory what the route did.
 - A runtime-specific launcher beside the entrypoint is a duplicate of it, not a fourth kind of site.
 - Not a **carrier**, which is a file that states dispatch behaviour in prose.
 - Two sites that disagree about one step are drift, not two mechanisms.

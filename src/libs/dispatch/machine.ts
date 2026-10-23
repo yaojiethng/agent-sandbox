@@ -28,14 +28,16 @@ export const INVARIANTS = [
 export const TRANSITIONS = [
   { id: 'R1', from: 'untried', on: 'success', to: 'ready', invariant: 'I5' },
   { id: 'R2', from: 'ready', on: 'success', to: 'ready', invariant: 'I5' },
-  { id: 'R3', from: 'any', on: 'transient', to: 'cooling:flaky', invariant: 'I1' },
-  { id: 'R4', from: 'any', on: 'quota:rate', to: 'cooling:rate', invariant: 'I1' },
-  { id: 'R5', from: 'any', on: 'quota:plan', to: 'cooling:quota', invariant: 'I1' },
-  { id: 'R6', from: 'any', on: 'timeout', to: 'cooling:timeout', invariant: 'I1' },
-  { id: 'R7', from: 'any', on: 'capability:model|provider|account', to: 'dead', invariant: 'I4' },
+  { id: 'R3', from: 'untried|ready|cooling', on: 'transient', to: 'cooling:flaky', invariant: 'I1' },
+  { id: 'R4', from: 'untried|ready|cooling', on: 'quota:rate', to: 'cooling:rate', invariant: 'I1' },
+  { id: 'R5', from: 'untried|ready|cooling', on: 'quota:plan', to: 'cooling:quota', invariant: 'I1' },
+  { id: 'R6', from: 'untried|ready|cooling', on: 'timeout', to: 'cooling:timeout', invariant: 'I1' },
+  { id: 'R7', from: 'untried|ready|cooling', on: 'capability:model|provider|account', to: 'dead', invariant: 'I4' },
   { id: 'R8', from: 'any', on: 'capability:request', to: 'same', invariant: 'I2' },
   { id: 'R9', from: 'any', on: 'unknown', to: 'same', invariant: 'I3' },
   { id: 'R10', from: 'cooling', on: 'clock>=until', to: 'untried', invariant: 'I6' },
+  { id: 'R11', from: 'cooling', on: 'success', to: 'cooling', invariant: 'I6' },
+  { id: 'R12', from: 'dead', on: 'any attempt', to: 'dead', invariant: 'I4' },
 ] as const;
 
 export const SELECTIONS = [
@@ -50,6 +52,19 @@ function backoff(strikes: number): number {
 }
 
 export function applyOutcome(route: RouteRecord, o: Outcome): RouteRecord {
+  // A held route is frozen by the record itself, not by the absence of a
+  // writer. An attempt is recorded whichever chose it, a pin included, because
+  // the memory is evidence about the route rather than about the decision that
+  // selected it. What the record cannot do is move a route the router holds
+  // back: cooling changes only when the clock passes (I6), and dead never
+  // leaves the session (I4). Severity only ever moves down, so a capability
+  // fault still kills a cooling route.
+  if (route.state === 'dead') return route;
+  // A cooldown is frozen against improvement: only the clock makes the route
+  // attemptable again (I6), so a success neither readies it nor clears its
+  // strikes. A failure still extends the wait and counts a strike (I1), and a
+  // capability fault still kills it, because severity only ever moves down.
+  if (route.state === 'cooling' && o.class === 'success') return route;
   const strikes = route.state === 'cooling' ? route.strikes : 0;
   const previousUntil = route.state === 'cooling' ? route.until : 0;
 

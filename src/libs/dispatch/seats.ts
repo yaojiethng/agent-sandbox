@@ -42,8 +42,6 @@ export type SeatState = {
   dropped: number[];
   /** A non-zero code stops the run: the failure said nothing about the route. */
   stop: number;
-  /** A pinned run records no outcome: the caller's assignment is not a route decision. */
-  pinned: boolean;
 };
 
 export type SeatOrder = { seat: number; entry: string; runtime: Runtime };
@@ -69,7 +67,8 @@ export function seatCandidates(
  * A caller's pin: one candidate, taken as given. Resolution is the default and a
  * pin overrides it, so the pinned route is attempted whether or not the memory
  * holds it back: the caller named it on purpose, and the pin is what makes the
- * run reproducible.
+ * run reproducible. The attempt is recorded like any other, because the memory
+ * is evidence about the route and not about the decision that selected it.
  */
 export function pinnedCandidates(assignment: Assignment): SeatCandidate[] {
   return [
@@ -88,7 +87,6 @@ export function startSeats(
   role: string,
   seats: number,
   candidates: SeatCandidate[],
-  pinned = false,
 ): SeatState {
   if (candidates.length === 0) {
     throw new DispatchError(`dispatch: unroutable: ${role} names no candidate that may be attempted now`);
@@ -109,7 +107,6 @@ export function startSeats(
     slots,
     dropped: [],
     stop: 0,
-    pinned,
   };
 }
 

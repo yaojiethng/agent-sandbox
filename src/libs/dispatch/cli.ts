@@ -277,9 +277,6 @@ function cmdSeats(argv: string[]): never {
       const role = one(map, '--role') || fail('seats start needs --role');
       const count = Number(one(map, '--seats') ?? '1');
       const pin = one(map, '--model');
-      // A pinned run is not routed, so it teaches the memory nothing: recording
-      // it would let a pin revive a route the router had put to sleep.
-      const routed = pin === undefined;
       const level = one(map, '--thinking');
       // Resolution is the default. A caller who names the assignment instead
       // takes it as given, and the level beside it, so every seat runs that one
@@ -291,7 +288,7 @@ function cmdSeats(argv: string[]): never {
       if (candidates.length === 0) {
         fail(`unroutable: ${role} names no candidate that may be attempted now`, 4);
       }
-      const state = startSeats(role, count, candidates, !routed);
+      const state = startSeats(role, count, candidates);
       writeFileSync(statePath, `${JSON.stringify(state)}\n`);
       const orders = seatOrders(state, memory.routes, at);
       state.turn = 1;
@@ -308,7 +305,7 @@ function cmdSeats(argv: string[]): never {
         const rc = Number(rcText);
         const text = tail(logPath, 4000);
         const applied = seatResult(state, seat, rc, text, at);
-        const record = state.pinned ? undefined : applied.record;
+        const record = applied.record;
         if (record !== undefined) {
           memory.routes[record.route] = applyOutcome(memory.routes[record.route] ?? { state: 'untried' }, {
             at,

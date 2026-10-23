@@ -558,11 +558,9 @@ while :; do
   fi
 
   if (( rc == 0 )); then
-    # A pinned run is not routed, so it teaches the memory nothing: recording it
-    # would let a pin revive a route the router had put to sleep.
-    if [[ -z "$MODEL" ]]; then
-      node "$DISPATCH_CLI" record --route "$ROUTE" --class success --scope none "${METERED[@]}" >/dev/null
-    fi
+    # An attempt is an observation of the route, whichever chose it: a pin reads
+    # no route, and still records what its attempt ended in.
+    node "$DISPATCH_CLI" record --route "$ROUTE" --class success --scope none "${METERED[@]}" >/dev/null
     report_failures
     if (( WORKER )); then
       printf 'rc=%s %ss changed=%s model=%s log=%s\n' \
@@ -579,7 +577,7 @@ while :; do
   record_args=(--route "$ROUTE" --class "$class" --scope "$scope" --text "$text" "${METERED[@]}")
   [[ "$reason" != "-" ]] && record_args+=(--reason "$reason")
   [[ "$refresh" != "-" ]] && record_args+=(--refresh-at "$refresh")
-  [[ -n "$MODEL" ]] || node "$DISPATCH_CLI" record "${record_args[@]}" >/dev/null
+  node "$DISPATCH_CLI" record "${record_args[@]}" >/dev/null
   if (( WORKER )); then
     FAILED+=("$ROUTE ($_pclass $class $scope $reason $refresh)")
   fi

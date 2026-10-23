@@ -36,19 +36,19 @@ A role is a tag matching `_[A-Z][A-Z0-9_]*`, and its line lists assignments sepa
 
 One machine and one loop.
 
-The route machine has four states. A route is untried before its first attempt, ready after a success, cooling until a stated moment with a reason and a strike count, or dead for the session. Its only events are an attempt that succeeded, an attempt that failed, and the clock. Cooling expires to untried, never to ready, because no evidence arrived in between. A dead route does not leave that state for the session.
+The route machine has four states. A route is untried before its first attempt, ready after a success, cooling until a stated moment with a reason and a strike count, or dead for the session. Its only events are an attempt that succeeded, an attempt that failed, and the clock. A held route only ever moves down in severity: cooling expires to untried, never to ready, because no evidence arrived in between, and a dead route does not leave that state for the session.
 
 | From | Event | To |
 |---|---|---|
-| untried | attempt succeeded | ready |
-| ready | attempt succeeded | ready |
-| any | transient failure | cooling: flaky |
-| any | rate limit | cooling: rate |
-| any | plan limit | cooling: quota |
-| any | timeout | cooling: timeout |
-| any | capability at model, provider or account | dead |
-| any | capability at request | unchanged |
-| any | unclassified failure | unchanged |
+| untried, ready | attempt succeeded | ready |
+| cooling | attempt succeeded | cooling |
+| untried, ready, cooling | transient failure | cooling: flaky |
+| untried, ready, cooling | rate limit | cooling: rate |
+| untried, ready, cooling | plan limit | cooling: quota |
+| untried, ready, cooling | timeout | cooling: timeout |
+| untried, ready, cooling | capability at model, provider or account | dead |
+| untried, ready, cooling | capability at request | unchanged |
+| dead | any attempt | dead |
 | cooling | clock reaches the stated moment | untried |
 
 Selection answers with one of three things: attempt this entry, blocked until a stated moment for a stated reason, or unroutable because every entry is dead. The loop then either finishes or moves to the next entry, so the walk itself carries no state beyond the attempt it is on.
@@ -74,7 +74,7 @@ Seats fire in turns. A turn launches its seats concurrently and ends when its sl
 | capability | the candidate is dropped and the seat takes the next in the remaining rotation, wrapping to the first |
 | timeout or unknown | the run stops, because the outcome says nothing about the route |
 
-A caller may pin an assignment with `--model`, and a seat run then seats every seat on that one assignment: the seats repeat it by the caller's choice, which is how a review pins its own reproducibility. A pinned run records nothing, in the seat path as in the walk.
+A caller may pin an assignment with `--model`, and a seat run then seats every seat on that one assignment: the seats repeat it by the caller's choice, which is how a review pins its own reproducibility. The route memory reads nothing from the pin and still records what each attempt ended in.
 
 A seat run is read-only and reads one revision, so the entrypoint refuses a dirty tree before the first attempt. A seat that exits zero with an empty log stops the run, because the log is the only evidence it ran; the route keeps whatever the memory already held, since a silent exit says nothing about it.
 
@@ -90,9 +90,9 @@ A malformed request leaves the route record untouched, because the repair is the
 
 An unclassified failure leaves the route record untouched, because a guess about the route is worse than no record of it.
 
-A dead route stays dead for the session, and a success clears the strike count.
+A dead route stays dead for the session, whatever the attempt ended in, and a success clears the strike count.
 
-The clock is the only way out of cooling. No dispatch attempt, and no other event, brings a cooling route forward.
+The clock is the only way out of cooling. No dispatch attempt, and no other event, brings a cooling route forward: a success leaves the cooldown where it is, while a later failure moves it further out and a capability fault kills the route.
 
 ## The Launch Sites
 
@@ -102,7 +102,7 @@ The mechanism is two halves that meet at one command. The library, TypeScript un
 
 A skill or a prompt carries the instruction that turns an intent into that invocation, and reads back what ran. A launch site may not carry its own resolver, restate the role table, or substitute a model the table does not name. Each of those existed beside this mechanism at one point, and each read as agreement with a table it had never seen. `scripts/check_launch_sites.sh` holds the rule instead of the reader: it fails a source file that names a launcher's own flags outside the library and the entrypoint, so a call site added later cannot reopen the door it closes.
 
-A pinned run is a launch site that resolves nothing. It names one assignment because its caller fixed it, and it is reproducible precisely because no route decision is available to it.
+A pinned run is a launch site that resolves nothing. It names one assignment because its caller fixed it, and it is reproducible precisely because no route decision is available to it. Its attempt is recorded all the same, so the memory learns the route's outcome whichever way the attempt was chosen.
 
 ## Failure and Its Vocabulary
 

@@ -86,6 +86,23 @@ test('[R10] a cooling route becomes untried once the clock reaches until', () =>
   assert.deepEqual(applyClock(cooling, cooling.until), { state: 'untried' });
 });
 
+test('[R11] a cooling route is not moved forward by an attempt', () => {
+  const cooling = applyOutcome(UNTRIED, outcome({ class: 'transient' }));
+  assert.deepEqual(applyOutcome(cooling, outcome({ class: 'success' })), cooling, 'a success leaves the cooldown alone');
+  const worse = applyOutcome(cooling, outcome({ class: 'transient', at: cooling.state === 'cooling' ? cooling.until : AT }));
+  assert.equal(worse.state, 'cooling');
+  if (worse.state === 'cooling') assert.ok(worse.until > AT + BACKOFF_BASE_MS, 'a later failure moves it further out, never nearer');
+  const killed = applyOutcome(cooling, outcome({ class: 'capability', scope: 'model' }));
+  assert.equal(killed.state, 'dead', 'severity only moves down, so a capability fault still kills it');
+});
+
+test('[R12] a dead route stays dead through every attempt', () => {
+  const dead = applyOutcome(UNTRIED, outcome({ class: 'capability', scope: 'model' }));
+  for (const ended of ['success', 'transient', 'quota', 'timeout', 'unknown'] as const) {
+    assert.deepEqual(applyOutcome(dead, outcome({ class: ended })), dead, `${ended} does not revive it`);
+  }
+});
+
 test('[S1] resolution takes the first dispatchable entry, after any cooling one', () => {
   const table = { 'p/a': applyOutcome(UNTRIED, outcome({ class: 'transient' })) };
   const r = select(['p/a', 'p/b'], table, AT);
