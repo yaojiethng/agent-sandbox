@@ -23,7 +23,7 @@ test_cost_ledger_sums_single_session() {
   make_session "$root"
   file="$root/session.jsonl"
   out="$(node "$REPO_ROOT/scripts/cost_ledger.mjs" --session "$file")"
-  assert_eq "$(printf '%s' "$out" | jq -r '.backend')" "pi" "backend"
+  assert_eq "$(printf '%s' "$out" | jq -r '.runtime')" "pi" "runtime"
   assert_eq "$(printf '%s' "$out" | jq -r '.session')" "11111111-2222-3333-4444-555555555555" "session id"
   assert_eq "$(printf '%s' "$out" | jq -r '.provider')" "anthropic" "provider"
   assert_eq "$(printf '%s' "$out" | jq -r '.model')" "claude-opus-4" "model"

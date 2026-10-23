@@ -104,7 +104,7 @@ The subagent runs in the same container/workspace as the primary agent, with the
 **What any dispatch must hold.**
 
 - **The brief goes to a file**, and the file must be non-empty. Pre-flight it: `[ -s "$brief" ] || { echo "brief missing or empty: $brief" >&2; exit 1; }`.
-- **Pin the role, and the pair its line resolves to**, and state the role, the provider, the model and the thinking level in the brief, because the subagent cannot see its invocation flags. The pair comes from the resolver in `**Which model.**`, never from a hand read of the file.
+- **Pin the role, and the assignment its line resolves to**, and state the role, the provider, the model and the thinking level in the brief, because the subagent cannot see its invocation flags. The assignment comes from the resolver in `**Which model.**`, never from a hand read of the file.
 - **Give the run a timeout you set**, and record the exit code and the elapsed seconds.
 - **Log to a file, never a pipe.** A run's log is its only evidence.
 
@@ -147,14 +147,14 @@ A review dispatch has one mechanism: the runner at `$AGENT_HOME/agent/bin/review
 
 **A reviewer is a delegated read-only run.** It edits nothing, commits nothing and runs no suite, so the caller applies what the report names. It takes one brief, passed verbatim, and keeps its own session file and log. Its report comes back in the brief's shape.
 
-**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
+**Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the assignment. Recommend model choices in the role table, never here.
 
-**Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). The line orders its assignments, and the resolver walks them. The reviewer takes the pair its caller resolved and the runner carries no model; both seats run that pair, so a second seat is a repeat rather than an independent family, and agreement between the two reports is the signal.
+**Which model.** Every dispatch takes its assignment and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). The line orders its assignments, and the resolver walks them. The reviewer takes the assignment its caller resolved and the runner carries no model; both seats run that assignment, so a second seat is a repeat rather than an independent family, and agreement between the two reports is the signal.
 
-1. Resolve the pair: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1.
-2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <pair> <level>`. The runner passes the id in full. It refuses a malformed pair, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.
-3. Read its lines, one per seat: the model read back from the session file against the pair from step 1, and the log path. `model=unverified` means the session file named none.
-4. Record the role, the pair, and the level beside the seat in the brief.
+1. Resolve the assignment: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1.
+2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <assignment> <level>`. The runner passes the id in full. It refuses a malformed assignment, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.
+3. Read its lines, one per seat: the model read back from the session file against the assignment from step 1, and the log path. `model=unverified` means the session file named none.
+4. Record the role, the assignment, and the level beside the seat in the brief.
 
 **When a step fails, stop and report.** Step 1 exits 1 for a missing file, a role with no line, and a line naming no model, and it prints which on stderr. `No models match pattern` means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run. In every case, dispatch nothing further, choose no model by hand, and report the role and the message.
 

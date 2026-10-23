@@ -103,7 +103,7 @@ resolved_runtime() {
 test_resolve_role_with_level() {
   local RESULT
   RESULT="$(cli table resolve --role _IMPLEMENTER --file "$REC_FILE")"
-  assert_eq "$RESULT" "opencode-go/stub-model high pi" "a role resolves to its pair, its level and the runtime that reaches it"
+  assert_eq "$RESULT" "opencode-go/stub-model high pi" "a role resolves to its assignment, its level and the runtime that reaches it"
 }
 
 test_resolve_role_without_level() {

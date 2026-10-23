@@ -45,18 +45,18 @@
 
 **Reason superseded by 2026-10-22:** the table is committed now, so a wrong path is a review defect rather than an operator edit nobody sees, and the startup-default rung is gone. The resolution order, the pinned exception and the rule that a hand read is not a resolution carry forward.
 
-**Decision:** A subagent dispatch names a role, and the pair comes from the role table in this order: the role's line, then the startup default from `settings.json`, then a stop. A dispatch that fits no role uses the `_IMPLEMENTER` line. A dispatch that needs a property one line cannot express, such as two model families, is a designed exception whose pair is pinned where its seats are defined, with the reason stated there. The table wins over a preference. Initialisation of the file happens after the dispatch, never before it. The resolver is `dispatch_role_model <role>`; a hand read of the file is not a resolution.
+**Decision:** A subagent dispatch names a role, and the assignment comes from the role table in this order: the role's line, then the startup default from `settings.json`, then a stop. A dispatch that fits no role uses the `_IMPLEMENTER` line. A dispatch that needs a property one line cannot express, such as two model families, is a designed exception whose assignment is pinned where its seats are defined, with the reason stated there. The table wins over a preference. Initialisation of the file happens after the dispatch, never before it. The resolver is `dispatch_role_model <role>`; a hand read of the file is not a resolution.
 
-**Rationale:** The 2026-10-14 entry left two openings. An untagged dispatch resolved to the startup default, which read as permission to compose a pair instead. And a missing file routed to initialise-before-dispatch, which turned one wrong path into a blocked resolution, because its only exit is an operator confirmation an unattended run cannot get. On 2026-10-20 a census dispatch reached three pairs outside the table through that second opening and reported them as the enabled families. Resolution now runs first and stops, so an absent file cannot block the fallback and a composed pair has no rung to hide in.
+**Rationale:** The 2026-10-14 entry left two openings. An untagged dispatch resolved to the startup default, which read as permission to compose an assignment instead. And a missing file routed to initialise-before-dispatch, which turned one wrong path into a blocked resolution, because its only exit is an operator confirmation an unattended run cannot get. On 2026-10-20 a census dispatch reached three assignments outside the table through that second opening and reported them as the enabled families. Resolution now runs first and stops, so an absent file cannot block the fallback and a composed assignment has no rung to hide in.
 
 **Rejected alternatives:**
 
 - Restrict the capability, so that only the resolver can reach a model: the operator ruled it out and kept the free `pi -p` invocation (2026-10-20).
 - Keep the startup-default rung for an untagged dispatch: it is the exemption that licensed the composition.
 - Confirm a fallback with the operator at dispatch time: unexecutable in an unattended run, and the block is what produced the improvised fourth rung.
-- Give the reviewer pair a role line: one line names one pair, and the reviewer contract needs two families.
+- Give the reviewer seats a role line: one line names one assignment, and the reviewer contract needs two families.
 
-**Edge cases / drivers:** the role table is operator-owned and gitignored, so a wrong path is indistinguishable from a change of model unless `test -f` decides it. The startup default names one pair, not a family, and cannot satisfy a multi-seat requirement. `dispatch_role_model` reads only the first entry of a repeated line, which is a known seam defect, so a fallback inside a line is a record rather than a route on that path.
+**Edge cases / drivers:** the role table is operator-owned and gitignored, so a wrong path is indistinguishable from a change of model unless `test -f` decides it. The startup default names one assignment, not a family, and cannot satisfy a multi-seat requirement. `dispatch_role_model` reads only the first entry of a repeated line, which is a known seam defect, so a fallback inside a line is a record rather than a route on that path.
 
 ## 2026-10-14 -- The recommendations leave the project AGENTS.md
 

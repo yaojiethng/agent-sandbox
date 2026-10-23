@@ -255,13 +255,13 @@ function cmdCommand(argv: string[]): never {
   refusing(() => {
     if (!role || !brief || !dir) throw new DispatchError('dispatch: ROLE, BRIEF and DIR are required');
     const resolved = firstAssignment(role, file);
-    const pair = one(map, '--model') || resolved.key;
+    const pinned = one(map, '--model') || resolved.key;
     const level = one(map, '--thinking') || resolved.level;
     // A pin arrives as provider/model, and the level is carried beside it.
-    if (!pair.includes('/') || pair.endsWith('/')) {
-      throw new DispatchError(`dispatch: the role's model '${pair}' is not provider/model`);
+    if (!pinned.includes('/') || pinned.endsWith('/')) {
+      throw new DispatchError(`dispatch: the role's model '${pinned}' is not provider/model`);
     }
-    const assignment = parseAssignment(role, level === undefined ? pair : `${pair} at ${level}`);
+    const assignment = parseAssignment(role, level === undefined ? pinned : `${pinned} at ${level}`);
     const session = one(map, '--session');
     process.stdout.write(`${commandFor(assignment, { brief, dir, session })}\n`);
     process.exit(0);

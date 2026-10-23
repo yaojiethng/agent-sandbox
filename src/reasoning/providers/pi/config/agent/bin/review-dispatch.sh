@@ -5,13 +5,13 @@
 # $AGENT_HOME/agent/bin/review-dispatch.sh beside the AGENTS.md section that
 # instructs a review dispatch.
 #
-# A pair is not decided here. The caller resolves the role line and passes the
-# pair and its thinking level, so this script holds no model, no provider and
-# no fallback: a pair pinned inside a dispatch site is the bypass the role
-# table exists to close. Two seats of one pair is the repeat the contract
-# names, not two families.
+# An assignment is not decided here. The caller resolves the role line and
+# passes the assignment and its thinking level, so this script holds no model,
+# no provider and no fallback: an assignment pinned inside a dispatch site is
+# the bypass the role table exists to close. Two seats of one assignment is the
+# repeat the contract names, not two families.
 #
-# Refuses a malformed pair, a missing or empty brief, an absent or unwritable
+# Refuses a malformed assignment, a missing or empty brief, an absent or unwritable
 # scratch directory, and a dirty working tree. A reviewer reading content its
 # caller is still editing produces findings that cannot be attributed to a
 # revision.
@@ -21,7 +21,7 @@
 # Exit codes: 0 = both seats logged and bound the requested model. 1 = a
 # refusal, or a seat that produced no work or bound another model.
 #
-# Usage: bash review-dispatch.sh <brief-file> <scratch-dir> <pair> <level>
+# Usage: bash review-dispatch.sh <brief-file> <scratch-dir> <assignment> <level>
 #
 # Env: REVIEW_TIMEOUT  per-seat seconds (default 900)
 
@@ -31,7 +31,7 @@ readonly DEFAULT_TIMEOUT=900
 readonly SEATS=(a b)
 
 usage() {
-  printf 'usage: bash review-dispatch.sh <brief-file> <scratch-dir> <pair> <level>\n' >&2
+  printf 'usage: bash review-dispatch.sh <brief-file> <scratch-dir> <assignment> <level>\n' >&2
   exit 1
 }
 
@@ -43,12 +43,12 @@ refuse() {
 
 main() {
   [[ $# -eq 4 ]] || usage
-  local brief="$1" scratch="$2" pair="$3" level="$4"
+  local brief="$1" scratch="$2" assignment="$3" level="$4"
 
-  [[ "$pair" == */* ]] || refuse "pair is not provider/model" "$pair"
-  local provider="${pair%%/*}" model="${pair#*/}"
-  [[ -n "$provider" && -n "$model" ]] || refuse "pair is not provider/model" "$pair"
-  [[ -n "$level" ]] || refuse "thinking level is empty" "$pair"
+  [[ "$assignment" == */* ]] || refuse "assignment is not provider/model" "$assignment"
+  local provider="${assignment%%/*}" model="${assignment#*/}"
+  [[ -n "$provider" && -n "$model" ]] || refuse "assignment is not provider/model" "$assignment"
+  [[ -n "$level" ]] || refuse "thinking level is empty" "$assignment"
 
   [[ -f "$brief" ]] || refuse "brief not found" "$brief"
   [[ -s "$brief" ]] || refuse "brief is empty" "$brief"
@@ -64,8 +64,8 @@ main() {
   local run_dir timeout_secs
   run_dir="$(mktemp -d "$scratch/review-dispatch.XXXXXX")"
   timeout_secs="${REVIEW_TIMEOUT:-$DEFAULT_TIMEOUT}"
-  printf 'brief: %s\nscratch: %s\npair: %s\nrun dir: %s\n' \
-    "$brief" "$scratch" "$pair" "$run_dir"
+  printf 'brief: %s\nscratch: %s\nassignment: %s\nrun dir: %s\n' \
+    "$brief" "$scratch" "$assignment" "$run_dir"
 
   local seat session log
   local -a pids=()

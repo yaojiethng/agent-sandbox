@@ -142,7 +142,7 @@ function runtimeFor(provider: string, model: string): Runtime {
   if (!declared.split(SEPARATOR).includes(provider)) return 'pi';
   // The decision needs the model, not only the provider: keying on the
   // provider alone sends a paid model through the CLI, where the request is
-  // forwarded and fails at the backend. A default here is the same guess with
+  // forwarded and fails at the provider. A default here is the same guess with
   // the same symptom, so an absent model refuses.
   if (model === '') {
     throw new DispatchError(`dispatch: the runtime for '${provider}' needs the model as well`);

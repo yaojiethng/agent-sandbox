@@ -89,7 +89,7 @@ function readSession(path) {
   const sessionValue = sessionId != null ? sessionId : path.split(/[/\\]/).pop();
 
   return {
-    backend: "pi",
+    runtime: "pi",
     session: sessionValue,
     cwd,
     provider,

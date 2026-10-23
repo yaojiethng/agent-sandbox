@@ -211,7 +211,7 @@ A place that starts a worker.
 
 - The entrypoint: `scripts/dispatch.sh`, which prints the command for a role or runs it with `--run`.
 - The library it calls: `src/libs/dispatch/`, which resolves a role and derives the runtime.
-- A fixed run's script, such as `review-dispatch.sh`, which takes its pair from its caller and resolves nothing.
+- A fixed run's script, such as `review-dispatch.sh`, which takes its assignment from its caller and resolves nothing.
 
 ### Scope
 

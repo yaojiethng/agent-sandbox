@@ -18,7 +18,7 @@
 #
 #   src/libs/dispatch/launch.ts   the only builder of a launch argv
 #   scripts/dispatch.sh           the entrypoint that prints or runs it
-#   config/agent/bin/review-dispatch.sh  the reviewer's runner, which takes its pair
+#   config/agent/bin/review-dispatch.sh  the reviewer's runner, which takes its assignment
 #                                      from its caller and resolves nothing
 #
 # Test seam: LAUNCH_SITE_SCAN_ROOT points the scan at a fixture root that mirrors
