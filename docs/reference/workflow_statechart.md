@@ -37,6 +37,7 @@ stateDiagram-v2
         state "chk_docs -- the doc-maintenance skill runs" as chk_docs
         state "chk_history -- the history-cleanup skill runs" as chk_history
         state "chk_corpus -- the initialize skill runs" as chk_corpus
+        state "chk_close -- both record checks rerun over the rows the close wrote" as chk_close
     }
 
     state "Milestone grain" as milestone {
@@ -64,7 +65,8 @@ stateDiagram-v2
         it_implementing --> it_scope_gate : a design question reopens the scope
         it_implementing --> it_acceptance_gate : /iter reaches its pre-close summary
         it_acceptance_gate --> it_implementing : a defect is fixed rather than filed
-        it_acceptance_gate --> it_closed : operator releases, /wrapup closes
+        it_acceptance_gate --> chk_close : operator releases, /wrapup writes its rows
+        chk_close --> it_closed : both reports clean, the close hands off to /commit
         it_closed --> it_committed : /commit
         it_committed --> it_open : the operator picks the next unit
     }
@@ -87,10 +89,11 @@ stateDiagram-v2
         ms_active --> plan_scoping : /plan or /scope
         plan_scoping --> plan_interview : the design is probed
         plan_interview --> plan_released : operator releases the scope
-        plan_released --> ms_active : /wrapup writes back, no delivery commit
+        plan_released --> chk_close : /wrapup writes its rows
+    chk_close --> ms_active : both reports clean, no delivery commit
         ms_active --> doc_drafting : /document
         doc_drafting --> doc_published : operator releases the draft
-        doc_published --> it_closed : /wrapup
+        doc_published --> chk_close : /wrapup
     }
 
     state "Recovery" as recovery {
@@ -169,6 +172,7 @@ stateDiagram-v2
 | `chk_docs` | checks | the `doc-maintenance` skill runs |
 | `chk_history` | checks | the `history-cleanup` skill runs |
 | `chk_corpus` | checks | the `initialize` skill runs |
+| `chk_close` | checks | both record checks rerun over the rows the close wrote |
 | `ms_none` | milestone | no milestone is active |
 | `ms_active` | milestone | one milestone is active; iterations run against it |
 | `ms_close_gate` | milestone | compaction and changelog presented, awaiting release |
@@ -219,7 +223,7 @@ Every prompt the tree carries is an event here, and the command table is held to
 | `/rebase` | `rec_triage` | `it_committed` | `history-cleanup`, `/commit` |
 | `/record-correction` | `rec_triage` | `it_closed` | `/rebase` when the fold needs a port |
 | `/read-back` | `rec_triage` | `rec_triage` | none |
-| `/wrapup` | a released gate | `it_closed`, `plan_released` | `/commit` |
+| `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
 | `/commit` | a closed unit | `it_committed` | none |
 | `/package-eval-snapshot` | any settled state | the same state | `eval` |
 
@@ -231,13 +235,14 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 
 | Story | Path |
 |---|---|
-| One delivered unit | `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> it_closed -> it_committed` |
+| One delivered unit | `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> chk_close -> it_closed -> it_committed` |
 | The next unit after a commit | `it_committed -> it_open -> it_scope_gate` |
 | A milestone closes and the next promotes | `ms_active -> ms_close_gate -> ms_closed -> ms_active` |
 | A milestone closes and the next is shaped | `ms_active -> ms_close_gate -> ms_closed -> ms_none -> ms_active` |
 | A sidequest interrupts an open unit | `it_implementing -> sq_running -> sq_committed -> it_implementing` |
-| Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> ms_active` |
-| Publishing a document | `ms_active -> doc_drafting -> doc_published -> it_closed -> it_committed` |
+| Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> chk_close -> ms_active` |
+| Publishing a document | `ms_active -> doc_drafting -> doc_published -> chk_close -> it_closed -> it_committed` |
+| The close checks the rows it wrote | `it_acceptance_gate -> chk_close -> it_closed` |
 | Recovering an unportable export | `rec_triage -> rec_rebase -> it_committed -> it_open` |
 | A project bootstrapped and oriented | `sess_start -> sess_initialized -> sess_oriented -> it_open` |
 | The record checks before a release | `it_implementing -> chk_roadmap -> chk_record -> it_acceptance_gate` |
@@ -256,11 +261,12 @@ Each check is a query a reader makes on the chart and the defect the query finds
 | Unsatisfied entry | a command's input contract holds in the state it fires from: `/commit` requires an open handover, `/milestone-close` requires an active milestone | a runbook's precondition the chart violates |
 | Guard collision | no state has two outbound edges on one event whose guards can both hold | an ambiguous transition |
 | Orphan record | every `rec_*` state has an inbound write edge and an outbound read edge | a record kept and never consulted |
-| Path resolution | every path in `## Stories` resolves id by id, and every edge belongs to at least one story | a story the map does not support, or a transition nothing asks for |
+| Path resolution | every path in `## Stories` resolves id by id: each id is a declared state, and each consecutive pair is an edge | a story the map does not support |
 | Command coverage | every prompt file under `workflow/coding-agent/prompts/` appears in `## Commands` | a command the map does not know |
 
 ## Gaps
 
+- **Story coverage.** The stories cover the main paths, not every edge: the recovery and records edges are drawn and no story routes them. The query is the edge set minus the pairs the stories use.
 - **`/auto` and `/goal`.** Reserved for M4 by `docs/adr/coding_agent_loop_workflow.md`, which is repository-only and cannot be linked from here; no transition, and no node.
 - **`history-cleanup`.** Reached from the `git-discipline` convention's runbook table rather than from a prompt, so its single incoming edge above comes from `/rebase`. A maintenance skill dispatched by a convention rather than a command is the one member of the set with no command edge of its own.
 - **The render capability.** Not built. The chart targets Mermaid 12.1.0, and the intended render target, Pele's compatibility page, could not be read from this container.

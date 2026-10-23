@@ -21,19 +21,17 @@ An autonomous run spends the operator's goodwill. Every unit it dispatches consu
 
 The output is one table with a verdict per row. The verdict is the work: which rows run unattended, and the single question that parks each of the rest.
 
-This prompt is not a plan, a dispatch, or a survey. It does not sequence the runnable rows, open handovers, or write records.
-
 ## When to run this way
 
-Run this when the operator asks which work can proceed without them, before releasing an unattended run, or before pointing a large or cheap model at the backlog. The answer is the same question each time, and it is cheap to answer from the records that already exist.
+Run this when the operator asks which work can proceed without them, before releasing an unattended run, or before pointing a large or cheap model at the backlog.
 
 A check-in whose recommended direction is an unattended run rather than a supervised iteration reaches triage here: run triage on the inventory before opening the run. The check-in answers what is open; this prompt answers which of it runs without the operator.
 
 Routing:
 
-- A specific multi-unit plan the operator has already released has no runbook in the tree: the dispatch family that runs one is a draft, and M4 owns the dispatcher that will. Triage produces the candidate rows either way, and the operator runs them.
+- A specific multi-unit plan the operator has already released has no runbook in the tree: the dispatch family that runs one is a draft. Triage produces the candidate rows either way, and the operator runs them.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
-- The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
+- The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone.
 
 ## Step 1 - Build the candidate set
 
@@ -98,11 +96,10 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 ## Non-goals
 
-- Sequencing the runnable rows into a run plan, and splitting one into units. No runbook in the tree owns it; the M4 dispatcher will.
-- Surveying the project for work that is not on the roadmap. [`gm.md`](gm.md) owns the situational survey.
-- Choosing a dispatch shape, or resolving execution order across a dependency graph. `/auto` owns that, from M4.
-- Editing any record. A stale row becomes a finding; the record is fixed in an iteration.
-- Answering a question the operator owns. Triage surfaces it once, in a form that can be answered in a reply.
+- Sequencing the runnable rows into a run plan, and splitting one into units. No runbook in the tree owns it.
+- Surveying the project for work that is not on the roadmap.
+- Choosing a dispatch shape, or resolving execution order across a dependency graph.
+- Answering a question the operator owns.
 
 ## Failure modes and invariants
 

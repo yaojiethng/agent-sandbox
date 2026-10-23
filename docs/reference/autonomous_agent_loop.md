@@ -16,7 +16,7 @@ The diagram is [`workflow_statechart.md`](workflow_statechart.md), which draws t
 
 At the acceptance gate, the agent presents the findings queue, with each entry's destination. It also presents the record-check reports for the records the iteration changed.
 
-Closing is the work that follows a gate decision, not a state. It lands what the gate confirmed and raises what the gate missed. The close-seam rules are in `docs/adr/coding_agent_loop_workflow.md#transitions`.
+Closing is the work that follows a gate decision, not a state. It lands what the gate confirmed, raises what the gate missed, and runs both record checks again over the rows it just wrote, because the gate's run predates them. The close-seam rules are in `docs/adr/coding_agent_loop_workflow.md#transitions`.
 
 ## Workflows
 
