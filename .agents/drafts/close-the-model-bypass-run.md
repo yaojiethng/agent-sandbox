@@ -14,7 +14,7 @@ An agent reaches a model the operator never named, and reports neither the subst
 The cause is structural rather than careless. The role table is one route to a model, and agent-facing instructions print another. Each of these routes was verified on 2026-10-18.
 
 - **A role line can resolve to nothing reachable, and nothing refuses first.** Every candidate answered `403`, `opencode/*` with `FreeTierError` and `opencode-go/*` with `permission_error`. The dispatch reported `verdict=` empty for both, because neither message matched the refusal vocabulary.
-- **A pair no role names can be pinned** through `OPENCODE_DISPATCH_MODEL`.
+- **A pair no role names can be pinned** through the `--model` pin.
 - **A direct invocation bypasses the seam.** An agent that runs `pi --provider <provider> --model <model> -p` reaches a model with no resolver, no fallback and no record.
 - **Nothing reconciles intent against outcome.** No check compares the pair a brief asked for against the pair that ran. Searching `src/libs/dispatch.sh` and the dispatch skill's `dispatch.sh` for a mismatch check returns nothing.
 
@@ -62,7 +62,7 @@ Show the gate failing on today's tree before the fix and passing after. That fai
 ## Filed to the dispatch milestone
 
 - **A capability record** published by dispatch and probed per backend. Facts measured 2026-10-18, to be re-measured rather than trusted. `GET https://api.deepseek.com/models` answers 401 without the key and 200 in 0.13s with it, listing `deepseek-flash` and `deepseek-v4-pro`. A `max_tokens: 1` completion answers 200 in 0.63s. `GET https://opencode.ai/inference/go/v1/models` answers 200 with no auth header at all, so it proves catalogue access and says nothing about inference access. A direct inference POST answers 400 `MissingSessionID`, so that backend cannot be probed out of band and the probe costs what the dispatch costs. `auth.json` stores the string `$DEEPSEEK_API_KEY` rather than a key, so a probe that treats the value as a key reports a false green.
-- **A refusal of a pair no role line names**, covering the `OPENCODE_DISPATCH_MODEL` override, with its test.
+- **A refusal of a pair no role line names**, covering the `--model` pin, with its test.
 - **A distinct exit code** for all-candidates-refused, once a caller exists that reads it.
 - **Reconciliation** of the pair a brief declared against the pair that ran, printing both.
 

@@ -114,6 +114,10 @@ make_stub_workspace() {
   cp "$base/.agents/skills/git-discipline/SKILL.md" "$work/candidate/.agents/skills/git-discipline/SKILL.md"
   printf '%s\n' "$stub_body" >"$work/bin/pi"
   chmod +x "$work/bin/pi"
+  # The entrypoint resolves the role before it prints a command, so the fixture
+  # carries a table of its own and names a synthetic assignment.
+  mkdir -p "$work/pi"
+  printf '_ORCHESTRATOR: stub-provider/stub-model at low\n' >"$work/pi/model-recommendations.md"
 }
 
 COMMIT_STUB='#!/usr/bin/env bash
@@ -131,7 +135,7 @@ run_stub_case() {
   # Pin the eval model and config so the run is hermetic: no operator
   # recommendations file and no host settings.json influence the stub.
   PATH="$work/bin:$PATH" \
-    EVAL_MODEL="stub-model" EVAL_THINKING="high" \
+    EVAL_MODEL="stub-provider/stub-model" EVAL_THINKING="high" \
     EVAL_CONFIG_DIR="$work/pi" \
     EVAL_RECOMMENDATIONS_FILE="$work/pi/model-recommendations.md" \
     bash "$RUN_CASE" \

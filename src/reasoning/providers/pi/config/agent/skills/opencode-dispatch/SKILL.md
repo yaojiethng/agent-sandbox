@@ -23,20 +23,21 @@ The contract is what makes this a general subagent rather than a reviewer.
 A caller runs the script beside this skill:
 
 ```bash
-bash "$AGENT_HOME/agent/skills/opencode-dispatch/dispatch.sh" <brief-file> <scratch-dir> [role]
+bash scripts/dispatch.sh --role _IMPLEMENTER --brief <brief-file> --worker --run \
+  [--base <rev>] [--run-dir <dir>]
 ```
 
-The role defaults to `_IMPLEMENTER`. The script builds the command through the runner seam (`/opt/sandbox/lib/dispatch.sh`), so the flag mapping lives in one place, and runs it in the foreground of one call so the worker is never orphaned. It writes the log and the change set beneath the scratch directory and prints the run directory, the log path and the changed-file count. It refuses a missing or empty brief, an absent or unwritable scratch directory, and an unresolvable base revision.
+`--role` names the role; a general worker runs as `_IMPLEMENTER`. The script builds the command through the runner seam (`src/libs/dispatch/`), so the flag mapping lives in one place, and runs it in the foreground of one call so the worker is never orphaned. It writes the log and the change set beneath the scratch directory and prints the run directory, the log path and the changed-file count. It refuses a missing or empty brief, an absent or unwritable scratch directory, and an unresolvable base revision.
 
-Env overrides: `OPENCODE_DISPATCH_MODEL`, `OPENCODE_DISPATCH_THINKING`, `OPENCODE_DISPATCH_TIMEOUT`, `OPENCODE_DISPATCH_BASE`.
+Env overrides: `DISPATCH_TIMEOUT`, `DISPATCH_STALL` and `DISPATCH_POLL`; the model, the thinking level and the base are flags (`--model`, `--thinking`, `--base`).
 
 ## The fallback
 
-A role's line may list several models, separated by `;`. The script tries them in file order and starts the next one only when the attempt failed without adding a change of its own, so a second model never inherits a first model's edits. The caller's own uncommitted work is measured out of that comparison, so a dirty tree does not block the advance. Every failed candidate is reported at the end with its class, whether or not a later one succeeded. `OPENCODE_DISPATCH_MODEL` pins one model and disables the fallback.
+A role's line may list several models, separated by `;`. The script tries them in file order and starts the next one only when the attempt failed without adding a change of its own, so a second model never inherits a first model's edits. The caller's own uncommitted work is measured out of that comparison, so a dirty tree does not block the advance. Every failed candidate is reported at the end with its class, whether or not a later one succeeded. `--model` pins one model and disables the fallback.
 
-The attempt is stopped as soon as its log carries a refusal, and the flags that put the CLI's errors on stderr are part of the command the seam builds. Measured on the pinned CLI: a refusal arrives in under a second, and the process then stays alive on an event subscription it never closes, so a caller that waits for exit waits forever. The CLI also discards the response's `retry-after`; the free tier is a per-IP daily quota that resets at UTC midnight (200 requests/day, one pool across the default free models, with a 2x grace for a fresh IP, per `ipRateLimiter.ts` in `anomalyco/opencode`), so the class is reported and the next candidate is tried rather than the request retried. `OPENCODE_DISPATCH_STALL` sets the silence backstop, in seconds, for an attempt that prints nothing at all.
+The attempt is stopped as soon as its log carries a refusal, and the flags that put the CLI's errors on stderr are part of the command the seam builds. Measured on the pinned CLI: a refusal arrives in under a second, and the process then stays alive on an event subscription it never closes, so a caller that waits for exit waits forever. The CLI also discards the response's `retry-after`; the free tier is a per-IP daily quota that resets at UTC midnight (200 requests/day, one pool across the default free models, with a 2x grace for a fresh IP, per `ipRateLimiter.ts` in `anomalyco/opencode`), so the class is reported and the next candidate is tried rather than the request retried. `DISPATCH_STALL` sets the silence backstop, in seconds, for an attempt that prints nothing at all.
 
-The provider `AGENTS.md` defines the container's scratch directory. Pass that directory as the second argument, because the script keeps its run directory and its logs are the evidence.
+The provider `AGENTS.md` defines the container's scratch directory. Pass that directory as `--run-dir`, because the script keeps its attempt logs and its change set there.
 
 ## Steps
 
@@ -59,7 +60,7 @@ The provider `AGENTS.md` defines the container's scratch directory. Pass that di
 
 | Failure | Response |
 |---|---|
-| The base revision does not resolve | the script refuses and names the value; correct `OPENCODE_DISPATCH_BASE` |
+| The base revision does not resolve | the script refuses and names the value; correct `--base` |
 | The pre-state cannot be captured | the script refuses and names the failure, because a dirty tree must have a recovery point before the worker runs |
 | The worker destroys uncommitted work | a worker runs with `--auto` and can reset the tree; the `pre-state` stash commit recovers tracked changes only, and neither an untracked file nor a submodule's modified content is captured |
 | The worker commits the caller's uncommitted work | a worker running `git add -A && git commit` folds the caller's edits into a worker commit; the `pre-state` still holds the work and the base-relative set still names the files, but the caller unwinds the worker commit before landing the unit |

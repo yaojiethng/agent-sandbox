@@ -10,4 +10,4 @@ You are operating as poteto-mode's full agent style. Read the `poteto-mode` skil
 
 $@
 
-please execute this. you have liberal access to subagents through opencode-dispatch. parallelization or ordering of tasks is at your full discretion.
+please execute this. you have liberal access to subagents through `scripts/dispatch.sh --worker`. parallelization or ordering of tasks is at your full discretion.

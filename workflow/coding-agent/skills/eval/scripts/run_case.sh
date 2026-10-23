@@ -56,49 +56,28 @@ fi
 mkdir -p "$WORK_ROOT"
 [[ "$WORK_KEPT" == true ]] && echo "work root kept: $WORK_ROOT"
 
-PROVIDER="${EVAL_PROVIDER:-opencode-go}"
-THINKING="${EVAL_THINKING:-}"
 RUN_TIMEOUT="${EVAL_RUN_TIMEOUT:-600}"
 CONFIG_DIR="${EVAL_CONFIG_DIR:-$HOME/.pi/agent}"
 
-# The eval default is the _ORCHESTRATOR role from the operator-owned
-# recommendations file. No model slug is hardcoded: an unset role falls back to
-# the pi startup default in settings.json, and a missing value is an error.
-RECOMMENDATIONS_FILE="${EVAL_RECOMMENDATIONS_FILE:-$(dirname "$CONFIG_DIR")/model-recommendations.md}"
-
-# _role_value <role> <file>: the first ';'-delimited value on the role's line.
-_role_value() {
-  local role="$1" file="$2"
-  [[ -f "$file" ]] || return 0
-  awk -v role="$role" '
-    index($0, role ":") == 1 {
-      sub("^[^:]*:[[:space:]]*", "");
-      sub(/;.*/, "");
-      print; exit
-    }' "$file"
-}
-
-# _role_model <role> <file>: the provider/model token of the first value.
-_role_model() {
-  local value; value="$(_role_value "$1" "$2")"
-  [[ -n "$value" ]] || return 0
-  awk '{ for (i=1;i<=NF;i++) if ($i=="at") { print $1; exit } }' <<<"$value"
-}
-
-# _role_thinking <role> <file>: the thinking level of the first value.
-_role_thinking() {
-  local value; value="$(_role_value "$1" "$2")"
-  [[ -n "$value" ]] || return 0
-  awk '{ for (i=1;i<=NF;i++) if ($i=="at") { print $(i+1); exit } }' <<<"$value"
-}
-
-MODEL="${EVAL_MODEL:-$(_role_model _ORCHESTRATOR "$RECOMMENDATIONS_FILE")}"
-if [[ -z "$MODEL" && -f "$CONFIG_DIR/settings.json" ]]; then
-  MODEL="$(jq -r '.defaultModel // empty' "$CONFIG_DIR/settings.json" 2>/dev/null)"
+DISPATCH_SH="${EVAL_DISPATCH_SH:-$HERE/../../../../../scripts/dispatch.sh}"
+# The eval default is the _ORCHESTRATOR role, resolved by the dispatch entrypoint
+# and launched through the command it prints. Nothing here composes a launch flag:
+# a consumer that took the model from the table and the provider from a literal
+# ran the table's entry against a runtime the table did not choose, and the
+# runtime forwarded the request while the provider refused it.
+RECOMMENDATIONS_FILE="${EVAL_RECOMMENDATIONS_FILE:-}"
+if [[ -z "$RECOMMENDATIONS_FILE" ]]; then
+  if [[ -n "${PROJECT_DIR:-}" && -f "$PROJECT_DIR/.agents/model-recommendations.md" ]]; then
+    RECOMMENDATIONS_FILE="$PROJECT_DIR/.agents/model-recommendations.md"
+  else
+    RECOMMENDATIONS_FILE="$(dirname "$CONFIG_DIR")/model-recommendations.md"
+  fi
 fi
-[[ -n "$MODEL" ]] || { echo "no eval model: set EVAL_MODEL or initialize $RECOMMENDATIONS_FILE" >&2; exit 2; }
-THINKING="${THINKING:-$(_role_thinking _ORCHESTRATOR "$RECOMMENDATIONS_FILE")}"
-[[ -n "$THINKING" ]] || THINKING=high
+# A pin is a whole assignment: EVAL_MODEL names one, and EVAL_THINKING replaces
+# the level the table carries.
+PIN=()
+[[ -n "${EVAL_MODEL:-}" ]] && PIN+=(--model "$EVAL_MODEL")
+[[ -n "${EVAL_THINKING:-}" ]] && PIN+=(--thinking "$EVAL_THINKING")
 PROMPT="${EVAL_PROMPT:-The working tree holds the pending work for this iteration. Land it as the delivery commit.}"
 
 CASE_DIR="$OUT/case-$LABEL"
@@ -119,12 +98,19 @@ for i in $(seq 1 "$RUNS"); do
   git -C "$PROJ" apply "$PATCH" || { echo "patch failed for run $i" >&2; exit 1; }
   git -C "$PROJ" rev-list --count HEAD >"$RUN_DIR/base-count"
   git -C "$PROJ" rev-parse HEAD >"$RUN_DIR/base-sha"
+  printf 'You are working in the git repository at %s. %s Work only inside that directory. Reply DONE when the commit is made.\n' \
+    "$PROJ" "$PROMPT" >"$RUN_DIR/prompt.txt"
+  # One door: the command comes from the entrypoint, so the runtime, the provider
+  # and the model are the table's decision rather than this script's.
+  CMD="$(DISPATCH_REC_FILE="$RECOMMENDATIONS_FILE" \
+    DISPATCH_STATE_FILE="$RUN_DIR/dispatch-state.json" \
+    bash "$DISPATCH_SH" --role _ORCHESTRATOR --brief "$RUN_DIR/prompt.txt" \
+      --dir "$PROJ" --session "$RUN_DIR/session.jsonl" \
+      ${PIN[@]+"${PIN[@]}"})" || { echo "the eval command cannot be resolved" >&2; exit 2; }
   (
     cd "$PROJ" || exit 1
-    timeout "$RUN_TIMEOUT" env PI_CODING_AGENT_DIR="$CONFIG_DIR" pi -p \
-      "You are working in the git repository at $PROJ. $PROMPT Work only inside that directory. Reply DONE when the commit is made." \
-      --provider "$PROVIDER" --model "$MODEL" --thinking "$THINKING" \
-      --session "$RUN_DIR/session.jsonl" >"$RUN_DIR/run.log" 2>&1
+    timeout "$RUN_TIMEOUT" env PI_CODING_AGENT_DIR="$CONFIG_DIR" bash -c "$CMD" \
+      >"$RUN_DIR/run.log" 2>&1
     echo $? >"$RUN_DIR/rc"
   ) &
 done

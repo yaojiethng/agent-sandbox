@@ -6,9 +6,9 @@
 # (check_document_shape.sh), the handover format gate
 # (check_handover_format.sh), the legacy wrap gate (check_doc_wrap_legacy.sh),
 # the instruction-surface gate (check_instruction_surfaces.sh), the reach gate
-# (check_reach.sh) and the statechart gate (check_statechart.sh);
-# the Markdown gate carries the doc-wrap and linking rules. BLOCKING: exits 1 when any gate reports
-# findings or cannot run.
+# (check_reach.sh), the statechart gate (check_statechart.sh) and the launch-site
+# gate (check_launch_sites.sh); the Markdown gate carries the doc-wrap and linking
+# rules. BLOCKING: exits 1 when any gate reports findings or cannot run.
 #
 # All gates always run, so a failure in one never hides the others. The gates
 # run concurrently (background jobs), which cuts the wall time; each gate's
@@ -23,7 +23,7 @@ SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_document_shape.sh check_handover_format.sh check_doc_wrap_legacy.sh check_instruction_surfaces.sh check_container_layout.sh check_reach.sh check_statechart.sh check_numbering.sh)
+GATES=(check_shell.sh check_lib_contract.sh check_markdown.sh check_document_shape.sh check_handover_format.sh check_doc_wrap_legacy.sh check_instruction_surfaces.sh check_container_layout.sh check_reach.sh check_statechart.sh check_numbering.sh check_launch_sites.sh)
 
 OUT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX") || exit 1
 trap 'rm -rf "$OUT_DIR"' EXIT
