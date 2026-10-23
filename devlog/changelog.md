@@ -223,3 +223,11 @@ The rules that outlived their documents landed where they are enforced. The norm
 The reasoning container carries both harnesses, so a brief names a role and the runner seam picks pi or the OpenCode CLI from the provider that role resolves to. The unproven model-failover extension is off behind a flag, the seam refuses a role whose backend cannot run, and the dispatch script keeps its log and its change set as the evidence the run leaves. Attribution moved from a clean tree to a named base revision, with a pre-state stash commit as the recovery point for work a second pass needs to see, and the script gained the check it lacked. The build half is measurement and design rather than applied change, fixing what each tier costs and what invalidates it.
 
 ---
+
+## M3.3.2 - Retire the policy form
+
+*Every rule now lives where it is enforced: a procedure holds its mechanism, a convention skill holds its judgement, and no policy document stands as a form.*
+
+Eight policy documents were split by kind and deleted. Each mechanism moved to the runbook that runs it, each convention to the project's convention-skill, and the remainder to the surface that enforces it, so the protocol is the one document that survives as a contract rather than a policy. The audit that checked the split walked every retired policy against its absorbing surfaces, restored nine rules no carrier held, and traced each deliberate cut to its record. The policy map's authority doctrine was rewritten to the kind test, the maintenance surface was declared in the workflow statechart, and the image stopped shipping the policy folder.
+
+---

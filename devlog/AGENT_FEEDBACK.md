@@ -563,16 +563,6 @@ The read-through close was released as "follow through everything autonomously",
 
 A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
 
-### [O] 2026-09-29  --  Conversational numbering must be unambiguous
-
-```text
-state: probation
-scoped: M3 T1 -- documentation conventions; now `## Chat: one token per item` in `.agents/skills/numbering/SKILL.md`
-probation: the fix landed as that section and as the provider `AGENTS.md` fallback. The operator decides dismiss / maintain / escalate at the next review; the observation is an audit report that cites a labelled chat pick without a second axis appearing in the reply.
-legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
-mitigation: when the agent presents several numbered or lettered sets in one exchange, the operator's index reply can map to the wrong axis, and the agent must guess. The rule is `## Chat: one token per item` in the project convention `.agents/skills/numbering/SKILL.md`; this entry is the case that rule prevents. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
-```
-
 ### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed
 
 ```text
