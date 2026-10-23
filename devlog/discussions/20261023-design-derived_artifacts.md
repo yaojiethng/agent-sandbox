@@ -35,7 +35,7 @@ That single result decides the shape of the answer below: a stored artifact can 
 | `AGENTS.md` `### Loop prompts` | 9 rows | nobody | `check_instruction_surfaces.sh`, which holds it to the protocol's `scope` | 69 / 7 | Gated copy |
 | ADR `coding_agent_loop_workflow.md` command table | 11 rows | nobody | a human | 22 / 3 | Authored source: a dated snapshot |
 | `src/build/container-interface.json` | 45 rows | nobody | 8 files, plus the layout gate | 8 / 1 | Authored source: the declaration |
-| `pi/config/agent/settings.json` | 16 keys | nobody | 5 files | 28 / 23 | Authored source; one field is a copy with no gate |
+| `pi/config/agent/settings.json` | 16 keys | nobody | 5 files | 28 / 23 | Authored source; one field is a copy, asserted by the runbook that moves it |
 | chart `## States` | 40 rows | nobody | a human | 2 / 0 | Authored source; its id column repeats the diagram above it |
 | `agent_workflow.md` ownership table | 12 rows | nobody | a human | 45 / 8 | Authored source; 3 of its 12 document cells are links |
 | `documentation_taxonomy.md` `## Reach` | 4 rows | nobody | `check_reach.sh` | -- | Gated copy; one row unverified |
@@ -77,7 +77,7 @@ Both seats classified the nine artifacts from the numbers alone, without the ver
 - **The chart's tables are authored, and the derivation is one column wide.** With 17 rows against 17 files the row set is a directory listing, but the fires-from and leaves-in cells compress multi-hop routing that no file holds. The same shape explains `## States`: its id column restates the diagram in the same file, and its gloss column is design prose.
 - **The churn metric measures the file, not the artifact.** It is shape-blind (its upkeep regex fires on any changed line beginning with a table pipe or a brace), rename-sensitive, and it ranks its own false positive first. It is reported as a ranking of where to look; the classification above is the evidence.
 
-One seat also found that `settings.json` carries the image's version pin as a literal, so one version lives in two records with one hand-synced copy -- the census's own defect at the smallest scale it occurs here.
+One seat also found that `settings.json` carries the image's version pin as a literal, so one version lives in two records. Both values move only during a bump, so the check belongs in the bump runbook and not in a CI gate; `20261023-08` put it there, and the reviewer's finding stands as the reason the runbook now asserts equality rather than grepping for a number.
 
 ## Consequences
 

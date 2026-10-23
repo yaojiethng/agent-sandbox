@@ -21,7 +21,7 @@ In scope: the census query, its output, the per-artifact verdicts, the rule they
 
 | # | Criterion | Verification | Result |
 |---|---|---|---|
-| A1 | The census runs and prints candidates | the query in the design record's `## The census query`, run from the root: 27 tables, 3 registries, 0 written paths | Agent [x] |
+| A1 | The census runs and prints candidates | the run reported in the design record's `## Method` and `## What the tree says`: 27 tables, 3 registries, 0 written paths. The script itself was dropped from the record when the unit was released | Agent [x] |
 | A2 | The zero in detector A is true, not an artefact | `grep -rn 'writeFileSync' src/ scripts/` resolved by hand: every write target is a host path, `.compose/`, a run directory or `$AGENT_HOME` | Agent [x] |
 | A3 | Every stored catalog above eight rows is classified | the design record's table lists 8 artifact classes; the 27 detected tables are accounted for as catalogs or as authored claims | Agent [x] |
 | A4 | The rule names the unit and the test | `## The rule` states the column test and the three homes, with the chart's table and the loop table as the two sides | Agent [x] |
