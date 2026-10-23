@@ -160,6 +160,8 @@ stateDiagram-v2
 
 ## States
 
+The id and region columns are generated from the chart's declarations: edit the chart, then run `bash scripts/check_statechart.sh --write`. The gate `bash scripts/check_statechart.sh` fails when a state is declared on one side only, or when a region moves in the table alone. The gloss column is authored prose and is not compared, so it may say more than the chart's label.
+
 | Id | Region | The state it names |
 |---|---|---|
 | `sess_start` | entry | a session begins and nothing has been read |
@@ -249,7 +251,7 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 
 ## Checks
 
-Each check is a query a reader makes on the chart and the defect the query finds. They are read by hand today; a script is the next rung of the maturity chain, and the working document in the session output records what such a script would read.
+Each check is a query a reader makes on the chart and the defect the query finds. They are read by hand today, except legend drift, which `scripts/check_statechart.sh` runs. A script for the rest is the next rung of the maturity chain, and the working document in the session output records what such a script would read.
 
 | Check | The query | The defect it finds |
 |---|---|---|
@@ -262,6 +264,7 @@ Each check is a query a reader makes on the chart and the defect the query finds
 | Guard collision | no state has two outbound edges on one event whose guards can both hold | an ambiguous transition |
 | Orphan record | every `rec_*` state has an inbound write edge and an outbound read edge | a record kept and never consulted |
 | Path resolution | every path in `## Stories` resolves id by id: each id is a declared state, and each consecutive pair is an edge | a story the map does not support |
+| Legend drift | the `## States` id and region columns equal the chart's declarations, in the chart's order | a state declared on one side only, or a region moved in the table |
 | Command coverage | every prompt file under `workflow/coding-agent/prompts/` appears in `## Commands` | a command the map does not know |
 
 ## Gaps
