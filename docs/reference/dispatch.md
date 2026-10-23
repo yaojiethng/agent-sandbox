@@ -16,7 +16,7 @@ The value is a fact with an owner. A model id written at a call site is measured
 
 ## Requirements
 
-- A caller names a role, never a model. A model named explicitly is a pin: it reads no route and records none, because a pinned run is not routed.
+- Resolution is the default and not a requirement. A caller names a role and the table decides; a caller who names an assignment instead pins it, and the pin is taken as given: it reads no route and records none, because a pinned run is not routed. A pin is a value the caller states in the invocation, never a default a skill or a brief carries on its behalf.
 - The role table is the only source of a role's models. No default model exists, and a role the table does not name is refused by its own name rather than resolved to something the table never mentioned. Nothing validates an assignment against a runtime's catalogue: whether a named model exists is the operator's fact, and the table states it. An id that does not exist surfaces at the provider: a text naming the model marks that route dead and the walk advances, and text the classifier does not know stops the walk as unclassified rather than guessing.
 - An assignment is validated as a whole line, and a malformed line fails the resolution instead of reaching a command.
 - The runtime follows an assignment's provider and its model together. Within the OpenCode provider set a model id ending `-free` runs on the CLI and every other model runs on pi, and an assignment whose model is empty refuses instead of defaulting to one.
@@ -25,7 +25,6 @@ The value is a fact with an owner. A model id written at a call site is measured
 - The route memory is session-scoped and dies with the container. It is one small file named by the session, overridable with `DISPATCH_STATE_FILE`, and it is never a bind-mounted path: a memory that outlives the session is a record, and this one is not a record.
 - Only a recorded outcome writes to the memory. The clock is applied when the memory is read, so expiry needs no writer, and a missing or unreadable file loads as an empty memory rather than an error.
 - A read-write worker attributes its change set to a named base revision, and a second model never runs over a first model's edits.
-- A caller may pin an assignment with `--model`. A pinned run resolves nothing, so the route memory never learns from it, and a seat run refuses a pin because a review's seats are the rotation over the role.
 
 ## The Resolution Path
 
@@ -75,6 +74,8 @@ Seats fire in turns. A turn launches its seats concurrently and ends when its sl
 | capability | the candidate is dropped and the seat takes the next in the remaining rotation, wrapping to the first |
 | timeout or unknown | the run stops, because the outcome says nothing about the route |
 
+A caller may pin an assignment with `--model`, and a seat run then seats every seat on that one assignment: the seats repeat it by the caller's choice, which is how a review pins its own reproducibility. A pinned run records nothing, in the seat path as in the walk.
+
 A seat run is read-only and reads one revision, so the entrypoint refuses a dirty tree before the first attempt. A seat that exits zero with an empty log stops the run, because the log is the only evidence it ran; the route keeps whatever the memory already held, since a silent exit says nothing about it.
 
 A turn that can start no remaining seat ends the run `blocked` and names the earliest wait, and it does not sleep. A seat whose every candidate is dead makes the run `unroutable`. A run whose seats all finished on a working model exits zero, including a seat that was reassigned before it succeeded.
@@ -101,7 +102,7 @@ The mechanism is two halves that meet at one command. The library, TypeScript un
 
 A skill or a prompt carries the instruction that turns an intent into that invocation, and reads back what ran. A launch site may not carry its own resolver, restate the role table, or substitute a model the table does not name. Each of those existed beside this mechanism at one point, and each read as agreement with a table it had never seen. `scripts/check_launch_sites.sh` holds the rule instead of the reader: it fails a source file that names a launcher's own flags outside the library and the entrypoint, so a call site added later cannot reopen the door it closes.
 
-A pinned run is not a launch site. It names one assignment because its caller fixed it, and it is reproducible precisely because no route decision is available to it.
+A pinned run is a launch site that resolves nothing. It names one assignment because its caller fixed it, and it is reproducible precisely because no route decision is available to it.
 
 ## Failure and Its Vocabulary
 

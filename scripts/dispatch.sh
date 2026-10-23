@@ -17,9 +17,9 @@
 #
 # A brief names a role, not a runtime: the shell resolves the role's ordered
 # entries, the machine decides which entry may be attempted now, and this script
-# builds the command. `--model` is the caller's pin;
-# a pin bypasses selection because a pinned run is not routed, and a seat run
-# refuses one because a review's seats are the rotation over the role.
+# builds the command. `--model` is the caller's pin: resolution is the default
+# mechanism, and a caller who names the assignment takes it as given, so a pin
+# bypasses selection and a seat run seats every seat on it.
 #
 # `--worker` is the read-write mode: one delegated run that edits the tree and
 # returns a change set. It attributes that set to `--base`, captures one
@@ -142,10 +142,6 @@ if (( SEATS_GIVEN )) && (( ! RUN )); then
 fi
 if (( SEATS_GIVEN )) && (( WORKER )); then
   echo "dispatch: --seats is not a worker flag; a worker returns one change set" >&2
-  exit 2
-fi
-if (( SEATS_GIVEN )) && [[ -n "$MODEL" ]]; then
-  echo "dispatch: --seats cannot be pinned; a pin names one assignment" >&2
   exit 2
 fi
 
@@ -362,8 +358,11 @@ seat_run() {
   local state="$RUN_DIR/seats.json" out="$RUN_DIR/seats.start" i line seat runtime entry log rc turn=0
   local -a fire_seat=() fire_rt=() fire_entry=() pidof=() results=()
 
+  local -a pin_args=()
+  [[ -n "$MODEL" ]] && pin_args+=(--model "$MODEL")
+  [[ -n "$THINKING" ]] && pin_args+=(--thinking "$THINKING")
   node "$DISPATCH_CLI" seats start --state "$state" --role "$ROLE" \
-    --seats "$SEATS" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} >"$out" || return $?
+    --seats "$SEATS" ${pin_args[@]+"${pin_args[@]}"} ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} >"$out" || return $?
 
   while :; do
     fire_seat=(); fire_rt=(); fire_entry=(); pidof=()

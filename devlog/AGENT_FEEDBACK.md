@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-23  --  A default mechanism was hardened into a requirement
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: when a mechanism resolves something on the caller's behalf, the caller's own value is an override and not a violation. State the rule as "resolve by default, and take the caller's value when one is given", and refuse a given value only when it cannot be satisfied.
+```
+
+The seat path was built with `dispatch: --seats cannot be pinned`, a test that held the refusal, and a shipped review section saying a review's pin "is refused here". The operator's correction was one sentence: pins and manual specification that bypass auto-resolution are always allowed, and what the mechanism does on its own is a default. The ADR's headline, "names a role and never a model", was read as a prohibition rather than as the shape of the default path, and everything downstream inherited the harder reading.
+
+The tree already carried the softer statement, one paragraph away: the walk had taken `--model` as a pin since before the seat path existed, refusing nothing and simply not recording the attempt. The harder reading was new, invented while writing the seat refusals, and it survived because no test could disagree with it: the test asserted the refusal the code had just been told to make.
+
+The cost was a reversed decision inside one unit, a test deleted rather than kept, and a pass over the shipped section, the reference, the reserved terms and both ADRs. The fix's shape is the one to remember: a pin seats every seat on the one assignment and records nothing, which is what the walk already did.
+
 ## [A] 2026-10-23  --  A shipped document linked a target the image does not carry
 
 ```text

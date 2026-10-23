@@ -149,7 +149,7 @@ A review has one mechanism: the dispatch entrypoint with a seat count. It runs i
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the assignment. Recommend model choices in the role table, never here.
 
-**Which model.** Every dispatch takes its assignments from the role line in `model-recommendations.md`, for example `_REVIEWER`. The entrypoint resolves the role, keeps the assignments the route memory allows at that moment, and seats them by rotation, so a role naming two assignments gives two families and agreement between the two reports is the signal. A review that named its own model would be a run the table did not route, so the pin is refused here.
+**Which model.** A dispatch takes its assignments from the role line in `model-recommendations.md`, for example `_REVIEWER`. By default the entrypoint resolves the role, keeps the assignments the route memory allows at that moment, and seats them by rotation, so a role naming two assignments gives two families and agreement between the two reports is the signal. A caller may instead pin one assignment with `--model`, and every seat then runs that assignment: the seats repeat it by the caller's choice, which is what a caller who needs a fixed pair asks for.
 
 1. **Name the role and the seat count.** `_REVIEWER` for source, `_ADVISOR_DOCS` for prose, and two seats unless the caller says otherwise.
 2. **Commit or stash first.** A seat run refuses a dirty tree, because a review reads one revision: a finding against content the caller is still editing cannot be attributed to a commit.

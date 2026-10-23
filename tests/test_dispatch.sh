@@ -1100,6 +1100,28 @@ test_a_retryable_outcome_keeps_the_seat_and_blocks() {
     "the seat is not re-fired while its route cools"
 }
 
+# Resolution is the default, not a requirement. A caller who names the
+# assignment gets that assignment in every seat, a repeat by choice, and the
+# pinned route is attempted whether or not the memory holds it back.
+test_a_pin_seats_every_seat_on_one_assignment() {
+  local sandbox out rc
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high; opencode/s2-free at high'
+  write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
+    "opencode/s1-free=ok opencode/s2-free=ok"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 2 --model opencode/s2-free --thinking low)"; rc=$?
+  assert_rc 0 "$rc" "the pinned assignment runs in every seat"
+  assert_eq "$(grep -c -- '-m opencode/s2-free' "$sandbox/argv.log")" "2" \
+    "both seats run the pinned model"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log" 2>/dev/null || true)" "0" \
+    "the role's first entry is not dealt"
+  assert_eq "$(printf '%s' "$out" | grep -c 'opencode/s2-free at low')" "2" \
+    "the pinned level reaches every seat"
+  assert_eq "$(grep -c 's2-free' "$sandbox/state.json" 2>/dev/null || true)" "0" \
+    "a pinned run records nothing in the route memory"
+}
+
 # A seat that logs nothing says nothing about the route. The log is the only
 # evidence the seat ran, so a silent zero exit stops the run rather than counting
 # as a success.
@@ -1150,10 +1172,6 @@ test_seats_refuse_the_contradictory_forms() {
   assert_rc 2 "$rc" "a seat count on a worker is refused"
   assert_contains "$out" "not a worker flag" "the refusal names the mode it contradicts"
 
-  out="$(run_seats "$sandbox" --role _SEAT --seats 2 --model opencode/s1-free)"; rc=$?
-  assert_rc 2 "$rc" "a seat count with a pin is refused"
-  assert_contains "$out" "cannot be pinned" "the refusal says a pin names one assignment"
-
   out="$(run_seats "$sandbox" --role _SEAT --seats 0)"; rc=$?
   assert_rc 2 "$rc" "a zero seat count is refused"
   assert_contains "$out" "at least 1" "the refusal names the floor"
@@ -1166,6 +1184,7 @@ run_test test_a_seat_drops_a_dead_candidate_and_rotates
 run_test test_a_retryable_outcome_keeps_the_seat_and_blocks
 run_test test_a_silent_seat_stops_the_run
 run_test test_a_dirty_tree_is_refused
+run_test test_a_pin_seats_every_seat_on_one_assignment
 run_test test_seats_refuse_the_contradictory_forms
 
 if [[ "$WORKER_FALLBACK_CASES" == "1" ]]; then

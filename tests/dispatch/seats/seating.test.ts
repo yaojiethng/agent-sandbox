@@ -100,6 +100,13 @@ test('every seat on a working model finishes the run at zero', () => {
   assert.equal(verdict.code, 0, 'a seat that was reassigned and then succeeded does not fail the run');
 });
 
+test('a pinned run carries the flag that keeps it out of the memory', () => {
+  const routed = startSeats('_R', 1, [candidate('p/a', 0)]);
+  assert.equal(routed.pinned, false, 'resolution is the default');
+  const pinned = startSeats('_R', 1, [candidate('p/a', 0)], true);
+  assert.equal(pinned.pinned, true);
+});
+
 test('a seat that logs nothing stops the run', () => {
   const state = startSeats('_R', 1, [candidate('p/a', 0), candidate('p/b', 1)]);
   const applied = seatResult(state, 1, 0, '   \n', AT);

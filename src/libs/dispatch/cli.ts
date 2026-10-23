@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { classify } from './classify.ts';
 import { binaryRuns, commandFor, opencodeBin } from './launch.ts';
 import { applyClock, applyOutcome, select } from './machine.ts';
-import { seatCandidates, seatOrders, seatResult, startSeats, seatVerdict } from './seats.ts';
+import { pinnedCandidates, seatCandidates, seatOrders, seatResult, startSeats, seatVerdict } from './seats.ts';
 import type { SeatState } from './seats.ts';
 import { defaultPath, load, save } from './state.ts';
 import { DispatchError, firstAssignment, parseAssignment, roleAssignments, tableAssignments } from './table.ts';
@@ -276,11 +276,22 @@ function cmdSeats(argv: string[]): never {
     if (step === 'start') {
       const role = one(map, '--role') || fail('seats start needs --role');
       const count = Number(one(map, '--seats') ?? '1');
-      const candidates = seatCandidates(roleAssignments(role, one(map, '--file')), memory.routes, at);
+      const pin = one(map, '--model');
+      // A pinned run is not routed, so it teaches the memory nothing: recording
+      // it would let a pin revive a route the router had put to sleep.
+      const routed = pin === undefined;
+      const level = one(map, '--thinking');
+      // Resolution is the default. A caller who names the assignment instead
+      // takes it as given, and the level beside it, so every seat runs that one
+      // assignment: a repeat is the caller's choice, not a routing decision.
+      const candidates =
+        pin === undefined
+          ? seatCandidates(roleAssignments(role, one(map, '--file')), memory.routes, at)
+          : pinnedCandidates(parseAssignment(role, level === undefined ? pin : `${pin} at ${level}`));
       if (candidates.length === 0) {
         fail(`unroutable: ${role} names no candidate that may be attempted now`, 4);
       }
-      const state = startSeats(role, count, candidates);
+      const state = startSeats(role, count, candidates, !routed);
       writeFileSync(statePath, `${JSON.stringify(state)}\n`);
       const orders = seatOrders(state, memory.routes, at);
       state.turn = 1;
@@ -297,7 +308,7 @@ function cmdSeats(argv: string[]): never {
         const rc = Number(rcText);
         const text = tail(logPath, 4000);
         const applied = seatResult(state, seat, rc, text, at);
-        const record = applied.record;
+        const record = state.pinned ? undefined : applied.record;
         if (record !== undefined) {
           memory.routes[record.route] = applyOutcome(memory.routes[record.route] ?? { state: 'untried' }, {
             at,
