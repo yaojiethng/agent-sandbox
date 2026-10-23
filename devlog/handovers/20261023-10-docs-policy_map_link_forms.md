@@ -23,8 +23,10 @@ Out of scope: converting cells to image-path links. A cell naming the module ski
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The Policy Map states the form each `Document` cell takes, naming the linking convention and the reach table it follows | `sed -n '/^## Policy Map/,/^### Boundary notes/p' docs/reference/agent_workflow.md \| grep -c 'Every cell names its document'` returns 1 | Agent [x] |
-| No `Document` cell links a project-only root or a target read at another image path | `sed -n '/^## Policy Map/,/^### Boundary notes/p' docs/reference/agent_workflow.md \| grep -nE '\]\([^)]*(development\|adr\|\.agents/)'` finds nothing | Agent [x] |
+| The Policy Map states the form each `Document` cell takes, naming the linking convention and the reach table it follows | `sed -n '/^## Policy Map/,/^### Boundary notes/p' docs/reference/agent_workflow.md \| grep -c 'linking convention'` and the same command with `grep -c 'states which roots ship'` both return 1 | Agent [x] |
+| No `Document` cell links a project-only root or a target read at another image path | `sed -n '/^## Policy Map/,/^### Boundary notes/p' docs/reference/agent_workflow.md \| grep -nE '\]\([^)]*(development\|adr\|devlog\|\.agents/\|/opt/)'` finds nothing | Agent [x] |
+
+[CORRECTION -- 2026-10-23: the two Verification cells counted one phrase rather than the clauses the criterion names, and the second pattern missed the `devlog/` and absolute image-path classes it forbids; each cell now greps its clause.]
 
 ## Decisions
 

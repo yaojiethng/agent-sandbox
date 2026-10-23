@@ -221,7 +221,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 **What the census already established.** Re-gather none of this.
 
 - No code in this repository writes a tracked file. Generators write to the host, to `.compose/`, to a run directory or to `$AGENT_HOME`. So no stored artifact here can be rebuilt, and `regenerate and diff` has nothing to run until something writes one.
-- Nine artifacts carry a classification today, in the design record's table. Five of them are live problems: the chart's `## Commands` table asserts equality with the 17 prompt files and no gate holds it; `settings.json` carries the image's version pin as a literal that `base.dockerfile` also states; `tests/mutations/catalog.jsonl` holds 244 rows nobody can regenerate, 7 of which no longer match their subject; the chart states its 40 state ids twice; the reach table has one row that stays clean when deleted.
+- Nine artifacts carry a classification today, in the design record's table. The live problems among them: the chart's `## Commands` table asserts equality with the 17 prompt files and no gate holds it; `settings.json` carries the image's version pin as a literal that `base.dockerfile` also states; `tests/mutations/catalog.jsonl` holds 244 rows nobody can regenerate, 7 of which no longer match their subject; the chart states its 40 state ids twice.
 - The instrument the census used was the wrong shape and is deliberately not preserved: it guessed at equality from a share of resolvable names, it could not see a duplicated literal, and its churn metric ranked an authored config first. Expect to write a new one rather than extend it.
 
 #### The inventory, re-derived
@@ -241,7 +241,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 #### Acceptance criteria
 
-- [ ] The five known artifacts reproduce from the new query: the chart's command table reports drift, the version literal reports duplicate, the mutation catalog reports its stale rows, the loop table reports a clean subset of the protocol's scope, and the reach table reports its unverified row.
+- [ ] The known artifacts reproduce from the new query: the chart's command table reports drift, the version literal reports duplicate, the mutation catalog reports its stale rows, and the loop table reports a clean subset of the protocol's scope.
 - [ ] Every artifact in the census table keeps its classification, or carries a recorded reason it changed.
 
 #### Not in scope
