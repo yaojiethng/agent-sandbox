@@ -83,15 +83,15 @@ The tag a brief is dispatched under: `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR_CODE
 
 ### Scope
 
-A role is scoped to one brief and is resolved before a worker starts. A request names a role and the number of distinct models it needs: one for a single-seat brief, two for a two-seat review. The role resolves that many distinct assignments, taken from its preference list in order.
+A role is scoped to one brief and is resolved before a worker starts. A request names a role and a number of seats n. The role's line supplies the candidates: its entries filtered to those that can be attempted now, m of them. Seats fill by rotating through the candidates, so seat i takes candidate ((i - 1) mod m) + 1. A request with n at most m runs distinct models, and a request with n above m repeats them in written order. Seats fire in turns: a turn launches its seats concurrently and ends when its slowest attempt does, and every outcome is read at that boundary, so the candidate set has one writer per turn.
 
 ### Relationships
 
 - Resolved from the [role table](#role-table) into a [role line](#role-line).
 - Occupied by one or more seats. A seat is one occupant of a role in one run; it is not a synonym for the role, and it does not select its own assignment.
-- Heterogeneity is a request for more than one distinct model from the same list. It is not a second list and not a second role.
+- Heterogeneity is a request for more than one distinct model from the same list, which the seat walk takes in written order. It is not a second list and not a second role.
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-23
 
 ## role table
 
@@ -131,12 +131,14 @@ One line per role. A role with no line is absent, which is a failure rather than
 ### Relationships
 
 - Holds a preference list of [assignments](#assignment).
-- A single-seat request takes the first entry. A request for k seats takes the first k entries, so seat n takes entry n.
-- A seat whose attempt fails with a retryable outcome advances to the next entry that no other seat of the same request holds.
-- Fewer distinct entries than the request needs is a failure naming the shortage; a seat is never filled by duplicating a model.
+- Its candidates are the entries that can be attempted now, in written order, m of them.
+- A request for n seats fills seat i from candidate ((i - 1) mod m) + 1, so the first m seats are distinct models and seat m + 1 repeats the first.
+- A seat whose attempt ends retryably retries its own assignment in the next turn.
+- A seat whose attempt ends unretryably drops that candidate as unreachable and takes the candidate after it in the remaining rotation, wrapping to the first when the failed one was last, in the next turn.
+- A request whose role has no candidate is refused, and the refusal names why.
 - Truncating the list at its first entry discards the fallback rather than selecting the preference.
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-23
 
 ## assignment
 

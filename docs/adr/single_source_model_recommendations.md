@@ -54,7 +54,7 @@
 - Restrict the capability, so that only the resolver can reach a model: the operator ruled it out and kept the free `pi -p` invocation (2026-10-20).
 - Keep the startup-default rung for an untagged dispatch: it is the exemption that licensed the composition.
 - Confirm a fallback with the operator at dispatch time: unexecutable in an unattended run, and the block is what produced the improvised fourth rung.
-- Give the reviewer seats a role line: one line names one assignment, and the reviewer contract needs two families.
+- Give the reviewer seats a role line: one line names one assignment, and the reviewer contract needs two families. Superseded on 2026-10-23: the seat walk reads one line k times, so a role line serves a two-seat review without a second line.
 
 **Edge cases / drivers:** the role table is operator-owned and gitignored, so a wrong path is indistinguishable from a change of model unless `test -f` decides it. The startup default names one assignment, not a family, and cannot satisfy a multi-seat requirement. `dispatch_role_model` reads only the first entry of a repeated line, which is a known seam defect, so a fallback inside a line is a record rather than a route on that path.
 
