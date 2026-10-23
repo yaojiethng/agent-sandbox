@@ -39,7 +39,14 @@ if [[ ! -f "$SCAN_SCRIPT" ]]; then
 fi
 
 set +e
-node "$SCAN_SCRIPT" --root "$REPO_ROOT" "$@"
+ARGS=("$@")
+# The default root is the repository, and a caller may replace it for a fixture.
+# Appending the default before the caller's arguments would leave the scanner
+# reading the first `--root` it finds, so the seam is added only when unset.
+if [[ " $* " != *" --root "* ]]; then
+  ARGS=(--root "$REPO_ROOT" "${ARGS[@]}")
+fi
+node "$SCAN_SCRIPT" "${ARGS[@]}"
 rc=$?
 set -e
 

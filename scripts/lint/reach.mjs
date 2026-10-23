@@ -15,7 +15,7 @@
 //
 // Usage: node scripts/lint/reach.mjs [--manifest PATH] [--taxonomy PATH] [--root PATH]
 
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -106,6 +106,29 @@ for (const folder of repositoryOnly) {
 for (const folder of delivered) {
   if (!existsSync(resolve(root, folder)) || !statSync(resolve(root, folder)).isDirectory()) {
     finding(folder, "`## Reach` names it as a delivered folder and the tree has no such directory");
+  }
+}
+
+// 5. The project's own setup route is stated. The `initialize` skill's convention
+// corpus is the tree's project-setup payload, so a `## Reach` that names no route
+// to it leaves that delivery unchecked. The set is derived from the tree, so a
+// second module's corpus joins the check with no edit here.
+function projectSetupRoots(repoRoot) {
+  const workflow = resolve(repoRoot, "workflow");
+  let modules = [];
+  try {
+    modules = readdirSync(workflow, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+  } catch {
+    return [];
+  }
+  return modules
+    .map((entry) => `workflow/${entry.name}/skills/initialize/assets/conventions/`)
+    .filter((folder) => existsSync(resolve(repoRoot, folder)) && statSync(resolve(repoRoot, folder)).isDirectory());
+}
+
+for (const setup of projectSetupRoots(root)) {
+  if (!delivered.includes(setup)) {
+    finding(setup, "the tree carries the project-setup corpus and `## Reach` names no route to it");
   }
 }
 
