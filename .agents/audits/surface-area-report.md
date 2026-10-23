@@ -17,7 +17,7 @@ The envisioned future state: a targeted workflow file for each current use case,
 | `prompts/propagation-check.md` | In-iteration: verify a cross-file change reached every consumer | Current | Keep; AGENTS.md carries the checklist discipline, this file is the audit invocation |
 | `drafts/bugfix.skill.md` | In-iteration: structured diagnosis of a systemic bug across a chain | Current | Keep |
 | `drafts/refactor-mv-rename-file.skill.md` | In-iteration: atomic file move/rename procedure | Current | Keep; complements the AGENTS.md rename rule |
-| `drafts/recovery.skill.md` | State repair: recover committed artifacts after a reset or policy violation | Current | Keep |
+| `drafts/recovery.skill.md` (moved) | State repair: recover committed artifacts after a reset or policy violation | Moved | The class table and the rebuild are now [`skills/git-discipline/references/recovery.md`](../../.agents/skills/git-discipline/references/recovery.md) |
 | `drafts/roadmap-management.skill.md` | State maintenance: mutate `roadmap.md`/`changelog.md` per policy | Current | Keep; natural pair with `roadmap-audit` -- management mutates, audit verifies |
 | `audits/audit.skill.md` (removed) | Audit: closed-handover review -- deferred chains, close sequences, dangling references | Removed | Merged into [`skills/handover-maintenance/SKILL.md`](../../workflow/coding-agent/skills/handover-maintenance/SKILL.md) Track B by handover `20261003-02` |
 | [`audits/test-quality-campaign.md`](test-quality-campaign.md) | Audit: test suite vs the `testing` skill and `test_harness_mechanism.md` -- fix + report campaign, run by a fresh subagent | Current, canonical | Keep |

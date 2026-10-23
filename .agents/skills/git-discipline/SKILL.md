@@ -60,6 +60,7 @@ A branch name carries the commit type, the milestone and a slug, in that order. 
 | [`merge`](../../../workflow/coding-agent/prompts/merge.md) | an export is corrupted or partial and its changes must be replayed onto the current branch, one commit per iteration |
 | [`rebase`](../../../workflow/coding-agent/prompts/rebase.md) | a stale export must be ported onto the current branch, with the agent resolving conflicts and dropping what it no longer needs |
 | [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a draft branch's series holds an inversion, before the branch is packaged for review |
+| [`recovery`](references/recovery.md) | work is missing, and naming which class of loss it is decides the runbook -- this table's own rows included |
 
 Each runbook states its own procedure.
 
