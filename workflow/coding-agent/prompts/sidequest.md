@@ -7,7 +7,7 @@ argument-hint: "<what the sidequest does - required>"
 
 # Sidequest - Operator-Directed Interruption
 
-**Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md#sidequests)'s.
+**Scope:** an operator-directed work item raised while an iteration is open. The runbook pauses the open iteration, runs the standard lifecycle at the sidequest's own grain, and returns control to the handover the open iteration was working. It owns the interruption and the return; the lifecycle steps are [`/iter`](iter.md)'s and [`/wrapup`](wrapup.md)'s, and the invariants are [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md#sidequests)'s.
 
 ## Project conventions
 
@@ -60,7 +60,7 @@ Present the pre-close summary and wait for the release gate, per `/iter` Step 7 
 
 ## Close
 
-Run the consolidated close from [`/wrapup`](wrapup.md) Part B, as `/iter` Steps 8-9 do. The sidequest is one delivery commit.
+Run the consolidated close from [`/wrapup`](wrapup.md), as `/iter` Steps 8-9 do; the close hands the sidequest's single delivery commit to [`/commit`](commit.md).
 
 **Roadmap write-back.** A durable outcome raises a roadmap row and marks it `[x]` in the sidequest's own close commit, per the project's `task-list` convention. A fix, check or record that belongs in no roadmap row states that as the write-back outcome; the step is never skipped.
 

@@ -13,7 +13,7 @@
 //
 // Enforces docs/development/prompt-authoring-conventions.md `## Structure of a
 // workflow document`, `## The principle shape` and `## The principle claims`,
-// docs/policies/documentation_policy.md `### Document header format`, and the
+// `.agents/skills/docs/SKILL.md` `## How a document opens`, and the
 // decision in docs/adr/principle_skill_shape.md.
 //
 // Every set is derived. The instruction roots come from the manifest's cells, so

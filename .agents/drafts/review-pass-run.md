@@ -8,7 +8,7 @@ The main agent orchestrates; subagents review. Subagents are fresh contexts (`pi
 
 ## Preconditions
 
-1. **Working tree committed as wip.** Subagents review an exact diff range (`git diff <base>..<head>`), not a moving tree. Commit the session's work first with a free-form wip message; the delivery commit at close replaces it (git_policy: squash).
+1. **Working tree committed as wip.** Subagents review an exact diff range (`git diff <base>..<head>`), not a moving tree. Commit the session's work first with a free-form wip message; the delivery commit at close replaces it (the `git-discipline` convention: squash).
 2. **Review concerns chosen.** Typically two: a structural code-quality review (e.g. the thermo-nuclear skill) and an audit campaign (e.g. the test-quality campaign). The operator may substitute or add concerns; each concern is one subagent.
 3. **Operator release of scope** per iteration_policy (this template runs mid-iteration, after implementation, before close).
 
@@ -65,7 +65,7 @@ An audit campaign (e.g. `test-quality-campaign.md`) differs from a review: it FI
 
 ## Close
 
-Per iteration_policy Step 7 and git_policy:
+Per iteration_policy Step 7 and the `git-discipline` convention:
 
 1. Apply the roadmap write-back (including rows for accepted proposals).
 2. Mark the handover Closed with AC statuses, findings (including the review round history and outcome), and deferred items.

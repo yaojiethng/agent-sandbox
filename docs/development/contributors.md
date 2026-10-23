@@ -49,9 +49,9 @@ See [`docs/development/standard_operating_procedures.md`](../development/standar
 
 Before making any documentation or roadmap change, read the relevant policy:
 
-- [`docs/policies/documentation_policy.md`](../policies/documentation_policy.md) -- document structure, folder ownership, enforcement rules
+- `.agents/skills/docs/SKILL.md` -- document structure, folder ownership, enforcement rules
 - `.agents/skills/task-list/SKILL.md` -- roadmap update sequence and cleanup rules
-- [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) -- iteration workflow, milestone planning, story and investigation conventions
+- [`docs/reference/iteration_protocol.md`](../reference/iteration_protocol.md) -- iteration workflow, milestone planning, story and investigation conventions
 
 ## References
 
@@ -61,5 +61,5 @@ Before making any documentation or roadmap change, read the relevant policy:
 | [`docs/development/security.md`](../development/security.md) | Security model and trust boundaries |
 | [`docs/development/threat_model_stride.md`](threat_model_stride.md) | STRIDE threat model |
 | [`docs/development/standard_operating_procedures.md`](../development/standard_operating_procedures.md) | Operational SOPs |
-| [`docs/policies/iteration_policy.md`](../policies/iteration_policy.md) | Iteration workflow and milestone planning |
+| [`docs/reference/iteration_protocol.md`](../reference/iteration_protocol.md) | Iteration workflow and milestone planning |
 | `.agents/skills/task-list/SKILL.md` | Task-list convention |

@@ -4,7 +4,7 @@
 # Dispatch one general OpenCode worker over one brief file.
 #
 # A worker is a read-write delegated run: it edits the tree, runs tests, and
-# returns a change set. It is not read-only like pi-reviewer-dispatch, so the
+# returns a change set. It is not read-only like the review runner, so the
 # caller attributes the change set to a named base revision.
 #
 # The command is built through the runner seam (src/libs/dispatch.sh), so the

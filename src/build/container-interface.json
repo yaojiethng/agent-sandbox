@@ -47,11 +47,6 @@
       "destination": "/opt/sandbox/docs/reference/"
     },
     {
-      "provider": "pi",
-      "source": "docs/policies/",
-      "destination": "/opt/sandbox/docs/policies/"
-    },
-    {
       "provider": "hermes",
       "source": "src/libs/",
       "destination": "/opt/sandbox/lib/"
@@ -67,11 +62,6 @@
       "destination": "/opt/sandbox/docs/reference/"
     },
     {
-      "provider": "hermes",
-      "source": "docs/policies/",
-      "destination": "/opt/sandbox/docs/policies/"
-    },
-    {
       "provider": "opencode",
       "source": "src/libs/",
       "destination": "/opt/sandbox/lib/"
@@ -85,11 +75,6 @@
       "provider": "opencode",
       "source": "docs/reference/",
       "destination": "/opt/sandbox/docs/reference/"
-    },
-    {
-      "provider": "opencode",
-      "source": "docs/policies/",
-      "destination": "/opt/sandbox/docs/policies/"
     }
   ],
   "provision": [
@@ -196,10 +181,6 @@
     {
       "path": "/opt/sandbox/docs/reference/",
       "holds": "the reference layer: contracts, states and sequences, the interface index"
-    },
-    {
-      "path": "/opt/sandbox/docs/policies/",
-      "holds": "the policy corpus, bundled from `docs/policies/`"
     }
   ],
   "cells": [

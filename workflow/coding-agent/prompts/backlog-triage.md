@@ -21,19 +21,17 @@ An autonomous run spends the operator's goodwill. Every unit it dispatches consu
 
 The output is one table with a verdict per row. The verdict is the work: which rows run unattended, and the single question that parks each of the rest.
 
-This prompt is not a plan, a dispatch, or a survey. It does not sequence the runnable rows, open handovers, or write records.
-
 ## When to run this way
 
-Run this when the operator asks which work can proceed without them, before releasing an unattended run, or before pointing a large or cheap model at the backlog. The answer is the same question each time, and it is cheap to answer from the records that already exist.
+Run this when the operator asks which work can proceed without them, before releasing an unattended run, or before pointing a large or cheap model at the backlog.
 
 A check-in whose recommended direction is an unattended run rather than a supervised iteration reaches triage here: run triage on the inventory before opening the run. The check-in answers what is open; this prompt answers which of it runs without the operator.
 
 Routing:
 
-- A specific multi-unit plan the operator has already released is `sequential-work.md`. That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
+- A specific multi-unit plan the operator has already released has no runbook in the tree: the dispatch family that runs one is a draft. Triage produces the candidate rows either way, and the operator runs them.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
-- The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
+- The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone.
 
 ## Step 1 - Build the candidate set
 
@@ -45,11 +43,11 @@ One candidate per open row. A row is open when its checkbox is unchecked. Record
 
 ## Step 2 - Apply the well-specifiedness test
 
-Apply the test from `sequential-work.md` Step 1 to every candidate. The test is: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
+Apply the well-specifiedness test to every candidate: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
-Use the commit types from [`git_policy.md`](/opt/sandbox/docs/policies/git_policy.md) Active Types for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
+Use the commit types from the `git-discipline` convention's active types, `.agents/skills/git-discipline/references/commit-types.md`, for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
 
 Two rows that cannot be separated by the records alone are one row. Merge them and say so in the verdict, rather than guessing where the boundary falls.
 
@@ -67,7 +65,7 @@ Where the row is parked on a decision the operator already made but the agent ha
 
 ## Step 4 - Check each runnable row against the run's own rules
 
-A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_policy.md`](/opt/sandbox/docs/policies/iteration_policy.md): one commit, one context, one verification, disjoint files.
+A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): one commit, one context, one verification, disjoint files.
 
 - A row that fails one commit is over-scoped. Park it with the question of which slice comes first.
 - A row that needs two contexts splits, and each half is its own candidate. Present the split as two rows.
@@ -98,11 +96,10 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 ## Non-goals
 
-- Sequencing the runnable rows into a run plan. `sequential-work.md` owns the order and the unit split of a released plan.
-- Surveying the project for work that is not on the roadmap. [`gm.md`](gm.md) owns the situational survey.
-- Choosing a dispatch shape, or resolving execution order across a dependency graph. `/auto` owns that, from M4.
-- Editing any record. A stale row becomes a finding; the record is fixed in an iteration.
-- Answering a question the operator owns. Triage surfaces it once, in a form that can be answered in a reply.
+- Sequencing the runnable rows into a run plan, and splitting one into units. No runbook in the tree owns it.
+- Surveying the project for work that is not on the roadmap.
+- Choosing a dispatch shape, or resolving execution order across a dependency graph.
+- Answering a question the operator owns.
 
 ## Failure modes and invariants
 

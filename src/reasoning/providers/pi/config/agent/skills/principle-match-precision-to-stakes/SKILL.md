@@ -1,7 +1,6 @@
 ---
 name: principle-match-precision-to-stakes
 description: Set an instruction's precision by what you can establish about it, from the assumption it rests on to how far a wrong move reaches, whether the move can be undone, and whether anything reports it. Use when writing a procedure, a prompt, or a skill, and when deciding between an exact command and a range of approaches.
-disable-model-invocation: true
 metadata:
   claim: authority
 ---
@@ -26,7 +25,6 @@ Where the move reaches wide, cannot be undone, or goes unreported, state the exa
 | Tight guidance, because a wrong move is silent | Open guidance, because a different choice shows |
 |---|---|
 | `iter.md` states "use `make test`" and forbids the `tests/knowledge/` tests, since a wrong command returns a green nothing checks | `grill-me` asks for a recommended answer per question, since a different phrasing is read and corrected next turn |
-| The regeneration rule for `norm-ownership.tsv` states the exact command, since a hand edit is overwritten with no report | `principle-say-what-done-looks-like` lists a step, a procedure, a task and an assignment, since the reader picks the one that applies |
 
 **Why.** An agent cannot measure the cost of an error before making it, so a rule that needs that measurement cannot be followed. Assumptions, gaps, reach, reversibility and reporting are establishable while writing.
 

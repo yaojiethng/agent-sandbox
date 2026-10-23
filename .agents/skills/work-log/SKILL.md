@@ -10,7 +10,7 @@ This project's work log holds three records.
 | Record | Path | Its shape |
 |---|---|---|
 | The work-unit record | `devlog/handovers/` | [`assets/handover.md`](assets/handover.md) |
-| The exploration record | `devlog/discussions/` | [`discussion_policy.md`](../../../docs/policies/discussion_policy.md) |
+| The exploration record | `devlog/discussions/` | one of four types, below |
 | The agent-feedback and gotchas record | `devlog/AGENT_FEEDBACK.md` | stated below |
 
 A workflow procedure that reads or writes a record hands off here for its structure. This file states the rules; the template states the shape.
@@ -20,6 +20,12 @@ A workflow procedure that reads or writes a record hands off here for its struct
 One file per iteration, committed with the iteration's changes, retained for the life of the milestone. It is a log, not a document, so the drafting rules for `docs/` do not apply.
 
 Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the seven sections.
+
+It is written for the agent that opens the next iteration, not the one that produced it. A well-written record orients that agent; a thin one forces it to rebuild state from the roadmap and the discussions, which is the cost the record exists to remove.
+
+An iteration declares its own scope and inherits nothing from the previous record: objectives, acceptance criteria and completion status are not carried forward. The prior record reads `Closed` before a new one opens; when it does not, the iteration continues that record rather than starting a second, and a record that cannot be closed is a finding for the operator.
+
+Brevity is the record's own duty, because it is what makes the next agent's read cheap. Implementation steps -- the file-by-file changes and edit descriptions -- belong in the commit, not the record. One line per file in `Completed`, one observable delta per acceptance criterion, and a criterion whose verification means reading the record is too detailed to be one.
 
 ### Filename
 
@@ -71,7 +77,7 @@ A procedure that checks a record names a section by role. The template carries t
 | the findings | `## Findings` |
 | the completed work | `## Completed` |
 
-The record carries no `Deferred`, `Carried forward` or `What's Next` section. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is one sentence in the scope section with its reason.
+The record carries no `Deferred`, `Carried forward` or `What's Next` section. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is one sentence in the scope section with its reason. A pending decision is not a task: it never lands in the roadmap, and its row is written the moment the block appears.
 
 An empty nullable section carries its canonical marker and nothing else. Do not explain why the section is empty; a decision that affects it belongs in the decisions section.
 
@@ -104,7 +110,56 @@ The `milestone` field names the task group the iteration belongs to. The task li
 
 ## The exploration record
 
-`devlog/discussions/`. `discussion_policy.md` states its naming, type codes, statuses and templates.
+`devlog/discussions/` holds one record per line of enquiry. The type decides what the record answers, its status path and its shape.
+
+### A discussion record's filename
+
+```text
+YYYYMMDD-{type}-{status}-{description}.md
+```
+
+| Component | Rule |
+|---|---|
+| `YYYYMMDD` | the date the record opens |
+| `{type}` | one of `story`, `study`, `design`, `report` |
+| `{status}` | one of the statuses below |
+| `{description}` | `[a-z0-9][a-z0-9._-]*`: lowercase letters, digits, period, underscore and hyphen, with underscores for word spaces |
+
+Hyphens delimit and underscores separate words. A name carries no emoji, no unicode and no space.
+
+A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention and its inbound links are updated.
+
+A file under `docs/` is not a discussion record and does not take this name. `investigation` was an earlier name for `study` and is retired; the type code is `study`.
+
+### Statuses
+
+| Status | Meaning | Valid next states |
+|---|---|---|
+| `draft` | First write, not yet reviewed | `active`, `rejected` |
+| `active` | Under discussion or investigation | `settled`, `rejected` |
+| `settled` | Discussion closed, decision reached | `superseded`, `archived` |
+| `superseded` | Replaced by a newer record | `archived` |
+| `rejected` | Decided against | `archived` |
+| `archived` | Terminal, no active references | -- |
+
+One vocabulary serves all four types, in the filename and in the `**Status:**` line. A report is the exception: it starts at `draft`, moves straight to `settled`, and never passes through `active`. A rejected report is deleted or archived at the operator's direction.
+
+### The four types
+
+| Type | Open one when | Its shape |
+|---|---|---|
+| `story` | the sub-milestone objective is clear but the approach is not | [`assets/story.md`](assets/story.md) |
+| `study` | a story has two or more candidate approaches to compare | [`assets/study.md`](assets/study.md) |
+| `design` | the iteration's design phase resolves trade-offs between options | [`assets/design.md`](assets/design.md) |
+| `report` | an operation has finished and its record is composed after the fact | no fixed order, on the rules below |
+
+**A story graduates** when the pain point is understood, the resolvable questions are answered, the approach is agreed with its rationale, and the tasks name a file and a nature of change. Write the task-list row first, then set the status to `settled`. Tasks are not copied back into the story.
+
+**A closed study feeds its parent story.** The study links back from the parent's `## Study Findings`, and the agent does not delete a study record.
+
+**A design settles into an ADR.** When the design settles an implementation decision, record the decision in `docs/adr/` per the [`decision-records`](../decision-records/SKILL.md) convention and set the design's status to `settled`. The design stays the exploration record; the ADR is the authority.
+
+**A report has no fixed section order.** Three rules bind it: it is composed after the fact and is never a working record; it starts at `draft` and moves straight to `settled`; and it states the context, what came of it, and the artifacts it produced, each naming the artifact's source of truth.
 
 ## The feedback record
 

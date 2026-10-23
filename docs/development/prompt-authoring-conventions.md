@@ -14,11 +14,11 @@ The authoring rules borrow from two external references: Claude's Skill authorin
 
 A document an agent consumes is one of three types. The type determines where it lives and how it is written.
 
-**Policy** documents hold the rules an observer detects, and the judgements their own workflow produces. A policy document lives in `docs/policies/`, `docs/reference/`, or `docs/development/`.
+**Convention-skill** documents hold the rules an observer detects, and the judgements a workflow produces; they live under `.agents/skills/`, one skill per convention. The policy form is retired, so no document holds a rule set for the whole workflow.
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states facts; a rule it stated would make it a policy document, per the type test below.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; [`documentation_policy.md`](../policies/documentation_policy.md) excludes them from its scope by the same boundary.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; the `docs` convention, `.agents/skills/docs/SKILL.md` excludes them from its scope by the same boundary, because skill files and prompt templates are not documentation.
 
 Two tests identify a workflow document:
 
@@ -73,7 +73,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 **Skill frontmatter.** A skill opens with `name` and `description`. `disable-model-invocation: true` removes a skill from the model's prompt, so the model can neither discover nor fire it; only the operator invokes it, by typing its name. Set it on a skill the operator fires deliberately: the two quality skills and the two loop runbooks set it in this tree. A judgement skill does not set it, because a writer reaches for a judgement mid-draft and must find it, and the field's value is a boolean, held by the frontmatter gate. A hidden skill's description is read from the operator's skill list, so write it for the operator, while a model-invoked skill's description is for the agent's discovery. A router skill names the others and when to reach for each, for when user-invoked skills multiply past what the operator can remember.
 
-**Suggested skill name.** The judgement is the `principle-skill-signposting` skill at `$AGENT_HOME/agent/skills/principle-skill-signposting/SKILL.md`. This document holds the scheme this repository uses, which is a suggestion and not a rule; nothing in the tree checks a skill name, and the norm-ownership ledger records it as a judgement with no observer. A principle follows `[<domain>-]principle-<judgement>`: a bare `principle-` when the judgement holds for any agentic work, and the domain prefix when it is confined to one, as in `principle-guard-the-context-window`, `communication-principle-write-for-the-reader`, and `bash-coding-principle-<judgement>` for language-specific work. The scheme shadows the one the `poteto` skill set uses at its fork source, `pstack`, so a name states the class and never the provenance; the skill's maintenance record states where it came from. Every other skill follows `<verb-noun>`, so that `/<action>` reads to the operator as "do <action>", the same shape as `node run <action>` and `uv run <action>`. A mode keeps the `-mode` suffix `poteto-mode` established.
+**Suggested skill name.** The judgement is in `skill-scaffolder`'s [`patterns/signposting.md`](../../.agents/skills/skill-scaffolder/patterns/signposting.md). This document holds the scheme this repository uses, which is a suggestion and not a rule; nothing in the tree checks a skill name. A principle follows `[<domain>-]principle-<judgement>`: a bare `principle-` when the judgement holds for any agentic work, and the domain prefix when it is confined to one, as in `principle-guard-the-context-window`, `communication-principle-write-for-the-reader`, and `bash-coding-principle-<judgement>` for language-specific work. The scheme shadows the one the `poteto` skill set uses at its fork source, `pstack`, so a name states the class and never the provenance; the skill's maintenance record states where it came from. Every other skill follows `<verb-noun>`, so that `/<action>` reads to the operator as "do <action>", the same shape as `node run <action>` and `uv run <action>`. A mode keeps the `-mode` suffix `poteto-mode` established.
 
 **Body order.** A finished workflow document follows a stable order:
 
@@ -87,7 +87,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 **The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 
-The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in `documentation_policy.md`. No step-by-step walkthrough repeats a rule the policy already states; the prompt links to the policy at the point of handoff. A prompt is never the only source of truth for a rule.
+The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in the `communication-principle-*` corpus. No step-by-step walkthrough repeats a rule its source already states; the prompt links to that source at the point of handoff. A prompt is never the only source of truth for a rule.
 
 ## The principle shape
 
@@ -120,7 +120,7 @@ Every principle applies one claim, and the claim is how a reader finds the famil
 | `reader` | the reader holds what the text gives them, in the order it arrives |
 | `authority` | a document owns the scope it declares and no more |
 
-Two skills may apply one claim when they act on different objects, because each states a different test. `only-derive-what-you-own` and `single-source-of-truth` both apply `source`, and one asks whether the reader can recompute a number while the other asks whether every copy of a rule points at one source of truth. Two skills may not state the same rule.
+Two skills may apply one claim when they act on different objects, because each states a different test. Three apply `source`: `only-derive-what-you-own` asks whether the reader can recompute a number, `single-source-of-truth` whether every copy of a rule points at one source, and `guard-derived-state` whether a stored copy has anything that catches its drift. Two skills may not state the same rule.
 
 This table is the only place that decides the set, and the gate reads the set from here. The gate decides that a claim is stated and that the table holds it; which claim a given skill picks stays a judgement, so no gate reads it.
 
@@ -128,11 +128,11 @@ This table is the only place that decides the set, and the gate reads the set fr
 
 **One subject per prompt.** The subject is what the prompt hands on: one artifact to one next step. A prompt that hands on two artifacts, or hands one to two next steps, is two prompts, or a runbook that dispatches two sub-cases. The judgement is `principle-own-the-scope-you-declare` at `$AGENT_HOME/agent/skills/principle-own-the-scope-you-declare/SKILL.md`.
 
-Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_policy.md`](../policies/iteration_policy.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
+Scope earlier shapes the authoring. A prompt's scope statement must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. This restates the prompt-scope discipline in [`iteration_protocol.md`](../reference/iteration_protocol.md), which applies it both at runtime and to the main agent authoring the prompt. Write the scope so the contradiction cannot arise.
 
 A prompt that hands off to a sub-agent states the target's whole owned-file set, not a per-unit list, and remaps the sandbox boundary to the worktree. The brief-construction lesson applies at authoring time: a file set must be closed under the test surface, and the closure is computed by searching the test tree for each changed file's basename. The `/task-queue` prompt (`.agents/drafts/task-queue.md`, draft pending operator review) models this: it defines fork, join, and re-queue as the machinery, and the caller supplies the tasks and their owned files.
 
-**A skill's name and description are its signpost.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that steer, and the description summarises to the name. The judgement is the `principle-skill-signposting` skill at `$AGENT_HOME/agent/skills/principle-skill-signposting/SKILL.md`.
+**A skill's name and description are its signpost.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that steer, and the description summarises to the name. The judgement is `skill-scaffolder`'s [`patterns/signposting.md`](../../.agents/skills/skill-scaffolder/patterns/signposting.md).
 
 ## A fast path names its source of truth
 
@@ -142,7 +142,7 @@ The source of truth is decided by the kind, not by the layer, per `### Norm kind
 
 Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
-The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in `documentation_policy.md` (its `### Rule placement`); the register lists the signs to look for.
+The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in [`agent_workflow.md`](../reference/agent_workflow.md#prompt-templates); the register lists the signs to look for.
 
 ## A workflow document owns the scope it declares
 
@@ -150,7 +150,7 @@ A workflow document owns the scope it declares, holds everything that scope owes
 
 ## The workflow handoff pattern
 
-A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` Part B, [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
+A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` for the close, which hands the commit to `/commit`; [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
 
 ## A reference resolves where the workflow document runs
 
@@ -158,7 +158,7 @@ A reference is legal when its target is delivered to the reader the citing docum
 
 A prompt runs at its image path. A skill runs from the root that carries it, `$AGENT_HOME/agent/skills/<name>/` for a provider-scoped skill and `.agents/skills/<name>/` for a project-scoped one. The harness prompts run from `/opt/workflow/agent/prompts/`, from `src/reasoning/agent/prompts/`. A workflow module's prompts run from the module's own root, `/opt/workflow/agent/modules/<module>/prompts/`, from `workflow/<module>/prompts/`, because the module is the unit a provider enables or leaves out. A provider's own prompt runs from that provider's root: pi's `pi-agent.md` runs from `$AGENT_HOME/agent/prompts/` -- `/home/agentuser/.pi/agent/prompts/` -- which the image seeds from `src/reasoning/providers/pi/config/agent/prompts/` through the config template. The repository tree is not there. The link check resolves a link in an instruction file in the image's path space rather than the repository's, so a target that exists only in the repository is a finding, and a link in the old repository-relative form no longer passes.
 
-A prompt links a document that ships. The policy corpus ships at `/opt/sandbox/docs/policies/`, and the reference layer ships beside it at `/opt/sandbox/docs/reference/`. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
+A prompt links a document that ships. The reference layer ships at `/opt/sandbox/docs/reference/`, and the iteration protocol ships with it. The link names the path the document has in the image, which reads the same from every instruction root and needs no depth arithmetic. A prompt in one instruction root links a document in another by the image path, not the source path.
 
 A prompt names a document that does not ship -- a record, a draft, an ADR, a development document -- in plain text or a code span. Name it by the path a reader can find, and do not link it: the link would pass no reader in the container and fail the check. A reference to a project file, such as the project `AGENTS.md` or `devlog/roadmap.md`, is the same case, because the project tree is the reader's working directory rather than the prompt's.
 
@@ -166,7 +166,7 @@ When the content behind the reference matters to the agent working in the contai
 
 The same rule covers the inverse: a rule whose only source of truth is a record is unreachable from the container, whether or not a link points at it. If the agent must obey it, it is stated where the agent reads.
 
-The rule holds for a bundled document too. A document under `docs/reference/` or `docs/policies/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between the two bundled folders resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`linking.mjs`](../../scripts/lint/linking.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
+The rule holds for a bundled document too. A document under `docs/reference/` ships into the container, where the repository tree is absent, so a link from it reaches only a path that ships: a relative link between two shipped documents resolves because their destinations keep the repository's shape, and an image path resolves for the same reason. A target that ships nowhere -- a record, an ADR, a development document -- is named in a code span carrying its repository path, never linked. [`linking.mjs`](../../scripts/lint/linking.mjs) fails the gate on a link from a shipped file that resolves only in the repository.
 
 ## Naming
 

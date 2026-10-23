@@ -26,7 +26,7 @@ Then read `$SESSION_DIR/FINAL_REVIEW.md`.
 
 ## Step 3 - Work the proposal through the iteration
 
-The subagent's uncommitted changes and its report are a proposal. Operate the normal iteration workflow with the operator: review the proposal, and accept, amend, cherry-pick, or reject as the iteration requires. Commit at iteration close per `docs/policies/git_policy.md`.
+The subagent's uncommitted changes and its report are a proposal. Operate the normal iteration workflow with the operator: review the proposal, and accept, amend, cherry-pick, or reject as the iteration requires. Commit at iteration close per `.agents/skills/git-discipline/SKILL.md`.
 
 The report's sections feed the iteration:
 

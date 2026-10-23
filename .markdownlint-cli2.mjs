@@ -1,12 +1,12 @@
 // markdownlint-cli2 configuration for the agent-sandbox repository.
 // Enables the subset of markdownlint rules that align with
-// docs/policies/documentation_policy.md, plus two custom rules:
+// `.agents/skills/docs/SKILL.md`, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
 // physical line) and linking (link targets and heading fragments
 // resolve). Both exempt the record trees declared below, under one key.
 //
 // Deliberately DISABLED (they contradict written policy):
-//   MD013 line-length -- documentation_policy.md `### Line wrapping`
+//   MD013 line-length -- the docs skill's one-paragraph-per-line rule
 //       forbids breaking prose at a column limit
 //   MD060 table-column-style -- the repo writes compact tables; MD060
 //       pads cells to a uniform width and makes tables unreadable
@@ -78,7 +78,6 @@ export default {
         "docs/adr/env_resolution.md",
         "docs/adr/harness_versioning.md",
         "docs/adr/interface_contract_compatibility.md",
-        "docs/adr/policy_declarative_framing.md",
         "docs/adr/session_identifier.md",
         "docs/adr/single_source_model_recommendations.md",
         "docs/adr/task_queue_primitive.md",
@@ -92,7 +91,6 @@ export default {
         "docs/reference/sandbox_identity.md",
         "docs/reference/terminology.md",
         "docs/development/interface-conventions.md",
-        "docs/development/testing-conventions.md",
         "src/reasoning/agent/skills/caveman/SKILL.md",
         "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
         "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",

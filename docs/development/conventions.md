@@ -6,7 +6,7 @@ Index of coding and interface conventions for the agent-sandbox project. Each ca
 |---|---|---|
 | Interface (CLI, TUI, API) | [`interface-conventions.md`](interface-conventions.md) | CLI flags, output discipline, TUI surface, API contracts pointer, contextual-knowledge-light naming |
 | Bash coding | [`bash-coding-conventions.md`](bash-coding-conventions.md) | Language rules, traps as positive rules, dependency management |
-| Testing | [`testing-conventions.md`](testing-conventions.md) | Fixture patterns, anti-patterns, templates, checklists, debug steps |
+| Testing | [`testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) | Judgements and patterns for writing a test |
 | Prompt and skill authoring | [`prompt-authoring-conventions.md`](prompt-authoring-conventions.md) | Workflow-document structure, runbook vs advisor, subject scoping, document-type identification |
 | Instruction surfaces | [`instruction-surface-conventions.md`](instruction-surface-conventions.md) | Declaring a prompt or skill surface in the interface manifest: fields, conditions, scope, layers, gates |
 
@@ -14,6 +14,5 @@ Policy documents govern process, not code shape. Conventions govern code shape w
 
 | Category | Policy document |
 |---|---|
-| Testing policy | [`testing_policy.md`](testing_policy.md) |
 | Skills (agent-facing) | `src/reasoning/agent/drafts/*.skill.md` (procedures), `.agents/audits/*.skill.md` (audit family), `workflow/coding-agent/skills/*/SKILL.md` (record checks, shipped as the module payload) |
 | Agent feedback and gotchas (recorded) | [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) (entries tagged `[A]` raised by the agent, `[O]` raised by the operator) |

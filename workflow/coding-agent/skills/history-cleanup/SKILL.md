@@ -14,11 +14,9 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Mandate
 
-The deliverable is a series in which each commit is one reviewable unit, builds and passes on its own, carries a record true at that commit, and contains no content that a later commit in the range replaces.
-
 Four invariants decide the result: every commit is a reviewable unit; every commit is bisectable; every record is true at the commit that carries it; no content appears twice in the series with one occurrence cancelling the other. A rewrite that satisfies the shape and breaks bisectability is worse than the history it replaced.
 
-The content is the invariant. The records are not. You rewrite only the records, because they describe a shape that no longer exists. This asymmetry is why the proofs below exclude record paths: hold the content fixed, and let the records move.
+The content is the invariant. The records are not. Only the records are rewritten, because they describe a shape that no longer exists. That asymmetry is why the proofs exclude record paths: hold the content fixed, and let the records move.
 
 ## Input contract
 
@@ -35,7 +33,7 @@ The argument slot may carry extra context: known inversions, a review comment th
 
 ## Establish that the rewrite is safe
 
-You rewrite nothing until you check the refs. A tag, a second branch, a note, or a signed commit inside the range is an invisible casualty of a rewrite and none of them appears in `git log`.
+Rewrite nothing until the refs are checked. A tag, a second branch, a note, or a signed commit inside the range is an invisible casualty of a rewrite and none of them appears in `git log`.
 
 Record four results. `git status -sb` shows no upstream, because a pushed range is not yours to rewrite. `git for-each-ref --contains <base>` names no tag or branch inside the range. `git log --show-signature` emits no signature that the rewrite would invalidate, or the operator accepts the loss. `git notes list` is empty inside the range, or the notes are copied.
 
@@ -76,9 +74,9 @@ Completion criterion: the positive control fires, every inversion is listed with
 
 One commit per coherent deliverable. Collapse an inversion into the later commit, because the later content is the one a reviewer should read. Keep the record-to-commit pairing at one to one, because the record is the only place a reviewer learns why the unit exists.
 
-An inversion collapses backwards when the earlier commit's record needs the content to be true at that commit, and the later commits only rewrote it. Say which direction you chose and why, per inversion.
+An inversion collapses backwards when the earlier commit's record needs the content to be true at that commit, and the later commits only rewrote it. State which direction was chosen and why, per inversion.
 
-Merging records follows from the pairing. When two records merge, the survivor keeps the earlier number, so a citation from outside the range still resolves. A record born into the new series states the correct facts at birth, which means no `[CORRECTION]` tag, because there is nothing earlier in the series to correct.
+When two records merge, the survivor keeps the earlier number, so a citation from outside the range still resolves. A record born into the new series states the correct facts at birth, which means no `[CORRECTION]` tag, because there is nothing earlier in the series to correct.
 
 Do not split a change when the split would make the tree assert a rule twice and a later commit remove one copy. That trades one inversion for another, one level up.
 
@@ -123,7 +121,7 @@ Completion criterion: `git log --oneline <base>..HEAD` matches the proposal exac
 Three checks run in this order, and the first two exclude the record paths, because the records are what the rewrite is allowed to change.
 
 1. **Content identity.** Every non-record blob at the new tip equals the blob at the old tip: `git ls-tree -r <old-tip>` against `git ls-tree -r HEAD`, with the record paths filtered out, differing by nothing except a named addition. Report the record delta separately, as files added and removed.
-2. **Net content identity.** `git diff <base> <tip> | git patch-id --stable` is unstable here, because the range now carries the record edits and any addition. Use the blob comparison above as the content check and report the net patch-id only as context, never as a pass condition.
+2. **Net content identity.** `git diff <base> <tip> | git patch-id --stable` is unstable here, because the range now carries the record edits and any addition. Use the blob comparison in check 1 as the content check and report the net patch-id only as context, never as a pass condition.
 3. **Series identity.** `git range-diff <base>..<old> <base>..<new>` maps each old commit to its new one and shows a content section only where content moved between commits. A regroup moves content by construction; what must not appear is a non-record file whose content changed rather than moved.
 
 Do not use the sorted patch-id multiset as the content proof. It is invariant under a reorder and false under a collapse, and this runbook requires collapses. A check that cannot hold on the required work is not a check.

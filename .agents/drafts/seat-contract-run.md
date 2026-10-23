@@ -127,13 +127,13 @@ The census lives in the session that wrote this draft and is not committed. To r
 
 ## The quick win
 
-Before the contract lands, one sentence in the provider-layer `AGENTS.md` "Which model" block removes the ambiguity that produced the incident: a dispatched seat resolves only from `$AGENT_HOME/model-recommendations.md`, an agent composes no pair, and the brief records the role, the pair and the level. Two mechanical deletions go with it. The reviewer script's pinned pairs and the advisor prompt's dead routing clause both name values the table does not contain. The eight draft lines can wait for the migration unit.
+Before the contract lands, one sentence in the provider-layer `AGENTS.md` "Which model" block removes the ambiguity that produced the incident: a dispatched seat resolves only from `$AGENT_HOME/model-recommendations.md`, an agent composes no pair, and the brief records the role, the pair and the level. Two mechanical deletions go with it, both landed ahead of this unit: the reviewer script's pinned pairs (Handover `20261023-02`) and the advisor prompt's dead routing clause (Handover `20261023-01`). The eight draft lines can wait for the migration unit.
 
-The `_REVIEWER` line carries three candidates from one family, so the reviewer's two-family constraint has no source in the table. The script's pairs are on-list now, and the constraint is a table gap for the migration unit.
+The `_REVIEWER` line carries three candidates from one family, so the reviewer's two-family constraint has no source in the table. The runner carries no pair at all now, so the constraint is a table gap for the migration unit.
 
 ## Records this depends on
 
 - [`single_source_model_recommendations.md`](../../docs/adr/single_source_model_recommendations.md), which owns the role file and its requirements.
 - [`dispatch.sh`](../../src/libs/dispatch.sh), the seam the resolver replaces.
-- [`pi-reviewer-dispatch`](../../src/reasoning/providers/pi/config/agent/skills/pi-reviewer-dispatch/SKILL.md), the one multi-seat dispatch.
+- [`review-dispatch.sh`](../../src/reasoning/providers/pi/config/agent/bin/review-dispatch.sh), the one multi-seat dispatch.
 - [`close-the-model-bypass-run.md`](close-the-model-bypass-run.md), which states the incident class this contract removes.

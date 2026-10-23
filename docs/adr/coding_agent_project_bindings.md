@@ -106,7 +106,7 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 - **A project value file.** Superseded: the project's convention is a skill it owns, not a value it supplies, so the structure and the content live together.
 - **A run-time default.** Superseded: a default answers for a project that never chose. The shipment is seed material, and its stub states a failure.
 
-**Edge cases / drivers:** The convention list is the set of subjects that carry a maintenance surface: `task-list`, `work-log` (handovers and discussions), `decision-records`, `docs`, `git-discipline`, `testing` and `evals`, of which `evals` is optional. `iteration_policy` is the protocol, not a convention. A convention may cover more than one structure, and `work-log` carries two. The corpus lives in the `initialize` skill's `assets/` and ships with the skills cell, so no new layout surface is needed. The writing standard that governs all communicated text - chat, code comments, records and documents alike - is the `communication` standard, not a convention: it has no structure and no provision, and it lives in the project's always-loaded steering. Moving the conventions out of the shipped maintenance skills is deferred to the policy-form retirement.
+**Edge cases / drivers:** The convention list is the set of subjects that carry a maintenance surface: `task-list`, `work-log` (handovers and discussions), `decision-records`, `docs`, `git-discipline`, `testing` and `evals`, of which `evals` is optional. `iteration_protocol` is the protocol, not a convention. A convention may cover more than one structure, and `work-log` carries two. The corpus lives in the `initialize` skill's `assets/` and ships with the skills cell, so no new layout surface is needed. The writing standard that governs all communicated text - chat, code comments, records and documents alike - is the `communication` standard, not a convention: it has no structure and no provision, and it lives in the project's always-loaded steering. Moving the conventions out of the shipped maintenance skills is deferred to the policy-form retirement.
 
 ## 2026-10-14 -- The handoff names a convention and its path
 
@@ -125,7 +125,7 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 
 ## 2026-10-14 -- The policy form is retired by subtraction
 
-**Decision:** Each policy splits by subtraction: the mechanism goes to the procedure that already runs it, the convention goes to the project's convention-skill, and the remainder is the rule. A rule a procedure enforces is stated where it is enforced; a rule that binds the procedures to each other keeps a document. On that rule the eight policies become two documents: `iteration_policy`'s Principles and Iteration Invariants keep a protocol document, because they bind every runbook, and `documentation_policy`'s Communication Standards keep the `communication` standard, because they govern every text. The other six dissolve. Amended 2026-10-21: the standard survives as the `communication-principle-*` skill corpus rather than as a document, because those judgements were filed as skills and a rule with an owner admits no document beside it, so one document remains. The per-policy map is in [`20261014-design-settled-retire_the_policy_form.md`](../../devlog/discussions/20261014-design-settled-retire_the_policy_form.md); each policy is one slice, ordered `handover_policy` through `iteration_policy`.
+**Decision:** Each policy splits by subtraction: the mechanism goes to the procedure that already runs it, the convention goes to the project's convention-skill, and the remainder is the rule. A rule a procedure enforces is stated where it is enforced; a rule that binds the procedures to each other keeps a document. On that rule the eight policies become two documents: `iteration_protocol`'s Principles and Iteration Invariants keep a protocol document, because they bind every runbook, and `documentation_policy`'s Communication Standards keep the `communication` standard, because they govern every text. **Revised 2026-10-22:** the standard's judgements became `communication-principle-*` skills and its rules the `docs` convention, so `iteration_protocol` is the one document that survives; the file is deleted. The other six dissolve. Amended 2026-10-21: the standard survives as the `communication-principle-*` skill corpus rather than as a document, because those judgements were filed as skills and a rule with an owner admits no document beside it, so one document remains. The per-policy map is in [`20261014-design-settled-retire_the_policy_form.md`](../../devlog/discussions/20261014-design-settled-retire_the_policy_form.md); each policy is one slice, ordered `handover_policy` through `iteration_protocol`.
 
 **Rationale:** A section often carries the mechanism and the convention at once, so assigning each section one label forces an artificial choice. Subtraction needs no label: what remains after the mechanism and the convention are removed is the rule by construction, and the document count then follows from a property of the remainder rather than a judgement about the section.
 
@@ -138,14 +138,14 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 
 ## 2026-10-14 -- The split test is cross-cutting, and a record's shape is its template
 
-**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `check-in` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
+**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `commit`, `check-in` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
 
 No artifact states the contract as a whole. Each procedure states the part it reads or writes, and nothing restates the whole:
 
 | Part | Stated by |
 |---|---|
 | the four keys, the `type` vocabulary and its commit mapping | `iter`, the writer |
-| the `status` value it sets | `wrapup` and `milestone-close` |
+| the `status` value it sets | `commit` and `milestone-close` |
 | the `status` values it reads | `check-in` |
 | the keys and roles it validates | `handover-maintenance`, as checks, restating no vocabulary |
 
@@ -156,7 +156,7 @@ The record's shape is its template, `.agents/skills/work-log/assets/handover.md`
 **Rejected alternatives:**
 
 - **Rule versus structure.** Rejected: the handover `type` is a convention under that test, and a fixed procedure's behaviour depends on it, so the test misclassifies it.
-- **A workflow contract file beside the prompts**, or **the contract in `iteration_policy.md`.** Rejected: both invent a second artifact to state what the template already states.
+- **A workflow contract file beside the prompts**, or **the contract in `iteration_protocol.md`.** Rejected: both invent a second artifact to state what the template already states.
 - **The contract in the `handover-maintenance` skill.** Rejected: it puts the interface every writer reads inside the one skill that checks the writers.
 - **All of the format and lifecycle as convention.** Rejected: a project that renames `status` breaks `check-in` and `milestone-close`, which the workflow cannot adapt.
 - **The gate reads the project's format.** Rejected: the gate is the project's own artifact, so it enforces the project's structure, and the workflow owns no format for it to read.

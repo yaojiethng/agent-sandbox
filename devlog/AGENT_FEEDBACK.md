@@ -563,16 +563,6 @@ The read-through close was released as "follow through everything autonomously",
 
 A second form recurred one turn after the first fix. The agent applied the rule and then split the structured-data work into three commits by file class - a `refactor` for the data and its documentation, a `build` for the `jq` package, a `workflow` for the policy clause - and the operator collapsed them into one, because they are one concern: the register moves to JSON Lines, and the tooling and the references it needs travel with it. The counter-case sits in the same session: four fix lanes shared the `fix` type and were correctly left as four commits. The distinguishing test is not the kind of file but the unit of approval - would one reviewer accept or reject these changes together? The JSON change is accepted or rejected as a whole; one fix lane is accepted or rejected on its own.
 
-### [O] 2026-09-29  --  Conversational numbering must be unambiguous
-
-```text
-state: probation
-scoped: M3 T1 -- documentation conventions; now `## Chat: one token per item` in `.agents/skills/numbering/SKILL.md`
-probation: the fix landed as that section and as the provider `AGENTS.md` fallback. The operator decides dismiss / maintain / escalate at the next review; the observation is an audit report that cites a labelled chat pick without a second axis appearing in the reply.
-legacy: the close-milestone discipline entry's rule ("session-relative finding numbers are valid only in their source conversation") covers cross-conversation validity, not a single exchange that carries two numbered/lettered axes at once (see [A] 2026-09-21 "Process improvement: gate-release and scope-first discipline", rule 2).
-mitigation: when the agent presents several numbered or lettered sets in one exchange, the operator's index reply can map to the wrong axis, and the agent must guess. The rule is `## Chat: one token per item` in the project convention `.agents/skills/numbering/SKILL.md`; this entry is the case that rule prevents. Raised 2026-09-29 when the agent presented glm's findings (1, 2) beside its own options (A, B), and the operator's ".ok, .ok" indexed the findings, not the options.
-```
-
 ### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed
 
 ```text
@@ -812,3 +802,20 @@ Two costs, not one. The reader had no way to tell which copy was current, and th
 The rule that persists it: when a workflow hands off to a script, it relays that script's output and adds only what the script cannot know. An instruction the next command prints belongs to that command, and a multi-step flow belongs in the ADR that owns the pipeline rather than in the prompt that starts the first step.
 
 Raised by the operator during handover `20261002-24`.
+
+## Agent experience  --  session 20261023 (M3.3.2 cheap-row pass)
+
+### [O] 2026-10-23  --  A close decision that waits on an observation is not a task
+
+```text
+state: probation
+scoped: M3.3.2 - Retire the policy form
+legacy: none
+mitigation: none
+```
+
+The row asked the release gate to carry every question the close would otherwise answer, so a close is data entry: a finding states its `Triaged to:` destination when it is raised, both record checks run before the release, and the handover lint fails a row with no destination. The gate landed on 2026-10-20. What did not happen is the row's ending condition, a close commit that changes no record the gate already confirmed. Every close since has changed one, so what remains is an observation rather than work.
+
+A task list holds work. A landed change waiting on a future observation is a probation entry, and the roadmap row is removed. The observation that clears it is a close whose delivery commit changes no record the gate confirmed.
+
+Raised by the operator during the milestone's cheap-row triage.

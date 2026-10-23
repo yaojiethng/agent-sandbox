@@ -24,7 +24,7 @@ Choose the word that carries the most distinction for the least reader effort, a
 
 **Why.** The domain model is exact, and the delivery is shorter than the model. A word dropped from the delivery takes a distinction with it, and the reader cannot see the loss, because the sentence still reads correctly. A model left at full resolution costs the reader work, and the reader notices, because the point is not on the page. The first loss cannot be repaired and the second can.
 
-**The leading word.** A principle's leading word is this judgement applied to the principle itself. It is the one word that holds most of what the principle says, drawn from the domain the principle works in, and the corpus records it as `metadata: leitwort:`, a keyword tag beside the claim rather than a controlled vocabulary. `principle-skill-signposting` at `$AGENT_HOME/agent/skills/principle-skill-signposting/SKILL.md` decides where the word is placed and tested. Choosing it is this skill's question, and placing it is that one's.
+**The leading word.** A principle's leading word is this judgement applied to the principle itself. It is the one word that holds most of what the principle says, drawn from the domain the principle works in, and the corpus records it as `metadata: leitwort:`, a keyword tag beside the claim rather than a controlled vocabulary. the project's `skill-scaffolder` convention decides where the word is placed and tested, in its signposting pattern. Choosing it is this skill's question, and placing it is that one's.
 
 **The test.** Two readers, because each catches a failure the other accepts. The domain reader checks that nothing false was added. A reader outside the domain checks that nothing they needed was removed.
 

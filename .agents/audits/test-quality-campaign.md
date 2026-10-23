@@ -2,12 +2,12 @@
 
 ## Authority
 
-The repo testing policy is the authority. This prompt links to it and does not restate it. Before any action, read both:
+The repo testing convention is the authority. This prompt links to it and does not restate it. Before any action, read both:
 
-- `docs/development/testing_policy.md` - placement, the `make test` invariant, the prerequisite rule, the `knowledge_` and `diagnose_` prefixes, the untested-behaviour-branch rule.
-- `docs/development/testing-conventions.md` - the anti-patterns, especially **Anti-Pattern 6: Change-Mirror Test**, and the two checklists.
+- `.agents/skills/testing/SKILL.md` - the judgements, the patterns, the test homes and the completion lists, especially the change-mirror form in `patterns/assertions.md`.
+- `docs/development/test_harness_mechanism.md` - the runner, the suite contract, the result protocol and the gates.
 
-Where this prompt and a policy rule disagree, the policy wins.
+Where this prompt and the convention disagree, the convention wins.
 
 ## Mode
 
@@ -42,7 +42,7 @@ Create `$SESSION_DIR` and the state files. Confirm the test command (`make test`
 
 Run the full suite and record pass/fail. Before changing anything, apply the reflection gate. For each test file answer three questions:
 
-1. **Code mirroring vs value creation** - apply Anti-Pattern 6's test. Does the assertion fail only if the change is reverted? Does it assert the meaning or the exact string the change touched? A test that pins a behaviour a future reader would be tempted to change must name the record (ADR, design record, or handover decision) that explains it.
+1. **Code mirroring vs value creation** - apply the change-mirror test. Does the assertion fail only if the change is reverted? Does it assert the meaning or the exact string the change touched? A test that pins a behaviour a future reader would be tempted to change must name the record (ADR, design record, or handover decision) that explains it.
 2. **Noise** - find tautological, file-exists, and string-presence assertions; tests of removed features; and dead tests (defined but never `run_test`-registered).
 3. **Iteration friction** - find lock-step edits from output-contract changes that lacked a propagation checklist, and pins with no rationale.
 
@@ -82,7 +82,7 @@ Do not continue past the report.
 
 Stop only when all hold:
 
-1. Zero change-mirror tests (Anti-Pattern 6).
+1. Zero change-mirror tests.
 2. Zero dead tests - every `test_*()` registered and every `run_test` target resolving.
 3. Prerequisites enforced - a broken stub or shim reports one named prerequisite error, not N unrelated test failures.
 4. Output-contract changes carry a propagation checklist per AGENTS.md.
@@ -99,7 +99,7 @@ Do not stop before the success criteria hold and the report is written. If conte
 
 ## Style
 
-Be harsh and precise. Name the anti-pattern per `testing-conventions.md` ("this is a change-mirror test", "this is dead - defined but not registered"). Prefer deleting a bad test over leaving it. Prefer one strong invariant test over three weak ones. Cite concrete examples in every markdown note.
+Be harsh and precise. Name the anti-pattern per `.agents/skills/testing/patterns/assertions.md` and `.agents/skills/testing/patterns/structure.md` ("this is a change-mirror test", "this is dead - defined but not registered"). Prefer deleting a bad test over leaving it. Prefer one strong invariant test over three weak ones. Cite concrete examples in every markdown note.
 
 ## Kickoff
 

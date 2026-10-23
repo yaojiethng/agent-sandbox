@@ -125,7 +125,7 @@ After every batch, run one scripted pass over the data file: every `id` appears 
 | pinned | A behaviour is pinned when a unit fails if that behaviour is changed. Pinning an intended contract is a regression guard; pinning an accident forces a later correct fix to break the test first. Pinning is neither good nor bad by itself. |
 | unpinned | The state behind a survived mutation: no unit fails when the behaviour changes. |
 | vacuous | A unit exercises a path without pinning any behaviour inside it. |
-| over-broad | An assertion pins an outcome without its reason, for example a return code without the diagnostic. The repository's rule for this state is "Assert the meaning, not the string" in `docs/development/testing-conventions.md`. |
+| over-broad | An assertion pins an outcome without its reason, for example a return code without the diagnostic. The repository's rule for this state is "Assert the meaning, not the string" in `.agents/skills/testing/patterns/assertions.md`. |
 
 ## Fan-out protocol
 

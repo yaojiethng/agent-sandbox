@@ -14,7 +14,6 @@ The paths this layer covers. Each is part of the container, so a reference to on
 | `/opt/workflow/agent/prompts/` | the harness prompts and the coding-agent workflow prompts, merged into one root |
 | `/opt/workflow/agent/skills/` | the skill root |
 | `/opt/sandbox/docs/reference/` | the reference layer: contracts, states and sequences, the interface index |
-| `/opt/sandbox/docs/policies/` | the policy corpus the loop obeys |
 | `/opt/sandbox/lib/` | the harness libraries |
 | `/opt/sandbox/bin/` | the entrypoint and preflight scripts |
 | `/home/agentuser/workspace/input/` | the operator's handover files, read-only |
@@ -40,7 +39,7 @@ Code changes should be self-contained within a single iteration. The operator re
 
 An approval that produces an artifact edits the file that is its source of truth, in the same unit of work, per `principle-approval-writes-the-artifact` at `$AGENT_HOME/agent/skills/principle-approval-writes-the-artifact/SKILL.md`. With version control the write is cheap to undo; a decision held in the conversation cannot be reverted, resumed or checked. A decision kept only in the conversation is re-derived later, and its re-derivation fails no gate.
 
-Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md) `### Line wrapping`.
+Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See the `docs` convention, `.agents/skills/docs/SKILL.md` `## What a document may contain`.
 
 When writing code, always take into account the following:
 
@@ -67,28 +66,28 @@ Tools you have access to:
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below names the skill that holds it, and this section states no rule of its own.
+General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below links the skill that holds it, and this section states no rule of its own.
 
-- Keep the sentence that changes a decision and delete the one that does not: `communication-principle-cut-what-carries-nothing`.
-- Write so the reader attaches each phrase as it arrives: `communication-principle-attach-as-you-read`.
-- Define a term before the work relies on it: `principle-define-terminology-before-use`.
-- Write for the reader, not the session that produced it: `communication-principle-write-for-the-reader`.
-- Name a value rather than fixing a literal the reader must set: `communication-principle-name-the-value-not-a-literal`.
-- State the primary data, not a value derived from it: `communication-principle-only-derive-what-you-own`.
-- Print one addressing axis per presentation: `communication-principle-one-addressing-axis`.
-- Choose the word that carries the most distinction and loses none: `communication-principle-maximize-conceptual-leverage`.
-- Give every word one meaning and every thing one word: `communication-principle-align-the-mental-model`.
-- Carry one line of reasoning through the document: `communication-principle-single-train-of-thought`.
+- Keep the sentence that changes a decision and delete the one that does not: [`communication-principle-cut-what-carries-nothing`](./skills/communication-principle-cut-what-carries-nothing/SKILL.md).
+- Write so the reader attaches each phrase as it arrives: [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md).
+- Define a term before the work relies on it: [`principle-define-terminology-before-use`](./skills/principle-define-terminology-before-use/SKILL.md).
+- Write for the reader, not the session that produced it: [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md).
+- Name a value rather than fixing a literal the reader must set: [`communication-principle-name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md).
+- State the primary data, not a value derived from it: [`communication-principle-only-derive-what-you-own`](./skills/communication-principle-only-derive-what-you-own/SKILL.md).
+- Print one addressing axis per presentation: [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md).
+- Choose the word that carries the most distinction and loses none: [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md).
+- Give every word one meaning and every thing one word: [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md).
+- Carry one line of reasoning through the document: [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md).
 
-Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
+The judgements that fire on a whole artifact rather than a sentence: [`communication-principle-show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md) when an instruction or a claim of compliance is written, [`communication-principle-dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md) when a record describes work no task holds, [`communication-principle-keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md) when a caveat or a definition moves, and [`communication-principle-hand-off-by-naming-the-boundary`](./skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md) at a prompt's last step.
 
-The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-keep-a-subject-near` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
-
-The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: `documentation_policy.md` `### Line wrapping` and `### Character set`, which the `doc-wrap` and `doc-ascii` lint rules catch.
+The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: [`communication-principle-link-what-the-reader-can-open`](./skills/communication-principle-link-what-the-reader-can-open/SKILL.md). Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: the `docs` convention's `## What a document may contain`, which the `doc-wrap` and `doc-ascii` lint rules catch.
 
 Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
 
 Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
+
+Read a finished instruction as a literal reader: if the words allow the reader to infer a task, an action or a conclusion the writer did not intend, one of the judgements above failed, and the sentence is rephrased with that one.
 
 ## Fresh Subagent Invocation
 
@@ -144,17 +143,21 @@ A run can still be truncated by its own timeout. The signature is a short log wi
 
 ## Running Review Subagents
 
-A review dispatch has one mechanism: the `pi-reviewer-dispatch` skill at `$AGENT_HOME/agent/skills/pi-reviewer-dispatch/SKILL.md`. It states the reviewer contract and runs the pinned pair. Read it before dispatching a review. This section carries only what that skill cannot.
+A review dispatch has one mechanism: the runner at `$AGENT_HOME/agent/bin/review-dispatch.sh`, provisioned beside this file. It runs the two seats in the foreground of one call and prints one line per seat.
+
+**A reviewer is a delegated read-only run.** It edits nothing, commits nothing and runs no suite, so the caller applies what the report names. It takes one brief, passed verbatim, and keeps its own session file and log. Its report comes back in the brief's shape.
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
 **Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). Every role names `deepseek/deepseek-flash`; there is one model, so a second seat is a second run of the same model, not a second family.
 
 1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1.
-2. Pass it verbatim, in full: `--provider <provider> --model <provider>/<model> --thinking <level>`.
-3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u` prints the pair from step 1, once.
+2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <pair> <level>`. The runner passes the id in full. It refuses a malformed pair, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.
+3. Read its lines, one per seat: the model read back from the session file against the pair from step 1, and the log path. `model=unverified` means the session file named none.
 4. Record the role, the pair, and the level beside the seat in the brief.
 
 **When a step fails, stop and report.** Step 1 exits 1 for a missing file, a role with no line, and a line naming no model, and it prints which on stderr. `No models match pattern` means the id was wrong; do not retry with a shortened id. A step 3 output that differs from step 1 voids the run. In every case, dispatch nothing further, choose no model by hand, and report the role and the message.
 
 **The full id.** Pass the model id in full, provider prefix included: `--model` matches as a substring over the provider's list and takes the last id that contains it, so a short name can run a different model than the one intended. A `No models match pattern` message means pi fell back to the startup default, and a partial match is silent, so verify the effective model from the session file either way: give the run an explicit session path, then read the model with `grep -o '"model":"[^"]*"' <session file> | sort -u`.
+
+**A worker fan-out is not this.** A dispatch that writes, holds a worktree and returns work is the harness's `taskq_*` shape, and it is not a review.

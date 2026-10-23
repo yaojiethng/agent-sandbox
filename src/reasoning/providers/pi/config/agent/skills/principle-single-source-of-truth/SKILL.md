@@ -1,7 +1,6 @@
 ---
 name: principle-single-source-of-truth
 description: "A norm has one source of truth, so you do not repeat yourself. Apply when writing, moving or copying a rule, a judgement or a definition across documents. A second copy is a defect unless it points at that source."
-disable-model-invocation: true
 metadata:
   claim: source
 ---

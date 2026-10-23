@@ -1,6 +1,6 @@
 ---
 name: doc-maintenance
-description: "Checks the documentation set against documentation_policy.md and reports what the tree contradicts: a claim the implementation no longer holds, a link whose target does not say what the citing line claims, and a fact two documents state differently. Use at a loop or milestone close, or when the operator asks for a documentation pass. Writes no document."
+description: "Checks the documentation set against the `docs` convention and reports what the tree contradicts: a claim the implementation no longer holds, a link whose target does not say what the citing line claims, and a fact two documents state differently. Use at a loop or milestone close, or when the operator asks for a documentation pass. Writes no document."
 ---
 
 # doc-maintenance
@@ -19,7 +19,7 @@ Checks the documentation set and reports the claims the tree contradicts. The me
 
 The method is the point. A term-driven sweep finds only the staleness whose wording it already knows: it cannot find a claim about a term nobody listed as stale, and it cannot see two documents that contradict each other. A claim checked against the implementation finds both classes, at the cost of a read per claim.
 
-The rules live in [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md), and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The policy owns the rules; this runbook is a copy of the checks that apply them, and the policy wins a disagreement.
+The rules live in the `docs` convention, `.agents/skills/docs/SKILL.md`, and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here.
 
 This pass writes no document and applies no correction. It reports.
 
@@ -28,7 +28,7 @@ This pass writes no document and applies no correction. It reports.
 | Trigger | Scope |
 |---|---|
 | A loop close, per `workflow/coding-agent/prompts/iter.md` | the documents the iteration changed, plus every document that cites them |
-| A milestone close, per `workflow/coding-agent/prompts/milestone-close.md` | the shipped set: `docs/reference/` and `docs/policies/` |
+| A milestone close, per `workflow/coding-agent/prompts/milestone-close.md` | the shipped set: `docs/reference/` |
 | The operator's request | the set the operator names |
 
 The pass is not an iteration and does not close one. It is a review sweep with its own scope, and it may run inside a session that owns another outcome.
@@ -43,6 +43,14 @@ The pass is not an iteration and does not close one. It is a review sweep with i
 | The heading anchors a link names | `scripts/lint/linking.mjs` | whether the section carries the fact |
 
 The split is the standing rule for a check: a decidable check belongs in a gate, where it fails the build, and a check that needs a reading belongs here. Do not report what a gate already catches; run the gate first.
+
+### The lint rule set
+
+The repository holds zero Markdown findings, and a finding is a defect fixed in the same change rather than a baseline entry. The config is `.markdownlint-cli2.mjs`: it disables `MD013` because one paragraph per physical line forbids breaking at a column limit, and `MD060` because the repository writes compact tables.
+
+A rule the config names but never enables is the failure this section exists to catch. `config.default` is `false`, so a rule armed nowhere reports nothing, and the gate prints a clean verdict over an empty rule set. Naming a rule in `.agents/skills/docs/SKILL.md` and enabling it in the config are one obligation, and a rule the config registers but does not enable is a defect.
+
+A per-file disable is not a fix. Silence a finding by fixing the text or changing the config.
 
 ## Procedure
 
@@ -99,7 +107,7 @@ Completion criterion: each fact stated in more than one document is stated ident
 
 ### Step 6 - The diagnostic register
 
-Run the register below over the set. It names what has gone wrong, not what to write instead: the prescriptive form of each is in [`documentation_policy.md`](/opt/sandbox/docs/policies/documentation_policy.md).
+Run the register below over the set. It names what has gone wrong, not what to write instead: the prescriptive form of each is in the `docs` convention.
 
 Completion criterion: every register item is either applied or skipped with a reason.
 

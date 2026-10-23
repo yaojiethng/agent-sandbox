@@ -6,7 +6,7 @@
 # and diff_export default behavior.
 #
 # Promoted from tests/knowledge/knowledge_diff_rename.sh  --  the seams it
-# probes are deterministic (git only), so per testing_policy.md it belongs
+# probes are deterministic (git only), so per the `testing` skill it belongs
 # in the discovered suite, not in knowledge/.
 
 set -uo pipefail

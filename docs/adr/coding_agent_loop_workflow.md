@@ -32,11 +32,11 @@
 
 ## 2026-09-28 -- Loops are workflows; policy carries the rules
 
-**Decision:** The coding agent runs the autonomous agent loop as invocable workflow prompts under `workflow/coding-agent/prompts/`. Workflow prompts own the steps and the state transitions of the loop. Policy files under `docs/policies/` own the invariants those transitions must not break. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The workflow prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
+**Decision:** The coding agent runs the autonomous agent loop as invocable workflow prompts under `workflow/coding-agent/prompts/`. Workflow prompts own the steps and the state transitions of the loop. Policy files under `docs/policies/` own the invariants those transitions must not break -- since 2026-10-22 that owner is the iteration protocol, `docs/reference/iteration_protocol.md`. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The workflow prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
 
-[CORRECTION -- 2026-10-03: the diagram's home is the concept document, not this ADR. The state diagram is drawn in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md#the-loop), and this section states the transition rules behind it. The decision above otherwise stands.]
+[CORRECTION -- 2026-10-03: the diagram's home is the concept document, not this ADR. The state diagram is drawn in [`workflow_statechart.md`](../reference/workflow_statechart.md), and this section states the transition rules behind it. The decision above otherwise stands.]
 
-**Rationale:** The loop workflows previously lived as step-by-step procedure interleaved with policy rules in `iteration_policy.md` and `milestone_policy.md`, which made the governance surface large and forced every change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a workflow's steps reviewable in one prompt, and lets the workflows evolve without a policy change. The separation itself is already ruled by [`policy_declarative_framing.md`](policy_declarative_framing.md): policy states rules declaratively and execution guidance does not belong in policy. This ADR records the loop-specific consequence of that rule and names the loop set.
+**Rationale:** The loop workflows previously lived as step-by-step procedure interleaved with policy rules in `iteration_protocol.md` and `milestone_policy.md`, which made the governance surface large and forced every change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a workflow's steps reviewable in one prompt, and lets the workflows evolve without a policy change. The separation itself is already ruled by `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`, retired with the policy form: rules are stated declaratively and execution guidance does not belong in the rule's own document. This ADR records the loop-specific consequence of that rule and names the loop set.
 
 **Rejected alternatives:**
 
@@ -69,20 +69,21 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 | `/milestone-close` | closes a milestone or sub-milestone | `workflow/coding-agent/prompts/milestone-close.md` |
 | `/plan` | milestone planning | `workflow/coding-agent/prompts/plan.md` |
 | `/sidequest` | operator-directed interruption of an open iteration | `workflow/coding-agent/prompts/sidequest.md` |
+| `/commit` | the shared commit runbook: the in-session checkpoint and the unit's delivery commit | `workflow/coding-agent/prompts/commit.md` |
 
-`/wrapup` is a shared close runbook, not a workflow prompt: the active-operator prompts (`/iter`, `/plan`, `/document`) invoke its Part B close rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
+`/wrapup` and `/commit` are shared runbooks, not workflow prompts. The active-operator prompts (`/iter`, `/plan`, `/document`) invoke `/wrapup`'s close after their release point rather than opening it, so the close steps live once in `workflow/coding-agent/prompts/wrapup.md` instead of once per prompt; `/wrapup` hands the commit to `workflow/coding-agent/prompts/commit.md`, which holds the checkpoint and the commit rules once for every caller. `/sidequest` and `/merge` reach `/commit` directly. `milestone-start`, `sequential-work` and `parallel-work` do not invoke either -- the milestone-record close is `/milestone-close`, and the work runs substitute an autonomous review for the operator gate.
 
 ## Transitions
 
-One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The state diagram is the model, drawn once in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md#the-loop); this section states the rules behind it.
+One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The state diagram is the model, drawn once in [`workflow_statechart.md`](../reference/workflow_statechart.md); this section states the rules behind it.
 
 Three edge types: **workflow-implemented** (a prompt performs the transition), **operator decision** (the operator releases the gate), and **workflow-assisted operator decision** (a workflow or skill narrows the choice, and the operator picks). `/backlog-triage` and `/milestone-start` are labels of the third type, not types of their own.
 
-Three gate states, each an arrow's source rather than a resting place for closing work: `it:scope-gate`, `it:acceptance-gate`, `ms:close-gate`. Closing is the work that follows the acceptance decision, not a state.
+Three gate states, each an arrow's source rather than a resting place for closing work: `it_scope_gate`, `it_acceptance_gate`, `ms_close_gate`. Closing is the work that follows the acceptance decision, not a state.
 
 One milestone is modelled, the active one. Its successors are handwaved behind `ms:successor?`, so a per-milestone state set does not appear, and several milestones may be shaped at once without the diagram growing. The autonomous-run prompts -- `/auto`, `/goal`, `/sequential-work`, `/parallel-work` -- are out of the diagram until the milestone that lands them; the two built prompts among them live in the drafts tree, and `/backlog-triage` drives no transition of its own.
 
-`/iter` runs one iteration and stops at the acceptance gate; `/wrapup` takes it from there, lands the commit and closes the handover. The next iteration opens only after the operator picks a task, and when the milestone has no open row left the operator calls `/milestone-close` instead.
+`/iter` runs one iteration and stops at the acceptance gate; `/wrapup` closes the handover and `/commit` lands the commit. The next iteration opens only after the operator picks a task, and when the milestone has no open row left the operator calls `/milestone-close` instead.
 
 ## Concept offload map
 
@@ -92,5 +93,5 @@ The explanatory loop content moves to `docs/reference/autonomous_agent_loop.md`:
 
 - Design record: [`20260928-design-settled-loop_workflows_migration.md`](../../devlog/discussions/archive/20260928-design-settled-loop_workflows_migration.md)
 - Planning handover: `20260928-04`
-- Separation rule: [`policy_declarative_framing.md`](policy_declarative_framing.md)
+- Separation rule: [`norm_kinds.md`](norm_kinds.md), and the retired framing at `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`
 - Framework loop workflow: `docs/reference/autonomous_agent_loop.md`

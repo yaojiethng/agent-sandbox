@@ -13,6 +13,7 @@
 #   empty      --  a mount point nothing mounts is named
 #   shipped    --  a folder stated repository-only that the manifest reaches is named
 #   missing    --  a delivered folder the tree lacks is named
+#   setup      --  a project-setup corpus no route states is named, and is clean when stated
 
 set -uo pipefail
 
@@ -41,8 +42,9 @@ write_manifest() {
 # write_taxonomy MOUNT...  --  a `## Reach` section naming the mounts and the
 # folder in FOLDER, followed by a second section so the scanner must stop at it.
 write_taxonomy() {
-  local mounts=""
+  local mounts="" setup_row=""
   for mount in "$@"; do mounts+="\`$mount\`, "; done
+  [[ -n "${SETUP_FOLDER:-}" ]] && setup_row="| the project's own setup | \`${SETUP_FOLDER}\` | every session |"
   mkdir -p "$(dirname "$TAXONOMY")"
   cat > "$TAXONOMY" <<EOF
 # Fixture taxonomy
@@ -53,7 +55,7 @@ write_taxonomy() {
 |---|---|---|
 | the image, as a module payload | the roots the manifest mounts at ${mounts%, } | every session |
 | nothing | the repository-only folders, \`${FOLDER}\` | a session with the tree |
-
+${setup_row}
 ## Record lifecycle view
 
 \`/opt/not/a/root/\` is outside the section, so the scanner never reads it.
@@ -129,11 +131,37 @@ test_section_boundary() {
   assert_not_contains "$RUN_OUT" "/opt/not/a/root/" "the later section's path is ignored"
 }
 
+test_setup_route_is_named() {
+  local setup="workflow/coding-agent/skills/initialize/assets/conventions/"
+  mkdir -p "$FIXTURE_ROOT_DIR/src/libs" "$FIXTURE_ROOT_DIR/devlog" "$FIXTURE_ROOT_DIR/$setup"
+  FOLDER="devlog/"
+  write_manifest "/opt/sandbox/lib/"
+  write_taxonomy "/opt/sandbox/"
+  assert_run 1 "$GATE --manifest $MANIFEST --taxonomy $TAXONOMY --root $FIXTURE_ROOT_DIR" \
+    "a project-setup corpus no route states fails the gate"
+  assert_contains "$RUN_OUT" "$setup" "the finding names the project-setup folder"
+  rm -rf "$FIXTURE_ROOT_DIR/workflow"
+}
+
+test_stated_setup_route_is_clean() {
+  mkdir -p "$FIXTURE_ROOT_DIR/src/libs" "$FIXTURE_ROOT_DIR/devlog" \
+    "$FIXTURE_ROOT_DIR/workflow/coding-agent/skills/initialize/assets/conventions"
+  FOLDER="devlog/"
+  SETUP_FOLDER="workflow/coding-agent/skills/initialize/assets/conventions/"
+  write_manifest "/opt/sandbox/lib/"
+  write_taxonomy "/opt/sandbox/"
+  run_gate
+  unset SETUP_FOLDER
+  rm -rf "$FIXTURE_ROOT_DIR/workflow"
+}
+
 run_test test_clean
 run_test test_unmounted_destination_is_named
 run_test test_empty_mount_is_named
 run_test test_shipped_repository_folder_is_named
 run_test test_missing_delivered_folder_is_named
+run_test test_setup_route_is_named
+run_test test_stated_setup_route_is_clean
 run_test test_section_boundary
 
 test_done "reach gate"

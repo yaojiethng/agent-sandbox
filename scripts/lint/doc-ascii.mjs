@@ -1,11 +1,11 @@
 // markdownlint custom rule: non-ASCII prose ban.
-// Enforces docs/policies/documentation_policy.md `### Character set`:
+// Enforces `.agents/skills/docs/SKILL.md` `## What a document may contain`:
 // documents use plain ASCII punctuation. Flags em-dash (U+2014),
 // en-dash (U+2013), section sign (U+00A7), pilcrow (U+00B6), and any
 // other non-ASCII code point.
 //
-// Box-drawing characters (U+2500-U+257F, the documentation_policy
-// exception for ASCII-art diagrams) are excluded because markdownlint
+// Box-drawing characters (U+2500-U+257F, the docs skill's exception for
+// ASCII-art diagrams) are excluded because markdownlint
 // never emits text tokens for fenced code blocks; the tokenizer already
 // leaves diagram content untouched. No explicit exception is needed.
 //

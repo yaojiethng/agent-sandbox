@@ -373,8 +373,8 @@ assert_run() {
 # source_function_from FILE NAME
 #   Extracts NAME() from FILE at run time and evals it into the current
 #   shell. Fails with a named error when the pattern does not match --
-#   the Anti-Pattern 7 prerequisite gate, built in
-#   (testing-conventions.md, Anti-Pattern 7: Test-the-Copy).
+#   the test-the-copy prerequisite gate, built in
+#   (.agents/skills/testing/patterns/assertions.md, the test-the-copy pattern).
 source_function_from() {
   local FILE="$1" NAME="$2" SRC
   SRC="$(sed -n "/^${NAME}()/,/^}/p" "$FILE")"

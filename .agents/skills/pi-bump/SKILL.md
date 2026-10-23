@@ -103,12 +103,22 @@ Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for 
 ### 6. Verify
 
 - [ ] `node scripts/lint/pi-extension-compat.mjs --target <NEW>` reports clean
-- [ ] `grep -rn "<NEW>"` hits `base.dockerfile` and `settings.json`
-- [ ] Every version literal in those two files equals `<NEW>`. Read them. A grep with a hardcoded range misses the stale pin that is actually there.
+- [ ] **The version assertion prints a match.** Run it from the repo root. The bump is not complete until it does.
 - [ ] `settings.json` is valid JSON (`node -e "require('./... settings.json')"`)
 - [ ] `bash scripts/lint.sh` is clean
 - [ ] Run `bash tests/knowledge/knowledge_pi_config_cycle.sh`. Its version fixtures are intentional and decoupled from the installed version.
+
 - [ ] The assumption table rows touched by step 2 are updated, or marked unverified with the reason
+
+**The version assertion.** It reads whatever version each file holds rather than matching a literal, so a bump that moved one side and not the other fails here instead of surviving a grep for the new number.
+
+```bash
+pin=$(sed -n 's/.*pi-coding-agent@\([0-9][^ "]*\).*/\1/p' src/reasoning/providers/pi/base.dockerfile)
+rec=$(node -p 'JSON.parse(require("fs").readFileSync("src/reasoning/providers/pi/config/agent/settings.json","utf8")).lastChangelogVersion')
+[ "$pin" = "$rec" ] && echo "match: $pin" || { echo "mismatch: pin=$pin settings=$rec"; exit 1; }
+```
+
+`lastChangelogVersion` is pi's own note of which changelog the reader has seen, not a copy of the pin, and pi rewrites it at runtime. Both values move only during a bump, which is why the check sits in this runbook rather than in a gate: the only event that can separate them runs here.
 
 ### 7. Commit
 
