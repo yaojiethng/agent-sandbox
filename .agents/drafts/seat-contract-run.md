@@ -134,6 +134,6 @@ The `_REVIEWER` line carries three candidates from one family, so the reviewer's
 ## Records this depends on
 
 - [`single_source_model_recommendations.md`](../../docs/adr/single_source_model_recommendations.md), which owns the role file and its requirements.
-- [`dispatch.sh`](../../src/libs/dispatch.sh), the seam the resolver replaces.
+- [`dispatch/`](../../src/libs/dispatch/), the library the resolver replaced the shell seam with.
 - [`review-dispatch.sh`](../../src/reasoning/providers/pi/config/agent/bin/review-dispatch.sh), the one multi-seat dispatch.
 - [`close-the-model-bypass-run.md`](close-the-model-bypass-run.md), which states the incident class this contract removes.

@@ -71,3 +71,202 @@ A session's or image's divergence from the current project or build content, in 
 - Image staleness detection is a superseded principle: the settled direction retires list-time staleness in favour of recorded version identity -- see `docs/adr/drift_state_coherence.md` and `docs/adr/harness_versioning.md`. Until that implementation lands, the behaviour above is current.
 
 **Last updated:** 2026-08-21
+
+## role
+
+The tag a brief is dispatched under: `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR_CODE`, `_ADVISOR_DOCS`, `_ORCHESTRATOR`. A brief names its role, and the role names what runs it.
+
+### Identity
+
+- These five tags; no other tag is dispatched. The advisor is two tags because its two review shapes ran on different models, which a conditional inside one role line could not express, so the condition became the role.
+- Recorded as the tag that prefixes a line of the role table.
+
+### Scope
+
+A role is scoped to one brief and is resolved before a worker starts. A request names a role and the number of distinct models it needs: one for a single-seat brief, two for a two-seat review. The role resolves that many distinct assignments, taken from its preference list in order.
+
+### Relationships
+
+- Resolved from the [role table](#role-table) into a [role line](#role-line).
+- Occupied by one or more seats. A seat is one occupant of a role in one run; it is not a synonym for the role, and it does not select its own assignment.
+- Heterogeneity is a request for more than one distinct model from the same list. It is not a second list and not a second role.
+
+**Last updated:** 2026-10-22
+
+## role table
+
+The one file that names a role's assignments: `.agents/model-recommendations.md`, committed to the repository.
+
+### Identity
+
+- Path: `.agents/model-recommendations.md`.
+- A caller that must read another table names it in `DISPATCH_REC_FILE`.
+- A file at `$AGENT_HOME/model-recommendations.md` is an installed copy of the same content, not a role table.
+
+### Scope
+
+One line per role. Each line holds a preference list: distinct assignments in preference order, separated by `;`, the first being the preferred one. A request that needs more than one distinct model takes them from the head of the list in that order. The table's own `Format:` line states that grammar, and it is the only place the grammar is stated.
+
+### Relationships
+
+- Read by the dispatch library to resolve a [role](#role).
+- An edit changes routing with no code change, and a reordering is also an edit, because the order is the preference.
+- Where the installed copy and the committed copy disagree, the committed copy is the table and the installed copy is stale.
+
+**Last updated:** 2026-10-22
+
+## role line
+
+One line of the role table: a role tag, a colon, and that role's preference list.
+
+### Identity
+
+- `_ROLE: <assignment>; <assignment>`; the `;` separator and the written order are both meaningful.
+- The `Format:` line of the role table states the grammar.
+
+### Scope
+
+One line per role. A role with no line is absent, which is a failure rather than a default.
+
+### Relationships
+
+- Holds a preference list of [assignments](#assignment).
+- A single-seat request takes the first entry. A request for k seats takes the first k entries, so seat n takes entry n.
+- A seat whose attempt fails with a retryable outcome advances to the next entry that no other seat of the same request holds.
+- Fewer distinct entries than the request needs is a failure naming the shortage; a seat is never filled by duplicating a model.
+- Truncating the list at its first entry discards the fallback rather than selecting the preference.
+
+**Last updated:** 2026-10-22
+
+## assignment
+
+One entry of a role line: a model id, the runtime that serves it, and an optional thinking level.
+
+### Identity
+
+- `<provider>/<model>`, optionally followed by `at <level>`, so a whole entry reads `deepseek/deepseek-flash at high`.
+- Deprecated tokens: **pair**, **triple**, **recommendation**.
+
+### Scope
+
+Enough to launch one worker: the model id selects the model, the provider derives the runtime, and the level is passed when the line carries one.
+
+### Relationships
+
+- One of the preference list on its [role line](#role-line).
+- Distinct within its role line: two entries naming one model are one assignment, and the repeat is ignored.
+- Its [runtime](#runtime) is derived from its [provider](#provider) by one declared map.
+- Its model id begins with a provider prefix. That prefix names a provider and never the runtime.
+
+**Last updated:** 2026-10-22
+
+## provider
+
+The namespace a model id belongs to: the part before the first slash.
+
+### Identity
+
+- `deepseek`, `opencode`, `opencode-go`, `openrouter`.
+- Deprecated as a name for the executable: **provider** in the sense of the `pi` or `opencode` program.
+
+### Scope
+
+A provider is served by one runtime, declared in one map. Nothing in the provider's name decides that map.
+
+### Relationships
+
+- `<provider>/<model>` composes a model id.
+- `opencode` and `opencode-go` are provider prefixes; `opencode run` invokes the runtime of the same name.
+- Served by one [runtime](#runtime), chosen from the map rather than inferred from the prefix.
+
+**Last updated:** 2026-10-22
+
+## runtime
+
+The executable that runs a worker: `pi` or `opencode`.
+
+### Identity
+
+- `pi`, invoked with `-p`.
+- `opencode`, invoked with `run`.
+- Deprecated tokens: **backend**, and **provider** in the launcher sense.
+
+### Scope
+
+Chosen by the dispatch library from the assignment's provider. No caller names a runtime, and no worker chooses one.
+
+### Relationships
+
+- Serves one or more [providers](#provider), per the declared map.
+- Located at the [launch site](#launch-site) that resolves. A runtime that cannot be located is a failure to launch, not an assignment to another runtime.
+- A runtime is not a model provider: `opencode` names both a runtime and a set of provider prefixes, and the two senses never share a field.
+
+**Last updated:** 2026-10-22
+
+## launch site
+
+A place that starts a worker.
+
+### Identity
+
+- The entrypoint: `scripts/dispatch.sh`, which prints the command for a role or runs it with `--run`.
+- The library it calls: `src/libs/dispatch/`, which resolves a role and derives the runtime.
+- A fixed run's script, such as `review-dispatch.sh`, which takes its pair from its caller and resolves nothing.
+
+### Scope
+
+A site may resolve, launch, or both. Only the library resolves a [role](#role). A site that resolves is dispatching. A site that takes its assignments from its caller instead, for a run that must not move when the table changes, is a fixed run and is not dispatching: its input is its own contract, stated in one place.
+
+### Relationships
+
+- A site that launches calls the library for the assignment, so one role resolves one way everywhere.
+- A site that takes its assignments from its caller resolves nothing, so it is not a dispatch site and its behaviour is not evidence of how dispatch routes.
+- A runtime-specific launcher beside the entrypoint is a duplicate of it, not a fourth kind of site.
+- Not a **carrier**, which is a file that states dispatch behaviour in prose.
+- Two sites that disagree about one step are drift, not two mechanisms.
+
+**Last updated:** 2026-10-22
+
+## outcome
+
+What one attempt at an assignment ended in.
+
+### Identity
+
+- `success`, `transient`, `quota`, `capability`, `timeout`.
+- `unknown`, reported with its denominator: per attempt, per request, or per distinct failure text.
+- Deprecated tokens: **result**, **class**.
+
+### The classes
+
+Each class answers whether another attempt can succeed, and when. What must change first is the verdict's scope, a separate field, so the two never share one word.
+
+| Class | Means | The signal | The caller |
+|---|---|---|---|
+| `success` | the worker ran and returned | exit 0 with output | stop, record |
+| `transient` | the same request may succeed on the same model, now | connection reset, 5xx, overloaded, stream cut, an empty body under a 200 | advance; the horizon is seconds |
+| `quota` | a rate or plan limit with a reset horizon | `429`, `Rate limit exceeded`, `FreeUsageLimitError`, `GoUsageLimitError`, `Insufficient account funds` | advance now, and cool the route until the horizon |
+| `capability` | the model cannot do this task, whatever its health | `Model is unavailable`, `Model access is disabled`, `FreeTierError`, `can only be used from within`, `Provider is not configured`, `invalid_request_error`, `Failed to deserialize`, `Invalid API key` | advance only when the repair is another model or another provider; otherwise stop |
+| `timeout` | the attempt exceeded its wall-clock budget without an answer | no exit inside the budget | stop and report; a second attempt costs the same budget |
+| `unknown` | the text matched nothing declared | any refusal text outside the list | stop, and record the text with its denominator |
+
+A caller advances to the next assignment when the class is `transient` or `quota`, or when the class is `capability` and its scope is the model or the provider. It stops for `success`, `timeout`, `unknown`, and for `capability` whose scope is the request or the account.
+
+Three boundaries the classes turn on, each with a case behind it:
+
+- A plan limit is `quota`, not `capability`, because it has a horizon and lifts. Only an expired key or an unknown user is an account fault that never lifts.
+- `invalid_request_error` and `Failed to deserialize` are `capability` with scope `request`, and they stop. Another model receives the same request.
+- `timeout` is ambiguous between a slow provider and a model too slow for the task, and no text separates them. The record carries the duration beside the class, and the class stops by default.
+
+### Scope
+
+One outcome per attempt. It decides whether the next entry of the preference list is tried.
+
+### Relationships
+
+- A retryable outcome, meaning `transient` or `quota`, yields to the next assignment; `capability` yields only when its scope is the model or the provider.
+- The report the library returns on failure is a verdict, not an outcome: it names the role, the attempt, and the provider's own sentence.
+- Recorded against the assignment it belongs to, not against the route alone.
+- The share of `unknown` is the classifier's own health, so it is reported with the denominator it was counted over.
+
+**Last updated:** 2026-10-22

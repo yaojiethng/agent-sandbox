@@ -151,7 +151,7 @@ A review dispatch has one mechanism: the runner at `$AGENT_HOME/agent/bin/review
 
 **Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). Every role names `deepseek/deepseek-flash`; there is one model, so a second seat is a second run of the same model, not a second family.
 
-1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1.
+1. Resolve the pair: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1.
 2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <pair> <level>`. The runner passes the id in full. It refuses a malformed pair, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.
 3. Read its lines, one per seat: the model read back from the session file against the pair from step 1, and the log path. `model=unverified` means the session file named none.
 4. Record the role, the pair, and the level beside the seat in the brief.

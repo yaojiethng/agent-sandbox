@@ -55,6 +55,7 @@ The freeze status is layer-scoped (a whole layer freezes, never an individual fi
 |---|---|
 | Container lifecycle, seed pipeline, mount shape | [execution_model.md](execution_model.md) |
 | Workflow expression model and policy map | [../reference/agent_workflow.md](../reference/agent_workflow.md) |
+| Model routing, dispatch state and failure vocabulary | [dispatch.md](dispatch.md) |
 | Security guarantees and trust boundaries | `docs/development/security.md` |
 | STRIDE threat analysis | `docs/development/threat_model_stride.md` |
 | Standard operating procedures | `docs/development/standard_operating_procedures.md` |

@@ -20,7 +20,7 @@ The transport splits in two, and the split is the design:
 
 - **Config files** (`settings.json`, `auth.json`, `models.json`, `AGENTS.md`) come from the image template at `/opt/workflow/agent/config/` on every start. The image owns them, so a session's write to one lasts for that session.
 - **State** (`prompts/`, `sessions/`, `skills/`) lives on the host under `$SANDBOX_DIR/.<provider>/agent/` and is mounted read-write over the provisioned tree.
-- **Model recommendations** (`model-recommendations.md`) are operator-owned. They live on the host at `$SANDBOX_DIR/.<provider>/model-recommendations.md`, are never committed, and are mounted read-write as a single file. The `setup-model-recommendations` skill populates them.
+- **Model recommendations** (`model-recommendations.md`) are committed with the project at `.agents/model-recommendations.md`, so which model a role names is a reviewable edit. A container's `AGENT_HOME` copy is seeded at onboard and read only when the project copy is absent. The `setup-model-recommendations` skill populates the values.
 
 An agent cannot tell the two apart while it works. The difference appears at the next start: the config files come back from the image, and the mounted subdirectories come back from the host.
 
