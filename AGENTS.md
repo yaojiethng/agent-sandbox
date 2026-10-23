@@ -122,7 +122,7 @@ Agent output is complete and ready for review when it follows the format rules b
 
 Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in the provider layer's `AGENTS.md`, which indexes the `communication-principle-*` corpus.
 
-**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rules: write for the reader, not the session (`communication-principle-write-for-the-reader`); skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
+**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rule: skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 

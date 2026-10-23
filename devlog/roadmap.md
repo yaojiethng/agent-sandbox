@@ -212,6 +212,8 @@ The sub-milestone that settled the contract between prompts, skills and the two 
 - [x] **Every payload ships as a declared surface** -- the workflow module and the harness each ship their prompt and skill roots enabled by one `packages` entry. The pi-specific skills moved under the pi provider, and the hermes and opencode images ship a fresh install. ADR `module_instruction_payload.md`.
 - [x] **The corrections raised along the way landed** -- the doc tree carries readers not kinds, the acceptance-criteria table has one shape, the frontmatter gate is renamed to its scope, the propagation discipline has one home, and the model-selection quirk is recorded where a dispatcher meets it.
 
+- [ ] **The two `AGENTS.md` layers have no test for which one owns a rule** -- M3.3.1's ownership split names the layers and leaves the boundary to each file's prose, so a rule can stand in both layers or in neither and no check notices. The provider layer states a rule as its own in one clause and then names the project documents that own the next one: the paragraph saying it names no path to a project's own convention is followed by the `## What a document may contain` section of the `docs` convention, `.agents/skills/docs/SKILL.md`. A second instance, the project layer restating a provider-layer judgement as a document rule, was corrected by handover `20261022-01`, which raised this row. Ends when a test answers which layer owns a given rule and no rule is stated in both.
+
 **Not in scope:** the policy-form execution (M3.3.2), the skill maintenance pipeline (M3.3.3), and the general half of the outgoing-link gate (T1).
 
 ##### M3.3.2 - Retire the policy form
