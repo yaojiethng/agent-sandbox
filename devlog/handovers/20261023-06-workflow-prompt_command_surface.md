@@ -69,7 +69,7 @@ None.
 |---|---|
 | [`workflow/coding-agent/prompts/wrapup.md`](../../workflow/coding-agent/prompts/wrapup.md) | 22 references through the pass; a third input row; B9 added and the rest renumbered; the dispatched checks are its own |
 | [`workflow/coding-agent/prompts/backlog-triage.md`](../../workflow/coding-agent/prompts/backlog-triage.md) | 16 references through the pass; the no-write claim from four statements to two; three forecasts cut |
-| [`devlog/discussions/20261023-design-prompt_command_surface.md`](../discussions/20261023-design-prompt_command_surface.md) | the method, five classes, nine decisions, three rejections and the 38-row census |
+| [`devlog/discussions/20261023-design-settled-prompt_command_surface.md`](../discussions/20261023-design-settled-prompt_command_surface.md) | the method, five classes, nine decisions, three rejections and the 38-row census |
 | [`docs/reference/workflow_statechart.md`](../../docs/reference/workflow_statechart.md) | `chk_close` declared, three edges in, two out; the `/wrapup` row now names the two skills it calls; the path check restated to what holds, and story coverage named as a gap |
 | [`docs/reference/iteration_protocol.md`](../../docs/reference/iteration_protocol.md) | the close invariant **The close's own writes are checked** |
 | [`docs/reference/autonomous_agent_loop.md`](../../docs/reference/autonomous_agent_loop.md) | closing now states that the close reruns both checks over the rows it wrote |

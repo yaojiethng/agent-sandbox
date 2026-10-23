@@ -77,7 +77,7 @@ Both seats classified the nine artifacts from the numbers alone, without the ver
 - **The chart's tables are authored, and the derivation is one column wide.** With 17 rows against 17 files the row set is a directory listing, but the fires-from and leaves-in cells compress multi-hop routing that no file holds. The same shape explains `## States`: its id column restates the diagram in the same file, and its gloss column is design prose.
 - **The churn metric measures the file, not the artifact.** It is shape-blind (its upkeep regex fires on any changed line beginning with a table pipe or a brace), rename-sensitive, and it ranks its own false positive first. It is reported as a ranking of where to look; the classification above is the evidence.
 
-One seat also found that `settings.json` carries the image's version pin as a literal, so one version lives in two records. Both values move only during a bump, so the check belongs in the bump runbook and not in a CI gate; `20261023-08` put it there, and the reviewer's finding stands as the reason the runbook now asserts equality rather than grepping for a number.
+One seat also found that `settings.json` carries the image's version pin as a literal, so one version lives in two records. Both values move only during a bump, so the check belongs in the bump runbook and not in a CI gate; `20261023-09` put it there, and the reviewer's finding stands as the reason the runbook now asserts equality rather than grepping for a number.
 
 ## Consequences
 

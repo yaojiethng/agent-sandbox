@@ -68,7 +68,7 @@ Option 1. One gate, `scripts/check_prompt_commands.sh`, in `scripts/lint.sh`.
 
 ## Consequences
 
-The derived-artifact census (design record `20261023-design-derived_artifacts.md`) parks this design at `draft` and adds a second subject: the chart's `## Commands` table is a 17-row catalog that asserts equality with the prompt directory and no gate regenerates it. The same query answers both, so the row is worked as one unit when it is worked.
+The derived-artifact census (design record `20261023-design-settled-derived_artifacts.md`) parks this design at `draft` and adds a second subject: the chart's `## Commands` table is a 17-row catalog that asserts equality with the prompt directory and no gate regenerates it. The same query answers both, so the row is worked as one unit when it is worked.
 
 The census also found `/auto` carried by two artifacts -- this ADR's M4 reservation and `.agents/prompts/auto.md` -- so a token resolving to a file is not evidence that it resolves to the right one.
 

@@ -27,9 +27,9 @@ Out of scope: the second equality case the census raised, the chart's `## Comman
 | A2 | The assertion fails on a mismatch and names both values | run with the pin read as `1.4.0`: prints `mismatch: pin=1.4.0 settings=1.3.0`, exit 1 | Agent [x] |
 | A3 | The assertion passes on the tree as it stands | run from the repo root: `match: 1.3.0` | Agent [x] |
 | A4 | The roadmap row is closed and carries the ruling | `grep -n "version pin as a literal" devlog/roadmap.md` reports the closed row, naming `providers/pi/base.dockerfile` and `pi-bump` step 6 | Agent [x] |
-| A5 | The census record stops claiming the field has no gate | the `settings.json` classification cell reads as a copy asserted by the runbook that moves it, and the reviewer finding's sentence names `20261023-08` | Agent [x] |
+| A5 | The census record stops claiming the field has no gate | the `settings.json` classification cell reads as a copy asserted by the runbook that moves it, and the reviewer finding's sentence names `20261023-09` | Agent [x] |
 | A6 | Every decision this iteration recorded is realized in the files | D1 the ruling and D2 the replacement are both readable in the files A1 to A5 verify | Agent [x] |
-| A7 | The record chain carries no reference to the deleted census script | `grep -n "The census query" devlog/discussions/20261023-design-derived_artifacts.md devlog/handovers/20261023-07-*.md` reports 0 | Agent [x] |
+| A7 | The record chain carries no reference to the deleted census script | `grep -n "The census query" devlog/discussions/20261023-design-settled-derived_artifacts.md devlog/handovers/20261023-07-*.md` reports 0 | Agent [x] |
 
 ## Decisions
 
@@ -55,5 +55,5 @@ None.
 |---|---|
 | [`.agents/skills/pi-bump/SKILL.md`](../../.agents/skills/pi-bump/SKILL.md) | step 6's `<NEW>` grep and its read-them line become one assertion that prints a match or names both values |
 | [`devlog/roadmap.md`](../roadmap.md) | the version-literal row closes with the ruling, and its dockerfile path corrected |
-| [`devlog/discussions/20261023-design-derived_artifacts.md`](../discussions/20261023-design-derived_artifacts.md) | the settings cell reads as a copy asserted by the runbook that moves it; the reviewer finding's consequence names the unit |
+| [`devlog/discussions/20261023-design-settled-derived_artifacts.md`](../discussions/20261023-design-settled-derived_artifacts.md) | the settings cell reads as a copy asserted by the runbook that moves it; the reviewer finding's consequence names the unit |
 | [`devlog/handovers/20261023-07-workflow-derived_artifacts_census.md`](20261023-07-workflow-derived_artifacts_census.md) | A1 stops citing the dropped section |
