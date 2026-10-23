@@ -2,7 +2,7 @@
  * The dispatch walk: which route of a chain serves this request.
  *
  * A pure function over the chain, the ledger's eligibility answer and the
- * request's previous physical pair. It holds no state of its own, so every
+ * request's previous provider and model. It holds no state of its own, so every
  * branch is a unit-test case without a pi process.
  *
  * Three tiers, in order (README.md, "The dispatch walk"):
@@ -30,7 +30,7 @@ export interface RouteChoice {
 	readonly tier: ChoiceTier;
 }
 
-/** A previous physical pair, as pi reports it on the route request. */
+/** A previous provider and model, as pi reports them on the route request. */
 export interface RouteRef {
 	readonly provider: string;
 	readonly model: string;
@@ -42,7 +42,7 @@ export interface WalkInput {
 	readonly resolvable: (route: Route) => boolean;
 	/** The eligibility guard's answer for one route. */
 	readonly eligible: (route: Route) => boolean;
-	/** The last successful physical pair, when the transcript has one. */
+	/** The last successful provider and model, when the transcript has one. */
 	readonly previous?: RouteRef;
 }
 

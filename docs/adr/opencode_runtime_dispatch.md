@@ -1,4 +1,4 @@
-# OpenCode as a Dispatch Backend
+# OpenCode as a Dispatch Runtime
 
 **Current:** 2026-10-15
 

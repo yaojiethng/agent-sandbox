@@ -61,7 +61,7 @@ export interface LedgerFile {
 	readonly routes: Record<string, RouteState>;
 }
 
-/** The stable key of a route: provider and model, the pair pi dispatches. */
+/** The stable key of a route: the provider and the model pi dispatches to. */
 export function routeKey(provider: string, model: string): string {
 	return `${provider}/${model}`;
 }
