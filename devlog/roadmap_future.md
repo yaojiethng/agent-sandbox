@@ -208,6 +208,50 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ## Deferred (Unplanned)
 
+### Artifact Inventory and Reader Graph (indefinitely deferred)
+
+**Status:** Indefinitely deferred, raised 2026-10-23 by handover `20261023-07`. Every requirement needed to start it is in this section; a session that picks it up should not have to re-derive the census it builds on.
+
+**Objective:** One query that reports, for every artifact the repository stores, whether it is a copy of something the tree already holds and whether anything would notice if it went stale.
+
+**Scope:** Two halves, one instrument. The first re-derives the inventory of stored artifacts using equality instead of shape, so a table that claims to list a directory is checked against that directory rather than guessed at. The second builds a reader index, so each artifact's classification comes from who consumes it rather than from what the file looks like. The judgement is [`principle-guard-derived-state`](../src/reasoning/providers/pi/config/agent/skills/principle-guard-derived-state/SKILL.md): every artifact is either derived at read time or protected by a mechanical verification gate, decided by reproducibility first, then auditability, then cost. The census that motivates this milestone is [`20261023-design-derived_artifacts.md`](discussions/20261023-design-derived_artifacts.md).
+
+**Depends on:** nothing hard. The cited-command check row under M3.3.2 in [`roadmap.md`](roadmap.md) shares the equality half's first test case and may land before it.
+
+**What the census already established.** Re-gather none of this.
+
+- No code in this repository writes a tracked file. Generators write to the host, to `.compose/`, to a run directory or to `$AGENT_HOME`. So no stored artifact here can be rebuilt, and `regenerate and diff` has nothing to run until something writes one.
+- Nine artifacts carry a classification today, in the design record's table. Five of them are live problems: the chart's `## Commands` table asserts equality with the 17 prompt files and no gate holds it; `settings.json` carries the image's version pin as a literal that `base.dockerfile` also states; `tests/mutations/catalog.jsonl` holds 244 rows nobody can regenerate, 7 of which no longer match their subject; the chart states its 40 state ids twice; the reach table has one row that stays clean when deleted.
+- The instrument the census used was the wrong shape and is deliberately not preserved: it guessed at equality from a share of resolvable names, it could not see a duplicated literal, and its churn metric ranked an authored config first. Expect to write a new one rather than extend it.
+
+#### The inventory, re-derived
+
+- [ ] **Replace the shape detectors with set equality.** For each stored table or list, compare its first column to the directory or file set it appears to mirror and report exact match, subset or drift. Nature of change: a query run by hand, printing its table, with fixture cases for the five known artifacts.
+- [ ] **Add the duplicate-literal detector.** Values that appear in two or more tracked files, filtered to identifiers, versions and counts; the settings version pin is its known case. Nature of change: the same query, one detector.
+- [ ] **Classify every artifact with the four names of the principle** -- `Authored source`, `Gated copy`, `Derived on read`, `Dead weight` -- and record for each which detector found it and what would catch it going stale.
+- [ ] **Keep the output unstored.** The report is printed and attached to a record as evidence; it is never committed as a table, because a stored inventory is the artifact class the milestone exists to find.
+
+#### The reader graph
+
+- [ ] **Build the index.** For each tracked path, every file that names it, split by kind: code that opens it, a prompt or skill that instructs a reader to it, a gate that scans it, a document that mentions it.
+- [ ] **Add timing.** Whether that reader runs at build, at check, or at run time, since a copy that only a human document reader opens must be stored and gated, while a copy whose readers are programs can be computed by them.
+- [ ] **Answer `Dead weight` mechanically.** A path with no reader at all is the classification that costs the most maintenance and the one no shape detector can reach.
+- [ ] **Answer `Derived on read` mechanically.** A copy whose every reader can see the source is a candidate for deletion from disk.
+- [ ] **Print what the graph cannot do.** It cannot see a copy: two artifacts with their own readers both look healthy while disagreeing, so drift stays with the equality detectors. The report should say so where it prints, not only in this entry.
+
+#### Acceptance criteria
+
+- [ ] The five known artifacts reproduce from the new query: the chart's command table reports drift, the version literal reports duplicate, the mutation catalog reports its stale rows, the loop table reports a clean subset of the protocol's scope, and the reach table reports its unverified row.
+- [ ] Every artifact in the census table keeps its classification, or carries a recorded reason it changed.
+
+#### Not in scope
+
+- The two equality gates that would hold these cases still. They are separate rows in [`roadmap.md`](roadmap.md): the cited-command check, and the version literal against the dockerfile pin.
+- The mutation corpus's future, which is its own row and a feature decision rather than a check.
+- Any stored form of the graph or the inventory, for the reason the inventory's last row states.
+
+---
+
 ### Doc Language Cleanup -- STE-Clean Sweep
 
 **Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.

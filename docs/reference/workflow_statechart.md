@@ -205,7 +205,7 @@ stateDiagram-v2
 
 ## Commands
 
-Every prompt the tree carries is an event here, and the command table is held to `workflow/coding-agent/prompts/` by the check in the next section.
+Every prompt the tree carries is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand.
 
 | Command | Fires from | Leaves the agent in | Dispatches |
 |---|---|---|---|

@@ -1,4 +1,4 @@
-{"schema":1,"kind":"mutation-catalog","last_updated":"2026-09-26","count":244,"origin":"read-through corpus 2026-09-24/25"}
+{"schema":1,"kind":"mutation-catalog","origin":"read-through corpus 2026-09-24/25"}
 {"source":"tests/mutations/bite_apply.sh","subject":"scripts/workflows/apply.sh","name":"A1-required-args-guard","id":1,"old":"if [[ -z \"$PROJECT_DIR\" || -z \"$DIFF_FILE\" ]]; then","new":"if false; then"}
 {"subject":"scripts/workflows/apply.sh","source":"tests/mutations/bite_apply.sh","new":"if false; then","old":"if [[ ! -f \"$DIFF_FILE\" ]]; then","id":2,"name":"A2-diff-not-found-guard"}
 {"source":"tests/mutations/bite_apply.sh","subject":"scripts/workflows/apply.sh","id":3,"new":"if false; then","old":"if [[ \"$_tree_rc\" -eq 2 ]]; then","name":"A3-unreadable-tree-arm"}

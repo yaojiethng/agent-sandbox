@@ -57,7 +57,7 @@ EOF
   printf 'scripts/fake.sh\ttest_fake.sh test_fake2.sh\nscripts/fake2.sh\ttest_fake2.sh\n' > "$root/subjects.map"
 
   cat > "$root/catalog.jsonl" <<EOF
-{"schema":1,"kind":"mutation-catalog","last_updated":"fixture","count":3}
+{"schema":1,"kind":"mutation-catalog"}
 {"id":1,"source":"fixture","name":"proven-row","subject":"scripts/fake.sh","old":"  if [[ \"\${1:-}\" == \"blocked\" ]]; then","new":"  if false; then"}
 {"id":2,"source":"fixture","name":"survived-row","subject":"scripts/fake2.sh","old":"LABEL=\"start\"","new":"LABEL=\"mutated\""}
 {"id":3,"source":"fixture","name":"stale-row","subject":"scripts/fake.sh","old":"text that appears nowhere","new":"irrelevant"}
