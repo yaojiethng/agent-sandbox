@@ -159,7 +159,7 @@ Known dead seats: `opencode/*` and `opencode-go/*` (measured 2026-10-18). The op
 - [`close-the-model-bypass-run.md`](close-the-model-bypass-run.md) -- the neighbouring run; owns the instruction-carrier gate.
 - [`cost-aware-dispatch-run.md`](cost-aware-dispatch-run.md) -- a source of measured facts, not the plan; its own design supersedes parts of it.
 - [`20261015-design-settled-cost_aware_dispatch.md`](../../devlog/discussions/20261015-design-settled-cost_aware_dispatch.md) -- the router boundary and failure taxonomy the document absorbs.
-- [`20261016-design-active-dispatch_ownership.md`](../../devlog/discussions/20261016-design-active-dispatch_ownership.md) -- why dispatch is three layers, and the lean the document must settle.
+- [`20261016-design-settled-dispatch_ownership.md`](../../devlog/discussions/20261016-design-settled-dispatch_ownership.md) -- why dispatch is three layers, and the lean the document must settle.
 - [`coding_agent_project_bindings.md`](../../docs/adr/coding_agent_project_bindings.md) -- the reserved-terminology device this vocabulary follows.
 - [`single_source_model_recommendations.md`](../../docs/adr/single_source_model_recommendations.md) -- R1 to R9, two of which the tree now contradicts.
 - `devlog/roadmap.md` M3.6.3 -- the ten rows whose blind spots the document replaces.

@@ -107,6 +107,8 @@ A worker prints one line for each attempt it spent, so a caller reads every entr
 
 The decision that one table is the source of a role's models, and that a second copy is a defect rather than a convenience, is recorded in the ADR `docs/adr/single_source_model_recommendations.md`.
 
+The decision that a dispatch made from inside pi names a role, that one door resolves it, and that the shape is settled for that problem and re-decided when the problem grows, is recorded in the ADR `docs/adr/pi_subagent_dispatch.md`.
+
 The reserved terms this document uses are defined once in [`terminology.md`](terminology.md), including the terms retired in favour of them.
 
 The mechanism has four parts. `scripts/dispatch.sh` is the entrypoint and holds the loop. `src/libs/dispatch/table.ts` holds the role table's grammar and `launch.ts` beside it the argv shape of each runtime. `src/libs/dispatch_worker.sh` holds the git measurement and the process supervision. The route machine is `src/libs/dispatch/`, and its transition table and its invariants are data that the test suite holds itself to.

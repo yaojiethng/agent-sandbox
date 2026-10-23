@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [A] 2026-10-23  --  A shipped document linked a target the image does not carry
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before writing a pointer in a shipped document, ask whether the target ships. A reference document is read at its image path, so a relative target the repository resolves may not resolve where the text is read; the fix is the target's repository path in a code span, which the `linking` convention's `Name a target the citing text cannot reach` already states.
+```
+
+`docs/reference/dispatch.md` gained a paragraph citing a new ADR as a relative link, `../adr/pi_subagent_dispatch.md`. The linking rule failed it with `link target does not exist in the image`. A reference document ships into the container at `/opt/sandbox/docs/reference/`, so every relative target in it resolves at its image path, and `docs/adr/` does not ship. The sentence above the new one already named an ADR in a code span, one line away from the mistake.
+
+The class is a pointer written from the writer's position rather than the reader's. Both files sit under `docs/`, so the relative path is correct on disk and wrong where the file is read. The rule that settles it is stated in the `linking` convention and enforced by `scripts/lint/linking.mjs`, which reads the shipped set from `src/build/container-interface.json`, so a new surface joins the check with no edit to the rule.
+
+The cost was one gate cycle, in a session that had already run the gate three times and read the convention's own summary earlier. The durable half is the gate and it worked. What the agent carries is the reading rule: the citing text is the wrong place to learn what ships, and the neighbour line that names a target instead of linking it is the pattern to copy.
+
 ## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
 
 ```text
