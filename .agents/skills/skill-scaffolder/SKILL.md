@@ -1,6 +1,6 @@
 ---
 name: skill-scaffolder
-description: Automates the creation of a new agent Skill by generating directories and SKILL.md templates. Use when the user asks to create, scaffold, or clone a skill.
+description: Automates the creation of a new agent Skill by generating directories and SKILL.md templates, and reviews a skill against the bars it was written to. Use when the user asks to create, scaffold, or clone a skill, or to review one for rule loss and length.
 ---
 
 # Skill Scaffolder Workflow
@@ -19,6 +19,7 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 3. **Draft the Frontmatter:** Construct the mandatory YAML frontmatter using the exact template schema below.
 4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill. When the content carries more than one kind, or a code-bearing form, split it per [`patterns/nested-patterns.md`](patterns/nested-patterns.md).
 5. **Write File:** Use file system tools to create the folder and write the final `SKILL.md` file automatically.
+6. **Review the Result:** Dispatch the review in [`runbook/review.md`](runbook/review.md) over the skill you wrote, and fix what it names before reporting the skill as done. The same runbook reviews an existing skill or a prompt that is about to change.
 
 ## Standard SKILL.md Output Template
 
@@ -43,6 +44,7 @@ A skill may carry siblings beside `SKILL.md`. The `SKILL.md` index names each on
 |---|---|
 | [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | the content grows past one body and you must decide what stays inline and what becomes a sibling |
 | [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | the new skill wraps a script or a command with a fixed call shape |
+| [`runbook/review.md`](runbook/review.md) | a skill has just been written, or a skill or prompt is about to change, and it needs the rule-loss and length review |
 
 ## How to Use the Generated Skill
 
