@@ -65,6 +65,8 @@ Propose the skeleton of an ADR or a reference document in chat before writing pr
 
 Write for the reader of the artifact, not for the session that produced it; `communication-principle-write-for-the-reader` is that judgement's only source of truth. A design record carries no question-and-reply pair, every question it lists is still open, and the designs considered and rejected sit in one short section with a reason each, after the final design.
 
+A reference document keeps its code examples current: every code block, variable name, path and function signature matches the implementation as built. A document edited across several sessions collects examples that contradict the system, so an update checks each example against the implementation and corrects the ones that changed.
+
 ## What each document type owes
 
 A concept document stands alone and reads complete: a reader new to the area understands the model and what it guarantees without opening another document, and its outbound links are further reading rather than prerequisites. It links its ADR and does not restate the ADR's record.

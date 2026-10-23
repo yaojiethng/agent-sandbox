@@ -10,7 +10,7 @@ An ADR records the reasoning behind one standing principle. It states the chosen
 ## Judgements
 
 - **Unit of record.** One ADR per standing principle. A local design choice rides under an existing ADR; it spawns a file only when its principle governs more than one local choice, or when no existing ADR covers it. A component may host several independent principles, each its own ADR, because an ADR belongs to a principle rather than to a file or module.
-- **When one begins.** A design settles a principle whose consequences reach beyond the change that introduced it: a contract other components must match to stay compatible, or a rule that stabilizes a convention for future work. Reach, not size. A choice that affects one implementation detail in one file does not spawn an ADR.
+- **When one begins.** A design settles a principle whose consequences reach beyond the change that introduced it: a contract other components must match to stay compatible, or a rule that stabilizes a convention for future work. Reach, not size. A choice that affects one implementation detail in one file does not spawn an ADR. Write it when the principle is committed or being actively resolved: it may precede or follow the implementation, and landing code does not create the obligation. The subjects that call for one are a primitive or model other components must reason about, an area whose invariants a reference document cannot state concisely, and a design document too long or branched to serve as a stable reference.
 - **Change the principle, change the record.** When a local choice outgrows its governing ADR, redesign the ADR. Do not carve out an exception inside it.
 - **The record is current.** An ADR holds the live decision and its history. When the principle changes, edit it in place.
 
@@ -48,7 +48,7 @@ A principle that is fully superseded stops carrying a current entry. Its last en
 
 ## Naming
 
-Name a live ADR for the principle it governs, and keep the name stable so other documents can link to it. The form is `docs/adr/<principle>[-<scope>].md`. Use hyphens as delimiters and underscores as word separators, and put no date or status in the name. The optional `<scope>` suffix specializes a principle for a different scope. The agent recommends the name, and the operator decides it.
+Name a live ADR for the principle it governs, and keep the name stable so other documents can link to it. The form is `docs/adr/<principle>[-<scope>].md`. Use hyphens as delimiters and underscores as word separators, and put no date or status in the name. The optional `<scope>` suffix specializes a principle for a different scope. The agent recommends the name from two or three candidates, and the operator decides it.
 
 ## Archive
 
