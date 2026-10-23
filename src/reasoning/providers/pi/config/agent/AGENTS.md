@@ -149,7 +149,7 @@ A review dispatch has one mechanism: the runner at `$AGENT_HOME/agent/bin/review
 
 **Attribution.** State the provider, model, and thinking level in the review prompt: the subagent cannot see its invocation flags, and the report needs the attribution. Record the role, or the words `startup default`, beside the pair. Recommend model choices in the role table, never here.
 
-**Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). Every role names `deepseek/deepseek-flash`; there is one model, so a second seat is a second run of the same model, not a second family.
+**Which model.** Every dispatch takes its pair and level from the role line in `model-recommendations.md` (for example `_REVIEWER`). The line orders its assignments, and the resolver walks them. The reviewer takes the pair its caller resolved and the runner carries no model; both seats run that pair, so a second seat is a repeat rather than an independent family, and agreement between the two reports is the signal.
 
 1. Resolve the pair: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1.
 2. Hand it to the runner with the brief and the scratch directory, and wait for it: `bash "$AGENT_HOME/agent/bin/review-dispatch.sh" <brief-file> <scratch-dir> <pair> <level>`. The runner passes the id in full. It refuses a malformed pair, an empty brief, an unwritable scratch directory and a dirty working tree, and fails a seat that logs nothing or binds another model.

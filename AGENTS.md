@@ -77,7 +77,7 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level. Every role names `deepseek/deepseek-flash`, the only model we dispatch.
+A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, in the order the role tries them.
 
 The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR_CODE`, `_ADVISOR_DOCS`, and `_ORCHESTRATOR`. An advisor takes the role of the artifact it reviews: source code, tests and configuration take `_ADVISOR_CODE`, and prose takes `_ADVISOR_DOCS`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
 

@@ -1,13 +1,15 @@
 ---
 name: setup-model-recommendations
-description: Populate the project's role-to-model recommendations at /home/agentuser/sandbox/.agents/model-recommendations.md. Detects the models this pi session can dispatch and writes one line per role. Use for /setup-model-recommendations, "initialize model recommendations", "set the role models", or when a dispatch reports an uninitialized role.
+description: Read and write the project's role-to-model recommendations at /home/agentuser/sandbox/.agents/model-recommendations.md, exactly as the operator states them. Writes only when the operator asks. Never detects, probes, or invokes a model. Use for /setup-model-recommendations, "initialize model recommendations", "set the role models", or when a dispatch reports an uninitialized role.
 ---
 
 # Setup model recommendations
 
 Write `model-recommendations.md`, the single source of truth for the role-to-model recommendations this project dispatches by.
 
-The file is committed at `.agents/model-recommendations.md`. The operator sets the values; the agent writes it only when the operator asks, and pi never rewrites it. A role line with no value is uninitialized and resolves to the pi startup default in `$AGENT_HOME/agent/settings.json`.
+The operator owns the values. The agent is an interface to them: it reads the file and writes what the operator says, and nothing else. The file is committed at `.agents/model-recommendations.md`, so an edit there is a reviewable change and pi never rewrites it on its own.
+
+Nothing here validates a model. A model id is a fact about the operator's accounts, and this skill has no way to check one that does not spend a request or read a catalogue that drifts. An id that does not exist is discovered at dispatch, where the failure is attributed to the route, and the run reports it.
 
 ## Roles
 
@@ -15,35 +17,35 @@ The file is committed at `.agents/model-recommendations.md`. The operator sets t
 |---|---|
 | `_IMPLEMENTER` | Code and implementation work, worker tracks |
 | `_REVIEWER` | Code review, adversarial review |
-| `_ADVISOR` | Advisory review, with a routing clause for documentation and language versus code |
+| `_ADVISOR_CODE` | Advisory review of a change whose deliverable is code |
+| `_ADVISOR_DOCS` | Advisory review of a change whose deliverable is prose |
 | `_ORCHESTRATOR` | The eval harness's driver run |
+
+A role tag not in this table is from a retired role: drop the line, and do not invent values for it.
 
 ## Steps
 
-### 1. Detect available models
+### 1. Read the file
 
-Enumerate the models this session can dispatch: run `pi --list-models` and treat its output as the dependable source. If you cannot detect any, ask the operator to paste the slugs they have access to. Never write a real slug you have not confirmed is available.
+Read `model-recommendations.md` as it stands. Keep every value already present, in its written order, character for character. Report to the operator what each role resolves to before changing anything.
 
-A slug is the model's **full** id, provider prefix included. `--model` is a substring pattern over the provider's list, not an id lookup, and where several ids match it takes the last one in the list, silently. A short name therefore binds to whichever matching id comes last, which is not necessarily the model intended. Copy the id exactly as the list prints it.
+### 2. Ask for the change
 
-### 2. Load current state
+Ask which role and which value, and accept the operator's answer as given. Do not propose a model from memory, do not run `pi --list-models`, and do not read a runtime's catalogue. The operator names the assignment; the model may not exist, and that is the operator's call to make and to correct.
 
-Read `model-recommendations.md`. Keep every value already present. A line for a role not in the table above is from a retired role: drop it. If a role line is missing, add it empty.
+A value is `<provider>/<model> at <thinking level>`. A role line may carry several values separated by `;`, tried in the order written, so the cheapest route that can answer goes first. A condition on which models a role uses becomes a role of its own, never a clause inside one line.
 
-### 3. Choose a value per role
+### 3. Write the file in place
 
-For each role, propose a value in the form `<provider>/<model> at <thinking level>` and confirm it with the operator, showing the current value and the detected models. Prefer a question with the detected models as options over free text. A role may list several values separated by `;`, and the first wins unless a routing clause says otherwise; keep the `_ADVISOR` routing clause when the operator wants one.
+Edit only the lines the operator named. Keep the header, the format line and every other role line untouched. The repository copy is the one to edit: the container's `~/.pi/model-recommendations.md` is derived from it at every start.
 
-State the level explicitly, because a recommendation carries its thinking level.
+### 4. Report what the file now says
 
-### 4. Validate
+Print the resulting lines for the roles that changed, and say that the next dispatch reads them. Do not report a model as available. The only thing this skill knows is what the file says.
 
-Every real slug written must be in the detected set, and must be the full id: a prefix short enough to match several entries binds to one of them, not to the one intended, and nothing reports the difference. Confirm the value is the id the list prints, character for character. If a chosen slug is not available, stop and ask again.
+## What this skill never does
 
-### 5. Write the file in place
-
-Write `model-recommendations.md` with the same header, format and role lines, preserving the values. Write the file in place. The retired `~/.pi/model-recommendations.md` is a bind mount the container cannot remove, so the repository copy is the one to edit.
-
-### 6. Confirm
-
-Tell the operator the file was written and that the next dispatch reads it. Re-running this skill updates it.
+- It never runs a model, or any command that would list models.
+- It never asserts that an id exists, is served, or is reachable by a runtime.
+- It never substitutes a default for a role with no value. That dispatch stops and names the role.
+- It never rewrites values the operator did not name.
