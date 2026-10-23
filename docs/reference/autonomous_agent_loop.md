@@ -12,42 +12,7 @@ The `docs/adr/coding_agent_loop_workflow.md` ADR records the decisions behind th
 
 One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The loop runs at two grains, drawn once each. The rules behind each arrow -- the three edge types and the three gate states -- are in `docs/adr/coding_agent_loop_workflow.md#transitions`.
 
-```text
-MILESTONE GRAIN
-
-  [ms:none]                                  no active milestone
-      |
-      |  "milestone to promote?"              workflow-assisted operator decision
-      |    no  -> /milestone-start shapes one     (/milestone-start presents the shapes)
-      |    yes -> the operator picks one
-      v
-  [ms:active]  ----------  iterations run against this milestone
-      |
-      |  /milestone-close                     workflow-implemented
-      v
-  [ms:close-gate]                            compaction, changelog, boundary presented
-      |
-      |  operator release                     operator decision
-      v
-  [ms:successor?]                            handwaved: one milestone is modelled
-      |
-      |  yes -> promote                       workflow-assisted operator decision
-      |  no  -> shape one                    (edge to ms:none above)
-      v
-  [ms:active]  (the successor)
-
-ITERATION GRAIN  (drawn once; runs against whichever node is ms:active)
-
-  [it:open] --/iter--> [it:scope-gate] --operator decision--> [it:implementing]
-                                                                    |
-                                                             /iter Step 7
-                                                                    v
-  [it:closed] <--operator decision-- [it:acceptance-gate] --/wrapup, /commit--> (close, commit)
-      |
-      |  all tasks complete? /wrapup recommends
-      +-- yes --> ms:close-gate
-      +-- no  --> [it:open]   (operator picks the next task)
-```
+The diagram is [`workflow_statechart.md`](workflow_statechart.md), which draws the whole surface: both grains, every slash command, every dispatch from one prompt to another, and every maintenance check a runbook invokes. A state there is cited by its id, and a behaviour here is a path through it.
 
 At the acceptance gate, the agent presents the findings queue, with each entry's destination. It also presents the record-check reports for the records the iteration changed.
 
@@ -65,10 +30,10 @@ Each workflow enforces one group of state transitions in the loop.
 | `/sidequest` | pauses an open iteration for operator-directed work, then returns to the handover it interrupted |
 | `/wrapup` | closes the handover, writes back the roadmap task and seeds the next iteration; the shared close runbook |
 | `/commit` | lands the unit's delivery commit; the shared commit runbook |
-| `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, owned and refined by M3.2.3 |
+| `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, which is a pair of drafts and not a shipped prompt, owned and refined by M3.2.3 |
 | `/milestone-close` | records a milestone or sub-milestone close: compaction, the changelog, the close boundary |
 
-`/wrapup` and `/commit` are shared runbooks, not standalone loop workflows. `/iter`, `/plan` and `/document` invoke `/wrapup` after their release point, and the close hands the commit to `/commit`. `/commit` is also reached directly by `/sidequest`, which lands its own delivery commit, and by `/merge`, which folds a replay's corrections. `/milestone-start`, `/sequential-work` and `/parallel-work` do not invoke either -- the milestone-record close is `/milestone-close` and lands its own bookkeeping commit.
+`/wrapup` and `/commit` are shared runbooks, not standalone loop workflows. `/iter`, `/plan` and `/document` invoke `/wrapup` after their release point, and the close hands the commit to `/commit`. `/commit` is also reached directly by `/sidequest`, which lands its own delivery commit, and by `/merge`, which folds a replay's corrections. `/milestone-start` does not invoke either -- the milestone-record close is `/milestone-close` and lands its own bookkeeping commit.
 
 `/wrapup` closes the handover to the `work-log` convention, and `/commit` lands the work, the status flip and the write-back as one delivery commit. The pre-commit handover format gate checks the record's shape.
 
@@ -78,7 +43,9 @@ The `/auto` smart dispatcher and `/goal` loose-goal decomposition are M4's. They
 
 ## Skills
 
-A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. `/gm` runs both when the operator asks for an exhaustive check. `/iter` runs both before the release gate, over the records the iteration changed. `/milestone-close` runs `roadmap-maintenance` for the compaction pass, whose input is the whole milestone record. `/plan` and `/document` pass their session context to the `grill-me` skill for the interview. A skill owns its procedure; the workflow owns the transition that invokes it.
+A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. A skill owns its procedure; the workflow owns the transition that invokes it.
+
+Which command invokes which skill is not stated here. [`workflow_statechart.md`](workflow_statechart.md) declares the maintenance set and draws the edge from each dispatching command, and its `## Checks` section names the query that finds a check no command reaches.
 
 ## Responsibilities
 

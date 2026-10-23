@@ -31,7 +31,7 @@ A check-in whose recommended direction is an unattended run rather than a superv
 
 Routing:
 
-- A specific multi-unit plan the operator has already released is `sequential-work.md`. That prompt applies the same well-specifiedness test to the units it was handed; triage is how the rows got selected.
+- A specific multi-unit plan the operator has already released has no runbook in the tree: the dispatch family that runs one is a draft, and M4 owns the dispatcher that will. Triage produces the candidate rows either way, and the operator runs them.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
 - The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone. Triage is its precursor: it answers the per-row question that dispatcher would answer across a whole plan.
 
@@ -45,7 +45,7 @@ One candidate per open row. A row is open when its checkbox is unchecked. Record
 
 ## Step 2 - Apply the well-specifiedness test
 
-Apply the test from `sequential-work.md` Step 1 to every candidate. The test is: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
+Apply the well-specifiedness test to every candidate: a row is runnable only when a scope confirmation would raise no open question. The design or spec is clear, the acceptance criteria are clear, and nothing is left to decide.
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
@@ -98,7 +98,7 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 ## Non-goals
 
-- Sequencing the runnable rows into a run plan. `sequential-work.md` owns the order and the unit split of a released plan.
+- Sequencing the runnable rows into a run plan, and splitting one into units. No runbook in the tree owns it; the M4 dispatcher will.
 - Surveying the project for work that is not on the roadmap. [`gm.md`](gm.md) owns the situational survey.
 - Choosing a dispatch shape, or resolving execution order across a dependency graph. `/auto` owns that, from M4.
 - Editing any record. A stale row becomes a finding; the record is fixed in an iteration.

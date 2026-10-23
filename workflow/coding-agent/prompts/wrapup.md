@@ -7,7 +7,7 @@ argument-hint: "[optional: a session to close]"
 
 # /wrapup - The Consolidated Close
 
-**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: write back the roadmap task, close the ADRs and discussion docs whose work landed, close the handover, and seed the next iteration. It does not land the commit; [`/commit`](commit.md) owns the checkpoint, the preparation, the landing and the post-commit verification. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `milestone-start`, `sequential-work` and `parallel-work` do not invoke it.
+**Scope:** one shared close runbook for the active-operator-participation prompts -- `/iter`, `/plan` and `/document`. It owns the steps common to every such session's end: write back the roadmap task, close the ADRs and discussion docs whose work landed, close the handover, and seed the next iteration. It does not land the commit; [`/commit`](commit.md) owns the checkpoint, the preparation, the landing and the post-commit verification. It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`. `/milestone-start` does not invoke it.
 
 ## Project conventions
 
@@ -28,7 +28,6 @@ Each active-operator prompt invokes the part of this runbook that applies:
 - `/iter` and `/document` run the close at the end of the session.
 - `/plan` runs the close at the end of a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit.
 - `milestone-start` does not invoke it -- `/milestone-close` owns the milestone-record close, distinct from the unit close.
-- `sequential-work` and `parallel-work` do not invoke it -- their run review substitutes for the operator gate (roadmap row `/auto` bypasses the two operator-acceptance points).
 
 ## Input contract
 

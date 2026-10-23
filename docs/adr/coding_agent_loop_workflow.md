@@ -34,7 +34,7 @@
 
 **Decision:** The coding agent runs the autonomous agent loop as invocable workflow prompts under `workflow/coding-agent/prompts/`. Workflow prompts own the steps and the state transitions of the loop. Policy files under `docs/policies/` own the invariants those transitions must not break -- since 2026-10-22 that owner is the iteration protocol, `docs/reference/iteration_protocol.md`. A gate is an instruction to stop and wait for operator feedback, and a check that after a prompt finishes, the output conforms to the expected state. The workflow prompts are `/iter`, `/milestone-start`, `/milestone-close` and `/plan`; `/auto` and `/parallel-auto` are declared expansions of `/iter`.
 
-[CORRECTION -- 2026-10-03: the diagram's home is the concept document, not this ADR. The state diagram is drawn in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md#the-loop), and this section states the transition rules behind it. The decision above otherwise stands.]
+[CORRECTION -- 2026-10-03: the diagram's home is the concept document, not this ADR. The state diagram is drawn in [`workflow_statechart.md`](../reference/workflow_statechart.md), and this section states the transition rules behind it. The decision above otherwise stands.]
 
 **Rationale:** The loop workflows previously lived as step-by-step procedure interleaved with policy rules in `iteration_protocol.md` and `milestone_policy.md`, which made the governance surface large and forced every change into a policy edit. Separating the procedure into prompts with the policy keeping the rules keeps the shared governance surface minimal, makes a workflow's steps reviewable in one prompt, and lets the workflows evolve without a policy change. The separation itself is already ruled by `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`, retired with the policy form: rules are stated declaratively and execution guidance does not belong in the rule's own document. This ADR records the loop-specific consequence of that rule and names the loop set.
 
@@ -75,11 +75,11 @@ The harness targets four workflow kinds, with two declared expansions of `/iter`
 
 ## Transitions
 
-One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The state diagram is the model, drawn once in [`autonomous_agent_loop.md`](../reference/autonomous_agent_loop.md#the-loop); this section states the rules behind it.
+One workflow is one arrow. A node is a state the loop rests in; a gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. The state diagram is the model, drawn once in [`workflow_statechart.md`](../reference/workflow_statechart.md); this section states the rules behind it.
 
 Three edge types: **workflow-implemented** (a prompt performs the transition), **operator decision** (the operator releases the gate), and **workflow-assisted operator decision** (a workflow or skill narrows the choice, and the operator picks). `/backlog-triage` and `/milestone-start` are labels of the third type, not types of their own.
 
-Three gate states, each an arrow's source rather than a resting place for closing work: `it:scope-gate`, `it:acceptance-gate`, `ms:close-gate`. Closing is the work that follows the acceptance decision, not a state.
+Three gate states, each an arrow's source rather than a resting place for closing work: `it_scope_gate`, `it_acceptance_gate`, `ms_close_gate`. Closing is the work that follows the acceptance decision, not a state.
 
 One milestone is modelled, the active one. Its successors are handwaved behind `ms:successor?`, so a per-milestone state set does not appear, and several milestones may be shaped at once without the diagram growing. The autonomous-run prompts -- `/auto`, `/goal`, `/sequential-work`, `/parallel-work` -- are out of the diagram until the milestone that lands them; the two built prompts among them live in the drafts tree, and `/backlog-triage` drives no transition of its own.
 
