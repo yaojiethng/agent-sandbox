@@ -41,6 +41,6 @@ The role table stays runtime-agnostic, the door has its three callers, and a mod
 
 The fixed run keeps its pin and sits outside the door: `review-dispatch.sh` resolves nothing, so it stays reproducible, and its behaviour is not evidence of how dispatch routes.
 
-The contract layer holds no model of its own. The `opencode-dispatch` skill still states a default model, which is the shadow the dispatch-rule surface row owns and which this decision makes a defect rather than a convenience.
+The contract layer holds no model of its own. The worker skill stated a default model until handover `20261023-22`, which was the shadow the dispatch-rule surface row owns; it now names a role and no model, and the shape test holds it there.
 
 A scope increase re-opens this record. The rejected options are not foreclosed by it: a third runtime changes the runtime rule and the argv builder, and a caller that needs isolation composes the queue rather than replacing the door.

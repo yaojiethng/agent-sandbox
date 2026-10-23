@@ -10,6 +10,8 @@
 #   - the skeleton, the initialization skill, the project layer and the eval
 #     harness bind no role to a model, so no file names a model the operator did
 #     not write into the table
+#   - the dispatch skill names no model the table carries, so the one instruction
+#     a worker dispatch reads cannot shadow the table's value
 #   - .pi/ is gitignored
 #   - the pi compose overlay mounts the file at $AGENT_HOME/model-recommendations.md
 #   - the project and provider AGENTS.md name the file
@@ -31,6 +33,8 @@ SKELETON="$PROVIDER_DIR/model-recommendations.skeleton.md"
 SKILL="$PROVIDER_DIR/config/agent/skills/setup-model-recommendations/SKILL.md"
 COMPOSE="$PROVIDER_DIR/docker-compose.pi.yml"
 RUN_CASE="$REPO_ROOT/workflow/coding-agent/skills/eval/scripts/run_case.sh"
+TABLE="$REPO_ROOT/.agents/model-recommendations.md"
+DISPATCH_SKILL="$PROVIDER_DIR/config/agent/skills/dispatch/SKILL.md"
 
 # ---------------------------------------------------------------------------
 # Tests
@@ -91,6 +95,18 @@ test_no_file_pins_a_role_to_a_model() {
   assert_file_exists "$SKILL" "the initialization skill exists"
 }
 
+test_the_dispatch_skill_names_no_table_model() {
+  local shape='^[[:space:]]*_[A-Z][A-Z0-9_]*:[[:space:]]*[a-zA-Z0-9._-]+/'
+  local ids id
+  assert_file_exists "$DISPATCH_SKILL" "the dispatch skill exists"
+  assert_empty "$(grep -nE "$shape" "$DISPATCH_SKILL" || true)" "the dispatch skill pins no role to a model"
+  ids="$(grep -oE '^_[A-Z][A-Z0-9_]*: .*' "$TABLE" | grep -oE '[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+' | sort -u)"
+  assert_not_empty "$ids" "the role table names at least one assignment"
+  for id in $ids; do
+    assert_empty "$(grep -nF "$id" "$DISPATCH_SKILL" || true)" "the dispatch skill names no table model: $id"
+  done
+}
+
 test_pi_is_gitignored() {
   local rc=0
   git -C "$REPO_ROOT" check-ignore -q .pi/model-recommendations.md || rc=$?
@@ -125,6 +141,7 @@ run_test test_setup_leaves_existing_file
 run_test test_setup_refreshes_from_the_project_copy
 run_test test_onboard_creates_skeleton
 run_test test_no_file_pins_a_role_to_a_model
+run_test test_the_dispatch_skill_names_no_table_model
 run_test test_pi_is_gitignored
 run_test test_compose_mounts_the_file
 run_test test_agents_layers_name_the_file
