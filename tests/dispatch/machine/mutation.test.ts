@@ -1,5 +1,5 @@
-// The mutation gate for the dispatch machine. Each row is a deliberate break of
-// an invariant the machine holds by construction, replayed against a copy of
+// The mutation gate for the dispatch library. Each row is a deliberate break of
+// an invariant the module holds by construction, replayed against a copy of
 // the module and the suite in a temp mirror. The repository tree is never the
 // subject, so a row that dies mid-run cannot leave a mutant behind.
 //
@@ -71,6 +71,29 @@ const ROWS: Row[] = [
     replace: ["    class: 'transient',", "    scope: 'request',"].join('\n'),
     test: 'classify.test.ts',
     expect: 'a malformed request is capability on the request',
+  },
+  {
+    // T1 and T2 pin the table module's two standing rules. A machine transition
+    // carries its invariant's id, so those rows cite one; the table's rules are
+    // stated without ids, in `docs/reference/dispatch.md` `## Requirements` and
+    // `docs/reference/terminology.md` `## runtime`, so these two name them T1 and
+    // T2.
+    id: 'M5',
+    invariant: 'T1',
+    file: 'table.ts',
+    find: "  return model.endsWith('-free') ? 'opencode' : 'pi';",
+    replace: "  return 'opencode';",
+    test: 'table.test.ts',
+    expect: 'a paid model on an OpenCode provider resolves to pi',
+  },
+  {
+    id: 'M6',
+    invariant: 'T2',
+    file: 'table.ts',
+    find: "  if (!key.includes('/') || key.includes(' ') || key.startsWith('/')) {",
+    replace: '  if (false) {',
+    test: 'table.test.ts',
+    expect: 'a malformed entry refuses the role',
   },
 ];
 

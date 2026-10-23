@@ -155,10 +155,10 @@ Enough to launch one worker: the model id selects the model, the provider derive
 
 - One of the preference list on its [role line](#role-line).
 - Distinct within its role line: two entries naming one model are one assignment, and the repeat is ignored.
-- Its [runtime](#runtime) is derived from its [provider](#provider) by one declared map.
+- Its [runtime](#runtime) is derived from its [provider](#provider) and its model by one declared map, so the provider alone does not decide it.
 - Its model id begins with a provider prefix. That prefix names a provider and never the runtime.
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-23
 
 ## provider
 
@@ -193,7 +193,7 @@ The executable that runs a worker: `pi` or `opencode`.
 
 ### Scope
 
-Chosen by the dispatch library from the assignment's provider. No caller names a runtime, and no worker chooses one.
+Chosen by the dispatch library from the assignment's provider and its model together: within the OpenCode provider set a model id ending `-free` runs on the CLI and every other model runs on pi, and an assignment with no model refuses rather than defaulting. No caller names a runtime, and no worker chooses one.
 
 ### Relationships
 
@@ -201,7 +201,7 @@ Chosen by the dispatch library from the assignment's provider. No caller names a
 - Located at the [launch site](#launch-site) that resolves. A runtime that cannot be located is a failure to launch, not an assignment to another runtime.
 - A runtime is not a model provider: `opencode` names both a runtime and a set of provider prefixes, and the two senses never share a field.
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-23
 
 ## launch site
 
