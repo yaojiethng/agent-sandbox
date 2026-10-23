@@ -66,24 +66,22 @@ Tools you have access to:
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below names the skill that holds it, and this section states no rule of its own.
+General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below links the skill that holds it, and this section states no rule of its own.
 
-- Keep the sentence that changes a decision and delete the one that does not: `communication-principle-cut-what-carries-nothing`.
-- Write so the reader attaches each phrase as it arrives: `communication-principle-attach-as-you-read`.
-- Define a term before the work relies on it: `principle-define-terminology-before-use`.
-- Write for the reader, not the session that produced it: `communication-principle-write-for-the-reader`.
-- Name a value rather than fixing a literal the reader must set: `communication-principle-name-the-value-not-a-literal`.
-- State the primary data, not a value derived from it: `communication-principle-only-derive-what-you-own`.
-- Print one addressing axis per presentation: `communication-principle-one-addressing-axis`.
-- Choose the word that carries the most distinction and loses none: `communication-principle-maximize-conceptual-leverage`.
-- Give every word one meaning and every thing one word: `communication-principle-align-the-mental-model`.
-- Carry one line of reasoning through the document: `communication-principle-single-train-of-thought`.
+- Keep the sentence that changes a decision and delete the one that does not: [`communication-principle-cut-what-carries-nothing`](./skills/communication-principle-cut-what-carries-nothing/SKILL.md).
+- Write so the reader attaches each phrase as it arrives: [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md).
+- Define a term before the work relies on it: [`principle-define-terminology-before-use`](./skills/principle-define-terminology-before-use/SKILL.md).
+- Write for the reader, not the session that produced it: [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md).
+- Name a value rather than fixing a literal the reader must set: [`communication-principle-name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md).
+- State the primary data, not a value derived from it: [`communication-principle-only-derive-what-you-own`](./skills/communication-principle-only-derive-what-you-own/SKILL.md).
+- Print one addressing axis per presentation: [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md).
+- Choose the word that carries the most distinction and loses none: [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md).
+- Give every word one meaning and every thing one word: [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md).
+- Carry one line of reasoning through the document: [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md).
 
-Each skill named above is at `$AGENT_HOME/agent/skills/<name>/SKILL.md`.
+The judgements that fire on a whole artifact rather than a sentence: [`communication-principle-show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md) when an instruction or a claim of compliance is written, [`communication-principle-dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md) when a record describes work no task holds, [`communication-principle-keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md) when a caveat or a definition moves, and [`communication-principle-hand-off-by-naming-the-boundary`](./skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md) at a prompt's last step.
 
-The judgements that fire on a whole artifact rather than a sentence: `communication-principle-show-dont-describe` when an instruction or a claim of compliance is written, `communication-principle-dont-forecast-undone-work` when a record describes work no task holds, `communication-principle-keep-a-subject-near` when a caveat or a definition moves, and `communication-principle-hand-off-by-naming-the-boundary` at a prompt's last step.
-
-The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: `communication-principle-link-what-the-reader-can-open`. Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: the `docs` convention's `## What a document may contain`, which the `doc-wrap` and `doc-ascii` lint rules catch.
+The judgement behind a numbered list: `communication-principle-one-addressing-axis`. How a document points at another: [`communication-principle-link-what-the-reader-can-open`](./skills/communication-principle-link-what-the-reader-can-open/SKILL.md). Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this layer names no path to it. Line wrapping and the character set: the `docs` convention's `## What a document may contain`, which the `doc-wrap` and `doc-ascii` lint rules catch.
 
 Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
 

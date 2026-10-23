@@ -16,7 +16,7 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
    - This project only: `.agents/skills/<kebab-case-name>/SKILL.md`.
 
    Do not write in `$AGENT_HOME/agent/skills/` directly. The config home is seeded from the image at every start, so a file written there is lost on the next start, and no gate reads it while it lives.
-3. **Draft the Frontmatter:** Construct the mandatory YAML frontmatter using the exact template schema below.
+3. **Draft the Frontmatter:** Read [`patterns/signposting.md`](patterns/signposting.md) first: the name and the description are the signpost that decides whether the body is ever loaded, so the word that leads is chosen before the template is filled. Construct the mandatory YAML frontmatter using the exact template schema below.
 4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill. When the content carries more than one kind, or a code-bearing form, split it per [`patterns/nested-patterns.md`](patterns/nested-patterns.md).
 5. **Write File:** Use file system tools to create the folder and write the final `SKILL.md` file automatically.
 6. **Review the Result:** Dispatch the review in [`runbook/review.md`](runbook/review.md) over the skill you wrote, and fix what it names before reporting the skill as done. The same runbook reviews an existing skill or a prompt that is about to change.
@@ -44,6 +44,7 @@ A skill may carry siblings beside `SKILL.md`. The `SKILL.md` index names each on
 |---|---|
 | [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | the content grows past one body and you must decide what stays inline and what becomes a sibling |
 | [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | the new skill wraps a script or a command with a fixed call shape |
+| [`patterns/signposting.md`](patterns/signposting.md) | the new skill's name or description is being chosen, or an existing signpost is reviewed |
 | [`runbook/review.md`](runbook/review.md) | a skill has just been written, or a skill or prompt is about to change, and it needs the rule-loss and length review |
 
 ## How to Use the Generated Skill

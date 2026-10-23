@@ -1,11 +1,3 @@
----
-name: principle-skill-signposting
-description: Put a skill's name and description to work as a signpost, so an agent matches the situation that needs the skill and an operator recalls it. Place the leading word its domain supplies through the name, the description and the body. Use when writing or reviewing a skill's name or description.
-disable-model-invocation: true
-metadata:
-  claim: reader
----
-
 # Make the name and the description a signpost
 
 A skill reaches a reader through its name and its description, and its body arrives only after that reader decides to load it.
