@@ -148,7 +148,7 @@ stateDiagram-v2
     it_implementing --> chk_docs : /iter's information-gathering pass
     doc_drafting --> chk_docs : /document reads the diagnostic register
     sess_initialized --> chk_corpus : /bootstrap installs the corpus
-    rec_rebase --> chk_history : a series inverted before review
+    rec_rebase --> chk_history : the operator runs history-cleanup on the inverted series
 
     chk_corpus --> sess_oriented : the corpus is installed
     chk_orientation --> sess_oriented : the report is applied
@@ -222,7 +222,7 @@ Every prompt the tree carries is an event here, and the command table's row set 
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
 | `/merge` | `rec_triage` | `it_committed` | `/commit` |
-| `/rebase` | `rec_triage` | `it_committed` | `history-cleanup`, `/commit` |
+| `/rebase` | `rec_triage` | `it_committed` | none |
 | `/record-correction` | `rec_triage` | `it_closed` | `/rebase` when the fold needs a port |
 | `/read-back` | `rec_triage` | `rec_triage` | none |
 | `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
@@ -271,5 +271,5 @@ Each check is a query a reader makes on the chart and the defect the query finds
 
 - **Story coverage.** The stories cover the main paths, not every edge: the recovery and records edges are drawn and no story routes them. The query is the edge set minus the pairs the stories use.
 - **`/auto` and `/goal`.** Reserved for M4 by `docs/adr/coding_agent_loop_workflow.md`, which is repository-only and cannot be linked from here; no transition, and no node.
-- **`history-cleanup`.** Reached from the `git-discipline` convention's runbook table rather than from a prompt, so its single incoming edge above comes from `/rebase`. A maintenance skill dispatched by a convention rather than a command is the one member of the set with no command edge of its own.
+- **`history-cleanup`.** The operator dispatches it by hand, naming the units to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the recovery case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
 - **The render capability.** Not built. The chart targets Mermaid 12.1.0, and the intended render target, Pele's compatibility page, could not be read from this container.
