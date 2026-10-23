@@ -73,7 +73,7 @@ None.
 | File | Change |
 |---|---|
 | [`devlog/discussions/20261023-design-settled-derived_artifacts.md`](../discussions/20261023-design-settled-derived_artifacts.md) | the census method and its limits, the per-artifact table, the rule, the two reviewer seats, four rejections, and no copy of the script |
-| [`devlog/discussions/20261023-design-draft-cited_command_gate.md`](../discussions/20261023-design-draft-cited_command_gate.md) | parked at `draft`; gains the chart table as its second subject and the `/auto` ambiguity |
+| [`devlog/discussions/20261023-design-rejected-cited_command_gate.md`](../discussions/20261023-design-rejected-cited_command_gate.md) | rejected; the citation half is retired and the chart table moves to M3.3.3 |
 | [`tests/mutations/catalog.jsonl`](../../tests/mutations/catalog.jsonl) | header reduced to schema, kind and origin: `count` and `last_updated` were derived and read by nobody |
 | [`tests/test_mutations_runner.sh`](../../tests/test_mutations_runner.sh) | its fixture header matches the real one |
 | [`docs/reference/workflow_statechart.md`](../../docs/reference/workflow_statechart.md) | its command-table claim names the `Command coverage` query and says it is read by hand, instead of claiming a check it does not have |

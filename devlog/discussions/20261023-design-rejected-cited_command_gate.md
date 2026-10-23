@@ -1,5 +1,5 @@
 ---
-status: draft
+status: rejected
 date: 2026-10-23
 ---
 
@@ -77,3 +77,9 @@ One gate and its test file join the umbrella. The chart's `Dangling dispatch` qu
 The wider instruction surface becomes a roadmap row carrying the measurement above as its brief: four namespaces, one of them not decidable by shape.
 
 `bootstrap.md` states that `/package-branch` names a capability rather than a filesystem path. The gate now enforces that reading instead of trusting it.
+
+## Outcome
+
+Rejected on 2026-10-23, after the operator ruled on the citations half. Pi rejects a command the operator types when no prompt carries it, so that failure is loud at the point of use. The two bad tokens this design was filed against had already been removed, and a resolver over prompted commands cannot be complete, because `/auto` routes to a skill package the operator installs. Gating our prompts against a surface we do not own is coverage the tree does not need.
+
+The second subject survives on its own terms. The chart's `## Commands` table asserts equality with the prompt directory and no gate holds it, so it is filed as an M3.3.3 row in handover `20261023-16`. The measurement in `## What the tree says` is its brief.

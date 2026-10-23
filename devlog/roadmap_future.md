@@ -216,7 +216,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Scope:** Two halves, one instrument. The first re-derives the inventory of stored artifacts using equality instead of shape, so a table that claims to list a directory is checked against that directory rather than guessed at. The second builds a reader index, so each artifact's classification comes from who consumes it rather than from what the file looks like. The judgement is [`principle-guard-derived-state`](../src/reasoning/providers/pi/config/agent/skills/principle-guard-derived-state/SKILL.md): every artifact is either derived at read time or protected by a mechanical verification gate, decided by reproducibility first, then auditability, then cost. The census that motivates this milestone is [`20261023-design-settled-derived_artifacts.md`](discussions/20261023-design-settled-derived_artifacts.md).
 
-**Depends on:** nothing hard. The cited-command check row under M3.3.2 in [`roadmap.md`](roadmap.md) shares the equality half's first test case and may land before it.
+**Depends on:** nothing hard. The command-table gate under M3.3.3 in [`roadmap.md`](roadmap.md) shares the equality half's first test case and may land before it.
 
 **What the census already established.** Re-gather none of this.
 
@@ -246,7 +246,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 #### Not in scope
 
-- The two equality gates that would hold these cases still. They are separate rows in [`roadmap.md`](roadmap.md): the cited-command check, and the version literal against the dockerfile pin.
+- The two equality gates that would hold these cases still. They are separate rows in [`roadmap.md`](roadmap.md): the chart's command table under M3.3.3, and the version literal against the dockerfile pin.
 - The mutation corpus's future, which is its own row and a feature decision rather than a check.
 - Any stored form of the graph or the inventory, for the reason the inventory's last row states.
 
