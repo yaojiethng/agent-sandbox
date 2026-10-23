@@ -48,6 +48,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.3 - Route and decide](#m363---route-and-decide) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.4 - The reasoning image refactor](#m364---the-reasoning-image-refactor) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.5 - OpenCode as a first-class provider](#m365---opencode-as-a-first-class-provider) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.6 - The scheduler](#m366---the-scheduler) | Not started |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | **Multi-Agent** | |
 | &nbsp;&nbsp;[M4 - Multi-Agent Coordination](roadmap_future.md#m4---multi-agent-coordination) | Not started |
@@ -426,6 +427,18 @@ Split out of M3.6.1 on 2026-10-16, because none of its rows produces dispatch ca
 - Adding a paid dependency. A paid fallback stays limited to what the operator has already configured.
 - The task-list mechanism and the record format. That is M3.5's.
 - The multi-agent coordination surface that M4 owns. This milestone makes its dispatch cost-aware; it does not build its coordination.
+
+##### M3.6.6 - The scheduler
+
+**Objective:** hold the class of work that needs both a seat count and a lifecycle, so that neither dispatch nor the task queue has to grow into the other to serve it.
+
+**Depends on:** nothing it blocks. It is filed unscoped so that a boundary decision elsewhere can point at it instead of proposing an extension of either mechanism.
+
+**Sequencing:** none. It opens when an iteration is scoped against it, and until then every mechanism states its own boundary and stops there.
+
+The seam is measured, not assumed. Dispatch owns role resolution, the runtime decision, the route memory, the seat count, the turn boundary and the failure rule. The task queue owns worktrees, branches, break points, verification and write-back, and its worker protocol is plain files, so a worker of any kind can take part even though its fork path spawns through pi. One brief at a time is dispatch's, and one fan-out under a human is the queue's. What neither owns is the shape between them: many briefs in one run, seats that span runtimes, a failure that changes what the next turn may use, and results that must land as one verified change set. A scheduler would subsume both. That is a boundary this milestone records rather than cuts.
+
+- [ ] **The scheduler subsumes dispatch and the task queue** - unscoped on purpose. Known: it owns the seat count, the turn boundary, the failure rule, the worktree lifecycle and the write-back as one contract; it serves every runtime the table names rather than the workers pi spawns; and it keeps the single-writer property the turn boundary buys today. Unknown: whether it is a harness tool, a mode of the entrypoint, or a third layer beside the two; what a worktree's lifetime does to the route memory; and what the operator sees when a turn pauses. Nature of change: not yet cut. Filed by the dispatch run, handover `20261023-28`.
 
 ### T - Harness Development Tracks
 
