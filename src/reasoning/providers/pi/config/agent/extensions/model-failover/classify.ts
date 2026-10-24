@@ -18,10 +18,9 @@
  * unrecoverable and were previously treated as transient.
  */
 
-import type { FailureClass, Outcome } from "./types.ts";
+import type { FailureClass, FailureScope, Outcome } from "./types.ts";
 
-/** What has to change before a retry can succeed. */
-export type FailureScope = "none" | "account" | "provider" | "model" | "request" | "unclassified";
+export type { FailureScope } from "./types.ts";
 
 export interface Verdict {
 	readonly recoverable: boolean;
@@ -35,7 +34,7 @@ export interface Verdict {
  */
 const UNRECOVERABLE: readonly { readonly scope: FailureScope; readonly pattern: RegExp }[] = [
 	{ scope: "account", pattern: /GoUsageLimitError|FreeUsageLimitError|monthly usage limit|weekly usage limit|5-hour usage limit|usage limit reached|exceeded your current quota|quota exceeded|insufficient[ _]quota/i },
-	{ scope: "account", pattern: /AuthError|authentication_error|api_key_expired|invalid api key|api key expired|user not found|authentication fails|insufficient account funds/i },
+	{ scope: "account", pattern: /AuthError|authentication_error|api_key_expired|invalid api key|api key expired|user not found|authentication fails|insufficient account funds|insufficient balance/i },
 	{ scope: "provider", pattern: /FreeTierError|can only be used from within|provider is not configured|<!doctype html/i },
 	{ scope: "model", pattern: /model access is disabled|model-ignored-by-guardrail|guardrail|model is unavailable/i },
 	{ scope: "request", pattern: /invalid_request_error|failed to deserialize|unknown variant|reasoning_effort|must be passed back|supported api model names|invalid request/i },
@@ -88,10 +87,9 @@ export function classifyVerdict(errorMessage: string): Verdict {
 }
 
 /**
- * The cooldown class a verdict earns. Kept as the narrow two-value form the
- * ledger and the report already key on, so the verdict reaches them without
- * changing their shape. A request-scope failure still cools the route, which is
- * wrong for a caller-caused error and is filed as its own row.
+ * The cooldown class a verdict earns. The ledger keys on the class and the
+ * scope together: the class sets the window, and the scope decides whether the
+ * route record holds the failure at all.
  */
 export function classifyError(errorMessage: string): FailureClass {
 	return classifyVerdict(errorMessage).recoverable ? "transient" : "limited";
@@ -105,5 +103,5 @@ export function classifyOutcome(stopReason: string | undefined, errorMessage: st
 	if (stopReason !== "error" || errorMessage === undefined || errorMessage === "" || isAborted(errorMessage)) {
 		return { ok: true };
 	}
-	return { ok: false, class: classifyError(errorMessage) };
+	return { ok: false, class: classifyError(errorMessage), scope: classifyVerdict(errorMessage).scope };
 }

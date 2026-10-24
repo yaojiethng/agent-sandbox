@@ -122,6 +122,8 @@ A failure carries a class, a scope and, for a route that will be tried again, a 
 
 A quota record states what happened, not what remains. It holds the moment the route may be tried again, the reason, the strike count, and the provider's own sentence. A count of metered attempts sits beside it in the same state. A remainder is not recorded, because two sessions spending one pool make any remainder a fiction.
 
+The scope is an attribution, and it decides whether the route record holds the failure at all. A failure whose scope is the request, or that names nothing (`unknown`), leaves the record untouched: every model receives the same request, so cooling a route charges it for the caller's mistake. A failure that does cool a route also names its scope, so a reader learns what would have to change before a retry could succeed, not only how long the wait is. Two stores hold route memory in this tree, the library's state and the model-failover extension's ledger, and both apply this rule: `R8` and `R9` here, and the ledger's own attribution guard.
+
 The exit codes are part of the interface. Zero means an attempt ran, a command was printed, or an inspection question was answered. One means a refusal before any attempt: no git work tree, an unresolvable base, a pre-state that could not be captured, a role the table does not name, or a change set git could not compute. Two means a usage error. Three means blocked, and the message names the earliest wait. Four means unroutable, and the message names the dead routes. Any other code is the last attempt's own, so a caller reads the worker's failure without a translation layer.
 
 A worker prints one line for each attempt it spent, so a caller reads every entry beside the one that worked.

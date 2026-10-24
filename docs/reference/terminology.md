@@ -271,3 +271,46 @@ One outcome per attempt. It decides whether the next entry of the preference lis
 - The share of `unknown` is the classifier's own health, so it is reported with the denominator it was counted over.
 
 **Last updated:** 2026-10-22
+
+## attribution
+
+The claim that a failure belongs to the request, to the route, or to the harness that built the request.
+
+### Identity
+
+- One of `request`, `route`, `harness`.
+- Carried by an outcome's scope where the verdict names it, and by a record's provenance.
+- Deprecated tokens: **cause**, where it means the cooldown class. The class says how long a route waits; the attribution says whether the route should wait at all.
+
+### Scope
+
+Decided from evidence, not from the error text alone. A failure the same request also produces on a second model is the request's. A failure a second route does not produce is the route's. A failure no recorded pair covers is not established, and is reported as a gap rather than graded either way.
+
+### Relationships
+
+- A `request` or `unclassified` attribution leaves a route record untouched, in every [store](#outcome) that holds one, so a malformed call cannot demote a healthy model.
+- A route record keeps the [scope](#outcome) of the failure that cooled it, so the report names what would have to change before a retry can succeed.
+- Its evidence is the per-actor census and the cross-model pair. An absent pair is a finding, not a zero.
+
+**Last updated:** 2026-10-24
+
+## provenance
+
+The observation an attribution rests on.
+
+### Identity
+
+- The error text, the request shape, the call site, the working directory, the session, or a replay.
+- Named with the record it came from, so a reader can re-derive the claim.
+
+### Scope
+
+Every attribution names its provenance. An attribution with none is a guess, and a guess cools a route for an hour.
+
+### Relationships
+
+- The [attribution](#attribution) is a decision; the provenance is what it was decided from.
+- A report of a cooling route names the scope beside the class, which is the provenance of that cooldown.
+- The session store records no call site. The working directory and the session are the nearest provenance it keeps, and a question the store cannot answer is recorded as a gap.
+
+**Last updated:** 2026-10-24

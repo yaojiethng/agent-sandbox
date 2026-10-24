@@ -34,7 +34,7 @@ export const PATTERNS: Pattern[] = [
   },
   {
     id: 'funds',
-    re: /Insufficient account funds|Insufficient funds/i,
+    re: /Insufficient account funds|Insufficient funds|Insufficient Balance/i,
     class: 'capability',
     scope: 'account',
   },

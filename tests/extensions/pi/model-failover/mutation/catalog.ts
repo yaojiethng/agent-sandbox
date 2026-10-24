@@ -78,7 +78,7 @@ export const MUTATIONS: readonly Mutation[] = [
 		id: "T4:cooldown-ignores-class",
 		invariant: "TI2",
 		subject: `${EXTENSION_DIR}/ledger.ts`,
-		old: "\tconst cooling = (failureClass: FailureClass): RouteState => ({ state: \"cooling\", until: now + cooldownMs[failureClass], class: failureClass });",
+		old: "\tconst cooling = (failureClass: FailureClass): RouteState => ({ state: \"cooling\", until: now + cooldownMs[failureClass], class: failureClass, ...(outcome.scope === \"none\" ? {} : { scope: outcome.scope }) });",
 		next: "\tconst cooling = (_failureClass: FailureClass): RouteState => ({ state: \"cooling\", until: now + cooldownMs.transient, class: \"transient\" });",
 		tests: ["ledger.test.ts"],
 		breaks: "a quota-class failure gets the short transient window, so an exhausted route returns while the account is still limited",
@@ -172,6 +172,16 @@ export const MUTATIONS: readonly Mutation[] = [
 		next: "\t\treturn DEFAULT_COOLDOWN_MS;",
 		tests: ["config.test.ts"],
 		breaks: "every chain that omits the block shares one cooldown object, so one accidental write aliases all declarations at once",
+	},
+	// --- TI7: a failure that is not the route's does not cool it ---
+	{
+		id: "A1:request-scope-cools",
+		invariant: "TI7",
+		subject: `${EXTENSION_DIR}/ledger.ts`,
+		old: "\tif (outcome.scope === \"request\" || outcome.scope === \"unclassified\") {",
+		next: "\tif (false) {",
+		tests: ["ledger.test.ts"],
+		breaks: "a malformed request, or an unreadable failure, cools the route for the long window and counts a strike, so a caller's mistake demotes a healthy model",
 	},
 	// --- The control: an unmutated mirror must stay green ---
 	{

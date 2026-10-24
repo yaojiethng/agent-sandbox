@@ -37,16 +37,26 @@ export function formatDuration(ms: number): string {
 	return seconds > 0 ? `${minutePart} ${seconds}s` : minutePart;
 }
 
-/** The state of one route, in one line. */
-export function routeLine(provider: string, model: string, entry: RouteState, now: number): string {
+/**
+ * The cause a cooling route names. The class sets the window; the scope says
+ * what would have to change before a retry could succeed, which the class
+ * alone cannot: `limited` covers an exhausted account, a disabled model and an
+ * unfunded provider alike. A route cooled before this field existed names the
+ * class alone.
+ */
+function coolingCause(entry: { readonly class: string; readonly scope?: string }): string {
+	return entry.scope === undefined ? `cooling on ${entry.class}` : `cooling on ${entry.class} (${entry.scope})`;
+}
+
+/** The state of one route, in one line. */export function routeLine(provider: string, model: string, entry: RouteState, now: number): string {
 	const key = routeKey(provider, model);
 	if (entry.state === "eligible") {
 		return entry.streak > 0 ? `${key} eligible (${entry.streak} consecutive transient failures)` : `${key} eligible`;
 	}
 	if (entry.until <= now) {
-		return `${key} cooling on ${entry.class}, deadline lapsed`;
+		return `${key} ${coolingCause(entry)}, deadline lapsed`;
 	}
-	return `${key} cooling on ${entry.class} for another ${formatDuration(entry.until - now)}`;
+	return `${key} ${coolingCause(entry)} for another ${formatDuration(entry.until - now)}`;
 }
 
 /** The report for every chain, read against the ledger's current view. */

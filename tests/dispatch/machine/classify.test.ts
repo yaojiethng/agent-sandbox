@@ -39,6 +39,15 @@ test('an unavailable model is capability on the model', () => {
   assert.equal(v.scope, 'model');
 });
 
+test('an unfunded balance is the account\'s, even when the body carries a request error code', () => {
+  // A 402 arrives with "code":"invalid_request_error" in the body. The code names
+  // the shape of the envelope, not the fault, and the fault is no-retry.
+  const v = classify('402: {"message":"Insufficient Balance (request_id: 9cf76f00)","type":"unknown_error","code":"invalid_request_error"}', AT);
+  assert.equal(v.id, 'funds');
+  assert.equal(v.class, 'capability');
+  assert.equal(v.scope, 'account');
+});
+
 test('a malformed request is capability on the request', () => {
   const v = classify('invalid_request_error: reasoning_effort', AT);
   assert.equal(v.id, 'bad-request');

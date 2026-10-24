@@ -14,6 +14,13 @@
  */
 export type FailureClass = "transient" | "limited";
 
+/**
+ * What has to change before a retry can succeed. A failure whose scope is the
+ * request, or that names nothing, is not evidence about the route: the same
+ * call fails identically on every model, so the route record does not hold it.
+ */
+export type FailureScope = "none" | "account" | "provider" | "model" | "request" | "unclassified";
+
 /** The thinking-level names a route may declare; pi clamps them to the physical model. */
 export type ThinkingLevelName = "off" | "minimal" | "low" | "medium" | "high" | "max";
 
@@ -43,17 +50,20 @@ export interface Declarations {
 /**
  * The state one route rests in. Two states, per README.md: `eligible` carries
  * the consecutive-failure streak, `cooling` carries the deadline and the class
- * that set it. Eligibility past the deadline is derived at read time, so a
+ * that set it. A cooling entry also carries the scope of the failure that set
+ * it, because `limited` alone cannot tell an exhausted account from a disabled
+ * model; `none` is not stored, so an absent scope means the class names all
+ * there is to know. Eligibility past the deadline is derived at read time, so a
  * stored cooling state with a past deadline is never wrong, only unreaped.
  */
 export type RouteState =
 	| { readonly state: "eligible"; readonly streak: number }
-	| { readonly state: "cooling"; readonly until: number; readonly class: FailureClass };
+	| { readonly state: "cooling"; readonly until: number; readonly class: FailureClass; readonly scope?: FailureScope };
 
 /** One classified assistant outcome: the input the machine applies. */
 export type Outcome =
 	| { readonly ok: true }
-	| { readonly ok: false; readonly class: FailureClass };
+	| { readonly ok: false; readonly class: FailureClass; readonly scope: FailureScope };
 
 /** The ledger file's shape on disk. Version 1. */
 export interface LedgerFile {

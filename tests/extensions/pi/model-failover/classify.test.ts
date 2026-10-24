@@ -74,9 +74,17 @@ describe("the error classification", () => {
 		assert.equal(isAborted("Stream ended without finish_reason"), false);
 	});
 
-	it("a finalized message with an error carries its class", () => {
-		assert.deepEqual(classifyOutcome("error", "GoUsageLimitError"), { ok: false, class: "limited" });
-		assert.deepEqual(classifyOutcome("error", "Endpoint is unavailable"), { ok: false, class: "transient" });
+	it("an unfunded balance is the account's, even when the body carries a request error code", () => {
+		const balance = '402: {"message":"Insufficient Balance (request_id: 9cf76f00)","type":"unknown_error","code":"invalid_request_error"}';
+		assert.deepEqual(classifyOutcome("error", balance), { ok: false, class: "limited", scope: "account" });
+		assert.equal(classifyVerdict(balance).recoverable, false, "an unfunded account is never retried");
+	});
+
+	it("a finalized message with an error carries its class and the scope that says what must change", () => {
+		assert.deepEqual(classifyOutcome("error", "GoUsageLimitError"), { ok: false, class: "limited", scope: "account" });
+		assert.deepEqual(classifyOutcome("error", "Endpoint is unavailable"), { ok: false, class: "transient", scope: "none" });
+		assert.deepEqual(classifyOutcome("error", "400 invalid_request_error: reasoning_effort: unknown variant `minimal`"), { ok: false, class: "limited", scope: "request" });
+		assert.deepEqual(classifyOutcome("error", "something no pattern knows"), { ok: false, class: "limited", scope: "unclassified" });
 	});
 
 	it("a cancelled turn recorded as an error is a success, because nothing failed", () => {

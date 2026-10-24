@@ -28,11 +28,29 @@ describe("the route health ledger", () => {
 		assert.equal(eligibleAt(at, NOW + COOLDOWNS.transient - 1), false, "the route is skipped inside the window");
 	});
 
-	it("T4 a quota-class failure cools on the first occurrence, whatever the streak", () => {
-		const zero = applyOutcome({ state: "eligible", streak: 0 }, limited(), NOW, THRESHOLD, COOLDOWNS);
+	it("T4 a quota-class failure cools on the first occurrence, whatever the streak", () => {		const zero = applyOutcome({ state: "eligible", streak: 0 }, limited(), NOW, THRESHOLD, COOLDOWNS);
 		assert.deepEqual(zero, { state: "cooling", until: NOW + COOLDOWNS.limited, class: "limited" });
 		const many = applyOutcome({ state: "eligible", streak: 99 }, limited(), NOW, THRESHOLD, COOLDOWNS);
 		assert.deepEqual(many, { state: "cooling", until: NOW + COOLDOWNS.limited, class: "limited" });
+	});
+
+	it("A1 a request-scope failure leaves the route record untouched, in either state", () => {
+		const eligible = { state: "eligible", streak: 2 } as const;
+		assert.equal(applyOutcome(eligible, limited("request"), NOW, THRESHOLD, COOLDOWNS), eligible, "the same request fails identically on every model, so the route learns nothing");
+		const cooling = { state: "cooling", until: NOW + COOLDOWNS.transient, class: "transient" } as const;
+		assert.equal(applyOutcome(cooling, limited("request"), NOW + 5000, THRESHOLD, COOLDOWNS), cooling, "a request failure does not extend a cooldown either");
+	});
+
+	it("A1 an unclassified failure leaves the route record untouched", () => {
+		const eligible = { state: "eligible", streak: 0 } as const;
+		assert.equal(applyOutcome(eligible, limited("unclassified"), NOW, THRESHOLD, COOLDOWNS), eligible, "a text no pattern knows is a statement about the classifier, not about the route");
+	});
+
+	it("A2 a cooling entry keeps the scope that set it, so the report can name it", () => {
+		const cooled = applyOutcome({ state: "eligible", streak: 0 }, limited("account"), NOW, THRESHOLD, COOLDOWNS);
+		assert.deepEqual(cooled, { state: "cooling", until: NOW + COOLDOWNS.limited, class: "limited", scope: "account" });
+		const scopeFree = applyOutcome({ state: "eligible", streak: THRESHOLD - 1 }, transient(), NOW, THRESHOLD, COOLDOWNS);
+		assert.deepEqual(scopeFree, { state: "cooling", until: NOW + COOLDOWNS.transient, class: "transient" }, "no scope is stored when the class names all there is to know");
 	});
 
 	it("T1 a success on an eligible route resets the streak", () => {
