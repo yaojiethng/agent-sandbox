@@ -16,6 +16,21 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [O] 2026-10-24  --  A roadmap measurement note became an artifact and a gate
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before designing for a roadmap row, separate what the row measured from what it proposed. Name what reads the artifact besides the check that would keep it true; when the answer is nothing, the row is retired rather than built.
+```
+
+The M3.6.3 row **The model-catalog track** carried two kinds of text in one paragraph: measurements (the free tier is one shared 200-request pool per IP per day, and `opencode-go`'s `429` meters a model family) and a proposal ("the per-model declaration and its staleness check"). The agent read the proposal as a requirement and designed a reference document, a structural gate with its test, an ADR, two reserved terms and a roadmap retitle.
+
+Every column the row asked for was already answered: preference by the role line's order, cost by M3.6.2's ledger, a rate limit by the route record's cooled-until with its reason, provenance by the provider's sentence plus the scope, and the model list by `pi --list-models` and `opencode models`. The document's only consumer would have been the gate written to keep it true, which is the registry-nobody-reads class the 2026-10-23 derived-artifacts census recorded.
+
+The operator's correction: the mental model of the algorithm is clean and its capabilities are clean, and the agent keeps adding constraints or features that affect neither correctness nor performance. The row was retired, and the one residue is a line in `dispatch.md` naming the listing command.
+
 ## [A] 2026-10-23  --  A default mechanism was hardened into a requirement
 
 ```text
