@@ -7,11 +7,11 @@
 #   - setup.sh creates the skeleton when absent, leaves it when present, and
 #     replaces it from the project copy when the project has one
 #   - onboard.sh creates the skeleton
-#   - the skeleton, the initialization skill, the project layer and the eval
-#     harness bind no role to a model, so no file names a model the operator did
-#     not write into the table
-#   - the dispatch skill names no model the table carries, so the one instruction
-#     a worker dispatch reads cannot shadow the table's value
+#   - the skeleton, the initialization skill, the project layer, the eval harness
+#     and the dispatch skill bind no role to a model, so no file names a model
+#     the operator did not write into the table
+#   - every role line in the committed table resolves through the library, so a
+#     rule edit that breaks a line fails here rather than at a dispatch
 #   - .pi/ is gitignored
 #   - the pi compose overlay mounts the file at $AGENT_HOME/model-recommendations.md
 #   - the project and provider AGENTS.md name the file
@@ -35,6 +35,13 @@ COMPOSE="$PROVIDER_DIR/docker-compose.pi.yml"
 RUN_CASE="$REPO_ROOT/workflow/coding-agent/skills/eval/scripts/run_case.sh"
 TABLE="$REPO_ROOT/.agents/model-recommendations.md"
 DISPATCH_SKILL="$PROVIDER_DIR/config/agent/skills/dispatch/SKILL.md"
+
+# The library's command line, called once per role, with the committed table named
+# explicitly so the case reads it even where DISPATCH_REC_FILE points elsewhere.
+CLI="$REPO_ROOT/src/libs/dispatch/cli.ts"
+cli() {
+  node "$CLI" "$@"
+}
 
 # ---------------------------------------------------------------------------
 # Tests
@@ -92,18 +99,23 @@ test_no_file_pins_a_role_to_a_model() {
   assert_empty "$(grep -nE "$shape" "$SKILL" || true)" "the initialization skill binds no role to a model"
   assert_empty "$(grep -nE "$shape" "$REPO_ROOT/AGENTS.md" || true)" "the project layer binds no role to a model"
   assert_empty "$(grep -nE "$shape" "$RUN_CASE" || true)" "the eval harness binds no role to a model"
+  assert_empty "$(grep -nE "$shape" "$DISPATCH_SKILL" || true)" "the dispatch skill binds no role to a model"
   assert_file_exists "$SKILL" "the initialization skill exists"
 }
 
-test_the_dispatch_skill_names_no_table_model() {
-  local shape='^[[:space:]]*_[A-Z][A-Z0-9_]*:[[:space:]]*[a-zA-Z0-9._-]+/'
-  local ids id
-  assert_file_exists "$DISPATCH_SKILL" "the dispatch skill exists"
-  assert_empty "$(grep -nE "$shape" "$DISPATCH_SKILL" || true)" "the dispatch skill pins no role to a model"
-  ids="$(grep -oE '^_[A-Z][A-Z0-9_]*: .*' "$TABLE" | grep -oE '[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+' | sort -u)"
-  assert_not_empty "$ids" "the role table names at least one assignment"
-  for id in $ids; do
-    assert_empty "$(grep -nF "$id" "$DISPATCH_SKILL" || true)" "the dispatch skill names no table model: $id"
+
+test_every_committed_role_line_resolves() {
+  # The tag lines are read from the file rather than from `table roles`, because a
+  # role whose line does not resolve is absent from that listing: a walk over the
+  # listing would pass on exactly the defect this case exists to catch.
+  local tags tag rc out
+  tags="$(grep -oE '^_[A-Z][A-Z0-9_]*:' "$TABLE" | tr -d ':' | sort -u)"
+  assert_not_empty "$tags" "the committed table names at least one role"
+  for tag in $tags; do
+    rc=0
+    out="$(cli table resolve --role "$tag" --file "$TABLE" 2>&1)" || rc=$?
+    assert_rc 0 "$rc" "the committed table resolves '$tag'"
+    assert_not_empty "$out" "the committed table gives '$tag' an assignment"
   done
 }
 
@@ -141,7 +153,7 @@ run_test test_setup_leaves_existing_file
 run_test test_setup_refreshes_from_the_project_copy
 run_test test_onboard_creates_skeleton
 run_test test_no_file_pins_a_role_to_a_model
-run_test test_the_dispatch_skill_names_no_table_model
+run_test test_every_committed_role_line_resolves
 run_test test_pi_is_gitignored
 run_test test_compose_mounts_the_file
 run_test test_agents_layers_name_the_file
