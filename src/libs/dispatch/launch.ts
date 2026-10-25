@@ -6,27 +6,16 @@
 // is chosen in one place. The brief is read at run time with `$(cat <path>)`,
 // so the printed command carries a path and never the brief text.
 
-import { accessSync, constants, readFileSync, statSync } from 'node:fs';
+import { accessSync, constants, statSync } from 'node:fs';
 import { basename } from 'node:path';
 import type { Assignment } from './table.ts';
 
 export type LaunchOptions = { brief: string; dir: string; session?: string };
 
-export function argvFor(a: Assignment, o: LaunchOptions): string[] {
-  // The command string reads the brief with `$(cat <path>)`, and a substitution
-  // drops the trailing newlines, so the argv carries the same text.
-  const brief = readFileSync(o.brief, 'utf8').replace(/\n+$/, '');
-  if (a.runtime === 'opencode') {
-    return [opencodeBin(), ...opencodeWords(a, o), brief];
-  }
-  return ['pi', ...piWords(a, o), '-p', brief];
-}
-
 export function commandFor(a: Assignment, o: LaunchOptions): string {
   const brief = `"$(cat ${quote(o.brief)})"`;
   if (a.runtime === 'opencode') {
-    // The binary stands unquoted, exactly as the shell seam interpolates it.
-    return `${opencodeBin()} ${opencodeWords(a, o).map(quote).join(' ')} ${brief}`;
+    return `${quote(opencodeBin())} ${opencodeWords(a, o).map(quote).join(' ')} ${brief}`;
   }
   return `${['pi', ...piWords(a, o), '-p'].map(quote).join(' ')} ${brief}`;
 }

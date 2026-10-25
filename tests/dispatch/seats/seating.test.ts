@@ -5,24 +5,20 @@
 
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
-import { seatCandidates, seatOrders, seatResult, seatVerdict, startSeats } from '../../../src/libs/dispatch/seats.ts';
-import type { SeatCandidate } from '../../../src/libs/dispatch/seats.ts';
+import { decodeSeatState, seatCandidates, seatOrders, seatResult, seatTurn, startSeats } from '../../../src/libs/dispatch/seats.ts';
 import type { Assignment } from '../../../src/libs/dispatch/table.ts';
 import type { RouteRecord } from '../../../src/libs/dispatch/types.ts';
 
 const AT = Date.parse('2026-10-23T00:00:00Z');
 
-function candidate(key: string, index: number): SeatCandidate {
-  return { index, key, entry: `${key} at high`, runtime: 'opencode', level: 'high' };
-}
-
 function assignment(key: string): Assignment {
   return {
+    role: '_R',
     key,
     text: `${key} at high`,
     provider: key.split('/')[0],
     model: key.split('/')[1],
-    runtime: 'opencode',
+    runtime: 'pi',
     level: 'high',
   };
 }
@@ -30,7 +26,7 @@ function assignment(key: string): Assignment {
 const READY: RouteRecord = { state: 'ready' };
 
 test('a seat takes candidate ((i - 1) mod m) + 1', () => {
-  const state = startSeats('_R', 5, [candidate('p/a', 0), candidate('p/b', 1), candidate('p/c', 2)]);
+  const state = startSeats(5, [assignment('p/a'), assignment('p/b'), assignment('p/c')]);
   assert.deepEqual(state.slots.map((slot) => slot.idx), [0, 1, 2, 0, 1]);
 });
 
@@ -44,87 +40,160 @@ test('a route the memory holds back is not dealt', () => {
   assert.deepEqual(candidates.map((c) => c.key), ['p/b']);
 });
 
-test('a role with no candidate is unroutable', () => {
-  assert.throws(
-    () => startSeats('_R', 1, []),
-    /unroutable: _R names no candidate that may be attempted now/,
-  );
+test('a seating with no candidate refuses', () => {
+  assert.throws(() => startSeats(1, []), /a seating needs at least one candidate/);
 });
 
 test('a retryable outcome keeps the seat on its assignment', () => {
-  const state = startSeats('_R', 1, [candidate('p/a', 0), candidate('p/b', 1)]);
+  const state = startSeats(1, [assignment('p/a'), assignment('p/b')]);
   const applied = seatResult(state, 1, 1, 'Error: Rate limit exceeded', AT);
   assert.equal(applied.outcome, 'retry');
-  assert.equal(state.slots[0].idx, 0);
-  assert.deepEqual(state.dropped, []);
-  assert.equal(applied.record?.class, 'quota');
+  assert.equal(state.slots[0].idx, 0, 'the seat keeps its assignment');
+  assert.equal(applied.write?.outcome.class, 'quota');
 });
 
 test('a dead candidate is dropped and the seat takes the next in the rotation', () => {
-  const state = startSeats('_R', 2, [candidate('p/a', 0), candidate('p/b', 1), candidate('p/c', 2)]);
-  const applied = seatResult(state, 1, 1, '401: {"type":"AuthError","message":"Invalid API key."}', AT);
-  assert.equal(applied.outcome, 'rotate');
-  assert.deepEqual(state.dropped, [0]);
+  const state = startSeats(2, [assignment('p/a'), assignment('p/b'), assignment('p/c')]);
+  const turn = seatTurn(state, [{ seat: 1, rc: 1, logText: 'Error: the model is unavailable' }], {}, AT);
+  assert.equal(turn.kind, 'fire');
+  const dead = turn.writes[0].outcome;
+  assert.equal(dead.class, 'capability', 'the memory holds the model dead');
   assert.equal(state.slots[0].idx, 1, 'seat 1 moves to the next candidate');
   assert.equal(state.slots[1].idx, 1, 'seat 2 keeps the assignment it already held');
 });
 
+test('a dead route advances every seat on it, not just the one that found it', () => {
+  const state = startSeats(2, [assignment('p/a'), assignment('p/b')]);
+  const turn = seatTurn(
+    state,
+    [
+      { seat: 1, rc: 1, logText: 'Error: the model is unavailable' },
+      { seat: 2, rc: 0, logText: 'report\n' },
+    ],
+    {},
+    AT,
+  );
+  assert.equal(turn.kind, 'fire');
+  assert.equal(state.slots[0].idx, 1, 'seat 1 leaves the dead route');
+  assert.equal(state.slots[1].state, 'done', 'seat 2 finished where it was');
+  assert.deepEqual(
+    turn.kind === 'fire' ? turn.orders.map((order) => [order.seat, order.candidate.key]) : [],
+    [[1, 'p/b']],
+  );
+});
+
 test('a seat whose every candidate is dead is unroutable', () => {
-  const state = startSeats('_R', 1, [candidate('p/a', 0)]);
-  seatResult(state, 1, 1, 'Error: the model is unavailable', AT);
+  const state = startSeats(1, [assignment('p/a')]);
+  const turn = seatTurn(state, [{ seat: 1, rc: 1, logText: 'Error: the model is unavailable' }], {}, AT);
+  assert.equal(turn.kind, 'refusal');
+  if (turn.kind !== 'refusal') return;
+  assert.equal(turn.refusal.kind, 'unroutable');
+  assert.deepEqual(turn.refusal.routes, ['p/a']);
   assert.equal(state.slots[0].state, 'gone');
-  assert.equal(seatVerdict(state).code, 4);
 });
 
 test('an unclassified sentence stops the run rather than reassigning', () => {
-  const state = startSeats('_R', 1, [candidate('p/a', 0), candidate('p/b', 1)]);
+  const state = startSeats(1, [assignment('p/a'), assignment('p/b')]);
   const applied = seatResult(state, 1, 1, 'the model failed', AT);
   assert.equal(applied.outcome, 'stop');
-  assert.equal(state.stop, 1);
-  assert.deepEqual(state.dropped, [], 'no candidate is blamed');
+  assert.equal(applied.exit, 1);
+  assert.equal(applied.write?.outcome.class, 'unknown', 'no candidate is blamed');
 });
 
 test('a timeout stops the run rather than reassigning', () => {
-  const state = startSeats('_R', 1, [candidate('p/a', 0), candidate('p/b', 1)]);
+  const state = startSeats(1, [assignment('p/a'), assignment('p/b')]);
   const applied = seatResult(state, 1, 124, 'aborted: the time limit of 1800s expired', AT);
   assert.equal(applied.outcome, 'stop');
 });
 
 test('every seat on a working model finishes the run at zero', () => {
-  const state = startSeats('_R', 2, [candidate('p/a', 0), candidate('p/b', 1)]);
-  seatResult(state, 1, 1, '401: {"type":"AuthError","message":"Invalid API key."}', AT);
-  seatResult(state, 2, 0, 'report\n', AT);
-  seatResult(state, 1, 0, 'report\n', AT);
-  const verdict = seatVerdict(state);
-  assert.equal(verdict.done, true);
-  assert.equal(verdict.code, 0, 'a seat that was reassigned and then succeeded does not fail the run');
+  const state = startSeats(2, [assignment('p/a'), assignment('p/b')]);
+  const first = seatTurn(
+    state,
+    [
+      { seat: 1, rc: 1, logText: 'Error: the model is unavailable' },
+      { seat: 2, rc: 0, logText: 'report\n' },
+    ],
+    {},
+    AT,
+  );
+  assert.equal(first.kind, 'fire', 'seat 1 takes the candidate seat 2 finished on');
+  const second = seatTurn(state, [{ seat: 1, rc: 0, logText: 'report\n' }], {}, AT);
+  assert.equal(second.kind, 'finished');
 });
 
+test('a fault no other model repairs stops the run, scope included', () => {
+  const state = startSeats(2, [assignment('p/a'), assignment('p/b')]);
+  const applied = seatResult(state, 1, 1, '401: {"type":"AuthError","message":"Invalid API key."}', AT);
+  assert.equal(applied.outcome, 'stop', 'an unfunded or unauthorised account is not repaired by another model');
+  assert.equal(applied.write?.outcome.class, 'capability');
+});
 
 test('a seat that logs nothing stops the run', () => {
-  const state = startSeats('_R', 1, [candidate('p/a', 0), candidate('p/b', 1)]);
+  const state = startSeats(1, [assignment('p/a'), assignment('p/b')]);
   const applied = seatResult(state, 1, 0, '   \n', AT);
   assert.equal(applied.outcome, 'stop', 'a silent exit says nothing about the route');
   assert.equal(applied.exit, 1);
-  assert.deepEqual(state.dropped, [], 'no candidate is blamed');
+  assert.equal(applied.write?.outcome.class, 'unknown', 'the memory records no success the attempt did not earn');
 });
 
 test('an attemptable seat is ordered to fire with its runtime', () => {
-  const state = startSeats('_R', 2, [candidate('p/a', 0), candidate('p/b', 1)]);
-  const step = seatOrders(state, { 'p/a': READY, 'p/b': READY }, AT);
-  assert.deepEqual(step.orders, [
-    { seat: 1, entry: 'p/a at high', runtime: 'opencode' },
-    { seat: 2, entry: 'p/b at high', runtime: 'opencode' },
-  ]);
-  assert.equal(step.waiting, 0);
+  const state = startSeats(2, [assignment('p/a'), assignment('p/b')]);
+  const orders = seatOrders(state, { 'p/a': READY, 'p/b': READY }, AT);
+  assert.deepEqual(
+    orders.map((order) => [order.seat, order.candidate.text, order.candidate.runtime]),
+    [
+      [1, 'p/a at high', 'pi'],
+      [2, 'p/b at high', 'pi'],
+    ],
+  );
 });
 
 test('a cooling seat is waited on, not fired', () => {
-  const state = startSeats('_R', 1, [candidate('p/a', 0)]);
+  const state = startSeats(1, [assignment('p/a')]);
   const records: Record<string, RouteRecord> = {
     'p/a': { state: 'cooling', until: AT + 60_000, reason: 'rate', strikes: 1 },
   };
-  const step = seatOrders(state, records, AT);
-  assert.deepEqual(step.orders, []);
-  assert.equal(step.waiting, 1);
+  assert.deepEqual(seatOrders(state, records, AT), []);
+});
+
+test('a pinned seat fires even when the memory holds its route back', () => {
+  const state = startSeats(1, [assignment('p/a')], true);
+  const records: Record<string, RouteRecord> = {
+    'p/a': { state: 'cooling', until: AT + 60_000, reason: 'quota', strikes: 2 },
+  };
+  const orders = seatOrders(state, records, AT);
+  assert.equal(orders.length, 1, 'the pin is the caller value, not a routing decision');
+});
+
+test('a stopping seat does not truncate the turn\'s writes', () => {
+  const state = startSeats(2, [assignment('p/a'), assignment('p/b')]);
+  const turn = seatTurn(
+    state,
+    [
+      { seat: 1, rc: 124, logText: '' },
+      { seat: 2, rc: 0, logText: 'report\n' },
+    ],
+    {},
+    AT,
+  );
+  // Both seats fired in the turn, so both outcomes are the memory's to record:
+  // the stop ends the run, it does not discard the other seat's success.
+  assert.equal(turn.kind, 'stopped');
+  assert.deepEqual(turn.writes.map((write) => write.route), ['p/a', 'p/b']);
+});
+
+test('a pinned seat stops on a retryable outcome instead of re-firing', () => {
+  const state = startSeats(1, [assignment('p/a')], true);
+  const turn = seatTurn(state, [{ seat: 1, rc: 1, logText: 'Rate limit exceeded' }], {}, AT);
+  // The memory never holds a pinned route back, so a retry would re-fire the
+  // same attempt with no wait: the pin is one attempt, as the pinned walk is.
+  assert.equal(turn.kind, 'stopped');
+});
+
+test('an unreadable run state is refused rather than resumed', () => {
+  const state = startSeats(1, [assignment('p/a')]);
+  assert.deepEqual(decodeSeatState(JSON.parse(JSON.stringify(state))), state);
+  assert.equal(decodeSeatState({ role: '_R', turn: 1 }), undefined);
+  assert.equal(decodeSeatState({ ...state, candidates: [{ key: 'p/a' }] }), undefined);
 });

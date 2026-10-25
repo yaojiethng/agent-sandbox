@@ -11,6 +11,8 @@
 #               [--session <id>] [--run]
 #   dispatch.sh --role <role> --brief <file> --worker --run \
 #               [--base <rev>] [--run-dir <dir>]
+#   dispatch.sh --role <role> --brief <file> --seats <n> --run \
+#               [--model <provider>/<model>] [--thinking <level>] [--run-dir <dir>]
 #   dispatch.sh --list-roles
 #   dispatch.sh --status [--json]
 #   dispatch.sh --check --role <role>
@@ -41,12 +43,8 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/dispatch_worker.sh"
 DISPATCH_CLI="$REPO_ROOT/src/libs/dispatch/cli.ts"
-# The CLI chooses the table, so the override is passed through only when the
-# operator set one, and no function here picks a path.
-TABLE_ARGS=()
-if [[ -n "${DISPATCH_REC_FILE:-}" ]]; then
-  TABLE_ARGS=(--file "$DISPATCH_REC_FILE")
-fi
+# The CLI chooses the table from DISPATCH_REC_FILE; `--file` stays its explicit
+# override for a test that needs another file.
 
 ROLE=""
 BRIEF=""
@@ -54,25 +52,28 @@ DIR="$(pwd)"
 MODEL=""
 THINKING=""
 SESSION=""
+MODE=""
 RUN=0
-WORKER=0
 SEATS=1
-SEATS_GIVEN=0
-DIR_GIVEN=0
 BASE="HEAD"
 RUN_DIR=""
-BASE_GIVEN=0
-RUNDIR_GIVEN=0
-LIST_ROLES=0
-STATUS=0
-STATUS_JSON=0
-CHECK=0
+declare -A GIVEN=()
+
+# set_mode MODE -- one mode per call. A second, different mode flag refuses,
+# because the mode is a decision rather than a sum of booleans.
+set_mode() {
+  if [[ -n "$MODE" && "$MODE" != "$1" ]]; then
+    printf 'dispatch: --%s and --%s are alternatives\n' "$MODE" "$1" >&2
+    exit 2
+  fi
+  MODE="$1"
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --role) ROLE="${2:-}"; shift 2 ;;
     --brief) BRIEF="${2:-}"; shift 2 ;;
-    --dir) DIR="${2:-}"; DIR_GIVEN=1; shift 2 ;;
+    --dir) GIVEN[--dir]=1; DIR="${2:-}"; shift 2 ;;
     --model) MODEL="${2:-}"; shift 2 ;;
     --thinking) THINKING="${2:-}"; shift 2 ;;
     --session) SESSION="${2:-}"; shift 2 ;;
@@ -82,18 +83,18 @@ while [[ $# -gt 0 ]]; do
         echo "dispatch: --seats requires a value" >&2
         exit 2
       fi
+      set_mode seats
       SEATS="$2"
-      SEATS_GIVEN=1
       shift 2
       ;;
-    --worker) WORKER=1; shift ;;
+    --worker) set_mode worker; shift ;;
     --base)
       if [[ -z "${2:-}" ]]; then
         echo "dispatch: --base requires a value" >&2
         exit 2
       fi
+      GIVEN[--base]=1
       BASE="$2"
-      BASE_GIVEN=1
       shift 2
       ;;
     --run-dir)
@@ -101,14 +102,14 @@ while [[ $# -gt 0 ]]; do
         echo "dispatch: --run-dir requires a value" >&2
         exit 2
       fi
+      GIVEN[--run-dir]=1
       RUN_DIR="$2"
-      RUNDIR_GIVEN=1
       shift 2
       ;;
-    --list-roles) LIST_ROLES=1; shift ;;
-    --status) STATUS=1; shift ;;
-    --json) STATUS_JSON=1; shift ;;
-    --check) CHECK=1; shift ;;
+    --list-roles) set_mode list; shift ;;
+    --status) set_mode status; shift ;;
+    --json) GIVEN[--json]=1; shift ;;
+    --check) set_mode check; shift ;;
     -h|--help)
       sed -n '2,/^$/p' "${BASH_SOURCE[0]}" | sed '$d'
       exit 0
@@ -120,54 +121,64 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if (( WORKER && ! RUN )); then
-  echo "dispatch: --worker requires --run" >&2
-  exit 2
+# The mode is one value, written by the flag that names it: print (the default),
+# run, worker, seats, list, status or check.
+if (( RUN )); then
+  [[ -z "$MODE" ]] && MODE=run
 fi
-if (( BASE_GIVEN && ! WORKER )); then
-  echo "dispatch: --base is worker mode only" >&2
-  exit 2
-fi
-if (( RUNDIR_GIVEN && ! WORKER && ! SEATS_GIVEN )); then
-  echo "dispatch: --run-dir is worker or seat mode only" >&2
-  exit 2
-fi
-if ! [[ "$SEATS" =~ ^[0-9]+$ ]] || (( SEATS < 1 )); then
-  echo "dispatch: --seats needs a count of at least 1" >&2
-  exit 2
-fi
-if (( SEATS_GIVEN )) && (( ! RUN )); then
-  echo "dispatch: --seats requires --run" >&2
-  exit 2
-fi
-if (( SEATS_GIVEN )) && (( WORKER )); then
-  echo "dispatch: --seats is not a worker flag; a worker returns one change set" >&2
-  exit 2
-fi
+[[ -z "$MODE" ]] && MODE=print
 
-if (( LIST_ROLES )); then
-  node "$DISPATCH_CLI" table roles ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"}
-  exit 0
+if [[ "$MODE" == worker || "$MODE" == seats ]] && (( ! RUN )); then
+  printf 'dispatch: --%s requires --run\n' "$MODE" >&2
+  exit 2
 fi
-
-if (( STATUS )); then
-  if (( STATUS_JSON )); then
-    node "$DISPATCH_CLI" status --json
-  else
-    node "$DISPATCH_CLI" status
-  fi
-  exit $?
-fi
-
-if (( CHECK )); then
-  if [[ -z "$ROLE" ]]; then
-    echo "dispatch: --check requires --role" >&2
+# Which modes may carry a flag that is not itself a mode. One relation, so a
+# new flag is one row rather than a fifth if-block, and the parse refuses the
+# combination wherever it appears.
+declare -A FLAG_MODES=(
+  [--base]="worker|worker mode only"
+  [--run-dir]="worker seats|worker or seat mode only"
+  [--json]="status|status mode only"
+)
+for flag in "${!FLAG_MODES[@]}"; do
+  [[ -z "${GIVEN[$flag]:-}" ]] && continue
+  belongs="${FLAG_MODES[$flag]%%|*}"
+  where="${FLAG_MODES[$flag]#*|}"
+  if [[ " $belongs " != *" $MODE "* ]]; then
+    printf 'dispatch: %s is %s\n' "$flag" "$where" >&2
     exit 2
   fi
-  rc=0
-  node "$DISPATCH_CLI" table check --role "$ROLE" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} || rc=$?
-  exit "$rc"
+done
+if [[ "$MODE" == seats ]]; then
+  if ! [[ "$SEATS" =~ ^[0-9]+$ ]] || (( SEATS < 1 )); then
+    echo "dispatch: --seats needs a count of at least 1" >&2
+    exit 2
+  fi
 fi
+
+case "$MODE" in
+  list)
+    node "$DISPATCH_CLI" table roles
+    exit 0
+    ;;
+  status)
+    if [[ -n "${GIVEN[--json]:-}" ]]; then
+      node "$DISPATCH_CLI" status --json
+    else
+      node "$DISPATCH_CLI" status
+    fi
+    exit $?
+    ;;
+  check)
+    if [[ -z "$ROLE" ]]; then
+      echo "dispatch: --check requires --role" >&2
+      exit 2
+    fi
+    rc=0
+    node "$DISPATCH_CLI" table check --role "$ROLE" || rc=$?
+    exit "$rc"
+    ;;
+esac
 
 if [[ -z "$ROLE" ]]; then
   echo "dispatch: --role is required" >&2
@@ -195,20 +206,9 @@ fi
 # so a role the table does not name refuses before the header claims a run
 # exists.
 worker_preflight() {
-  local root base_sha pre entry assignments=""
+  local root base_sha pre entry
 
-  if [[ -n "$RUN_DIR" ]]; then
-    if [[ ! -d "$RUN_DIR" ]]; then
-      printf 'dispatch: run directory not found: %s\n' "$RUN_DIR" >&2
-      exit 2
-    fi
-    if [[ ! -w "$RUN_DIR" ]]; then
-      printf 'dispatch: run directory is not writable: %s\n' "$RUN_DIR" >&2
-      exit 2
-    fi
-  else
-    RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dispatch-worker.XXXXXX")"
-  fi
+  dispatch_run_dir "${TMPDIR:-/tmp}/dispatch-worker.XXXXXX" || exit 2
 
   if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     printf 'dispatch: not inside a git work tree: %s\n' "$PWD" >&2
@@ -220,7 +220,7 @@ worker_preflight() {
   # rather than in whatever subdirectory the caller happened to invoke from.
   # A caller who named another directory is told, because ignoring a flag reads
   # as agreement with it.
-  if (( DIR_GIVEN )); then
+  if [[ -n "${GIVEN[--dir]:-}" ]]; then
     printf 'dispatch: --dir is not a worker flag; a worker edits the repository root: %s\n' "$root" >&2
     exit 2
   fi
@@ -238,11 +238,7 @@ worker_preflight() {
 
   # A role the table cannot resolve refuses here, before the header claims a run
   # exists, and the message names the role.
-  assignments="$(node "$DISPATCH_CLI" table list --role "$ROLE" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"})" || exit 1
-  ENTRIES=()
-  while IFS= read -r entry; do
-    [[ -n "$entry" ]] && ENTRIES+=("$entry")
-  done <<<"$assignments"
+  node "$DISPATCH_CLI" table list --role "$ROLE" >/dev/null || exit 1
 
   TIMEOUT="${DISPATCH_TIMEOUT:-1800}"
 
@@ -250,90 +246,34 @@ worker_preflight() {
     "$BRIEF" "$ROLE" "$BASE_SHA" "$PRE_STATE" "$RUN_DIR"
 }
 
-# The role's ordered entries, as the table wrote them. Worker mode resolves them
-# in its preflight, so every refusal there precedes the header.
-ENTRIES=()
-if (( WORKER )); then
+if [[ "$MODE" == worker ]]; then
   worker_preflight
-else
-  entries_text="$(node "$DISPATCH_CLI" table list --role "$ROLE" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"})" || exit 1
-  while IFS= read -r entry; do
-    [[ -n "$entry" ]] && ENTRIES+=("$entry")
-  done <<<"$entries_text"
 fi
 
-# choose_entry [START] -- set ENTRY to the assignment this dispatch will attempt,
-# from the entries at index START and later.
-#
-# A pinned model is the whole answer. Otherwise the machine decides, and this
-# function exits with the machine's code when nothing may be attempted.
-choose_entry() {
-  local start="${1:-0}"
-  if [[ -n "$MODEL" ]]; then
-    ENTRY="$MODEL"
-    [[ -n "$THINKING" ]] && ENTRY="$MODEL at $THINKING"
-    return 0
-  fi
-  local -a sel=()
-  local i out rc
-  for (( i = start; i < ${#ENTRIES[@]}; i++ )); do
-    sel+=(--entry "${ENTRIES[i]}")
-  done
-  rc=0
-  out="$(node "$DISPATCH_CLI" select "${sel[@]}")" || rc=$?
-  case "$rc" in
-    0)
-      ENTRY="${out#run }"
-      return 0
-      ;;
-    3)
-      local iso reason routes
-      read -r _ iso reason routes <<<"$out"
-      printf 'dispatch: blocked until %s (%s): %s\n' "$iso" "$reason" "$routes" >&2
-      exit 3
-      ;;
-    4)
-      printf 'dispatch: unroutable: %s\n' "${out#unroutable }" >&2
-      exit 4
-      ;;
-    *)
-      exit "$rc"
-      ;;
-  esac
+# plan_run [FLAGS...] -- one library call resolves and plans an attempt. Sets
+# CMD, ROUTE, LEVEL, RUNTIME and METERED. The library owns the selection from
+# the role's whole list, so the shell never holds an assignment's text as a
+# cursor, and this is the one place the plan record is decoded.
+plan_run() {
+  local out first
+  local -a plan=(node "$DISPATCH_CLI" plan --role "$ROLE" --brief "$BRIEF" --dir "$DIR" "$@")
+  [[ -n "$SESSION" ]] && plan+=(--session "$SESSION")
+  out="$("${plan[@]}")" || return $?
+  first="$(head -n 1 <<<"$out")"
+  IFS='|' read -r ROUTE LEVEL RUNTIME <<<"$first"
+  METERED=()
+  [[ "$RUNTIME" == opencode ]] && METERED=(--metered)
+  CMD="$(tail -n +2 <<<"$out")"
 }
 
-# build_command -- set CMD, ROUTE, LEVEL, RUNTIME and METERED from ENTRY.
-build_command() {
-  local model resolved
-  model="${ENTRY%% at *}"
-  LEVEL="${THINKING:-}"
-  if [[ -z "$LEVEL" && "$ENTRY" == *" at "* ]]; then
-    LEVEL="${ENTRY#* at }"
-  fi
-  ROUTE="$model"
-  # The runtime is the entry's own. A fallback or a pin may name a runtime the
-  # role's head does not, and the stall window and the metered count follow it.
-  # A pin is the caller's value, so it is resolved as one and refused as one.
-  if [[ -n "$MODEL" ]]; then
-    resolved="$(node "$DISPATCH_CLI" table resolve --role "$ROLE" --pin "$MODEL" \
-      ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"})" || return 1
-  else
-    resolved="$(node "$DISPATCH_CLI" table resolve --role "$ROLE" --entry "$ENTRY" \
-      ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"})" || return 1
-  fi
-  RUNTIME="${resolved##* }"
-  METERED=()
-  if [[ "$RUNTIME" == "opencode" ]]; then
-    METERED=(--metered)
-  fi
-  local -a build=(node "$DISPATCH_CLI" command --role "$ROLE" --brief "$BRIEF" --dir "$DIR" --model "$model")
-  if [[ -n "$LEVEL" ]]; then
-    build+=(--thinking "$LEVEL")
-  fi
-  if [[ -n "$SESSION" ]]; then
-    build+=(--session "$SESSION")
-  fi
-  CMD="$("${build[@]}" ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"})"
+# plan_attempt [MODEL LEVEL] -- one attempt's argv. With no argument the caller's
+# pin applies; a seat passes the assignment it was dealt.
+plan_attempt() {
+  local model="${1-$MODEL}" level="${2-$THINKING}"
+  local -a flags=()
+  [[ -n "$model" ]] && flags+=(--model "$model")
+  [[ -n "$level" ]] && flags+=(--thinking "$level")
+  plan_run "${flags[@]}"
 }
 
 # report_failures -- print the attempts of this walk that failed, with the
@@ -355,27 +295,30 @@ report_failures() {
 # than the sum and the candidate set has one writer per turn. Nothing sleeps: a
 # turn the library cannot fill ends the run as blocked and names the wait.
 seat_run() {
-  local state="$RUN_DIR/seats.json" out="$RUN_DIR/seats.start" i line seat runtime entry log rc turn=0
-  local -a fire_seat=() fire_rt=() fire_entry=() pidof=() results=()
+  local state="$RUN_DIR/seats.json" out="$RUN_DIR/seats.start" i seat runtime log rc turn=0
+  local -a fire_seat=() fire_rt=() fire_key=() fire_level=() fire_entry=() pidof=() results=()
 
   local -a pin_args=()
   [[ -n "$MODEL" ]] && pin_args+=(--model "$MODEL")
   [[ -n "$THINKING" ]] && pin_args+=(--thinking "$THINKING")
   node "$DISPATCH_CLI" seats start --state "$state" --role "$ROLE" \
-    --seats "$SEATS" ${pin_args[@]+"${pin_args[@]}"} ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} >"$out" || return $?
+    --seats "$SEATS" ${pin_args[@]+"${pin_args[@]}"} >"$out" || return $?
 
   while :; do
-    fire_seat=(); fire_rt=(); fire_entry=(); pidof=()
-    while read -r line; do
-      case "$line" in
-        turn*) turn="${line#turn }" ;;
-        fire*)
-          read -r _ seat runtime entry <<<"$line"
-          fire_seat+=("$seat"); fire_rt+=("$runtime"); fire_entry+=("$entry")
-          ;;
-        blocked*)
-          printf 'dispatch: blocked: %s\n' "${line#blocked }" >&2
-          return 3
+    fire_seat=(); fire_rt=(); fire_key=(); fire_level=(); fire_entry=(); pidof=()
+    # The plan is NUL-delimited records, so a field can carry any character and
+    # the reader never splits one on a separator it did not declare.
+    while IFS= read -r -d '' kind; do
+      case "$kind" in
+        turn) IFS= read -r -d '' turn ;;
+        fire)
+          IFS= read -r -d '' seat
+          IFS= read -r -d '' runtime
+          IFS= read -r -d '' key
+          IFS= read -r -d '' level
+          IFS= read -r -d '' entry
+          fire_seat+=("$seat"); fire_rt+=("$runtime"); fire_key+=("$key")
+          fire_level+=("$level"); fire_entry+=("$entry")
           ;;
         finished)
           printf 'seat run: %s seats over role %s\n' "$SEATS" "$ROLE"
@@ -384,14 +327,9 @@ seat_run() {
       esac
     done < "$out"
 
-    if (( ${#fire_seat[@]} == 0 )); then
-      printf 'dispatch: blocked: no seat may be attempted now\n' >&2
-      return 3
-    fi
-
     for i in "${!fire_seat[@]}"; do
-      seat="${fire_seat[i]}"; runtime="${fire_rt[i]}"; ENTRY="${fire_entry[i]}"
-      build_command || return 1
+      seat="${fire_seat[i]}"; runtime="${fire_rt[i]}"
+      plan_attempt "${fire_key[i]}" "${fire_level[i]}" || return 1
       log="$RUN_DIR/seat$seat-turn$turn.log"
       dispatch_run_supervised "$CMD" "$log" "$TIMEOUT" "$DISPATCH_CLI" \
         "$(dispatch_stall_window "$runtime")" </dev/null &
@@ -405,23 +343,20 @@ seat_run() {
       rc=0
       wait "${pidof[i]}" || rc=$?
       printf 'seat %s turn %s: %s rc=%s log=%s\n' "$seat" "$turn" "${fire_entry[i]}" "$rc" "$log"
-      results+=(--result "$seat:$rc:$log")
+      results+=(--seat "$seat" --rc "$rc" --log "$log")
     done
 
     out="$RUN_DIR/seats.turn$turn"
     rc=0
-    node "$DISPATCH_CLI" seats turn --state "$state" \
-      ${TABLE_ARGS[@]+"${TABLE_ARGS[@]}"} "${results[@]}" >"$out" || rc=$?
+    node "$DISPATCH_CLI" seats turn --state "$state" "${results[@]}" >"$out" || rc=$?
     if (( rc != 0 )); then
-      if (( rc == 3 )); then
-        printf 'dispatch: blocked: %s\n' "$(sed -n 's/^blocked //p' "$out")" >&2
-      fi
+      # A blocked turn names its wait on stderr, which this shell passes through.
       return "$rc"
     fi
   done
 }
 
-if (( SEATS_GIVEN )); then
+if [[ "$MODE" == seats ]]; then
   TIMEOUT="${DISPATCH_TIMEOUT:-1800}"
   # A seat run is read-only, and a review reads one revision: a dirty tree makes
   # the report unattributable to a commit, which is the check the reviewer's old
@@ -430,94 +365,33 @@ if (( SEATS_GIVEN )); then
     printf 'dispatch: the working tree is dirty; a review reads one revision: %s\n' "${DIR:-.}" >&2
     exit 1
   fi
-  if (( RUNDIR_GIVEN )); then
-    if [[ ! -d "$RUN_DIR" || ! -w "$RUN_DIR" ]]; then
-      printf 'dispatch: run directory is not a writable directory: %s\n' "$RUN_DIR" >&2
-      exit 2
-    fi
-  else
-    RUN_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dispatch-seats.XXXXXX")"
-  fi
+  dispatch_run_dir "${TMPDIR:-/tmp}/dispatch-seats.XXXXXX" || exit 2
   printf 'role: %s\nseats: %s\nrun dir: %s\n' "$ROLE" "$SEATS" "$RUN_DIR"
   seat_run
   exit $?
 fi
 
-choose_entry
-build_command
+plan_attempt || exit $?
 
-if (( ! RUN )); then
+if [[ "$MODE" != run && "$MODE" != worker ]]; then
   printf '%s\n' "$CMD"
   exit 0
 fi
 
-# may_advance CLASS SCOPE RC LOG -- whether the walk may attempt another entry
-# after an attempt that ended CLASS with SCOPE, exited RC and logged to LOG.
-# One predicate, so the two rules sit side by side.
-#
-# The general walk repeats the route machine's rule: a capability failure at the
-# request or the account is not repaired by another model, an unclassified
-# failure is not guessed at, and a timeout would cost the next entry the same
-# budget without evidence that it fares better.
-#
-# A worker adds the tree, and the tree decides: a second model over a first
-# model's edits mixes two workers' work, so a changed tree stops the walk
-# whatever the attempt's class. An attempt that left the tree alone spent its
-# model, and the walk names the next entry.
-may_advance() {
-  local class="$1" scope="$2" rc="$3" log="$4"
-  case "$class" in
-    timeout)
-      printf 'dispatch: not retried: a timeout is the same budget again\n' >&2
-      return 1
-      ;;
-  esac
-  if (( WORKER )); then
-    if [[ "$TREE_CHANGED" == "yes" ]]; then
-      printf 'dispatch: the worker exited rc=%s after changing the tree: %s\n' "$rc" "$log" >&2
-      return 1
-    fi
-    return 0
-  fi
-  case "$class:$scope" in
-    capability:request|capability:account)
-      printf 'dispatch: not retried: the repair is not another model\n' >&2
-      return 1
-      ;;
-    unknown:*)
-      printf 'dispatch: not retried: the failure is not classified\n' >&2
-      return 1
-      ;;
-  esac
-  return 0
-}
-
-
-# The walk: run the attempt, record what it ended in, and advance only when the
-# outcome says another attempt can help.
-attempt=0
-next_index=0
-FAILED=()
-max=${#ENTRIES[@]}
-(( max < 1 )) && max=1
-# A pinned model is the only entry the walk may attempt, so a worker run makes
-# one attempt rather than treating the role's list as candidates.
-if (( WORKER )) && [[ -n "$MODEL" ]]; then
-  max=1
-fi
-while :; do
-  attempt=$(( attempt + 1 ))
-
-  if (( WORKER )); then
+# attempt_open -- the log path, the pre-state measurement and the attempt header.
+# The worker keeps each attempt's log as its evidence; a general run writes one
+# temporary log and prints it on success.
+attempt_open() {
+  if [[ "$MODE" == worker ]]; then
     # Every attempt keeps its own log as evidence, so the previous one is
     # renamed off the current path before this attempt opens it.
     if (( attempt > 1 )); then
       mv "$LOG" "$RUN_DIR/worker-attempt-$(( attempt - 1 )).log"
     fi
     LOG="$RUN_DIR/worker.log"
-    LEVEL_NOTE=""
-    [[ -n "$LEVEL" ]] && LEVEL_NOTE=" at $LEVEL"
-    printf 'attempt %s: model %s%s\ncommand: %s\n' "$attempt" "$ROUTE" "$LEVEL_NOTE" "$CMD"
+    local note=""
+    [[ -n "$LEVEL" ]] && note=" at $LEVEL"
+    printf 'attempt %s: model %s%s\ncommand: %s\n' "$attempt" "$ROUTE" "$note" "$CMD"
     if ! dispatch_change_set "$REPO_TREE" "$BASE_SHA" \
       "$RUN_DIR/changes-before.txt" "$RUN_DIR/changes.err"; then
       printf 'dispatch: the change set could not be computed before the attempt: %s\n' \
@@ -528,33 +402,56 @@ while :; do
   else
     LOG="$(mktemp)"
   fi
+}
 
-  rc=0
-  if (( WORKER )); then
+# attempt_exec -- one attempt: supervised for a worker, a plain shell for a
+# general run, whose printed command is the caller's own.
+attempt_exec() {
+  if [[ "$MODE" == worker ]]; then
     dispatch_run_supervised "$CMD" "$LOG" "$TIMEOUT" "$DISPATCH_CLI" \
       "$(dispatch_stall_window "$RUNTIME")" || rc=$?
     elapsed=$(( $(date +%s) - start ))
-    # The CLI can exit 0 having printed nothing. The log is the only evidence
-    # that a worker ran, so an empty one is a failure, not a success.
-    if (( rc == 0 )) && [[ ! -s "$LOG" ]]; then
-      printf 'dispatch: the worker exited 0 with an empty log, so no work is evidenced\n' >&2
-      rc=1
-    fi
-    if ! dispatch_change_set "$REPO_TREE" "$BASE_SHA" \
-      "$RUN_DIR/changes.txt" "$RUN_DIR/changes.err"; then
-      printf 'dispatch: the change set could not be computed after the attempt: %s\n' \
-        "$(tr '\n' ' ' <"$RUN_DIR/changes.err")" >&2
-      exit 1
-    fi
-    changed="$(awk 'END { print NR }' "$RUN_DIR/changes.txt")"
-    TREE_CHANGED=no
-    cmp -s "$RUN_DIR/changes-before.txt" "$RUN_DIR/changes.txt" || TREE_CHANGED=yes
-    if [[ "$TREE_CHANGED" == "yes" ]]; then
-      printf 'dispatch: attempt %d left this change set (%s):\n' "$attempt" "$RUN_DIR/changes.txt" >&2
-      sed 's/^/  /' "$RUN_DIR/changes.txt" >&2
-    fi
   else
     bash -c "$CMD" >"$LOG" 2>&1 || rc=$?
+  fi
+}
+
+# attempt_close -- the post-attempt change set and its report.
+attempt_close() {
+  [[ "$MODE" == worker ]] || return 0
+  if ! dispatch_change_set "$REPO_TREE" "$BASE_SHA" \
+    "$RUN_DIR/changes.txt" "$RUN_DIR/changes.err"; then
+    printf 'dispatch: the change set could not be computed after the attempt: %s\n' \
+      "$(tr '\n' ' ' <"$RUN_DIR/changes.err")" >&2
+    exit 1
+  fi
+  changed="$(awk 'END { print NR }' "$RUN_DIR/changes.txt")"
+  TREE_CHANGED=no
+  cmp -s "$RUN_DIR/changes-before.txt" "$RUN_DIR/changes.txt" || TREE_CHANGED=yes
+  if [[ "$TREE_CHANGED" == "yes" ]]; then
+    printf 'dispatch: attempt %d left this change set (%s):\n' "$attempt" "$RUN_DIR/changes.txt" >&2
+    sed 's/^/  /' "$RUN_DIR/changes.txt" >&2
+  fi
+}
+
+attempt=0
+FAILED=()
+while :; do
+  attempt=$(( attempt + 1 ))
+  emptylog=no
+  rc=0
+  attempt_open
+  attempt_exec
+  attempt_close
+
+  # A process that exits 0 having printed nothing is an observation of nothing:
+  # the log is the only evidence that an attempt ran. Empty means no
+  # non-whitespace in the tail, which is the seat path's reading of the same
+  # rule. The walk owns the rule and the message; the shell reports the fact.
+  text="$(tail -c 4000 "$LOG")"
+  if (( rc == 0 )) && [[ -z "${text//[[:space:]]/}" ]]; then
+    rc=1
+    emptylog=yes
   fi
 
   if (( rc == 0 )); then
@@ -562,7 +459,7 @@ while :; do
     # no route, and still records what its attempt ended in.
     node "$DISPATCH_CLI" record --route "$ROUTE" --class success --scope none "${METERED[@]}" >/dev/null
     report_failures
-    if (( WORKER )); then
+    if [[ "$MODE" == worker ]]; then
       printf 'rc=%s %ss changed=%s model=%s log=%s\n' \
         "$rc" "$elapsed" "$changed" "$ROUTE" "$LOG"
     else
@@ -572,18 +469,17 @@ while :; do
     exit 0
   fi
 
-  text="$(tail -c 4000 "$LOG" | tr '\n' ' ')"
-  read -r _pclass class scope reason refresh <<<"$(node "$DISPATCH_CLI" classify --text "$text")"
-  record_args=(--route "$ROUTE" --class "$class" --scope "$scope" --text "$text" "${METERED[@]}")
+  read -r _pclass class scope reason refresh <<<"$(node "$DISPATCH_CLI" classify --text "$(tr '\n' ' ' <<<"$text")")"
+  record_args=(--route "$ROUTE" --class "$class" --scope "$scope" "${METERED[@]}")
   [[ "$reason" != "-" ]] && record_args+=(--reason "$reason")
   [[ "$refresh" != "-" ]] && record_args+=(--refresh-at "$refresh")
   node "$DISPATCH_CLI" record "${record_args[@]}" >/dev/null
-  if (( WORKER )); then
+  if [[ "$MODE" == worker ]]; then
     FAILED+=("$ROUTE ($_pclass $class $scope $reason $refresh)")
   fi
 
   cat "$LOG" >&2
-  if (( WORKER )); then
+  if [[ "$MODE" == worker ]]; then
     printf 'attempt %s failed: rc=%s %ss changed=%s verdict=%s msg=%s log=%s\n' \
       "$attempt" "$rc" "$elapsed" "$changed" "$_pclass $class $scope $reason $refresh" \
       "${text:0:160}" "$LOG"
@@ -592,23 +488,25 @@ while :; do
   fi
   printf 'dispatch: attempt %d on %s ended %s (%s)\n' "$attempt" "$ROUTE" "$class" "$scope" >&2
 
-  if ! may_advance "$class" "$scope" "$rc" "$LOG"; then
+  walk_args=(--class "$class" --scope "$scope")
+  if [[ "$MODE" == worker ]]; then
+    walk_args+=(--worker)
+    [[ "$TREE_CHANGED" == "yes" ]] && walk_args+=(--tree-changed)
+  fi
+  [[ "$emptylog" == "yes" ]] && walk_args+=(--empty-log)
+  if ! node "$DISPATCH_CLI" walk "${walk_args[@]}"; then
     report_failures
     exit "$rc"
   fi
 
-  if (( attempt >= max )); then
+  # A pin is the caller's whole answer, so it is attempted once. Otherwise the
+  # library selects from the role's list: every outcome that reaches here left
+  # its route unselectable, so the next plan visits the next entry, and an
+  # exhausted list answers blocked or unroutable with the library's own message.
+  if [[ -n "$MODEL" ]]; then
     printf 'dispatch: every entry was attempted\n' >&2
     report_failures
     exit "$rc"
   fi
-
-  # A worker attempt spends its entry: the route machine keeps a route that
-  # failed without saying anything about itself in the table, so selecting over
-  # the whole list again would re-run the model that just failed.
-  if (( WORKER )); then
-    next_index=$attempt
-  fi
-  choose_entry "$next_index"
-  build_command
+  plan_attempt || exit $?
 done

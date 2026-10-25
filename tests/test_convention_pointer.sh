@@ -29,6 +29,11 @@ POINTER='Read each convention below at `.agents/skills/<name>/SKILL.md`; if one 
 offenders() {
   local root="$1" file
   while IFS= read -r file; do
+    # A gate reads the repository, not the session scratch: a gitignored file is
+    # part of no tree a review sees, and `.scratchpad/` holds throwaway drafts.
+    if git -C "$root" check-ignore -q "$file" 2>/dev/null; then
+      continue
+    fi
     grep -qF "$POINTER" "$file" || printf '%s\n' "${file#"$root"/}"
   done < <(grep -rl '^## Project conventions$' --include='*.md' "$root" 2>/dev/null | sort)
 }

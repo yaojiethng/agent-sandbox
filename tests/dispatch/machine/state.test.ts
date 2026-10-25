@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { defaultPath, emptyState, load, save } from '../../../src/libs/dispatch/state.ts';
+import { decodeState, defaultPath, emptyState, load, recordAttempt, save } from '../../../src/libs/dispatch/state.ts';
 
 test('a new session starts with an empty route memory', () => {
   assert.deepEqual(emptyState('s1'), { version: 1, session: 's1', routes: {}, usage: {} });
@@ -48,4 +48,31 @@ test('the default path is namespaced by session and honours the override', () =>
   else process.env.DISPATCH_STATE_FILE = before;
   if (beforeSession === undefined) delete process.env.SESSION_ID;
   else process.env.SESSION_ID = beforeSession;
+});
+
+test('a readable file missing a field is merged onto an empty memory', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dispatch-state-'));
+  const path = join(dir, 'partial.json');
+  writeFileSync(path, JSON.stringify({ version: 1, routes: { 'p/a': { state: 'ready' } } }));
+  assert.deepEqual(load(path, 's1').usage, {});
+  assert.deepEqual(decodeState({ version: 2, routes: {} }, 's1'), emptyState('s1'));
+  assert.deepEqual(decodeState('not an object', 's1'), emptyState('s1'));
+});
+
+test('recording an attempt is one transaction and leaves no lock behind', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dispatch-state-'));
+  const path = join(dir, 'state.json');
+  const next = recordAttempt(path, 's1', 'p/a', { at: 1000, class: 'success', scope: 'none' }, true);
+  assert.deepEqual(next, { state: 'ready' });
+  assert.deepEqual(load(path, 's1').usage, { 'p/a': 1 });
+  assert.equal(existsSync(`${path}.lock`), false);
+});
+
+test('a lock left by a dead process is taken over', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'dispatch-state-'));
+  const path = join(dir, 'state.json');
+  // A pid the kernel cannot have assigned: the holder is provably gone.
+  writeFileSync(`${path}.lock`, '2147483647\n');
+  assert.deepEqual(recordAttempt(path, 's1', 'p/a', { at: 1, class: 'success', scope: 'none' }, false), { state: 'ready' });
+  assert.equal(existsSync(`${path}.lock`), false);
 });

@@ -266,7 +266,7 @@ One outcome per attempt. It decides whether the next entry of the preference lis
 ### Relationships
 
 - A retryable outcome, meaning `transient` or `quota`, yields to the next assignment; `capability` yields only when its scope is the model or the provider.
-- The report the library returns on failure is a verdict, not an outcome: it names the role, the attempt, and the provider's own sentence.
+- The report the library returns on failure is a verdict, not an outcome: it names the role and the attempt, and the provider's sentence is what the entrypoint prints beside it.
 - Recorded against the assignment it belongs to, not against the route alone.
 - The share of `unknown` is the classifier's own health, so it is reported with the denominator it was counted over.
 

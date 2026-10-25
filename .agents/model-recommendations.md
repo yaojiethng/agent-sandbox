@@ -11,10 +11,10 @@ Format: `_ROLE: <provider>/<model> at <thinking level>; <provider>/<model> at <l
 
 _IMPLEMENTER: opencode/deepseek-v4.1-flash-free at high; opencode-go/deepseek-v4.1-flash at high; deepseek/deepseek-flash at high
 
-_REVIEWER: opencode/deepseek-v4.1-flash-free at high; opencode-go/minimax-m3.1-flash-free at high; deepseek/deepseek-flash at high
+_REVIEWER: opencode/deepseek-v4.1-flash-free at high; deepseek/deepseek-flash at high
 
 _ADVISOR_CODE: opencode/deepseek-v4.1-flash-free at high; opencode-go/deepseek-v4.1-flash at high; deepseek/deepseek-flash at high
 
-_ADVISOR_DOCS: opencode/glm-5.3-flash-free at high; opencode-go/minimax-m3.1-flash-free at high; deepseek/deepseek-flash at high
+_ADVISOR_DOCS: opencode/glm-5.3-flash-free at high; deepseek/deepseek-flash at high
 
 _ORCHESTRATOR: deepseek/deepseek-flash at high

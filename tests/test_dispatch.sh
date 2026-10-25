@@ -44,8 +44,8 @@ cli() {
 }
 
 # A role table fixture, so the case never reads the operator's real file.
-# DISPATCH_REC_FILE is the operator's override, and the entrypoint passes it
-# through as --file, which is how the fixture reaches the CLI.
+# DISPATCH_REC_FILE is the one override, read by the library; `--file` stays the
+# CLI's explicit alternative for a case that needs another table.
 REC_FILE="$FIXTURE_ROOT/model-recommendations.md"
 export DISPATCH_REC_FILE="$FIXTURE_ROOT/model-recommendations.md"
 export AGENT_HOME="$FIXTURE_ROOT"
@@ -169,53 +169,53 @@ test_runtime_unknown_provider() {
   assert_eq "$RESULT" "pi" "a provider outside the opencode set selects the pi runtime"
 }
 
-test_command_pi_backend() {
+test_plan_pi_backend() {
   local RESULT
-  RESULT="$(cli command --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --file "$REC_FILE")"
+  RESULT="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --file "$REC_FILE")"
   assert_contains "$RESULT" "pi --provider opencode-go --model stub-model --thinking high" "the pi backend maps provider, model and thinking"
   assert_contains "$RESULT" "-p \"\$(cat /tmp/brief.md)\"" "the brief is read at run time"
 }
 
-test_command_opencode_backend_by_role() {
+test_plan_opencode_backend_by_role() {
   local RESULT
-  RESULT="$(cli command --role _ADVISOR --brief /tmp/brief.md --dir /work --file "$REC_FILE")"
+  RESULT="$(cli plan --role _ADVISOR --brief /tmp/brief.md --dir /work --file "$REC_FILE")"
   assert_contains "$RESULT" "/opt/opencode run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/stub-model-free --variant high" "the opencode backend maps the pair and the level"
   assert_contains "$RESULT" "\"\$(cat /tmp/brief.md)\"" "the opencode backend passes the brief as the message"
 }
 
-test_command_model_override_selects_backend() {
+test_plan_model_override_selects_backend() {
   local RESULT
-  RESULT="$(cli command --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode/stub-model-free --file "$REC_FILE")"
+  RESULT="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode/stub-model-free --file "$REC_FILE")"
   assert_contains "$RESULT" "/opt/opencode run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/stub-model-free" "an override onto an opencode-only provider switches the backend"
 }
 
-test_command_thinking_override() {
+test_plan_thinking_override() {
   local RESULT
-  RESULT="$(cli command --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode-go/stub-model --thinking low --file "$REC_FILE")"
+  RESULT="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode-go/stub-model --thinking low --file "$REC_FILE")"
   assert_contains "$RESULT" "pi --provider opencode-go --model stub-model --thinking low" "the thinking override replaces the role's level"
 }
 
-test_command_session_on_both_backends() {
+test_plan_session_on_both_backends() {
   local PI_CMD OC_CMD
-  PI_CMD="$(cli command --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode-go/stub-model --thinking high --session sess-1 --file "$REC_FILE")"
-  OC_CMD="$(cli command --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode/stub-model-free --thinking high --session sess-2 --file "$REC_FILE")"
+  PI_CMD="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode-go/stub-model --thinking high --session sess-1 --file "$REC_FILE")"
+  OC_CMD="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode/stub-model-free --thinking high --session sess-2 --file "$REC_FILE")"
   assert_contains "$PI_CMD" "--session sess-1" "the pi backend resumes a session"
   assert_contains "$OC_CMD" "--session sess-2" "the opencode backend resumes a session"
 }
 
-test_command_missing_role_refuses() {
+test_plan_missing_role_refuses() {
   local RESULT RC
-  RESULT="$(cli command --role _NOPE --brief /tmp/brief.md --dir /work --file "$REC_FILE" 2>/dev/null)"
+  RESULT="$(cli plan --role _NOPE --brief /tmp/brief.md --dir /work --file "$REC_FILE" 2>/dev/null)"
   RC=$?
   assert_rc "$RC" 1 "a command for a missing role refuses"
   assert_empty "$RESULT" "a missing role prints no command"
 }
 
-test_command_missing_args_refuses() {
+test_plan_missing_args_refuses() {
   local RC
-  cli command --role _IMPLEMENTER --brief "" --dir "" --file "$REC_FILE" >/dev/null 2>&1
+  cli plan --role _IMPLEMENTER --brief "" --dir "" --file "$REC_FILE" >/dev/null 2>&1
   RC=$?
-  assert_rc "$RC" 1 "a command without a brief or dir refuses"
+  assert_rc "$RC" 2 "a command without a brief or dir is a usage error"
 }
 
 test_roles_lists_table() {
@@ -406,6 +406,39 @@ STUB
 }
 
 
+# A cursor that advanced by attempt ordinal used to plan past the end of the
+# role's list when the head was skipped, turning the attempt's own code into a
+# usage error. The library selects from the whole list, so the skip costs nothing.
+test_cli_run_skips_a_cooling_head_without_losing_the_attempt_code() {
+  local BIN COUNT BRIEF STATE REC RESULT RC
+  BIN="$FIXTURE_DIR/skip-stub"
+  COUNT="$FIXTURE_DIR/skip-count"
+  BRIEF="$FIXTURE_DIR/skip-brief.md"
+  STATE="$FIXTURE_DIR/skip-state.json"
+  REC="$FIXTURE_DIR/skip-rec.md"
+  printf 'brief\n' > "$BRIEF"
+  printf '_SKIP: opencode/x-free at high; opencode/y-free at high\n' > "$REC"
+  rm -f "$COUNT"
+  printf '{"version":1,"session":"default","routes":{"opencode/x-free":{"state":"cooling","until":%s,"reason":"rate","strikes":1}},"usage":{}}\n' \
+    "$(( $(date +%s) * 1000 + 600000 ))" > "$STATE"
+  cat > "$BIN" <<STUB
+#!/usr/bin/env bash
+n=\$(cat "$COUNT" 2>/dev/null || echo 0)
+n=\$((n + 1))
+printf '%s' "\$n" > "$COUNT"
+echo 'invalid_request_error: reasoning_effort none is not accepted' >&2
+exit 1
+STUB
+  chmod +x "$BIN"
+  RC=0
+  RESULT="$(DISPATCH_REC_FILE="$REC" DISPATCH_STATE_FILE="$STATE" \
+    DISPATCH_OPENCODE_BIN="$BIN" \
+    bash "$REPO_ROOT/scripts/dispatch.sh" --role _SKIP --brief "$BRIEF" --dir /work --run 2>&1)" || RC=$?
+  assert_rc 1 "$RC" "the attempt's own code survives a skipped head"
+  assert_eq "$(cat "$COUNT")" "1" "the cooling head is not attempted and nothing past the end is planned"
+  assert_contains "$RESULT" "not retried" "the caller is told why nothing else was tried"
+}
+
 test_cli_a_role_with_no_line_names_the_role() {
   local BRIEF REC STATE RESULT RC
   BRIEF="$FIXTURE_DIR/noline-brief.md"
@@ -564,6 +597,9 @@ case "\$action" in
   auth)
     printf '401: {"type":"AuthError","message":"Invalid API key."}\n'
     sleep 60
+    exit 1 ;;
+  dead)
+    printf 'Error: the model is unavailable\n'
     exit 1 ;;
   hang) printf '> build \xc2\xb7 %s\n' "\$model"; sleep 60; exit 1 ;;
   silent) exit 0 ;;
@@ -813,7 +849,9 @@ STUB
   chmod +x "$sandbox/bin/opencode"
 
   out="$( DISPATCH_STALL=1 run_worker "$sandbox" HEAD )"; rc=$?
-  assert_rc 1 "$rc" "a silent OpenCode attempt is ended at the silence window"
+  # The attempt is ended at the window and its route cools, so the run ends
+  # blocked on that wait rather than claiming the attempt's own code.
+  assert_rc 3 "$rc" "a silent OpenCode attempt is ended at the silence window"
   assert_contains "$out" "no output for 1s" "the refusal names the window that ended it"
 }
 
@@ -826,7 +864,7 @@ test_worker_a_failing_worker_stops() {
   out="$(run_worker "$sandbox" HEAD)"; rc=$?
   assert_rc 1 "$rc" "a worker that exits non-zero fails the run"
   run_dir="$(printf '%s\n' "$out" | sed -n 's/^run dir: //p')"
-  assert_contains "$out" "the worker exited rc=1" "the refusal names the worker exit"
+  assert_contains "$out" "not retried: the attempt left a change set" "the refusal names the tree as the reason"
   assert_contains "$out" "$run_dir/worker.log" "the refusal names the log path"
 }
 
@@ -843,7 +881,7 @@ test_worker_a_changed_failure_does_not_fall_back() {
 
   out="$(run_worker "$sandbox" HEAD)"; rc=$?
   assert_rc 1 "$rc" "a first attempt that changed the tree stops the run"
-  assert_contains "$out" "the worker exited rc=1 after changing the tree" \
+  assert_contains "$out" "not retried: the attempt left a change set" \
     "the refusal says the tree holds the attempt"
   attempts="$(wc -l < "$sandbox/argv.log")"
   assert_eq "$attempts" "1" "no second model ran over the first model's edits"
@@ -976,13 +1014,14 @@ run_test test_runtime_refuses_a_free_provider_without_its_model
 run_test test_runtime_pi_provider
 run_test test_runtime_pi_provider_free_model
 run_test test_runtime_unknown_provider
-run_test test_command_pi_backend
-run_test test_command_opencode_backend_by_role
-run_test test_command_model_override_selects_backend
-run_test test_command_thinking_override
-run_test test_command_session_on_both_backends
-run_test test_command_missing_role_refuses
-run_test test_command_missing_args_refuses
+run_test test_plan_pi_backend
+run_test test_plan_opencode_backend_by_role
+run_test test_plan_model_override_selects_backend
+run_test test_plan_thinking_override
+run_test test_plan_session_on_both_backends
+run_test test_plan_missing_role_refuses
+run_test test_plan_missing_args_refuses
+run_test test_cli_run_skips_a_cooling_head_without_losing_the_attempt_code
 run_test test_roles_lists_table
 run_test test_check_opencode_success
 run_test test_check_opencode_failure
@@ -1072,15 +1111,39 @@ test_a_seat_drops_a_dead_candidate_and_rotates() {
   sandbox="$(get_fixture_dir)"
   seat_setup "$sandbox" '_SEAT: opencode/s1-free at high; opencode/s2-free at high; opencode/s3-free at high'
   write_model_stub "$sandbox/bin/opencode" "$sandbox/argv.log" "edit.txt" \
-    "opencode/s1-free=auth opencode/s2-free=ok opencode/s3-free=ok"
+    "opencode/s1-free=dead opencode/s2-free=ok opencode/s3-free=ok"
 
   out="$(run_seats "$sandbox" --role _SEAT --seats 2)"; rc=$?
   assert_rc 0 "$rc" "both seats end on a working model"
-  assert_contains "$out" "seat 1 ended capability (account)" "the dead candidate ends seat 1's first turn"
+  assert_contains "$out" "seat 1 ended capability (model)" "the dead candidate ends seat 1's first turn"
   assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log")" "1" \
     "the dead candidate is attempted once and dropped"
   assert_eq "$(grep -c -- '-m opencode/s2-free' "$sandbox/argv.log")" "2" \
     "seat 1 takes the next candidate, which seat 2 already held"
+}
+
+# A start turn whose every candidate is held back answers the selection's own
+# vocabulary: a cooldown is blocked with its wait, and only a dead set is
+# unroutable. A length test over the candidate list cannot tell them apart.
+test_a_start_turn_names_a_cooldown_as_blocked() {
+  local sandbox out rc until
+  sandbox="$(get_fixture_dir)"
+  seat_setup "$sandbox" '_SEAT: opencode/s1-free at high'
+  until=$(( ($(date +%s) + 600) * 1000 ))
+  printf '{"version":1,"session":"default","routes":{"opencode/s1-free":{"state":"cooling","until":%s,"reason":"rate","strikes":1}},"usage":{}}\n' \
+    "$until" > "$sandbox/state.json"
+
+  out="$(run_seats "$sandbox" --role _SEAT --seats 1)"; rc=$?
+  assert_rc 3 "$rc" "a cooling candidate blocks the start turn rather than making it unroutable"
+  assert_contains "$out" "blocked until" "the refusal names the wait"
+  assert_eq "$(grep -c -- '-m opencode/s1-free' "$sandbox/argv.log" 2>/dev/null || echo 0)" "0" \
+    "no seat fires while its route cools"
+
+  printf '{"version":1,"session":"default","routes":{"opencode/s1-free":{"state":"dead"}},"usage":{}}\n' \
+    > "$sandbox/state.json"
+  out="$(run_seats "$sandbox" --role _SEAT --seats 1)"; rc=$?
+  assert_rc 4 "$rc" "a dead candidate is unroutable"
+  assert_contains "$out" "unroutable" "the refusal reports the dead route"
 }
 
 # A retryable outcome keeps the seat on its assignment, and the route memory
@@ -1172,7 +1235,7 @@ test_seats_refuse_the_contradictory_forms() {
 
   out="$(run_seats "$sandbox" --role _SEAT --seats 2 --worker)"; rc=$?
   assert_rc 2 "$rc" "a seat count on a worker is refused"
-  assert_contains "$out" "not a worker flag" "the refusal names the mode it contradicts"
+  assert_contains "$out" "alternatives" "the refusal names the mode it contradicts"
 
   out="$(run_seats "$sandbox" --role _SEAT --seats 0)"; rc=$?
   assert_rc 2 "$rc" "a zero seat count is refused"
@@ -1183,6 +1246,7 @@ WORKER_FALLBACK_CASES="${DISPATCH_WORKER_FALLBACK_CASES:-0}"
 
 run_test test_seats_rotate_over_the_candidates
 run_test test_a_seat_drops_a_dead_candidate_and_rotates
+run_test test_a_start_turn_names_a_cooldown_as_blocked
 run_test test_a_retryable_outcome_keeps_the_seat_and_blocks
 run_test test_a_silent_seat_stops_the_run
 run_test test_a_dirty_tree_is_refused

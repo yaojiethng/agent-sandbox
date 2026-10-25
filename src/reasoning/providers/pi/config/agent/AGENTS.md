@@ -151,9 +151,9 @@ A review has one mechanism: the dispatch entrypoint with a seat count. It runs i
 
 **Which model.** A dispatch takes its assignments from the role line in `model-recommendations.md`, for example `_REVIEWER`. By default the entrypoint resolves the role, keeps the assignments the route memory allows at that moment, and seats them by rotation, so a role naming two assignments gives two families and agreement between the two reports is the signal. A caller may instead pin one assignment with `--model`, and every seat then runs that assignment: the seats repeat it by the caller's choice, which is what a caller who needs a fixed pair asks for. A pinned attempt still records its outcome, so the route memory learns what the model did either way.
 
-1. **Name the role and the seat count.** `_REVIEWER` for source, `_ADVISOR_DOCS` for prose, and two seats unless the caller says otherwise.
+1. **Name the role and the seat count.** `_REVIEWER` for source, `_ADVISOR_DOCS` for prose. The caller sets the seat count; no role implies one.
 2. **Commit or stash first.** A seat run refuses a dirty tree, because a review reads one revision: a finding against content the caller is still editing cannot be attributed to a commit.
-3. **Run it in the foreground of one call**, `bash scripts/dispatch.sh --role _REVIEWER --brief <brief-file> --dir <repo-root> --seats 2 --run --run-dir <scratch-dir>`. It prints the role, the seat count and the run directory, then one line per seat per turn: the seat, the turn, the assignment it ran, its exit code and its log path.
+3. **Run it in the foreground of one call**, `bash scripts/dispatch.sh --role _REVIEWER --brief <brief-file> --dir <repo-root> --seats <n> --run --run-dir <scratch-dir>`. It prints the role, the seat count and the run directory, then one line per seat per turn: the seat, the turn, the assignment it ran, its exit code and its log path.
 4. **Read the logs**, one per seat, and record the role, the seat's assignment and its level in the brief.
 5. **Read the exit code.** Zero means every seat finished on a working model, three is blocked with the earliest wait named, four is a seat with no candidate left, and one is a refusal.
 

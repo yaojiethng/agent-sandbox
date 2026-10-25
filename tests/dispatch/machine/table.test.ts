@@ -5,15 +5,15 @@ import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DispatchError } from '../../../src/libs/dispatch/errors.ts';
 import {
-  DispatchError,
   defaultTableFile,
   firstAssignment,
   parseAssignment,
   roleAssignments,
   tableAssignments,
 } from '../../../src/libs/dispatch/table.ts';
-import { argvFor, commandFor } from '../../../src/libs/dispatch/launch.ts';
+import { commandFor } from '../../../src/libs/dispatch/launch.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = resolve(HERE, '..', '..', '..', 'src', 'libs', 'dispatch', 'cli.ts');
@@ -29,13 +29,6 @@ process.env.DISPATCH_OPENCODE_BIN = BIN;
 function tableFile(body: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'dispatch-table-'));
   const path = join(dir, 'model-recommendations.md');
-  writeFileSync(path, body);
-  return path;
-}
-
-function briefFile(body: string): string {
-  const dir = mkdtempSync(join(tmpdir(), 'dispatch-brief-'));
-  const path = join(dir, 'brief.md');
   writeFileSync(path, body);
   return path;
 }
@@ -207,6 +200,16 @@ test('a malformed thinking level refuses the role', () => {
   );
 });
 
+test('an entry with an empty model is malformed, whatever its provider', () => {
+  // A pi provider reaches 'pi --model \'\'', which the grammar must refuse
+  // before a caller builds a command from it.
+  const file = tableFile('_BAD: deepseek/\n');
+  assert.equal(
+    refusal(() => roleAssignments('_BAD', file)),
+    "dispatch: role '_BAD' has a malformed entry: 'deepseek/'",
+  );
+});
+
 test('a malformed entry refuses the whole role rather than a partial list', () => {
   const file = tableFile('_BAD: deepseek/x at high; nonsense; deepseek/y\n');
   assert.equal(
@@ -235,10 +238,10 @@ test('a role line naming no model refuses', () => {
   assert.equal(refusal(() => roleAssignments('_EMPTY', file)), "dispatch: role '_EMPTY' names no model");
 });
 
-test('the runtime for an OpenCode provider needs the model as well', () => {
+test('an entry naming a provider without a model is malformed', () => {
   assert.equal(
     refusal(() => parseAssignment('_X', 'opencode/ at high')),
-    "dispatch: the runtime for 'opencode' needs the model as well",
+    "dispatch: role '_X' has a malformed entry: 'opencode/ at high'",
   );
 });
 
@@ -289,40 +292,6 @@ test('a value with a space is shell-quoted, so the command re-reads as one word'
   );
 });
 
-test('the argv is the same command, with the brief read as its own argument', () => {
-  const brief = briefFile('the brief text\n\n');
-  const pi = parseAssignment('_IMPL', 'deepseek/x at high');
-  assert.deepEqual(argvFor(pi, { brief, dir: '/work' }), [
-    'pi',
-    '--provider',
-    'deepseek',
-    '--model',
-    'x',
-    '--thinking',
-    'high',
-    '-p',
-    'the brief text',
-  ]);
-  const opencode = parseAssignment('_ADVISOR', 'opencode/x-free at high');
-  assert.deepEqual(argvFor(opencode, { brief, dir: '/work' }), [
-    BIN,
-    'run',
-    '--auto',
-    '--print-logs',
-    '--log-level',
-    'ERROR',
-    '--title',
-    'brief.md',
-    '--dir',
-    '/work',
-    '-m',
-    'opencode/x-free',
-    '--variant',
-    'high',
-    'the brief text',
-  ]);
-});
-
 // --- the command line ------------------------------------------------------
 
 test('table roles prints every role in file order and preference order', () => {
@@ -371,49 +340,65 @@ test('a refused role exits 1 with the message on stderr and nothing on stdout', 
   }
 });
 
-test('command prints the role command', () => {
+test('plan prints the assignment it resolved and the command it runs', () => {
   const file = tableFile('_IMPL: deepseek/deepseek-flash at high\n_ADVISOR: opencode/x-free at high\n');
-  assert.deepEqual(cli(['command', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--file', file]), {
+  assert.deepEqual(cli(['plan', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--file', file]), {
     code: 0,
-    out: `pi --provider deepseek --model deepseek-flash --thinking high -p "$(cat ${BRIEF})"\n`,
+    out: `deepseek/deepseek-flash|high|pi\npi --provider deepseek --model deepseek-flash --thinking high -p "$(cat ${BRIEF})"\n`,
     err: '',
   });
-  assert.deepEqual(cli(['command', '--role', '_ADVISOR', '--brief', BRIEF, '--dir', '/work', '--file', file]), {
+  assert.deepEqual(cli(['plan', '--role', '_ADVISOR', '--brief', BRIEF, '--dir', '/work', '--file', file]), {
     code: 0,
-    out: `${BIN} run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/x-free --variant high "$(cat ${BRIEF})"\n`,
+    out: `opencode/x-free|high|opencode\n${BIN} run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/x-free --variant high "$(cat ${BRIEF})"\n`,
     err: '',
   });
 });
 
-test('command --model overrides the role pair and keeps the role level', () => {
+test('plan --model takes the pin as given, with its own level or none', () => {
+  const file = tableFile('_IMPL: deepseek/deepseek-flash at high\n');
+  const bare = cli(['plan', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--model', 'opencode/y-free', '--file', file]);
+  assert.equal(bare.code, 0);
+  assert.match(bare.out, /^opencode\/y-free\|\|opencode\n/);
+  assert.ok(!bare.out.includes('--variant'), 'the role head level does not follow a pin');
+  const levelled = cli(['plan', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--model', 'opencode/y-free', '--thinking', 'low', '--file', file]);
+  assert.match(levelled.out, /^opencode\/y-free\|low\|opencode\n/);
+  assert.match(levelled.out, /--variant low /);
+});
+
+test('plan --thinking overrides the role level and keeps the role pair', () => {
   const file = tableFile('_IMPL: deepseek/deepseek-flash at high\n');
   assert.equal(
-    cli(['command', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--model', 'opencode/y-free', '--file', file])
-      .out,
-    `${BIN} run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/y-free --variant high "$(cat ${BRIEF})"\n`,
+    cli(['plan', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--thinking', 'low', '--file', file]).out,
+    `deepseek/deepseek-flash|low|pi\npi --provider deepseek --model deepseek-flash --thinking low -p "$(cat ${BRIEF})"\n`,
   );
 });
 
-test('command --thinking overrides the role level and keeps the role pair', () => {
-  const file = tableFile('_IMPL: deepseek/deepseek-flash at high\n');
-  assert.equal(
-    cli(['command', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--thinking', 'low', '--file', file]).out,
-    `pi --provider deepseek --model deepseek-flash --thinking low -p "$(cat ${BRIEF})"\n`,
-  );
-});
-
-test('command without a role, a brief or a dir refuses', () => {
-  const run = cli(['command', '--role', '_IMPL', '--brief', BRIEF]);
-  assert.equal(run.code, 1);
+test('plan without a role, a brief or a dir refuses', () => {
+  const run = cli(['plan', '--role', '_IMPL', '--brief', BRIEF]);
+  assert.equal(run.code, 2, 'a missing required flag is a usage error');
   assert.equal(run.err, 'dispatch: ROLE, BRIEF and DIR are required\n');
 });
 
-test("command refuses a pin that is not provider/model", () => {
+test('plan refuses a pin that is not provider/model', () => {
   const file = tableFile('_IMPL: deepseek/deepseek-flash at high\n');
-  const run = cli(['command', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--model', 'justmodel', '--file', file]);
-  assert.equal(run.code, 1);
+  const run = cli(['plan', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--model', 'justmodel', '--file', file]);
+  assert.equal(run.code, 2, 'a malformed flag value is a usage error');
   assert.equal(run.out, '');
   assert.equal(run.err, "dispatch: the role's model 'justmodel' is not provider/model\n");
+});
+
+test('plan selects the first attemptable entry from the whole role list', () => {
+  const file = tableFile('_IMPL: opencode/a-free at high; opencode/b-free at high\n');
+  const state = join(mkdtempSync(join(tmpdir(), 'dispatch-state-')), 'state.json');
+  writeFileSync(state, JSON.stringify({
+    version: 1,
+    session: 'default',
+    routes: { 'opencode/a-free': { state: 'cooling', until: Date.now() + 60_000, reason: 'rate', strikes: 1 } },
+    usage: {},
+  }));
+  const run = cli(['plan', '--role', '_IMPL', '--brief', BRIEF, '--dir', '/work', '--file', file], { DISPATCH_STATE_FILE: state });
+  assert.equal(run.code, 0);
+  assert.match(run.out, /^opencode\/b-free\|high\|opencode\n/);
 });
 
 test('table resolve --entry answers for the entry given, not the role head', () => {

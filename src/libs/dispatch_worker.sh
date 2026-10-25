@@ -87,20 +87,16 @@ dispatch_change_set() {
 # the classifier answers `unknown` is not evidence that the attempt cannot
 # succeed, so the scan continues to the next line instead of stopping on it.
 #
-# The scan is bounded because the classifier is a process: a worker log holding
-# a failing test suite holds hundreds of lines containing `error`, and asking
-# about each one would outspend the poll interval it runs inside.
+# The block is bounded because the classifier is a process: a worker log holding
+# a failing test suite holds hundreds of lines containing `error`, so the first
+# twelve are asked about in one call rather than one call each.
 dispatch_refusal_line() {
-  local log="$1" cli="$2" line verdict class
+  local log="$1" cli="$2" candidates refused
   [[ -f "$log" ]] || return 0
-  while IFS= read -r line; do
-    verdict="$(node "$cli" classify --text "$line" 2>/dev/null)" || continue
-    read -r _pattern class _rest <<<"$verdict"
-    [[ "$class" == "unknown" ]] && continue
-    printf '%s' "$line"
-    return 0
-  done < <(grep -v 'agent=title' "$log" 2>/dev/null | grep -i 'error' | head -n 12)
-  return 0
+  candidates="$(grep -v 'agent=title' "$log" 2>/dev/null | grep -i 'error' | head -n 12)"
+  [[ -z "$candidates" ]] && return 0
+  refused="$(node "$cli" refusal --text "$candidates" 2>/dev/null)" || return 0
+  printf '%s' "$refused"
 }
 
 # dispatch_run_supervised CMD LOG LIMIT CLI [STALL]  --  run one attempt in the
@@ -183,4 +179,25 @@ dispatch_stop_process() {
   kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
   wait "$pid" 2>/dev/null || true
   printf 'aborted: %s\n' "$reason" >>"$log"
+}
+
+# dispatch_run_dir TEMPLATE -- validate a caller's run directory or create one.
+#
+# The worker and the seat run both keep their evidence in a run directory, so
+# both refuse an unusable path before an attempt spends anything, with one
+# message. Sets RUN_DIR; a caller that named one keeps it.
+dispatch_run_dir() {
+  local template="$1"
+  if [[ -n "${RUN_DIR:-}" ]]; then
+    if [[ ! -d "$RUN_DIR" ]]; then
+      printf 'dispatch: run directory not found: %s\n' "$RUN_DIR" >&2
+      return 1
+    fi
+    if [[ ! -w "$RUN_DIR" ]]; then
+      printf 'dispatch: run directory is not writable: %s\n' "$RUN_DIR" >&2
+      return 1
+    fi
+    return 0
+  fi
+  RUN_DIR="$(mktemp -d "$template")" || return 1
 }

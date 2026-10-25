@@ -28,7 +28,7 @@ fixture_tree() {
   local root="$FIXTURE_DIR/tree"
   mkdir -p "$root/src/libs/dispatch" "$root/scripts" "$root/tests" "$root/docs"
   printf 'export function argvFor() { return ["pi"]; }\n' >"$root/src/libs/dispatch/launch.ts"
-  printf '#!/usr/bin/env bash\nexec node "$CLI" command --role _R\n' >"$root/scripts/dispatch.sh"
+  printf '#!/usr/bin/env bash\nexec node "$CLI" plan --role _R\n' >"$root/scripts/dispatch.sh"
   printf 'Run `pi -p "$(cat brief.md)" --provider p` to dispatch.\n' >"$root/docs/guide.md"
   printf 'assert_contains "$out" "pi --provider p"\n' >"$root/tests/test_argv.sh"
   printf '%s\n' "$root"

@@ -105,8 +105,8 @@ test('[R12] a dead route stays dead through every attempt', () => {
 
 test('[S1] resolution takes the first dispatchable entry, after any cooling one', () => {
   const table = { 'p/a': applyOutcome(UNTRIED, outcome({ class: 'transient' })) };
-  const r = select(['p/a', 'p/b'], table, AT);
-  assert.deepEqual(r, { kind: 'run', entry: 'p/b' });
+  const r = select([{ key: 'p/a' }, { key: 'p/b' }], table, AT);
+  assert.deepEqual(r, { kind: 'run', chosen: { key: 'p/b' } });
 });
 
 test('[S2] resolution blocks on the earliest wait when every entry is cooling', () => {
@@ -114,7 +114,7 @@ test('[S2] resolution blocks on the earliest wait when every entry is cooling', 
     'p/a': applyOutcome(UNTRIED, outcome({ class: 'quota', reason: 'quota', refreshAt: AT + 60_000 })),
     'p/b': applyOutcome(UNTRIED, outcome({ class: 'transient' })),
   };
-  const r = select(['p/a', 'p/b'], table, AT);
+  const r = select([{ key: 'p/a' }, { key: 'p/b' }], table, AT);
   assert.equal(r.kind, 'blocked');
   if (r.kind !== 'blocked') return;
   assert.equal(r.earliest, AT + BACKOFF_BASE_MS);
@@ -123,7 +123,7 @@ test('[S2] resolution blocks on the earliest wait when every entry is cooling', 
 
 test('[S3] resolution is unroutable when every entry is dead', () => {
   const dead = applyOutcome(UNTRIED, outcome({ class: 'capability', scope: 'model' }));
-  const r = select(['p/a', 'p/b'], { 'p/a': dead, 'p/b': dead }, AT);
+  const r = select([{ key: 'p/a' }, { key: 'p/b' }], { 'p/a': dead, 'p/b': dead }, AT);
   assert.equal(r.kind, 'unroutable');
 });
 

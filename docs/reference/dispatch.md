@@ -16,7 +16,7 @@ The value is a fact with an owner. A model id written at a call site is measured
 
 ## Requirements
 
-- Resolution is the default and not a requirement. A caller names a role and the table decides; a caller who names an assignment instead pins it, and the pin is taken as given: it reads no route and records none, because a pinned run is not routed. A pin is a value the caller states in the invocation, never a default a skill or a brief carries on its behalf.
+- Resolution is the default and not a requirement. A caller names a role and the table decides; a caller who names an assignment instead pins it, and the pin is taken as given: it reads no route, because a pinned run is not routed. A pin is a value the caller states in the invocation, never a default a skill or a brief carries on its behalf.
 - The role table is the only source of a role's models. No default model exists, and a role the table does not name is refused by its own name rather than resolved to something the table never mentioned. Nothing validates an assignment against a runtime's catalogue: whether a named model exists is the operator's fact, and the table states it. A caller asked what models are available answers from the runtime rather than from this tree: `pi --list-models` lists what pi knows, and `opencode models [provider]` lists what the OpenCode CLI knows. That listing is information for the reader, not a validation step, because it names what a runtime knows and not what it will serve. An id that does not exist surfaces at the provider: a text naming the model marks that route dead and the walk advances, and text the classifier does not know stops the walk as unclassified rather than guessing.
 - An assignment is validated as a whole line, and a malformed line fails the resolution instead of reaching a command.
 - The runtime follows an assignment's provider and its model together. Within the OpenCode provider set a model id ending `-free` runs on the CLI and every other model runs on pi, and an assignment whose model is empty refuses instead of defaulting to one.
@@ -57,7 +57,7 @@ An invocation without `--run` prints the command it would have run and stops the
 
 An executed run walks the role's list. It attempts the selected entry, classifies what the attempt ended in, records that outcome, and advances only when the [outcome](terminology.md#outcome) says another entry can help. It stops on a `capability` outcome whose scope is the request or the account, on `timeout`, and on `unknown`.
 
-A worker run adds the tree to that decision. It requires `--run` and refuses `--dir`, because a worker edits the repository root. It defaults `--base` to `HEAD` and `--run-dir` to a fresh temporary directory, captures a recovery point before the first attempt, measures the change set against the base before and after each attempt, and stops the walk when the tree changed, whatever the attempt's outcome. Two models over one change set is not a fallback, it is two workers in one unit.
+A worker run adds the tree to that decision. It stops on the same empty log, timeout and unrecoverable capability failure, and otherwise advances while the tree is unchanged and stops when the tree changed, whatever the outcome. It requires `--run` and refuses `--dir`, because a worker edits the repository root. It defaults `--base` to `HEAD` and `--run-dir` to a fresh temporary directory, captures a recovery point before the first attempt, measures the change set against the base before and after each attempt. Two models over one change set is not a fallback, it is two workers in one unit.
 
 A worker attempt is supervised. It ends early when its log carries a sentence the classifier reads as a refusal, because the CLI retries a refused request silently and stays alive on a subscription it never closes. It ends when its log has stopped growing below a small size, which is the same silent retry seen from outside. It ends at `DISPATCH_TIMEOUT`, default 1800 seconds, and `DISPATCH_STALL`, default 15, sets the silence window. A worker that exits zero with an empty log is a failure, because the log is the only evidence that it ran.
 
@@ -71,10 +71,11 @@ Seats fire in turns. A turn launches its seats concurrently and ends when its sl
 |---|---|
 | success | the seat is finished |
 | transient or quota | the seat keeps its assignment, and the memory decides when the next turn may attempt it |
-| capability | the candidate is dropped and the seat takes the next in the remaining rotation, wrapping to the first |
+| capability at model or provider | the candidate is dropped and the seat takes the next in the remaining rotation, wrapping to the first |
+| capability at account or request | the run stops, because no model repairs an account or a malformed request |
 | timeout or unknown | the run stops, because the outcome says nothing about the route |
 
-A caller may pin an assignment with `--model`, and a seat run then seats every seat on that one assignment: the seats repeat it by the caller's choice, which is how a review pins its own reproducibility. The route memory reads nothing from the pin and still records what each attempt ended in.
+A caller may pin an assignment with `--model`, and a seat run then seats every seat on that one assignment: the seats repeat it by the caller's choice, which is how a review pins its own reproducibility. The route memory reads nothing from the pin and still records what each attempt ended in. A pin is one attempt: the memory never holds a pinned route back, so a retryable outcome stops the run with that attempt's own exit code rather than waiting to fire it again.
 
 A seat run is read-only and reads one revision, so the entrypoint refuses a dirty tree before the first attempt. A seat that exits zero with an empty log stops the run, because the log is the only evidence it ran; the route keeps whatever the memory already held, since a silent exit says nothing about it.
 
@@ -118,9 +119,9 @@ A failure carries a class, a scope and, for a route that will be tried again, a 
 | `capability` | provider | the provider is not configured or refuses this tier | the route is dead for the session and the next entry is tried |
 | `capability` | account | the account is unfunded or unauthorised | the route is dead, and the walk stops: no other model repairs an account |
 | `capability` | request | the request itself is malformed | the record is untouched and the walk stops, because every model receives the same request |
-| `unknown` | none | no pattern matched the provider's sentence | the record is untouched and the walk stops; the caller reads the sentence |
+| `unknown` | none | no pattern matched the provider's sentence | the record is untouched; a general run stops and a worker advances while the tree is unchanged; the caller reads the sentence |
 
-A quota record states what happened, not what remains. It holds the moment the route may be tried again, the reason, the strike count, and the provider's own sentence. A count of metered attempts sits beside it in the same state. A remainder is not recorded, because two sessions spending one pool make any remainder a fiction.
+A quota record states what happened, not what remains. It holds the moment the route may be tried again, the reason and the strike count. A count of metered attempts sits beside it in the same state, and the provider's sentence is the entrypoint's report rather than part of the memory. A remainder is not recorded, because two sessions spending one pool make any remainder a fiction.
 
 The scope is an attribution, and it decides whether the route record holds the failure at all. A failure whose scope is the request, or that names nothing (`unknown`), leaves the record untouched: every model receives the same request, so cooling a route charges it for the caller's mistake. A failure that does cool a route also names its scope, so a reader learns what would have to change before a retry could succeed, not only how long the wait is. Two stores hold route memory in this tree, the library's state and the model-failover extension's ledger, and both apply this rule: `R8` and `R9` here, and the ledger's own attribution guard.
 
