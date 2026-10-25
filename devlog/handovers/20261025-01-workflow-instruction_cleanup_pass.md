@@ -60,6 +60,7 @@ None. The audits line settled on invocation rather than subject, and a missing b
 | The Milestone Summary shows M3.6.4 and M3.6.5 as `In progress` while their commits live only on unmerged branches | record | a reader takes the milestone for further along than the tree is, and M3.4 was just filed for the same reason | flagged at the scope gate; the row edit is M3.6's or this iteration's write-back, at the operator's choice |
 | The milestone summary for M3.2.2 was `Not started` against an opened milestone | record | corrected in the opening commit, before this handover existed | the opening commit `43942db7`, recorded here |
 | The rewrite-provenance judgement was raised mid-iteration and lands as a sidequest, [`20261025-02-workflow-rewrite_syntax_principle.md`](20261025-02-workflow-rewrite_syntax_principle.md) | record | the judgement governs every rewrite of the operator's wording, so it is a durable outcome the M3.2.2 leftover does not own; this handover's Completed rows for the principle, `AGENTS.md` and `skill-scaffolder` move to that handover | the sidequest |
+| The vendored `writing-for-agents` reference landed as a skill, in a sidequest raised while this iteration is open | scope | the reference `prose-review` will call as a runbook is now in the tree; the call site stays with the two base skills row | [`20261025-03-workflow-writing_for_agents_skill.md`](20261025-03-workflow-writing_for_agents_skill.md) |
 
 ## Completed
 
