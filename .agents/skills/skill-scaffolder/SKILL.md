@@ -34,7 +34,7 @@ description: <Clear explanation of when the agent should automatically trigger t
 
 ## The body's sections
 
-The body's order is in `docs/development/prompt-authoring-conventions.md` `## Structure of a workflow document`, which lists the parts a skill carries and the parts that only a prompt carries. This skill lives in the project tree, so that document resolves wherever the skill runs.
+The body carries the sections its work needs; no fixed order is mandated. A short skill or prompt may carry none of them beyond the frontmatter above.
 
 ## Nested files
 
