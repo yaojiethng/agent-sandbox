@@ -21,12 +21,6 @@ One file per iteration, committed with the iteration's changes, retained for the
 
 Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the seven sections.
 
-It is written for the agent that opens the next iteration, not the one that produced it. A well-written record orients that agent; a thin one forces it to rebuild state from the roadmap and the discussions, which is the cost the record exists to remove.
-
-An iteration declares its own scope and inherits nothing from the previous record: objectives, acceptance criteria and completion status are not carried forward. The prior record reads `Closed` before a new one opens; when it does not, the iteration continues that record rather than starting a second, and a record that cannot be closed is a finding for the operator.
-
-Brevity is the record's own duty, because it is what makes the next agent's read cheap. Implementation steps -- the file-by-file changes and edit descriptions -- belong in the commit, not the record. One line per file in `Completed`, one observable delta per acceptance criterion, and a criterion whose verification means reading the record is too detailed to be one.
-
 ### Filename
 
 ```text
@@ -77,7 +71,7 @@ A procedure that checks a record names a section by role. The template carries t
 | the findings | `## Findings` |
 | the completed work | `## Completed` |
 
-The record carries no `Deferred`, `Carried forward` or `What's Next` section. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is one sentence in the scope section with its reason. A pending decision is not a task: it never lands in the roadmap, and its row is written the moment the block appears.
+The record carries no `Deferred`, `Carried forward` or `What's Next` section. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is one sentence in the scope section with its reason.
 
 An empty nullable section carries its canonical marker and nothing else. Do not explain why the section is empty; a decision that affects it belongs in the decisions section.
 
@@ -129,7 +123,7 @@ Hyphens delimit and underscores separate words. A name carries no emoji, no unic
 
 A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention and its inbound links are updated.
 
-A file under `docs/` is not a discussion record and does not take this name. `investigation` was an earlier name for `study` and is retired; the type code is `study`.
+A file under `docs/` is not a discussion record and does not take this name.
 
 ### Statuses
 
