@@ -25,10 +25,10 @@ Out of scope, with reason: the provider `setup.sh`, `onboard.sh` and `docker-com
 | The resolver reads the repository copy and still returns a pair | `source src/libs/dispatch.sh; dispatch_role_model _REVIEWER` prints `deepseek/deepseek-flash high` | Agent [x] |
 | The dispatch tests express the pair through `DISPATCH_REC_FILE`, and both dispatch suites pass | `tests/test_dispatch.sh`, `tests/test_pi_model_recommendations.sh` | Agent [x] |
 | No live instruction describes the retired path | `grep -rn "AGENT_HOME/model-recommendations" --include=*.md AGENTS.md docs workflow src/reasoning/providers/pi/config/agent` returns nothing | Agent [x] |
-| The project layer states the four-step procedure and what to do when a step fails | read `## Model Recommendations` | Operator [ ] |
-| The provider layer states the same procedure and drops the two-family claim | read `**Which model.**` | Operator [ ] |
+| The project layer states the four-step procedure and what to do when a step fails | read `## Model Recommendations` | Operator [x] |
+| The provider layer states the same procedure and drops the two-family claim | read `**Which model.**` | Operator [x] |
 | The installed provider copy is byte-identical to the repository source | `diff -q src/reasoning/providers/pi/config/agent/AGENTS.md ~/.pi/agent/AGENTS.md` | Agent [x] |
-| Every decision this iteration records is realized in the files | read `## Decisions` against the tree | Operator [ ] |
+| Every decision this iteration records is realized in the files | read `## Decisions` against the tree | Operator [x] |
 
 ## Decisions
 

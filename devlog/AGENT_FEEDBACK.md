@@ -367,19 +367,6 @@ legacy: none
 mitigation: three process rules. (1) A released task-list gate confirms scope and acceptance criteria, not policy text; present each changed policy section verbatim and await explicit release. (2) Session-relative finding numbers are valid only in their source conversation. (3) A redesign task first establishes purpose, then scopes exploration to it; do not launch a broad sweep before realigning onto the true objective.
 ```
 
-### [A] 2026-09-21  --  Edit-tool failure family (T2)
-
-```text
-state: open
-scoped: M3 T2 -- edit-tool failure metrics + feedback resolution
-legacy: none
-mitigation: one failure family across the `edit` tool, resolved from the T2 measurement. Multi-edit atomicity (one failed entry rolls back the whole call); exact-match `oldText` (invisible whitespace / trailing chars break the match); overlapping/nested entries rejected; `oldText` must be unique. Sub-cases: a regex `sed -i` with a missing file operand silently writes nothing; the "did the write land?" reflex catches un-applied edits; table-row append must keep the anchor row (overwrite-instead-of-append is a distinct failure mode). Count and classify failures by cause via the T2 metric.
-legacy: 2026-09-27 -- the anchor-row mode recurred while inserting a roadmap row: the `newText` replaced the
-anchor line instead of prefixing it, and the row's text was lost until it was restored from `HEAD` and verified
-byte-identical. Read `newText` as the full replacement region before writing, and re-run `git diff --numstat` to
-confirm an append shows one insertion and zero deletions. Second instance the same day: the marker-ordering row still carried the neighbouring trial row's body after the restore passed byte-identical, and the close read-back caught it. Run the numstat reflex after every row edit, not only after the recovery.
-```
-
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
 
 ```text
@@ -849,20 +836,3 @@ Two costs, not one. The reader had no way to tell which copy was current, and th
 The rule that persists it: when a workflow hands off to a script, it relays that script's output and adds only what the script cannot know. An instruction the next command prints belongs to that command, and a multi-step flow belongs in the ADR that owns the pipeline rather than in the prompt that starts the first step.
 
 Raised by the operator during handover `20261002-24`.
-
-## Agent experience  --  session 20261023 (M3.3.2 cheap-row pass)
-
-### [O] 2026-10-23  --  A close decision that waits on an observation is not a task
-
-```text
-state: probation
-scoped: M3.3.2 - Retire the policy form
-legacy: none
-mitigation: none
-```
-
-The row asked the release gate to carry every question the close would otherwise answer, so a close is data entry: a finding states its `Triaged to:` destination when it is raised, both record checks run before the release, and the handover lint fails a row with no destination. The gate landed on 2026-10-20. What did not happen is the row's ending condition, a close commit that changes no record the gate already confirmed. Every close since has changed one, so what remains is an observation rather than work.
-
-A task list holds work. A landed change waiting on a future observation is a probation entry, and the roadmap row is removed. The observation that clears it is a close whose delivery commit changes no record the gate confirmed.
-
-Raised by the operator during the milestone's cheap-row triage.

@@ -19,7 +19,7 @@ The dispatch library, its shell entrypoint, and the tests that pin them: `src/li
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The dispatch library's unit suite is green | `node --test tests/dispatch/machine/*.test.ts tests/dispatch/seats/*.test.ts tests/dispatch/walk/*.test.ts` prints 112 passing | Agent [x] |
+| The dispatch library's unit suite is green | `node --test tests/dispatch/machine/*.test.ts tests/dispatch/seats/*.test.ts tests/dispatch/walk/*.test.ts` prints 114 passing | Agent [x] |
 | The seam's behavioural suite is green | `bash tests/test_dispatch.sh` prints 61 passed, 0 failed | Agent [x] |
 | The gates are clean | `bash scripts/lint.sh` across 12 gates | Agent [x] |
 | The whole suite is green | `bash scripts/run_tests.sh`; one load-dependent flake re-run in isolation, per the recorded triage | Agent [x] |

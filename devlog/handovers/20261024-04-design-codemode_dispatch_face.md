@@ -49,9 +49,9 @@ What such a face buys is one process spawn and one JSON round trip per decision,
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The row's first question is answered by measurement | the probe above, run in this session's codemode, and quoted in the record | Agent [x] Operator [ ] |
-| The second question is answered as far as this deployment allows | the record states what a seat run needs -- a worktree and a process -- and that the sandbox has neither | Agent [x] Operator [ ] |
-| The row's fate is recorded, and what survives it is routed | `grep -c "^- \[x\] \*\*The library is reachable from codemode\*\*" devlog/roadmap.md` prints 1, and `grep -c "the dispatch library is already where an extension can import it" devlog/roadmap.md` prints 1, on the scheduler row under `M3.6.6` | Agent [x] Operator [ ] |
+| The row's first question is answered by measurement | the probe above, run in this session's codemode, and quoted in the record | Agent [x] Operator [x] |
+| The second question is answered as far as this deployment allows | the record states what a seat run needs -- a worktree and a process -- and that the sandbox has neither | Agent [x] Operator [x] |
+| The row's fate is recorded, and what survives it is routed | `grep -c "^- \[x\] \*\*The library is reachable from codemode\*\*" devlog/roadmap.md` prints 1, and `grep -c "the dispatch library is already where an extension can import it" devlog/roadmap.md` prints 1, on the scheduler row under `M3.6.6` | Agent [x] Operator [x] |
 
 ## Decisions
 

@@ -32,13 +32,13 @@ Out of scope, each with its reason. A schema file or a loader, because [`table.t
 
 | Criterion | Verification | Result |
 |---|---|---|
-| Both conditions are stated as judgements | `grep -c '\*\*A tautology asserts nothing' .agents/skills/testing/SKILL.md` and `grep -c '\*\*A derived case set is bound' .agents/skills/testing/SKILL.md` each print 1, inside `## Judgements`, each as one unwrapped line | Agent [x] Operator [ ] |
-| The case that failed the second condition is gone | `grep -c 'test_the_dispatch_skill_names_no_table_model' tests/test_pi_model_recommendations.sh` prints 0, the file's `run_test` count is 10, and the suite is green | Agent [x] Operator [ ] |
-| The guard it half-held survives, statically | `grep -c 'the dispatch skill binds no role to a model' tests/test_pi_model_recommendations.sh` prints 1, and the case carrying it derives nothing from live data | Agent [x] Operator [ ] |
-| Every role line of the committed table resolves | the new case is green on the committed table, and a copy with one broken entry turns it red naming that role; both runs are below | Agent [x] Operator [ ] |
-| The case finds the roles a listing would skip | on that copy `table roles` prints the other four roles, omits the broken one, and exits 0, while the new case fails on it | Agent [x] Operator [ ] |
-| No schema artifact is added | `git show --stat HEAD` names the convention skill, the test file, this record and the roadmap; no file under `src/libs/dispatch/` and no new config file | Agent [x] Operator [ ] |
-| Both roadmap rows close with evidence | the M3.6.3 row and the T1 row each read `- [x]` with a closed note naming this record | Agent [x] Operator [ ] |
+| Both conditions are stated as judgements | `grep -c '\*\*A tautology asserts nothing' .agents/skills/testing/SKILL.md` and `grep -c '\*\*A derived case set is bound' .agents/skills/testing/SKILL.md` each print 1, inside `## Judgements`, each as one unwrapped line | Agent [x] Operator [x] |
+| The case that failed the second condition is gone | `grep -c 'test_the_dispatch_skill_names_no_table_model' tests/test_pi_model_recommendations.sh` prints 0, the file's `run_test` count is 10, and the suite is green | Agent [x] Operator [x] |
+| The guard it half-held survives, statically | `grep -c 'the dispatch skill binds no role to a model' tests/test_pi_model_recommendations.sh` prints 1, and the case carrying it derives nothing from live data | Agent [x] Operator [x] |
+| Every role line of the committed table resolves | the new case is green on the committed table, and a copy with one broken entry turns it red naming that role; both runs are below | Agent [x] Operator [x] |
+| The case finds the roles a listing would skip | on that copy `table roles` prints the other four roles, omits the broken one, and exits 0, while the new case fails on it | Agent [x] Operator [x] |
+| No schema artifact is added | `git show --stat HEAD` names the convention skill, the test file, this record and the roadmap; no file under `src/libs/dispatch/` and no new config file | Agent [x] Operator [x] |
+| Both roadmap rows close with evidence | the M3.6.3 row and the T1 row each read `- [x]` with a closed note naming this record | Agent [x] Operator [x] |
 
 ### The gate's two runs
 

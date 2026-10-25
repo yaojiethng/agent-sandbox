@@ -53,11 +53,11 @@ None.
 
 | Criterion | Verification | Result |
 |---|---|---|
-| the frontier row replaces the requests row | `grep -c "^- \[ \] \*\*The policy frontier, from the corpus\*\*" devlog/roadmap.md` prints 1 and `grep -c "Requests per completed task" devlog/roadmap.md` prints 0 | Agent [x] Operator [ ] |
-| the bakeoff row closes on a pointer | `grep -c "^- \[x\] \*\*The policy bakeoff\*\*" devlog/roadmap.md` prints 1 | Agent [x] Operator [ ] |
-| `M3.6.3` no longer scopes a bakeoff, and holds no open row | `grep -c "the policy bakeoff, dispatch ownership" devlog/roadmap.md` prints 0; the section's open rows count 0 | Agent [x] Operator [ ] |
-| the brief exists and names the row it feeds | `.agents/drafts/dispatch-policy-frontier-run.md` opens with the row it serves | Agent [x] Operator [ ] |
-| the gates stay green | `scripts/lint.sh`, `scripts/run_tests.sh` | Agent [x] Operator [ ] |
+| the frontier row replaces the requests row | `grep -c "^- \[ \] \*\*The policy frontier, from the corpus\*\*" devlog/roadmap.md` prints 1 and `grep -c "Requests per completed task" devlog/roadmap.md` prints 0 | Agent [x] Operator [x] |
+| the bakeoff row closes on a pointer | `grep -c "^- \[x\] \*\*The policy bakeoff\*\*" devlog/roadmap.md` prints 1 | Agent [x] Operator [x] |
+| `M3.6.3` no longer scopes a bakeoff, and holds no open row | `grep -c "the policy bakeoff, dispatch ownership" devlog/roadmap.md` prints 0; the section's open rows count 0 | Agent [x] Operator [x] |
+| the brief exists and names the row it feeds | `.agents/drafts/dispatch-policy-frontier-run.md` opens with the row it serves | Agent [x] Operator [x] |
+| the gates stay green | `scripts/lint.sh`, `scripts/run_tests.sh` | Agent [x] Operator [x] |
 
 ## Findings
 

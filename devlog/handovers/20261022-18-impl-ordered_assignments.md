@@ -24,7 +24,7 @@ The dispatch-rule surface stays open by the run's own ruling: this unit names th
 | A role prints its ordered assignments, each with the runtime it resolves to | `node src/libs/dispatch/cli.ts table roles` prints three assignments per role | Agent [x] |
 | A walk advances by outcome, and a pin is the caller's value | `bash tests/test_dispatch.sh` prints `52 passed, 0 failed` | Agent [x] |
 | The shell seam is gone | `test ! -e src/libs/dispatch.sh`, and `scripts/dispatch.sh` asks the library | Agent [x] |
-| The vocabulary and the behaviour are stated once | [`terminology.md`](../../docs/reference/terminology.md) defines each term; [`dispatch.md`](../../docs/reference/dispatch.md) defines none | Operator [ ] |
+| The vocabulary and the behaviour are stated once | [`terminology.md`](../../docs/reference/terminology.md) defines each term; [`dispatch.md`](../../docs/reference/dispatch.md) defines none | Operator [x] |
 | The gates are clean | `bash scripts/lint.sh` prints `Lint: clean in 7s across 12 gates`; `bash tests/test_dispatch_machine.sh` prints `2 passed, 0 failed` | Agent [x] |
 
 ## Decisions
