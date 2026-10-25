@@ -13,7 +13,7 @@ Make the boundary between what a rewrite may change and what its author owns a s
 
 ## Scope
 
-Continues the open iteration [`20261025-01-design-counterparty_check_scope.md`](20261025-01-design-counterparty_check_scope.md), which owns M3.2.2's counterparty check scope and the instruction-cleanup procedure; this sidequest owns the provenance judgement that procedure obeys, and returns there when it closes.
+Continues the open iteration [`20261025-01-workflow-instruction_cleanup_pass.md`](20261025-01-workflow-instruction_cleanup_pass.md), which owns M3.2.2's counterparty check scope and the instruction-cleanup procedure; this sidequest owns the provenance judgement that procedure obeys, and returns there when it closes.
 
 In scope: the judgement and its guard list, as a principle skill with its installed copy; the router line in the provider layer's `AGENTS.md`, in the repo source and the installed copy alike; and the link from `skill-scaffolder`, whose subject is instruction text. The provenance requirement the operator stated, that an instruction be written in the operator's words or a verbatim approved statement, is part of this unit, and so is the raise procedure that replaces a rephrase.
 
