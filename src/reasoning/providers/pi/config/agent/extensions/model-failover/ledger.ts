@@ -22,7 +22,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { FailureClass, LedgerFile, Outcome, RouteState } from "./types.ts";
+import type { FailureClass, FailureScope, LedgerFile, Outcome, RouteState } from "./types.ts";
 import { routeKey } from "./types.ts";
 
 /** The ledger path, beside this module so it travels with the extension. */
@@ -59,7 +59,14 @@ export function applyOutcome(entry: RouteState, outcome: Outcome, now: number, t
 	if (outcome.ok) {
 		return initialRouteState();
 	}
-	const cooling = (failureClass: FailureClass): RouteState => ({ state: "cooling", until: now + cooldownMs[failureClass], class: failureClass });
+	// A failure whose scope is the request, or that names nothing, is not
+	// evidence about the route: the same call fails identically on every model,
+	// so the record does not hold it. The dispatch library applies the same rule
+	// to the same class of evidence, in its R8 and R9.
+	if (outcome.scope === "request" || outcome.scope === "unclassified") {
+		return entry;
+	}
+	const cooling = (failureClass: FailureClass): RouteState => ({ state: "cooling", until: now + cooldownMs[failureClass], class: failureClass, ...(outcome.scope === "none" ? {} : { scope: outcome.scope }) });
 	if (outcome.class === "limited") {
 		return cooling("limited");
 	}
@@ -107,17 +114,26 @@ export function parseLedger(text: string): ReadonlyMap<string, RouteState> {
 	return entries;
 }
 
+/** The scope values a stored cooling entry may carry. */
+const SCOPES: readonly FailureScope[] = ["account", "provider", "model", "request", "unclassified"];
+
 /** Parse one stored entry, or undefined when the shape is not one this version writes. */
 function parseEntry(value: unknown): RouteState | undefined {
 	if (typeof value !== "object" || value === null) {
 		return undefined;
 	}
-	const raw = value as { state?: unknown; streak?: unknown; until?: unknown; class?: unknown };
+	const raw = value as { state?: unknown; streak?: unknown; until?: unknown; class?: unknown; scope?: unknown };
 	if (raw.state === "eligible" && typeof raw.streak === "number" && Number.isInteger(raw.streak) && raw.streak >= 0) {
 		return { state: "eligible", streak: raw.streak };
 	}
 	if (raw.state === "cooling" && typeof raw.until === "number" && (raw.class === "transient" || raw.class === "limited")) {
-		return { state: "cooling", until: raw.until, class: raw.class };
+		// A scope this version does not know is dropped rather than refusing the
+		// entry: the deadline and the class still decide eligibility, and a stale
+		// sidecar must not outrank them.
+		const scope = SCOPES.find((known) => known === raw.scope);
+		return scope === undefined
+			? { state: "cooling", until: raw.until, class: raw.class }
+			: { state: "cooling", until: raw.until, class: raw.class, scope };
 	}
 	return undefined;
 }

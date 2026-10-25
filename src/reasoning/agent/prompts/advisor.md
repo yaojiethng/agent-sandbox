@@ -3,7 +3,7 @@ description: Run a fresh external model as an advisory reviewer over a single fi
 argument-hint: "<target file or artifact path> -- <focus concern>"
 ---
 
-Advisor review over: $@
+Advisor review over: $ARGUMENTS
 
 ## Role split
 
@@ -13,7 +13,7 @@ The advisor reviews one concrete artifact. You are the leader with decision auth
 
 Run a fresh subagent with its own context. It does not inherit this session's conversation, loaded files, or tool state, so pass the whole assignment in the argument.
 
-State the provider, model and thinking level in the brief, because the subagent cannot see the invocation flags. Resolve the `_ADVISOR` line with `dispatch_role_model _ADVISOR`. The line carries an ordered pair list and a level. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
+State the provider, model and thinking level in the brief, because the subagent cannot see the invocation flags. Name the role by the artifact: `_ADVISOR_CODE` when the deliverable is source code, a test or a configuration file, and `_ADVISOR_DOCS` when it is prose. Resolve that role's line with `node src/libs/dispatch/cli.ts table resolve --role <role>`. The line carries an ordered assignment list and a level. Capture the run to a log file, never through a pipe, with a generous timeout. Write both the brief and the log in `/tmp`, never in the repo tree:
 
 ```bash
 timeout 1800 pi --provider <provider> --model <model> --thinking <level> -p "$(cat /tmp/advisor-brief.md)" > /tmp/advisor.log 2>&1

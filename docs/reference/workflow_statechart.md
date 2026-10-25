@@ -88,6 +88,7 @@ stateDiagram-v2
         state "doc_published -- the document is landed" as doc_published
         ms_active --> plan_scoping : /plan or /scope
         plan_scoping --> plan_interview : the design is probed
+        plan_scoping --> it_open : the operator releases the brief to a run
         plan_interview --> plan_released : operator releases the scope
         plan_released --> chk_close : /wrapup writes its rows
     chk_close --> ms_active : both reports clean, no delivery commit
@@ -216,7 +217,7 @@ Every prompt the tree carries is an event here, and the command table's row set 
 | `/backlog-triage` | `sess_oriented` | `sess_triaged` | none |
 | `/milestone-start` | `ms_none` | `ms_active` | none |
 | `/plan` | `ms_active` | `plan_released` | `grill-me`, `/wrapup` |
-| `/scope` | `ms_active` | `plan_released` | `/wrapup`, `/commit` |
+| `/scope` | `ms_active` | `plan_scoping` | none - suggests a run, or a saved brief in `.agents/drafts` |
 | `/document` | `ms_active` | `doc_published` | `doc-maintenance`, `grill-me`, `/wrapup`, `/commit` |
 | `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |

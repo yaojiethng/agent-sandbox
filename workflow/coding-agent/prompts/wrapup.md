@@ -3,7 +3,7 @@ description: "Close an active-operator session: consolidate the close into one s
 argument-hint: "[optional: a session to close]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # /wrapup - The Consolidated Close
 

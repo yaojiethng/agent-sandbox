@@ -48,7 +48,7 @@ Project-layer content is stable across iterations. It is not per-iteration state
 
 ### Model recommendations
 
-The role-to-model recommendations are operator-owned and do not travel with the project. They live at `model-recommendations.md`, mounted from `$SANDBOX_DIR/.<provider>/model-recommendations.md` and never committed. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and an unset role falls back to the pi startup default in `settings.json`. The decision's source of truth is the ADR `single_source_model_recommendations.md`.
+The role-to-model recommendations are committed with the project at `.agents/model-recommendations.md`, so a change to which model a role names is a reviewable edit. A container also carries a copy at `${AGENT_HOME:-~/.pi}/model-recommendations.md`, seeded at onboard and read only when the project copy is absent. The project and provider layers name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and a role the table does not name is refused by name rather than resolved to a default. [`dispatch.md`](dispatch.md) states the resolution and the launch sites. The decision's source of truth is the ADR `single_source_model_recommendations.md`.
 
 ### Reference template
 

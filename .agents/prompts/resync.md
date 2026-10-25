@@ -3,7 +3,7 @@ description: "Re-install the repository's staged config tree into $AGENT_HOME/ag
 argument-hint: "[optional: one skill name to narrow the sweep]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # /resync - Re-install the working copy
 

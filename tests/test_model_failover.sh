@@ -40,6 +40,7 @@ NODE_TEST_FILES=(
   mapping.test.ts
   mutation.test.ts
   pinned-fetch.test.ts
+  replay.test.ts
   report.test.ts
   router.test.ts
   wire.test.ts

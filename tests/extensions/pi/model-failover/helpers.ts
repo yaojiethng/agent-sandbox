@@ -6,7 +6,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Chain, Outcome, Route, ThinkingLevelName } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts";
+import type { Chain, FailureScope, Outcome, Route, ThinkingLevelName } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts";
 
 /** The fixed clock every test reads: 2023-11-14T22:13:20Z, as epoch milliseconds. */
 export const NOW = 1_700_000_000_000;
@@ -27,12 +27,12 @@ export function chain(id: string, routes: readonly Route[]): Chain {
 
 /** A transient failure outcome, as the classifier reports one. */
 export function transient(): Outcome {
-	return { ok: false, class: "transient" };
+	return { ok: false, class: "transient", scope: "none" };
 }
 
 /** A quota-class failure outcome. */
-export function limited(): Outcome {
-	return { ok: false, class: "limited" };
+export function limited(scope: FailureScope = "none"): Outcome {
+	return { ok: false, class: "limited", scope };
 }
 
 /** A success outcome. */

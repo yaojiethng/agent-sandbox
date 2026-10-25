@@ -16,6 +16,51 @@ This file is tied into the session's Findings section for recording and into the
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
+## [O] 2026-10-24  --  A roadmap measurement note became an artifact and a gate
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before designing for a roadmap row, separate what the row measured from what it proposed. Name what reads the artifact besides the check that would keep it true; when the answer is nothing, the row is retired rather than built.
+```
+
+The M3.6.3 row **The model-catalog track** carried two kinds of text in one paragraph: measurements (the free tier is one shared 200-request pool per IP per day, and `opencode-go`'s `429` meters a model family) and a proposal ("the per-model declaration and its staleness check"). The agent read the proposal as a requirement and designed a reference document, a structural gate with its test, an ADR, two reserved terms and a roadmap retitle.
+
+Every column the row asked for was already answered: preference by the role line's order, cost by M3.6.2's ledger, a rate limit by the route record's cooled-until with its reason, provenance by the provider's sentence plus the scope, and the model list by `pi --list-models` and `opencode models`. The document's only consumer would have been the gate written to keep it true, which is the registry-nobody-reads class the 2026-10-23 derived-artifacts census recorded.
+
+The operator's correction: the mental model of the algorithm is clean and its capabilities are clean, and the agent keeps adding constraints or features that affect neither correctness nor performance. The row was retired, and the one residue is a line in `dispatch.md` naming the listing command.
+
+## [A] 2026-10-23  --  A default mechanism was hardened into a requirement
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: when a mechanism resolves something on the caller's behalf, the caller's own value is an override and not a violation. State the rule as "resolve by default, and take the caller's value when one is given", and refuse a given value only when it cannot be satisfied.
+```
+
+The seat path was built with `dispatch: --seats cannot be pinned`, a test that held the refusal, and a shipped review section saying a review's pin "is refused here". The operator's correction was one sentence: pins and manual specification that bypass auto-resolution are always allowed, and what the mechanism does on its own is a default. The ADR's headline, "names a role and never a model", was read as a prohibition rather than as the shape of the default path, and everything downstream inherited the harder reading.
+
+The tree already carried the softer statement, one paragraph away: the walk had taken `--model` as a pin since before the seat path existed, refusing nothing and simply not recording the attempt. The harder reading was new, invented while writing the seat refusals, and it survived because no test could disagree with it: the test asserted the refusal the code had just been told to make.
+
+The cost was a reversed decision inside one unit, a test deleted rather than kept, and a pass over the shipped section, the reference, the reserved terms and both ADRs. The fix's shape is the one to remember: a pin seats every seat on the one assignment, and its attempt is recorded like any other, because the memory holds evidence about the route rather than about the decision that chose it.
+
+## [A] 2026-10-23  --  A shipped document linked a target the image does not carry
+
+```text
+state: open
+scoped: none
+legacy: the same session's second instance, below, reached the opposite error from the same cause: a gate verdict predicted from reading the manifest by hand instead of run.
+mitigation: before writing a pointer in a shipped document, ask whether the target ships. A reference document is read at its image path, so a relative target the repository resolves may not resolve where the text is read; the fix is the target's repository path in a code span, which the `linking` convention's `Name a target the citing text cannot reach` already states. Where the question is a link's legality rather than its target's existence, change the line and run the gate: it answers in one cycle, and a hand read of one manifest field answers confidently and wrongly.
+```
+
+`docs/reference/dispatch.md` gained a paragraph citing a new ADR as a relative link, `../adr/pi_subagent_dispatch.md`. The linking rule failed it with `link target does not exist in the image`. A reference document ships into the container at `/opt/sandbox/docs/reference/`, so every relative target in it resolves at its image path, and `docs/adr/` does not ship. The sentence above the new one already named an ADR in a code span, one line away from the mistake.
+
+**The second instance, later the same session.** The provider `AGENTS.md` needed a pointer to a new skill at `/opt/workflow/agent/skills/write-locations/SKILL.md`. Reading the citing instruction cell's `reachable` rows, which name `/opt/workflow/agent/config/` and the pi install, the agent concluded the link was illegal and wrote a code span instead. It was legal: `instruction_reach` assembles the image set from every cell's runtime path, plus the session paths, plus the cell's own rows, so any instruction root in the image is reachable from any shipped surface. One `bash scripts/check_markdown.sh` returned 0 findings on the link. The cost was larger than the first instance's: the wrong conclusion was written into the handover as a decision and a finding, so the record had to be corrected as well as the line.
+
+The class is the same in both directions: a rule about where a pointer resolves was settled by reasoning about it instead of by running the check that owns it. The first instance reasoned about the target and the second about the gate, and both reads felt decisive.
+
 ## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
 
 ```text
@@ -181,6 +226,8 @@ The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. 
 Raised by the agent during handover `20261014-03`.
 
 **Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
+
+**Recurrence, 2026-10-24** (handover `20261024-12`, the dispatch refactor): the full run failed `test_interactive_session_select.sh: test_select_session_patch_count_shown`, which passed 37 of 37 in isolation. A third file, the same shape, and still no cause.
 ---
 
 ## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
@@ -318,19 +365,6 @@ state: open
 scoped: M3 T1 -- process improvements
 legacy: none
 mitigation: three process rules. (1) A released task-list gate confirms scope and acceptance criteria, not policy text; present each changed policy section verbatim and await explicit release. (2) Session-relative finding numbers are valid only in their source conversation. (3) A redesign task first establishes purpose, then scopes exploration to it; do not launch a broad sweep before realigning onto the true objective.
-```
-
-### [A] 2026-09-21  --  Edit-tool failure family (T2)
-
-```text
-state: open
-scoped: M3 T2 -- edit-tool failure metrics + feedback resolution
-legacy: none
-mitigation: one failure family across the `edit` tool, resolved from the T2 measurement. Multi-edit atomicity (one failed entry rolls back the whole call); exact-match `oldText` (invisible whitespace / trailing chars break the match); overlapping/nested entries rejected; `oldText` must be unique. Sub-cases: a regex `sed -i` with a missing file operand silently writes nothing; the "did the write land?" reflex catches un-applied edits; table-row append must keep the anchor row (overwrite-instead-of-append is a distinct failure mode). Count and classify failures by cause via the T2 metric.
-legacy: 2026-09-27 -- the anchor-row mode recurred while inserting a roadmap row: the `newText` replaced the
-anchor line instead of prefixing it, and the row's text was lost until it was restored from `HEAD` and verified
-byte-identical. Read `newText` as the full replacement region before writing, and re-run `git diff --numstat` to
-confirm an append shows one insertion and zero deletions. Second instance the same day: the marker-ordering row still carried the neighbouring trial row's body after the restore passed byte-identical, and the close read-back caught it. Run the numstat reflex after every row edit, not only after the recovery.
 ```
 
 ### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
@@ -802,20 +836,3 @@ Two costs, not one. The reader had no way to tell which copy was current, and th
 The rule that persists it: when a workflow hands off to a script, it relays that script's output and adds only what the script cannot know. An instruction the next command prints belongs to that command, and a multi-step flow belongs in the ADR that owns the pipeline rather than in the prompt that starts the first step.
 
 Raised by the operator during handover `20261002-24`.
-
-## Agent experience  --  session 20261023 (M3.3.2 cheap-row pass)
-
-### [O] 2026-10-23  --  A close decision that waits on an observation is not a task
-
-```text
-state: probation
-scoped: M3.3.2 - Retire the policy form
-legacy: none
-mitigation: none
-```
-
-The row asked the release gate to carry every question the close would otherwise answer, so a close is data entry: a finding states its `Triaged to:` destination when it is raised, both record checks run before the release, and the handover lint fails a row with no destination. The gate landed on 2026-10-20. What did not happen is the row's ending condition, a close commit that changes no record the gate already confirmed. Every close since has changed one, so what remains is an observation rather than work.
-
-A task list holds work. A landed change waiting on a future observation is a probation entry, and the roadmap row is removed. The observation that clears it is a close whose delivery commit changes no record the gate confirmed.
-
-Raised by the operator during the milestone's cheap-row triage.

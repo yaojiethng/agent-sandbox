@@ -3,7 +3,7 @@ description: Draft - the sequential dispatch shape - run an operator-released un
 argument-hint: "[plan reference - a roadmap task, a row list, or the unit table - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Sequential Work - Unit Dispatch (Main-Agent Template)
 

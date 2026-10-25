@@ -3,7 +3,7 @@ description: Merge arbitrary draft branches into a target branch by replaying ea
 argument-hint: "[draft branches...] [target branch]"
 ---
 
-> $@
+> $ARGUMENTS
 
 ## Project conventions
 

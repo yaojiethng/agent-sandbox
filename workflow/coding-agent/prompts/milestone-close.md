@@ -3,7 +3,7 @@ description: Close a milestone or sub-milestone. A single general fractal protoc
 argument-hint: "[milestone name - for example M3.1 - Backpressure]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Milestone Close - Loop (Main-Agent Template)
 

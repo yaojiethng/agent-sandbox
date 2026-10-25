@@ -3,7 +3,7 @@ description: "Dispatch prompt for record maintenance. Picks the maintenance payl
 argument-hint: "[target - roadmap, handovers, both, or a worktree dispatch - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Maintenance - The Dispatch Runbook
 

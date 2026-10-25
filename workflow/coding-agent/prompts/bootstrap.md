@@ -3,7 +3,7 @@ description: Bootstrap the agent-sandbox content layer on a project. Investigate
 argument-hint: "[workflow intent and branch line - optional; e.g. full loop, work lands on main]"
 ---
 
-> $@
+> $ARGUMENTS
 
 ## Project conventions
 

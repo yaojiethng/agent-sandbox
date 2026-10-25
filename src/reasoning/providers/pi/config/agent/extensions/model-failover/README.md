@@ -53,6 +53,8 @@ The extension is inert unless the `MODEL_FAILOVER_ENABLED` environment variable 
 
 The shipped `routes.json` carries one chain with one route. That matches the measured state of this deployment: the models the chain would otherwise list were quiet on 2026-10-12 (`space-bunny-free` answered model-unavailable, `deepseek-v4-flash` and `glm-5.3-flash` answered usage-limit), and `opencode` cannot serve this model at all. A second route is a declaration edit away; the loader validates it and the ledger cools it when it fails, so the surface accepts a route before it is needed.
 
+The extension is parked un-enabled until a model with flaky semantics exists to evaluate it against: no model in this deployment fails often enough to persist through, so the off state is the parking, and the comparison that would earn the flag -- quality held fixed while the retries are priced -- is the `T12` row for flaky-model handling in the repository's `devlog/roadmap.md`.
+
 ## The algorithm
 
 ### Requirements

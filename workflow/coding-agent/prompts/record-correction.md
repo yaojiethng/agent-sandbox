@@ -3,7 +3,7 @@ description: Fold a correction into a closed commit that is not HEAD, without re
 argument-hint: "[target commit hash or subject] [what the correction changes] [why it belongs to that commit]"
 ---
 
-> $@
+> $ARGUMENTS
 
 ## Project conventions
 

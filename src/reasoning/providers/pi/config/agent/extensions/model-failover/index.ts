@@ -92,7 +92,7 @@ export default function modelFailover(pi: ExtensionAPI) {
 	/** The host resolved for each declared provider, so an outcome finds its edge. */
 	const providerHost = new Map<string, string>();
 
-	/** Every declared route, keyed by its provider and model pair. */
+	/** Every declared route, keyed by the provider and the model it names. */
 	const declared = new Map<string, { chainId: string; route: Route; threshold: number }>();
 	for (const chain of declarations.chains) {
 		for (const route of chain.routes) {
@@ -179,7 +179,7 @@ export default function modelFailover(pi: ExtensionAPI) {
 		const key = routeKey(message.provider, message.model);
 		const owner = declared.get(key);
 		if (owner === undefined) {
-			// The physical pair is not a declared route of any chain, so its
+			// The physical provider and model are not a declared route of any chain, so its
 			// outcome says nothing about one. A manual model selection stays
 			// outside the ledger (S1).
 			return;

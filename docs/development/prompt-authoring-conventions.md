@@ -75,15 +75,17 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 **Suggested skill name.** The judgement is in `skill-scaffolder`'s [`patterns/signposting.md`](../../.agents/skills/skill-scaffolder/patterns/signposting.md). This document holds the scheme this repository uses, which is a suggestion and not a rule; nothing in the tree checks a skill name. A principle follows `[<domain>-]principle-<judgement>`: a bare `principle-` when the judgement holds for any agentic work, and the domain prefix when it is confined to one, as in `principle-guard-the-context-window`, `communication-principle-write-for-the-reader`, and `bash-coding-principle-<judgement>` for language-specific work. The scheme shadows the one the `poteto` skill set uses at its fork source, `pstack`, so a name states the class and never the provenance; the skill's maintenance record states where it came from. Every other skill follows `<verb-noun>`, so that `/<action>` reads to the operator as "do <action>", the same shape as `node run <action>` and `uv run <action>`. A mode keeps the `-mode` suffix `poteto-mode` established.
 
-**Body order.** A finished workflow document follows a stable order:
+**Passing the argument through.** A prompt that forwards the operator's text to its body opens with `> $ARGUMENTS` after the frontmatter. Write `$ARGUMENTS`, not `$@`: pi substitutes both, OpenCode substitutes only `$ARGUMENTS`, so one spelling serves both runtimes from one file. The decision is [`instruction_surface_declaration.md`](../adr/instruction_surface_declaration.md).
 
-1. **The opening template line.** A main-agent prompt opens with `> $@` after the frontmatter, then a title and a `Scope` declaration that states the prompt's boundary. A runbook without this declaration makes a misplaced title indistinguishable from a missing one.
-2. **Purpose** states what the prompt or skill is for and what it is not. The task-queue prompt leads with what it is a primitive for, then names what it is not in its "Not this template" routing, inside "When to use".
-3. **When to use** states the conditions that invoke it and the routing: what it is for, and what replaces it in the cases it is not for. The task-queue prompt names `iter.md` and `fanout-run.md` as the not-this-template cases.
-4. **The steps or the reference region** carries the work. A runbook orders its steps and ends each on a completion criterion; the judgement is the `principle-say-what-done-looks-like` skill at `$AGENT_HOME/agent/skills/principle-say-what-done-looks-like/SKILL.md`. A reference region lists rules consulted on demand, so it has no step to finish.
-5. **The handoff.** A runbook that ends by handing to another prompt names the boundary. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`. A prompt that ends inside its own scope omits it.
-6. **Non-goals** states what the prompt deliberately does not do, so the agent does not silently extend scope.
-7. **Failure modes and invariants** close a runbook: what can go wrong and what the work must not break. The run-style and work-style prompts (`sequential-work`, `parallel-work`, `fanout-run`) and `task-queue` carry them.
+**A common shape, not a requirement.** A workflow document carries the sections its work needs, and a short prompt may carry none of them. Where the parts are needed, this order has read well:
+
+1. **Title and scope.** A title, then a `Scope` line stating the prompt's boundary.
+2. **Purpose.** What the prompt is for, and what it is not.
+3. **When to use.** The conditions that invoke it, and what replaces it otherwise.
+4. **The work.** Steps, each ending on a completion criterion; or a reference region, which has no step to finish.
+5. **The handoff.** The next prompt and the boundary, where the prompt hands on.
+6. **Non-goals.** What the prompt deliberately does not do.
+7. **Failure modes and invariants.** What can go wrong, and what must stay true.
 
 **The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 

@@ -2,7 +2,7 @@
 description: Package an eval snapshot of this session -- a frozen transcript, a complete repository bundle, the operator turn stream, the session facts and a credential scan -- so a later eval can replay and score it. Use when the operator asks to save the session state for evals, when a closed series is worth scoring later, or when the operator asks what an eval would need.
 trigger: /package-eval-snapshot
 ---
-> $@
+> $ARGUMENTS
 
 # Package an eval snapshot
 

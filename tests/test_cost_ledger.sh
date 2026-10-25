@@ -23,7 +23,7 @@ test_cost_ledger_sums_single_session() {
   make_session "$root"
   file="$root/session.jsonl"
   out="$(node "$REPO_ROOT/scripts/cost_ledger.mjs" --session "$file")"
-  assert_eq "$(printf '%s' "$out" | jq -r '.backend')" "pi" "backend"
+  assert_eq "$(printf '%s' "$out" | jq -r '.runtime')" "pi" "runtime"
   assert_eq "$(printf '%s' "$out" | jq -r '.session')" "11111111-2222-3333-4444-555555555555" "session id"
   assert_eq "$(printf '%s' "$out" | jq -r '.provider')" "anthropic" "provider"
   assert_eq "$(printf '%s' "$out" | jq -r '.model')" "claude-opus-4" "model"
@@ -54,7 +54,52 @@ test_cost_ledger_root_walks() {
   assert_eq_num "$count" 1 "one record per session"
 }
 
+make_failure_session() {
+  local dir="$1" model="$2" tag="$3"
+  mkdir -p "$dir"
+  cat > "$dir/$tag.jsonl" <<JSON
+{"type":"session","version":3,"id":"session-$tag","timestamp":"2026-01-01T00:00:00.000Z","cwd":"/tmp/fixture-cwd"}
+{"type":"message","id":"m1","timestamp":"2026-01-01T00:00:01.000Z","message":{"role":"assistant","provider":"deepseek","model":"$model","stopReason":"error","errorMessage":"400 invalid_request_error: reasoning_effort: unknown variant \`minimal\`"}}
+{"type":"message","id":"m2","timestamp":"2026-01-01T00:00:02.000Z","message":{"role":"assistant","provider":"deepseek","model":"deepseek-flash","stopReason":"error","errorMessage":"429 usage limit reached"}}
+{"type":"message","id":"m3","timestamp":"2026-01-01T00:00:03.000Z","message":{"role":"assistant","provider":"deepseek","model":"$model","stopReason":"aborted","errorMessage":"This operation was aborted"}}
+JSON
+}
+
+test_cost_ledger_failure_view() {
+  local root out count
+  root="$(get_fixture_dir)"
+  make_failure_session "$root" "deepseek-flash" "one"
+  out="$(node "$REPO_ROOT/scripts/cost_ledger.mjs" --root "$root" --failures)"
+  count="$(printf '%s\n' "$out" | grep -c . || true)"
+  assert_eq_num "$count" 2 "one record per failure, and a cancelled turn is not one"
+  assert_eq "$(printf '%s\n' "$out" | head -1 | jq -r '.extension.scope')" "request" "the extension's rule reads the request scope"
+  assert_eq "$(printf '%s\n' "$out" | head -1 | jq -r '.library.scope')" "request" "the library's rule reads the request scope"
+  assert_eq "$(printf '%s\n' "$out" | head -1 | jq -r '.provider')" "deepseek" "the request's provenance carries the provider"
+}
+
+test_cost_ledger_census_and_attribution() {
+  local root out absent count
+  root="$(get_fixture_dir)"
+  make_failure_session "$root" "deepseek-flash" "one"
+  out="$(node "$REPO_ROOT/scripts/cost_ledger.mjs" --root "$root" --census)"
+  count="$(printf '%s\n' "$out" | jq -s '[.[] | select(.rule == "library" and .scope == "request")][0].count' -r)"
+  assert_eq_num "$count" 1 "the census counts the request-scope failure per rule"
+  local first last
+  first="$(printf '%s\n' "$out" | head -1 | jq -r '.first')"
+  last="$(printf '%s\n' "$out" | head -1 | jq -r '.last')"
+  assert_eq "$([ "$first" != "null" ] && [ "$last" != "null" ] && [ "$first" -le "$last" ] && echo ok)" "ok" "each census cell carries the window it was measured over"
+  out="$(node "$REPO_ROOT/scripts/cost_ledger.mjs" --root "$root" --attribution)"
+  absent="$(printf '%s\n' "$out" | jq -s '[.[] | select(.kind == "attribution-summary")][0].absentPairs' -r)"
+  assert_eq_num "$absent" 1 "a shape seen on one model only has no cross-model pair"
+  make_failure_session "$root" "deepseek-v4-flash" "two"
+  out="$(node "$REPO_ROOT/scripts/cost_ledger.mjs" --root "$root" --attribution)"
+  absent="$(printf '%s\n' "$out" | jq -s '[.[] | select(.kind == "attribution-summary")][0].absentPairs' -r)"
+  assert_eq_num "$absent" 0 "the same shape on a second model is a cross-model pair"
+}
+
 run_test test_cost_ledger_sums_single_session
 run_test test_cost_ledger_root_walks
+run_test test_cost_ledger_failure_view
+run_test test_cost_ledger_census_and_attribution
 
 test_done "cost_ledger"

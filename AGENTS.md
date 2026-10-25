@@ -77,18 +77,18 @@ These files are tied into the iteration's Findings for recording and into the su
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level. Every role names `deepseek/deepseek-flash`, the only model we dispatch.
+A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, in the order the role tries them.
 
-The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR`, and `_ORCHESTRATOR`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
+The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR_CODE`, `_ADVISOR_DOCS`, and `_ORCHESTRATOR`. An advisor takes the role of the artifact it reviews: source code, tests and configuration take `_ADVISOR_CODE`, and prose takes `_ADVISOR_DOCS`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
 
-The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference, and do not compose a pair from `pi --list-models`.
+The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference, and do not compose an assignment from `pi --list-models`.
 
 **The dispatch procedure.** Four steps, in this order.
 
-1. Resolve the pair: `source src/libs/dispatch.sh; dispatch_role_model <ROLE>`. It prints `<provider>/<model> <level>`, or prints nothing and exits 1. Print the result before dispatching, so the pair is in the transcript.
+1. Resolve the assignment: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1. Print the result before dispatching, so the assignment is in the transcript.
 2. Pass it verbatim: `pi --provider <provider> --model <provider>/<model> --thinking <level> --session <path> -p "$(cat <brief>)"`. Pass the id in full; `--model` matches as a substring and takes the last id that contains it.
-3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u`. It must print the pair from step 1, once.
-4. Record the role, the pair, and the level in the brief and in the report.
+3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u`. It must print the assignment from step 1, once.
+4. Record the role, the assignment, and the level in the brief and in the report.
 
 **When a step fails, stop and report**, per the failure rules in the provider layer's `## Model Recommendations`: dispatch nothing further, choose no model by hand, and report the role and the message.
 
@@ -122,7 +122,7 @@ Agent output is complete and ready for review when it follows the format rules b
 
 Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in the provider layer's `AGENTS.md`, which indexes the `communication-principle-*` corpus.
 
-**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rules: write for the reader, not the session (`communication-principle-write-for-the-reader`); skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
+**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rule: skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 

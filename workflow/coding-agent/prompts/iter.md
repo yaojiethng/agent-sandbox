@@ -3,7 +3,7 @@ description: Open a new iteration. Finds the latest handover, runs the roadmap m
 argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus description>"
 ---
 
-> $@
+> $ARGUMENTS
 
 ## Project conventions
 

@@ -3,7 +3,7 @@ description: "Run a documentation session. An iteration whose deliverable is a d
 argument-hint: "[documentation goal or target document - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Document - The Documentation Session
 

@@ -231,3 +231,11 @@ The reasoning container carries both harnesses, so a brief names a role and the 
 Eight policy documents were split by kind and deleted. Each mechanism moved to the runbook that runs it, each convention to the project's convention-skill, and the remainder to the surface that enforces it, so the protocol is the one document that survives as a contract rather than a policy. The audit that checked the split walked every retired policy against its absorbing surfaces, restored nine rules no carrier held, and traced each deliberate cut to its record. The policy map's authority doctrine was rewritten to the kind test, the maintenance surface was declared in the workflow statechart, and the image stopped shipping the policy folder.
 
 ---
+
+## M3.6.3 - Route and decide
+
+*A dispatch's model is chosen by the committed role table and the route memory rather than by the agent invoking it, and every choice is recorded, tested and reproducible.*
+
+A role resolves to an ordered list of assignments and the runtime follows the assignment, so a brief names a role and never a model, and the live recommendation values are committed with an explicit operator override. The route machine keys `<provider>/<model>`, decides from a typed outcome whose scope says what would have to change before a retry could succeed, and stops the walk where no model repairs the fault. A seat run fires several of a role's models on one brief, a pin seats every seat on one assignment for a reproducible run, and a conformance check holds every launcher to the seam. The seam then shed its accumulated shapes: one command renderer, one resolver, one assignment constructor, and one decision per rule, each held by a unit suite and a mutation gate.
+
+---

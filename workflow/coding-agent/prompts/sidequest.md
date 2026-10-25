@@ -3,7 +3,7 @@ description: "Run a sidequest: operator-directed work raised while an iteration 
 argument-hint: "<what the sidequest does - required>"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Sidequest - Operator-Directed Interruption
 

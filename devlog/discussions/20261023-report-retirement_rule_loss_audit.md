@@ -25,7 +25,7 @@ The two seats exist so that agreement is a signal rather than a tie-breaker. The
 
 Source: `git show 75deaa0d^:docs/policies/handover_policy.md`, 232 lines, 17 sections. Rows: 17.
 
-Pass: `deepseek/deepseek-flash` high, seats a and b, run directory `review-dispatch.zInrR6`. Agreement: the seats disagreed on 3 positions, each settled by command.
+Pass: `deepseek/deepseek-flash` high, seats a and b, run directory `review-dispatch.zInrR6`. Agreement: the seats disagreed on 3 positions, each settled by command. The five rules this pass restored were removed again on 2026-10-24, on the operator's direction, returning the file to its pre-audit state (handover `20261024-09`).
 
 | # | Section | Disposition | Destination | Evidence | Cut by |
 |---|---|---|---|---|---|
@@ -46,6 +46,11 @@ Pass: `deepseek/deepseek-flash` high, seats a and b, run directory `review-dispa
 | 15 | The Format Window | present | .agents/skills/work-log/SKILL.md | A record with no frontmatter block is unreachable by the default scan | - |
 | 16 | Canonical Null Markers | present | .agents/skills/work-log/SKILL.md | An empty nullable section carries its canonical marker and nothing else. Do not  | - |
 | 17 | Corrections to Closed Handovers | present | workflow/coding-agent/prompts/record-correction.md | A closed record is edited only at the operator's direction, and every edit carri | - |
+
+---
+[CORRECTION -- 2026-10-24: the pass restored rows 1, 2, 4, 5 and 12 at `.agents/skills/work-log/SKILL.md`, and a later iteration removed them again on the operator's direction, returning the file to its pre-audit state. Handover `20261024-09`.]
+
+---
 
 ### roadmap_policy
 

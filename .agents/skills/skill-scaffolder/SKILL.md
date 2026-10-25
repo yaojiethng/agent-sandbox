@@ -19,7 +19,7 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 3. **Draft the Frontmatter:** Read [`patterns/signposting.md`](patterns/signposting.md) first: the name and the description are the signpost that decides whether the body is ever loaded, so the word that leads is chosen before the template is filled. Construct the mandatory YAML frontmatter using the exact template schema below.
 4. **Draft the Content:** Generate descriptive, step-by-step instructions, examples, and constraints. Where the skill holds checks, place each one where its input exists, per the `principle-check-placement` skill. When the content carries more than one kind, or a code-bearing form, split it per [`patterns/nested-patterns.md`](patterns/nested-patterns.md).
 5. **Write File:** Use file system tools to create the folder and write the final `SKILL.md` file automatically.
-6. **Review the Result:** Dispatch the review in [`runbook/review.md`](runbook/review.md) over the skill you wrote, and fix what it names before reporting the skill as done. The same runbook reviews an existing skill or a prompt that is about to change.
+6. **Offer the Review:** the review in [`runbook/review.md`](runbook/review.md) checks the skill against the rule-loss and length bars. Ask the operator whether to run it; dispatch it only on their word, and fix what it names before reporting the skill as done. The same runbook reviews an existing skill or a prompt that is about to change.
 
 ## Standard SKILL.md Output Template
 
@@ -34,7 +34,7 @@ description: <Clear explanation of when the agent should automatically trigger t
 
 ## The body's sections
 
-The body's order is in `docs/development/prompt-authoring-conventions.md` `## Structure of a workflow document`, which lists the parts a skill carries and the parts that only a prompt carries. This skill lives in the project tree, so that document resolves wherever the skill runs.
+The body carries the sections its work needs; no fixed order is mandated. A short skill or prompt may carry none of them beyond the frontmatter above.
 
 ## Nested files
 

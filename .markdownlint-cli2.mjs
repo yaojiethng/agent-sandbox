@@ -79,7 +79,6 @@ export default {
         "docs/adr/harness_versioning.md",
         "docs/adr/interface_contract_compatibility.md",
         "docs/adr/session_identifier.md",
-        "docs/adr/single_source_model_recommendations.md",
         "docs/adr/task_queue_primitive.md",
         "docs/adr/task_type_taxonomy.md",
         "docs/reference/execution_model.md",

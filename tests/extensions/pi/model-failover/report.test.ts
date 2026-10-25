@@ -32,6 +32,11 @@ describe("the report", () => {
 		assert.equal(routeLine("p", "m", lapsed, NOW), "p/m cooling on limited, deadline lapsed");
 	});
 
+	it("names the scope beside the class, so an exhausted account reads differently from a disabled model", () => {
+		const account = { state: "cooling", until: NOW + COOLDOWNS.limited, class: "limited", scope: "account" } as const;
+		assert.equal(routeLine("p", "m", account, NOW), "p/m cooling on limited (account) for another 1h");
+	});
+
 	it("the report lists one chain header per chain and one line per route", () => {
 		const two = chain("c", [route("p", "m1"), route("p", "m2")]);
 		const view = (provider: string, model: string) => (model === "m2" ? ({ state: "cooling", until: NOW + COOLDOWNS.limited, class: "limited" } as const) : ({ state: "eligible", streak: 0 } as const));

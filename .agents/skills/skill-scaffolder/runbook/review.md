@@ -2,12 +2,21 @@
 
 Open this when a skill has just been written, or when an existing skill or prompt is about to change. The review reads one instruction surface against the bars it was written to and returns a findings table; the caller applies what it accepts.
 
-The subject is an instruction surface: a skill or a prompt that was created, folded into, or shortened. The scaffolder dispatches this for the skill it just wrote, and a runbook that moves or cuts a prompt dispatches it for that prompt.
+This runbook runs only where a workflow prescribes it, or where the operator asks for it. The scaffolder may offer a review of what it just wrote; it does not dispatch one on its own.
+
+## Called from
+
+- The scaffolding procedure, for the skill it just wrote.
+- The operator, for any instruction surface.
+
+No other workflow dispatches it. A prompt that would benefit from a review names that to the operator; it does not run one.
+
+The subject is an instruction surface: a skill or a prompt that was created, folded into, or shortened. The scaffolder offers this for the skill it just wrote, and a runbook that moves or cuts a prompt names it to the operator.
 
 ## Steps
 
 1. **Name the subject and its source.** Name the files under review. When content moved into them, name the document it came from and the commit that held it, so the reviewer can read it with `git show <parent>:<path>`. Done when both are named and `git status --porcelain` prints nothing.
-2. **Dispatch the pair.** Write the brief below to a file with `<subject>` and `<source>` substituted, then run it per the provider `AGENTS.md` `## Running Review Subagents`. Done when both reviewers returned a non-empty report.
+2. **Dispatch the pair.** The workflow or the operator has already called this runbook; this step does not decide whether a review happens. Write the brief below to a file with `<subject>` and `<source>` substituted, then run it per the provider `AGENTS.md` `## Running Review Subagents`. Done when both reviewers returned a non-empty report.
 3. **Read, verify, apply.** Check each finding against the tree before acting, and name the claims you refuted. Agreement between the pair is the signal; a disagreement is where to check hardest. Done when every finding is either accepted with its correction or refuted with a reason.
 4. **Fix, do not file.** A finding that names a defect in the surface under review is fixed here, and one outside it is reported to the operator. Done when `bash scripts/lint.sh` and `bash scripts/run_tests.sh` are clean.
 
@@ -30,11 +39,11 @@ Substitute the subject and the source, then pass the text below unchanged.
 >
 > **The lenses, in priority order.**
 >
-> 1. **Rule loss.** Walk the source and confirm every rule, table row and qualifier landed in the subject. Name anything that vanished, and say where it belonged. This is the highest-value check, and the one no gate can make.
+> 1. **Rule loss.** When content moved into the subject, walk the source and confirm every rule, table row and qualifier landed somewhere in the subject. When the operator directed a reduction of a live surface, confirm the reduction took only what the direction names. Name anything that vanished, and say where it belonged. This is the highest-value check, and the one no gate can make.
 > 2. **Length.** Give a per-file verdict, a target, and cuts quantified in lines and words, ordered by lines saved, with the text to delete or shrink and its replacement.
 > 3. **Settled design.** The surface's structural decisions were settled before this review. Report a structural defect only where it costs a rule or a reader.
 >
-> **Rule preservation bounds every cut.** Losing a rule is a defect, not an edit. For a rule you could not shorten without losing it, say so and say why.
+> **Rule preservation bounds every cut on a move.** When content is being retired or folded into the subject, every rule, table row and qualifier in the source must land somewhere, and any rule you could not shorten without losing it is reported, not cut. When the operator has directed a reduction of a live surface, the direction decides what may go: a reviewer flags a rule it believes the direction missed, but does not restore it as lost.
 >
 > **Label the evidence.** Mark each finding measured, inferred or guessed. A pointer you did not run is inferred, not measured.
 >

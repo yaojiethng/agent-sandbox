@@ -3,7 +3,7 @@ description: Check-in. Survey the project state and present the work inventory w
 argument-hint: "[intent - optional, e.g. back after a break, easy start] [thoroughness - optional: be thorough | deep dive | full audit]"
 ---
 
-> $@
+> $ARGUMENTS
 
 ## Project conventions
 

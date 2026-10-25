@@ -3,7 +3,7 @@ description: Triage prompt. Sort the open roadmap backlog into the rows an auton
 argument-hint: "[scope - a milestone ID, a task group, or empty for the whole open backlog - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Backlog Triage - Run (Main-Agent Template)
 

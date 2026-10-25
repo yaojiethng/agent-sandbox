@@ -1,6 +1,7 @@
 # Single-Source Model Recommendations
 
-**Current:** 2026-10-20
+**Current:** 2026-10-22
+
 **Status:** active
 
 ## Requirements
@@ -10,27 +11,52 @@
 | R1 | One home | The role-to-model mapping lives in one place, not restated across prompts |
 | R2 | Project-scoped | Recommendations are a project concern; the global pi file does not dictate to every project |
 | R3 | Resolvable by agent | Any agent or subagent for this project can read the recommendation for its role at dispatch time |
-| R4 | Ordered | When one model is required but several are suggested, the first in listed order wins; a routing clause on a row takes precedence |
-| R5 | Default stays truth | Prompts do not restate the effective default; the agent reads it from `settings.json` |
+| R4 | Ordered | When one model is required but several are suggested, the first in listed order wins. A set that depends on which kinds of work a role does is two roles, never a clause on one row |
+| R5 | No silent default | A role with no line stops the dispatch; nothing resolves it to a startup default, and no prompt restates a model |
 | R6 | Level travels | A recommendation carries its thinking level, not model alone |
 | R7 | Provider travels | A recommendation names the provider, not the model alone, because two providers can serve the same-named model with different capability |
-| R8 | Operator-owned | The live recommendation values are not committed; the repository carries the mechanism and a slug-free skeleton, never a model choice |
-| R9 | Initializable | A file with no values is observable as uninitialized, and one skill populates it from the models the session can dispatch |
+| R8 | Committed | The live values are committed with the project at `.agents/model-recommendations.md`; a container's copy is derived from them at every start |
+| R9 | Operator-authored | The values are the operator's, and the agent is an interface to the file: it writes what the operator states, validates no model, and runs no command that would list one |
+
+## 2026-10-22 -- The values are the operator's, and the agent validates none of them
+
+**Decision:** The role table is operator-authored. The initialisation skill reads the file, asks which role and which value, writes exactly that, and reports what the file now says. It runs no model, reads no catalogue, and asserts nothing about whether an id exists or is served. Whether a model exists is the operator's fact, and a wrong id is corrected in the table.
+
+**Rationale:** The skill's earlier step told the agent to detect the models the session can dispatch, and that detection was wrong twice in one session: a catalogue listing is not a service claim, since pi prints every model it knows and serves only the providers its own settings enable, and a name read from a list was reported as available when the provider refused it. A check that reads a catalogue therefore either duplicates the table's contents, which makes it a tautology, or contradicts them, and neither is a validation. Resolution needs the table and nothing else, so the cheapest correct skill is the one that moves the operator's text into the file.
+
+**Rejected alternatives:**
+
+- Validate each id against the runtime's catalogue: it is text the same operator wrote, so a mismatch is a typo the operator fixes, and the check cannot tell a listed id from a served one (execution).
+- Probe each id with a request: it spends the quota the ladder is built to conserve, and it answers for the moment it ran (execution).
+
+## 2026-10-22 -- The values are committed, and the container copy is derived
+
+**Decision:** The role table is committed with the project at `.agents/model-recommendations.md`, so a change to which model a role names is a reviewable edit. The container's copy at `$AGENT_HOME/model-recommendations.md` is written from it at every start when the project has one, and is seeded from the slug-free skeleton only when it does not. A role with no line is refused by its own name. A model named at a call site is a pin, and a pinned run neither reads nor writes the route memory.
+
+**Rationale:** Moving the values out of the repository in the 2026-10-14 entry moved them where nothing reviews them. Measured on 2026-10-22, the container copy named `opencode/deepseek-v4.1-flash-free`, dead since 2026-10-18, two entries past the last correction to the project copy, left `_ADVISOR` and `_ORCHESTRATOR` empty, and promised a startup default for an unset role. Both hooks seeded it once and never touched it again, so every later correction stopped at the repository. A session whose library predates the project copy still reads that path, because the copy is a single-file bind mount the container cannot remove, which makes parity there the condition for an old session to be correct. Naming a model at a call site stays allowed as a pin: a pinned run is reproducible because no route decision is available to it, and a changed pin is an edit to the run, not to the table.
+
+**Rejected alternatives:**
+
+- Keep the values out of the repository: the staleness the 2026-10-14 entry avoided in the tree reappeared in a file nothing reviews, and a dead model survived every review (execution).
+- Make the container copy the authority and derive nothing: the same unreviewed file decides what every dispatch runs, and a model change cannot be reviewed (intent).
+- Delete the container copy: it is a single-file bind mount, and a library that predates the project copy still reads it, so deleting it changes nothing for the sessions that are wrong (execution).
 
 ## 2026-10-20 -- Resolution binds to the role table
 
-**Decision:** A subagent dispatch names a role, and the pair comes from the role table in this order: the role's line, then the startup default from `settings.json`, then a stop. A dispatch that fits no role uses the `_IMPLEMENTER` line. A dispatch that needs a property one line cannot express, such as two model families, is a designed exception whose pair is pinned where its seats are defined, with the reason stated there. The table wins over a preference. Initialisation of the file happens after the dispatch, never before it. The resolver is `dispatch_role_model <role>`; a hand read of the file is not a resolution.
+**Reason superseded by 2026-10-22:** the table is committed now, so a wrong path is a review defect rather than an operator edit nobody sees, and the startup-default rung is gone. The resolution order, the pinned exception and the rule that a hand read is not a resolution carry forward.
 
-**Rationale:** The 2026-10-14 entry left two openings. An untagged dispatch resolved to the startup default, which read as permission to compose a pair instead. And a missing file routed to initialise-before-dispatch, which turned one wrong path into a blocked resolution, because its only exit is an operator confirmation an unattended run cannot get. On 2026-10-20 a census dispatch reached three pairs outside the table through that second opening and reported them as the enabled families. Resolution now runs first and stops, so an absent file cannot block the fallback and a composed pair has no rung to hide in.
+**Decision:** A subagent dispatch names a role, and the assignment comes from the role table in this order: the role's line, then the startup default from `settings.json`, then a stop. A dispatch that fits no role uses the `_IMPLEMENTER` line. A dispatch that needs a property one line cannot express, such as two model families, is a designed exception whose assignment is pinned where its seats are defined, with the reason stated there. The table wins over a preference. Initialisation of the file happens after the dispatch, never before it. The resolver is `dispatch_role_model <role>`; a hand read of the file is not a resolution.
+
+**Rationale:** The 2026-10-14 entry left two openings. An untagged dispatch resolved to the startup default, which read as permission to compose an assignment instead. And a missing file routed to initialise-before-dispatch, which turned one wrong path into a blocked resolution, because its only exit is an operator confirmation an unattended run cannot get. On 2026-10-20 a census dispatch reached three assignments outside the table through that second opening and reported them as the enabled families. Resolution now runs first and stops, so an absent file cannot block the fallback and a composed assignment has no rung to hide in.
 
 **Rejected alternatives:**
 
 - Restrict the capability, so that only the resolver can reach a model: the operator ruled it out and kept the free `pi -p` invocation (2026-10-20).
 - Keep the startup-default rung for an untagged dispatch: it is the exemption that licensed the composition.
 - Confirm a fallback with the operator at dispatch time: unexecutable in an unattended run, and the block is what produced the improvised fourth rung.
-- Give the reviewer pair a role line: one line names one pair, and the reviewer contract needs two families.
+- Give the reviewer seats a role line: one line names one assignment, and the reviewer contract needs two families. Superseded on 2026-10-23: the seat walk reads one line k times, so a role line serves a two-seat review without a second line.
 
-**Edge cases / drivers:** the role table is operator-owned and gitignored, so a wrong path is indistinguishable from a change of model unless `test -f` decides it. The startup default names one pair, not a family, and cannot satisfy a multi-seat requirement. `dispatch_role_model` reads only the first entry of a repeated line, which is a known seam defect, so a fallback inside a line is a record rather than a route on that path.
+**Edge cases / drivers:** the role table is operator-owned and gitignored, so a wrong path is indistinguishable from a change of model unless `test -f` decides it. The startup default names one assignment, not a family, and cannot satisfy a multi-seat requirement. `dispatch_role_model` reads only the first entry of a repeated line, which is a known seam defect, so a fallback inside a line is a record rather than a route on that path.
 
 ## 2026-10-14 -- The recommendations leave the project AGENTS.md
 

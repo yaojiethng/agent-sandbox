@@ -51,7 +51,7 @@ Reasoning layer container (CWD: /home/agentuser/)
     │   ├── auth.json          ← ephemeral: seeded from the image template at startup
     │   ├── models.json        ← ephemeral: seeded from the image template at startup
     │   └── AGENTS.md          ← ephemeral: seeded from the image template at startup
-    ├── model-recommendations.md ← RW bind mount: operator-owned role recommendations (never committed)
+    ├── model-recommendations.md ← RW bind mount: the container's role-table copy, read when the project copy is absent
     └── .env                   ← host-provided: API keys (never committed)
 ```
 

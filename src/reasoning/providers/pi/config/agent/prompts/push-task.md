@@ -3,7 +3,7 @@ description: Record the active task tracker. pi provider only, because it pairs 
 argument-hint: "[the node and its parent, as the active-tracker skill's push arguments]"
 ---
 
-> $@
+> $ARGUMENTS
 
 Record the active task tracker. If you have an autopilot grant, consider it invalidated. Proceed with autonomy off until the operator explicitly re-grants it.
 
