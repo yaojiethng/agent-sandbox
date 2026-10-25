@@ -77,6 +77,7 @@ General communication guidelines for all agent prose. The standard is the `commu
 - Print one addressing axis per presentation: [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md).
 - Choose the word that carries the most distinction and loses none: [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md).
 - Give every word one meaning and every thing one word: [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md).
+- Syntax is the agent's; semantics is the operator's: a rewrite may rearrange, join, reorder, restructure and relabel, and it may not touch the words that decide what is required, per [`communication-principle-rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md).
 - Carry one line of reasoning through the document: [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md).
 
 The judgements that fire on a whole artifact rather than a sentence: [`communication-principle-show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md) when an instruction or a claim of compliance is written, [`communication-principle-dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md) when a record describes work no task holds, [`communication-principle-keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md) when a caveat or a definition moves, and [`communication-principle-hand-off-by-naming-the-boundary`](./skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md) at a prompt's last step.
@@ -87,7 +88,7 @@ Report honestly. A claim about an unobservable state is an inference and is mark
 
 Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
 
-Read a finished instruction as a literal reader: if the words allow the reader to infer a task, an action or a conclusion the writer did not intend, one of the judgements above failed, and the sentence is rephrased with that one.
+Before rewriting a sentence someone else wrote, or wording the operator approved, apply `communication-principle-rewrite-syntax-never-semantics`: it governs what may be touched and the test that confirms it.
 
 ## Fresh Subagent Invocation
 
