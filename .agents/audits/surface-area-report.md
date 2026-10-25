@@ -58,4 +58,4 @@ The deployed agent surface (`/opt/workflow/agent/`) is: `src/reasoning/agent/ski
 
 Name collisions between `src/reasoning/agent/prompts/` and `workflow/coding-agent/prompts/` would silently overwrite at COPY time; there are none today. A prompt file belongs in exactly one of the two folders.
 
-The name `drafts/` implies draft status, but the directory holds current, in-use procedures (`bugfix`, `recovery`, `refactor-mv-rename-file`, `roadmap-management`). The M3 reorganization should rename or dissolve it so the name does not mislead.
+The name `drafts/` implies draft status, but the directory holds current, in-use procedures (`bugfix`, `recovery`, `refactor-mv-rename-file`, `roadmap-management`). The M3 reorganization should rename or dissolve it so the name does not mislead. The disposition was settled on 2026-10-25 against the folder as it stands now: the folder is live workflow output that `/scope` writes to and the only home of four unshipped prompts, so it gains a contract and is drained rather than dissolved. The M3.2.2 row **The audit and review payload consolidation** in [`roadmap.md`](../../devlog/roadmap.md) owns that disposition.

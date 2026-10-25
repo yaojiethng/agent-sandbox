@@ -36,7 +36,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Objective:** A consolidated workflow section for the deep approach to the communication domain: a taxonomy of the reader's processing costs that slices the domain into principles, a controlled vocabulary of the domain terms, and a measured answer to whether those terms signal the domain to an agent. The output is one communication surface that owns the domain.
 
-**Depends on:** the eval module, so the signalling experiment can run; and M3.3.4's principle cleanup, at minimum the removal of the duplicate declaration locations across `documentation_policy.md` `## Communication Standards`, `prompt-authoring-conventions.md`, and the `skill-scaffolder` skill.
+**Depends on:** M3.3.5, which owns the eval module the signalling experiment needs; and M3.3.4's principle cleanup, at minimum the removal of the duplicate declaration locations across `documentation_policy.md` `## Communication Standards`, `prompt-authoring-conventions.md`, and the `skill-scaffolder` skill.
 
 **Tasks:**
 
