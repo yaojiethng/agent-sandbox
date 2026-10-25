@@ -3,7 +3,7 @@ description: Write one executable brief from a rough ask. Run the four-question 
 argument-hint: "[the rough ask - required]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Scope - From a Rough Ask to a Brief
 

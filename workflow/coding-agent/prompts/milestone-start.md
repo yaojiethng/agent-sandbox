@@ -3,7 +3,7 @@ description: Open or reshape a major milestone or sub-milestone. Factors the roa
 argument-hint: "[direction or intent - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Milestone Start - Milestone Open
 

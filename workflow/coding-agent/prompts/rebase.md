@@ -3,7 +3,7 @@ description: Port a stale branch onto a target branch by replaying the intent of
 argument-hint: "[stale branch] [target branch] [port intent - what the stale branch was for, known supersession concerns]"
 ---
 
-> $@
+> $ARGUMENTS
 
 ## Project conventions
 

@@ -3,7 +3,7 @@ description: "Proceed on a task handed over without a view, and leave a record t
 argument-hint: "[the task - required]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Don't know, don't care
 

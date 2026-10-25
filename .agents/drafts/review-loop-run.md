@@ -3,7 +3,7 @@ description: Draft - run a bounded review loop over a committed diff range - a f
 argument-hint: "[diff range] [reviewer - a skill or a brief]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Bounded Review Loop - Run (Main-Agent Template)
 

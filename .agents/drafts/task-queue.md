@@ -3,7 +3,7 @@ description: "Run a task fan-out as a fork and a join: per-task worktrees, a blo
 argument-hint: "[task list - the tasks to fork, each a track with a worker - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Task-Queue - The General Sequencing Primitive (Main-Agent Template)
 

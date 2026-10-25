@@ -3,7 +3,7 @@ description: Run a fresh external model as an advisory reviewer over a single fi
 argument-hint: "<target file or artifact path> -- <focus concern>"
 ---
 
-Advisor review over: $@
+Advisor review over: $ARGUMENTS
 
 ## Role split
 

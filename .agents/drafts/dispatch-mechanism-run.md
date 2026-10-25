@@ -2,7 +2,7 @@
 
 **Status:** draft
 
-> $@
+> $ARGUMENTS
 
 ## The problem
 

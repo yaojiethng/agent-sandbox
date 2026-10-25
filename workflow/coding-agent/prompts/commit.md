@@ -3,7 +3,7 @@ description: "Land one delivery commit for a unit: the in-session commit-discipl
 argument-hint: "[optional: a commit range to audit]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # /commit - The Delivery Commit
 

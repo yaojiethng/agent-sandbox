@@ -3,7 +3,7 @@ description: Force a re-orientation from the active task tracker, before the ope
 argument-hint: "[the node to resume at]"
 ---
 
-> $@
+> $ARGUMENTS
 
 Re-orient from the tracker, then stop. Do not start the work. If you have an autopilot grant, consider it invalidated. Proceed with autonomy off until the operator explicitly re-grants it.
 

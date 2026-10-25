@@ -3,7 +3,7 @@ description: Draft - run two or more work tracks concurrently, each in its own g
 argument-hint: "[track list - a roadmap task set, a row list, or a named track plan - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Parallel Work - Concurrent Work Tracks (Main-Agent Template)
 

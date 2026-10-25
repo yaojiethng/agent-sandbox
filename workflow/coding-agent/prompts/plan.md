@@ -3,7 +3,7 @@ description: Planning and design workflow. Runs a plan session in place of `/ite
 argument-hint: "[goal or scope to plan - required]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Plan - Planning and Design
 

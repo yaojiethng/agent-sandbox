@@ -3,7 +3,7 @@ description: "Draft - close the class of error where an agent reaches a model th
 argument-hint: "[scope - gate, filing, or both - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Close the Model Bypass
 

@@ -3,7 +3,7 @@ description: Draft - run an adversarial novel-bug review - the machine gates fir
 argument-hint: "[repo path] [scope - what is under review] [baseline]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # Adversarial Novel-Bug Review - Run (Main-Agent Template)
 

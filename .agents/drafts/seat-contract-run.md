@@ -3,7 +3,7 @@ description: "Draft - define the seat contract once: the table schema and valida
 argument-hint: "[scope - contract, migration, or both - optional]"
 ---
 
-> $@
+> $ARGUMENTS
 
 # The Seat Contract
 
