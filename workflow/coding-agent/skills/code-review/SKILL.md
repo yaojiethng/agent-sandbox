@@ -44,6 +44,7 @@ A seat that fails on its model stops the run: report the seat and its message ra
 |---|---|---|
 | thermo-nuclear-code-quality-review | thermonuclear-review | a delta: the branch's changes, read as a diff |
 | code-review-bash | bash-review | a delta or a named set of shell files |
+| code-review-container | container-review | a delta or a named set of files whose subject is an image build |
 
 The slots a runbook fills are [`review_runbook_template.md`](/opt/sandbox/docs/reference/review_runbook_template.md). The code runbooks are read as they stand: they are upstream documents, and this shell is where their requirements become this repository's conventions.
 
@@ -53,6 +54,5 @@ A payload that exists but has not been screened is not a runbook: it names no sc
 
 | Payload | Route |
 |---|---|
-| `.agents/audits/kelsey-code-reviewer.skill.md` | `/instruction-cleanup` |
+| `.agents/audits/kelsey-code-reviewer.skill.md` | its container half is `code-review-container` and its shell half is the pattern set; what remains unowned is its feedback-style block |
 | `.agents/audits/dhh-code-audit.skill.md` | `/instruction-cleanup` |
-| `.agents/audits/bash-audit.skill.md` | subsumed by `code-review-bash`, whose Focus is that file's rule list expressed as entries |
