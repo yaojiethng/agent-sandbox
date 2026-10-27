@@ -10,13 +10,7 @@ Rules for writing bash scripts in this project. Supersedes the former `bash-scri
 
 ### 1.1 Makefile content: `printf`, not heredocs
 
-Heredocs produce spaces when indented; `make` requires tabs. Always use `printf` with explicit `\t` for Makefile generation:
-
-```bash
-printf "\ntarget:\n\tcommand --flag=$(VAR)\n" >> Makefile
-```
-
-Verify with `cat -A`  --  tabs appear as `^I`.
+`p-19` in [the file content patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/file-content.md).
 
 ### 1.2 Terminate flag parsing with `--` before filenames
 
@@ -72,12 +66,7 @@ Verify with `cat -A`  --  tabs appear as `^I`.
 
 ### 1.15 Self-derive repo root for dual-use scripts
 
-Scripts that can be `exec`"d or sourced need to handle both:
-
-```bash
-_self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
-```
+`p-18` in [the shell options patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/shell-options.md).
 
 ### 1.16 No `local` at script top level
 
@@ -86,25 +75,6 @@ AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$_self/../.." && pwd)}"
 ### 1.17 Scope `|| true` to the command that needs it
 
 `p-11` in [the failure handling patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/failure-handling.md).
-
-### 1.18 Shell option flags by file class
-
-Every shell file declares its failure regime according to its class. The class is determined by how the file is consumed, not by where it lives.
-
-| Class | Rule | Why |
-|---|---|---|
-| Orchestrator entry points (exec"d, no source-consumers) | `set -euo pipefail` at top | fail-fast beats continuing with partial state |
-| Dual-use (exec"d in production, sourced by tests) | flags inside `main()` or the rule 1.11 guard only | a top-level `set` mutates the sourcing consumer"s shell |
-| Pure libraries (sourced only) | never set options | inherit the consumer"s regime; per-function correctness via rule 3.1 and the rule 4 idioms |
-| Observe-and-report (test files, harness runners, diagnostic sweeps) | no `-e`  --  must run all checks and count failures; `set -uo pipefail` preferred | first-failure abort defeats reporting (`run_test`"s NO-ASSERTION detection relies on observing failures) |
-
-In the last row, weaker than `-uo pipefail` is permitted only with an inline rationale comment (e.g. the dry-run diagnostics: "Intentionally no set -u: env vars are checked explicitly with guards").
-
-Notes:
-
-- Direct execution of subcommand scripts is the rule 1.13 dispatch architecture, not an accident to be designed away.
-- `-u` in library code would fire on consumer-controlled environments; libraries validate their inputs explicitly instead.
-- A class change (e.g. a lib growing an entry point) means re-declaring flags for the new class as part of that change.
 
 ## 2. Dependency Management
 
@@ -136,7 +106,7 @@ Notes:
 
 ### 3.4 No speculative flags: boolean parameters need a production caller
 
-Do not add boolean/string mode parameters to a function unless at least one production call site passes a value that changes behaviour. A flag "for later" is dead API surface: it widens every signature it threads through, invites untested branches, and its eventual removal touches every file in between (`STRICT` and `AUTO_SELECT` were both removed for exactly this  --  see the 2026-08-21 loc-reduction campaign). When a mode is genuinely needed, add the parameter and the call-site change in the same commit.
+`p-18` in [the shell options patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/shell-options.md).
 
 ### 3.5 Checks fail closed, name their failure key, and never presume a predecessor succeeded
 
@@ -166,11 +136,7 @@ Do not add boolean/string mode parameters to a function unless at least one prod
 
 ### 4.6 A prose comment must not start the token `shellcheck`
 
-ShellCheck parses any comment line whose first token after `#` is the word `shellcheck` as a directive. A prose line such as `# shellcheck absent -- rc 1` becomes a directive the tool tries to parse, failing the gate with SC1072/SC1073 that looks like a false positive until the directive rule is known. Word the line so the tool name is not the first token (for example "the shellcheck tool absent"). Real directives (`# shellcheck disable=SCxxxx`, `enable=`, `source=`) are exempt. The gate's prose-comment pass (`scripts/check_shell.sh`) enforces this rule.
-
-### 4.7 A process scan must not match the scanning shell
-
-A scan for a process by name matches its own command line, because the pattern text is in the scanner's arguments: a loop that feeds the matching pids to `kill` signals itself, and the calling tool dies with 143. Match on the executable as well as the argument (`node\ *server.mjs`), and exclude the current pid. `pkill` is absent from the runtime image, so a cleanup that uses it removes nothing and reports no error; when the cleanup holds a port, verify the port is closed rather than read the kill as success.
+`p-33` in [the shellcheck patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/shellcheck.md).
 
 ## 5. Cross-References
 
