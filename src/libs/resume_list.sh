@@ -43,7 +43,7 @@ build_inventory() {
 
 # _no_sessions  --  emit the empty-inventory guidance and return 1. Shared by
 # the --list and --interactive branches (same message in both). Returns rather
-# than exits, per the library rule in bash-coding-conventions.md 3.1: callers
+# than exits, per the library rule in pattern p-13: callers
 # run under `set -euo pipefail`, so the status aborts them identically.
 _no_sessions() {
   if [[ -n "$PROVIDER_FILTER" ]]; then

@@ -6,7 +6,7 @@
 #
 # Exit codes: 0 = no findings, 1 = findings OR the gate could not run. The
 # finding count is printed, never encoded in the exit code (see
-# docs/development/bash-coding-conventions.md 3.2).
+# pattern p-14).
 #
 # Uses .markdownlint-cli2.mjs at the repo root. The config enables the
 # rule subset that matches `.agents/skills/docs/SKILL.md` plus

@@ -29,7 +29,7 @@
 #
 # Exit codes: 0 = nothing to clear, 1 = findings or stale entries, 2 = the gate
 # could not run. The finding count is printed, never encoded
-# (bash-coding-conventions.md 3.2).
+# (pattern p-14).
 
 set -uo pipefail
 

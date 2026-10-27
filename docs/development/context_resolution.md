@@ -157,19 +157,30 @@ At the seam between host context and ambiguous-context libs, the host's variable
 | Ambiguous | `_self_dir` (self-resolution) | Sibling-relative paths | `session_state.sh`, `routing.sh`, `diff_export.sh`, `package_branch.sh`, `dirs.sh` |
 | Container | `/opt/sandbox/lib/` (baked) | Absolute paths | `sandbox-entrypoint.sh`, `provider-entrypoint.sh`, `snapshot.sh`, `dry_run_*.sh` |
 
-## Control Flow Constraints
+## Dependency direction
 
-The dependency graph follows directional rules that enforce separation between layers:
+A dependency may point toward something more general, never toward something more specific. A general module that knows its caller cannot serve a second one, and a change at the specific end becomes a change to everything in between. The rule is about direction rather than language, so the same graph covers every language the project is written in.
 
 ```text
-scripts/  ──→ libs/shared/          host scripts source shared libs
-scripts/  ──→ scripts/              may source other scripts if logically
-                                      a library (e.g. checkpoint.sh)
-libs/*    ──→ libs/shared/ only    libs never source scripts
-tests/*   ──→ anything              tests can source everything
-☐ nothing ──→ tests/               nothing sources tests
-containers ──→ libs/shared/ only   entrypoints only source shared libs
+scripts/    ──→ libs/shared/          host scripts source shared libs
+scripts/    ──→ scripts/              may source other scripts if logically
+                                        a library (e.g. checkpoint.sh)
+scripts/    ──→ src/build/            host scripts source build libraries
+src/build/  ──→ src/build/, libs/shared/   build libraries share the same leaves
+libs/*      ──→ libs/shared/ only     libs never source scripts
+tests/*     ──→ anything              tests can source everything
+☐ nothing   ──→ tests/                nothing sources tests
+containers  ──→ libs/shared/ only     entrypoints only source shared libs
 ```
+
+What counts as an edge depends on the language, and an unstated edge is a legal one by default:
+
+| Language | The dependency edge |
+|---|---|
+| bash | `source`, `.` or `exec` of another script |
+| TypeScript and JavaScript | `import`, `require`, and a dynamic import resolved at build time |
+| a dispatched subcommand | the `exec` boundary, a process edge rather than a source edge |
+| a shipped image | the files baked into `/opt/sandbox/lib/` |
 
 ### Boundary rules
 

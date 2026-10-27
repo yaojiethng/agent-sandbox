@@ -26,7 +26,7 @@
 # touching the real tree.
 #
 # Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
-# finding count is printed, never encoded (bash-coding-conventions.md 3.2).
+# finding count is printed, never encoded (pattern p-14).
 
 set -uo pipefail
 

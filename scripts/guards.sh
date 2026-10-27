@@ -43,7 +43,7 @@ validate_project_dir() {
 #   git cannot read the tree. Prints nothing: the verdict is the return status
 #   and the caller owns the message. An unreadable tree is not clean, and it is
 #   not dirty either -- the caller must not tell the operator to stash changes
-#   that do not exist (docs/development/bash-coding-conventions.md 3.2).
+#   that do not exist (pattern p-14).
 #   Dirty is a non-empty `status --porcelain`.
 require_clean_working_tree() {
   local dir="$1" out

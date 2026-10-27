@@ -2,11 +2,11 @@
 # scripts/check_lib_contract.sh
 # Sourced-library contract gate over src/libs/ and src/build/.
 #
-# Enforces two conventions from docs/development/bash-coding-conventions.md:
-#   rule 3.1  --  functions in sourced libraries use `return`, never `exit`.
+# Enforces two rules of the bash pattern set, in workflow/coding-agent/skills/code-review/code-review-bash/patterns/:
+#   p-13  --  functions in sourced libraries use `return`, never `exit`.
 #                Top-level main flow behind a BASH_SOURCE[0] == "$0" exec guard
 #                may exit legitimately, so only function-body exits are flagged.
-#   rule 4.4  --  a `while read ...; done < "$VAR"` in a sourced-lib function
+#   p-31  --  a `while read ...; done < "$VAR"` in a sourced-lib function
 #                must not redirect from an unguarded path. A finding unless the
 #                function guards the same variable with a `[[ -f "$VAR" ]]` or
 #                `[[ ! -f "$VAR" ]]` test before the read.
@@ -18,7 +18,7 @@
 #
 # Exit codes: 0 = no findings, 1 = findings OR the gate could not run. The
 # finding count is printed, never encoded in the exit code (see
-# bash-coding-conventions.md 3.2).
+# pattern p-14).
 
 set -uo pipefail
 
@@ -121,18 +121,18 @@ check_file() {
           next
         }
 
-        # rule 4.4 guard -- a -f / ! -f test records the protected variable
+        # p-31 guard -- a -f / ! -f test records the protected variable
         if (match(raw, /(^|[^A-Za-z0-9_])-f[[:space:]]+["]?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?["]?/)) {
           guards[var_in(substr(raw, RSTART, RLENGTH))] = 1
         }
 
-        # rule 3.1 -- exit inside a function body
+        # p-13 -- exit inside a function body
         if (plain ~ /(^|[;&|( ])exit([;&|) ]|$)/) {
           printf "%s:%d: exit in a sourced-library function (convention 3.1; use return)\n", fname, NR
           findings++
         }
 
-        # rule 4.4 -- while-read redirect from a variable without a guard
+        # p-31 -- while-read redirect from a variable without a guard
         if (match(raw, /done[[:space:]]*<[[:space:]]*["]?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?["]?/)) {
           v = var_in(substr(raw, RSTART, RLENGTH))
           if (!guards[v]) {
@@ -158,7 +158,7 @@ done
 
 echo "Lib-contract gate: $TOTAL finding(s) across ${#FILES[@]} files"
 if (( RC != 0 )); then
-  echo "Blocking gate: fix the findings above (see docs/development/bash-coding-conventions.md 3.1 and 4.4)." >&2
+  echo "Blocking gate: fix the findings above (see pattern p-13 and pattern p-31)." >&2
   exit 1
 fi
 
