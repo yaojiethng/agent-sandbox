@@ -20,12 +20,7 @@ Verify with `cat -A`  --  tabs appear as `^I`.
 
 ### 1.2 Terminate flag parsing with `--` before filenames
 
-Filenames beginning with `-` are interpreted as flags by `cp`, `rm`, `git`, and most Unix tools.
-
-```bash
-cp --parents -- "$file" "$DEST/"
-rm -- "$file"
-```
+`p-20` in [the arguments patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/arguments.md).
 
 ### 1.3 Prefer `while read` over `xargs` for file processing
 
