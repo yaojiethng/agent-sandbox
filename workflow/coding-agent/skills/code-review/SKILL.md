@@ -54,5 +54,5 @@ A payload that exists but has not been screened is not a runbook: it names no sc
 
 | Payload | Route |
 |---|---|
-| `.agents/audits/kelsey-code-reviewer.skill.md` | its container half is `code-review-container` and its shell half is the pattern set; what remains unowned is its feedback-style block |
+| `src/reasoning/agent/skills/kelsey-code-reviewer/SKILL.md` | under test: it names no scope, so it is dispatched beside `thermonuclear-review` on the next code review rather than through this table |
 | `.agents/audits/dhh-code-audit.skill.md` | `/instruction-cleanup` |

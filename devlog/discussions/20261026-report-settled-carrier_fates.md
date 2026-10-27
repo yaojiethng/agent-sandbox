@@ -16,7 +16,7 @@ Record, per carrier, what happens to it. This table is what the consolidation ex
 | Carrier | Lines | Fate |
 |---|---|---|
 | `bash-audit.skill.md` | 29 | subsumed into a `code-review-bash` runbook; deleted, its pointers repointed |
-| `kelsey-code-reviewer.skill.md` | 158 | the bash half absorbed into `code-review-bash`, the container half awaiting a container runbook, the file deleted in that unit |
+| `kelsey-code-reviewer.skill.md` | 158 | the bash half absorbed into `code-review-bash`, the container half into `code-review-container`, the general residue kept as a payload under test, the file deleted in `20261026-08` |
 | `architecture-doc-reviewer.skill.md` | 166 | subsumed into a `prose-review` runbook, file deleted |
 | `dhh-code-audit.skill.md` | 99 | subsumed: the general parts reach the `code-review` shell, the Rails doctrine is dropped, the JavaScript part becomes a `code-review-javascript` runbook, file deleted |
 | `test-quality-campaign.md` | 106 | pending |
@@ -43,20 +43,20 @@ A file-level fate cannot carry this one: it holds three subjects, and the operat
 
 The ruling is absorb: `code-review-bash` is the survivor, and a second bash runbook would put two standards on one language. Its bash block now opens by naming the pattern set as the better version of every rule in it, so a reader who lands on the file is sent to the entry rather than to the paraphrase.
 
-The file stays for one reason, and it is not the bash half. The Dockerfile rules it carries have no owner: pin the base image, `COPY` over `ADD`, combine `RUN` to cut layers, run as a non-root user, make `WORKDIR`, `USER` and `ENTRYPOINT` explicit, keep the image minimal, use exec-form `ENTRYPOINT`, and ask whether the image rebuilds the same in six months. No pattern file, no convention document and no runbook states any of them; the two documents that mention `ENTRYPOINT` and the non-root user describe this repository's own images rather than stating a rule to review against. Deleting the file deletes the only statement of those rules, so the deletion waits for the container runbook that takes them, and that runbook is the container third of the consolidation row.
+The file stayed for one reason, and it was not the bash half: the Dockerfile rules it carried had no owner. Pin the base image, `COPY` over `ADD`, combine `RUN` to cut layers, run as a non-root user, make `WORKDIR`, `USER` and `ENTRYPOINT` explicit, keep the image minimal, use exec-form `ENTRYPOINT`, and ask whether the image rebuilds the same in six months. That owner now exists, in `code-review-container`'s entries `p-49` to `p-57`, and what held the file after that was its feedback-style block. That block is now the payload under test at `src/reasoning/agent/skills/kelsey-code-reviewer/SKILL.md`, so the file is gone.
 
 The frozen copy in the eval fixture is not an argument for keeping the live file: `tests/eval/instruction-cleanup/room/kelsey-code-reviewer.skill.md.orig` holds the bytes and `SHA256SUMS` names them, so the calibration file is already preserved without a live path.
 
 | Part | Lines | Fate |
 |---|---|---|
-| Core Philosophy | 11-21 | the general plane, deduped against the shell |
-| Review Process, safety audit | 26-38 | the general plane, with the option line and the silent-failure line naming `p-18` and `p-29` |
-| Review Process, idiomatic discipline | 39-66 | the general plane; the bash questions become the runbook's Focus, citing ids where the set holds the rule |
-| Review Standards, Bash | 88-101 | Focus, citing ids. Seven rules here have no entry, listed below |
-| Review Standards, Dockerfile | 102-113 | out of a bash runbook's subject: a container runbook's material, or dropped with the carrier |
-| Feedback Style | 114-123 | the general plane, deduped against the shell |
-| Output Format | 124-145 | the general plane, without the rewrite pass |
-| The Production Test | 146-158 | the general plane |
+| Core Philosophy | 11-21 | kept in the payload under test, with the bullets that named a script reworded to name a unit |
+| Review Process, safety audit | 26-38 | removed from the payload: every line is a bash entry, and the two that had none are `p-18` and `p-29` |
+| Review Process, idiomatic discipline | 39-66 | removed from the payload: the bash questions are entries, the image questions are `p-49` to `p-57` |
+| Review Standards, Bash | 88-101 | removed from the payload: the rules are entries, and the seven that had none are what `p-37` to `p-48` were written for |
+| Review Standards, Dockerfile | 102-113 | removed from the payload: nine entries, `p-49` to `p-57`, in `code-review-container` |
+| Feedback Style | 114-123 | kept in the payload under test, including the two clauses a seat called harmful and no ruling has removed |
+| Output Format | 124-145 | kept in the payload under test, including the rewrite pass |
+| The Production Test | 146-158 | kept in the payload under test, without the image question |
 
 The seven rules in that block which no entry held at the time of the mapping, and where each went:
 
