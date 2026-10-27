@@ -168,15 +168,7 @@ Notes:
 
 ### 2.1 Control flow graph
 
-```text
-scripts/  ---> src/libs/, src/build/     host scripts source shared libs
-scripts/  ---> scripts/                  may source other scripts if logically
-                                          a library (e.g. checkpoint.sh)
-src/libs/ ---> src/libs/ only            libs never source scripts
-src/build/---> src/build/, src/libs/     build libs source shared libs only
-tests/*   ---> anything                  tests can source everything
-nothing   ---> tests/                    nothing sources tests
-```
+`p-26` in [the sourcing patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/sourcing.md).
 
 ### 2.2 Path resolution conventions
 
@@ -184,7 +176,7 @@ nothing   ---> tests/                    nothing sources tests
 
 ### 2.3 No circular sourcing
 
-Shared functions live in leaf libraries, never in orchestrators. If `A.sh` sources `B.sh` and `B.sh` needs a function from `A.sh`, extract the shared function to a third library `C.sh` sourced by both.
+`p-27` in [the sourcing patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/sourcing.md).
 
 ## 3. Library Discipline
 
