@@ -21,7 +21,7 @@ The roadmap's `active-milestone` frontmatter and a handover's `milestone` field 
 
 ## Marking a task done
 
-**The invariant.** A completed task is marked, and the mark is committed. The roadmap is the sole task list: a task an iteration generates lands on the roadmap, not only in a handover.
+**The invariant.** A completed task is marked, and the mark rides the commit that lands the artifact it describes -- so a completion that is reverted takes its marker with it. The roadmap is the sole task list: a task an iteration generates lands on the roadmap, not only in a handover.
 
 **The marker obeys the nesting.** A parent row is `- [x]` only when every row beneath it is `- [x]`, however complete the parent's own text reads.
 

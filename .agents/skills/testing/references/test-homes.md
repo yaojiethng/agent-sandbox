@@ -20,6 +20,10 @@ Behavioural knowledge about seams the harness cannot call. Every file is self-co
 
 End-to-end or environment-gated flows that cannot run deterministically in the unit harness: container or daemon requirements, chunky multi-process flows, metrics with no defined pass/fail. They are excluded from `make test` so the unit suite stays a deterministic `failed 0`. A flow whose seam becomes unit-testable is promoted, not kept here as a permanent home.
 
+## `tests/eval/`
+
+Frozen inputs for an eval case, as opposed to a fixture a run executes against. Every file here is a byte-identical copy of a source elsewhere in the tree, taken on a stated date and hashed, because the live source is about to be rewritten and a case that pointed at it would silently become a different case. Copies carry an `.orig` suffix, which keeps the documentation and linking gates from reading them as authored prose: a verbatim copy of a document with relative links cannot resolve them from a new location, and a snapshot must not be edited to satisfy a lint rule. No runner executes anything here, and the integrity check is `sha256sum -c SHA256SUMS` inside the case directory. A fixture that a run reads and writes against is not this: per the eval skill it lives outside the repository, in a work root, and leaves nothing behind.
+
 ## Promoting a test
 
 A seam that was untestable and becomes testable - a docker mock now asserting the exact command passed, a network call behind a stub - is promoted to `tests/test_*.sh` in the change that makes it callable. The knowledge or integration note is then deleted, not left beside the unit test as a second opinion.
