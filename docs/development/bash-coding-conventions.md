@@ -54,11 +54,7 @@ fi
 
 ### 1.6 `BASH_SOURCE[0]` resolves to the symlink path
 
-When called through a symlink, `${BASH_SOURCE[0]}` returns the symlink path. This is usually correct for intentional tooling symlinks. If the real file location is needed, use `realpath`:
-
-```bash
-REAL_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" && pwd)"
-```
+`p-1` in [the path resolution patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/path-resolution.md).
 
 ### 1.7 Derive `REPO_ROOT` from a named anchor, never count `../..`
 
@@ -78,15 +74,7 @@ CREATED=0  # disarm on success
 
 ### 1.9 Operator prompts in orchestrators only
 
-Library scripts (primitives) emit errors to stderr and exit non-zero. Only the top-level operator-facing script prints next-steps guidance.
-
-```bash
-# Library  --  right
-do_thing || { echo "ERROR: thing failed: $reason" >&2; return 1; }
-
-# Orchestrator  --  right
-echo "Done. Next: run make start"
-```
+`p-28` in [the path resolution patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/path-resolution.md).
 
 ### 1.10 Absolute symlinks for cross-repository links
 
@@ -192,13 +180,7 @@ nothing   ---> tests/                    nothing sources tests
 
 ### 2.2 Path resolution conventions
 
-| Context | Convention | Variable |
-|---|---|---|
-| Container entrypoints | Hardcoded `/opt/sandbox/lib/` | Absolute path |
-| Cross-context shared libs | Self-resolution | `_self_dir` |
-| Host installed CLI | Macro | `$AGENT_SANDBOX_REPO` |
-| Host repo scripts | Repo root | `$REPO_ROOT` |
-| Test files | Repo root | `$REPO_ROOT` |
+`p-25` in [the path resolution patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/path-resolution.md).
 
 ### 2.3 No circular sourcing
 
@@ -246,7 +228,7 @@ A `while read` redirection inside a sourced-lib function -- `while IFS='=' read 
 
 ### 4.5 Absolutize `git rev-parse --git-path` output before filesystem use
 
-`git -C "$REPO" rev-parse --git-path info/exclude` prints `.git/info/exclude` -- relative to the repo root, not the caller's cwd. Using the output directly in a `mkdir -p`/append sequence writes into the caller's cwd. Absolutize before filesystem use: `[[ $p == /* ]] || p="$REPO/$p"`.
+`p-32` in [the path resolution patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/path-resolution.md).
 
 ### 4.6 A prose comment must not start the token `shellcheck`
 
