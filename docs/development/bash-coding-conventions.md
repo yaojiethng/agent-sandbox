@@ -62,15 +62,7 @@ fi
 
 ### 1.8 Use EXIT traps for partial-state rollback
 
-`set -euo pipefail` stops on error but does not clean up state already written. Use a flag + EXIT trap:
-
-```bash
-CREATED=0
-trap "[[ "$CREATED" -eq 1 ]] && rm -rf "$DIR"" EXIT
-mkdir "$DIR"; CREATED=1
-# ... work ...
-CREATED=0  # disarm on success
-```
+`p-30` in [the operator facing text patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/operator-facing-text.md).
 
 ### 1.9 Operator prompts in orchestrators only
 
