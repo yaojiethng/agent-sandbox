@@ -53,7 +53,7 @@ Run the scope-reconciliation invariant in [`iteration_protocol.md`](/opt/sandbox
 
 ### B4. Roadmap write-back
 
-Apply the row changes the release gate released, and mark each task this session resolved. The record-check report from the gate is this step's evidence; a finding the gate missed is recorded as `late`, naming the gate that should have asked. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates: the task list requires a completed task to be marked, and the mark to ride this commit. When every sub-row of a task is resolved, close that task in the form the `/milestone-close` compaction procedure, step 1, states. A session that drew a brief from `/scope` files its work-unit table here, one row per unit, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing and records that outcome.
+Confirm the released row changes are the ones on disk, and that each resolved task is marked: the rows were written before the gate, so this step reads the diff instead of applying a description. The record-check report from the gate is this step's evidence; a finding the gate missed is recorded as `late`, naming the gate that should have asked. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates: the task list requires a completed task to be marked, and the mark to ride this commit. When every sub-row of a task is resolved, close that task in the form the `/milestone-close` compaction procedure, step 1, states. A session that drew a brief from `/scope` files its work-unit table here, one row per unit, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing and records that outcome.
 
 ### B5. Carry-forward resolution
 
@@ -61,7 +61,7 @@ Run the deferred-resolution invariant in [`iteration_protocol.md`](/opt/sandbox/
 
 ### B6. Findings review/publish
 
-The gate decided the destinations; this step publishes them. Write each destination to its record: the Decisions table, a named `roadmap.md` row, or `devlog/AGENT_FEEDBACK.md`. Record the `[A]` or `[O]` class the operator confirmed. A finding discovered here is `late`, per B4, and stays in the handover. A recurring late entry becomes a roadmap row against the gate that missed it.
+The destinations were decided at the gate, and each finding reached the handover's `## Findings` table when it was raised. Confirm every destination is on disk, and land those the gate decided after the write: the Decisions table, a named `roadmap.md` row, or `devlog/AGENT_FEEDBACK.md`. Record the `[A]` or `[O]` class the operator confirmed. A finding discovered here is `late`, per B4, and stays in the handover. A recurring late entry becomes a roadmap row against the gate that missed it.
 
 ### B7. Pending-decision resolution
 

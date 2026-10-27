@@ -139,7 +139,7 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 Produce changes against the confirmed scope. Write tests alongside per the `testing` skill. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 
-The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) holds the invariants this step runs. Four of them are about records, and each fires while the work is produced rather than at the close.
+The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) holds the invariants this step runs.
 
 - **Record decisions live.** A decision is recorded in the handover's Decisions table as it is made, with the document where it was recorded. A decision that lives only in chat does not exist for the next iteration.
 - **Record a document-relevant change when you make it.** A change to an invariant, interface or contract is recorded when it is made, not at the close; a record that waits lets a stale document govern the work in the meantime.
@@ -149,7 +149,7 @@ The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/
 The handover write-back fires at three moments in the runbook's operation:
 
 - **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task.
-- **On discovery:** a bug, contradiction, design gap, obstacle, or new file in scope goes to Findings immediately; if it changes the approach, surface it in chat before proceeding.
+- **On discovery:** a bug, contradiction, design gap, obstacle, or new file in scope is a Findings row in the same turn it is found, before it is mentioned in chat; if it changes the approach, surface it in chat before proceeding.
 - **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row.
 
 **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently.
@@ -159,7 +159,7 @@ The handover write-back fires at three moments in the runbook's operation:
 Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has six sections:
 
 1. **Acceptance criteria** -- the table the project's `work-log` convention states, with `Result` carrying the marking; each criterion marked accepted or pushed. Run verifiable checks and show output.
-2. **Roadmap write-back** -- per task touched, the exact row change and the completed rows it supersedes or invalidates, per the project's `task-list` convention. When a task's sub-rows are all resolved, present the compacted outcome summary here, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
+2. **Roadmap write-back** -- the rows are written before this gate, so the summary shows the diff that carries them: `git diff <iteration-base> -- devlog/roadmap.md`, where `<iteration-base>` is `HEAD` when nothing is committed this iteration and otherwise the delivery commit it opened on. Every `Completed` row maps to a line in that diff or is raised as a finding. When a task's sub-rows are all resolved, the diff carries the compacted outcome summary, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
 | File | Change planned | Status |
@@ -170,7 +170,7 @@ Every row must carry a status. A deferred or not-started row must be written bac
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
 5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
-6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbook/content.md) of `handover-maintenance` over this handover. List every finding with its `Triaged to:` destination, and both reports with what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
+6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbook/content.md) of `handover-maintenance` over this handover. Read the findings from the handover's `## Findings` table, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 
