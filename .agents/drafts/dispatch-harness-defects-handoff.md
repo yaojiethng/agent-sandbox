@@ -105,8 +105,8 @@ opencode run -m opencode/deepseek-v4.1-flash-free "Reply with exactly: PONG"   #
 | Record | What it holds |
 |---|---|
 | [`devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`](../../devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md) | the trap table, the corrections, and the session-store query |
-| [`.agents/drafts/seat-contract-run.md`](seat-contract-run.md) | the three axes, the resolver, and the runtime rule |
-| [`.agents/drafts/dispatch-mechanism-run.md`](dispatch-mechanism-run.md) | the seam's shape as designed |
+| [`docs/adr/pi_subagent_dispatch.md`](../../docs/adr/pi_subagent_dispatch.md) | the seat contract's decided part: one door, one assignment per seat, the runtime following the assignment |
+| [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the seam's behaviour as shipped: the outcome table, the advance rule and the stop rule |
 | [`.agents/drafts/cost-aware-dispatch-run.md`](cost-aware-dispatch-run.md) | the free tier's reachability from the CLI |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | the refusal vocabulary, class by class |
 | `devlog/handovers/archive/20261017-05-impl-the_dispatch_failure_channel.md` | why the CLI's error channel is on stderr, with `--print-logs --log-level ERROR` |
