@@ -77,11 +77,20 @@ This step defines scope but does not stop for a release. The scope gate below co
 
 ## Step 3  --  Design
 
-Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per the project's `task-list` convention. If the design ends in an implementation decision, create an ADR before releasing, per the project's `decision-records` convention. Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
+Resolve the design questions for what this iteration builds, before the scope gate. A design that outgrows a single iteration is [`plan.md`](plan.md)'s, which runs at milestone or task grain.
 
-**Design precedence.** This step designs what one iteration builds. A design that outgrows a single iteration is [`plan.md`](plan.md)'s, which runs at milestone or task grain.
+Gather requirements and resolve any deferred story that depends on this iteration.
 
-Exit condition: all design questions resolved and recorded, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
+Decisions are recorded by default in the handover's `## Decisions` table, which is what the next iteration reads. A design document is opened only on operator direction. The agent proposes one, without opening it, when any of these holds:
+
+- more than one option is live and the roadmap entry does not settle which;
+- the decision must outlive this iteration;
+- the decision changes an interface, a contract, or a file set that another iteration builds against;
+- the work would otherwise produce an ADR with no record of the alternatives it rejected.
+
+Record decisions in the roadmap and handover per the project's `task-list` convention, and if the design settles an implementation decision, create an ADR before releasing, per the project's `decision-records` convention.
+
+Exit condition: all design questions resolved and recorded, any suggestion carried to the scope gate, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
 
 ## Step 4  --  Information gathering pass
 
