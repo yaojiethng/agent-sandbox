@@ -22,6 +22,8 @@ The **maintenance surface** is this document and the other documents that descri
 
 The test for a line in the working surface: could a session that has read only this file act on it, and does it need the concept to act? A path and what is in it passes. A statement about which layer owns the path fails, because the session cannot use the distinction and did not ask for it.
 
+The problem both surfaces are reduced for is stated once, in the operator's words, at [`.agents/instruction-surface-framing.md`](../../.agents/instruction-surface-framing.md). It states a regime and what follows for remedies; it holds no rule this document applies.
+
 ## The shape
 
 ```json
