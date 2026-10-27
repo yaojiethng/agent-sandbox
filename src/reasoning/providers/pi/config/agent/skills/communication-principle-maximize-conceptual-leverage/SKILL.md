@@ -1,6 +1,6 @@
 ---
 name: communication-principle-maximize-conceptual-leverage
-description: "Apply when writing prose in a technical domain, a document, a prompt or a skill. Choose the word that carries the most distinction for the least reader effort, subject to one constraint, no distinction may be lost."
+description: "Apply when a word choice trades a distinction for brevity or for plainness. Choose the word that carries the most distinction for the least reader effort, and lose none to shorten it."
 metadata:
   claim: reader
   leitwort: leverage
@@ -25,6 +25,10 @@ Choose the word that carries the most distinction for the least reader effort, a
 **Why.** The domain model is exact, and the delivery is shorter than the model. A word dropped from the delivery takes a distinction with it, and the reader cannot see the loss, because the sentence still reads correctly. A model left at full resolution costs the reader work, and the reader notices, because the point is not on the page. The first loss cannot be repaired and the second can.
 
 **The leading word.** A principle's leading word is this judgement applied to the principle itself. It is the one word that holds most of what the principle says, drawn from the domain the principle works in, and the corpus records it as `metadata: leitwort:`, a keyword tag beside the claim rather than a controlled vocabulary. the project's `skill-scaffolder` convention decides where the word is placed and tested, in its signposting pattern. Choosing it is this skill's question, and placing it is that one's.
+
+**Fires on.** A word, a term or a claim where brevity and precision pull apart.
+
+**What it does not cover.** Which claim to make: the principle of the domain in hand. Whether the sentence stays at all: `communication-principle-cut-what-carries-nothing`.
 
 **The test.** Two readers, because each catches a failure the other accepts. The domain reader checks that nothing false was added. A reader outside the domain checks that nothing they needed was removed.
 

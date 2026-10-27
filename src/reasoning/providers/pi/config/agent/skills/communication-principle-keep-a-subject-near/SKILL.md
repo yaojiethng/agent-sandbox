@@ -1,6 +1,6 @@
 ---
 name: communication-principle-keep-a-subject-near
-description: "Keep a subject and its parts close, the proximity that lets a reader meet the whole rule where it is needed and a writer see the whole subject before editing it. Apply when writing, moving or splitting a section, a caveat or a definition, or when a section carries a second subject."
+description: "Apply when a subject and its parts are separated: a caveat at the far end, a definition below its first use, a section split so its subject leaves the screen, or a section carrying a second subject. Keep them close enough that one read meets the whole rule."
 metadata:
   claim: reader
   leitwort: proximity

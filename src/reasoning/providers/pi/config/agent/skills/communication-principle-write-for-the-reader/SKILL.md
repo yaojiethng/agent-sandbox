@@ -1,6 +1,6 @@
 ---
 name: communication-principle-write-for-the-reader
-description: "Apply when writing a reply, a commit message, a code comment, a document, a record, a note, a skill or a prompt. The reader has the text, not your session and not its own earlier draft. Name the thing, not the chat label, the option letter, the session id, the narration of how the work went, or the text this version replaced."
+description: "Apply when a sentence needs your session or an earlier draft to make sense: a chat label, an option letter, a session id, a narration of the work, a clause answering text the file no longer holds. State the thing the reader holds."
 metadata:
   claim: scope
 ---
@@ -38,6 +38,8 @@ Every text is written for the reader who holds it, not for the session that prod
 
 **Where the sentence names only the prohibition.** The reader holds only the form the sentence gives, so a prohibition alone leaves the reader to invent one. Name the action and write the permitted form. Write "a space-separated hyphen", not "do not use an em-dash"; write "apply the durable fix the entry's `scoped:` row names", not "avoid or re-check those patterns".
 
-**The same judgement on a prompt.** A correction appended to a prompt is read by the model as an instruction about a behaviour, not as history, so it survives only if it reads as one. "Do not do Y, do X instead" works when the model might do Y. It fails when Y was a phrase the prompt used to contain, because the model never met it. Name the behaviour, not the retired sentence.
+**Fires on.** A sentence whose referent lives in the session: a label, an option letter, a session id, a narration of how the work went, a clause that rebuts a sentence the file no longer contains.
+
+**What it does not cover.** Whether the reader can reach a target: `communication-principle-link-what-the-reader-can-open`. Whether the sentence earns its place at all: `communication-principle-cut-what-carries-nothing`.
 
 **The test.** Ask four questions of the sentence. Would the reader need the session to use it? If yes, state the thing. Would the reader need an earlier version of the file? If yes, state the current rule and move the comparison to the record. Is it about the subject, or about how the text was written or revised? If the latter, state the state. Does it leave the reader to invent the permitted form? If yes, write that form.

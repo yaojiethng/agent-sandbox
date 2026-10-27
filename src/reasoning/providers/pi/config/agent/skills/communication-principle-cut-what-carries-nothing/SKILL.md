@@ -1,6 +1,6 @@
 ---
 name: communication-principle-cut-what-carries-nothing
-description: "Apply when writing or editing prose, a prompt, a skill, or a document. Keep the sentence that changes a decision; delete the sentence that does not."
+description: "Apply to a sentence no reader's action depends on: an opener, a restatement, a trim that shortens without removing. Keep the sentence that changes a decision; delete the sentence that does not."
 metadata:
   claim: reader
 ---
@@ -21,5 +21,9 @@ Keep the sentence that changes a decision, and delete the sentence that does not
 | a term restated after it was defined | the term, once |
 
 **Why.** Every sentence costs the reader attention whether or not it changes an action. A sentence that changes nothing pays that cost and returns nothing. Deleting it also keeps the document short enough that its live lines stay visible, because a long document thins attention across the excess.
+
+**Fires on.** A sentence the reader could drop and act the same, and a sentence shortened where it could be removed.
+
+**What it does not cover.** A sentence that is true and useful but placed where the reader cannot use it: `communication-principle-single-train-of-thought`. A word that carries the wrong distinction: `communication-principle-maximize-conceptual-leverage`.
 
 **The test.** Ask of each sentence: would the reader act differently if it were gone? If no, delete it whole. Do not trim it. Then ask whether the document still says everything the reader needs.

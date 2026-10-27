@@ -1,6 +1,6 @@
 ---
 name: communication-principle-attach-as-you-read
-description: Write so a reader who attaches each phrase as it arrives never holds material in memory or revises an expectation. Use when a sentence must be re-read, when its actor is hidden, or when a clause arrives before the reader can attach it.
+description: "Apply to a sentence that has to be re-read: its actor is hidden, a clause arrives before the reader can attach it, or the reader must hold material in memory to finish it."
 metadata:
   claim: reader
 ---

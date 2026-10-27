@@ -1,6 +1,6 @@
 ---
 name: communication-principle-align-the-mental-model
-description: "Apply when a text names a thing, introduces a term, or reuses a word a reader may hold differently. Give every word one meaning and every thing one word, so the reader builds the model the writer holds."
+description: "Apply when a word names a thing the reader may hold differently, when one thing has gone by two names, or when a new term arrives unannounced. Give every word one meaning and every thing one word."
 metadata:
   claim: reader
 ---

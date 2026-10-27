@@ -1,6 +1,6 @@
 ---
 name: principle-define-terminology-before-use
-description: Define a term before the work relies on it when the term can carry two meanings, when it arrives from another field, or when the repository states no definition. Use when a plan, a design, a record or a sentence depends on a word whose meaning the reader has to supply.
+description: "Apply before the work relies on a word whose meaning the reader has to supply: the word can carry two meanings, it arrives from another field, or the repository states no definition for it."
 metadata:
   claim: reader
 ---
