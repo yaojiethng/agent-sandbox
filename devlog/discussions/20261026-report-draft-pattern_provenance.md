@@ -40,51 +40,11 @@ The verdict vocabulary, fixed before the seats ran so the three reports could be
 
 ## Pass 1
 
-One row per entry. `origin` names the commit, or the record where a failure is logged. The verdict is the seat's, reconciled where two seats saw the same entry.
+One row per entry, read against the commit or record that produced it. Thirty-five rows over the entries that existed then: ten `guards`, eighteen `checkable`, seven `repaired`, and nothing left in `thin`, `lost` or `defect`. The seven repairs are the `A1` to `A6` rows below and the six recorded failures that had no carrier, and each landed in the entry it named. The full row set stays in this record's history, one revision back.
 
-| Id | Origin | Verdict | What decides it |
-|---|---|---|---|
-| `p-1` | `05685dc2` rule 1.6 | repaired | `A4` carried the `realpath` condition into the variant and gave `p-1` a statement; bridge 1.6 had been holding both, which is why the pattern had lost them |
-| `p-2` | `05685dc2` rule 1.7 | checkable | the anchor rule and the count rule are both in the entry |
-| `p-3` | `05685dc2` rule 1.14 | checkable | the entry states two damages the original did not |
-| `p-4` | `05685dc2` rule 4.1 | repaired | the entry carried a fence and no statement. `A2` added the statement; the recorded accumulator failure is still unheld and stays in the no-pattern list |
-| `p-5` | `05685dc2` rule 1.12 | repaired | the original exempted `.env` values and identity variables from the export rule. `A3` carried the exception list into the entry as a variant, and bridge 1.11 stopped holding it |
-| `p-6` | `05685dc2` rule 4.2 | repaired | the entry stated that `:-` keeps an empty string, and it does not. `A1` restated it as the colon versus bare distinction with both forms, and bridge 4.2 lost the sentence it had been carrying |
-| `p-7` | `05685dc2` rule 1.4 | checkable | - |
-| `p-8` | `0f9fbea4` | checkable | added after the document's creation, so not a migration loss; the working herestring form is not carried |
-| `p-9` | `05685dc2` rule 1.14 | checkable | the subshell scoping and its damage are both stated |
-| `p-10` | `05685dc2` rule 1.14 | repaired | `A5` added the `A && B` shape to the statement and the `Replaces:` line; the argument-order half of the same record still has no carrier |
-| `p-11` | `d98c42a4`, fed by `[A] 2026-10-20` | guards | the SIGPIPE chain, the second case and the deceptive symptom are all kept |
-| `p-12` | `05685dc2` rule 4.3 | checkable | the two-zeros damage and the guard are both stated |
-| `p-13` | `[O] 2026-08-12` | guards | the record's three facts are kept whole, including the entrypoint exemption |
-| `p-14` | `d15508fe`, record `20260919-19` | guards | the same-status-for-two-states defect and the missing-tool case are both stated |
-| `p-15` | `05685dc2` rules 1.11 and 3.2 | checkable | the guard, its reason, and both form constraints are kept |
-| `p-16` | `fc9b1424`, record `20260912-10` | guards | the ambient-read failure is named, and the parse-once rule survives |
-| `p-17` | `05685dc2` rule 1.13 | checkable | the five-line limit survives as a number |
-| `p-18` | `3b08478a` and `5cad0cf4`, record `20260823-10` | guards | the four classes, the sourcing damage and the dead-flag variant are kept |
-| `p-19` | `05685dc2` rule 1.1 | checkable | the tab damage and the `cat -A` detection are kept |
-| `p-20` | `05685dc2` rule 1.2 | checkable | - |
-| `p-21` | `05685dc2` rule 1.3 | checkable | - |
-| `p-22` | `05685dc2` rule 1.5 | checkable | - |
-| `p-23` | `05685dc2` rule 1.8 | checkable | the disarm-on-success line survives |
-| `p-24` | `0bcd85f4`, record `20261017-04` | guards | the per-container grace and the stated-duration rule are kept; the transform match-count discipline is another subject and has no carrier |
-| `p-25` | `05685dc2` rule 2.2 | checkable | the naming table survives with the rename |
-| `p-26` | `05685dc2` rule 2.1 | checkable | - |
-| `p-27` | `[A] 2026-08-09` | guards | the leaf-library extraction and its reason are kept whole |
-| `p-28` | `05685dc2` rule 1.10 | checkable | - |
-| `p-29` | `6579d1bc`, record `20260926-07` | guards | all four obligations survive, including reading `PIPESTATUS[0]` |
-| `p-30` | `05685dc2` rule 1.9 | checkable | - |
-| `p-31` | `677b4d8a`, record `[A] 2026-09-19` | repaired | the guard held in every case measured, so `A8` left the entry as it stands and wrote the measurement into `AGENT_FEEDBACK`, whose new entry names the deleted 2026-09-19 record as its `legacy` line. See `## The two rules that state a false fact` |
-| `p-32` | `677b4d8a` | checkable | added after the document's creation |
-| `p-33` | `1d075806`, fed by `[A] 2026-09-19` | guards | the mechanism, both error codes, the real-directive list and the fix are kept |
-| `p-34` | `c4ce06ee`, fed by `[A] 2026-09-30` | guards | the self-match, the 143 and the executable-plus-pid fix are kept |
-| `p-35` | `c4ce06ee`, fed by `[A] 2026-09-30` | repaired | `A6` added the record's consequence: the next run's probe talks to the process that was never killed and reports nothing captured |
+## Failures that had no carrier, and the entries they became
 
-Counts over the thirty-five entries as pass 1 first read them: `guards` 10, `checkable` 18, `thin` 5, `lost` 1, `defect` 1. The repairs closed all six of those rows, `p-1`, `p-4`, `p-5`, `p-6`, `p-10` and `p-35`, and `A8` closed the seventh, so no entry in the pass 1 table still reads `thin`, `lost` or `defect`. The set pass 2 compares against holds 10 guards and 18 checkable entries. Seven entries did not exist when pass 1 ran, `p-36` to `p-42`; their first verdict is their baseline, and pass 2 reports them as new rather than as changed.
-
-## Recorded failures with no pattern
-
-Each one is a failure an operator or an agent recorded, whose lesson had no carrier in the pattern set when pass 1 ran. `A7` gave each one a home, named in the last column. The argument-order half of the `p-10` record joined them as `p-42`, because `p-10` is about a claimed success rather than about a command line. The two mutation rules were split by subject: the part that is bash semantics became `p-43` and the `p-18` variant, and the part that is instrument discipline stayed in the testing patterns written as logic, with no bash in it.
+Each is a failure an operator or an agent recorded, with no rule behind it when pass 1 ran. Every one now has a home: the accumulator and the apostrophe default are `p-37` and `p-38`, the `cd` inside a command substitution is `p-39`, a child eating stdin is `p-40`, a retry keyed to any non-zero exit is `p-41`, an option after a positional argument is `p-42`, and the two mutation-idiom families became `p-43` and a variant on `p-18`, because a test instrument is not a form a review of production code reports.
 
 | Record | The failure | What a pattern would say | Home |
 |---|---|---|---|
@@ -126,22 +86,9 @@ The record behind rule `4.4` says an unguarded read from an absent file "aborts 
 
 A guarded call survives a missing file; what escapes the guard is the shell's own expansion failing under `set -u`. `p-31` therefore keeps the constraint, which is right, and states the firing condition that reproduces. The record in `devlog/AGENT_FEEDBACK.md` `[A] 2026-09-19` still carries the false mechanism, and is a correction owed to that file.
 
-## What pass 1 asks the operator to rule
-
-| Code | Item | Proposed |
-|---|---|---|
-| A1 | `p-6` states a false claim about `:-` | restate the rule as the `-` versus `:-` distinction, with the measured behaviour in the entry, and correct bridge `4.2` |
-| A2 | `p-4`, `p-5` and `p-6` carry a fence and no statement paragraph, against `patterns/README.md` | write the missing statement for each, which is also where the accumulator rule and the export exception belong |
-| A3 | `p-5` dropped the export exception list | carry the exception list in the entry, since a reader without it flags three legitimate exports |
-| A4 | `p-1` dropped the condition for `realpath` | carry it in the variant bullet |
-| A5 | `p-10` dropped the `A && B` guard shape | add it to the statement and the `Replaces:` line |
-| A6 | `p-35` dropped the consequence the record names | state what the stale process does to the next run |
-| A7 | five recorded failures have no pattern, and a sixth is folded into `p-4` | add them as entries, or file them outside the pattern set with the reason |
-| A8 | the record behind `p-31` states a mechanism that does not reproduce | correct the `AGENT_FEEDBACK` entry, naming the measurement |
-
 ## Pass 2
 
-The sweep ran as `c8200c9b`: 29 replacements across nine files, each applied by exact match so a missed anchor fails the script rather than skipping the edit. Pass 2 then re-read every entry against the verdict it carried in, in three seats pinned the same way as pass 1, split by file group rather than by the pass 1 brief, because the question had changed from "what produced this rule" to "does the rule still carry what that answer said".
+The sweep ran as `d601e8d5`: 29 replacements across nine files, each applied by exact match so a missed anchor fails the script rather than skipping the edit. Pass 2 then re-read every entry against the verdict it carried in, in three seats pinned the same way as pass 1, split by file group rather than by the pass 1 brief, because the question had changed from "what produced this rule" to "does the rule still carry what that answer said".
 
 | Seat | Files | Rows |
 |---|---|---|

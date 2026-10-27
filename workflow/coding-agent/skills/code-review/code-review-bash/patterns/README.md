@@ -11,6 +11,10 @@ An id is assigned once, from the next number after the highest ever used. Ids ar
 An entry is retired in place, never deleted: the heading stays, the fence and the statement come out, and one line says where the content went.
 
 ```text
+## What retired into this set
+
+`docs/development/bash-coding-conventions.md` held the bash rules before this set existed, as thirty-five numbered sections. Every one is now an entry here and the document is gone. A record written before the retirement cites it by section number; each section was titled after the subject the entry now carries, so the entry is found by searching this directory for that subject.
+
 ## p-12 Retired, folded into p-20
 ```
 

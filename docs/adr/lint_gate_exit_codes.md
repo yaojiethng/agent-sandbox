@@ -18,8 +18,10 @@
 
 Every failure condition names itself on stderr, so the operator distinguishes them from the exit code alone.
 
-**Rationale:** An exit code answers one question: did the gate pass. A count, a severity, or a tool-missing condition is a magnitude, which is not what a process boundary reports to a caller that reads only zero versus non-zero. Rule 3.2 of [bash-coding-conventions.md](../../docs/development/bash-coding-conventions.md) states this: a missing tool is a finding, not a special code; print the finding and exit `1`. The earlier form collapsed these conditions into different values (the markdown gate exited `127` for a missing tool), which made a missing tool indistinguishable from 127 findings.
+**Rationale:** An exit code answers one question: did the gate pass. A count, a severity, or a tool-missing condition is a magnitude, which is not what a process boundary reports to a caller that reads only zero versus non-zero. `p-14` states this, in [the failure-handling patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/failure-handling.md#p-14-an-exit-code-is-a-verdict-not-a-magnitude): a missing tool is a finding, not a special code; print the finding and exit `1`. The earlier form collapsed these conditions into different values (the markdown gate exited `127` for a missing tool), which made a missing tool indistinguishable from 127 findings.
 
 This is the exit-code contract the gate rewrite of handover `20260919-19` settles. It applies to every gate in `GATES` and the umbrella that sequences them; a tool that fails without emitting findings fails the gate, because a clean verdict can never be derived from an aborted run.
 
 **Edge cases / drivers:** The umbrella always runs every gate even when the first fails, so one failure never hides the other. A missing tool or an empty file set can never report "clean", because the gate cannot determine an answer; refusing to run is the fail-closed behaviour that keeps a broken gate from passing silently. The `test` harness exit (its failure count) remains the one standing exemption to the verdict rule, recorded in rule 3.2.
+
+[CORRECTION -- 2026-10-26: the citation names the pattern entry that now holds rule 3.2. The decision and its reasoning are unchanged.]

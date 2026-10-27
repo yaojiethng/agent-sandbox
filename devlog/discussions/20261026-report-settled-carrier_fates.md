@@ -15,8 +15,8 @@ Record, per carrier, what happens to it. This table is what the consolidation ex
 
 | Carrier | Lines | Fate |
 |---|---|---|
-| `bash-audit.skill.md` | 29 | subsumed into a `code-review-bash` runbook, file deleted, its two pointers repointed |
-| `kelsey-code-reviewer.skill.md` | 158 | subsumed into a container runbook, file deleted |
+| `bash-audit.skill.md` | 29 | subsumed into a `code-review-bash` runbook; deleted, its pointers repointed |
+| `kelsey-code-reviewer.skill.md` | 158 | the bash half absorbed into `code-review-bash`, the container half awaiting a container runbook, the file deleted in that unit |
 | `architecture-doc-reviewer.skill.md` | 166 | subsumed into a `prose-review` runbook, file deleted |
 | `dhh-code-audit.skill.md` | 99 | subsumed: the general parts reach the `code-review` shell, the Rails doctrine is dropped, the JavaScript part becomes a `code-review-javascript` runbook, file deleted |
 | `test-quality-campaign.md` | 106 | pending |
@@ -41,7 +41,11 @@ A file-level fate cannot carry this one: it holds three subjects, and the operat
 
 ## `kelsey` absorbed, and what it holds that the set does not
 
-The ruling is absorb: `code-review-bash` is the survivor, and a second bash runbook would put two standards on one language. `kelsey` stays in the tree until `/instruction-cleanup` retires it, and its bash block now opens by naming the pattern set as the better version of every rule in it, so a reader who lands on the file is sent to the entry rather than to the paraphrase.
+The ruling is absorb: `code-review-bash` is the survivor, and a second bash runbook would put two standards on one language. Its bash block now opens by naming the pattern set as the better version of every rule in it, so a reader who lands on the file is sent to the entry rather than to the paraphrase.
+
+The file stays for one reason, and it is not the bash half. The Dockerfile rules it carries have no owner: pin the base image, `COPY` over `ADD`, combine `RUN` to cut layers, run as a non-root user, make `WORKDIR`, `USER` and `ENTRYPOINT` explicit, keep the image minimal, use exec-form `ENTRYPOINT`, and ask whether the image rebuilds the same in six months. No pattern file, no convention document and no runbook states any of them; the two documents that mention `ENTRYPOINT` and the non-root user describe this repository's own images rather than stating a rule to review against. Deleting the file deletes the only statement of those rules, so the deletion waits for the container runbook that takes them, and that runbook is the container third of the consolidation row.
+
+The frozen copy in the eval fixture is not an argument for keeping the live file: `tests/eval/instruction-cleanup/room/kelsey-code-reviewer.skill.md.orig` holds the bytes and `SHA256SUMS` names them, so the calibration file is already preserved without a live path.
 
 | Part | Lines | Fate |
 |---|---|---|
@@ -79,7 +83,7 @@ The kelsey line is a harmful duplicate rather than a tidy one: it demands a top-
 
 ## The bridge
 
-A carrier's document becomes a bridge when its statements and forms have moved into the pattern set: the headings stay, each carrying one line that names the patterns now holding its content. The bridge is removed in a later pass, after every live link is repointed. Thirteen files cite `bash-coding-conventions.md` as a link, including two accepted ADRs, so removal is a decision about record citations rather than a file operation.
+A carrier's document became a bridge when its statements and forms moved into the pattern set: the headings stayed, each carrying one line that named the patterns now holding its content. The bridge is gone, and so is the file. Thirty live citations were repointed first, twenty-nine of them by the number-to-id map the bridge headings themselves carried; the stub was kept for the record citations and the two accepted ADRs, then deleted once both of those reasons went. The ADRs were repointed as claim-record corrections, and the operator ruled that a record citation is closed once committed, so only live links must resolve. The three that remained were the friction log's canonical-rules line and two roadmap rows.
 
 ## Where the patterns live
 

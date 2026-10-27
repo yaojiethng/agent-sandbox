@@ -465,7 +465,7 @@ mitigation: tooling and harness notes for the library-migrations track. Use bash
 
 ## Bash
 
-Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md).
+Canonical bash coding rules: the pattern set beside the `code-review-bash` runbook, [`patterns/`](../workflow/coding-agent/skills/code-review/code-review-bash/patterns/README.md).
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
