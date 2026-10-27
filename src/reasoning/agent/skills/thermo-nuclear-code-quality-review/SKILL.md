@@ -6,9 +6,9 @@ disable-model-invocation: true
 
 # Thermo-Nuclear Code Quality Review
 
-Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
+> Source: [cursor/plugins, thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md), landed at commit `6e3d2ea5`. Verbatim apart from one removal: the paragraph naming this repository's `_REVIEWER` role, its seat count and its attribution requirement. That is this environment, not the review, and `code-review` states it.
 
-Use the `_REVIEWER` role recommendation from `model-recommendations.md` for the provider, model and thinking level; take the first listed model. The caller sets the seat count, and this skill prescribes none. State the provider, model and thinking level in the invitation so the report carries attribution.
+Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
 Above all, this skill should push the reviewer to be **ambitious** about code structure. Do not merely identify local cleanup opportunities. Actively search for "code judo" moves: restructurings that preserve behavior while making the implementation dramatically simpler, smaller, more direct, and more elegant.
 

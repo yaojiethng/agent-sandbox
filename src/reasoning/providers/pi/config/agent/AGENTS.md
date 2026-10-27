@@ -39,6 +39,8 @@ Code changes should be self-contained within a single iteration. The operator re
 
 An approval that produces an artifact edits the file that is its source of truth, in the same unit of work, per `principle-approval-writes-the-artifact` at `$AGENT_HOME/agent/skills/principle-approval-writes-the-artifact/SKILL.md`. With version control the write is cheap to undo; a decision held in the conversation cannot be reverted, resumed or checked. A decision kept only in the conversation is re-derived later, and its re-derivation fails no gate.
 
+A fix to work already written lands in the artifact the defect is in and produces no second artifact beside it, naming `principle-minimal-corrections` at `$AGENT_HOME/agent/skills/principle-minimal-corrections/SKILL.md`.
+
 Never manually word wrap prose. Do not insert a line break mid-paragraph  --  not at sentence boundaries, nor at a column limit; editors and viewers soft-wrap. See the `docs` convention, `.agents/skills/docs/SKILL.md` `## What a document may contain`.
 
 When writing code, always take into account the following:
