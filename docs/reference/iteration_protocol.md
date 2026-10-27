@@ -32,6 +32,8 @@ A sidequest is an operator-directed work item raised while an iteration is open.
 
 **Record decisions where the work lives.** Decisions belong in the documents where they were made (roadmap, architecture docs). The handover points to those documents -- it does not reproduce their content.
 
+**Record a finding when it is found.** It belongs in the record the moment it surfaces, and its destination may be filled later; the row may not wait. The gate reads the record, so a finding held in conversation is not presented to it, and an empty table cannot be told apart from a clean unit.
+
 **Confirm the scope before writing code.** The implementation details -- files, interfaces, naming -- are confirmed by the operator before any code is produced. They are the agreement, not a starting point.
 
 **Documentation is part of the task, not a cleanup step.** Reference documents are updated before implementation begins -- they describe the agreed design the code is written against. If implementation reveals a divergence from the agreed design, correct the document before the iteration ends; do not defer it. A sub-milestone cannot close if any in-scope architecture or concepts document contradicts the system as built.
