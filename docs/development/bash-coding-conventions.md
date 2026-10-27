@@ -78,11 +78,7 @@ CREATED=0  # disarm on success
 
 ### 1.10 Absolute symlinks for cross-repository links
 
-Relative symlinks across repository boundaries encode host directory structure and break on moves. Use absolute symlinks:
-
-```bash
-ln -s "/absolute/path/to/target" "$LINK_PATH"
-```
+`p-15` in [the script boundaries patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/script-boundaries.md).
 
 ### 1.11 Dual-use scripts: guard with `BASH_SOURCE[0] == "$0"`
 
@@ -90,39 +86,11 @@ ln -s "/absolute/path/to/target" "$LINK_PATH"
 
 ### 1.12 Default to `local`; pass behaviour as CLI flags, not exports
 
-An exported boolean set in one invocation leaks into every child process, including teardown. Pass as CLI flags instead.
-
-```bash
-# Right
-local REFRESH_FLAG=""
-[[ "${REFRESH:-false}" == "true" ]] && REFRESH_FLAG="--refresh"
-exec "$SCRIPT_DIR/run.sh" --name="$PROJECT" $REFRESH_FLAG
-```
-
-Exceptions: `.env` config vars and identity values (`SESSION_TS`, `HOST_HEAD_SHA`, `SESSION_ID`) are safe to export.
+`p-16` in [the script boundaries patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/script-boundaries.md).
 
 ### 1.13 Mode/config selection: parse the default once at ingestion, pass it as an argument
 
-A mode or model selection (e.g. delivery type) is a command input, not environment state. The entry script parses it (or its default) exactly once and every downstream consumer receives it as an explicit argument. Downstream scripts never read it from the environment, never re-apply `${VAR:-default}`, and never export it. For resumable operations, the consumer recovers the value from the persisted record and rejects the record when the field is absent -- a silently-propagated default would let one mode impersonate another (the mount-resume-as-copy failure, handover `20260912-10`).
-
-```bash
-# Entry script (start_agent.sh): parse once, default at ingestion
-DELIVERY="copy"
-for ARG in "$@"; do
-  case "$ARG" in
-    --delivery=*) DELIVERY="${ARG#--delivery=}" ;;
-  esac
-done
-exec "$REPO_ROOT/scripts/run_agent.sh" "$MODE" --delivery="$DELIVERY"
-
-# Downstream (run_agent.sh): required argument, no default, no env read
-if [[ -z "$DELIVERY" ]]; then
-  echo "Error: --delivery is required (copy|mount); the caller must state it" >&2
-  exit 1
-fi
-```
-
-Container-boundary values (compose `environment:` literals) are persisted config, not bash state -- they are unaffected.
+`p-17` in [the script boundaries patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/script-boundaries.md).
 
 ### 1.14 `exec` over sourcing for subcommand dispatch
 
@@ -190,7 +158,7 @@ Notes:
 
 ### 3.3 Dual-use scripts: library functions + standalone guard
 
-Files in `src/libs/` may export functions (for sourcing) and also run standalone. The `BASH_SOURCE[0] == "$0"` guard separates the two modes.
+`p-15` in [the script boundaries patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/script-boundaries.md).
 
 ### 3.4 No speculative flags: boolean parameters need a production caller
 
