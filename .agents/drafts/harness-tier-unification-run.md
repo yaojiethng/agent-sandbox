@@ -123,7 +123,7 @@ What must stay true across the run.
 
 - Every harness install has one home.
 - Every pin is paired with a bump path and is checkable, per `build_input_pinning.md`.
-- The library contract holds: library functions `return`, never `exit`; the flags rule in `docs/development/bash-coding-conventions.md` is followed; the dual-use script guard is at the foot.
+- The library contract holds: library functions `return`, never `exit`; the flags rule in `p-18` is followed; the dual-use script guard is at the foot.
 - No comment cites a change, a unit, a plan or a handover.
 
 ## What would settle this brief

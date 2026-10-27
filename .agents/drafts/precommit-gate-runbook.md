@@ -6,7 +6,7 @@ description: "Braindump for a runbook that adds, amends and retires a lint gate.
 
 # Pre-commit and lint gate maintenance - braindump
 
-Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `divergent`, run over that session's digest), the decisions they proposed, and what this repository's gates look like today. Where a proposal is still a proposal it says so. Nothing here is a rule; the rules live in [`docs/development/bash-coding-conventions.md`](../../docs/development/bash-coding-conventions.md), [`docs/adr/git_hooks.md`](../../docs/adr/git_hooks.md) and [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs), and M3.1.2 decides what moves where.
+Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `divergent`, run over that session's digest), the decisions they proposed, and what this repository's gates look like today. Where a proposal is still a proposal it says so. Nothing here is a rule; the rules live in [`code-review-bash`](../../workflow/coding-agent/skills/code-review/code-review-bash/SKILL.md) and its [`patterns/`](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/), [`docs/adr/git_hooks.md`](../../docs/adr/git_hooks.md) and [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs), and M3.1.2 decides what moves where.
 
 ## 1. What exists today
 

@@ -27,7 +27,7 @@ You believe in code that is:
 
 Scan immediately for correctness violations  --  these are blockers regardless of style:
 
-- Missing `set -euo pipefail` in any executable script
+- Missing `set -euo pipefail` in a script that is only executed, or a top-level `set` in one the tests also source (`p-18`)
 - Unquoted variable expansions (`$VAR` instead of `"$VAR"`)
 - Unquoted command substitutions
 - Functions in sourced libraries missing `local` declarations (namespace pollution)
@@ -42,7 +42,7 @@ Evaluate whether the code uses the language's own idioms correctly:
 
 **For Bash:**
 
-- Are safety flags (`set -euo pipefail`) present at the top of every executable script?
+- Are safety flags present where the file consumption class calls for them (`p-18`)?
 - Are sourced library files structured so they are safe to source under `set -euo pipefail`?
 - Are functions using `local` for all variables?
 - Is argument validation explicit and early, with usage messages that include the expected call signature?
@@ -87,8 +87,10 @@ Ask: what happens when this fails?
 
 ## Review Standards  --  Bash
 
-- `set -euo pipefail` is non-negotiable in every executable script. No exceptions.
-- Sourced library files do not need `set -euo pipefail` themselves, but must be written to be safe when sourced by a script that has it.
+Each rule in this block is held as an entry in the `code-review-bash` pattern set, which is the better version of it: where a line here states one differently, the entry wins and a finding cites its id.
+
+- Shell options follow the class of consumption (`p-18`). An entry point that is executed and never sourced declares `set -euo pipefail` at the top; a dual-use file, executed in production and sourced by tests, puts the flags inside `main()` or the `p-15` guard; a pure library sets none.
+- A sourced library sets no options, because a top-level `set` would change the shell of whatever sources it (`p-18`).
 - Every function in a library must declare all its variables `local`. Leaking into the caller's namespace is a bug.
 - All error output goes to stderr (`>&2`). All structured output (paths, SHAs, names the caller will use) goes to stdout.
 - Error messages follow the pattern: `FunctionName: what failed  --  what the caller should do`. Including the function name makes errors attributable without a debugger.
