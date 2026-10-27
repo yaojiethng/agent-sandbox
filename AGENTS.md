@@ -2,38 +2,26 @@
 
 ## Scope
 
-This file is the project layer: the second context file pi loads, after the provider layer at `$AGENT_HOME/agent/AGENTS.md`. The provider layer covers the harness and the container paths. This file adds the project itself, which is the working tree the session runs in.
+You are working on the project **agent-sandbox**. These are the working directories you should use.
 
-| Path | What is there |
+| Directory | What is there |
 |---|---|
 | `/home/agentuser/sandbox/` | the project working tree: `docs/`, `devlog/`, `scripts/`, `tests/`, `src/`, `workflow/`, and this file |
 | `/home/agentuser/sandbox/.scratchpad/` | the session-local scratch, inside the working tree: state a `/fork` or `/tree` must carry across, such as the active task tracker. It lasts the session and no longer. |
+
+This file is loaded second, after `$AGENT_HOME/agent/AGENTS.md`. If you are asked to edit either `AGENTS.md`, read [`instruction-surface-conventions.md`](docs/development/instruction-surface-conventions.md#the-layers) first: it states where a section belongs and what an edit to either file must do.
 
 ## System
 
 **agent-sandbox** is a containerized sandbox and orchestration harness for running autonomous coding agents safely. Agents execute and commit inside containers, output is exported as a draft branch, and a human operator reviews and merges. The agent runtime is explicitly untrusted. See your provider-layer AGENTS.md for the two-layer container architecture.
 
-## Role
-
-You operate in three modes, often in combination:
-
-**Design** -- Propose architecture, system behaviour, and implementation plans grounded in the existing system. Do not propose designs that skip incomplete milestones.
-
-**Development** -- Generate code against an agreed design. The design proposal is the agreement; correctness and adherence are the primary evaluation criteria.
-
-**Audit** -- Review proposals, code, and documentation against the threat model, policy documents, and milestone constraints. Flag violations explicitly and propose corrections.
-
 ## Constraints
 
-**Sandbox boundary.** Work exclusively inside your working directory. Do not attempt to access paths outside it. The host repository is not mounted and is not reachable.
-
-**No push.** Do not run `git push`, or any command that mutates remote git history.
+Run throwaway verification in `.scratchpad/`, the session-local scratch, never elsewhere in the repo tree. `.scratchpad/` is gitignored, so a stray file there does not surface in `git status` or pollute the diff. A throwaway file is any file you create only to check something and do not keep; an instrument a later session has to reuse is not throwaway, and where each kind belongs is the [`write-locations`](/opt/workflow/agent/skills/write-locations/SKILL.md) skill.
 
 **Git hygiene.** [`.agents/skills/git-discipline/SKILL.md`](.agents/skills/git-discipline/SKILL.md) is the git-hygiene document: the commit message, the commit types, the branch names, the fold rules, and the names of the git maintenance runbooks. It is the stopgap home for git hygiene until that work has a module of its own; [`docs/adr/coding_agent_project_bindings.md`](docs/adr/coding_agent_project_bindings.md) records that git is currently an available tool, not a module.
 
 **Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`. Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
-
-**No secrets.** Gitignored files -- including `.env` and credentials -- are excluded from the snapshot and are not present in your working directory. Do not attempt to create or infer them.
 
 ## Collaboration Protocol
 
@@ -65,64 +53,41 @@ These principles are stable. The operating workflow and policy documents are the
 
 When a task applies a change across multiple files -- a naming rule, a structural convention, an interface rename, a container label, a variable -- produce a propagation checklist before writing the first file, show it in chat, and confirm every row before declaring the task complete. The trigger list, the format, and the audit that verifies coverage are in the [`propagation-check`](src/reasoning/agent/skills/propagation-check/SKILL.md) skill.
 
-## Bash Friction Log
+## Instruction Surface
 
-Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`code-review-bash/patterns/`](workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/) for canonical rules, which are held there as entries a finding cites by id. The former separate friction-log file was subsumed here (session `20260809-04`).
+What is read before any work starts is the two `AGENTS.md` files and one line per skill and per prompt; everything else is read only when a file is opened. That index has grown faster than the corpus it indexes, so it is the budget this section governs.
+
+- **The index is the budget.** A description is one trigger sentence. A subject that needs a paragraph to be found is a subject that needs narrowing, not a longer description.
+- **Rules live where the work happens.** A rule is stated once, in the file a reader is already in when they need it, and cited from everywhere else. A rule reachable only by search is a routing defect.
+- **The check, not the story.** An instruction says what to do and how that is verified. Rationale stays only where a reader would otherwise take the wrong action; history belongs in `devlog/`.
+- **Add by replacing.** A rule, skill, prompt or reference document lands with the removal of something of comparable size in the same commit, or one sentence naming why nothing can be removed.
+- **A budget is a number.** The gate behind this section holds the caps for the two files and for descriptions and fails the tree past them.
 
 ## Feedback and Gotchas Record
 
 - [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- the single living record of the coding agent's experience and recurring mistakes. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). Reviewed by the operator. Before writing an entry, grep the file for an existing entry on the same topic; record a recurrence on that entry (re-open it, note the prior fix in `legacy:`) instead of creating a new one. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
 
-These files are tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
+Bash friction is one class of that record, held in its `## Bash` section: consult it when diagnosing unexpected shell behaviour or weighing a workaround, and take the canonical rule from the [`code-review-bash/patterns/`](workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/) entry a finding cites by id.
+
+This file is tied into the iteration's Findings for recording and into the sub-milestone pre-close review gate for reconciliation.
 
 ## Model Recommendations
 
-A prompt or skill dispatches subagents for a role. The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is a normal reviewable edit. Read the recommendation for a role tag from that file; each value names the provider, the model, and the thinking level, in the order the role tries them.
+The role table is [model-recommendations.md](.agents/model-recommendations.md), committed with this repository, so a model change is an ordinary reviewable edit. Its values are the operator's, and the harness only resolves them.
 
-The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR_CODE`, `_ADVISOR_DOCS`, and `_ORCHESTRATOR`. An advisor takes the role of the artifact it reviews: source code, tests and configuration take `_ADVISOR_CODE`, and prose takes `_ADVISOR_DOCS`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every subagent dispatch names a role. A dispatch that fits no role uses the `_IMPLEMENTER` line.
+The roles are `_IMPLEMENTER`, `_REVIEWER`, `_ADVISOR_CODE`, `_ADVISOR_DOCS`, and `_ORCHESTRATOR`. An advisor takes the role of the artifact it reviews: source code, tests and configuration take `_ADVISOR_CODE`, and prose takes `_ADVISOR_DOCS`. `_ROLE` in a prompt template shows where the dispatcher substitutes the assigned tag, for example `_REVIEWER`. Every dispatch names a role; one that fits no role uses the `_IMPLEMENTER` line.
 
-The role table wins. When a task needs something the table cannot give, stop and ask. Do not leave the table for a preference, and do not compose an assignment from `pi --list-models`.
+The table wins. When a task needs something it cannot give, stop and ask. Do not leave it for a preference, and do not compose an assignment from `pi --list-models`.
 
-**The dispatch procedure.** Four steps, in this order.
-
-1. Resolve the assignment: `node src/libs/dispatch/cli.ts table resolve --role <ROLE>`. It prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1. Print the result before dispatching, so the assignment is in the transcript.
-2. Pass it verbatim: `pi --provider <provider> --model <provider>/<model> --thinking <level> --session <path> -p "$(cat <brief>)"`. Pass the id in full; `--model` matches as a substring and takes the last id that contains it.
-3. Confirm what ran: `grep -o '"model":"[^"]*"' <session file> | sort -u`. It must print the assignment from step 1, once.
-4. Record the role, the assignment, and the level in the brief and in the report.
-
-**When a step fails, stop and report**, per the failure rules in the provider layer's `## Model Recommendations`: dispatch nothing further, choose no model by hand, and report the role and the message.
-
-Editing pi's own `AGENTS.md` always updates both the repo source (`src/reasoning/providers/pi/config/agent/AGENTS.md`) and the installed copy (`~/.pi/agent/AGENTS.md`), so the running agent context and the shipped config do not diverge.
-
-## Read Discipline
-
-Before opening any file in full, establish what you need from it first.
-
-**To find which files contain a term across the repo:**
-
-```bash
-grep -rn "TERM" path/
-```
-
-Build your change list from the results. Open only files that appear.
-
-**To get a section map of a file before reading it:**
-
-```bash
-grep -n "^##" filename.md
-```
-
-Then read only the sections you need.
-
-A full file read without a prior grep is a signal the discipline is not being applied. Full reads are only justified when: the file is the direct subject of the task, the file is under 40 lines, or the file structure is genuinely unknown.
+The resolver, the invocation and the failure rules belong to the `dispatch` skill. It reads this table, and a dispatch never names a model of its own.
 
 ## Output Format
 
-Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see your provider-layer `AGENTS.md` for interface-specific output instructions.
+Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see `$AGENT_HOME/agent/AGENTS.md` for interface-specific output instructions.
 
-Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in the provider layer's `AGENTS.md`, which indexes the `communication-principle-*` corpus.
+Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in `$AGENT_HOME/agent/AGENTS.md`, which indexes the `communication-principle-*` corpus.
 
-**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rule: skeleton first for record-layer documents (ADR, concept, architecture) -- propose the section skeleton in chat and confirm before writing prose.
+**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rule: skeleton first for an ADR, a concept document or an architecture document -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
@@ -147,7 +112,7 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and the Markdown lint gate in [`doc-maintenance`](workflow/coding-agent/skills/doc-maintenance/SKILL.md) `## The lint rule set`. Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/reference/iteration_protocol.md#iteration-invariants).
+A design settles an incomplete milestone first, per the roadmap's `Depends on:` lines. The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and the Markdown lint gate in [`doc-maintenance`](workflow/coding-agent/skills/doc-maintenance/SKILL.md) `## The lint rule set`. Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/reference/iteration_protocol.md#iteration-invariants).
 
 The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_protocol.md`](docs/reference/iteration_protocol.md)) before any further output.
 
@@ -178,7 +143,7 @@ Read these in order. Each answers a distinct question -- do not skip. Verify you
 | Document | Question it answers |
 |---|---|
 | `AGENTS.md` (this file) | How do I work here? |
-| Provider-layer `AGENTS.md` | What can I do in this specific interface? |
+| `$AGENT_HOME/agent/AGENTS.md` | What can I do in this specific interface? |
 | `YYYYMMDD-NN-TYPE-*.md` (most recent) | What milestone am I on, what files are in scope, and where did the last iteration end? |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | What is the current sub-milestone and what are the pending tasks? -- after reading, state your proposed scope and wait for confirmation before producing any output |
 

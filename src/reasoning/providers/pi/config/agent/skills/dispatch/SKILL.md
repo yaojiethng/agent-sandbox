@@ -31,7 +31,7 @@ The entrypoint resolves the role, derives the runtime from the assignment, build
 
 Without `--worker`, the entrypoint prints the command a role resolves to and records nothing. That form takes `--dir` instead of `--run-dir`, and it is how a caller checks what a role resolves to before spending an attempt.
 
-A review takes seats. `--seats <n> --run` runs n read-only attempts over the role's candidates and reports each seat's outcome, and `dispatch.md` holds the seating and the turns. A seat run takes `--dir` and refuses `--worker`, because a worker returns one change set. `--model` pins an assignment and every seat then runs it, recording each attempt like any other: resolution is the default, and a pin is the caller's stated value.
+A review takes seats. `--seats <n> --run` runs n read-only attempts over the role's candidates and reports each seat's outcome, and `dispatch.md` holds the seating and the turns. A subagent cannot see its invocation flags, so the brief states the provider, model and thinking level it runs at, and the report carries them; where the caller took the assignment from the role line rather than pinning it, the report says `startup default`. A seat run takes `--dir` and refuses `--worker`, because a worker returns one change set. `--model` pins an assignment and every seat then runs it, recording each attempt like any other: resolution is the default, and a pin is the caller's stated value.
 
 Resolution, the runtime rule, the walk and the failure vocabulary belong to [`dispatch.md`](/opt/sandbox/docs/reference/dispatch.md), and this skill points there rather than restating them. What the caller acts on is in one place, the exit code: zero means the worker ran, one a refusal before any attempt, three blocked with the earliest wait named, and any other code is the worker's own.
 
@@ -47,10 +47,11 @@ The attempt is stopped as soon as its log carries a refusal, because a refused p
 
 1. **Name the brief and the scratch directory.** Both are absolute paths. Done when the brief file is non-empty and the scratch directory exists and is writable; the entrypoint refuses either case.
 2. **Name the role.** A general worker runs as `_IMPLEMENTER`. Done when the role resolves; a role the table does not name is refused by name, and the change is the role table.
-3. **Name the base revision.** The default is `HEAD`. A later pass names the revision the unit started from, so the report covers the whole unit. A dirty tree is allowed, because that is what a later pass needs. Done when the base resolves to a commit.
-4. **Run the entrypoint.** Done when the log exists and is non-empty. An empty log with a zero exit code means the worker did no work, and the entrypoint reports that as a failure.
-5. **Verify the change set against the tree.** The report is a claim about the tree. Read the diff, run the check the brief named, and confirm the report landed. Done when every changed file is one the brief allowed and the check passes.
-6. **Commit one unit.** The worker returns work; the caller lands it, one commit for one unit.
+3. **Resolve the assignment, then pass it verbatim.** `node src/libs/dispatch/cli.ts table resolve --role <ROLE>` prints `<provider>/<model> <level|-> <runtime>`, or prints nothing and exits 1. Print the result before dispatching, so the assignment is in the transcript, and pass the id in full: `--model` matches as a substring and takes the last id that contains it. Done when the printed assignment is the one the command carries.
+4. **Name the base revision.** The default is `HEAD`. A later pass names the revision the unit started from, so the report covers the whole unit. A dirty tree is allowed, because that is what a later pass needs. Done when the base resolves to a commit.
+5. **Run the entrypoint.** Done when the log exists and is non-empty. An empty log with a zero exit code means the worker did no work, and the entrypoint reports that as a failure.
+6. **Verify the change set against the tree.** The report is a claim about the tree. Read the diff, run the check the brief named, and confirm the report landed. Done when every changed file is one the brief allowed and the check passes.
+7. **Commit one unit.** The worker returns work; the caller lands it, one commit for one unit.
 
 ## Non-goals
 

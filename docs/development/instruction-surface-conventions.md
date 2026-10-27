@@ -12,6 +12,16 @@ A cell answers three questions about a surface:
 
 A runtime path is the subject rather than a source folder, because two source folders can land on one, and then one cell names both. What the gate refuses is two cells on one path, because they would overwrite each other in the image. A module's payload does not merge into the harness roots: `workflow/<module>/prompts/` lands on `/opt/workflow/agent/modules/<module>/prompts/`, its own root. A merge loses which module a file came from, and it lets one module's file shadow another's with nothing reported. That shadowing is checked instead: no two roots under one settings key may hold a file, or a skill directory, of the same name.
 
+## Two surfaces
+
+There are two kinds of instruction text here, and they are read in two different conditions.
+
+The **working surface** is the two `AGENTS.md` files. A session receives them before any work starts, with no history and no other file read. Every line is read cold, so a line earns its place by being usable on its own: a path, a rule, an obligation. A term that only makes sense to someone who already knows how this repository is put together -- the layer split, the manifest, a surface, a cell -- is a defect in that file, whatever the sentence means to its author.
+
+The **maintenance surface** is this document and the other documents that describe how the instruction text is built and checked. A session reaches it by being sent here on a job about the surface, having read nothing else, so the terms are allowed and each is defined the first time it is used rather than assumed.
+
+The test for a line in the working surface: could a session that has read only this file act on it, and does it need the concept to act? A path and what is in it passes. A statement about which layer owns the path fails, because the session cannot use the distinction and did not ask for it.
+
 ## The shape
 
 ```json
@@ -84,9 +94,54 @@ A workflow step hands off to a convention-skill. When the skill is absent the ha
 
 ## The layers
 
-The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table for the container paths it covers; the project layer, `AGENTS.md`, holds one for the working tree the session runs in. Each table names runtime paths and nothing else.
+The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table of the resources the harness exposes; the project layer, `AGENTS.md`, holds one of the working directories the session should use. Each table names runtime paths and nothing else.
 
 The two tables split the `session` rows between them, and every row belongs to exactly one layer. The split is checked in both directions.
+
+**What each layer owns.** The provider layer owns what is true of any project running in this container: the runtime, the mounts, the tool set, the dispatch mechanics, and the agent's own config home. The project layer owns what is true of one working tree: its records, its roadmap and conventions, its documents, and the code in it. The test for a section is whether its sentences would still be right for a different project running in the same container. Yes places it in the provider layer; no places it in the project's.
+
+**What a layer may say about itself.** A layer names its paths in `## Scope` and stops there. The project layer also points here, because the session reading it may be about to edit it; the provider layer does not, because a project running on this image cannot edit it. A rule about where sections belong is maintenance material and lives here, not in either layer: the reader of a layer is an agent doing the work, and every other sentence it meets is one it can act on during that work. The dividing test is whether the working agent can act on the sentence now, which a pointer passes and a filing rule fails. This sentence is the rejected alternative's grave: the first design for this rule put the criterion and the subject table in both layers, and `principle-own-the-scope-you-declare` refuses it, because a document holds what its declared scope owes and describes no work outside it. That principle's own order is to link to the document that owns the content before moving it, so the two reach points for this rule are the pointer in a layer's `## Scope` and the check's failure message.
+
+**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source and its installed copy are one file: edit the source, copy it to `$AGENT_HOME/agent/AGENTS.md`, and let `scripts/check_instruction_surfaces.sh` prove they match. Both layers pass the same gates as the rest of the tree.
+
+**Standing in for the general provider layer.** A sentence true of every provider -- the sandbox boundary, no push, no secrets, the tool set -- has no provider-neutral always-loaded carrier: `src/reasoning/agent/` holds prompts and skills, and each provider seeds its own config home from its own template. Until that carrier exists, the pi provider layer stands in for the general provider layer, and such a sentence is filed there. Building the carrier is a filed roadmap row, not an assumption this document can leave implicit.
+
+**Who reads a layer.** The reader of an `AGENTS.md` is the agent runtime, and the runtime is handed each section concatenated into its context window. A rule addressed to it therefore has to stand as a sentence on its own: a position in the document, a table's rows and the source's line breaks carry no meaning to that reader. The path tables in the two `## Scope` sections are not instructions; they serve the maintainer and `scripts/check_instruction_surfaces.sh`, which is why a rule whose only purpose is to keep a table well-formed belongs here rather than in a layer.
+
+**The subject table.** One row per level-two section of either layer, naming the section and the layer that owns it. A section is filed by its subject, which is the noun its sentences are about rather than its heading.
+
+| Subject | Section | Layer |
+|---|---|---|
+| this working tree | `Scope` | project |
+| the product this repository builds | `System` | project |
+| where work may be written | `Constraints` | project |
+| how work is done on this repository | `Collaboration Protocol` | project |
+| the instruction-surface budget | `Instruction Surface` | project |
+| multi-file change audit | `Propagation Discipline` | project |
+| the feedback record | `Feedback and Gotchas Record` | project |
+| this repository's role table | `Model Recommendations` | project |
+| output classes and their obligations | `Output Format` | project |
+| an absent document | `Missing Documents` | project |
+| the iteration | `Iteration Lifecycle` | project |
+| the reading list a session opens with | `Iteration Start` | project |
+| the container paths this layer covers | `Scope` | provider |
+| the two containers and the tool set | `The Container` | provider |
+| write rules | `Write Discipline` | provider |
+| the prose principles | `Communication Standards` | provider |
+| reading a tree before opening it | `Read Discipline` | provider |
+| dispatching a subagent, and the review as its seat-count mode | `Subagents` | provider |
+
+A row and a heading are one requirement in two forms, so the table is the judgement and the check is the drift detector: a section renamed without its row, a heading added with no row, and a row naming the layer the heading is not in are each a failure. The table proves nothing about whether a ruling was right; that is what the ruling classes are for.
+
+**Ruling classes.** Every section ends in exactly one, and a ruling is recorded on the iteration's handover.
+
+| Ruling | Meaning |
+|---|---|
+| keep | the section is in its own layer and stays as written |
+| move | the section belongs to the other layer; it moves whole |
+| split | the section holds sentences for both layers; each sentence moves to its owner |
+| merge | the section duplicates another section that already owns the subject, so the two become one |
+| shrink | the section is in its own layer but carries text another file already states, so the duplicate goes and a pointer stays |
 
 ## The gates
 
@@ -94,7 +149,7 @@ Gates read the declaration through [`src/build/container-interface.mjs`](../../s
 
 [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY`, `ENV`, `WORKDIR` and `CMD` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a project-tree surface whose provider's command does not carry it, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
 
-[`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, and the loop inventory against the policy's `scope`.
+[`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope`. A section with no row, a row naming the layer the section is not in, and a row whose section no layer carries are each a finding. The table is the ruling; the check catches drift.
 
 [`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the reach axis to the declaration from the other side: the mount rows the manifest carries against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`. It reads both, so neither copies the other's list. A mount row added and not routed fails the row; a route with nothing behind it fails the route; a folder the table states repository-only fails when a manifest path reaches it.
 
