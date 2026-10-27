@@ -104,14 +104,7 @@ ln -s "/absolute/path/to/target" "$LINK_PATH"
 
 ### 1.11 Dual-use scripts: guard with `BASH_SOURCE[0] == "$0"`
 
-```bash
-main() { ... }
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  main "$@"
-fi
-```
-
-Use `"$0"`, not `${0}`. Do not add `||` array-length variations.
+`p-5` in [the declaration patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/declaration.md).
 
 ### 1.12 Default to `local`; pass behaviour as CLI flags, not exports
 
@@ -332,20 +325,11 @@ Why the family is small and deliberate: bash's `$( )` captures stdout only, so a
 
 ### 4.1 `local FOO=$(cmd)` swallows exit codes
 
-`local` is a builtin that always returns 0. Under `set -e`, the exit code of the command substitution is silently absorbed. Split the assignment:
-
-```bash
-local FOO; FOO=$(failing_cmd)
-```
+`p-4` in [the declaration patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/declaration.md).
 
 ### 4.2 `${VAR:-default}` on empty strings
 
-`${VAR:-default}` expands to `default` only when `VAR` is unset, not when it is an empty string. Validate explicitly:
-
-```bash
-local BASE_COMMIT="$BRANCH_FROM_ARG"
-[[ -n "$BASE_COMMIT" ]] || BASE_COMMIT="HEAD"
-```
+`p-6` in [the declaration patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/declaration.md).
 
 ### 4.3 `grep -c` returns exit 1 on zero matches
 
