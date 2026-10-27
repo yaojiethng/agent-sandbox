@@ -492,34 +492,7 @@ mitigation: word the line so `shellcheck` is not the first token after `#` (for 
 
 ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
 
-Scope: ShellCheck directive parsing. Cross-reference: `docs/development/bash-coding-conventions.md` states the suppression policy (targeted `# shellcheck disable=` with a rationale) but does not warn that a bare leading `shellcheck` word is parsed at all.
-
-### [A] 2026-09-25  --  `false` is a non-empty string inside `[[ ]]`, so a `&& false` mutation is not a mutation
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: to disable a guard while testing, replace its condition line with `if false; then`, and confirm the mutant file differs from its backup before running the suite, and that the line that changed is the site the verdict depends on. `[[ "$x" && false ]]` evaluates true, because the right-hand operand is a string test on a non-empty literal; `[[ -z "$x" && -n /dev/null ]]` is true for the same reason. Both forms report a false survivor. When a mutation uses perl to substitute a literal that contains a shell variable, `\Q...\E` does not stop interpolation: pass the literal through the environment (`OLD=... perl -0777 -pi -e 's/\Q$ENV{OLD}\E/.../'`) and keep the backup comparison in probes as well as in bite scripts.
-```
-
-A mutation is evidence only if it changes behaviour. Two forms that look like disablements do not: `&& false` and `-n /dev/null` inside `[[ ]]`, where the right-hand operand is a string test on a non-empty literal and therefore true. Both were used in the read-through's bite sweeps - a delivery guard, two resume guards, and a provider-recovery check - and each reported a survivor that was in fact an unchanged guard. The check that catches the whole family is cheap: verify the mutant differs from the backup before running the suite, and prefer a form with no operand at all.
-
-A second form of the same failure surfaced in the apply.sh pass, in a probe script rather than a bite script: `s/\QFILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || true)\E/` matched nothing, because perl interpolates `$DIFF_FILE` inside `\Q...\E`; the shell variable was unset in the perl process, so the pattern became a no-match and the probe reported the mutant's output as if the mutant had applied. Twenty of the first sweep's twenty-two bites no-op'd the same way for the same reason (the other two aborted with perl syntax errors on the interpolated quotes). The probe script had no backup comparison because the bite script already had one, which is why the check belongs in both.
-
-A third form belongs to the same entry, from the interactive.sh pass. `\Q...\E` also stops `\n` from being a newline: `OLD='---\n### '` passed through the environment matches the literal characters backslash and n, not a line break, so a two-line replacement against a markdown file no-op'd with no error. The environment idiom removes the interpolation hazard but not the escape hazard. When the literal spans lines, put a real newline in the variable (`OLD=$'---\n### '`) or use the `edit` tool, whose `oldText` carries the newline directly.
-
-A fourth false positive comes from outside the mutant. The Makefile-template pass's `start` `INTERACTIVE_FLAG` bite (M11) exited non-zero on its first run and a bite script that reads only the exit status recorded PROVEN; two re-runs gave 722/722 with the liveness gate reporting zero findings. The abort came from the liveness gate, which the read-through's row 135 records as observed once and unreproduced. A PROVEN verdict therefore needs the failing file's name and a re-run before it is trusted, not the exit status alone.
-
-A fifth false positive, from the first rectification slice. The mutant differed from its backup and the mutation was real, but it landed at the wrong site. `scripts/workflows/confirm.sh` carries `git -C "$PROJECT_DIR" rebase --abort 2>/dev/null || true` twice, at six-space indentation in the drop-step failure path and four-space indentation in the conflict path. A line-based matcher given the six-space form hit the drop-step guard, while the verdict belonged to the conflict path; the suite stayed green and the bite reported a survivor that the intended mutation would have caught. The indentation was invisible in a grep listing, which is what made the error easy. Confirm the site, not only the difference: print the mutant's diff and read which line changed, and give a repeated line enough of its context to be unambiguous. A survivor is evidence about the code path you actually mutated.
-
-Scope: bash conditional-expression semantics. Cross-reference: `docs/development/bash-coding-conventions.md`; the vacuity family is [A] 2026-09-22 "A condition on an always-true helper is a vacuous assertion", whose subject is an assertion rather than a mutation.
-
----
-
-Skill-trap coverage gaps (bash entries marked "no trap" or partially covered): consolidation into the bash-scripting-traps skill is deferred to a future skill-maintenance session; per-entry coverage is noted in each entry's Cross-reference line.
-
----
+Scope: ShellCheck directive parsing. Cross-reference: `p-33` in [`shellcheck.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/shellcheck.md).
 
 ### [A] 2026-09-25  --  A guard that errexit already provides cannot be pinned by a unit
 
@@ -537,41 +510,6 @@ No unit can fail on any of the three, so the mutation survives by construction. 
 Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
 
 Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
-
-### [A] 2026-10-05  --  An apostrophe inside a `${VAR:-default}` opens a quote, so the whole script is a syntax error
-
-```text
-state: open
-scoped: M3.3.1 -- the eval harness under the module skill
-legacy: none
-mitigation: keep the default free of apostrophes, or assign the default on its own line and expand the variable where it is used. The failure is loud but mislocated: bash reports `unexpected EOF while looking for matching` at the file's last line, whatever line holds the apostrophe.
-```
-
-`PROMPT="${EVAL_PROMPT:-The working tree holds this iteration's work.}"` is a syntax error. Inside `${...}` a single quote starts a quoted string, so the apostrophe in `iteration's` opens a quote that never closes. `bash -n` reports the EOF at the end of the file, so the line to fix has to be found by counting quotes rather than by reading the message.
-
-The measured check is cheap. `grep -c "'" file` against the file gives an odd count, and the offending lines are the ones that hold exactly one. Cross-reference: `docs/development/bash-coding-conventions.md`.
-
-### [A] 2026-10-06  --  `name+=value` without `declare -i` concatenates, and a 0-prefixed total then fails as octal
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: declare an accumulator integer (`declare -i n=0`) or assign through `$(( ))`; after a loop, compare the iteration count against the count a dry run reported instead of trusting a per-step summary line.
-```
-
-A cleanup loop summed freed bytes with `dirbytes+=$bytes` while `dirbytes` was never declared integer, so the byte counts concatenated into one very long number. The division that formatted it then failed with `value too great for base` - a 0-prefixed integer reads as octal - and the script printed its per-directory summary for the first of four directories only. That summary was plausible, the work for the other three silently did not happen, and a second run was needed to finish it. The durable check is the count rather than the total: a loop that reports what it did should also report how many iterations it ran. Cross-reference: `docs/development/bash-coding-conventions.md`.
-
-### [A] 2026-10-06  --  `git bundle create` takes no option after its positional arguments, and an `A && B` guard hides the failure
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: put every option before the file and the revision (`git bundle create -q <file> <rev>`), and end a guard chain with `|| { echo ...; exit 1; }` when the guarded command's failure must be visible.
-```
-
-The eval harness's write-back ran `git bundle create <file> <rev> -q`, which git refused with `error: unrecognized argument: -q`; nothing was written. The call sat behind `[[ "$head" != "$base" ]] && git ...`, so the status never reached the caller, and a run that produced no bundle still looked graded and complete. The missing artefact was the one the change exists to produce, and only the new test case caught it. Cross-reference: `docs/development/bash-coding-conventions.md`.
 
 ### [A] 2026-10-26  --  A rule recorded a mechanism nobody had run, and the guard it doubted holds
 
@@ -614,7 +552,7 @@ mitigation: when a test spawns `node --test` as a child, delete `NODE_TEST_CONTE
 
 The mutation gate for the task-queue extension replays each catalog row in a temp mirror and runs the owning suite in a child process. Its first run reported all 22 rows as survivors in 10 seconds, which is faster than the suites it claimed to have run. The cause was the harness, not the extension: `node --test` sets `NODE_TEST_CONTEXT=child-v8` in its children, and a child that inherits the marker and receives a `--test` argument treats the invocation as a recursive run. It prints "node:test run() is being called recursively within a test file. skipping running files." on stderr, runs nothing, and exits 0. Every mutant therefore looked uncaught, and the failure mode is a gate that reports a clean result on a broken subject. The tell is the wall time: a gate that replays suites finishes faster than the suites, and it is the one signal available before the subjects are re-checked by hand.
 
-The family is the [A] 2026-09-25 entry on a mutation that is not a mutation, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
+The family is the mutation-idiom rule in `p-43` and the instrument rules in `.agents/skills/testing/patterns/mutation-evidence.md`, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
 
 ---
 
@@ -637,7 +575,7 @@ mitigation: a commit whose only change is the handover Status flip or the roadma
 state: mitigated
 scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
-mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1. Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
+mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rule: `p-13` in [`failure-handling.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/failure-handling.md). Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
 ```
 
 ### [O] 2026-09-18  --  Mechanical-edit one-liners must carry a match-count guard and a timeout

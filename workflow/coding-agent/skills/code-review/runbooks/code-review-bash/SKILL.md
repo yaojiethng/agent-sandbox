@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 A review of shell code. The standard is the pattern set beside this file, in `patterns/`: every finding names the entry it rests on, and the entry states what the wrong form does and what to report instead.
 
+General shell style is the one subject the set does not restate: the [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) is authoritative for naming, quoting, `local` and `readonly`, function and command-substitution form, flags, and output to stderr. Where a pattern entry and the guide meet on a project-specific convention, the entry wins, and the set's own entries are the reason this review exists.
+
 ## Scope accepted
 
 Two kinds.

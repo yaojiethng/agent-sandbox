@@ -44,7 +44,7 @@ One row per entry, read against the commit or record that produced it. Thirty-fi
 
 ## Failures that had no carrier, and the entries they became
 
-Each is a failure an operator or an agent recorded, with no rule behind it when pass 1 ran. Every one now has a home: the accumulator and the apostrophe default are `p-37` and `p-38`, the `cd` inside a command substitution is `p-39`, a child eating stdin is `p-40`, a retry keyed to any non-zero exit is `p-41`, an option after a positional argument is `p-42`, and the two mutation-idiom families became `p-43` and a variant on `p-18`, because a test instrument is not a form a review of production code reports.
+Each is a failure an operator or an agent recorded, with no rule behind it when pass 1 ran. Every one now has a home: the accumulator and the apostrophe default are `p-37` and `p-38`, the `cd` inside a command substitution is `p-39`, a child eating stdin is `p-40`, a retry keyed to any non-zero exit is `p-41`, an option after a positional argument is `p-42`, and the two mutation-idiom families became `p-43` and a variant on `p-18`, because a test instrument is not a form a review of production code reports. Three of these entries, the accumulator, the apostrophe default and the truthiness family, left `devlog/AGENT_FEEDBACK.md` once their rules landed, so their first-column citation names the log's history rather than a live entry.
 
 | Record | The failure | What a pattern would say | Home |
 |---|---|---|---|
