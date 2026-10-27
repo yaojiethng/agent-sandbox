@@ -39,7 +39,7 @@ A pattern with no fence is a rule with no canonical code. The statement is what 
 ## Finding an id
 
 ```bash
-grep -rn '^## p-' workflow/coding-agent/skills/code-review/code-review-bash/patterns/
+grep -rn '^## p-' workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/
 ```
 
 No stored index. An index mapping ids to files is derived state and goes stale on the first insertion.

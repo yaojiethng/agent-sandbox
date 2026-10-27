@@ -2,7 +2,7 @@
 # scripts/check_lib_contract.sh
 # Sourced-library contract gate over src/libs/ and src/build/.
 #
-# Enforces two rules of the bash pattern set, in workflow/coding-agent/skills/code-review/code-review-bash/patterns/:
+# Enforces two rules of the bash pattern set, in workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/:
 #   p-13  --  functions in sourced libraries use `return`, never `exit`.
 #                Top-level main flow behind a BASH_SOURCE[0] == "$0" exec guard
 #                may exit legitimately, so only function-body exits are flagged.

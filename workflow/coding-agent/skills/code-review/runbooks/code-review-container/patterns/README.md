@@ -5,7 +5,7 @@ The canonical forms a container review names in a finding. One entry is one form
 Finding an id:
 
 ```bash
-grep -rn '^## p-' workflow/coding-agent/skills/code-review/code-review-container/patterns/
+grep -rn '^## p-' workflow/coding-agent/skills/code-review/runbooks/code-review-container/patterns/
 ```
 
 ## What a linter settles

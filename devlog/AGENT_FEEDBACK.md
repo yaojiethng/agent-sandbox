@@ -465,7 +465,7 @@ mitigation: tooling and harness notes for the library-migrations track. Use bash
 
 ## Bash
 
-Canonical bash coding rules: the pattern set beside the `code-review-bash` runbook, [`patterns/`](../workflow/coding-agent/skills/code-review/code-review-bash/patterns/README.md).
+Canonical bash coding rules: the pattern set beside the `code-review-bash` runbook, [`patterns/`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/README.md).
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
@@ -599,7 +599,7 @@ A third instance came from the pass 2 seat that re-read the swept pattern set. `
 
 The shape recurs because a rule is written from a plausible story about the failure rather than from the failure re-run. One command per claim is the whole check.
 
-Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/code-review-bash/patterns/`, and `devlog/discussions/20261026-report-draft-pattern_provenance.md`, which records the scan that found both.
+Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/`, and `devlog/discussions/20261026-report-draft-pattern_provenance.md`, which records the scan that found both.
 
 ## Node
 

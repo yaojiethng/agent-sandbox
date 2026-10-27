@@ -43,7 +43,7 @@ A file-level fate cannot carry this one: it holds three subjects, and the operat
 
 The ruling is absorb: `code-review-bash` is the survivor, and a second bash runbook would put two standards on one language. Its bash block now opens by naming the pattern set as the better version of every rule in it, so a reader who lands on the file is sent to the entry rather than to the paraphrase.
 
-The file stayed for one reason, and it was not the bash half: the Dockerfile rules it carried had no owner. Pin the base image, `COPY` over `ADD`, combine `RUN` to cut layers, run as a non-root user, make `WORKDIR`, `USER` and `ENTRYPOINT` explicit, keep the image minimal, use exec-form `ENTRYPOINT`, and ask whether the image rebuilds the same in six months. That owner now exists, in `code-review-container`'s entries `p-49` to `p-57`, and what held the file after that was its feedback-style block. That block is now the payload under test at `src/reasoning/agent/skills/kelsey-code-reviewer/SKILL.md`, so the file is gone.
+The file stayed for one reason, and it was not the bash half: the Dockerfile rules it carried had no owner. Pin the base image, `COPY` over `ADD`, combine `RUN` to cut layers, run as a non-root user, make `WORKDIR`, `USER` and `ENTRYPOINT` explicit, keep the image minimal, use exec-form `ENTRYPOINT`, and ask whether the image rebuilds the same in six months. That owner now exists, in `code-review-container`'s entries `p-49` to `p-57`, and what held the file after that was its feedback-style block. That block is now the payload under test at `workflow/coding-agent/skills/code-review/runbooks/kelsey-code-reviewer/SKILL.md`, so the file is gone.
 
 The frozen copy in the eval fixture is not an argument for keeping the live file: `tests/eval/instruction-cleanup/room/kelsey-code-reviewer.skill.md.orig` holds the bytes and `SHA256SUMS` names them, so the calibration file is already preserved without a live path.
 
@@ -87,7 +87,7 @@ A carrier's document became a bridge when its statements and forms moved into th
 
 ## Where the patterns live
 
-The examples that leave `bash-coding-conventions.md` collect in one place, and that place is the runbook that reads them: `workflow/coding-agent/skills/code-review/code-review-bash/patterns/`. The pattern set is the single canonical source for a bash form, so a rule and its example are not kept twice.
+The examples that leave `bash-coding-conventions.md` collect in one place, and that place is the runbook that reads them: `workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/`. The pattern set is the single canonical source for a bash form, so a rule and its example are not kept twice.
 
 The split follows the work rather than the file. The implementer writes what the code needs and is reviewed afterwards, so the implementer is not the reader being served; the reviewer is, and the reviewer arrives holding a runbook. Putting the set beside that runbook means the reviewer reads rules and forms from one dispatch, with no second load and no question of which copy is current. A rule in `docs/development/` points at the pattern instead of carrying it.
 

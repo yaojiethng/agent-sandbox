@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Thermo-Nuclear Code Quality Review
 
-> Source: [cursor/plugins, thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md), landed at commit `6e3d2ea5`. Verbatim apart from one removal: the paragraph naming this repository's `_REVIEWER` role, its seat count and its attribution requirement. That is this environment, not the review, and `code-review` states it.
+> Source: [cursor/plugins, thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md), landed at commit `6e3d2ea5`. Verbatim apart from two mechanical changes: the paragraph naming this repository's `_REVIEWER` role, its seat count and its attribution requirement is removed, and five paragraphs are joined onto one physical line each, as the repository's docs convention requires. No word of the review changes.
 
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 
@@ -16,11 +16,7 @@ Above all, this skill should push the reviewer to be **ambitious** about code st
 
 Start from this baseline:
 
-> Perform a deep code quality audit of the current branch's changes.
-> Rethink how to structure / implement the changes to meaningfully improve code quality without impacting behavior.
-> Work to improve abstractions, modularity, reduce Spaghetti code, improve succinctness and legibility.
-> Be ambitious, if there is a clear path to improving the implementation that involves restructuring some of the codebase, go for it.
-> Be extremely thorough and rigorous. Measure twice, cut once.
+> Perform a deep code quality audit of the current branch's changes. Rethink how to structure / implement the changes to meaningfully improve code quality without impacting behavior. Work to improve abstractions, modularity, reduce Spaghetti code, improve succinctness and legibility. Be ambitious, if there is a clear path to improving the implementation that involves restructuring some of the codebase, go for it. Be extremely thorough and rigorous. Measure twice, cut once.
 
 ## Non-Negotiable Additional Standards
 
@@ -131,15 +127,11 @@ When you identify a code-quality problem, prefer suggestions like:
 - Parallelize independent work when that also simplifies the orchestration.
 - Restructure related updates into a more atomic flow when partial state would be harder to reason about.
 
-Do not be satisfied with "maybe rename this" feedback when the real issue is structural.
-Do not be satisfied with a merely cleaner version of the same messy idea if there is a plausible path to a much simpler idea.
+Do not be satisfied with "maybe rename this" feedback when the real issue is structural. Do not be satisfied with a merely cleaner version of the same messy idea if there is a plausible path to a much simpler idea.
 
 ## Review Tone
 
-Be direct, serious, and demanding about quality.
-Do not be rude, but do not soften major maintainability issues into mild suggestions.
-If the code is making the codebase messier, say so clearly.
-If the implementation missed an opportunity for a dramatic simplification, say that clearly too.
+Be direct, serious, and demanding about quality. Do not be rude, but do not soften major maintainability issues into mild suggestions. If the code is making the codebase messier, say so clearly. If the implementation missed an opportunity for a dramatic simplification, say that clearly too.
 
 Good phrases:
 
@@ -165,13 +157,11 @@ Prioritize findings in this order:
 6. Modularity and abstraction issues
 7. Legibility and maintainability concerns
 
-Do not flood the review with low-value nits if there are larger structural issues.
-Prefer a smaller number of high-conviction comments over a long list of cosmetic notes.
+Do not flood the review with low-value nits if there are larger structural issues. Prefer a smaller number of high-conviction comments over a long list of cosmetic notes.
 
 ## Approval Bar
 
-Do not approve merely because behavior seems correct.
-The bar for approval is:
+Do not approve merely because behavior seems correct. The bar for approval is:
 
 - no clear structural regression
 - no obvious missed opportunity to make the implementation dramatically simpler when such a path is visible

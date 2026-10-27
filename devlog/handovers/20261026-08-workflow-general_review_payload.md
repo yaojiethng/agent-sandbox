@@ -17,7 +17,7 @@ The new file is not a runbook yet. It names no scope, so the `code-review` shell
 
 In scope:
 
-1. `src/reasoning/agent/skills/kelsey-code-reviewer/SKILL.md`, holding the carrier's residue: cleaned frontmatter, the persona and its standard, the core philosophy, one section of judgements that generalise past a language, the feedback discipline, the output shape, and the production test.
+1. `workflow/coding-agent/skills/code-review/runbooks/kelsey-code-reviewer/SKILL.md`, holding the carrier's residue: cleaned frontmatter, the persona and its standard, the core philosophy, one section of judgements that generalise past a language, the feedback discipline, the output shape, and the production test.
 2. the removal of the two standards blocks and the two review-process subsections that state bash and Dockerfile rules, since both subjects now have a pattern set.
 3. the removal of the frontmatter the harness cannot parse or honour, and of the worked examples inside the description.
 4. the rewording of a shell and image specific example or question wherever one carried the general rule.
@@ -66,7 +66,7 @@ Out of scope: running the test. It needs a code review to sit beside, and none i
 
 | File | Change |
 |---|---|
-| `src/reasoning/agent/skills/kelsey-code-reviewer/SKILL.md` | new, 81 lines: the persona and its standard, six philosophy bullets, nine judgements, five feedback rules, five output sections and four production questions, with frontmatter the harness can read and no note about where it came from |
+| `workflow/coding-agent/skills/code-review/runbooks/kelsey-code-reviewer/SKILL.md` | new, 81 lines: the persona and its standard, six philosophy bullets, nine judgements, five feedback rules, five output sections and four production questions, with frontmatter the harness can read and no note about where it came from |
 | `.agents/audits/kelsey-code-reviewer.skill.md` | deleted. Its shell rules are entries, its image rules are `p-49` to `p-57`, its general residue is the skill above, and nothing it stated is now unowned |
 | `workflow/coding-agent/skills/code-review/SKILL.md` | the payload-under-test row replaces the carrier row, with the route that makes it dispatchable |
 | `.agents/audits/surface-area-report.md` | the carrier row becomes `(deleted)`, naming where each of its three parts went |

@@ -67,7 +67,7 @@ When a task applies a change across multiple files -- a naming rule, a structura
 
 ## Bash Friction Log
 
-Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`code-review-bash/patterns/`](workflow/coding-agent/skills/code-review/code-review-bash/patterns/) for canonical rules, which are held there as entries a finding cites by id. The former separate friction-log file was subsumed here (session `20260809-04`).
+Bash friction is one class of the agent-feedback record. It lives with the other agent-experience entries in [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) (`## Bash` section). Consult it when diagnosing unexpected behavior or considering bash-language workarounds. Each entry cross-references [`code-review-bash/patterns/`](workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/) for canonical rules, which are held there as entries a finding cites by id. The former separate friction-log file was subsumed here (session `20260809-04`).
 
 ## Feedback and Gotchas Record
 

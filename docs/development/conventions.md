@@ -5,7 +5,7 @@ Index of coding and interface conventions for the agent-sandbox project. Each ca
 | Category | Document | Scope |
 |---|---|---|
 | Interface (CLI, TUI, API) | [`interface-conventions.md`](interface-conventions.md) | CLI flags, output discipline, TUI surface, API contracts pointer, contextual-knowledge-light naming |
-| Bash coding | [`code-review-bash`](../../workflow/coding-agent/skills/code-review/code-review-bash/SKILL.md) | Language rules as patterns beside the runbook, each carrying the wrong form it replaces, and the review that applies them |
+| Bash coding | [`code-review-bash`](../../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/SKILL.md) | Language rules as patterns beside the runbook, each carrying the wrong form it replaces, and the review that applies them |
 | Module dependency direction | [`context_resolution.md#dependency-direction`](context_resolution.md#dependency-direction) | Which module may depend on which, in every language: the graph, the boundary rules, and what an edge is per language |
 | Testing | [`testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) | Judgements and patterns for writing a test |
 | Prompt and skill authoring | [`prompt-authoring-conventions.md`](prompt-authoring-conventions.md) | Workflow-document structure, runbook vs advisor, subject scoping, document-type identification |
