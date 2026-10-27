@@ -2,7 +2,7 @@
 
 A persistent record of the coding agent's experience and recurring mistakes. Entries record friction points, poor stack design, poor operator prompting, and this-needs-reinforcing notes, plus agent mistakes and code smells. Written by the agent. Reviewed and addressed by the operator.
 
-**Writer:** agent. **Reviewer:** operator.
+**Writer:** agent. **Reviewer:** operator. An entry is written when the experience happens, not at the close.
 
 Entries are point-in-time records. The **A/O tag** names who raised the entry: `[A]` for an entry raised by the agent, `[O]` for an entry raised by the operator. Reconcile an entry against the current tree before acting on it. If the tree has outgrown an entry, mark it probation; if the entry is superseded  --  its lesson already carried by another entry or record  --  it jumps to probation as well. Either way, follow the normal procedure: wait to see whether it resurfaces; drop it if it does not.
 
@@ -12,9 +12,60 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [A] 2026-10-26  --  A driver loop over `opencode run` lost its work list to the child, then hung on a refusal
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: close the child stdin on every dispatch (`</dev/null`), match a refusal on every shape it arrives in, key any retry to the one transient error, and read a run's token counts from the session store before scoring it. Four traps, one loop: `opencode run` inherits stdin and consumes a redirected plan file, so the read loop reaches end of file and the grid ends after one cell with a clean exit; the free tier refusal arrives as `{"type":"FreeUsageLimitError"}` in one path and `AI_APICallError: Free usage limit reached` in another, so a detector that knows the first shape launches cells that can never answer; six concurrent processes sharing `~/.local/share/opencode/opencode.db` return `database is locked`; and a retry written as "repeat on a non-zero exit" repeats timeouts, holding a block for three times the wall cap.
+```
+
+A grid of a hundred and seventeen cells ran on the free model through `opencode run`, and the driver failed in four ways that each looked like something else. The silent one is the worst: the child process read the plan file off the inherited stdin, so the next read found end of file, the loop ended, and the summary reported a smaller grid as a finished one. Nothing exited non-zero and nothing printed.
+
+The refusal was worse in the other direction. It arrives as JSON in the error stream and as `AI_APICallError: Free usage limit reached` in the run log; the detector matched the JSON, so four cells were launched into a tier that had nothing left and each sat at its own wall cap. That reads as slowness rather than as exhaustion, and it cost twenty minutes.
+
+The lesson generalises past this backend: a driver exit code says nothing about whether its units of work ran, so count the units rather than trusting the summary, and treat "no output and no error" as a failure that needs an explanation before it is scored.
+
+The fourth trap belongs to the model rather than the driver: `--variant high` on `deepseek-v4.1-flash-free` spends 32000 reasoning tokens and returns no text, with a zero exit code, so it reads as a successful cell carrying an empty fault list. The store query that shows the token counts is in `devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`.
+
+---
+
+## [O] 2026-10-26  --  A discussion record was named and shaped like a handover
+
+```text
+state: mitigated
+scoped: .agents/skills/work-log/SKILL.md, the filename rule and the four types
+legacy: open from 2026-10-26 until the same day's recurrence, which made the check mechanical
+mitigation: when writing into devlog/discussions/, take the name and the frontmatter from the work-log convention rather than from the handover next door: YYYYMMDD-{type}-{status}-{description}.md with no ordinal, and a report's status starts at draft and moves straight to settled. scripts/check_record_names.sh now refuses the shape at the lint gate, so the reading habit is no longer the only guard.
+```
+
+Three report records under `devlog/discussions/` took the handover's shape in one session. `20261026-04-report-ablation_problems_found.md` and `20261026-05-report-eval_inputs_required.md` carry the handover's ordinal in the filename and the handover's `status: Active`, which a report never passes through. The third, `20261026-report-settled-census_six_carriers.md`, wrote hours earlier, kept the type and status in the name but still claimed `active` and `type: Discussion`, a type the convention does not have.
+
+Both record kinds live in `devlog/`, and the handover is the one written most often, so its shape is the shape at hand when a report is opened. The naming rule is a section of the work-log convention that a session opens for the handover's section set, not for the discussion's, which is why reading the convention for one record kind leaves the other kind's rule unread.
+
+**Recurrence, same day.** A fourth and fifth record took the ordinal, after this entry was written: `20261026-06-report-carrier_fates.md` and `20261026-07-report-pattern_provenance.md`. The cause was upstream of the habit. The handover's index row read "the two-digit per-day index, reset daily: `max + 1` over the day's existing records", so the number was defined over every record in `devlog/` rather than over handovers, and the exploration-record section named no exclusion. The row now counts the day's handovers, the exploration record's constraint line carries "no per-day index", and `scripts/check_record_names.sh` is a lint gate over the live folder, with eight tests. Two records already written were also renamed: the status joins the description with a hyphen, which the underscore form had broken.
+
+---
+
 ## Preamble  --  length
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
+
+## [O] 2026-10-26  --  An observation held in chat is invisible to the release gate
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before asking for the release gate, write every observation the iteration produced into the handover's `## Findings` with a destination or a fix. The gate reads the record, not the conversation, so an observation held in chat is not presented at all.
+```
+
+Closing the two base review skills unit, three observations surfaced in the turn after the release gate: the cleanup pass still named the shared body as an artifact that no file carried, the code runbook has no provenance block, and the four unscreened payloads are now listed in the shells. The first was a carrier of the unit's own change and belonged inside it; all three belonged in the gate.
+
+The gate's evidence is the record. A finding the agent keeps in its head is read by nobody, and a release granted on a Findings table that is empty because nothing was written there is indistinguishable from a release granted on a clean unit. The remedy is mechanical: the table is filled before the summary is presented, and an observation that fits no destination is still a row, with `this handover` or a named row as its destination.
+
+---
 
 ## [O] 2026-10-24  --  A roadmap measurement note became an artifact and a gate
 
@@ -522,6 +573,34 @@ mitigation: put every option before the file and the revision (`git bundle creat
 
 The eval harness's write-back ran `git bundle create <file> <rev> -q`, which git refused with `error: unrecognized argument: -q`; nothing was written. The call sat behind `[[ "$head" != "$base" ]] && git ...`, so the status never reached the caller, and a run that produced no bundle still looked graded and complete. The missing artefact was the one the change exists to produce, and only the new test case caught it. Cross-reference: `docs/development/bash-coding-conventions.md`.
 
+### [A] 2026-10-26  --  A rule recorded a mechanism nobody had run, and the guard it doubted holds
+
+```text
+state: mitigated
+scoped: M3.3.2 -- pattern-set migration
+legacy: the `[A] 2026-09-19` entry "A sourced-lib while read < file aborts a set -e caller on a missing file" (added `ddc1e76f`, removed by `677b4d8a` when rule 4.4 landed) stated that a surrounding `|| ...` does not rescue the abort "because the abort happens inside the command substitution, not at the call"
+mitigation: a guarded call survives a missing file, and what escapes the guard is the shell's own expansion under `set -u`. `p-31` in the pattern set states the case that reproduces and drops the one that does not
+```
+
+Rule 4.4 reached the conventions document from the 2026-09-19 entry, and both said an unguarded read inside a sourced function aborts the call site "even if the call is wrapped in `||`". Nothing had been run to establish that. Measured on this container's bash, each case a fresh `bash -c` under `set -euo pipefail`:
+
+| Case | Result |
+|---|---|
+| a function with a read from a missing file, called with `\|\| true` | survived, rc 0 |
+| the same read as a compound command, `\|\| true` | survived, rc 0 |
+| the same function called with no guard | rc 1, and the statements after it did not run |
+| the function called with `$1` unset under `set -u`, guarded by `\|\| true` | rc 1, the guard did not hold |
+
+So the recommendation was right and the reason was invented: a missing file is an ordinary failure that the guard catches, while an unset parameter fails during expansion, before any command runs, and no `||` on the call can see it. The wrong mechanism is the expensive half, because a reviewer holding it reports a guarded call as still broken and has a citation for saying so.
+
+This is the second rule in one session found asserting a mechanism rather than a behaviour. The other was `${VAR:-default}` keeping an empty value, which it does not, and whose stated right form was the wrong form written the long way. Both were carried across a migration unchanged, so neither was introduced by it, and neither could have been caught by reading: each needed one command run against the shell.
+
+A third instance came from the pass 2 seat that re-read the swept pattern set. `p-10` said an `a && b` chain "reports only `b`'s result", so "the chain returns success". Measured: `f(){ false; }; f && echo b; echo $?` prints `1`, and a function returning 3 leaves 3. The chain carries `a`'s status all along; what goes missing is that nothing reads it before the script runs its next command. The same pass found `p-26` saying an edge is "`source` or `exec`, which runs the target inside the caller's process", when `exec` replaces the caller's process image. Both are now stated as measured.
+
+The shape recurs because a rule is written from a plausible story about the failure rather than from the failure re-run. One command per claim is the whole check.
+
+Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/code-review-bash/patterns/`, and `devlog/discussions/20261026-report-draft-pattern_provenance.md`, which records the scan that found both.
+
 ## Node
 
 ### [A] 2026-09-29  --  A nested `node --test` inherits `NODE_TEST_CONTEXT` and exits 0 without running anything
@@ -774,6 +853,8 @@ A second, purely mechanical form recurred during the `guards.sh` integration. Ro
 Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.
 
 The same class recurred on 2026-09-27 inside a dispatched subagent's output, one level up from the findings log. A unit that replaced two tolerant-mode tests with strict-mode coverage defined a test function whose name already existed in the file and registered it a second time. Bash's last-definition-wins made the first body disappear without an error, the registration liveness gate passed because it checks both directions of the registration contract and not for a name used twice, and the suite's unit count came out one higher than the units actually added. The count is what a reviewer compares against a baseline, so an inflated count is not a cosmetic defect: it is an unverifiable number. The durable fix is a duplicate check in `scripts/check_test_liveness.sh`, filed as a T1 roadmap row (the duplicate test name check in the registration gate); the mitigation until it lands is to account for the arithmetic of the count growth after every dispatched return rather than reading the count as a fact.
+
+**Recurrence, 2026-10-26.** A `replace` whose anchor was the line it meant to insert above consumed that line. The assessment entry of `docs/adr/closed_record_corrections.md` was added by replacing the `## 2026-10-18 -- ...` heading with the new section, so the older entry lost its date heading and its four blocks sat under the newer date for a week, where its decision to defer the assessment read as the opposite of the assessment above it. Every gate stayed green, because a heading that disappears leaves valid Markdown and no gate counts headings per record. Re-read the anchor's own text after an insertion, and diff the heading set before and after: a drop of one is the signal.
 
 ### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
 
