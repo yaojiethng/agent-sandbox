@@ -24,13 +24,7 @@ Verify with `cat -A`  --  tabs appear as `^I`.
 
 ### 1.3 Prefer `while read` over `xargs` for file processing
 
-`xargs` batches arguments; a single bad filename fails the entire batch with no per-file error. Use `while IFS= read -r -d ""` with null-delimited input:
-
-```bash
-while IFS= read -r -d "" file; do
-  cp --parents -- "$file" "$DEST/" || echo "Error: failed: $file" >&2
-done
-```
+`p-21` in [the filenames patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/filenames.md).
 
 ### 1.4 Quote all variable expansions containing filenames
 
@@ -38,14 +32,7 @@ done
 
 ### 1.5 Check for symlinks before `cp --parents`
 
-`git ls-files --others` includes untracked symlinks. `cp --parents` cannot copy symlinks. Check explicitly:
-
-```bash
-if [[ -L "$SOURCE_DIR/$file" ]]; then
-  echo "Skipping symlink: $file" >&2
-  continue
-fi
-```
+`p-22` in [the filenames patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/filenames.md).
 
 ### 1.6 `BASH_SOURCE[0]` resolves to the symlink path
 
@@ -171,7 +158,7 @@ Do not add boolean/string mode parameters to a function unless at least one prod
 
 ### 4.4 Sourced-lib reads must not redirect from unguaranteed paths
 
-A `while read` redirection inside a sourced-lib function -- `while IFS='=' read -r ...; done < "$file"` -- aborts the *call site* under `set -e` when `$file` is absent, even if the call is wrapped in `|| ...` (the abort happens inside the command substitution, not at the call). A sourced-lib function must not read a path the caller cannot guarantee. Guard before the read (`[[ -f "$file" ]] || return 0`) either in the caller or in the lib function itself.
+`p-31` in [the filenames patterns](../../workflow/coding-agent/skills/code-review/code-review-bash/patterns/filenames.md).
 
 ### 4.5 Absolutize `git rev-parse --git-path` output before filesystem use
 
