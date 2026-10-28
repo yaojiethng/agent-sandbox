@@ -33,7 +33,7 @@ Two elements frame the stack without belonging to it:
 
 **Human Workflow** -- the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a layer that gets built in sequence.
 
-The freeze status is layer-scoped (a whole layer freezes, never an individual file). The `docs` convention applies it: architecture documents must not describe what a frozen layer does not yet do.
+The freeze status is layer-scoped (a whole layer freezes, never an individual file). The `project-documentation` convention applies it: architecture documents must not describe what a frozen layer does not yet do.
 
 ## Major Components
 

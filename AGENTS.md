@@ -87,7 +87,7 @@ Agent output is complete and ready for review when it follows the format rules b
 
 Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in `$AGENT_HOME/agent/AGENTS.md`, which indexes the `communication-principle-*` corpus.
 
-**Documents** -- Markdown, one file per document, correct folder and header per the `docs` convention, `.agents/skills/docs/SKILL.md`. Drafting rule: skeleton first for an ADR, a concept document or an architecture document -- propose the section skeleton in chat and confirm before writing prose.
+**Documents** -- Markdown, one file per document, correct folder and header per the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`. Drafting rule: skeleton first for an ADR, a concept document or an architecture document -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
@@ -161,7 +161,7 @@ Read these in addition to the above when opening a milestone planning iteration.
 | Document | Read before |
 |---|---|
 | [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or freeze status checks |
-| [`.agents/skills/docs/SKILL.md`](.agents/skills/docs/SKILL.md) | Any documentation task |
+| [`.agents/skills/project-documentation/SKILL.md`](.agents/skills/project-documentation/SKILL.md) | Any documentation task |
 | [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
 | [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
 | [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover or a record in `devlog/discussions/` |

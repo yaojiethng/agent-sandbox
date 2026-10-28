@@ -64,7 +64,7 @@ Start here and follow the path in order. Architecture documents describe the sys
 | Step | Document | Purpose |
 |---|---|---|
 | 1 | [contributors.md](docs/development/contributors.md) | Contribution rules, secrets handling, workflow responsibilities |
-| 2 | [.agents/skills/docs/SKILL.md](.agents/skills/docs/SKILL.md) | Documentation rules and structure (read once) |
+| 2 | [.agents/skills/project-documentation/SKILL.md](.agents/skills/project-documentation/SKILL.md) | Documentation rules and structure (read once) |
 | 3 | [agent_workflow.md](docs/reference/agent_workflow.md) | Workflow expression model and policy map (read once) |
 | 4 | [iteration_protocol.md](docs/reference/iteration_protocol.md) | Session workflow and milestone planning process (read once) |
 | 5 | [roadmap.md](devlog/roadmap.md) | Current tasks, open validation items, planned milestones |

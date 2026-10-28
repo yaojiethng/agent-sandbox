@@ -1,22 +1,21 @@
 ---
-name: docs
-description: agent-sandbox's docs convention - which folder a document belongs to, how it opens, what it may contain, how it is wrapped and numbered, and which obligations its type carries.
+name: project-documentation
+description: "Apply when writing or editing project documentation under `docs/`: which folder it belongs to, how it opens, what it may contain, and what its type owes."
 ---
 
-# docs
+# project-documentation
 
 ## Folder tree
 
-This project's document tree lives at `docs/`, in four folders, beside the `devlog/` record set.
+This convention covers the project documentation under `docs/`, in three folders. The `devlog/` records are the `work-log` convention's, the roadmap and changelog are `task-list`'s, and ADR entry structure is `decision-records`'s.
 
 | Folder | Holds | Ships |
 |---|---|---|
 | `docs/reference/` | how the harness works: contracts, states and sequences, the glossary | yes |
 | `docs/development/` | contributor workflow and the procedures for changing the harness | no |
 | `docs/adr/` | settled decisions, with superseded ones under `adr/archive/` | no |
-| `devlog/` | the roadmap, the changelog, the handovers and the discussion records | no |
 
-Each document belongs to exactly one folder. What a folder holds and why is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy), which also governs the `devlog/` records and states each type's durability.
+Each document belongs to exactly one folder. What a folder holds and why is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy), which states each type's durability.
 
 An architecture document describes what the layers do, not what a frozen layer has yet to do. The layer model, the freeze status per layer and the freeze rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-layer-model).
 
@@ -32,8 +31,7 @@ Documents open with a consistent header, so status and scope read without the bo
 > **Superseded / Resolved.** <one sentence pointing to the authoritative document.>
 ```
 
-- `**Status:**` is the first line after the title on every discussion document, with no preamble before it.
-- A superseded or resolved document carries the blockquote redirect immediately after its status line, naming the target.
+- A record's status line and its redirect are the `work-log` convention's.
 - A reference document carries no status line: the freeze table in `system_overview.md` governs it.
 - ADR headers and entry structure are the `decision-records` convention's.
 - Top-level sections use `##` and subsections use `###`. Use `####` only inside a long task list where grouping is genuinely needed.

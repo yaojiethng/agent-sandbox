@@ -1,6 +1,6 @@
 // markdownlint-cli2 configuration for the agent-sandbox repository.
 // Enables the subset of markdownlint rules that align with
-// `.agents/skills/docs/SKILL.md`, plus two custom rules:
+// `.agents/skills/project-documentation/SKILL.md`, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
 // physical line) and linking (link targets and heading fragments
 // resolve). Both exempt the record trees declared below, under one key.

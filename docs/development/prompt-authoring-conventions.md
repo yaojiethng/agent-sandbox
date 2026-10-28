@@ -18,7 +18,7 @@ A document an agent consumes is one of three types. The type determines where it
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states facts; a rule it stated would make it a policy document, per the type test below.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; the `docs` convention, `.agents/skills/docs/SKILL.md` excludes them from its scope by the same boundary, because skill files and prompt templates are not documentation.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` excludes them from its scope by the same boundary, because skill files and prompt templates are not documentation.
 
 Two tests identify a workflow document:
 

@@ -13,7 +13,7 @@ argument-hint: "[documentation goal or target document - optional]"
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `docs` - the document tree.
+- `project-documentation` - the document tree.
 - `decision-records` - the architecture decision records.
 
 ## Purpose
@@ -82,7 +82,7 @@ Exit condition: the operator released the gate, the handover holds the confirmed
 
 ### Step 5 -- Produce the documents
 
-Write the documents against the confirmed scope. A prompt or a skill takes the authoring rules in `prompt-authoring-conventions.md`. That document owns the two kinds the `docs` convention disclaims when it states that skill files and prompt templates are not documentation. A policy, concept, architecture, or record document takes the writing standards in the `communication-principle-*` corpus and the form rules in the `docs` convention, `.agents/skills/docs/SKILL.md`.
+Write the documents against the confirmed scope. A prompt or a skill takes the authoring rules in `prompt-authoring-conventions.md`. That document owns the two kinds the `project-documentation` convention disclaims when it states that skill files and prompt templates are not documentation. A policy, concept, architecture, or record document takes the writing standards in the `communication-principle-*` corpus and the form rules in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`.
 
 When the session applies a naming or structural change across more than two files, or uses "all", "every", "throughout", or "wherever X appears", produce the propagation checklist the [`propagation-check`](/opt/workflow/agent/skills/propagation-check/SKILL.md) skill requires, before the first file is written. Record every row as you complete it.
 
@@ -95,7 +95,7 @@ Exit condition: every in-scope document is written, every propagation row carrie
 The standards check reads each produced document against the standard its type selects.
 
 - **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and the kind test that decides each rule's source of truth, per `### Norm kinds` in `agent_workflow.md`. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
-- **A policy, concept, or architecture document.** Read the `docs` convention, `.agents/skills/docs/SKILL.md`, and check the folder placement, the header format, and the section map.
+- **A policy, concept, or architecture document.** Read the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and check the folder placement, the header format, and the section map.
 - **A record document.** Check it against the record-state invariants in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) `### Record-state invariants`, and against the project's `work-log` convention for a handover or a discussion record, or the `decision-records` convention for an ADR. For a discussion or design record, confirm that no question-and-reply pair remains, that every question still listed is still open, and that the designs considered and rejected are a short section carrying the reason for each. An answered question belongs in the body at the place its answer belongs, not in a reply, so fold it there when it closes.
 Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in [`doc-maintenance`](../skills/doc-maintenance/SKILL.md).
 

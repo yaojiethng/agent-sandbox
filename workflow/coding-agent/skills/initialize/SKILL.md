@@ -7,7 +7,7 @@ description: Install or update a project's convention-skills. Use when a project
 
 ## Purpose
 
-The workflow reads and writes project content through **conventions**. A convention is a structure over a subset of content - the task list, the work log, the decision records, the docs, the git discipline, the testing convention, the evals. Each convention is served by a **convention-skill** the project owns, under `.agents/skills/`.
+The workflow reads and writes project content through **conventions**. A convention is a structure over a subset of content - the task list, the work log, the decision records, the project documentation, the git discipline, the testing convention, the evals. Each convention is served by a **convention-skill** the project owns, under `.agents/skills/`.
 
 This skill installs and updates that set: a **default convention-skill corpus** in `assets/conventions/`, one directory per convention. Each shipped skill is a **stub**, a failure mode for the agent to reason over rather than a default convention; its contract is in `docs/development/instruction-surface-conventions.md`.
 

@@ -13,7 +13,7 @@ argument-hint: "[the surface whose rules have grown coupled - a folder, a prompt
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `docs` - where the surface's files belong, and what an instruction document may contain.
+- `project-documentation` - where the surface's files belong, and what an instruction document may contain.
 - `task-list` - the row this pass files its outcome into.
 - `work-log` - the handover that records its rulings.
 

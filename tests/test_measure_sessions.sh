@@ -64,7 +64,7 @@ test_delivery_counts() {
   assert_contains "$out" '"slashOpeners":0' "no session opens with a slash command"
   assert_contains "$out" ".agents/skills/task-list/SKILL.md	1" "the task-list read is counted once"
   assert_contains "$out" ".agents/skills/work-log/SKILL.md	1" "the bash hit on work-log is counted"
-  assert_contains "$out" ".agents/skills/docs/SKILL.md	0" "an unread convention reports zero"
+  assert_contains "$out" ".agents/skills/project-documentation/SKILL.md	0" "an unread convention reports zero"
 }
 
 test_join_counts() {

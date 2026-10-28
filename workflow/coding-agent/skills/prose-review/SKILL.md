@@ -11,7 +11,7 @@ The shell for prose reviews. It translates what a runbook asks for into this env
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `docs` - the document tree's conventions, worth reading when the review judges a document rather than a prompt or a skill.
+- `project-documentation` - the document tree's conventions, worth reading when the review judges a document rather than a prompt or a skill.
 
 ## Purpose
 

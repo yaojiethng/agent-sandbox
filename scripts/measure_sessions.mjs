@@ -48,7 +48,7 @@ const CONVENTIONS = [
   'task-list',
   'work-log',
   'decision-records',
-  'docs',
+  'project-documentation',
   'git-discipline',
   'testing',
 ].map((n) => `.agents/skills/${n}/SKILL.md`);

@@ -20,7 +20,7 @@ A copy is inert by design. Each carries an `.orig` suffix so that the documentat
 | `room/test_harness_mechanism.md.orig` | `docs/development/test_harness_mechanism.md` | `4dcb4a372326` | 11764 |
 | `room/conventions.md.orig` | `docs/development/conventions.md` | `2a543df93496` | 1576 |
 | `room/skills/testing-SKILL.md.orig` | `.agents/skills/testing/SKILL.md` | `035ab3ee98ab` | 5786 |
-| `room/skills/docs-SKILL.md.orig` | `.agents/skills/docs/SKILL.md` | `f37bebe3e9a7` | 6905 |
+| `room/skills/docs-SKILL.md.orig` | `.agents/skills/project-documentation/SKILL.md` | `f37bebe3e9a7` | 6905 |
 | `room/skills/linking-SKILL.md.orig` | `.agents/skills/linking/SKILL.md` | `f2d1bb4101c0` | 3771 |
 | `briefs/brief-a.md.orig` | `.scratchpad/cmp/brief-a.md` | `- (never tracked)` | 16989 |
 | `briefs/brief-b.md.orig` | `.scratchpad/cmp/brief-b.md` | `- (never tracked)` | 3716 |

@@ -1,6 +1,6 @@
 ---
 name: doc-maintenance
-description: "Checks the documentation set against the `docs` convention and reports what the tree contradicts: a claim the implementation no longer holds, a link whose target does not say what the citing line claims, and a fact two documents state differently. Use at a loop or milestone close, or when the operator asks for a documentation pass. Writes no document."
+description: "Checks the documentation set against the `project-documentation` convention and reports what the tree contradicts: a claim the implementation no longer holds, a link whose target does not say what the citing line claims, and a fact two documents state differently. Use at a loop or milestone close, or when the operator asks for a documentation pass. Writes no document."
 ---
 
 # doc-maintenance
@@ -11,7 +11,7 @@ description: "Checks the documentation set against the `docs` convention and rep
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `docs` - the document tree.
+- `project-documentation` - the document tree.
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Checks the documentation set and reports the claims the tree contradicts. The me
 
 The method is the point. A term-driven sweep finds only the staleness whose wording it already knows: it cannot find a claim about a term nobody listed as stale, and it cannot see two documents that contradict each other. A claim checked against the implementation finds both classes, at the cost of a read per claim.
 
-The rules live in the `docs` convention, `.agents/skills/docs/SKILL.md`, and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here.
+The rules live in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here.
 
 This pass writes no document and applies no correction. It reports.
 
@@ -48,7 +48,7 @@ The split is the standing rule for a check: a decidable check belongs in a gate,
 
 The repository holds zero Markdown findings, and a finding is a defect fixed in the same change rather than a baseline entry. The config is `.markdownlint-cli2.mjs`: it disables `MD013` because one paragraph per physical line forbids breaking at a column limit, and `MD060` because the repository writes compact tables.
 
-A rule the config names but never enables is the failure this section exists to catch. `config.default` is `false`, so a rule armed nowhere reports nothing, and the gate prints a clean verdict over an empty rule set. Naming a rule in `.agents/skills/docs/SKILL.md` and enabling it in the config are one obligation, and a rule the config registers but does not enable is a defect.
+A rule the config names but never enables is the failure this section exists to catch. `config.default` is `false`, so a rule armed nowhere reports nothing, and the gate prints a clean verdict over an empty rule set. Naming a rule in `.agents/skills/project-documentation/SKILL.md` and enabling it in the config are one obligation, and a rule the config registers but does not enable is a defect.
 
 A per-file disable is not a fix. Silence a finding by fixing the text or changing the config.
 
@@ -107,7 +107,7 @@ Completion criterion: each fact stated in more than one document is stated ident
 
 ### Step 6 - The diagnostic register
 
-Run the register below over the set. It names what has gone wrong, not what to write instead: the prescriptive form of each is in the `docs` convention.
+Run the register below over the set. It names what has gone wrong, not what to write instead: the prescriptive form of each is in the `project-documentation` convention.
 
 Completion criterion: every register item is either applied or skipped with a reason.
 
