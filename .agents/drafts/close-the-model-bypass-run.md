@@ -43,6 +43,8 @@ src/reasoning/providers/pi/config/agent/skills/pi-reviewer-dispatch/dispatch.sh
 workflow/coding-agent/skills/eval/scripts/run_case.sh
 ```
 
+The four deleted paths in that list -- `adversarial-review-run.md`, `review-loop-run.md`, `review-pass-run.md` and `test-assertion-sweep-brief.md` -- are gone; the list stays as the dated output it was.
+
 Three of those are legitimate callers of the seam rather than carriers, and the gate must name them rather than discover them. `src/reasoning/providers/pi/config/agent/skills/pi-reviewer-dispatch/dispatch.sh` runs the seam. `src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md` documents the provider rather than instructing an agent. `workflow/coding-agent/skills/eval/scripts/run_case.sh` is a test harness.
 
 For each remaining carrier, decide whether the fix is a gate the actor cannot pass or an instruction the actor must remember. Prefer the gate. Discard an instruction-only fix unless no gate is possible.
