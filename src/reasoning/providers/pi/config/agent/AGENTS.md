@@ -51,6 +51,8 @@ An approval that produces an artifact edits the file that is its source of truth
 
 A fix to work already written lands in the artifact the defect is in and produces no second artifact beside it, naming `principle-minimal-corrections` at `$AGENT_HOME/agent/skills/principle-minimal-corrections/SKILL.md`.
 
+An instruction set stays lean: an edit improves the existing text in place rather than appending clarification beside it. `scripts/report_instruction_growth.sh` measures the growth.
+
 When writing code, always take into account the following:
 
 1. Does this need to exist?   -> no: skip it (YAGNI)

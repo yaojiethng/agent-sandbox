@@ -12,6 +12,25 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [A] 2026-10-27  --  An instruction line carried its own argument, twice, an hour after the rule against it
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: state the rule and put the reason where the decision was taken, which is the handover's Decisions table. The drafting agent is the one agent that cannot make this separation, because it holds the argument the reader was not present for.
+```
+
+Asked for the rule that keeps an instruction set lean, I landed 49 words: the rule, then its reason, then a restatement of what the measuring script prints. The operator's own three-line statement of the same thing was shorter and complete. Cut to 23 words, I then folded a second judgement into the same sentence, that an instruction states the rule while its argument stays in the record that decided it, and that was cut too. It appended a clarification about not appending clarification, inside the sentence that names the defect.
+
+The rule was not missing. It had been installed earlier in the same session, in the layer I was editing, and I had read it. What was missing was the reader: an `AGENTS.md` is loaded by a fresh agent with almost no context, and a line that carries its reason charges that reader for a conversation they were not in. The drafting agent is present when the argument is made, so the argument feels like part of the rule, and no rule about the separation changes that, because the rule is read by the same agent holding the same argument.
+
+The meta-level is where this fails, and that is structural rather than a gap in the corpus. Rules-versus-arguments is a drafting-phase judgement, the drafting phase is a higher level than the surface being drafted, and every attempt to encode awareness of the inherited argument adds a third level that needs the same treatment. Filed as a capability limit, not a task: what remains available is the cold-read criterion in the `prose-review` family, and `scripts/report_instruction_growth.sh` as the residue signal.
+
+Cross-references: `## Write Discipline` in the provider layer; handover `20261027-04`.
+
+---
+
 ## [A] 2026-10-26  --  A driver loop over `opencode run` lost its work list to the child, then hung on a refusal
 
 ```text
