@@ -41,13 +41,17 @@ new_root() {
   get_fixture_dir
 }
 
-# write_fixture ROOT  --  one fixture with a manifest covering its one file.
+# write_fixture ROOT  --  one sealed fixture: a payload archive and its one-line pin.
 write_fixture() {
   local root="$1"
-  mkdir -p "$root/case1/room"
-  printf 'frozen text\n' >"$root/case1/room/a.md.orig"
-  ( cd "$root/case1" && sha256sum room/a.md.orig >SHA256SUMS )
+  mkdir -p "$root/case1/src/room"
+  printf 'frozen text\n' >"$root/case1/src/room/a.md.orig"
+  ( cd "$root/case1/src" && tar --sort=name --mtime='@0' --owner=0 --group=0 \
+      --numeric-owner -cf - room | gzip -n ) >"$root/case1/payload.tar.gz"
+  rm -rf "$root/case1/src"
+  ( cd "$root/case1" && sha256sum payload.tar.gz >SHA256SUMS )
   printf '# the fixture\n' >"$root/case1/README.md"
+  printf 'provenance\n' >"$root/case1/SOURCES.md"
 }
 
 run_gate() {
@@ -66,28 +70,29 @@ test_conforming_fixture_is_clean() {
 test_an_edited_frozen_file_is_named() {
   local root; root="$(new_root)"
   write_fixture "$root"
-  printf 'rewritten text\n' >"$root/case1/room/a.md.orig"
+  printf 'rewritten\n' >>"$root/case1/payload.tar.gz"
   run_gate "$root"
-  assert_rc 1 "$RUN_RC" "a rewritten fixture fails"
+  assert_rc 1 "$RUN_RC" "a rewritten archive fails"
   assert_contains "$RUN_OUT" "CHANGED" "the finding is a change"
-  assert_contains "$RUN_OUT" "case1/room/a.md.orig" "the file is named"
+  assert_contains "$RUN_OUT" "case1/payload.tar.gz" "the archive is named"
 }
 
 test_a_removed_frozen_file_is_named() {
   local root; root="$(new_root)"
   write_fixture "$root"
-  rm "$root/case1/room/a.md.orig"
+  rm "$root/case1/payload.tar.gz"
   run_gate "$root"
-  assert_rc 1 "$RUN_RC" "a missing fixture file fails"
+  assert_rc 1 "$RUN_RC" "a missing archive fails"
   assert_contains "$RUN_OUT" "MISSING" "the finding is an absence"
 }
 
 test_an_unlisted_file_in_a_subdirectory_is_named() {
   local root; root="$(new_root)"
   write_fixture "$root"
-  printf 'surprise\n' >"$root/case1/room/b.md.orig"
+  mkdir -p "$root/case1/room"
+  printf 'loose\n' >"$root/case1/room/b.md.orig"
   run_gate "$root"
-  assert_rc 1 "$RUN_RC" "a file with no provenance fails"
+  assert_rc 1 "$RUN_RC" "a loose file beside the archive has no provenance"
   assert_contains "$RUN_OUT" "UNNAMED" "the finding is unnamed"
   assert_contains "$RUN_OUT" "case1/room/b.md.orig" "the file is named"
 }
@@ -95,7 +100,6 @@ test_an_unlisted_file_in_a_subdirectory_is_named() {
 test_a_root_file_is_not_a_frozen_subject() {
   local root; root="$(new_root)"
   write_fixture "$root"
-  printf '# provenance\n' >"$root/case1/SOURCES.md"
   run_gate "$root"
   assert_rc 0 "$RUN_RC" "the fixture's own description is read, not hashed"
 }
@@ -103,8 +107,8 @@ test_a_root_file_is_not_a_frozen_subject() {
 test_a_fixture_without_a_manifest_is_named() {
   local root; root="$(new_root)"
   write_fixture "$root"
-  mkdir -p "$root/case2/room"
-  printf 'nothing holds me\n' >"$root/case2/room/a.md.orig"
+  mkdir -p "$root/case2"
+  printf 'nothing holds me\n' >"$root/case2/payload.tar.gz"
   run_gate "$root"
   assert_rc 1 "$RUN_RC" "an unhashed fixture fails"
   assert_contains "$RUN_OUT" "NOMANIFEST" "the finding is the absence of a manifest"

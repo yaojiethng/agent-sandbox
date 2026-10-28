@@ -5,18 +5,38 @@ Frozen inputs for the instruction-cleanup test case, taken on 2026-10-26 because
 This directory is not an eval harness, a case set, or a runner. It holds no assertions and no expected output, because the rulings those would come from do not exist yet. What it fixes is the input side: a stable copy of what the case reads.
 
 ```text
+payload.tar.gz   the frozen input, sealed; extract it to seed a run
+SHA256SUMS       one line: the sha256 of payload.tar.gz as committed
+SOURCES.md       provenance per file inside the archive: source path, source blob, byte count
+README.md        this file
+```
+
+The input is an archive rather than a set of loose files, and the reason is that a sealed archive cannot be edited by accident. A frozen copy of a Markdown file announces nothing: a find and replace across the tree rewrites it, every test stays green, and the case later grades a subject nobody chose. Sealed and pinned, the only way in is to extract, change and repack deliberately, and the pin then records that somebody did.
+
+The archive holds three subtrees, unchanged from how they were stored loose:
+
+```text
 room/    the files a run may read, and nothing else
 briefs/  the two prompt templates the runs were composed from
 tools/   the two generators that composed them, with the ablation preamble inline
-SOURCES.md   provenance per file: source path, source blob, byte count
-SHA256SUMS   integrity of every file below room/, briefs/ and tools/
 ```
 
 ## How a run uses it
 
-Copy `room/` into a temporary directory outside this repository and point the run's working directory at the copy. The copy is the isolation: the carriers live inside a tree that holds the census rulings, the comparison records and the feedback log, and a run that can read the tree reads the answers instead of judging the prompt. Thirty of the thirty-five cells of the first ablation attempt did exactly that, and the cost was the run.
+Seed the run from the archive: extract it into a temporary directory outside this repository and point the run's working directory at the extracted `room/`. Seeding is the first step of every run, as it is for a container, so the extraction is not an extra cost. The copy is the isolation: the carriers live inside a tree that holds the census rulings, the comparison records and the feedback log, and a run that can read the tree reads the answers instead of judging the prompt. Thirty of the thirty-five cells of the first ablation attempt did exactly that, and the cost was the run.
 
 The run writes nothing into this directory. A run that edits its surface is measuring a different surface on every cell.
+
+## Re-freezing the input
+
+Extract, change, repack, and update the pin in the same commit:
+
+```sh
+tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - room briefs tools | gzip -n > payload.tar.gz
+sha256sum payload.tar.gz > SHA256SUMS
+```
+
+The flags are what make the archive reproducible: the same content packs to the same bytes, so a re-freeze diff is the pin and not the gzip timestamp. `bash scripts/check_eval_fixtures.sh` fails when the pin and the file disagree, and `scripts/lint.sh` runs it.
 
 ## Resolving a citation
 

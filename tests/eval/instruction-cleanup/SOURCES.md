@@ -1,5 +1,7 @@
 # Sources
 
+The paths below name files inside `payload.tar.gz`, not files beside it. The archive is the frozen unit and its pin is `SHA256SUMS`; the table is provenance for a reader, so it survives the seal.
+
 Every file under `room/` and `briefs/` is a byte-identical copy of one source file, taken from commit `ba7d0f922b56` on 2026-10-26. `tools/` holds the two generators that composed the briefs, copied from the session scratch, which is gitignored and does not survive the session: this copy is their only tracked form.
 
 A copy is inert by design. Each carries an `.orig` suffix so that the documentation and linking gates read nothing here: a verbatim copy of a document with relative links cannot resolve them from a new location, and a snapshot must not be edited to satisfy a lint rule. Verify integrity rather than content with `sha256sum -c SHA256SUMS`.
