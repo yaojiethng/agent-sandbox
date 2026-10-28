@@ -115,10 +115,10 @@ The class is the same in both directions: a rule about where a pointer resolves 
 ## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
 
 ```text
-state: open
+state: mitigated
 scoped: W2 - Communication Domain Taxonomy
 legacy: none
-mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards.
+mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards. The definition now states this rule in `communication-principle-maximize-conceptual-leverage`, handover `20261028-06`.
 ```
 
 One iteration set `metadata: leitwort:` on all twenty-five principle skills in a single pass. The operator rejected the set as poorly chosen and asked for a revert. Two declarations stand, `proximity` and `leverage`, each of which names its own skill's subject and was already committed.

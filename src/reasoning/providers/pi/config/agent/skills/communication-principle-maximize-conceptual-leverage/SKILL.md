@@ -1,36 +1,38 @@
 ---
 name: communication-principle-maximize-conceptual-leverage
-description: "Apply when a word choice trades a distinction for brevity or for plainness. Choose the word that carries the most distinction for the least reader effort, and lose none to shorten it."
+description: "Apply when a skill or a document needs one word the reader thinks with. Choose the leitwort, define it once, and write the text around it instead of the weaker terms a writer reaches for by default."
 metadata:
   claim: reader
-  leitwort: leverage
+  leitwort: leitwort
 ---
 
 # Maximize conceptual leverage
 
-Choose the word that carries the most distinction for the least reader effort, and lose none to shorten it.
+Use this skill to choose a leitwort: a dense term that invokes a compact concept the reader already holds. A leitwort carries the most distinction for the least reader effort.
 
-**The pattern.** Compare the chosen word against the words a reader would need without it. The shorter form stays when it carries the same distinctions. The longer form replaces it when it carries one the shorter form drops, and the domain's own term replaces it when that term is the distinction.
+**The pattern.** Choose one leitwort for the concept the text is about, define it once, then write each sentence around it. When a phrase carries the same distinction, use the leitwort. When a phrase carries a distinction the leitwort does not, add the distinction to the definition rather than repeating it beside the word.
 
 | Instead of | Give |
 |---|---|
-| a plainer word that drops the distinction the domain reader needs | the domain term, defined once at first use |
-| a condition struck so the sentence reads smoother | the claim with its condition intact |
-| jargon the writer has not finished compressing | the reader's word for the same thing |
-| an ornate verb where a common verb says the same | the common verb |
-| a metaphor standing in for a mechanism | the mechanism |
-| an unmarked hedge ("somewhat", "fairly", "arguably") | the claim, marked as an inference where that is what it is |
-| a paragraph of analysis | the decision it supports |
+| a plainer word that drops the distinction the reader needs | the leitwort, defined once |
+| a phrase that spells the concept out | the leitwort |
+| a synonym that renames the concept | the leitwort, one word for one thing |
+| a metaphor standing in for the mechanism | the mechanism, or the leitwort that names it |
+| a hedge, an ornate verb, a condition struck for smoothness | the claim with the distinction it needs |
 
-**Why.** The domain model is exact, and the delivery is shorter than the model. A word dropped from the delivery takes a distinction with it, and the reader cannot see the loss, because the sentence still reads correctly. A model left at full resolution costs the reader work, and the reader notices, because the point is not on the page. The first loss cannot be repaired and the second can.
+**Why.** A reader holds a concept, not a sentence. The leitwort invokes the concept each time it appears, so the text spends one token where a phrase would spend a dozen, and the reader reaches for the same meaning every time.
 
-**The leading word.** A principle's leading word is this judgement applied to the principle itself. It is the one word that holds most of what the principle says, drawn from the domain the principle works in, and the corpus records it as `metadata: leitwort:`, a keyword tag beside the claim rather than a controlled vocabulary. the project's `skill-scaffolder` convention decides where the word is placed and tested, in its signposting pattern. Choosing it is this skill's question, and placing it is that one's.
+**Choosing it.** Draw the leitwort from the domain the text works in, and prefer a word the reader already holds. A coined word recruits no prior; it costs the definition and returns nothing.
 
-**Fires on.** A word, a term or a claim where brevity and precision pull apart.
+**Placing it.** Define the leitwort clearly in the body, anchor the body around it, and repeat it in the description. Record it as `metadata: leitwort:` in the frontmatter. It anchors twice: in the body, where the agent reaches for the same behaviour each time the word appears, and in the description, where the word triggers the skill.
 
-**What it does not cover.** Which claim to make: the principle of the domain in hand. Whether the sentence stays at all: `communication-principle-cut-what-carries-nothing`.
+Set it only where the body already teaches the word, because a candidate the body never says is a flavour word and a defence written after the choice cannot fail.
 
-**The test.** Two readers, because each catches a failure the other accepts. The domain reader checks that nothing false was added. A reader outside the domain checks that nothing they needed was removed.
+**Fires on.** A skill or a document that needs a word the reader thinks with, and a draft that spells the concept out in phrases.
+
+**What it does not cover.** Whether a sentence stays at all: `communication-principle-cut-what-carries-nothing`. Which claim to make: the principle of the domain in hand.
+
+**The test.** Read the text. Is there one word the reader will carry away? Does each sentence use it, or add to its definition? A text with two words for one concept, or a concept spelled out in phrases, has not anchored.
 
 New and changed prose in this corpus meets ASD-STE100, and this skill states the rules that meet it. A phrase dictionary is a source for wording, and these rules live here.
 
