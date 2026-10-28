@@ -72,7 +72,7 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 - **Author.** A record-layer document starts with a confirmed skeleton. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
 - **Format.** Every `docs/` document opens with the same header block. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- How a document opens.
 - **Maintain.** A durable record is written for its reader, not for the session that produced it. Judgement: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. Procedure: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
-- **Check.** A record must satisfy the document lint gate to close. Rule: the `doc-maintenance` procedure, `workflow/coding-agent/skills/doc-maintenance/SKILL.md` -- The lint rule set.
+- **Check.** A record must satisfy the document lint gate to close. Rule: the `doc-maintenance` procedure, `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md` -- The lint rule set.
 - **Correct after close.** A closed record's content does not change; it gains its type's marker. Rule: the `record-correction` procedure, `workflow/coding-agent/prompts/record-correction.md` -- Correcting a record.
 - **Reference a missing document.** A missing document is an error unless its link carries `[REMOVED]`. Rule: the project `AGENTS.md` -- Missing Documents.
 
@@ -100,5 +100,5 @@ Everything under a project's `.agents/` is project-scoped: that project's sessio
 | "Is this statement a rule or a description? Where is the source of truth of a rule?" | [`agent_workflow.md`](agent_workflow.md#norm-kinds) |
 | "How do I write the prose?" | the `communication-principle-*` corpus, indexed in the provider `AGENTS.md` |
 | "What content is forbidden in an architecture document?" | `communication-principle-dont-forecast-undone-work`; the `doc-maintenance` register names the symptom |
-| "What does the lint check? What must a record satisfy?" | `workflow/coding-agent/skills/doc-maintenance/SKILL.md` -- The lint rule set |
+| "What does the lint check? What must a record satisfy?" | `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md` -- The lint rule set |
 | "How do I correct a closed record?" | `workflow/coding-agent/prompts/record-correction.md` -- Correcting a record |

@@ -192,7 +192,7 @@ The source of truth is decided by the kind, not by the layer, per `### Norm kind
 
 Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
-The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in [`agent_workflow.md`](../reference/agent_workflow.md#prompt-templates); the register lists the signs to look for.
+The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in [`agent_workflow.md`](../reference/agent_workflow.md#prompt-templates); the register lists the signs to look for.
 
 ## A workflow document owns the scope it declares
 
@@ -234,4 +234,4 @@ The folder's other content is the run brief, the plan a session executes, includ
 
 The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time.
 
-The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.
+The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`doc-maintenance`](../../.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.

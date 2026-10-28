@@ -97,7 +97,7 @@ The standards check reads each produced document against the standard its type s
 - **A workflow document.** Read `prompt-authoring-conventions.md` first, then check the document against its structure rules, its subject scoping, and the kind test that decides each rule's source of truth, per `### Norm kinds` in `agent_workflow.md`. Record each change with the specific rule it answers, per `prompt-authoring-conventions.md` `## Compliance`.
 - **A policy, concept, or architecture document.** Read the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and check the folder placement, the header format, and the section map.
 - **A record document.** Check it against the record-state invariants in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) `### Record-state invariants`, and against the project's `work-log` convention for a handover or a discussion record, or the `decision-records` convention for an ADR. For a discussion or design record, confirm that no question-and-reply pair remains, that every question still listed is still open, and that the designs considered and rejected are a short section carrying the reason for each. An answered question belongs in the body at the place its answer belongs, not in a reply, so fold it there when it closes.
-Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in [`doc-maintenance`](../skills/doc-maintenance/SKILL.md).
+Fix the findings and re-run `bash scripts/lint.sh`. The diagnostic register a produced document is read against is `## The diagnostic register` in the project's `doc-maintenance` runbook, at `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md`.
 
 Exit condition: each produced document has been read against its governing standard, every finding is fixed or recorded as a finding in the handover, and the lint gate is clean.
 
@@ -133,7 +133,7 @@ Exit condition: the delivery commit landed, the handover is closed, and the road
 
 ## Non-goals
 
-- **Not the document-maintenance sweep.** The [doc-maintenance skill](../skills/doc-maintenance/SKILL.md) owns the review sweep and reports what it finds; this prompt owns the document it produces. Do not hand-run an improvised sweep inside a session and record the result as this prompt's work.
+- **Not the document-maintenance sweep.** The `doc-maintenance` runbook owns the review sweep and reports what it finds; this prompt owns the document it produces. Do not hand-run an improvised sweep inside a session and record the result as this prompt's work.
 - **Not runtime-behaviour work.** That belongs to [`/iter`](iter.md).
 - **Not the milestone-record close.** That belongs to [`/milestone-close`](milestone-close.md).
 - **Not the shared close procedure.** [`/wrapup`](wrapup.md) owns the close and [`/commit`](commit.md) owns the commit.

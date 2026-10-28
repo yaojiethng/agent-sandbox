@@ -66,3 +66,7 @@ A concept document restates its requirements as user-observable guarantees, with
 A concept document describes components as interfaces, contracts or diagrams. An exact command or variable value appears only for an external interaction the harness does not control, such as a `docker` CLI mapping; internal command sequences, function names and file paths belong in the architecture documents or the ADR.
 
 When an ADR begins, and how one is distilled, is the `decision-records` convention's.
+
+## Checking
+
+A document that leaves a session is read by the `doc-maintenance` runbook, at [`runbooks/doc-maintenance/SKILL.md`](runbooks/doc-maintenance/SKILL.md). It reports claims the tree contradicts; the gates decide what is mechanical, and this convention decides what a document of each type owes.

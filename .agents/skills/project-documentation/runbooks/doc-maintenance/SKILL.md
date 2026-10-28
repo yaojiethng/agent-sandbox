@@ -7,19 +7,13 @@ description: "Checks the documentation set against the `project-documentation` c
 
 <!-- Merge provenance: the diagnostic register of `.agents/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `.agents/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both carriers are gone, and the record of what each held is `devlog/handovers/archive/20260911-05-doc-architecture_staleness_sweep.md` (the two-arm experiment and its thirteen findings) and `devlog/handovers/archive/20261006-09-workflow-the_document_maintenance_review_becomes_executable.md` (the landing). -->
 
-## Project conventions
-
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
-
-- `project-documentation` - the document tree.
-
 ## Purpose
 
 Checks the documentation set and reports the claims the tree contradicts. The method is per-document claim extraction followed by an implementation cross-reference, then a cross-document consistency pass, then the diagnostic register below.
 
 The method is the point. A term-driven sweep finds only the staleness whose wording it already knows: it cannot find a claim about a term nobody listed as stale, and it cannot see two documents that contradict each other. A claim checked against the implementation finds both classes, at the cost of a read per claim.
 
-The rules live in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here.
+The rules live in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here. A project that has not stated the convention has nothing for this pass to diagnose against: report that, and run no check.
 
 This pass writes no document and applies no correction. It reports.
 

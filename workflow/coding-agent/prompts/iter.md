@@ -94,7 +94,7 @@ Exit condition: all design questions resolved and recorded, any suggestion carri
 
 ## Step 4  --  Information gathering pass
 
-After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate, per the `doc-maintenance` review pass, `workflow/coding-agent/skills/doc-maintenance/SKILL.md`. (Assessed step: run unless not applicable to the iteration type.)
+After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate, per the `doc-maintenance` review pass, `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md`. (Assessed step: run unless not applicable to the iteration type.)
 
 ## Scope gate
 
