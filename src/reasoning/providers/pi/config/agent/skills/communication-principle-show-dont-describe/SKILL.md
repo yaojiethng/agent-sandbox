@@ -1,8 +1,6 @@
 ---
 name: communication-principle-show-dont-describe
 description: "Apply when a sentence asks the reader to interpret what you could have handed over: a template, a command, an example, or the output that proves a rule was followed."
-metadata:
-  claim: evidence
 ---
 
 # Show, don't describe

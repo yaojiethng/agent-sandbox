@@ -1,8 +1,6 @@
 ---
 name: principle-single-source-of-truth
 description: "Apply when one rule, judgement or definition is about to exist in two places, or when a copy has already drifted from its original. A second copy is a defect unless it points at that source."
-metadata:
-  claim: source
 ---
 
 # Single source of truth

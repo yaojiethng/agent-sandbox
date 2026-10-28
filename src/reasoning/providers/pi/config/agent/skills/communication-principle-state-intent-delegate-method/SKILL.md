@@ -2,7 +2,6 @@
 name: communication-principle-state-intent-delegate-method
 description: "Apply subsidiarity to an instruction: state the intent and delegate the method to the party closest to the work. Use when writing a prompt, a brief or a dispatch that asks an agent to do work, and when a draft has grown into a procedure."
 metadata:
-  claim: authority
   leitwort: subsidiarity
 ---
 

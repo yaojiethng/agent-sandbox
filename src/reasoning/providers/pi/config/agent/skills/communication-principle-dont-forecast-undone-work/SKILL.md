@@ -1,8 +1,6 @@
 ---
 name: communication-principle-dont-forecast-undone-work
 description: "Apply when a sentence describes work that no task holds: a plan for a later milestone, a TODO, a pre-announcement, or a promise in a record. A forecast belongs where a task holds the work, and a guess is written as a gap."
-metadata:
-  claim: scope
 ---
 
 # Don't forecast undone work

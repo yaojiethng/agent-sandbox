@@ -2,7 +2,6 @@
 name: principle-justify-materialization-cost
 description: "Whether to materialize a generated result, and what catches its drift if you do. Use when a build, script, gate, test or pipeline produces a result that could become a file."
 metadata:
-  claim: source
   leitwort: materialization
 ---
 

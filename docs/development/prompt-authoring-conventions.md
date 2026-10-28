@@ -110,21 +110,65 @@ The order is fixed: the pattern, the why, the named parts, the test. A label end
 
 The exemplar is `communication-principle-show-dont-describe`, at `$AGENT_HOME/agent/skills/communication-principle-show-dont-describe/SKILL.md`.
 
-## The principle claims
+## The five questions
 
-Every principle applies one claim, and the claim is how a reader finds the family of principles that bears on a problem they cannot name yet. The five claims serve one goal, alignment. A text succeeds when the reader holds the model the writer holds, and each claim names a kind of gap between the two. A principle declares its claim in its frontmatter, under the `metadata` key pi documents for extra fields: `metadata:` then `claim: <name>`. `scripts/check_document_shape.sh` reads the declaration and fails a principle that carries none or names one this table does not state, and its `--map` mode prints the corpus grouped by claim.
+Every principle answers one question. A principle governs the trip a decision makes from the writer to the reader-agent who acts on the text: the writer holds a model and a mandate, the text is the only channel, and the reader has the tree and no memory of the conversation. The five questions are the points where that trip fails, and the lists under them are navigation for a writer who cannot name the problem yet.
 
-| Claim | The claim a skill of this family makes |
-|---|---|
-| `evidence` | a claim carries the artifact that proves it, or the sentence says it is an inference |
-| `source` | a restated fact is a copy and the source owns it, so a copy goes wrong when the source changes and nothing reports it |
-| `scope` | a pointer, a label or a literal names something the reader finds only where the text is read |
-| `reader` | the reader holds what the text gives them, in the order it arrives |
-| `authority` | a document owns the scope it declares and no more |
+The lists are not a registry. The description is the routing surface, so a principle may answer more than one question, and a list that omits one is not a defect; nothing checks the lists.
 
-Two skills may apply one claim when they act on different objects, because each states a different test. Three apply `source`: `only-derive-what-you-own` asks whether the reader can recompute a number, `single-source-of-truth` whether every copy of a rule points at one source, and `justify-materialization-cost` whether a stored copy has anything that catches its drift. Two skills may not state the same rule.
+### Can this sentence be checked?
 
-This table is the only place that decides the set, and the gate reads the set from here. The gate decides that a claim is stated and that the table holds it; which claim a given skill picks stays a judgement, so no gate reads it.
+A claim carries the artifact that proves it, or the sentence says it is an inference.
+
+- [`approval-writes-the-artifact`](../../src/reasoning/providers/pi/config/agent/skills/principle-approval-writes-the-artifact/SKILL.md)
+- [`check-placement`](../../src/reasoning/providers/pi/config/agent/skills/principle-check-placement/SKILL.md)
+- [`guard-the-context-window`](../../src/reasoning/providers/pi/config/agent/skills/principle-guard-the-context-window/SKILL.md)
+- [`say-what-done-looks-like`](../../src/reasoning/providers/pi/config/agent/skills/principle-say-what-done-looks-like/SKILL.md)
+- [`show-dont-describe`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md)
+
+### Is this the source or a copy?
+
+A restated fact is a copy and the source owns it, so a copy goes wrong when the source changes and nothing reports it.
+
+- [`justify-materialization-cost`](../../src/reasoning/providers/pi/config/agent/skills/principle-justify-materialization-cost/SKILL.md)
+- [`only-derive-what-you-own`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-only-derive-what-you-own/SKILL.md)
+- [`propagation-discipline`](../../src/reasoning/providers/pi/config/agent/skills/principle-propagation-discipline/SKILL.md)
+- [`rewrite-syntax-never-semantics`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md)
+- [`single-source-of-truth`](../../src/reasoning/providers/pi/config/agent/skills/principle-single-source-of-truth/SKILL.md)
+
+### Does this name resolve where it is read?
+
+A pointer, a label or a literal names something the reader finds only where the text is read.
+
+- [`dont-forecast-undone-work`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md)
+- [`link-what-the-reader-can-open`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-link-what-the-reader-can-open/SKILL.md)
+- [`name-the-value-not-a-literal`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-name-the-value-not-a-literal/SKILL.md)
+- [`one-addressing-axis`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-one-addressing-axis/SKILL.md)
+- [`write-for-the-reader`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md)
+
+### Can the reader build the model the text assumes?
+
+The reader holds what the text gives them, in the order it arrives, and the text supplies the model before it asks them to use it.
+
+- [`align-the-mental-model`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-align-the-mental-model/SKILL.md)
+- [`attach-as-you-read`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-attach-as-you-read/SKILL.md)
+- [`cut-what-carries-nothing`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md)
+- [`define-terminology-before-use`](../../src/reasoning/providers/pi/config/agent/skills/principle-define-terminology-before-use/SKILL.md)
+- [`keep-a-subject-near`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-keep-a-subject-near/SKILL.md)
+- [`maximize-conceptual-leverage`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md)
+- [`single-train-of-thought`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-single-train-of-thought/SKILL.md)
+
+### Who owns this decision?
+
+A text takes only the decisions its author holds and leaves the rest to the party with the context: the writer owns the intent, the bound and the evidence, the doer owns the route.
+
+- [`hand-off-by-naming-the-boundary`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md)
+- [`match-precision-to-stakes`](../../src/reasoning/providers/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md)
+- [`minimal-corrections`](../../src/reasoning/providers/pi/config/agent/skills/principle-minimal-corrections/SKILL.md)
+- [`own-the-scope-you-declare`](../../src/reasoning/providers/pi/config/agent/skills/principle-own-the-scope-you-declare/SKILL.md)
+- [`state-intent-delegate-method`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md)
+
+Two principles may answer one question when they act on different objects, because each states a different test; no two principles state the same test.
 
 ## Scope a prompt's subject
 

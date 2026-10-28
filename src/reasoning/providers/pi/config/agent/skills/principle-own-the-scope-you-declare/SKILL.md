@@ -1,8 +1,6 @@
 ---
 name: principle-own-the-scope-you-declare
 description: Apply when a workflow document declares a scope, or when one has started explaining a step that belongs to another. Hold everything the scope owes, describe no work outside it, and hand on one artifact to one next step.
-metadata:
-  claim: authority
 ---
 
 # Own the scope you declare

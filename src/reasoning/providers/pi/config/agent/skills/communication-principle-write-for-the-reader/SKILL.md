@@ -1,8 +1,6 @@
 ---
 name: communication-principle-write-for-the-reader
 description: "Apply when a sentence needs your session or an earlier draft to make sense: a chat label, an option letter, a session id, a narration of the work, a clause answering text the file no longer holds. State the thing the reader holds."
-metadata:
-  claim: scope
 ---
 
 # Write for the reader

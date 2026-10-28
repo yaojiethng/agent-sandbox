@@ -1,8 +1,6 @@
 ---
 name: communication-principle-name-the-value-not-a-literal
 description: "Apply when a snippet, command, or instruction carries a value the reader must set. Name the value; do not fix a literal that reads as the chosen one."
-metadata:
-  claim: scope
 ---
 
 # Name the value, not a literal

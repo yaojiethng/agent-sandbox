@@ -2,7 +2,6 @@
 name: communication-principle-maximize-conceptual-leverage
 description: "Apply when a skill or a document needs one word the reader thinks with. Choose the leitwort, define it once, and write the text around it instead of the weaker terms a writer reaches for by default."
 metadata:
-  claim: reader
   leitwort: leitwort
 ---
 

@@ -1,8 +1,6 @@
 ---
 name: communication-principle-rewrite-syntax-never-semantics
 description: "Apply when an agent rewrites, tightens, reorders or merges instruction text a person wrote or approved. Syntax may change; the quantifiers, negations, modals and keywords that decide what is required may not."
-metadata:
-  claim: source
 ---
 
 # Syntax is the agent's; semantics is the operator's
