@@ -2,7 +2,7 @@
 date: 2026-10-26
 milestone: M3.2.2 - Audit and Review Workflow Cleanup
 type: Workflow
-status: Open
+status: Closed
 ---
 
 # Handover - Five traps in `opencode run` as a dispatch backend
