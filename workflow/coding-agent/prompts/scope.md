@@ -26,7 +26,7 @@ An ask that needs decisions resolved before it can be written is [`plan.md`](pla
 Ask all four, in order, before rewriting the ask, and answer them in chat. The operator reads the answers and can correct the premise before the brief costs anything. Each question's judgement is a principle skill at `$AGENT_HOME/agent/skills/`, linked rather than restated.
 
 1. **What would a top professional in this field do here that the asker is not asking for?** `principle-attack-the-premise`.
-2. **What is the rawest material they would start from, rather than what has already been digested for me?** `principle-guard-derived-state`, `communication-principle-only-derive-what-you-own`, `principle-guard-the-context-window`.
+2. **What is the rawest material they would start from, rather than what has already been digested for me?** `principle-justify-materialization-cost`, `communication-principle-only-derive-what-you-own`, `principle-guard-the-context-window`.
 3. **What specific methods and tools would they use?** `principle-build-the-lever`, `principle-check-placement`, `principle-exhaust-the-design-space`.
 4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-show-dont-describe`.
 

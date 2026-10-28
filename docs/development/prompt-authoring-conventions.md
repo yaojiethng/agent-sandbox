@@ -122,7 +122,7 @@ Every principle applies one claim, and the claim is how a reader finds the famil
 | `reader` | the reader holds what the text gives them, in the order it arrives |
 | `authority` | a document owns the scope it declares and no more |
 
-Two skills may apply one claim when they act on different objects, because each states a different test. Three apply `source`: `only-derive-what-you-own` asks whether the reader can recompute a number, `single-source-of-truth` whether every copy of a rule points at one source, and `guard-derived-state` whether a stored copy has anything that catches its drift. Two skills may not state the same rule.
+Two skills may apply one claim when they act on different objects, because each states a different test. Three apply `source`: `only-derive-what-you-own` asks whether the reader can recompute a number, `single-source-of-truth` whether every copy of a rule points at one source, and `justify-materialization-cost` whether a stored copy has anything that catches its drift. Two skills may not state the same rule.
 
 This table is the only place that decides the set, and the gate reads the set from here. The gate decides that a claim is stated and that the table holds it; which claim a given skill picks stays a judgement, so no gate reads it.
 
