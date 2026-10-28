@@ -29,17 +29,15 @@ A copy is inert by design. Each carries an `.orig` suffix so that the documentat
 | `tools/census-gen.mjs` | `.scratchpad/census/gen.mjs` | `- (never tracked)` | 1564 |
 | `tools/ablation-gen.mjs` | `.scratchpad/ablation/gen.mjs` | `- (never tracked)` | 3277 |
 
-## Referenced, not copied
+## `reports/` - the answer key, never handed to a run
 
-These carry the case's ground truth and its account, and they stay in one place so that a copy cannot drift from the record that owns it.
+These carry the case's ground truth and its account. They were copied here and deleted from `devlog/discussions/` on operator direction 2026-10-28, so the archive now holds their only form: the drift this table once guarded against cannot happen, because no record is left to drift from.
 
-| Record | What it holds |
-|---|---|
-| [`devlog/discussions/20261026-report-settled-census_six_carriers.md`](../../../devlog/discussions/20261026-report-settled-census_six_carriers.md) | the candidate fault sites, which become the rulings a case is graded against |
-| [`devlog/discussions/20261026-report-settled-instruction_cleanup_comparison.md`](../../../devlog/discussions/20261026-report-settled-instruction_cleanup_comparison.md) | the single-file comparison of the two prompts |
-| [`devlog/discussions/20261026-report-draft-ablation_problems_found.md`](../../../devlog/discussions/20261026-report-draft-ablation_problems_found.md) | what the ablation attempt surfaced, including why its cells were discarded |
-| [`devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`](../../../devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md) | the dispatch traps, with the session-store query |
+| Fixture file | Source path | Source blob | Bytes |
+|---|---|---|---|
+| `reports/20261026-report-settled-census_six_carriers.md` | `devlog/discussions/20261026-report-settled-census_six_carriers.md` | `394029689138` | 135625 |
+| `reports/20261026-report-settled-instruction_cleanup_comparison.md` | `devlog/discussions/20261026-report-settled-instruction_cleanup_comparison.md` | `19c8e5b1edc1` | 16873 |
+| `reports/20261026-report-settled-carrier_fates.md` | `devlog/discussions/20261026-report-settled-carrier_fates.md` | `353e0368006b` | 10216 |
+| `reports/20261026-report-draft-ablation_problems_found.md` | `devlog/discussions/20261026-report-draft-ablation_problems_found.md` | `dda0a3b6b038` | 5976 |
 
-## Deliberately absent
-
-`.agents/audits/documentation-audit-comparison.md` and `.agents/audits/surface-area-report.md` are settled records rather than instructions, and the census row excluded them from the corpus. The comparison is now removed, its method having landed in the `doc-maintenance` skill; the report remains. Their absence here is the exclusion, stated once.
+They sit outside `room/` for the reason the run depends on: the census names every fault site, so a run that could read it would read the answer key. The extraction that seeds a run hands over `room/` and nothing else.

@@ -18,7 +18,7 @@ A run must read the subject and the files that run is allowed to consult, and no
 
 **Consequence.** A brief that names one file bounds nothing, and a rule in prose that forbids reading other files is not a control. Only the directory the process runs from is.
 
-**Evidence.** [`20261026-report-draft-ablation_problems_found.md`](20261026-report-draft-ablation_problems_found.md), and the census sessions that read the census handover before judging a carrier.
+**Evidence.** the ablation record, sealed at `tests/eval/instruction-cleanup/payload.tar.gz` under `reports/`, and the census sessions that read the census handover before judging a carrier.
 
 ## 2. A pinned fixture, distinct from the live tree
 

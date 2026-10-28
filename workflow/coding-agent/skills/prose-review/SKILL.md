@@ -43,3 +43,4 @@ A seat that fails on its model stops the run: report the seat and its message ra
 |---|---|---|
 | writing-for-agents | -- | a set: named paths of prose, read as they stand |
 | reference-staleness | -- | a set: named paths of reference documentation, read as they stand, with the claim report written for it where the caller has one |
+| instruction-cleanup | -- | a set: named paths of instruction -- prompts, skills, audits or policy clauses -- read as they stand |

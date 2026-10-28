@@ -13,17 +13,19 @@ README.md        this file
 
 The input is an archive rather than a set of loose files, and the reason is that a sealed archive cannot be edited by accident. A frozen copy of a Markdown file announces nothing: a find and replace across the tree rewrites it, every test stays green, and the case later grades a subject nobody chose. Sealed and pinned, the only way in is to extract, change and repack deliberately, and the pin then records that somebody did.
 
-The archive holds three subtrees, unchanged from how they were stored loose:
+The archive holds four subtrees, three of them unchanged from how they were stored loose:
 
 ```text
 room/    the files a run may read, and nothing else
 briefs/  the two prompt templates the runs were composed from
 tools/   the two generators that composed them, with the ablation preamble inline
+reports/ the answer key: the census fault lists, the comparison, the carrier fates and the
+         ablation record, deleted from devlog/ on 2026-10-28 so the case holds their only form
 ```
 
 ## How a run uses it
 
-Seed the run from the archive: extract it into a temporary directory outside this repository and point the run's working directory at the extracted `room/`. Seeding is the first step of every run, as it is for a container, so the extraction is not an extra cost. The copy is the isolation: the carriers live inside a tree that holds the census rulings, the comparison records and the feedback log, and a run that can read the tree reads the answers instead of judging the prompt. Thirty of the thirty-five cells of the first ablation attempt did exactly that, and the cost was the run.
+Seed the run from the archive: extract it into a temporary directory outside this repository and point the run's working directory at the extracted `room/`. Seeding is the first step of every run, as it is for a container, so the extraction is not an extra cost. Only `room/` is handed over: `reports/` is the grader's and a run that reads it is measuring the answer key. The copy is the isolation: the carriers live inside a tree that holds the census rulings, the comparison records and the feedback log, and a run that can read the tree reads the answers instead of judging the prompt. Thirty of the thirty-five cells of the first ablation attempt did exactly that, and the cost was the run.
 
 The run writes nothing into this directory. A run that edits its surface is measuring a different surface on every cell.
 

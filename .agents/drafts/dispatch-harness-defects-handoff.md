@@ -15,7 +15,7 @@ Priority order is the order below. D1 and D2 each produced a wrong conclusion th
 
 ## Where things stand
 
-The grid stopped at thirty-five of a hundred and seventeen cells when the free tier ran out, and those cells were discarded for a second, independent reason: the run's working directory held the census rulings, so thirty of the thirty-five read a prior record or an earlier fault list. That failure is recorded in [`devlog/discussions/20261026-report-draft-ablation_problems_found.md`](../../devlog/discussions/20261026-report-draft-ablation_problems_found.md) and its constraint now sits on the eval case set row of [`devlog/roadmap.md`](../../devlog/roadmap.md). The tier resets at UTC midnight, which the seam already knows: [`src/libs/dispatch/classify.ts`](../../src/libs/dispatch/classify.ts) carries `refresh: 'utc-midnight'` on the `plan-limit` pattern.
+The grid stopped at thirty-five of a hundred and seventeen cells when the free tier ran out, and those cells were discarded for a second, independent reason: the run's working directory held the census rulings, so thirty of the thirty-five read a prior record or an earlier fault list. That failure is recorded in the ablation record sealed at `tests/eval/instruction-cleanup/payload.tar.gz` under `reports/` and its constraint now sits on the eval case set row of [`devlog/roadmap.md`](../../devlog/roadmap.md). The tier resets at UTC midnight, which the seam already knows: [`src/libs/dispatch/classify.ts`](../../src/libs/dispatch/classify.ts) carries `refresh: 'utc-midnight'` on the `plan-limit` pattern.
 
 ## Suggested skills
 
