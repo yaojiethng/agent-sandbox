@@ -15,5 +15,5 @@ Policy documents govern process, not code shape. Conventions govern code shape w
 
 | Category | Policy document |
 |---|---|
-| Skills (agent-facing) | `src/reasoning/agent/drafts/*.skill.md` (procedures), `.agents/audits/*.skill.md` (audit family), `workflow/coding-agent/skills/*/SKILL.md` (record checks, shipped as the module payload) |
+| Skills (agent-facing) | `workflow/coding-agent/skills/*/SKILL.md` (record checks and review runbooks, shipped as the module payload) and `.agents/skills/*/SKILL.md` (the project's conventions) |
 | Agent feedback and gotchas (recorded) | [`devlog/AGENT_FEEDBACK.md`](../../devlog/AGENT_FEEDBACK.md) (entries tagged `[A]` raised by the agent, `[O]` raised by the operator) |
