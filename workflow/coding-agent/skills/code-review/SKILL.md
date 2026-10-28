@@ -49,7 +49,7 @@ A seat that fails on its model stops the run: report the seat and its message ra
 | code-review-container | container-review | a delta or a named set of files whose subject is an image build |
 | novel-bug-hunter | bug-hunter | a component and its contract record |
 
-The runbooks live in `runbooks/` beside this file, one directory each, with a `patterns/` directory beside any runbook whose findings cite entries. The slots a runbook fills are [`review_runbook_template.md`](/opt/sandbox/docs/reference/review_runbook_template.md). The code runbooks are read as they stand: they are upstream documents, and this shell is where their requirements become this repository's conventions.
+The runbooks live in `runbooks/` beside this file, one directory each, with a `patterns/` directory beside any runbook whose findings cite entries. A new runbook is written from [`references/authoring.md`](references/authoring.md). The code runbooks are read as they stand: they are upstream documents, and this shell is where their requirements become this repository's conventions.
 
 ## Not yet accepted
 

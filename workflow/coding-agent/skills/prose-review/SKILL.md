@@ -43,8 +43,6 @@ A seat that fails on its model stops the run: report the seat and its message ra
 |---|---|---|
 | writing-for-agents | -- | a set: named paths of prose, read as they stand |
 
-The slots a runbook fills are [`review_runbook_template.md`](/opt/sandbox/docs/reference/review_runbook_template.md).
-
 ## Not yet accepted
 
 A payload that exists but has not been screened is not a runbook: it names no scope, so there is nothing to dispatch.
