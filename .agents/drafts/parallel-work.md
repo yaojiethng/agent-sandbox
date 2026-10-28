@@ -24,7 +24,7 @@ Run this way when the plan names two or more tracks that are independent, each i
 Not this template:
 
 - one track, or units with a real dependency between them - use [`sequential-work.md`](sequential-work.md), which is sequential by design and needs no worktrees.
-- a read-mostly pass over many files, where each subagent reads a slice and returns verdicts with no commits - use [`fanout-run.md`](fanout-run.md). Its frozen snapshot is cheaper, because a subagent's edits stay in its own extraction and the primary merges nothing.
+- a read-mostly pass over many files, where each subagent reads a slice and returns verdicts with no commits - use [`fanout.md`](fanout.md). Its frozen snapshot is cheaper, because a subagent's edits stay in its own extraction and the primary merges nothing.
 - tracks where the operator must decide at boundaries the worker itself detects - use [`task-queue.md`](task-queue.md). It runs a fan-out as a fork and a join, hands each break point to the operator, and brings the accepted tracks back.
 
 ## Preconditions

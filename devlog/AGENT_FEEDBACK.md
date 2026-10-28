@@ -517,7 +517,7 @@ Scope: ShellCheck directive parsing. Cross-reference: `p-33` in [`shellcheck.md`
 
 ```text
 state: open
-scoped: M3.1 T1 -- the read-through brief's disposition rule for a surviving bite
+scoped: M3.1 T1 -- the disposition rule for a surviving bite
 legacy: none
 mitigation: when a bite survives, classify the row by running the deletion and comparing the outcome for the code's callers, never by argument. If no input changes output or exit status, the row is a code row: delete the line, write no unit. Do not add a gate for the idiom, because whether `cmd || exit 1` decides anything depends on the call context: errexit is suspended for the whole body of a function invoked in a condition.
 ```
@@ -528,7 +528,7 @@ No unit can fail on any of the three, so the mutation survives by construction. 
 
 Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
 
-Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
+Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: [`testing/patterns/mutation-evidence.md`](../.agents/skills/testing/patterns/mutation-evidence.md) pattern 3, the rule's surviving home; the brief and the register that recorded it are retired, handover `20261028-14`.
 
 ### [A] 2026-10-26  --  A rule recorded a mechanism nobody had run, and the guard it doubted holds
 

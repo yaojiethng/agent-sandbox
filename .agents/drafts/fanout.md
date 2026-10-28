@@ -1,12 +1,12 @@
-# Read-Through Fan-Out - Run (Main-Agent Template)
+# Fan-Out
 
-**Status:** draft
+**Status:** draft. The per-file protocol belongs to the [`close-read`](../../workflow/coding-agent/skills/close-read/SKILL.md) skill; this brief covers the partition, the snapshot and the collection around it.
 
-**Scope:** how to divide one read-through pass across parallel subagents: when to fan out, the frozen snapshot, file ownership, suite serialization, the findings block, the scripted integrity check, and the failure modes the fan-out must avoid.
+**Scope:** how to divide one close read across parallel subagents: when to fan out, the frozen snapshot, file ownership, suite serialization, the findings block, the scripted integrity check, and the failure modes the fan-out must avoid.
 
 ## Purpose
 
-This brief expands the `## Fan-out protocol` section of [`read-through-run.md`](read-through-run.md). Run that pass; use this brief when the pass is too large for one context. The resource a fan-out conserves is the primary agent's context. A single agent running the pass must hold the register, the source of every unit, and the accumulated mutation evidence at once; past a certain size the register is truncated or an earlier row is lost, and the pass degrades into a partial read. A fan-out moves each file group's source and mutation evidence into a fresh subagent context and leaves the register, the numbering, and the verdicts in the primary.
+Run the [`close-read`](../../workflow/coding-agent/skills/close-read/SKILL.md) skill; use this brief when the pass is too large for one context. The resource a fan-out conserves is the primary agent's context. A single agent running the pass must hold the register, the source of every unit, and the accumulated mutation evidence at once; past a certain size the register is truncated or an earlier row is lost, and the pass degrades into a partial read. A fan-out moves each file group's source and mutation evidence into a fresh subagent context and leaves the register, the numbering, and the verdicts in the primary.
 
 The primary still owns: the scope and the file partition; the frozen snapshot; the register and its row numbering; the mapping from provisional keys to row numbers; the cross-batch dedup; claim verification against the tree; the scripted integrity check; the presentation; and the close. A subagent owns one file group's read, its mutations, its BDD blocks, and its deliverable. The split is by artifact, not by convenience: a subagent must not number rows, because only the primary sees the whole register.
 
@@ -55,7 +55,7 @@ Negotiating the format per subagent is what the primary spends its time on inste
 
 ## The findings block
 
-Each subagent emits a machine-readable findings block beside its prose: one JSON Lines object per finding, in the register's schema (`id` or provisional key, `title`, `sector`, `class`, `action`, `action_kind`, `files`, `status`, `refs`). The `id` holds a provisional key of the subject file plus a one-line title, never an invented number. The schema table and its query commands live in the register-format design note; [`read-through-run.md`](read-through-run.md) is the companion brief.
+Each subagent emits a machine-readable findings block beside its prose: one JSON Lines object per finding, in the register's schema (`id` or provisional key, `title`, `sector`, `class`, `action`, `action_kind`, `files`, `status`, `refs`). The `id` holds a provisional key of the subject file plus a one-line title, never an invented number. The schema table and its query commands live in the register-format design note beside this brief.
 
 Beside the block, the subagent supplies its own `## Verification` section: the commands run, the baseline suite count, the number of mutations, and one line confirming every mutated file was restored byte-identical. The primary maps the provisional keys to row numbers in one pass with a script and appends the rows with a script. Never append a row by an `edit` anchor copied from a previous round: an anchor that matches the wrong row duplicates it.
 

@@ -23,7 +23,7 @@ A later pass adds `sector`, `action` and `assigned_to` to the lines it dispositi
 
 ## The classes
 
-The class says what kind of claim failed, so subject area belongs in `files`. Free text here fails: the register this format replaces ran 319 rows through about 110 distinct class values, including `-` twice, and none of them grouped.
+The class says what kind of claim failed, so subject area belongs in `files`. Free text here fails: a class field with no value set ends up with a value per author, and no grouping survives that.
 
 | Class | Means |
 |---|---|
