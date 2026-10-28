@@ -42,6 +42,16 @@ The schema has one owner, `/opt/workflow/agent/modules/coding-agent/skills/check
 
 The dispatcher reads both files, validates each line against [`report-schema.md`](report-schema.md), inspects each finding, and applies the `fix-now` set. The reports stay where they are and are never committed.
 
+## Running the dispatch
+
+Three rules, each because its failure is silent rather than reported.
+
+- Run the auditor in the foreground of the call that needs its report. A subagent started with `&` is killed when the call returns, and the loss reads as a hang.
+- Log the run to a file, not through a pipe, because a pipe drops the unflushed tail.
+- Judge the report and the tree, never the exit code. `rc=0` with an empty report means no work ran.
+
+A worker reports and never merges its own work: the review and the merge stay with the primary.
+
 ## Failure to report
 
 An auditor that returned no file, an empty file, or a line that does not conform has failed its dispatch. Report the failure with the auditor named; do not treat a missing report as a clean run. An auditor that reported nothing at all has not said the record is clean, it has said it did not check.
