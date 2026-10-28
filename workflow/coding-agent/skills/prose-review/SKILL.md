@@ -42,11 +42,4 @@ A seat that fails on its model stops the run: report the seat and its message ra
 | Runbook | Alias | Accepts |
 |---|---|---|
 | writing-for-agents | -- | a set: named paths of prose, read as they stand |
-
-## Not yet accepted
-
-A payload that exists but has not been screened is not a runbook: it names no scope, so there is nothing to dispatch.
-
-| Payload | Route |
-|---|---|
-| `.agents/audits/architecture-doc-reviewer.skill.md` | absorbed by the documentation-audit prompt under M3.2.2, so it never becomes a runbook here |
+| reference-staleness | -- | a set: named paths of reference documentation, read as they stand, with the claim report written for it where the caller has one |

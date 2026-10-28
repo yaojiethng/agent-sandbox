@@ -5,7 +5,7 @@ description: "Checks the documentation set against the `docs` convention and rep
 
 # doc-maintenance
 
-<!-- Merge provenance: the diagnostic register of `.agents/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `.agents/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both files are superseded by this skill. `documentation-pass.md` was removed by handover 20261006-09; `documentation-audit-comparison.md` stays until the folder is dissolved, because the milestone scope names it. -->
+<!-- Merge provenance: the diagnostic register of `.agents/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `.agents/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both carriers are gone, and the record of what each held is `devlog/handovers/archive/20260911-05-doc-architecture_staleness_sweep.md` (the two-arm experiment and its thirteen findings) and `devlog/handovers/archive/20261006-09-workflow-the_document_maintenance_review_becomes_executable.md` (the landing). -->
 
 ## Project conventions
 
@@ -144,6 +144,7 @@ Print a one-line summary to stdout when the run ends: the findings count, the sk
 - Does not check the roadmap, the handover chain, or `AGENT_FEEDBACK.md`. [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own those.
 - Does not report what a gate already catches. Run `bash scripts/lint.sh` first, and report a gate finding only when the gate is not run in the caller's environment.
 - Does not decide a design question. A contradiction that needs a decision is an escalation, not a finding with a fix.
+- Whether a document still describes the system at one level, for one audience. A claim this pass verifies is true or false against a source; a document whose claims are all true and whose described shape is gone is the `reference-staleness` review's finding. This pass reads a claim, that review reads a document, and this pass's report is the evidence that review judges.
 
 ## Failure modes
 

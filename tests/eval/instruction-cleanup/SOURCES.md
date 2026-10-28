@@ -42,4 +42,4 @@ These carry the case's ground truth and its account, and they stay in one place 
 
 ## Deliberately absent
 
-`.agents/audits/documentation-audit-comparison.md` and `.agents/audits/surface-area-report.md` are settled records rather than instructions, and the census row excludes them from the corpus. Their absence here is the exclusion, stated once.
+`.agents/audits/documentation-audit-comparison.md` and `.agents/audits/surface-area-report.md` are settled records rather than instructions, and the census row excluded them from the corpus. The comparison is now removed, its method having landed in the `doc-maintenance` skill; the report remains. Their absence here is the exclusion, stated once.
