@@ -21,7 +21,7 @@ A `principle-*` or `communication-principle-*` skill named anywhere below is rea
 
 ## The pass
 
-The faults the pass goes looking for are four: harmful instructions, redundant instructions, ambiguous wording and ambiguous procedure, and a harmful condition inside an otherwise good rule belongs to the first of them. They are where most cleanup lives, not a closed list: a fault that fits none of them is raised with its own justification, and if it recurs it is named as a fifth, the same rule the census carries for its kinds. The pass removes the absolute crap first; it does not rank what is sound, and it does not try to reach a final set.
+The faults the pass goes looking for are five: harmful instructions, redundant instructions, ambiguous wording, ambiguous procedure and unneeded instructions, and a harmful condition inside an otherwise good rule belongs to the first of them. They are where most cleanup lives, not a closed list: a fault that fits none of them is raised with its own justification, and if it recurs it is named here, the same rule the census carries for its kinds. The pass removes the absolute crap first; it does not rank what is sound, and it does not try to reach a final set.
 
 It starts from a census of every instruction in the named scope. The census is what tells us which instructions are duplicated, which are unique, what invokes each one, and the provenance of each. It is an instrument rather than a deliverable: a session sheet in `.scratchpad/`, produced by a throwaway script, committed never, and given no repository gate in this pass.
 
@@ -103,17 +103,25 @@ Four faults, and what each one has to show. The examples are illustrative, not e
 | **a redundant instruction**  --  one rule with two sites | a duplication entry, where the agent judges that both sites state one rule, or a conflict entry, where they disagree. Either way, a change to one must land in the other | a conflict entry. A duplication is a judgement, so there is no proof to read and the operator's ruling settles it |
 | **ambiguous wording** | the two readings, each a sentence a reader could act on; a reading nobody could act on is vagueness, not ambiguity | a failure entry in which it was read the wrong way, or a conflict entry of two instructions that mean opposite things |
 | **ambiguous procedure** | the trace: walk the steps in order, name the first that stops, and the input nothing reads or the condition nothing observes | a run entry in which the step did stop someone |
+| **an unneeded instruction** -- a rule whose behaviour survives its absence | no procedure step references it, no proof-grade entry backs it, and its removal changes nothing observable | a deletion run in which nothing goes wrong |
+
+**A deletion run is one dispatch.** Remove the rule, change nothing else, run the procedure it governs once, and read the result. A run that goes wrong is a proof-grade `failure` entry: the rule stays, now with a reason recorded. A run that goes right is a proof-grade `run` entry, and the removal is settled. Some rules no procedure exercises. There the fault is raised as a judgement and the operator rules on it, exactly as a duplication is.
+
+Provenance cannot settle this fault. The register shows why a rule was written, and never whether it still earns its line, which is why this one reads a run.
 
 Every proposal is one item in this shape:
 
 ```text
 rule:           the quoted clause, or both sites of a two-site fault
 site:           path:line
-fault:          one of the four, and what proves it
-recommendation: "removal - <the operator's reason>", or the replacement text quoted from the site that already states it
+fault:          one of the five, and what proves it
+recommendation: "removal - <the operator's reason>", the replacement text quoted from the site that already states it, or "enforce - <what now holds it>"
+carrier:        for a removal, where the rule lives now: a site, or the check, gate or error that holds it
 ```
 
 Where no site states the replacement, the recommendation is the agent's own text and is marked as such.
+
+**`enforce` applies when the failure is cheaper to detect than to describe.** A rule forbidding a non-ASCII dash is one check and no prose. A rule asking for the smallest change that works has no check, so it stays prose. The carrier names the artifact, and the check lands in the same commit as the deletion: a rule removed before its check exists is a rule lost.
 
 Where the register holds a conflict, the set is presented with its contradiction or contradictions and **two to four resolution options**, each with its cost, and with a recommendation where the agent has one. Not every contradiction resolves by one member dying: a specific case contradicting a general rule may resolve by narrowing the specific, widening the general, or splitting the general in two.
 
