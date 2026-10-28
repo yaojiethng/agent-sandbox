@@ -1,6 +1,6 @@
 ---
 description: "Owns the iteration grain: the two gates, the unit and close invariants the runbooks must not break, and the sidequest rule. The procedures live in the runbooks this document governs."
-scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/document", "/wrapup", "/commit"]
+scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/wrapup", "/commit"]
 reader: [agent]
 ---
 

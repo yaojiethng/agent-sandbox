@@ -130,7 +130,6 @@ The runbooks the loop runs, each seeded into the container. The list is the `sco
 | `/milestone-close` | [`milestone-close.md`](workflow/coding-agent/prompts/milestone-close.md) |
 | `/plan` | [`plan.md`](workflow/coding-agent/prompts/plan.md) |
 | `/scope` | [`scope.md`](workflow/coding-agent/prompts/scope.md) |
-| `/document` | [`document.md`](workflow/coding-agent/prompts/document.md) |
 | `/wrapup` | [`wrapup.md`](workflow/coding-agent/prompts/wrapup.md) |
 | `/commit` | [`commit.md`](workflow/coding-agent/prompts/commit.md) |
 

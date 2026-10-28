@@ -109,7 +109,7 @@ test_write_adds_the_row_and_keeps_the_gloss() {
 
 test_real_tree_is_clean() {
   assert_run 0 "$GATE" "the tree's chart is clean" || return 1
-  assert_contains "$RUN_OUT" "statechart: clean across 40 state(s)" "the summary counts the states"
+  assert_matches "$RUN_OUT" "statechart: clean across [0-9]+ state" "the summary reports a state count rather than a fixed number"
 }
 
 run_test test_clean

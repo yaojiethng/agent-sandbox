@@ -33,7 +33,7 @@ Each workflow enforces one group of state transitions in the loop.
 | `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, which is a pair of drafts and not a shipped prompt, owned and refined by M3.2.3 |
 | `/milestone-close` | records a milestone or sub-milestone close: compaction, the changelog, the close boundary |
 
-`/wrapup` and `/commit` are shared runbooks, not standalone loop workflows. `/iter`, `/plan` and `/document` invoke `/wrapup` after their release point, and the close hands the commit to `/commit`. `/commit` is also reached directly by `/sidequest`, which lands its own delivery commit, and by `/merge`, which folds a replay's corrections. `/milestone-start` does not invoke either -- the milestone-record close is `/milestone-close` and lands its own bookkeeping commit.
+`/wrapup` and `/commit` are shared runbooks, not standalone loop workflows. `/iter` and `/plan` invoke `/wrapup` after their release point, and the close hands the commit to `/commit`. `/commit` is also reached directly by `/sidequest`, which lands its own delivery commit, and by `/merge`, which folds a replay's corrections. `/milestone-start` does not invoke either -- the milestone-record close is `/milestone-close` and lands its own bookkeeping commit.
 
 `/wrapup` closes the handover to the `work-log` convention, and `/commit` lands the work, the status flip and the write-back as one delivery commit. The pre-commit handover format gate checks the record's shape.
 

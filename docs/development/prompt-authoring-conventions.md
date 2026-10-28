@@ -89,7 +89,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 **The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 
-The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in the `communication-principle-*` corpus. No step-by-step walkthrough repeats a rule its source already states; the prompt links to that source at the point of handoff. A prompt is never the only source of truth for a rule.
+The workflow-document presentation rules that complete the structure are: prose in the body follows the writing standards in the `communication-principle-*` corpus. No step-by-step walkthrough repeats a rule its source already states; the prompt links to that source at the point of handoff. A prompt is never the only source of truth for a rule.
 
 ## The principle shape
 
@@ -200,7 +200,7 @@ A workflow document owns the scope it declares, holds everything that scope owes
 
 ## The workflow handoff pattern
 
-A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` for the close, which hands the commit to `/commit`; [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
+A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Three prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` for the close, which hands the commit to `/commit`, and [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way.
 
 ## A reference resolves where the workflow document runs
 

@@ -1,5 +1,5 @@
 ---
-description: "Close an active-operator session: consolidate the close into one shared runbook that /iter, /plan and /document invoke, writing back the roadmap task, closing ADRs and discussion docs whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
+description: "Close an active-operator session: consolidate the close into one shared runbook that /iter and /plan invoke, writing back the roadmap task, closing ADRs and discussion docs whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
 argument-hint: "[optional: a session to close]"
 ---
 
@@ -23,7 +23,7 @@ You run the consolidated close for an active-operator session that ends at its r
 
 Each active-operator prompt invokes the part of this runbook that applies:
 
-- `/iter` and `/document` run the close at the end of the session.
+- `/iter` runs the close at the end of the session.
 - `/plan` runs the close at the end of a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit.
 - `/milestone-start` does not invoke it -- `/milestone-close` owns the milestone-record close, distinct from the unit close.
 

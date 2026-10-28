@@ -23,7 +23,7 @@ First, one commit per unit: every `wip:` checkpoint and typed intermediate commi
 
 ## Called from
 
-- `/iter`, `/document` and `/plan` run the checkpoint during the session and land the commit at the end, handed here by `/wrapup`'s close.
+- `/iter` and `/plan` run the checkpoint during the session and land the commit at the end, handed here by `/wrapup`'s close.
 - `/sidequest` lands its single delivery commit here.
 - `/merge` folds a replay's current-state corrections here.
 - `/milestone-close` does not invoke it: the milestone-record close lands its own bookkeeping commit.

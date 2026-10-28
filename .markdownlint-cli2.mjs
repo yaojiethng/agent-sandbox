@@ -97,7 +97,6 @@ export default {
         "src/reasoning/providers/opencode/quickstart.md",
         "src/reasoning/providers/pi/onboard-readme.md",
         "tests/integration/README.md",
-        "workflow/coding-agent/prompts/document.md",
         "workflow/coding-agent/prompts/gm.md",
         "workflow/knowledge-vault/README.md",
       ],

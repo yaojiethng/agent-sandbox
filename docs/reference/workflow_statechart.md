@@ -16,6 +16,7 @@ The diagram is Mermaid 12.1.0, `stateDiagram-v2`, in the conservative subset: co
 
 ## The chart
 
+<!-- snippet: illustrative -->
 ```mermaid
 stateDiagram-v2
     state "Entry and orientation" as entry {
@@ -84,17 +85,12 @@ stateDiagram-v2
         state "plan_scoping -- the milestone is being cut into units" as plan_scoping
         state "plan_interview -- the grill-me skill probes the design" as plan_interview
         state "plan_released -- rows, stories and ADRs are written back" as plan_released
-        state "doc_drafting -- a document is being written" as doc_drafting
-        state "doc_published -- the document is landed" as doc_published
         ms_active --> plan_scoping : /plan or /scope
         plan_scoping --> plan_interview : the design is probed
         plan_scoping --> it_open : the operator releases the brief to a run
         plan_interview --> plan_released : operator releases the scope
         plan_released --> chk_close : /wrapup writes its rows
     chk_close --> ms_active : both reports clean, no delivery commit
-        ms_active --> doc_drafting : /document
-        doc_drafting --> doc_published : operator releases the draft
-        doc_published --> chk_close : /wrapup
     }
 
     state "Recovery" as recovery {
@@ -147,7 +143,6 @@ stateDiagram-v2
     it_implementing --> chk_roadmap : /iter runs the roadmap record check
     it_implementing --> chk_record : /iter runs the handover record check
     it_implementing --> chk_docs : /iter's information-gathering pass
-    doc_drafting --> chk_docs : /document reads the diagnostic register
     sess_initialized --> chk_corpus : /bootstrap installs the corpus
     rec_rebase --> chk_history : the operator runs history-cleanup on the inverted series
 
@@ -155,7 +150,7 @@ stateDiagram-v2
     chk_orientation --> sess_oriented : the report is applied
     chk_roadmap --> chk_record : the two reports meet at one gate
     chk_record --> it_acceptance_gate : the findings queue carries the report
-    chk_docs --> doc_published : the report is applied
+    chk_docs --> it_implementing : the report is applied
     chk_history --> rec_merge : the series is rewritten, then replayed
 ```
 
@@ -191,8 +186,6 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `plan_scoping` | planning | the milestone is being cut into units |
 | `plan_interview` | planning | the `grill-me` skill is probing the design |
 | `plan_released` | planning | rows, stories and ADRs are written back |
-| `doc_drafting` | planning | a document is being written |
-| `doc_published` | planning | the document is landed |
 | `rec_triage` | recovery | work is reported lost, unmergeable, or landed wrong |
 | `rec_merge` | recovery | the export replays onto the target |
 | `rec_rebase` | recovery | the stale branch ports onto the target |
@@ -218,7 +211,6 @@ Every prompt the tree carries is an event here, and the command table's row set 
 | `/milestone-start` | `ms_none` | `ms_active` | none |
 | `/plan` | `ms_active` | `plan_released` | `grill-me`, `/wrapup` |
 | `/scope` | `ms_active` | `plan_scoping` | none - suggests a run, or a saved brief in `.agents/drafts` |
-| `/document` | `ms_active` | `doc_published` | `doc-maintenance`, `grill-me`, `/wrapup`, `/commit` |
 | `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
@@ -244,7 +236,6 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 | A milestone closes and the next is shaped | `ms_active -> ms_close_gate -> ms_closed -> ms_none -> ms_active` |
 | A sidequest interrupts an open unit | `it_implementing -> sq_running -> sq_committed -> it_implementing` |
 | Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> chk_close -> ms_active` |
-| Publishing a document | `ms_active -> doc_drafting -> doc_published -> chk_close -> it_closed -> it_committed` |
 | The close checks the rows it wrote | `it_acceptance_gate -> chk_close -> it_closed` |
 | Recovering an unportable export | `rec_triage -> rec_rebase -> it_committed -> it_open` |
 | A project bootstrapped and oriented | `sess_start -> sess_initialized -> sess_oriented -> it_open` |
