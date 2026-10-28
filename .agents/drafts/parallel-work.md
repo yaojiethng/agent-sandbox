@@ -144,7 +144,7 @@ The one documented exception to `sequential-work.md`'s "a subagent never commits
 
 ## Step 8 - Review the run
 
-The run's own review is the bounded loop in [`review-loop-run.md`](review-loop-run.md), over the merged range. Per track, record what the trial measured and what it cost: units, subagent runs, wall clock per unit, defects found by the primary's verification, and defects the tracks reported themselves. Those numbers are the only evidence for the next concurrency decision, and they are the input the T2 telemetry rows will make automatic.
+The run's own review is the loop in [`references/loop.md`](../../workflow/coding-agent/skills/code-review/references/loop.md), over the merged range. Per track, record what the trial measured and what it cost: units, subagent runs, wall clock per unit, defects found by the primary's verification, and defects the tracks reported themselves. Those numbers are the only evidence for the next concurrency decision, and they are the input the T2 telemetry rows will make automatic.
 
 ## Failure modes observed
 

@@ -51,7 +51,7 @@ Two finding classes proved high-yield and are not reliably produced by reviewer 
 2. Triage the verdict:
    - **APPROVE**: stop the loop. Record non-blocking observations in the handover findings for the operator to triage.
    - **BLOCK**: for each blocker, diagnose, fix, and commit as a wip commit (one commit per fix round). Then go to 1 with the updated blocker history.
-3. **Round cap**: if not converged after ~6 rounds, stop and report to the operator with the open blockers -- either the change has a structural problem the fixes keep masking, or the review scope needs narrowing. Do not grind silently.
+3. **Loop.** The loop, its check-in cadence and its verdict are the `code-review` skill's [`references/loop.md`](../../workflow/coding-agent/skills/code-review/references/loop.md).
 
 Calibration from 20260912-05: blockers converged quickly (rounds 1-3 were mechanism bugs; rounds 4-7 were almost entirely doc-contract drift and vocabulary/count reconciliation). Late-round blockers are still worth fixing -- they are one-line, zero-risk, and the consistency bar is the point of the review -- but the main agent should self-check the cheap classes (docs pinning changed strings, counts in the handover, header/usage text lagging behavior) BEFORE spawning each round; self-checking removes most of the late-round churn.
 

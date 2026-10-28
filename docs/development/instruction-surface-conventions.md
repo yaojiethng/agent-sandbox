@@ -132,6 +132,7 @@ The two tables split the `session` rows between them, and every row belongs to e
 | the prose principles | `Communication Standards` | provider |
 | reading a tree before opening it | `Read Discipline` | provider |
 | dispatching a subagent, and the review as its seat-count mode | `Subagents` | provider |
+| the status a turn ends with | `Reporting` | provider |
 
 A row and a heading are one requirement in two forms, so the table is the judgement and the check is the drift detector: a section renamed without its row, a heading added with no row, and a row naming the layer the heading is not in are each a failure. The table proves nothing about whether a ruling was right; that is what the ruling classes are for.
 

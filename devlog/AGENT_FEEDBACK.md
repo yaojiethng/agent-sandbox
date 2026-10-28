@@ -384,10 +384,10 @@ Frame the merged entries below; each replaces the member entries that shared its
 ### [A] 2026-09-21  --  Review-pass framing: directive wording (T1)
 
 ```text
-state: open
-scoped: M3 T1 -- review-pass framing fixes
-legacy: none
-mitigation: three review-directive wording rules. (1) Round-cap / blocker-re-review fits a correctness review; a model-consensus quality pass converges in one round per model against a shared brief. (2) Name the base commit or the explicit `git diff <base>..<head>` range in the review directive, not a handover date the reader must convert. (3) Name an edit target with a seeded/runtime copy pair by full path, stating which copy is authoritative. Source session `20260918-10`.
+state: mitigated
+scoped: M3.2.2 -- review-pass framing fixes
+legacy: open from 2026-09-21 until the loop moved into `code-review`'s reference
+mitigation: the review loop is `workflow/coding-agent/skills/code-review/references/loop.md`. The directive names the base commit and the explicit range, and converts any other scope format; a seeded/runtime copy pair is named by full path with the authoritative copy stated; the round cap is gone, replaced by a check-in on the operator's cadence that reports the round count, cumulative tokens and dollars, the open blockers with their rounds, and the trend. Source session `20260918-10`.
 ```
 
 ### [A] 2026-09-21  --  Evidence before a conclusion: verification discipline (T1)

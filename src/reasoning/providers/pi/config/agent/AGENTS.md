@@ -103,3 +103,7 @@ Anything that resolves a role, holds a timeout and keeps a log goes through `scr
 - **A review is a dispatch with a seat count.** `_REVIEWER` for source, `_ADVISOR_DOCS` for prose, and the caller sets the count.
 - **A reviewer is read-only.** It edits nothing, commits nothing and runs no suite, so the caller applies what the report names.
 - **Attribution goes in the brief.** A subagent cannot see its invocation flags, so the brief states the provider, the model and the level, and the report carries them.
+
+## Reporting
+
+End any turn that reports on long-running or delegated work with a short status: Goal, Done, Next, Needs you (or "nothing").

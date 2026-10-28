@@ -24,6 +24,8 @@ The mechanism that launches a seat is the `dispatch` skill, in the agent's own s
 
 A change to code needs a judgement its author did not make: a unit before it closes, a branch before it merges, a dispatch whose work is packaged for a rebase. Not for prose or documentation, which `prose-review` answers, and not for a check over the agent's own records, which `doc-maintenance`, `roadmap-maintenance` and `handover-maintenance` answer.
 
+A run to convergence, or a review loop, reads [`references/loop.md`](references/loop.md).
+
 ## Translating the runbook's requirements
 
 Almost every review asks for the same few things. Where a runbook states how to satisfy one, the runbook wins; where it is silent, this is how it is done here.
