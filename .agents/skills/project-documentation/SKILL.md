@@ -17,14 +17,14 @@ This convention covers the project documentation under `docs/`. The `devlog/` re
 
 Each document belongs to exactly one folder. Which folder holds what, and each type's durability, is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy).
 
-An architecture document describes what the layers do, not what a frozen layer has yet to do. The layer model, the freeze status and the freeze rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-layer-model).
+An architecture document describes what the layers do today. Future work belongs in the task-list. The layer model and the stabilization rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-layer-model).
 
 ## How a document opens
 
 A document under `docs/` opens with its title, then a frontmatter block declaring `reader` as `agent`, `operator` or `maintainer`. A document serving only the maintainer does not ship, so the frontmatter gate fails one under `reference/` or `policies/`.
 
 - Top-level sections use `##` and subsections use `###`. Use `####` only inside a long task list where grouping is genuinely needed.
-- A reference document carries no status line: the freeze table in `system_overview.md` governs it.
+- A reference document carries no status line: the layer table in `system_overview.md` governs it.
 - A record's status line, its redirect and ADR entry structure are `work-log`'s and `decision-records`'s.
 
 ## What a document may contain

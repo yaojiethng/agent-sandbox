@@ -19,21 +19,44 @@ These guarantees hold across all agent runs. Defined authoritatively in `docs/de
 
 ## Architecture Layer Model
 
-The implementation stack has three layers with a strict bottom-up stabilization rule: lower layers must stabilize before higher layers evolve, and refactors are always bottom-up.
+The stack has three layers. Each builds on the one below it.
 
-| Layer | Name | Responsibility | Freeze status |
-|---|---|---|---|
-| 0 | Infrastructure | Docker runtime, filesystem, container environment | Frozen at M1 |
-| 1 | Execution Mechanics | How a single agent runs tasks and generates diffs | Frozen at M1.2; changes expected in M1.5 and M2 |
-| 2 | Orchestration | Coordination between multiple agents | Not started |
+| Layer | Name | Holds |
+|---|---|---|
+| 0 | Infrastructure | the Docker runtime, the filesystem, the container environment a session runs in |
+| 1 | Execution Mechanics | how a single agent runs a task and produces a diff |
+| 2 | Orchestration | how several agents coordinate |
 
-Two elements frame the stack without belonging to it:
+**Security Model** -- states the threat model the implementation is hardened against.
 
-**Security Model** -- a design constraint applied to all implementation layers. The security requirements are written before implementation and used to harden each layer against the threat model. It is not a build layer; it is a constraint that the implementation must satisfy.
+**Human Workflow** -- the constraint on how the operator works within agent-sandbox.
 
-**Human Workflow** -- the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a layer that gets built in sequence.
+### The stabilization rule
 
-The freeze status is layer-scoped (a whole layer freezes, never an individual file). The `project-documentation` convention applies it: architecture documents must not describe what a frozen layer does not yet do.
+Layer 0 is finished before layer 1 is built on it, and layer 1 before layer 2. That order is the rule. A change to a low layer breaks the work already built on it, so the change waits until that work is finished.
+
+An unfinished layer above is a reason to leave a low layer alone. Settled never means finished for good: it means you can build on the layer today.
+
+### What going around it costs
+
+A low-layer change looks locally correct: tests pass, the diff is small. Four things follow.
+
+1. Changing a layer out of order invalidates the interface that future work relies on, so that work has to be replanned or rescoped.
+2. The review cannot catch it: everyone who uses the interface today gets updated in the same change, and the future work is not in the tree to read.
+3. Nothing records the crossing, so the rework shows up two milestones on with no account of why.
+4. Every document, handover and fixture that describes the old interface goes stale at once, and each one has to be found by hand.
+
+### Which situation you are in
+
+Editing a low layer to get on with the work above it is one of three situations. Each has a test, and a different fix.
+
+1. **The lower layer is not finished.** The work needs a contract the lower layer does not yet state. Finish the lower layer; the higher-layer task waits.
+2. **The task belongs to the lower layer.** The change makes sense without reference to the work above it. Rescope the task to the lower layer, and move its roadmap position with it.
+3. **The lower layer is being rewritten deliberately.** The rewrite changes an interface that everything above depends on. Make it a task of its own, name what it invalidates, and sequence it against the work above.
+
+A task whose first edit lands below the layer it names is the signal, and it is cheaper to catch before the work starts.
+
+How a document states a layer's state is the `project-documentation` convention's. Which layer work is in flight is the task list's.
 
 ## Major Components
 

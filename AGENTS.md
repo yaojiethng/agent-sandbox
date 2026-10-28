@@ -160,7 +160,7 @@ Read these in addition to the above when opening a milestone planning iteration.
 
 | Document | Read before |
 |---|---|
-| [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or freeze status checks |
+| [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or stabilization rule checks |
 | [`.agents/skills/project-documentation/SKILL.md`](.agents/skills/project-documentation/SKILL.md) | Any documentation task |
 | [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
 | [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
