@@ -21,7 +21,7 @@ The primary owns the run plan, the well-specifiedness test, the unit split, the 
 
 Run this way when the plan names its units and the units are independent. Independent means one unit's work does not depend on another unit's result; two units that must change one file are one unit.
 
-Not this template: one large pass fanned out to concurrent subagents on a frozen snapshot (see [`fanout-run.md`](fanout-run.md)), or a whole campaign handed to a single subagent (see [`test-quality-campaign-run.md`](test-quality-campaign-run.md)).
+Not this template: one large pass fanned out to concurrent subagents on a frozen snapshot (see [`fanout-run.md`](fanout-run.md)).
 
 ## Step 1 - Build the run plan
 

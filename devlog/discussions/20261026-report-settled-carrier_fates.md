@@ -19,8 +19,8 @@ Record, per carrier, what happens to it. This table is what the consolidation ex
 | `kelsey-code-reviewer.skill.md` | 158 | the bash half absorbed into `code-review-bash`, the container half into `code-review-container`, the general residue kept as a payload under test, the file deleted in `20261026-08` |
 | `architecture-doc-reviewer.skill.md` | 166 | subsumed into a `prose-review` runbook, file deleted |
 | `dhh-code-audit.skill.md` | 99 | subsumed: the general parts reach the `code-review` shell, the Rails doctrine is dropped, the JavaScript part becomes a `code-review-javascript` runbook, file deleted |
-| `test-quality-campaign.md` | 106 | pending |
-| `test-assertion-sweep-brief.md` | 49 | pending |
+| `test-quality-campaign.md` | 106 | retired: ran once as `c772e25c`; the how-to is the `testing` skill and the gate is the `test-review` runbook, file deleted |
+| `test-assertion-sweep-brief.md` | 49 | retired: superseded by the `testing` convention, deleted in `8b1c7e8d` |
 
 Every carrier is subsumed, so no carrier survives at its own path and none is vendored. That closes one fault class for the whole set: a defect whose whole content is packaging, being frontmatter, heading text, section order or filename, has no action, because there is no destination file for the edit. The first such site is `bash-audit.skill.md:1`, the absent frontmatter; the fault holds and the fate is `moot`.
 

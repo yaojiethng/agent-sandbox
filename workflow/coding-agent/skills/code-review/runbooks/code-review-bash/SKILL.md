@@ -32,4 +32,4 @@ One verdict per run. `HOLD` when any finding is a failure path, a masked status 
 
 - container image construction, which is a Dockerfile's subject
 - the interface conventions a script's output must satisfy, except where the script emits what they govern
-- whether a test asserts the right thing, which is the suite's convention
+- whether a test asserts the right thing, which [`test-review`](../test-review/SKILL.md) judges
