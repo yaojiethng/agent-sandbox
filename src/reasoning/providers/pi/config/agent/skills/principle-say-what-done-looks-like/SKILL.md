@@ -26,4 +26,6 @@ Run every verification that can run now, and show the output. A criterion that w
 
 **What it does not cover.** Whether the criteria are the right ones for the purpose of the work. The person who set the work owns that decision. This rule states criteria rather than setting them.
 
+**The brief's other half.** This principle fixes the finish and says nothing about how much method the brief prescribes. That is [`communication-principle-state-intent-delegate-method`](../communication-principle-state-intent-delegate-method/SKILL.md): an instruction that names no finish and one that names every step fail in opposite directions.
+
 **The test.** Point at the inventory, the bound and one criterion. Name the instrument that criterion uses. If the answer is the agent's own judgement, the work is not bounded yet.

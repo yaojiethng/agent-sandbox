@@ -157,9 +157,11 @@ An instruction this document writes is held to `communication-principle-rewrite-
 
 Where the operator's words do not exist for something the pass has to say, the item carries the agent's text as a suggestion under a raise, and the operator supplies the words. Where the agent judges a clause wrong, unclear or weak, the same raise applies: the clause, what it appears to require, and the rephrase offered as a suggestion, never applied.
 
+The rewritten text also states what the unit must achieve and leaves the route to the reader (`$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`). A rewrite that carries the old method forward under new wording has not done the job.
+
 ## Where to look
 
-- a file's place and its allowed content -> the `docs` convention
+- a file's place and its allowed content -> the `project-documentation` convention
 - what a ruling is recorded as -> `## The judgement`, then the `work-log` convention
 - what the pass owes at close -> [`/wrapup`](wrapup.md)
 - a gap the surface has -> a roadmap row naming the class and the census evidence

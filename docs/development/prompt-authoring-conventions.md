@@ -136,6 +136,10 @@ A prompt that hands off to a sub-agent states the target's whole owned-file set,
 
 **A skill's name and description are its signpost.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that steer, and the description summarises to the name. The judgement is `skill-scaffolder`'s [`patterns/signposting.md`](../../.agents/skills/skill-scaffolder/patterns/signposting.md).
 
+## State the intent, delegate the method
+
+An instruction states what the work must achieve and leaves the route to the party who holds the context. A step is satisfied by being performed, so a prompt of steps can be met by the wrong result, while an outcome is checked against the thing it names. An order that is itself the requirement, such as a migration sequence or a command the operator runs, is asked for as a deliverable with its constraints, so the doer still designs it. The judgement is `communication-principle-state-intent-delegate-method` at `$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`.
+
 ## A fast path names its source of truth
 
 A workflow document may inline a distillation of a rule for context efficiency: the inline names the source of truth, and where staleness would mislead it is labelled a convenience copy. The judgement and the fast path are `principle-single-source-of-truth` at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, which is their only source of truth.

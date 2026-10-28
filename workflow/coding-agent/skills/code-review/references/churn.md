@@ -1,6 +1,6 @@
 # The churn survey
 
-A churn count quoted without the method behind it cannot be re-derived, so a later reader measures different numbers for the same files and the two cannot be compared. The pass produces a ranking a reader can act on and reproduce.
+A churn count quoted without the method behind it cannot be re-derived, so a later reader measures different numbers for the same files and the two cannot be compared. The pass produces a ranking a reader can act on and reproduce. It states the outcome and not the steps (`$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`), so a run that reaches the same ranking by another route satisfies it.
 
 ## The outcome
 
