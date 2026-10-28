@@ -35,7 +35,7 @@ stateDiagram-v2
         state "chk_orientation -- the check-in skill runs" as chk_orientation
         state "chk_roadmap -- the roadmap-maintenance skill runs" as chk_roadmap
         state "chk_record -- the handover-maintenance skill runs" as chk_record
-        state "chk_docs -- the doc-maintenance skill runs" as chk_docs
+        state "chk_docs -- the documentation pass runs" as chk_docs
         state "chk_history -- the history-cleanup skill runs" as chk_history
         state "chk_corpus -- the initialize skill runs" as chk_corpus
         state "chk_close -- both record checks rerun over the rows the close wrote" as chk_close
@@ -167,7 +167,7 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `chk_orientation` | checks | the `check-in` skill runs |
 | `chk_roadmap` | checks | the `roadmap-maintenance` skill runs |
 | `chk_record` | checks | the `handover-maintenance` skill runs |
-| `chk_docs` | checks | the `doc-maintenance` skill runs |
+| `chk_docs` | checks | the documentation pass runs |
 | `chk_history` | checks | the `history-cleanup` skill runs |
 | `chk_corpus` | checks | the `initialize` skill runs |
 | `chk_close` | checks | both record checks rerun over the rows the close wrote |
@@ -264,4 +264,5 @@ Each check is a query a reader makes on the chart and the defect the query finds
 - **Story coverage.** The stories cover the main paths, not every edge: the recovery and records edges are drawn and no story routes them. The query is the edge set minus the pairs the stories use.
 - **`/auto` and `/goal`.** Reserved for M4 by `docs/adr/coding_agent_loop_workflow.md`, which is repository-only and cannot be linked from here; no transition, and no node.
 - **`history-cleanup`.** The operator dispatches it by hand, naming the units to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the recovery case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
+- **Drafting a document.** No command and no state of its own: a document is written inside `it_implementing` under the project documentation convention's drafting reference, and the publishing path this map once drew was `/document`'s, removed with that prompt. `chk_docs` is the check that reads the result.
 - **The render capability.** Not built. The chart targets Mermaid 12.1.0, and the intended render target, Pele's compatibility page, could not be read from this container.
