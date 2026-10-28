@@ -24,7 +24,7 @@ The mechanism that launches a seat is the `dispatch` skill, in the agent's own s
 
 A change to code needs a judgement its author did not make: a unit before it closes, a branch before it merges, a dispatch whose work is packaged for a rebase. Not for prose or documentation, which `prose-review` answers, and not for a check over the agent's own records, which `doc-maintenance`, `roadmap-maintenance` and `handover-maintenance` answer.
 
-A run to convergence, or a review loop, reads [`references/loop.md`](references/loop.md).
+A run to convergence, or a review loop, reads [`references/loop.md`](references/loop.md). A maintenance run that ranks where the tree moves reads [`references/churn.md`](references/churn.md): it dispatches no seat, because the working agent runs it over its own records.
 
 ## Translating the runbook's requirements
 
