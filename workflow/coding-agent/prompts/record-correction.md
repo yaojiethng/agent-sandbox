@@ -105,7 +105,7 @@ git status --porcelain    # clean
 
 ## Correcting a record
 
-A closed record is edited only at the operator's direction, and every edit carries the corresponding correction tag. The operator signals direction any way it is said: "amend the handover", "reopen the handover", "edit it", "fix the typo", or by naming the change. A correction is never applied unasked.
+A closed record is edited only at the operator's direction, and every edit carries the corresponding form. The operator signals direction any way it is said: "amend the handover", "reopen the handover", "edit it", "fix the typo", or by naming the change. A correction is never applied unasked.
 
 Three forms qualify:
 
@@ -115,21 +115,21 @@ Three forms qualify:
 
 An omission is not a place to record work the iteration never did, and it is not a place to state a limit the iteration set only afterwards. Both are new work, and a new record carries them.
 
-A closed record's content does not change; what changes is the account, and only where the account is wrong. The agent may notice a correction and propose it in one line, and never deletes a record, because deletion is an operator action.
+A closed record's account changes only where it is wrong. A closed roadmap row is edited in place; a closed changelog entry keeps its text and gains a marker. The agent may notice a correction and propose it in one line, and never deletes a record, because deletion is an operator action.
 
 ### The form follows the record's purpose
 
-A record that states what is true is corrected in place. A record that tracks open and closed tasks is corrected by addition, with a successor entry. A type's durability, and the marker it carries, is [`documentation_taxonomy.md`](/opt/sandbox/docs/reference/documentation_taxonomy.md#durability).
+A record that states what is true is corrected in place. The changelog, which tracks closed tasks and is the archive, is corrected by addition, with its marker and a successor entry. The roadmap is the live task list: a closed row is edited in place, and a correction that creates work is a new open row. A type's durability, and the marker it carries, is [`documentation_taxonomy.md`](/opt/sandbox/docs/reference/documentation_taxonomy.md#durability).
 
 | Record | Nature | Form |
 |---|---|---|
 | Handover | states what the iteration did | rewrite the paragraph, or reopen and close it again; either way the tag at the end of the corrected section |
-| Roadmap entry | tracks open and closed tasks | keep the entry, add the superseded marker, add the successor entry |
-| Changelog entry | tracks closed tasks, archived | as a roadmap entry |
+| Roadmap entry | a task in the live list | edit in place, no marker; a correction that creates work is a new open row |
+| Changelog entry | tracks closed tasks, archived | keep the entry, add the marker, add the successor entry |
 | Discussion record | states reasoning and evidence | rewrite, tag |
 | ADR, concept, architecture, policy | states what the system does | rewrite, tag |
 
-**Propagation.** A correction inherits the record set of the unit it corrects: a unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its marker. A correction that leaves a closed record contradicting its successor is incomplete.
+**Propagation.** A correction inherits the record set of the unit it corrects: a unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its type's form. A correction that leaves a closed record contradicting its successor is incomplete.
 
 **Archival is not amendment.** Moving a closed milestone's entries from the roadmap to the changelog is a length boundary, not a correction, and carries no marker.
 

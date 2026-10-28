@@ -105,7 +105,7 @@ A component that should survive and is gone, or one that should be removed and i
 3. **An entry written this run carries no fact the tree can falsify.** Search for paths, version strings and line numbers.
 4. **A superseded entry says so where a reader will see it.** For each entry whose capability a later milestone removed, read the entry's opening. A suffix on the milestone heading, or a supersession sentence with no date, is a finding.
 
-Parts 2 and 3 read only the section this run wrote or amended; an entry closed earlier is a historical claim about what was true when it closed. The project's `task-list` convention, The changelog entry and Corrections to a closed entry, own these rules.
+Parts 2 and 3 read only the section this run wrote or amended; an entry closed earlier is a historical claim about what was true when it closed. The project's `task-list` convention's `references/changelog.md` owns the changelog's rules; a closed roadmap row is edited in place.
 
 ### Step 4 - Pre-compaction readiness
 

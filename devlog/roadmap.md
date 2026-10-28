@@ -50,7 +50,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.4 - Service topology and trust boundary](#m344---service-topology-and-trust-boundary) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.5 - Verification surface](#m345---verification-surface) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.6 - Project-owned checks and skills](#m346---project-owned-checks-and-skills) | Not started |
-| &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | Not started |
+| &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | In progress |
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](changelog.md#m361---disable-and-ship-opencode-dispatch) | [Complete - see changelog](changelog.md#m361---disable-and-ship-opencode-dispatch) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.2 - Measure](#m362---measure) | Not started |
@@ -475,6 +475,7 @@ The sub-milestone that settles the container execution model and reserves its vo
 - [ ] **The foreign-format migration and its fixture** - a fixture project with an alternative roadmap and handover format, migrated end to end inside the suite. Nature of change: new fixture and test.
 - [ ] **The concurrency proof** - one test in which two sessions advance two sub-milestones at once for a fixed round count, asserting no lost update and no record conflict. This is the criterion that retires the operator's first blocker. Nature of change: new test and its runner.
 - [ ] **The parallel-milestone rule** - amend the `task-list` convention, the iteration protocol document [`iteration_protocol.md`](../docs/reference/iteration_protocol.md) and the runbooks that write the field, so the active-milestone scalar becomes a set and the serialization rule is deleted rather than reinterpreted. Nature of change: convention and protocol amendment, and runbook update.
+- [x] **The changelog leaves the task-list convention** -- the entry format and the closed-entry correction form moved to [`task-list`'s changelog reference](../.agents/skills/task-list/references/changelog.md), and the correction rule split: a closed roadmap row is edited in place, while a closed changelog entry keeps its marker and successor. Nature of change: convention and reference split, ADR entry, and carrier pointers. Handover `20261028-01`.
 - [ ] **Retire the legacy record** - delete the old format, its readers and its checks at the deletion date the converter contract names. Nature of change: deletion.
 
 ##### Not in scope: M3.5

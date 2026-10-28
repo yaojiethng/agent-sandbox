@@ -1,6 +1,6 @@
 # Closed Record Corrections
 
-**Current:** 2026-10-19
+**Current:** 2026-10-28
 
 ## Requirements
 
@@ -12,6 +12,19 @@
 | R4 | Propagation | a correction inherits the record set of the unit it corrects |
 | R5 | Operator direction | the agent folds a correction to its own commit while that session is live, and applies one only at the operator's direction after it has ended |
 | R6 | The fold | corrected content rides the unit's own commit, folded, so the history reads as if it had always been that way |
+
+## 2026-10-28 -- The marker is the changelog's; the roadmap is edited in place
+
+**Decision:** R2 and R3 apply to the changelog and not to the roadmap. A closed changelog entry keeps its text, gains its marker and gains the successor entry. A closed roadmap row is edited in place: its text is corrected directly, a correction that creates work is a new open row, and it gains no marker. The changelog's entry and correction forms are in [`task-list`'s changelog reference](../../.agents/skills/task-list/references/changelog.md).
+
+**Rationale:** The state the 2026-09-27 entry protects is the archive -- a completed claim that a later reader acts on. The changelog is that archive; the roadmap is the live task list, and its closed rows are the history of a list, whose provenance the handover and the git history carry. Splitting the form follows what each record is for and stops charging the roadmap's every session for the changelog's rule.
+
+**Rejected alternatives:**
+
+- *Keep the marker for the roadmap* -- the archive is the changelog; a roadmap marker duplicates the successor row that the correction already creates.
+- *Drop the marker for the changelog too* -- a silent rewrite of the permanent record loses the fact that a completed capability claim changed.
+
+**Edge cases / drivers:** A correction that adds work is a new open roadmap row under the milestone that owns it; it is not a marker on the closed row. A correction that changes only a roadmap row's text is a targeted edit, and its reason lives in the handover. Moving a closed milestone's entries to the changelog remains archival, not amendment, and carries no marker.
 
 ## 2026-10-19 -- The minimal-corrections principle is assessed against R1 to R6
 
