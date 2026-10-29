@@ -83,9 +83,7 @@ The resolver, the invocation and the failure rules belong to the `dispatch` skil
 
 ## Output Format
 
-Agent output is complete and ready for review when it follows the format rules below. The operator reviews, approves, and commits. Use the mechanism appropriate to the interface -- see `$AGENT_HOME/agent/AGENTS.md` for interface-specific output instructions.
-
-Every output class -- chat, prompts, documentation, roadmap items, code comments -- meets the Communication Standards in `$AGENT_HOME/agent/AGENTS.md`, which indexes the `communication-principle-*` corpus.
+Agent output is complete and ready for review when it follows the format rules below.
 
 **Documents** -- Markdown, one file per document, correct folder and header per the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`. Drafting rule: skeleton first for an ADR, a concept document or an architecture document -- propose the section skeleton in chat and confirm before writing prose.
 
