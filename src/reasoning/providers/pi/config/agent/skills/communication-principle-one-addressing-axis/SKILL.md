@@ -1,6 +1,6 @@
 ---
 name: communication-principle-one-addressing-axis
-description: "Apply when a list carries two ordering axes at once, or when a reader may address one item by number and another by letter. A numbered or lettered list asserts a relation between its items, so print one axis per presentation and name each axis when two sets appear together."
+description: "Apply when writing or revising a list that carries two ordering axes at once, or where a reader may address one item by number and another by letter. A numbered or lettered list asserts a relation between its items, so print one axis per presentation and name each axis when two sets appear together."
 ---
 
 # One addressing axis

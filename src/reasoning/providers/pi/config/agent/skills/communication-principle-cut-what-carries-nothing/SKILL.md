@@ -1,6 +1,6 @@
 ---
 name: communication-principle-cut-what-carries-nothing
-description: "Apply to sediment: a sentence no reader's action depends on -- an opener, a restatement, a trim that shortens without removing. Keep the sentence that changes a decision; delete the sediment."
+description: "Apply when writing or revising prose: an opener, a restatement, a trim that shortens without removing, or a sentence no reader's action depends on -- sediment. Keep the sentence that changes a decision; delete the sediment."
 metadata:
   leitwort: sediment
 ---

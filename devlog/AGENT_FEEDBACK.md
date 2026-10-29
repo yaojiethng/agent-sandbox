@@ -12,6 +12,27 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
+
+```text
+state: probation
+scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`
+legacy: none
+mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
+```
+
+Asked for a reference page on writing a document, I wrote one that opened by describing the gap it filled, then carried a heading per step and a closing section: 33 lines against the 14 that already covered the same five steps in the tree. The two judgements that forbid exactly that were named in the file I was editing and quoted in the layer loaded at session start, and neither fired.
+
+The cause is the shape of the trigger, not the address of the rule. A skill is selected on its `description` alone, and both of those descriptions named a property the finished text has: "a sentence that needs your session", "apply to sediment". A property can only be read once the text exists, so the two principles could fire on a revision pass and no authoring path asked for one. What the description says now is the act: writing or revising prose.
+
+The second half of the fix is the one that does not depend on selection. Both paths that produce prose now end on a read-back step against those two judgements, beside the draft, after it exists.
+
+This is the same class as the 2026-10-27 entry below, a rule held and not applied while drafting, with a different mechanism: there the sentence carried an argument the reader was not in, here the trigger could not be evaluated until the sentence was finished. What would settle it is a recurrence in the same form, a draft whose subject is the document or the session rather than the thing the document is about.
+
+Cross-references: `## The principle shape` in `docs/development/prompt-authoring-conventions.md`; handover `20261029-01`.
+
+---
+
 ## [A] 2026-10-27  --  An instruction line carried its own argument, twice, an hour after the rule against it
 
 ```text

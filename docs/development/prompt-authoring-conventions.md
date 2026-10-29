@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This document states the authoring rules for prompts and skills. It answers four questions: what structure a workflow document has, what belongs in a runbook versus an advisor, how to scope a prompt's subject, and how to identify a workflow document. It is the source of truth for the workflow-document presentation rules that the `/document` stub defers here.
+This document states the authoring rules for prompts and skills. It answers four questions: what structure a workflow document has, what belongs in a runbook versus an advisor, how to scope a prompt's subject, and how to identify a workflow document. It is the source of truth for the workflow-document presentation rules.
 
 The per-prompt quality passes read this document before they edit a prompt. The `fanout` doc pass reads it before it edits that prompt. Any session that writes a new prompt or skill reads it first.
 
@@ -109,6 +109,8 @@ The subject is the name. A skill whose directory name carries `principle-` carri
 The order is fixed: the pattern, the why, the named parts, the test. A label ends on a period, so a reader scanning the file sees the parts as one set. A bullet that opens with a bold label is not a part, because the list marker opens it.
 
 The exemplar is `communication-principle-show-dont-describe`, at `$AGENT_HOME/agent/skills/communication-principle-show-dont-describe/SKILL.md`.
+
+The description and the `**Fires on.**` part state the trigger, and selection reads the description alone. A description names the situation the agent is in, not a property of finished text: a rule that governs what to write triggers on the act of writing, because a property of the text can only be read once it exists, and a rule that governs a reading triggers on what the reading finds.
 
 ## The five questions
 
@@ -232,6 +234,6 @@ The folder's other content is the run brief, the plan a session executes, includ
 
 ## Compliance
 
-The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time.
+The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time. Before the file lands, read it back against two judgements: a sentence that needs the session, and a sentence the reader could drop without losing an action, stated by [`write-for-the-reader`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) and [`cut-what-carries-nothing`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md).
 
 The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`doc-maintenance`](../../.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.

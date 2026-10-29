@@ -1,6 +1,6 @@
 ---
 name: communication-principle-hand-off-by-naming-the-boundary
-description: Apply when a runbook's last step sends the reader to another prompt or skill. Name the next prompt and its entry part, what it owns, what stays, and where this one stops.
+description: "Apply when writing or revising a runbook's last step, where it sends the reader to another prompt or skill. Name the next prompt and its entry part, what it owns, what stays, and where this one stops."
 ---
 
 # Name the handoff boundary
