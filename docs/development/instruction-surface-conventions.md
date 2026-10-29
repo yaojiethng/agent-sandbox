@@ -2,7 +2,7 @@
 
 ## What a surface is
 
-An instruction surface is a folder an agent loads prompts or skills from. The surfaces are declared as data in [`src/build/container-interface.json`](../../src/build/container-interface.json), in its `cells` section, and the model behind them is in [`docs/adr/instruction_surface_declaration.md`](../adr/instruction_surface_declaration.md).
+An instruction surface is a folder an agent loads prompts or skills from. The surfaces are declared as data in [`src/build/container-interface.json`](../../src/build/container-interface.json), in its `cells` section, and the schema behind them is in [`docs/adr/instruction_surface_declaration.md`](../adr/instruction_surface_declaration.md).
 
 A cell answers three questions about a surface:
 
@@ -10,7 +10,9 @@ A cell answers three questions about a surface:
 2. **Where it runs** -- the runtime path, a `session` path when the project tree carries it, or `none` when no image carries the folder.
 3. **Loaded when** -- the condition under which the agent can load a file from it.
 
-A runtime path is the subject rather than a source folder, because two source folders can land on one, and then one cell names both. What the gate refuses is two cells on one path, because they would overwrite each other in the image. A module's payload does not merge into the harness roots: `workflow/<module>/prompts/` lands on `/opt/workflow/agent/modules/<module>/prompts/`, its own root. A merge loses which module a file came from, and it lets one module's file shadow another's with nothing reported. That shadowing is checked instead: no two roots under one settings key may hold a file, or a skill directory, of the same name.
+A runtime path is the subject rather than a source folder, because two source folders can land on one, and then one cell names both. What the gate refuses is two cells on one path, because they would overwrite each other in the image.
+
+A module's payload does not merge into the harness roots: `workflow/<module>/prompts/` lands on `/opt/workflow/agent/modules/<module>/prompts/`, its own root. A merge loses which module a file came from, and it lets one module's file shadow another's with nothing reported. That shadowing is checked instead: no two roots under one settings key may hold a file, or a skill directory, of the same name.
 
 ## Two surfaces
 
@@ -20,9 +22,9 @@ The **working surface** is the two `AGENTS.md` files. A session receives them be
 
 The **maintenance surface** is this document and the other documents that describe how the instruction text is built and checked. A session reaches it by being sent here on a job about the surface, having read nothing else, so the terms are allowed and each is defined the first time it is used rather than assumed.
 
-The test for a line in the working surface: could a session that has read only this file act on it, and does it need the concept to act? A path and what is in it passes. A statement about which layer owns the path fails, because the session cannot use the distinction and did not ask for it.
+The test for a line is whether a session that has read only this file can act on it: a path and what it holds pass, and a statement about which layer owns the path fails.
 
-The problem both surfaces are reduced for is stated once, in the operator's words, at [`.agents/instruction-surface-framing.md`](../../.agents/instruction-surface-framing.md). It states a regime and what follows for remedies; it holds no rule this document applies.
+The problem both surfaces are reduced for is stated in the operator's words at [`.agents/instruction-surface-framing.md`](../../.agents/instruction-surface-framing.md).
 
 ## The shape
 
@@ -74,7 +76,7 @@ Two surfaces declare one provider's config home: the home itself, which carries 
 "prompts": ["/home/agentuser/sandbox/.agents/prompts"]
 ```
 
-The value is the project mount, which the `session` rows already declare, so the record and the cell name one path and the gate holds them equal. It is absolute because a user setting's resource path resolves from the agent directory: the relative form `.agents/prompts` there resolves to `$AGENT_HOME/agent/.agents/prompts` and loads nothing, which is the defect recorded and reverted twice before this form was chosen.
+The value is the project mount, which the `session` rows already declare, so the record and the cell name one path and the gate holds them equal. It is absolute because a user setting's resource path resolves from the agent directory: the relative form `.agents/prompts` there resolves to `$AGENT_HOME/agent/.agents/prompts` and loads nothing.
 
 A path the record names and the tree lacks is skipped silently (`collectFilesFromPaths` ignores a missing path), so a project without the folder costs nothing. That is the reason the record is the carrier rather than a launch flag: `--prompt-template` reports every project without the folder as a prompt conflict at session start. The flag also resolves from the working directory, so it loads only when the session starts at the mount root.
 
@@ -82,7 +84,9 @@ The settings key is the carrier, and the gate checks it: a project-tree cell who
 
 ## A module's payload
 
-`workflow/<module>/` is a toggle unit. Its `prompts/` and `skills/` folders are its payload, and each ships to its own root under `/opt/workflow/agent/modules/<module>/`. A module is enabled by naming its directory as a package: pi's `settings.json` carries `/opt/workflow/agent/modules/coding-agent` in its `packages` key, and the package convention contributes that directory's `prompts` and `skills` subdirectories as roots, so one entry enables both. The harness's own payload root is reached through the same key and the same convention: the `/opt/workflow/agent` entry contributes `/opt/workflow/agent/prompts/` and `/opt/workflow/agent/skills/`, so no `skills` or `prompts` list names a harness root. The gate derives those roots from the entries, and a module root that no entry enables is a finding.
+`workflow/<module>/` is a toggle unit. Its `prompts/` and `skills/` folders are its payload, and each ships to its own root under `/opt/workflow/agent/modules/<module>/`. A module is enabled by naming its directory as a package: pi's `settings.json` carries `/opt/workflow/agent/modules/coding-agent` in its `packages` key, and the package convention contributes that directory's `prompts` and `skills` subdirectories as roots, so one entry enables both.
+
+The harness's own payload root is reached through the same key and the same convention: the `/opt/workflow/agent` entry contributes `/opt/workflow/agent/prompts/` and `/opt/workflow/agent/skills/`, so no `skills` or `prompts` list names a harness root. The gate derives those roots from the entries, and a module root that no entry enables is a finding.
 
 The repository keeps the two kinds apart because a prompt root reads files into commands and a skill root reads directories holding `SKILL.md`. A module's `prompts/` folder ships whole. Working records live outside a module: the repository's run briefs and audits are at `.agents/`, and its two instruction folders are declared differently - `.agents/prompts/` is a cell the launch command carries, and `.agents/skills/` is discovered by pi from the working directory with no cell at all.
 
@@ -96,17 +100,19 @@ A workflow step hands off to a convention-skill. When the skill is absent the ha
 
 ## The layers
 
-The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table of the resources the harness exposes and an index of the principle skills under `$AGENT_HOME/agent/skills/`; the project layer, `AGENTS.md`, holds one of the working directories the session should use. Each table names runtime paths and nothing else.
+The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table of the resources the harness exposes and an index of the principle skills under `$AGENT_HOME/agent/skills/`. The project layer, `AGENTS.md`, holds a `## Scope` table of the working directories the session should use. Each table names runtime paths and nothing else.
 
-The two tables split the `session` rows between them, and every row belongs to exactly one layer. The split is checked in both directions.
+The two tables split the `session` rows between them, and every row belongs to exactly one layer.
 
 **What each layer owns.** The provider layer owns what is true of any project running in this container: the runtime, the mounts, the tool set, the dispatch mechanics, and the agent's own config home. The project layer owns what is true of one working tree: its records, its roadmap and conventions, its documents, and the code in it. The test for a section is whether its sentences would still be right for a different project running in the same container. Yes places it in the provider layer; no places it in the project's.
 
-**What a layer may say about itself.** A layer names its paths in `## Scope` and stops there. The project layer also points here, because the session reading it may be about to edit it; the provider layer does not, because a project running on this image cannot edit it. A rule about where sections belong is maintenance material and lives here, not in either layer: the reader of a layer is an agent doing the work, and every other sentence it meets is one it can act on during that work. The dividing test is whether the working agent can act on the sentence now, which a pointer passes and a filing rule fails. This sentence is the rejected alternative's grave: the first design for this rule put the criterion and the subject table in both layers, and `principle-own-the-scope-you-declare` refuses it, because a document holds what its declared scope owes and describes no work outside it. That principle's own order is to link to the document that owns the content before moving it, so the two reach points for this rule are the pointer in a layer's `## Scope` and the check's failure message.
+**What a layer may say about itself.** A layer names its paths in `## Scope` and stops there. The project layer also points here, because the session reading it may be about to edit it; the provider layer does not, because a project running on this image cannot edit it.
 
-**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source and its installed copy are one file: edit the source, copy it to `$AGENT_HOME/agent/AGENTS.md`, and let `scripts/check_instruction_surfaces.sh` prove they match. Both layers pass the same gates as the rest of the tree.
+A rule about where sections belong is maintenance material and lives here, not in either layer. The reader of a layer is an agent doing the work, and the dividing test is whether the working agent can act on the sentence now, which a pointer passes and a filing rule fails. The rule's two reach points are a layer's pointer in `## Scope` and the check's failure message.
 
-**Standing in for the general provider layer.** A sentence true of every provider -- the sandbox boundary, no push, no secrets, the tool set -- has no provider-neutral always-loaded carrier: `src/reasoning/agent/` holds prompts and skills, and each provider seeds its own config home from its own template. Until that carrier exists, the pi provider layer stands in for the general provider layer, and such a sentence is filed there. Building the carrier is a filed roadmap row, not an assumption this document can leave implicit.
+**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source and its installed copy are one file: edit the source and copy it to `$AGENT_HOME/agent/AGENTS.md`. Both layers pass the same gates as the rest of the tree.
+
+**Standing in for the general provider layer.** A sentence true of every provider -- the sandbox boundary, no push, no secrets, the tool set -- has no provider-neutral always-loaded carrier: `src/reasoning/agent/` holds prompts and skills, and each provider seeds its own config home from its own template. Until that carrier exists, the pi provider layer stands in for the general provider layer, and such a sentence is filed there. Building the carrier is a filed roadmap row.
 
 **Who reads a layer.** The reader of an `AGENTS.md` is the agent runtime, and the runtime is handed each section concatenated into its context window. A rule addressed to it therefore has to stand as a sentence on its own: a position in the document, a table's rows and the source's line breaks carry no meaning to that reader. The path tables in the two `## Scope` sections are not instructions; they serve the maintainer and `scripts/check_instruction_surfaces.sh`, which is why a rule whose only purpose is to keep a table well-formed belongs here rather than in a layer.
 
@@ -134,7 +140,7 @@ The two tables split the `session` rows between them, and every row belongs to e
 | dispatching a subagent, and the review as its seat-count mode | `Subagents` | provider |
 | the status a turn ends with | `Reporting` | provider |
 
-A row and a heading are one requirement in two forms, so the table is the judgement and the check is the drift detector: a section renamed without its row, a heading added with no row, and a row naming the layer the heading is not in are each a failure. The table proves nothing about whether a ruling was right; that is what the ruling classes are for.
+The table is the judgement; it proves nothing about whether a ruling was right, which is what the ruling classes are for.
 
 **Ruling classes.** Every section ends in exactly one, and a ruling is recorded on the iteration's handover.
 
@@ -157,5 +163,3 @@ Gates read the declaration through [`src/build/container-interface.mjs`](../../s
 [`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the reach axis to the declaration from the other side: the mount rows the manifest carries against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`. It reads both, so neither copies the other's list. A mount row added and not routed fails the row; a route with nothing behind it fails the route; a folder the table states repository-only fails when a manifest path reaches it.
 
 [`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, holds the files to their cell's reach. A link in a cell's file must land inside the set the declaration grants that cell: every instruction root, the `session` paths, and the cell's own `reachable` rows. A target outside that set fails even when the image carries it, because it names a tree the surface cannot reach. A repository link under a `reachable` row resolves there instead of in the image.
-
-The gates are why a stale claim cannot survive. A `COPY` line added or removed fails the cell that described the old map, and a path that changes in the manifest and not in a layer table fails as a drift.
