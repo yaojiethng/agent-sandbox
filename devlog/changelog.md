@@ -198,6 +198,14 @@ The minor and major loop procedures moved out of `iteration_policy.md` and `road
 
 ---
 
+## M3.2.2 - Audit and Review Workflow Cleanup
+
+*Every audit and review use case now has one owner, so an agent reaches a pass once instead of choosing between copies of it.*
+
+The stray audit and review payloads are gone. `prose-review` and `code-review` became shells whose runbooks and patterns sit in one directory each, the handover-audit pair merged, `.agents/audits/` dissolved, and the vendored reviewers' surviving rules became pattern entries rather than carriers of their own. The bash rules took ids from `p-1` to `p-61` with the wrong form beside each, and the container rules a second set. Two prompts retired because nothing invoked them: `/document`, and `/maintenance`, which had never had a caller. The instruction surface was cleaned in the same milestone: ten principle descriptions now trigger on the act of writing rather than on a property the finished text has, the layer index names each principle before its rule, and the document stating the layer rules lost its archaeology and a procedure telling a maintainer to let a gate prove a copy that no gate reads.
+
+---
+
 ## M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract
 
 *An instruction surface now declares where it runs, what it can reach and what loads it, and every reference it carries resolves in the image it runs in.*
