@@ -62,3 +62,17 @@ done < plan.txt
 A child that reads standard input takes it from the loop's own file descriptor, so the loop reaches end of file after the first item, exits, and reports success. A caller that asked for every item in the file gets one, and no error says so. Redirect the child's input from `/dev/null`, which it can read and which ends immediately, so the loop keeps the stream it is walking.
 
 Replaces: a loop over a redirected file that runs a child with no `< /dev/null`.
+
+## p-61 Cross the process boundary at one named seam
+
+```bash
+# The seam, and the only place the dependency is named
+run_external() { "$EXTERNAL_CMD" "$@"; }
+
+# The test replaces the seam with the same name and signature
+run_external() { printf 'capture: %s\n' "$*"; }
+```
+
+Every call that leaves the process goes through one function, and a test replaces that function rather than the dependency behind it. A test that reaches the dependency is testing the dependency: it fails when the network, the daemon or the tool version moves, and it proves nothing about the argument the code built. Replacing the seam turns the handoff into data, so the assertion is over the arguments the dependency would have received.
+
+Replaces: a test that runs the real external command, and one that asserts the stub's own output rather than the arguments handed to it.
