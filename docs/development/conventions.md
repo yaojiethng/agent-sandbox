@@ -11,7 +11,7 @@ Index of coding and interface conventions for the agent-sandbox project. Each ca
 | Prompt and skill authoring | [`prompt-authoring-conventions.md`](prompt-authoring-conventions.md) | Workflow-document structure, runbook vs advisor, subject scoping, document-type identification |
 | Instruction surfaces | [`instruction-surface-conventions.md`](instruction-surface-conventions.md) | Declaring a prompt or skill surface in the interface manifest: fields, conditions, scope, layers, gates |
 
-Policy documents govern process, not code shape. Conventions govern code shape within their category.
+Policy documents govern process, not code shape. Conventions govern code shape within their category. A code-shape rule that holds in every language is neither: the provider layer's `## When writing code` and the project layer's `When writing code` carry it. A rule specific to one language joins that language's category above.
 
 | Category | Policy document |
 |---|---|
