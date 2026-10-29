@@ -21,7 +21,7 @@ Give the reader something to attach each phrase to before the next phrase arrive
 
 **Where another rule wins.** A passive is felicitous when the agent is unknown or the patient is the topic. End-weight puts the heavy constituent last, which can put a short condition first. A longer marked construction can beat a shorter garden path. A verbatim quote keeps its wording.
 
-Where the word itself needs a definition, settle it first at `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`, then place it here.
+Where the word itself needs a definition, settle it first at `communication-principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/communication-principle-define-terminology-before-use/SKILL.md`, then place it here.
 
 **The test.** Read the sentence left to right, and ask at each phrase whether it can attach to structure already built. Rewrite the sentence if the reader must do any of three things:
 

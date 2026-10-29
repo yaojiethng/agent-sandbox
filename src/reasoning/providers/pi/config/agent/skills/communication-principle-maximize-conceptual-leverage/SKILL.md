@@ -35,4 +35,4 @@ Set it only where the body already teaches the word, because a candidate the bod
 
 New and changed prose in this corpus meets ASD-STE100, and this skill states the rules that meet it. A phrase dictionary is a source for wording, and these rules live here.
 
-A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`.
+A term the reader may not hold is defined at first use, per `communication-principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/communication-principle-define-terminology-before-use/SKILL.md`.

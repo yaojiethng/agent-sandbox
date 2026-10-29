@@ -155,7 +155,7 @@ The reader holds what the text gives them, in the order it arrives, and the text
 - [`align-the-mental-model`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-align-the-mental-model/SKILL.md)
 - [`attach-as-you-read`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-attach-as-you-read/SKILL.md)
 - [`cut-what-carries-nothing`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md)
-- [`define-terminology-before-use`](../../src/reasoning/providers/pi/config/agent/skills/principle-define-terminology-before-use/SKILL.md)
+- [`define-terminology-before-use`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-define-terminology-before-use/SKILL.md)
 - [`keep-a-subject-near`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-keep-a-subject-near/SKILL.md)
 - [`maximize-conceptual-leverage`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md)
 - [`single-train-of-thought`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-single-train-of-thought/SKILL.md)

@@ -21,4 +21,4 @@ Use one word for each thing and one meaning for each word, so the reader builds 
 
 **The test.** Ask of each word whether a reader could place it on a second thing, and of each thing whether the text ever names it with a second word. A yes answer means two models are available.
 
-A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`, which decides when a term needs defining, where this skill decides the mapping.
+A term the reader may not hold is defined at first use, per `communication-principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/communication-principle-define-terminology-before-use/SKILL.md`, which decides when a term needs defining, where this skill decides the mapping.
