@@ -19,7 +19,7 @@
 #   a registered rule enabled nowhere  --  the config is incoherent, not clean
 #
 # The exit code carries the verdict only; the finding count is printed by the
-# leaf gate and never encoded (docs/development/bash-coding-conventions.md 3.2).
+# leaf gate and never encoded (pattern p-14).
 #
 # The real scripts/lint.sh, check_shell.sh and check_markdown.sh run; only the
 # external tools (shellcheck, markdownlint-cli2) are stubbed on PATH.

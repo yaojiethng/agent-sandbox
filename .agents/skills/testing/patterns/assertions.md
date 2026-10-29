@@ -30,6 +30,14 @@ When a unit asserts an output, assert the behaviour a reader cares about, not th
 
 **The removed-design form.** A unit that pins the removal of a design asserts a fact true of every implementation: a name no code creates stays absent, or a stale value stays untouched. Both hold however the code is written, so the unit cannot fail for a reason that matters. Rewrite it against the guard the code provides today, and rename it to say what it now guards.
 
+## Pin the contract, not the accident
+
+A behaviour no one decided is an accident of the current code, and a unit that pins it turns the next correct change red: the fix has to break the test first. Ask what decided the behaviour - an ADR, a design record, a usage the operator confirmed - and pin that. Where the record is silent and the behaviour matters, the unit waits, because writing it now pins a candidate and makes the decision harder.
+
+## A rename is not a rewrite
+
+A weak unit stays weak when only its name changes. When a unit is being fixed, the change is to the assertion: state what the unit is supposed to test, assert that, and let the name follow. A commit that renames a unit and leaves its body alone keeps the same blind evidence behind a better label.
+
 ## Never test a copy
 
 When a test needs a production function, never inline a copy of it: the copy diverges while the tests stay green. Extract the function from the live source at run time, or drive the real entry point end to end. When you extract with a pattern, the test states the pattern in a prerequisite gate that fails with one named error when the function is renamed, moved or restructured.

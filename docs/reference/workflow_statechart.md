@@ -16,6 +16,7 @@ The diagram is Mermaid 12.1.0, `stateDiagram-v2`, in the conservative subset: co
 
 ## The chart
 
+<!-- snippet: illustrative -->
 ```mermaid
 stateDiagram-v2
     state "Entry and orientation" as entry {
@@ -34,7 +35,7 @@ stateDiagram-v2
         state "chk_orientation -- the check-in skill runs" as chk_orientation
         state "chk_roadmap -- the roadmap-maintenance skill runs" as chk_roadmap
         state "chk_record -- the handover-maintenance skill runs" as chk_record
-        state "chk_docs -- the doc-maintenance skill runs" as chk_docs
+        state "chk_docs -- the documentation pass runs" as chk_docs
         state "chk_history -- the history-cleanup skill runs" as chk_history
         state "chk_corpus -- the initialize skill runs" as chk_corpus
         state "chk_close -- both record checks rerun over the rows the close wrote" as chk_close
@@ -84,17 +85,12 @@ stateDiagram-v2
         state "plan_scoping -- the milestone is being cut into units" as plan_scoping
         state "plan_interview -- the grill-me skill probes the design" as plan_interview
         state "plan_released -- rows, stories and ADRs are written back" as plan_released
-        state "doc_drafting -- a document is being written" as doc_drafting
-        state "doc_published -- the document is landed" as doc_published
         ms_active --> plan_scoping : /plan or /scope
         plan_scoping --> plan_interview : the design is probed
         plan_scoping --> it_open : the operator releases the brief to a run
         plan_interview --> plan_released : operator releases the scope
         plan_released --> chk_close : /wrapup writes its rows
     chk_close --> ms_active : both reports clean, no delivery commit
-        ms_active --> doc_drafting : /document
-        doc_drafting --> doc_published : operator releases the draft
-        doc_published --> chk_close : /wrapup
     }
 
     state "Recovery" as recovery {
@@ -147,7 +143,6 @@ stateDiagram-v2
     it_implementing --> chk_roadmap : /iter runs the roadmap record check
     it_implementing --> chk_record : /iter runs the handover record check
     it_implementing --> chk_docs : /iter's information-gathering pass
-    doc_drafting --> chk_docs : /document reads the diagnostic register
     sess_initialized --> chk_corpus : /bootstrap installs the corpus
     rec_rebase --> chk_history : the operator runs history-cleanup on the inverted series
 
@@ -155,7 +150,7 @@ stateDiagram-v2
     chk_orientation --> sess_oriented : the report is applied
     chk_roadmap --> chk_record : the two reports meet at one gate
     chk_record --> it_acceptance_gate : the findings queue carries the report
-    chk_docs --> doc_published : the report is applied
+    chk_docs --> it_implementing : the report is applied
     chk_history --> rec_merge : the series is rewritten, then replayed
 ```
 
@@ -172,7 +167,7 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `chk_orientation` | checks | the `check-in` skill runs |
 | `chk_roadmap` | checks | the `roadmap-maintenance` skill runs |
 | `chk_record` | checks | the `handover-maintenance` skill runs |
-| `chk_docs` | checks | the `doc-maintenance` skill runs |
+| `chk_docs` | checks | the documentation pass runs |
 | `chk_history` | checks | the `history-cleanup` skill runs |
 | `chk_corpus` | checks | the `initialize` skill runs |
 | `chk_close` | checks | both record checks rerun over the rows the close wrote |
@@ -191,8 +186,6 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `plan_scoping` | planning | the milestone is being cut into units |
 | `plan_interview` | planning | the `grill-me` skill is probing the design |
 | `plan_released` | planning | rows, stories and ADRs are written back |
-| `doc_drafting` | planning | a document is being written |
-| `doc_published` | planning | the document is landed |
 | `rec_triage` | recovery | work is reported lost, unmergeable, or landed wrong |
 | `rec_merge` | recovery | the export replays onto the target |
 | `rec_rebase` | recovery | the stale branch ports onto the target |
@@ -218,7 +211,6 @@ Every prompt the tree carries is an event here, and the command table's row set 
 | `/milestone-start` | `ms_none` | `ms_active` | none |
 | `/plan` | `ms_active` | `plan_released` | `grill-me`, `/wrapup` |
 | `/scope` | `ms_active` | `plan_scoping` | none - suggests a run, or a saved brief in `.agents/drafts` |
-| `/document` | `ms_active` | `doc_published` | `doc-maintenance`, `grill-me`, `/wrapup`, `/commit` |
 | `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
@@ -244,7 +236,6 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 | A milestone closes and the next is shaped | `ms_active -> ms_close_gate -> ms_closed -> ms_none -> ms_active` |
 | A sidequest interrupts an open unit | `it_implementing -> sq_running -> sq_committed -> it_implementing` |
 | Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> chk_close -> ms_active` |
-| Publishing a document | `ms_active -> doc_drafting -> doc_published -> chk_close -> it_closed -> it_committed` |
 | The close checks the rows it wrote | `it_acceptance_gate -> chk_close -> it_closed` |
 | Recovering an unportable export | `rec_triage -> rec_rebase -> it_committed -> it_open` |
 | A project bootstrapped and oriented | `sess_start -> sess_initialized -> sess_oriented -> it_open` |
@@ -273,4 +264,5 @@ Each check is a query a reader makes on the chart and the defect the query finds
 - **Story coverage.** The stories cover the main paths, not every edge: the recovery and records edges are drawn and no story routes them. The query is the edge set minus the pairs the stories use.
 - **`/auto` and `/goal`.** Reserved for M4 by `docs/adr/coding_agent_loop_workflow.md`, which is repository-only and cannot be linked from here; no transition, and no node.
 - **`history-cleanup`.** The operator dispatches it by hand, naming the units to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the recovery case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
+- **Drafting a document.** No command and no state of its own: a document is written inside `it_implementing` under the project documentation convention's drafting reference, and the publishing path this map once drew was `/document`'s, removed with that prompt. `chk_docs` is the check that reads the result.
 - **The render capability.** Not built. The chart targets Mermaid 12.1.0, and the intended render target, Pele's compatibility page, could not be read from this container.

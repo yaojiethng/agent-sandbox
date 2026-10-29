@@ -12,11 +12,6 @@
 #   a title-case title            --  flagged, naming the word
 #   a skill with no `principle-`  --  clean, and its departure is not read
 #   a root with no principle      --  not read; the module tree is what fails closed
-#   a declared claim              --  clean, and the map names the skill under it
-#   no claim declared             --  flagged: a principle carries one
-#   a claim the table lacks       --  flagged, naming the set the table states
-#   --map                         --  prints one row per skill and a total that
-#                                     matches the skills read
 #   a broken block                --  flagged, naming the parse
 #   a non-boolean flag            --  flagged: pi tests it with `=== true`
 #   a shipping document's reader  --  flagged when absent, clean when declared
@@ -61,8 +56,6 @@ conforming() {
   printf '%s' "---
 name: principle-example
 description: \"fixture\"
-metadata:
-  claim: evidence
 ---
 
 # One example judgement
@@ -183,35 +176,6 @@ description: \"fixture\"
   assert_contains "$GATE_OUT" '0 principle skill(s)' 'the run says how much corpus it read'
 }
 
-test_declared_claim_is_clean_and_mapped() {
-  local root out
-  root="$(make_root claimed)"
-  write_skill "$root" principle-example "$(conforming)"
-  run_gate "$root"
-  assert_eq_num 0 "$GATE_RC" 'a declared claim passes'
-  out="$(DOCUMENT_SHAPE_SCAN_ROOT="$root" bash "$GATE" --map 2>&1)"
-  assert_contains "$out" "evidence	principle-example" 'the map names the skill under its claim'
-  assert_contains "$out" 'claim map: 1 skill(s) across 1 claim(s) of 1' 'the map totals what it read'
-}
-
-test_missing_claim_is_flagged() {
-  local root
-  root="$(make_root no_claim)"
-  write_skill "$root" principle-example "$(conforming | sed '/^metadata:$/,+1d')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a principle with no claim fails the gate'
-  assert_contains "$GATE_OUT" 'no claim declared' 'the finding names the missing declaration'
-}
-
-test_unknown_claim_is_flagged() {
-  local root
-  root="$(make_root unknown_claim)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^  claim: evidence|  claim: vibes|')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a claim the table lacks fails the gate'
-  assert_contains "$GATE_OUT" 'claim `vibes` is not in the authoring convention' 'the finding names the claim and its home'
-}
-
 test_broken_block_is_flagged() {
   local root
   root="$(make_root broken_block)"
@@ -228,7 +192,7 @@ description: "a value that never closes
 test_non_boolean_flag_is_flagged() {
   local root
   root="$(make_root non_boolean_flag)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^metadata:$|disable-model-invocation: yes\nmetadata:|')"
+  write_skill "$root" principle-example "$(conforming | sed 's|^name: principle-example$|name: principle-example\ndisable-model-invocation: yes|')"
   run_gate "$root"
   assert_ne 0 "$GATE_RC" 'a string flag fails the gate'
   assert_contains "$GATE_OUT" 'disable-model-invocation is "yes"' 'the finding names the field and its value'
@@ -256,8 +220,5 @@ run_test test_named_part_after_the_test_is_flagged
 run_test test_title_case_title_is_flagged
 run_test test_skill_without_the_name_segment_is_not_read
 run_test test_a_fixture_root_with_no_principle_is_not_read
-run_test test_declared_claim_is_clean_and_mapped
-run_test test_missing_claim_is_flagged
-run_test test_unknown_claim_is_flagged
 
 test_done

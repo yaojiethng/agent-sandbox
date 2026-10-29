@@ -16,6 +16,10 @@
 #      `scope` names the runbooks it governs; the project layer.s `### Loop
 #      prompts` table is the inventory an agent reads. One declaration, two
 #      readers, checked both ways.
+#   3. The subject table in docs/development/instruction-surface-conventions.md
+#      names one section per level-two heading, and the layer that owns it. The
+#      table is the ruling; this check catches drift between it and the
+#      headings.
 #
 # Everything else about a surface is checked against the artefact that
 # implements it by scripts/check_container_layout.sh, which reads the same
@@ -26,7 +30,7 @@
 # touching the real tree.
 #
 # Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
-# finding count is printed, never encoded (bash-coding-conventions.md 3.2).
+# finding count is printed, never encoded (pattern p-14).
 
 set -uo pipefail
 
@@ -48,6 +52,10 @@ LAYER_FILES=(
 ITERATION_POLICY_REL="docs/reference/iteration_protocol.md"
 INVENTORY_REL="AGENTS.md"
 INVENTORY_HEADING="### Loop prompts"
+
+# The subject table: one row per level-two section of either layer, naming the
+# layer that owns it.
+LAYER_TABLE_REL="docs/development/instruction-surface-conventions.md"
 
 FINDINGS=0
 finding() {
@@ -136,6 +144,31 @@ inventory_prompts() {
       if (name != "") print name
     }
   ' "$1" | sort
+}
+
+# layer_headings FILE  --  the level-two headings, one per line. A `##` heading
+# identifies a section; a `###` heading is inside one and names no subject of
+# its own.
+layer_headings() {
+  awk '/^## [^*]/ { h = $0; sub(/^## /, "", h); print h }' "$1"
+}
+
+# subject_rows FILE  --  the subject table's rows as section|layer, backticks and
+# spacing stripped. The table opens with its `Subject | Section | Layer` header,
+# so a document may hold other tables.
+subject_rows() {
+  awk -F'|' '
+    !inside && /^\|[[:space:]]*Subject[[:space:]]*\|/ { inside = 1; next }
+    inside && $0 !~ /^\|/ { exit }
+    inside && NF >= 4 && $2 !~ /^[[:space:]]*-+[[:space:]]*$/ {
+      section = $3; layer = $4
+      gsub(/`/, "", section)
+      gsub(/`/, "", layer)
+      sub(/^[[:space:]]+/, "", section); sub(/[[:space:]]+$/, "", section)
+      sub(/^[[:space:]]+/, "", layer); sub(/[[:space:]]+$/, "", layer)
+      if (section != "") print section "|" layer
+    }
+  ' "$1"
 }
 
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/surface.XXXXXX")"
@@ -241,6 +274,54 @@ else
   fi
 fi
 
+# The subject table, three ways: a heading with no row, a row naming the layer
+# the heading is not in, and a row naming a section no layer carries. The first
+# two are the drift a new or moved section leaves; the third is a row that
+# outlived its section.
+layer_table_file="$SCAN_ROOT/$LAYER_TABLE_REL"
+if [[ ! -f "$layer_table_file" ]]; then
+  finding "$LAYER_TABLE_REL" "missing; the subject table is the layer declaration this check reads"
+else
+  subject_rows "$layer_table_file" > "$WORK_DIR/subjects"
+  if [[ ! -s "$WORK_DIR/subjects" ]]; then
+    finding "$LAYER_TABLE_REL" "holds no subject-table row; the table opens with '| Subject | Section | Layer |'"
+  fi
+
+  for entry in "${LAYER_FILES[@]}"; do
+    layer="${entry%%:*}"
+    layer_rel="${entry#*:}"
+    layer_file="$SCAN_ROOT/$layer_rel"
+    [[ -f "$layer_file" ]] || continue
+    while read -r heading; do
+      [[ -z "$heading" ]] && continue
+      if awk -F'|' -v section="$heading" -v want="$layer" '$1 == section && $2 == want { found = 1 } END { exit !found }' "$WORK_DIR/subjects"; then
+        continue
+      fi
+      other="$(awk -F'|' -v section="$heading" '$1 == section { print $2 }' "$WORK_DIR/subjects" | sort -u | paste -sd, -)"
+      if [[ -n "$other" ]]; then
+        finding "$layer_rel" "the subject table files '$heading' under '$other', but the section is in the $layer layer"
+      else
+        finding "$layer_rel" "the section '$heading' has no subject-table row"
+      fi
+    done < <(layer_headings "$layer_file")
+  done
+
+  while IFS='|' read -r section layer; do
+    [[ -z "$section" ]] && continue
+    owner_rel=""
+    for entry in "${LAYER_FILES[@]}"; do
+      [[ "${entry%%:*}" == "$layer" ]] && owner_rel="${entry#*:}"
+    done
+    if [[ -z "$owner_rel" ]]; then
+      finding "$LAYER_TABLE_REL" "the row for '$section' names '$layer', which is not one of the two layers"
+      continue
+    fi
+    if ! layer_headings "$SCAN_ROOT/$owner_rel" | grep -qxF "$section"; then
+      finding "$LAYER_TABLE_REL" "the row for '$section' names the $layer layer, which carries no such section"
+    fi
+  done < "$WORK_DIR/subjects"
+fi
+
 if (( FINDINGS == 0 )); then
   echo "Instruction-surface gate: clean across ${#SESSION_PATHS[@]} session row(s)"
   echo "Clean (${SECONDS}s)"
@@ -248,5 +329,5 @@ if (( FINDINGS == 0 )); then
 fi
 
 echo "Instruction-surface gate: $FINDINGS finding(s)" >&2
-echo "Blocking gate: align the two AGENTS.md layer tables with the manifest's session rows, or the loop inventory with the protocol's scope (see docs/development/instruction-surface-conventions.md)." >&2
+echo "Blocking gate: align the two AGENTS.md layer tables with the manifest's session rows, the subject table with the layers' headings, or the loop inventory with the protocol's scope (see docs/development/instruction-surface-conventions.md)." >&2
 exit 1

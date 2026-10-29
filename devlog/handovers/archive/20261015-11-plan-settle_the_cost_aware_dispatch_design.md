@@ -21,7 +21,7 @@ Out of scope: implementing the remainder, and the M3.3.2 and M3.3.3 sub-mileston
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The settled design is written | [`20261015-design-settled-cost_aware_dispatch.md`](../../discussions/20261015-design-settled-cost_aware_dispatch.md) | Accepted |
+| The settled design is written | [`20261015-design-settled-cost_aware_dispatch.md`](../../discussions/archive/20261015-design-settled-cost_aware_dispatch.md) | Accepted |
 | M3.6 is split into sub-milestones | `devlog/roadmap.md` M3.6.1, M3.6.2, M3.6.3, and three summary rows | Accepted |
 | The frontmatter names the active sub-milestone | `active-milestone: M3.6.1 - Disable and ship OpenCode dispatch` | Accepted |
 | Gates clean | `bash scripts/lint.sh` clean across 8 gates | Accepted |
@@ -52,6 +52,6 @@ None.
 
 | File | Change |
 |---|---|
-| [`devlog/discussions/20261015-design-settled-cost_aware_dispatch.md`](../../discussions/20261015-design-settled-cost_aware_dispatch.md) | new: the settled shape, the ordering, the measurement boundary, the router boundary, the failure taxonomy, the split |
+| [`devlog/discussions/archive/20261015-design-settled-cost_aware_dispatch.md`](../../discussions/archive/20261015-design-settled-cost_aware_dispatch.md) | new: the settled shape, the ordering, the measurement boundary, the router boundary, the failure taxonomy, the split |
 | [`devlog/roadmap.md`](../../roadmap.md) | M3.6 becomes a parent with M3.6.1, M3.6.2 and M3.6.3; the rows are regrouped; three summary rows and the frontmatter follow |
 | [`devlog/handovers/archive/20261015-11-plan-settle_the_cost_aware_dispatch_design.md`](20261015-11-plan-settle_the_cost_aware_dispatch_design.md) | this record |

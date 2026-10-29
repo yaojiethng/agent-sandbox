@@ -77,15 +77,24 @@ This step defines scope but does not stop for a release. The scope gate below co
 
 ## Step 3  --  Design
 
-Skip design only if the roadmap entry already carries resolved decisions with recorded rationale (a task list alone does not satisfy the skip). Otherwise open a design document in `devlog/discussions/` per the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`). Gather requirements and resolve any deferred story that depends on this iteration. Record decisions in the roadmap and handover per the project's `task-list` convention. If the design ends in an implementation decision, create an ADR before releasing, per the project's `decision-records` convention. Design runs before the scope gate and does not itself stop for a release; the operator confirms design as part of the scope gate.
+Resolve the design questions for what this iteration builds, before the scope gate. A design that outgrows a single iteration is [`plan.md`](plan.md)'s, which runs at milestone or task grain.
 
-**Design precedence.** This step designs what one iteration builds. A design that outgrows a single iteration is [`plan.md`](plan.md)'s, which runs at milestone or task grain.
+Gather requirements and resolve any deferred story that depends on this iteration.
 
-Exit condition: all design questions resolved and recorded, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
+Decisions are recorded by default in the handover's `## Decisions` table, which is what the next iteration reads. A design document is opened only on operator direction. The agent proposes one, without opening it, when any of these holds:
+
+- more than one option is live and the roadmap entry does not settle which;
+- the decision must outlive this iteration;
+- the decision changes an interface, a contract, or a file set that another iteration builds against;
+- the work would otherwise produce an ADR with no record of the alternatives it rejected.
+
+Record decisions in the roadmap and handover per the project's `task-list` convention, and if the design settles an implementation decision, create an ADR before releasing, per the project's `decision-records` convention.
+
+Exit condition: all design questions resolved and recorded, any suggestion carried to the scope gate, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
 
 ## Step 4  --  Information gathering pass
 
-After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate, per the `doc-maintenance` review pass, `workflow/coding-agent/skills/doc-maintenance/SKILL.md`. (Assessed step: run unless not applicable to the iteration type.)
+After design is confirmed, read in order: the roadmap task, the design decisions, the conceptual documents, and the architecture documents. Accumulate lapses across all four; group related lapses by document boundary; surface them together at the scope gate, per the `doc-maintenance` review pass, `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md`. (Assessed step: run unless not applicable to the iteration type.)
 
 ## Scope gate
 
@@ -139,7 +148,7 @@ Stop here and wait for an explicit release before continuing. On release, update
 
 Produce changes against the confirmed scope. Write tests alongside per the `testing` skill. On design divergence, correct the architecture document before continuing. Record adjacent issues in the handover's Findings; defer them by default.
 
-The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) holds the invariants this step runs. Four of them are about records, and each fires while the work is produced rather than at the close.
+The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) holds the invariants this step runs.
 
 - **Record decisions live.** A decision is recorded in the handover's Decisions table as it is made, with the document where it was recorded. A decision that lives only in chat does not exist for the next iteration.
 - **Record a document-relevant change when you make it.** A change to an invariant, interface or contract is recorded when it is made, not at the close; a record that waits lets a stale document govern the work in the meantime.
@@ -149,8 +158,8 @@ The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/
 The handover write-back fires at three moments in the runbook's operation:
 
 - **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task.
-- **On discovery:** a bug, contradiction, design gap, obstacle, or new file in scope goes to Findings immediately; if it changes the approach, surface it in chat before proceeding.
-- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row.
+- **On discovery:** a bug, contradiction, design gap, obstacle, or new file in scope is a Findings row in the same turn it is found, before it is mentioned in chat; if it changes the approach, surface it in chat before proceeding.
+- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row. A row is an instruction to a later session, so it states the intent and leaves the method to the doer, per `$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`.
 
 **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently.
 
@@ -159,7 +168,7 @@ The handover write-back fires at three moments in the runbook's operation:
 Step 7 is the pre-close verification before the release gate. Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so this is not a separate named gate. The summary has six sections:
 
 1. **Acceptance criteria** -- the table the project's `work-log` convention states, with `Result` carrying the marking; each criterion marked accepted or pushed. Run verifiable checks and show output.
-2. **Roadmap write-back** -- per task touched, the exact row change and the completed rows it supersedes or invalidates, per the project's `task-list` convention. When a task's sub-rows are all resolved, present the compacted outcome summary here, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
+2. **Roadmap write-back** -- the rows are written before this gate, so the summary shows the diff that carries them: `git diff <iteration-base> -- devlog/roadmap.md`, where `<iteration-base>` is `HEAD` when nothing is committed this iteration and otherwise the delivery commit it opened on. Every `Completed` row maps to a line in that diff or is raised as a finding. When a task's sub-rows are all resolved, the diff carries the compacted outcome summary, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
 | File | Change planned | Status |
@@ -170,7 +179,7 @@ Every row must carry a status. A deferred or not-started row must be written bac
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
 5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
-6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbook/content.md) of `handover-maintenance` over this handover. List every finding with its `Triaged to:` destination, and both reports with what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
+6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbook/content.md) of `handover-maintenance` over this handover. Read the findings from the handover's `## Findings` table, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
 

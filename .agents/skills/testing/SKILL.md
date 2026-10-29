@@ -52,3 +52,4 @@ A change to a library or script is not complete until its tests are reviewed and
 - When the change touches test files, run `make test-liveness`; a finding is a defect to fix in the same change.
 - A handover or finding does not claim a behaviour branch no test exercises. Where a branch is untested, state why at the code, per [`patterns/structure.md`](patterns/structure.md).
 - An output-contract change produces a propagation checklist per the [`propagation-check`](../../../src/reasoning/agent/skills/propagation-check/SKILL.md) skill.
+- A change that adds or edits a test is reviewed by the [`test-review`](../../../workflow/coding-agent/skills/code-review/runbooks/test-review/SKILL.md) runbook; a finding there is fixed in the same change.

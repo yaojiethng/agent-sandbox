@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This document states the authoring rules for prompts and skills. It answers four questions: what structure a workflow document has, what belongs in a runbook versus an advisor, how to scope a prompt's subject, and how to identify a workflow document. It is the source of truth for the workflow-document presentation rules that the `/document` stub defers here.
+This document states the authoring rules for prompts and skills. It answers four questions: what structure a workflow document has, what belongs in a runbook versus an advisor, how to scope a prompt's subject, and how to identify a workflow document. It is the source of truth for the workflow-document presentation rules.
 
 The per-prompt quality passes read this document before they edit a prompt. The `fanout` doc pass reads it before it edits that prompt. Any session that writes a new prompt or skill reads it first.
 
@@ -18,7 +18,7 @@ A document an agent consumes is one of three types. The type determines where it
 
 **Reference** documents state facts consulted on demand. They define terms, list options, or hold data. A reference document states facts; a rule it stated would make it a policy document, per the type test below.
 
-**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; the `docs` convention, `.agents/skills/docs/SKILL.md` excludes them from its scope by the same boundary, because skill files and prompt templates are not documentation.
+**Workflow** documents are prompts and skills. They are execution helpers and iteration tooling. They hold the rules their own procedure runs, and they point at the source of truth of every rule they borrow, or inline a distillation for context efficiency. A judgement used by more than one document lives in a principle skill, and that skill is its only source of truth. This document calls them workflow documents; the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` excludes them from its scope by the same boundary, because skill files and prompt templates are not documentation.
 
 Two tests identify a workflow document:
 
@@ -89,7 +89,7 @@ A prompt opens with frontmatter and a body. The frontmatter fields are the promp
 
 **The project conventions block.** A workflow document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions the document uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the workflow prescribes no fallback. The block names the convention, never the project's paths - the workflow keeps the procedure and the project's convention-skill holds the structure - so a project with a different layout is served by its own skill. The fourteen loop prompts and the six module skills are the model, and `gm` is the minimal case.
 
-The workflow-document presentation rules that the `/document` stub defers here complete the structure: prose in the body follows the writing standards in the `communication-principle-*` corpus. No step-by-step walkthrough repeats a rule its source already states; the prompt links to that source at the point of handoff. A prompt is never the only source of truth for a rule.
+The workflow-document presentation rules that complete the structure are: prose in the body follows the writing standards in the `communication-principle-*` corpus. No step-by-step walkthrough repeats a rule its source already states; the prompt links to that source at the point of handoff. A prompt is never the only source of truth for a rule.
 
 ## The principle shape
 
@@ -110,21 +110,67 @@ The order is fixed: the pattern, the why, the named parts, the test. A label end
 
 The exemplar is `communication-principle-show-dont-describe`, at `$AGENT_HOME/agent/skills/communication-principle-show-dont-describe/SKILL.md`.
 
-## The principle claims
+The description and the `**Fires on.**` part state the trigger, and selection reads the description alone. A description names the situation the agent is in, not a property of finished text: a rule that governs what to write triggers on the act of writing, because a property of the text can only be read once it exists, and a rule that governs a reading triggers on what the reading finds.
 
-Every principle applies one claim, and the claim is how a reader finds the family of principles that bears on a problem they cannot name yet. The five claims serve one goal, alignment. A text succeeds when the reader holds the model the writer holds, and each claim names a kind of gap between the two. A principle declares its claim in its frontmatter, under the `metadata` key pi documents for extra fields: `metadata:` then `claim: <name>`. `scripts/check_document_shape.sh` reads the declaration and fails a principle that carries none or names one this table does not state, and its `--map` mode prints the corpus grouped by claim.
+## The five questions
 
-| Claim | The claim a skill of this family makes |
-|---|---|
-| `evidence` | a claim carries the artifact that proves it, or the sentence says it is an inference |
-| `source` | a restated fact is a copy and the source owns it, so a copy goes wrong when the source changes and nothing reports it |
-| `scope` | a pointer, a label or a literal names something the reader finds only where the text is read |
-| `reader` | the reader holds what the text gives them, in the order it arrives |
-| `authority` | a document owns the scope it declares and no more |
+Every principle answers one question. A principle governs the trip a decision makes from the writer to the reader-agent who acts on the text: the writer holds a model and a mandate, the text is the only channel, and the reader has the tree and no memory of the conversation. The five questions are the points where that trip fails, and the lists under them are navigation for a writer who cannot name the problem yet.
 
-Two skills may apply one claim when they act on different objects, because each states a different test. Three apply `source`: `only-derive-what-you-own` asks whether the reader can recompute a number, `single-source-of-truth` whether every copy of a rule points at one source, and `guard-derived-state` whether a stored copy has anything that catches its drift. Two skills may not state the same rule.
+The lists are not a registry. The description is the routing surface, so a principle may answer more than one question, and a list that omits one is not a defect; nothing checks the lists.
 
-This table is the only place that decides the set, and the gate reads the set from here. The gate decides that a claim is stated and that the table holds it; which claim a given skill picks stays a judgement, so no gate reads it.
+### Can this sentence be checked?
+
+A claim carries the artifact that proves it, or the sentence says it is an inference.
+
+- [`approval-writes-the-artifact`](../../src/reasoning/providers/pi/config/agent/skills/principle-approval-writes-the-artifact/SKILL.md)
+- [`check-placement`](../../src/reasoning/providers/pi/config/agent/skills/principle-check-placement/SKILL.md)
+- [`guard-the-context-window`](../../src/reasoning/providers/pi/config/agent/skills/principle-guard-the-context-window/SKILL.md)
+- [`say-what-done-looks-like`](../../src/reasoning/providers/pi/config/agent/skills/principle-say-what-done-looks-like/SKILL.md)
+- [`show-dont-describe`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md)
+
+### Is this the source or a copy?
+
+A restated fact is a copy and the source owns it, so a copy goes wrong when the source changes and nothing reports it.
+
+- [`justify-materialization-cost`](../../src/reasoning/providers/pi/config/agent/skills/principle-justify-materialization-cost/SKILL.md)
+- [`only-derive-what-you-own`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-only-derive-what-you-own/SKILL.md)
+- [`propagation-discipline`](../../src/reasoning/providers/pi/config/agent/skills/principle-propagation-discipline/SKILL.md)
+- [`rewrite-syntax-never-semantics`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md)
+- [`single-source-of-truth`](../../src/reasoning/providers/pi/config/agent/skills/principle-single-source-of-truth/SKILL.md)
+
+### Does this name resolve where it is read?
+
+A pointer, a label or a literal names something the reader finds only where the text is read.
+
+- [`dont-forecast-undone-work`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md)
+- [`link-what-the-reader-can-open`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-link-what-the-reader-can-open/SKILL.md)
+- [`name-the-value-not-a-literal`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-name-the-value-not-a-literal/SKILL.md)
+- [`one-addressing-axis`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-one-addressing-axis/SKILL.md)
+- [`write-for-the-reader`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md)
+
+### Can the reader build the model the text assumes?
+
+The reader holds what the text gives them, in the order it arrives, and the text supplies the model before it asks them to use it.
+
+- [`align-the-mental-model`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-align-the-mental-model/SKILL.md)
+- [`attach-as-you-read`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-attach-as-you-read/SKILL.md)
+- [`cut-what-carries-nothing`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md)
+- [`define-terminology-before-use`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-define-terminology-before-use/SKILL.md)
+- [`keep-a-subject-near`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-keep-a-subject-near/SKILL.md)
+- [`maximize-conceptual-leverage`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md)
+- [`single-train-of-thought`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-single-train-of-thought/SKILL.md)
+
+### Who owns this decision?
+
+A text takes only the decisions its author holds and leaves the rest to the party with the context: the writer owns the intent, the bound and the evidence, the doer owns the route.
+
+- [`hand-off-by-naming-the-boundary`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md)
+- [`match-precision-to-stakes`](../../src/reasoning/providers/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md)
+- [`minimal-corrections`](../../src/reasoning/providers/pi/config/agent/skills/principle-minimal-corrections/SKILL.md)
+- [`own-the-scope-you-declare`](../../src/reasoning/providers/pi/config/agent/skills/principle-own-the-scope-you-declare/SKILL.md)
+- [`state-intent-delegate-method`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md)
+
+Two principles may answer one question when they act on different objects, because each states a different test; no two principles state the same test.
 
 ## Scope a prompt's subject
 
@@ -136,6 +182,10 @@ A prompt that hands off to a sub-agent states the target's whole owned-file set,
 
 **A skill's name and description are its signpost.** A skill is advertised by its name and its description, and its body loads only after a reader decides, so those two fields carry the words that steer, and the description summarises to the name. The judgement is `skill-scaffolder`'s [`patterns/signposting.md`](../../.agents/skills/skill-scaffolder/patterns/signposting.md).
 
+## State the intent, delegate the method
+
+An instruction states what the work must achieve and leaves the route to the party who holds the context. A step is satisfied by being performed, so a prompt of steps can be met by the wrong result, while an outcome is checked against the thing it names. An order that is itself the requirement, such as a migration sequence or a command the operator runs, is asked for as a deliverable with its constraints, so the doer still designs it. The judgement is `communication-principle-state-intent-delegate-method` at `$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`.
+
 ## A fast path names its source of truth
 
 A workflow document may inline a distillation of a rule for context efficiency: the inline names the source of truth, and where staleness would mislead it is labelled a convenience copy. The judgement and the fast path are `principle-single-source-of-truth` at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, which is their only source of truth.
@@ -144,7 +194,7 @@ The source of truth is decided by the kind, not by the layer, per `### Norm kind
 
 Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
-The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in [`agent_workflow.md`](../reference/agent_workflow.md#prompt-templates); the register lists the signs to look for.
+The diagnostic register for these checks is `## The diagnostic register` in the [`doc-maintenance`](../../.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) skill. The prescriptive rules are here and in [`agent_workflow.md`](../reference/agent_workflow.md#prompt-templates); the register lists the signs to look for.
 
 ## A workflow document owns the scope it declares
 
@@ -152,7 +202,7 @@ A workflow document owns the scope it declares, holds everything that scope owes
 
 ## The workflow handoff pattern
 
-A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Four prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` for the close, which hands the commit to `/commit`; [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way, and [`/document`](../../workflow/coding-agent/prompts/document.md) hands at its close.
+A runbook that ends by handing to another prompt names the boundary in four moves. The judgement is the `communication-principle-hand-off-by-naming-the-boundary` skill at `$AGENT_HOME/agent/skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md`, which is its only source of truth. Three prompts apply the shape: [`/iter`](../../workflow/coding-agent/prompts/iter.md) and [`/plan`](../../workflow/coding-agent/prompts/plan.md) hand to `/wrapup` for the close, which hands the commit to `/commit`, and [`/sidequest`](../../workflow/coding-agent/prompts/sidequest.md) hands the same way.
 
 ## A reference resolves where the workflow document runs
 
@@ -178,10 +228,12 @@ A name changes when its scope changes. Rename a document whose name no longer ma
 
 ## Draft status and the switch-over gate
 
-A prompt or skill that is not yet operator-reviewed is a draft. The durable gate is the location: drafts live in `.agents/drafts/` -- a root the frontmatter gate does not scan, the dispatch conventions do not read, and live dispatch never references -- so an unreviewed prompt is structurally unreachable by the run paths that would trust it. The file itself carries `**Status:** draft` as the human-readable marker. A draft is released from draft status only with explicit operator direction; the release is one commit that moves the file from `drafts/` into its live root (or the agent-facing prompt tree), runs a documentation pass over it at the same time, and the move is the promotion -- there is no separate promotion step to forget. A prompt written by an autonomous worker unit is a draft by default, whatever its author claimed; the `maintenance` dispatch prompt's premature switch-over (it became load-bearing in the session that wrote it, and carried a merge-back contract that produced seven `merge:` commits) is the recorded incident this gate exists to stop.
+A prompt or skill that is not yet operator-reviewed is a draft. The durable gate is the location: drafts live in `.agents/drafts/` -- a root the frontmatter gate does not scan, the dispatch conventions do not read, and live dispatch never references -- so an unreviewed prompt is structurally unreachable by the run paths that would trust it. The file itself carries `**Status:** draft` as the human-readable marker. A draft is released from draft status only with explicit operator direction; the release is one commit that moves the file from `drafts/` into its live root (or the agent-facing prompt tree), runs a documentation pass over it at the same time, and the move is the promotion -- there is no separate promotion step to forget. A prompt written by an autonomous worker unit is a draft by default, whatever its author claimed; the `maintenance` dispatch prompt's premature switch-over is the recorded incident this gate exists to stop.
+
+The folder's other content is the run brief, the plan a session executes, including the brief `/scope` saves: a brief names the roadmap row that owns it, and it is deleted by the commit that closes that row.
 
 ## Compliance
 
-The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time.
+The per-prompt quality passes read this document and apply it to one prompt each, starting with `/task-queue`. Each pass must name what it changed and why against a specific rule here. The `fanout` doc pass applies the same reading to that prompt. A session that writes a new prompt or skill applies it at authoring time. Before the file lands, read it back against two judgements: a sentence that needs the session, and a sentence the reader could drop without losing an action, stated by [`write-for-the-reader`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) and [`cut-what-carries-nothing`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md).
 
-The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`doc-maintenance`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.
+The [`conventions.md`](conventions.md) index links here as the canonical owner for workflow-document authoring. [`doc-maintenance`](../../.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) routes workflow-document prescriptive rules here. [`agent_workflow.md`](../reference/agent_workflow.md) links here from the "How the Workflow is Expressed" section, so a reader from the model finds the authoring bar. The `fanout` rename and doc pass read against this document.

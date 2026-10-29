@@ -1,6 +1,20 @@
 # Principle Skill Shape
 
-**Current:** 2026-10-21
+**Current:** 2026-10-28
+
+## 2026-10-28 -- The principle shape carries no claim field
+
+**Decision:** A principle skill carries the body shape and nothing else. The `metadata.claim` declaration is removed from every principle, the authoring convention's claim table is replaced by five question headings that group the corpus, and the gate drops the claim rule and its `--map` mode. The 2026-10-21 entry's Edge cases clause declaring the field is retired; the entry otherwise stands. The five questions live in `docs/development/prompt-authoring-conventions.md` `## The five questions`: can this sentence be checked, is this the source or a copy, does this name resolve where it is read, can the reader build the model the text assumes, who owns this decision. Each carries a linked member list, and the convention states that the lists are navigation and that no gate reads them.
+
+**Rationale:** The field was a stored classification that nothing decided on. The gate checked that a claim was named and that the table held it, never that the filing was right, so swapping two filings passed and a mis-filing was undetectable. The five names were not exclusive either: `scope` and `authority` both bounded a text, and `evidence` and `source` both traced where a fact came from. A stored judgement that no check can falsify and no reader acts on charges a declaration per file and teaches an author to classify rather than to write. The tests are the useful part, and a reader meets them in one place, so the labels go and the tests stay.
+
+**Rejected alternatives:**
+
+- *Give the field a consumer.* **Intent failure**: the consumer would inherit the overlap, because `scope` and `authority`, and `evidence` and `source`, would each claim the same principle, so it would need a tie-break the field cannot supply.
+- *Re-derive the axis bottom-up from the twenty-seven tests.* **Neither**: the tests were already written per skill, so a re-derivation would land near the same five, and it would still need a reader to be worth storing.
+- *Gate the member lists for coverage.* **Intent failure**: the lists are navigation for a writer using the conventions and the description is the routing surface, so a missing name costs a reader nothing and a gate would guard a copy the text does not need.
+
+**Edge cases / drivers:** The rule that no skill or prompt declares a claim is prose only, with no detector: it is verified once at the close that removed the field, and nothing guards it after that. The five questions name where a decision fails to cross from the writer to the reader-agent, and the fourth is deliberately stated as whether the model gets built rather than as one technique for building it. A principle may bear on more than one question, and the index does not adjudicate.
 
 ## 2026-10-21 -- A principle skill carries six parts in one shape, and a gate holds it
 

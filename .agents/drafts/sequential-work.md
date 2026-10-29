@@ -21,7 +21,7 @@ The primary owns the run plan, the well-specifiedness test, the unit split, the 
 
 Run this way when the plan names its units and the units are independent. Independent means one unit's work does not depend on another unit's result; two units that must change one file are one unit.
 
-Not this template: one large pass fanned out to concurrent subagents on a frozen snapshot (see [`fanout-run.md`](fanout-run.md)), or a whole campaign handed to a single subagent (see [`test-quality-campaign-run.md`](test-quality-campaign-run.md)).
+Not this template: one large pass fanned out to concurrent subagents on a frozen snapshot (see [`fanout.md`](fanout.md)).
 
 ## Step 1 - Build the run plan
 
@@ -132,7 +132,7 @@ Then confirm the boundary: suite green, lint clean, tree clean. An interrupted r
 The run's work is committed, so the review range is a fixed `git diff <run-base>..HEAD` and the tree is clean.
 
 1. Sweep the cheap classes over the run's changes: documents that pin strings, commands, exit semantics or counts the run changed, and any term or count that drifted across records.
-2. Run the bounded review loop in [`review-loop-run.md`](review-loop-run.md), with a reviewer of the operator's choice.
+2. Run the review loop in [`references/loop.md`](../../workflow/coding-agent/skills/code-review/references/loop.md), with a reviewer of the operator's choice.
 3. Present the run: the units and their commits, the review verdict, the parked units with their files, the bundle directories filed, and the rows that stay open.
 
 ## Failure modes observed

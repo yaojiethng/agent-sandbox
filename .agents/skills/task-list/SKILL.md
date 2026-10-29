@@ -15,17 +15,23 @@ The roadmap and its two companions are one record: a milestone title, a status, 
 
 `devlog/roadmap_future.md` is a planning document, not a historical record: its sections may be rewritten freely as understanding evolves, and the changelog is the permanent record.
 
+| File | Open when |
+|---|---|
+| [`references/changelog.md`](references/changelog.md) | you append a changelog entry at a milestone close, or correct a closed one |
+
 ## The milestone identifier
 
 The roadmap's `active-milestone` frontmatter and a handover's `milestone` field carry the same value: the milestone's identifier, a space-hyphen-space, then its name. The identifier is a dotted path (`M3.3.1`, `T12`) and the name is the one the milestone carries in the roadmap. If a handover's `milestone` field names a milestone the roadmap does not carry, the handover is unassigned.
 
 ## Marking a task done
 
-**The invariant.** A completed task is marked, and the mark is committed. The roadmap is the sole task list: a task an iteration generates lands on the roadmap, not only in a handover.
+**The invariant.** A completed task is marked, and the mark rides the commit that lands the artifact it describes -- so a completion that is reverted takes its marker with it. The roadmap is the sole task list: a task an iteration generates lands on the roadmap, not only in a handover.
 
 **The marker obeys the nesting.** A parent row is `- [x]` only when every row beneath it is `- [x]`, however complete the parent's own text reads.
 
 **A rejected completion reverts.** When the operator rejects a completion claim, the marker returns to `- [ ]`.
+
+**A closed row is edited in place.** A correction to a closed roadmap row changes its text directly and adds no marker; a correction that creates work is a new open row. The changelog is the exception, because it is the archive, and its form is in [`references/changelog.md`](references/changelog.md).
 
 **Every roadmap edit is a targeted change**, not a full-file rewrite.
 
@@ -91,38 +97,3 @@ Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited. A mileston
 **Single-edit record defects** - a defect in the record layer that one edit fixes, found by a gate or a survey, is corrected in place and named in the iteration's handover. It does not become a roadmap row: write a row only when the work needs a design decision, spans iterations, or closes a policy gap. A sweep that finds several such defects produces one commit and one handover, not one row each.
 
 **Ordering** - tasks may be ordered: a task can be sequenced after another task, or after a session that must run first. A task is *blocked* while something ordered before it has not completed. The roadmap carries no blocked marker: ordering is read from the rows at the moment a task is chosen.
-
-## The changelog entry
-
-Changelog entries live in `devlog/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
-
-```text
-## M{n} - {Title}
-
-*{One sentence: what the system can now do.}*
-
-{Two to four sentences: what was built - mechanisms, key decisions, concrete outcomes. No file lists. Capability first, mechanism second.}
-
----
-```
-
-The italicised summary is the capability sentence: what an operator or agent can now do that they could not before. Name concrete components without listing files. The changelog describes completed work only. An entry that states only abstract capability is too thin; one that recounts the implementation is too heavy. The judgement is the `communication-principle-dont-forecast-undone-work` skill at `$AGENT_HOME/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md`.
-
-## Corrections to a closed entry
-
-A closed roadmap or changelog entry does not change: it keeps its text, gains one of the markers below, and gains the successor entry that carries the correction.
-
-| Marker | Meaning |
-|---|---|
-| `[SUPERSEDED in MX.X]` | the row is closed and a later milestone carries the correction; the row stays |
-| `[REMOVED in MX.X]` | the row is closed and the content it claimed is gone from the active system description; the row stays |
-
-**Marker order.** When more than one correction lands on a closed row, the markers read newest first, oldest last. The newest marker governs; a reader acts on it. A row never carries two markers for the same correction.
-
-**The anchor** names the milestone that carries the correction, open or closed. A correction landing inside the current milestone is marked `[SUPERSEDED in M3]`. Work belonging to no milestone is marked with its iteration: `[SUPERSEDED in 20260927-06]`.
-
-**The successor entry** is written where the roadmap puts new work, under the current sub-milestone, in the row form the milestone requires. Do not rewrite the marked row, and do not delete it.
-
-A correction that cannot be finished leaves the record as it was, with the metadata it carried before. A correction that does finish reopens the record and closes it again with the successor entry; the changelog is corrected the same way.
-
-The shared principle, the direction, the propagation rule and the form per record type are in the [`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) procedure, `## Correcting a record`. The decisions behind the correction form are in `docs/adr/closed_record_corrections.md`.

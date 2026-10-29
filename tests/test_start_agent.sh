@@ -434,8 +434,8 @@ test_wizard_rejects_non_standard_mode() {
 # WSL path validation
 # ---------------------------------------------------------------------------
 # validate_wsl_path rejects Windows drive paths with a WSL conversion hint.
-# start_agent.sh is now dual-use (rule 1.11 guard) and validate_wsl_path returns
-# (rule 3.1), so it can be sourced and called in-process.
+# start_agent.sh is now dual-use (pattern p-5 guard) and validate_wsl_path returns
+# (pattern p-13), so it can be sourced and called in-process.
 source "$REPO_ROOT/scripts/start_agent.sh"
 
 # Given: a Linux absolute path

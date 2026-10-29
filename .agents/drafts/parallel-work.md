@@ -24,8 +24,7 @@ Run this way when the plan names two or more tracks that are independent, each i
 Not this template:
 
 - one track, or units with a real dependency between them - use [`sequential-work.md`](sequential-work.md), which is sequential by design and needs no worktrees.
-- a read-mostly pass over many files, where each subagent reads a slice and returns verdicts with no commits - use [`fanout-run.md`](fanout-run.md). Its frozen snapshot is cheaper, because a subagent's edits stay in its own extraction and the primary merges nothing.
-- a whole campaign handed to a single subagent - use [`test-quality-campaign-run.md`](test-quality-campaign-run.md).
+- a read-mostly pass over many files, where each subagent reads a slice and returns verdicts with no commits - use [`fanout.md`](fanout.md). Its frozen snapshot is cheaper, because a subagent's edits stay in its own extraction and the primary merges nothing.
 - tracks where the operator must decide at boundaries the worker itself detects - use [`task-queue.md`](task-queue.md). It runs a fan-out as a fork and a join, hands each break point to the operator, and brings the accepted tracks back.
 
 ## Preconditions
@@ -144,7 +143,7 @@ The one documented exception to `sequential-work.md`'s "a subagent never commits
 
 ## Step 8 - Review the run
 
-The run's own review is the bounded loop in [`review-loop-run.md`](review-loop-run.md), over the merged range. Per track, record what the trial measured and what it cost: units, subagent runs, wall clock per unit, defects found by the primary's verification, and defects the tracks reported themselves. Those numbers are the only evidence for the next concurrency decision, and they are the input the T2 telemetry rows will make automatic.
+The run's own review is the loop in [`references/loop.md`](../../workflow/coding-agent/skills/code-review/references/loop.md), over the merged range. Per track, record what the trial measured and what it cost: units, subagent runs, wall clock per unit, defects found by the primary's verification, and defects the tracks reported themselves. Those numbers are the only evidence for the next concurrency decision, and they are the input the T2 telemetry rows will make automatic.
 
 ## Failure modes observed
 

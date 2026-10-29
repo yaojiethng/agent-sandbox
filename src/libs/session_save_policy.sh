@@ -51,7 +51,7 @@ session_save_needed() {
 #   when a save must run and 1 when there is nothing to save. Prints the
 #   operator diagnostic for both the skip and the undeterminable case. Callers
 #   do not switch on the raw status; this helper owns that decision so the
-#   three-way mapping lives in one place (bash-coding-conventions.md 3.2).
+#   three-way mapping lives in one place (pattern p-14).
 #   LABEL names the caller in the diagnostic.
 save_decision() {
   local _sandbox_dir="${1:?save_decision requires a sandbox dir}" _export_dir="${2:-}" _label="${3:-save}" _rc=0

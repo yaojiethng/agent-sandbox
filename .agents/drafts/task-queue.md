@@ -28,7 +28,7 @@ Run this way when several independent tracks of work each need the operator's de
 Not this template:
 
 - one track with no operator boundary - use `iter.md` or `sequential-work.md`.
-- a read-mostly pass where each subagent returns verdicts and merges nothing - use `fanout-run.md`.
+- a read-mostly pass where each subagent returns verdicts and merges nothing - use `fanout.md`.
 
 The independence rule of `parallel-work` applies to the tracks: no track reads or writes a file another track owns. The queue does not make dependent tracks safe; it makes independent tracks reviewable.
 

@@ -30,7 +30,7 @@
 # backup on exit, including on a failure or an interrupt. It refuses to start
 # on a dirty tree, so the restore is checkable.
 
-# Observe-and-report, per bash-coding-conventions rule 1.17: every row runs and
+# Observe-and-report, per pattern p-11: every row runs and
 # is counted and the exit status carries the verdict. `set -e` would abort the
 # matrix at the first failing row and defeat the report. The flags sit inside
 # the execution guard at the foot of this file, so a test that sources the file
@@ -70,7 +70,7 @@ USAGE
 say() { echo "build_probe: $*"; }
 
 # A missing tool or an unusable output directory is a finding, not a special
-# exit code: report it and exit 1 (bash-coding-conventions rule 3.2).
+# exit code: report it and exit 1 (pattern p-14).
 die() {
   echo "build_probe: ERROR: $*" >&2
   exit 1
@@ -473,7 +473,7 @@ main() {
 }
 
 # Sourced by tests/test_build_probe.sh, and executed by the operator. The
-# guard separates the two modes, per bash-coding-conventions rule 3.3.
+# guard separates the two modes, per pattern p-15.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
   main "$@"

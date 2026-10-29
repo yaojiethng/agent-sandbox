@@ -1,6 +1,6 @@
 ---
 description: "Owns the iteration grain: the two gates, the unit and close invariants the runbooks must not break, and the sidequest rule. The procedures live in the runbooks this document governs."
-scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/document", "/wrapup", "/commit"]
+scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/wrapup", "/commit"]
 reader: [agent]
 ---
 
@@ -31,6 +31,8 @@ A sidequest is an operator-directed work item raised while an iteration is open.
 **Plan before executing.** No file, code, or structural change is produced without a confirmed plan. Proposals wait for operator confirmation before becoming outputs.
 
 **Record decisions where the work lives.** Decisions belong in the documents where they were made (roadmap, architecture docs). The handover points to those documents -- it does not reproduce their content.
+
+**Record a finding when it is found.** It belongs in the record the moment it surfaces, and its destination may be filled later; the row may not wait. The gate reads the record, so a finding held in conversation is not presented to it, and an empty table cannot be told apart from a clean unit.
 
 **Confirm the scope before writing code.** The implementation details -- files, interfaces, naming -- are confirmed by the operator before any code is produced. They are the agreement, not a starting point.
 

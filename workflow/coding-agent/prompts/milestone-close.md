@@ -56,7 +56,7 @@ Every number the close asserts must come from the live record rather than memory
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order. The project's `task-list` convention, The changelog entry, owns the entry's structure and its writing guidance; read them there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
+Append the milestone's entry to `devlog/changelog.md` in milestone order. The project's `task-list` convention's `references/changelog.md` owns the entry's structure and its writing guidance; read it there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
 
 ## Update the records
 

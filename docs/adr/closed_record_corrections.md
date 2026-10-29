@@ -1,6 +1,6 @@
 # Closed Record Corrections
 
-**Current:** 2026-10-19
+**Current:** 2026-10-28
 
 ## Requirements
 
@@ -12,6 +12,19 @@
 | R4 | Propagation | a correction inherits the record set of the unit it corrects |
 | R5 | Operator direction | the agent folds a correction to its own commit while that session is live, and applies one only at the operator's direction after it has ended |
 | R6 | The fold | corrected content rides the unit's own commit, folded, so the history reads as if it had always been that way |
+
+## 2026-10-28 -- The marker is the changelog's; the roadmap is edited in place
+
+**Decision:** R2 and R3 apply to the changelog and not to the roadmap. A closed changelog entry keeps its text, gains its marker and gains the successor entry. A closed roadmap row is edited in place: its text is corrected directly, a correction that creates work is a new open row, and it gains no marker. The changelog's entry and correction forms are in [`task-list`'s changelog reference](../../.agents/skills/task-list/references/changelog.md).
+
+**Rationale:** The state the 2026-09-27 entry protects is the archive -- a completed claim that a later reader acts on. The changelog is that archive; the roadmap is the live task list, and its closed rows are the history of a list, whose provenance the handover and the git history carry. Splitting the form follows what each record is for and stops charging the roadmap's every session for the changelog's rule.
+
+**Rejected alternatives:**
+
+- *Keep the marker for the roadmap* -- the archive is the changelog; a roadmap marker duplicates the successor row that the correction already creates.
+- *Drop the marker for the changelog too* -- a silent rewrite of the permanent record loses the fact that a completed capability claim changed.
+
+**Edge cases / drivers:** A correction that adds work is a new open roadmap row under the milestone that owns it; it is not a marker on the closed row. A correction that changes only a roadmap row's text is a targeted edit, and its reason lives in the handover. Moving a closed milestone's entries to the changelog remains archival, not amendment, and carries no marker.
 
 ## 2026-10-19 -- The minimal-corrections principle is assessed against R1 to R6
 
@@ -27,7 +40,9 @@
 
 **Edge cases / drivers:** A correction that changes only the commit and no record produces no marker, because no record changed. A correction to a record that is still open carries no tag, because the record is not closed. The tag on this record's 2026-09-27 entry stays; it is the form R2 requires, and the 2026-09-28 entry that supersedes it is the successor entry R3 requires for the edge-case sentence.
 
-**Decision:** The judgement about what a correction may contain leaves this record for `principle-minimal-corrections`, and the `git-discipline` convention's fold rules decide only where a correction lands. R5 governs the landing once the session that made the commit has ended. While that session is live and the commit is the agent's own, the agent folds the correction without asking, whichever actor raised the defect. R1, R2, R3, R4 and R6 are unchanged here and are the subject of the open roadmap row "Assess `closed_record_corrections.md` against the principle".
+## 2026-10-18 -- The content judgement leaves, and the operator's direction narrows to a closed session
+
+**Decision:** The judgement about what a correction may contain leaves this record for `principle-minimal-corrections`, and the `git-discipline` convention's fold rules decide only where a correction lands. R5 governs the landing once the session that made the commit has ended. While that session is live and the commit is the agent's own, the agent folds the correction without asking, whichever actor raised the defect. R1, R2, R3, R4 and R6 are unchanged here; the assessment the roadmap row asked for is the 2026-10-19 entry of this record, which keeps all six with a reason and supersedes nothing.
 
 **Rationale:** R5 named one direction for two decisions. A content instruction then read as a landing instruction, and a correction that should have folded into `582af1eb` landed as `f82d1a0d` twenty minutes later, with its own handover and its own record. Naming the two decisions separately is what closes the case that the single clause could not separate.
 
@@ -37,6 +52,10 @@
 - *Defer both the pointer and the R5 narrowing to the assessment row* -- execution failure, for longer. The contradiction is in the tree already, and the assessment is scoped to decide what survives, not to detect that something changed.
 
 **Edge cases / drivers:** A correction raised after the session that made the commit has ended stays with the operator, and the Amending section's case 2 says so. A correction to a commit that is not the agent's own is untouched by this entry. R2's marker is the sharpest question the assessment faces, because a marker is an artifact standing beside the corrected claim.
+
+---
+
+[CORRECTION -- 2026-10-26: the decision closed by naming the assessment as an open roadmap row. The row was closed in ed796fc1, which appended the outcome to it, and removed from the roadmap when M3.3.4 closed in b8e5fc99, so the sentence pointed at nothing; it now names the entry that holds the assessment. The 2026-10-18 heading is restored, because ed796fc1 overwrote it when the assessment was inserted above this entry.]
 
 ## 2026-09-28 -- The fold target is the unit whose scope the fix fits
 

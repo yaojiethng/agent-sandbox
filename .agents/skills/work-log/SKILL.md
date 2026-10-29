@@ -30,7 +30,7 @@ YYYYMMDD-NN-<shortform>-<slug>.md
 | Component | Rule |
 |---|---|
 | `YYYYMMDD` | the date |
-| `NN` | the two-digit per-day index, reset daily: `max + 1` over the day's existing records, so the day's first is `01` |
+| `NN` | the two-digit per-day index: `max + 1` over the day's existing handovers, so the day's first is `01` |
 | `<shortform>` | the type shortform, from the vocabulary below |
 | `<slug>` | the specific subject. Name the concrete thing, not a restatement of the type. Underscores for spaces; no other special character. A reader scanning a list of filenames distinguishes this iteration from others of its type without opening the file. |
 
@@ -119,7 +119,7 @@ YYYYMMDD-{type}-{status}-{description}.md
 | `{status}` | one of the statuses below |
 | `{description}` | `[a-z0-9][a-z0-9._-]*`: lowercase letters, digits, period, underscore and hyphen, with underscores for word spaces |
 
-Hyphens delimit and underscores separate words. A name carries no emoji, no unicode and no space.
+Hyphens delimit and underscores separate words. A name carries no emoji, no unicode, no space and no per-day index: that slot belongs to the handover record, and one date already holds both kinds of record.
 
 A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention and its inbound links are updated.
 

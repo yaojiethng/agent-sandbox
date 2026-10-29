@@ -1,8 +1,6 @@
 ---
 name: principle-own-the-scope-you-declare
-description: Own the scope a workflow document declares, holding everything it owes, describing no work outside it, and handing on one artifact to one next step. Use when writing or reviewing a prompt, a skill, a procedure, or a record, and when a document starts explaining a step that belongs to another one.
-metadata:
-  claim: authority
+description: Apply when a workflow document declares a scope, or when one has started explaining a step that belongs to another. Hold everything the scope owes, describe no work outside it, and hand on one artifact to one next step.
 ---
 
 # Own the scope you declare
@@ -27,10 +25,14 @@ A top-down view of the whole flow is a different artefact. The sequence across e
 
 **Why.** It catches a document locally accurate and globally unreliable. Every sentence is true of the moment it was written, nothing compares it against the work on either side, and when an adjacent stage changes the copy stays behind with no signal.
 
+**Fires on.** A document that declares a scope, and a document whose content has drifted into a neighbour's step.
+
 **When content does not belong.** One of three, and widening is the operator's decision:
 
 - link to the document that owns it,
 - move the content there,
 - ask the operator to widen the scope.
+
+**What it does not cover.** The seam where one document hands to the next: `communication-principle-hand-off-by-naming-the-boundary`. How precise each step's instruction is: `principle-match-precision-to-stakes`.
 
 **The test.** Take each paragraph and name the scope it serves. Serving this one, it must name the input, the decision, the output, the directions or the evidence. Serving an earlier or later one, it is out of scope unless it is a pointer.

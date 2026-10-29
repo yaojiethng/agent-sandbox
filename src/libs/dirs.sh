@@ -97,7 +97,7 @@ dirs_resolve() {
 #   Verifies that each baked library exists. Returns 1 when a CRITICAL file is
 #   missing, after printing the stale-image remedy; a missing WARN file warns
 #   and continues. Returns 1 rather than exiting, per the library rule in
-#   bash-coding-conventions.md 3.1 -- both entrypoints run at top level under
+#   pattern p-13 -- both entrypoints run at top level under
 #   `set -euo pipefail`, so the returned status aborts them identically.
 lib_preflight() {
   local lib_dir="$1"
@@ -121,7 +121,7 @@ lib_preflight() {
 #   Sources a baked library, reporting a stale image by name when it is absent.
 #   A bare source would abort with a raw bash error that names neither the lib
 #   nor the remedy. Returns 1 when the file is missing, per the library rule in
-#   bash-coding-conventions.md 3.1; callers at top level abort under `set -e`.
+#   pattern p-13; callers at top level abort under `set -e`.
 #   Only the entrypoints' own sources go through this: a library's sibling
 #   sources rely on lib_preflight having already named a missing file.
 _source_lib() {

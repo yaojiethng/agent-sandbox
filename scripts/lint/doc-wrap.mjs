@@ -1,5 +1,5 @@
 // markdownlint custom rule: one paragraph per physical line.
-// Enforces `.agents/skills/docs/SKILL.md` `## What a document may contain`:
+// Enforces `.agents/skills/project-documentation/SKILL.md` `## What a document may contain`:
 // prose is one paragraph per physical line, however long the line;
 // hard breaks separate blocks only (paragraphs, headings, list items).
 //
@@ -61,7 +61,7 @@ export default [
           lineNumber: token.map[0] + 1,
           detail: "paragraph spans " + lines +
             " physical lines; keep one paragraph per physical line" +
-            " (`.agents/skills/docs/SKILL.md` ### What a document may contain)",
+            " (`.agents/skills/project-documentation/SKILL.md` ### What a document may contain)",
         });
       }
     },

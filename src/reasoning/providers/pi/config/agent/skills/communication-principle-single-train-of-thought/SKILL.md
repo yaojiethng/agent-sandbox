@@ -1,8 +1,6 @@
 ---
 name: communication-principle-single-train-of-thought
-description: "Apply when writing or editing a document, a section, or a long answer. Carry one line of reasoning throughout, and let each sentence advance the line the reader is already on."
-metadata:
-  claim: reader
+description: "Apply when writing or revising text: a parenthesis, a caveat, a detour, or a summary that adds a claim the body never made carries two lines of reasoning at once. Carry one line, and let each sentence advance it."
 ---
 
 # Keep to a single train of thought
@@ -20,5 +18,9 @@ Carry one line of reasoning through the document, and let each sentence advance 
 | a summary that adds a claim the body never made | a summary of what the body argued |
 
 **Why.** A detour costs the reader the place they were keeping, and the cost falls on the whole document, because the reader can no longer check the parts against one shape. A task with two goals, or a criterion that answers a different question from the one asked, carries the same fault.
+
+**Fires on.** A second line of reasoning placed beside the first, in a parenthesis or a caveat, or a detour that returns.
+
+**What it does not cover.** A sentence that carries nothing: `communication-principle-cut-what-carries-nothing`. A word that loses a distinction: `communication-principle-maximize-conceptual-leverage`.
 
 **The test.** After each sentence, ask whether it advances the line the previous sentence was on. A sentence that opens a new line either closes the previous one or belongs in another document.

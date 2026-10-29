@@ -1,34 +1,27 @@
 // The instruction documents carry one shape.
 //
-// Three claims over the same file set, because the same walk, the same roots and
-// the same parser serve all three:
+// Two claims over the same file set, because the same walk, the same roots and
+// the same parser serve both:
 //
 //   1. Every prompt, skill and policy block parses. Pi drops a prompt whose
 //      frontmatter does not parse, with no message in the session.
-//   2. Every shipping document declares the reader it serves, because the ship
-//      set is a decision rather than a property of the folder.
-//   3. Every skill whose name carries `principle-` carries the corpus shape: a
+//   2. Every skill whose name carries `principle-` carries the corpus shape: a
 //      sentence-case title, `**The pattern.**`, `**Why.**`, any named part, then
-//      `**The test.**`, and a claim from the authoring convention's table.
+//      `**The test.**`
 //
 // Enforces docs/development/prompt-authoring-conventions.md `## Structure of a
-// workflow document`, `## The principle shape` and `## The principle claims`,
-// `.agents/skills/docs/SKILL.md` `## How a document opens`, and the
+// workflow document` and `## The principle shape`,
+// `.agents/skills/project-documentation/SKILL.md` `## How a document opens`, and the
 // decision in docs/adr/principle_skill_shape.md.
 //
 // Every set is derived. The instruction roots come from the manifest's cells, so
-// a new surface enters with the declaration. The claim set comes from the
-// authoring convention, so widening it is one edit to the document a writer
-// already opens. A principle is named by its directory, so it enters the gate
-// the day it exists.
+// a new surface enters with the declaration. A principle is named by its
+// directory, so it enters the gate the day it exists.
 //
 // Test seams: DOCUMENT_SHAPE_SCAN_ROOT points the tree scan at a fixture,
 // DOCUMENT_SHAPE_MANIFEST_ROOT points the declaration read elsewhere, and
 // DOCUMENT_SHAPE_SHIPPED_ROOTS names the shipping folders instead of deriving
 // them, so the fail-closed branch is reachable.
-//
-// Options: `--map` prints the principle corpus grouped by claim, which is a
-// derived view; a written map would restate the skills and go out of date.
 //
 // Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 // finding count is printed, never encoded in the exit code.
@@ -124,34 +117,6 @@ function frontmatterOf(text) {
 
 /** The path shown in a finding: relative to the scan root when it is under it. */
 const display = (file) => (file.startsWith(REPO_ROOT + "/") ? file.slice(REPO_ROOT.length + 1) : file);
-
-// The claim set is declared once, in the authoring convention's table. Reading it
-// from there keeps a claim name out of this file.
-const CLAIMS_DOC = join(MODULE_ROOT, "docs/development/prompt-authoring-conventions.md");
-const CLAIMS_HEADING = "## The principle claims";
-
-function declaredClaims() {
-  const text = readFileSync(CLAIMS_DOC, "utf8");
-  const start = text.indexOf(CLAIMS_HEADING);
-  if (start < 0) return [];
-  const rest = text.slice(start + CLAIMS_HEADING.length);
-  const end = rest.search(/\n## /);
-  const body = end < 0 ? rest : rest.slice(0, end);
-  const claims = [];
-  for (const line of body.split("\n")) {
-    const m = line.match(/^\| `([a-z][a-z-]*)` \|/);
-    if (m) claims.push(m[1]);
-  }
-  return claims;
-}
-
-const CLAIMS = declaredClaims();
-if (CLAIMS.length === 0) {
-  console.error("document shape: " + CLAIMS_DOC + " carries no table under `" + CLAIMS_HEADING + "`; the claim set has no home.");
-  process.exit(1);
-}
-
-const MAP = process.argv.includes("--map");
 
 // Pi's own parser, so the gate accepts exactly the files pi accepts.
 const { parseFrontmatter } = await loadPiFrontmatter("Document shape gate");
@@ -253,7 +218,7 @@ for (const file of shippedFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// A principle carries the corpus shape and one claim from the table.
+// A principle carries the corpus shape.
 // ---------------------------------------------------------------------------
 const PATTERN = "**The pattern.**";
 const WHY = "**Why.**";
@@ -335,24 +300,14 @@ function inspect(rel, text) {
 const targets = skillDirs().filter((d) => d.name.includes(NAME_SEGMENT));
 // Fail closed on the module tree: a rename that dropped the segment from every
 // directory would otherwise turn the shape check into a pass over nothing. A
-// fixture root is pointed at one claim at a time, so a fixture holding no
+// fixture root is pointed at one skill at a time, so a fixture holding no
 // principle is a tree with no corpus to check rather than a failed gate.
 if (targets.length === 0 && REPO_ROOT === MODULE_ROOT) {
   finding(NAME_SEGMENT, 0, "no skill directory carries `" + NAME_SEGMENT + "`; the gate would pass over nothing", { kind: "corpus" });
 }
 
-const groups = new Map(CLAIMS.map((claim) => [claim, []]));
-for (const { name, rel, path } of targets) {
-  const text = readFileSync(path, "utf8");
-  findings.push(...inspect(rel, text));
-  const claim = parseFrontmatter(text)?.frontmatter?.metadata?.claim;
-  if (claim === undefined || claim === "") {
-    finding(rel, 1, "no claim declared; a principle carries `metadata:` then `claim: <name>`");
-  } else if (!CLAIMS.includes(claim)) {
-    finding(rel, 1, "claim `" + claim + "` is not in the authoring convention's table; the set is " + CLAIMS.join(", "));
-  } else {
-    groups.get(claim).push(name);
-  }
+for (const { rel, path } of targets) {
+  findings.push(...inspect(rel, readFileSync(path, "utf8")));
 }
 
 // ---------------------------------------------------------------------------
@@ -363,16 +318,6 @@ for (const f of findings) {
   else if (f.kind === "corpus") console.log(`document shape: ${f.msg}`);
   else console.log(f.line ? `${f.rel}:${f.line} ${f.msg}` : `${f.rel}: ${f.msg}`);
   if (f.offending) console.log("  offending line: " + f.offending.trim().slice(0, 100));
-}
-
-if (MAP) {
-  for (const [claim, skills] of groups) {
-    for (const skill of skills.sort()) console.log(claim + "\t" + skill);
-  }
-  const used = [...groups.values()].filter((list) => list.length > 0);
-  const mapped = used.reduce((sum, list) => sum + list.length, 0);
-  console.log(`claim map: ${mapped} skill(s) across ${used.length} claim(s) of ${targets.length}`);
-  process.exit(findings.length === 0 && mapped === targets.length ? 0 : 1);
 }
 
 const summary =

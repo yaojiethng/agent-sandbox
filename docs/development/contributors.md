@@ -49,7 +49,7 @@ See [`docs/development/standard_operating_procedures.md`](../development/standar
 
 Before making any documentation or roadmap change, read the relevant policy:
 
-- `.agents/skills/docs/SKILL.md` -- document structure, folder ownership, enforcement rules
+- `.agents/skills/project-documentation/SKILL.md` -- document structure, folder ownership, enforcement rules
 - `.agents/skills/task-list/SKILL.md` -- roadmap update sequence and cleanup rules
 - [`docs/reference/iteration_protocol.md`](../reference/iteration_protocol.md) -- iteration workflow, milestone planning, story and investigation conventions
 

@@ -74,7 +74,7 @@ Where a finding is a correction to a closed record, the report states the form t
 
 - A **misrecording** gets the paragraph rewritten in place and the tag moved to a `[CORRECTION -- YYYY-MM-DD: ...]` block at the end of the corrected section.
 - A non-standard format or a policy violation that cannot be corrected cleanly gets an `[AMENDMENT -- YYYY-MM-DD: ...]` block, leaving the content unchanged.
-- An abandoned or superseded item gets `[REMOVED in MX.X]`.
+- An abandoned or superseded **changelog** entry gets `[REMOVED in MX.X]`; a closed **roadmap** row is edited in place, and a correction that creates work is a new open row.
 
 The report names the form; it does not write the block. A correction that more than one form could satisfy is reported as one no record settles, not as a fix this run can recommend for application.
 

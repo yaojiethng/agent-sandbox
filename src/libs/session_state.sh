@@ -96,7 +96,7 @@ init_sha_is_valid() {
 #   The unavailable case shares status 0 with the consistent case deliberately:
 #   the caller's action is identical (proceed) and the function prints a WARN,
 #   so the unknown state is never silent. This is an accepted exception to the
-#   rule in bash-coding-conventions.md 3.2, not an oversight.
+#   rule in pattern p-14, not an oversight.
 container_contract_check() {
   local SANDBOX_DIR="${1:?container_contract_check requires a sandbox dir}"
   local state_file="$SANDBOX_DIR/.git/SESSION_STATE"

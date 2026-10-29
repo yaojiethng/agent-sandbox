@@ -1,8 +1,6 @@
 ---
 name: communication-principle-show-dont-describe
-description: "Hand over the artifact a reader acts on, or the output that proves a rule was followed, instead of a description or an assumption. Apply when writing an instruction, a prompt, a doc, a reply, or a comment."
-metadata:
-  claim: evidence
+description: "Apply when writing or revising prose: a template, a command, an example, or the output that proves a rule was followed can stand where a sentence asks the reader to interpret."
 ---
 
 # Show, don't describe
@@ -23,5 +21,9 @@ A description asks the reader to interpret. An artifact asks them to copy. Give 
 | a rule the reader is trusted to follow | the output that proves it was followed |
 
 **Why.** An artifact cannot be misread. A command runs or it does not, so the meaning survives the writer. An assumption about compliance is not evidence; the output is.
+
+**Fires on.** A description standing where an artifact would do, and an assumption that stands in for evidence.
+
+**What it does not cover.** Whether the reader can open the artifact: `communication-principle-link-what-the-reader-can-open`. Whether the description should exist at all: `communication-principle-cut-what-carries-nothing`.
 
 **The test.** Must the reader interpret, or can they copy? Where a rule applies, is there output that shows it was followed?

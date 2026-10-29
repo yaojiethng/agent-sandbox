@@ -1,8 +1,6 @@
 ---
 name: communication-principle-align-the-mental-model
-description: "Apply when a text names a thing, introduces a term, or reuses a word a reader may hold differently. Give every word one meaning and every thing one word, so the reader builds the model the writer holds."
-metadata:
-  claim: reader
+description: "Apply when a word names a thing the reader may hold differently, when one thing has gone by two names, or when a new term arrives unannounced. Give every word one meaning and every thing one word."
 ---
 
 # Align the mental model
@@ -23,4 +21,4 @@ Use one word for each thing and one meaning for each word, so the reader builds 
 
 **The test.** Ask of each word whether a reader could place it on a second thing, and of each thing whether the text ever names it with a second word. A yes answer means two models are available.
 
-A term the reader may not hold is defined at first use, per `principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/principle-define-terminology-before-use/SKILL.md`, which decides when a term needs defining, where this skill decides the mapping.
+A term the reader may not hold is defined at first use, per `communication-principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/communication-principle-define-terminology-before-use/SKILL.md`, which decides when a term needs defining, where this skill decides the mapping.

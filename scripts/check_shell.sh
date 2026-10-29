@@ -5,7 +5,7 @@
 #
 # Exit codes: 0 = no findings, 1 = findings OR the gate could not run. The
 # finding count is printed, never encoded in the exit code (see
-# docs/development/bash-coding-conventions.md 3.2).
+# pattern p-14).
 #
 # History: baseline at introduction (20260823-07) was 31 warnings, held
 # non-gating until cleared. Suppression policy: targeted `# shellcheck

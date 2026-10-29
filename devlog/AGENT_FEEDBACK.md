@@ -2,7 +2,7 @@
 
 A persistent record of the coding agent's experience and recurring mistakes. Entries record friction points, poor stack design, poor operator prompting, and this-needs-reinforcing notes, plus agent mistakes and code smells. Written by the agent. Reviewed and addressed by the operator.
 
-**Writer:** agent. **Reviewer:** operator.
+**Writer:** agent. **Reviewer:** operator. An entry is written when the experience happens, not at the close.
 
 Entries are point-in-time records. The **A/O tag** names who raised the entry: `[A]` for an entry raised by the agent, `[O]` for an entry raised by the operator. Reconcile an entry against the current tree before acting on it. If the tree has outgrown an entry, mark it probation; if the entry is superseded  --  its lesson already carried by another entry or record  --  it jumps to probation as well. Either way, follow the normal procedure: wait to see whether it resurfaces; drop it if it does not.
 
@@ -12,9 +12,100 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
+
+```text
+state: probation
+scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`
+legacy: none
+mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
+```
+
+Asked for a reference page on writing a document, I wrote one that opened by describing the gap it filled, then carried a heading per step and a closing section: 33 lines against the 14 that already covered the same five steps in the tree. The two judgements that forbid exactly that were named in the file I was editing and quoted in the layer loaded at session start, and neither fired.
+
+The cause is the shape of the trigger, not the address of the rule. A skill is selected on its `description` alone, and both of those descriptions named a property the finished text has: "a sentence that needs your session", "apply to sediment". A property can only be read once the text exists, so the two principles could fire on a revision pass and no authoring path asked for one. What the description says now is the act: writing or revising prose.
+
+The second half of the fix is the one that does not depend on selection. Both paths that produce prose now end on a read-back step against those two judgements, beside the draft, after it exists.
+
+This is the same class as the 2026-10-27 entry below, a rule held and not applied while drafting, with a different mechanism: there the sentence carried an argument the reader was not in, here the trigger could not be evaluated until the sentence was finished. What would settle it is a recurrence in the same form, a draft whose subject is the document or the session rather than the thing the document is about.
+
+Cross-references: `## The principle shape` in `docs/development/prompt-authoring-conventions.md`; handover `20261029-01`.
+
+---
+
+## [A] 2026-10-27  --  An instruction line carried its own argument, twice, an hour after the rule against it
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: state the rule and put the reason where the decision was taken, which is the handover's Decisions table. The drafting agent is the one agent that cannot make this separation, because it holds the argument the reader was not present for.
+```
+
+Asked for the rule that keeps an instruction set lean, I landed 49 words: the rule, then its reason, then a restatement of what the measuring script prints. The operator's own three-line statement of the same thing was shorter and complete. Cut to 23 words, I then folded a second judgement into the same sentence, that an instruction states the rule while its argument stays in the record that decided it, and that was cut too. It appended a clarification about not appending clarification, inside the sentence that names the defect.
+
+The rule was not missing. It had been installed earlier in the same session, in the layer I was editing, and I had read it. What was missing was the reader: an `AGENTS.md` is loaded by a fresh agent with almost no context, and a line that carries its reason charges that reader for a conversation they were not in. The drafting agent is present when the argument is made, so the argument feels like part of the rule, and no rule about the separation changes that, because the rule is read by the same agent holding the same argument.
+
+The meta-level is where this fails, and that is structural rather than a gap in the corpus. Rules-versus-arguments is a drafting-phase judgement, the drafting phase is a higher level than the surface being drafted, and every attempt to encode awareness of the inherited argument adds a third level that needs the same treatment. Filed as a capability limit, not a task: what remains available is the cold-read criterion in the `prose-review` family, and `scripts/report_instruction_growth.sh` as the residue signal.
+
+Cross-references: `## Write Discipline` in the provider layer; handover `20261027-04`.
+
+---
+
+## [A] 2026-10-26  --  A driver loop over `opencode run` lost its work list to the child, then hung on a refusal
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: close the child stdin on every dispatch (`</dev/null`), match a refusal on every shape it arrives in, key any retry to the one transient error, and read a run's token counts from the session store before scoring it. Four traps, one loop: `opencode run` inherits stdin and consumes a redirected plan file, so the read loop reaches end of file and the grid ends after one cell with a clean exit; the free tier refusal arrives as `{"type":"FreeUsageLimitError"}` in one path and `AI_APICallError: Free usage limit reached` in another, so a detector that knows the first shape launches cells that can never answer; six concurrent processes sharing `~/.local/share/opencode/opencode.db` return `database is locked`; and a retry written as "repeat on a non-zero exit" repeats timeouts, holding a block for three times the wall cap.
+```
+
+A grid of a hundred and seventeen cells ran on the free model through `opencode run`, and the driver failed in four ways that each looked like something else. The silent one is the worst: the child process read the plan file off the inherited stdin, so the next read found end of file, the loop ended, and the summary reported a smaller grid as a finished one. Nothing exited non-zero and nothing printed.
+
+The refusal was worse in the other direction. It arrives as JSON in the error stream and as `AI_APICallError: Free usage limit reached` in the run log; the detector matched the JSON, so four cells were launched into a tier that had nothing left and each sat at its own wall cap. That reads as slowness rather than as exhaustion, and it cost twenty minutes.
+
+The lesson generalises past this backend: a driver exit code says nothing about whether its units of work ran, so count the units rather than trusting the summary, and treat "no output and no error" as a failure that needs an explanation before it is scored.
+
+The fourth trap belongs to the model rather than the driver: `--variant high` on `deepseek-v4.1-flash-free` spends 32000 reasoning tokens and returns no text, with a zero exit code, so it reads as a successful cell carrying an empty fault list. The store query that shows the token counts is in `devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`.
+
+---
+
+## [O] 2026-10-26  --  A discussion record was named and shaped like a handover
+
+```text
+state: mitigated
+scoped: .agents/skills/work-log/SKILL.md, the filename rule and the four types
+legacy: open from 2026-10-26 until the same day's recurrence, which made the check mechanical
+mitigation: when writing into devlog/discussions/, take the name and the frontmatter from the work-log convention rather than from the handover next door: YYYYMMDD-{type}-{status}-{description}.md with no ordinal, and a report's status starts at draft and moves straight to settled. scripts/check_record_names.sh now refuses the shape at the lint gate, so the reading habit is no longer the only guard.
+```
+
+Three report records under `devlog/discussions/` took the handover's shape in one session. `20261026-04-report-ablation_problems_found.md` and `20261026-05-report-eval_inputs_required.md` carry the handover's ordinal in the filename and the handover's `status: Active`, which a report never passes through. The third, `20261026-report-settled-census_six_carriers.md`, wrote hours earlier, kept the type and status in the name but still claimed `active` and `type: Discussion`, a type the convention does not have.
+
+Both record kinds live in `devlog/`, and the handover is the one written most often, so its shape is the shape at hand when a report is opened. The naming rule is a section of the work-log convention that a session opens for the handover's section set, not for the discussion's, which is why reading the convention for one record kind leaves the other kind's rule unread.
+
+**Recurrence, same day.** A fourth and fifth record took the ordinal, after this entry was written: `20261026-06-report-carrier_fates.md` and `20261026-07-report-pattern_provenance.md`. The cause was upstream of the habit. The handover's index row read "the two-digit per-day index, reset daily: `max + 1` over the day's existing records", so the number was defined over every record in `devlog/` rather than over handovers, and the exploration-record section named no exclusion. The row now counts the day's handovers, the exploration record's constraint line carries "no per-day index", and `scripts/check_record_names.sh` is a lint gate over the live folder, with eight tests. Two records already written were also renamed: the status joins the description with a hyphen, which the underscore form had broken.
+
+---
+
 ## Preamble  --  length
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
+
+## [O] 2026-10-26  --  An observation held in chat is invisible to the release gate
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: before asking for the release gate, write every observation the iteration produced into the handover's `## Findings` with a destination or a fix. The gate reads the record, not the conversation, so an observation held in chat is not presented at all.
+```
+
+Closing the two base review skills unit, three observations surfaced in the turn after the release gate: the cleanup pass still named the shared body as an artifact that no file carried, the code runbook has no provenance block, and the four unscreened payloads are now listed in the shells. The first was a carrier of the unit's own change and belonged inside it; all three belonged in the gate.
+
+The gate's evidence is the record. A finding the agent keeps in its head is read by nobody, and a release granted on a Findings table that is empty because nothing was written there is indistinguishable from a release granted on a clean unit. The remedy is mechanical: the table is filled before the summary is presented, and an observation that fits no destination is still a row, with `this handover` or a named row as its destination.
+
+---
 
 ## [O] 2026-10-24  --  A roadmap measurement note became an artifact and a gate
 
@@ -64,10 +155,10 @@ The class is the same in both directions: a rule about where a pointer resolves 
 ## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
 
 ```text
-state: open
+state: mitigated
 scoped: W2 - Communication Domain Taxonomy
 legacy: none
-mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards.
+mitigation: choose a leading word only where the word already carries the judgement and the body already says it. Where no such word is evident, leave the field blank and record the deferral, rather than declaring a word the record has to defend afterwards. The definition now states this rule in `communication-principle-maximize-conceptual-leverage`, handover `20261028-06`.
 ```
 
 One iteration set `metadata: leitwort:` on all twenty-five principle skills in a single pass. The operator rejected the set as poorly chosen and asked for a revert. Two declarations stand, `proximity` and `leverage`, each of which names its own skill's subject and was already committed.
@@ -333,10 +424,10 @@ Frame the merged entries below; each replaces the member entries that shared its
 ### [A] 2026-09-21  --  Review-pass framing: directive wording (T1)
 
 ```text
-state: open
-scoped: M3 T1 -- review-pass framing fixes
-legacy: none
-mitigation: three review-directive wording rules. (1) Round-cap / blocker-re-review fits a correctness review; a model-consensus quality pass converges in one round per model against a shared brief. (2) Name the base commit or the explicit `git diff <base>..<head>` range in the review directive, not a handover date the reader must convert. (3) Name an edit target with a seeded/runtime copy pair by full path, stating which copy is authoritative. Source session `20260918-10`.
+state: mitigated
+scoped: M3.2.2 -- review-pass framing fixes
+legacy: open from 2026-09-21 until the loop moved into `code-review`'s reference
+mitigation: the review loop is `workflow/coding-agent/skills/code-review/references/loop.md`. The directive names the base commit and the explicit range, and converts any other scope format; a seeded/runtime copy pair is named by full path with the authoritative copy stated; the round cap is gone, replaced by a check-in on the operator's cadence that reports the round count, cumulative tokens and dollars, the open blockers with their rounds, and the trend. Source session `20260918-10`.
 ```
 
 ### [A] 2026-09-21  --  Evidence before a conclusion: verification discipline (T1)
@@ -414,7 +505,7 @@ mitigation: tooling and harness notes for the library-migrations track. Use bash
 
 ## Bash
 
-Canonical bash coding rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md).
+Canonical bash coding rules: the pattern set beside the `code-review-bash` runbook, [`patterns/`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/README.md).
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
@@ -441,40 +532,13 @@ mitigation: word the line so `shellcheck` is not the first token after `#` (for 
 
 ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
 
-Scope: ShellCheck directive parsing. Cross-reference: `docs/development/bash-coding-conventions.md` states the suppression policy (targeted `# shellcheck disable=` with a rationale) but does not warn that a bare leading `shellcheck` word is parsed at all.
-
-### [A] 2026-09-25  --  `false` is a non-empty string inside `[[ ]]`, so a `&& false` mutation is not a mutation
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: to disable a guard while testing, replace its condition line with `if false; then`, and confirm the mutant file differs from its backup before running the suite, and that the line that changed is the site the verdict depends on. `[[ "$x" && false ]]` evaluates true, because the right-hand operand is a string test on a non-empty literal; `[[ -z "$x" && -n /dev/null ]]` is true for the same reason. Both forms report a false survivor. When a mutation uses perl to substitute a literal that contains a shell variable, `\Q...\E` does not stop interpolation: pass the literal through the environment (`OLD=... perl -0777 -pi -e 's/\Q$ENV{OLD}\E/.../'`) and keep the backup comparison in probes as well as in bite scripts.
-```
-
-A mutation is evidence only if it changes behaviour. Two forms that look like disablements do not: `&& false` and `-n /dev/null` inside `[[ ]]`, where the right-hand operand is a string test on a non-empty literal and therefore true. Both were used in the read-through's bite sweeps - a delivery guard, two resume guards, and a provider-recovery check - and each reported a survivor that was in fact an unchanged guard. The check that catches the whole family is cheap: verify the mutant differs from the backup before running the suite, and prefer a form with no operand at all.
-
-A second form of the same failure surfaced in the apply.sh pass, in a probe script rather than a bite script: `s/\QFILES_CHANGED=$(grep -c "^diff --git" "$DIFF_FILE" || true)\E/` matched nothing, because perl interpolates `$DIFF_FILE` inside `\Q...\E`; the shell variable was unset in the perl process, so the pattern became a no-match and the probe reported the mutant's output as if the mutant had applied. Twenty of the first sweep's twenty-two bites no-op'd the same way for the same reason (the other two aborted with perl syntax errors on the interpolated quotes). The probe script had no backup comparison because the bite script already had one, which is why the check belongs in both.
-
-A third form belongs to the same entry, from the interactive.sh pass. `\Q...\E` also stops `\n` from being a newline: `OLD='---\n### '` passed through the environment matches the literal characters backslash and n, not a line break, so a two-line replacement against a markdown file no-op'd with no error. The environment idiom removes the interpolation hazard but not the escape hazard. When the literal spans lines, put a real newline in the variable (`OLD=$'---\n### '`) or use the `edit` tool, whose `oldText` carries the newline directly.
-
-A fourth false positive comes from outside the mutant. The Makefile-template pass's `start` `INTERACTIVE_FLAG` bite (M11) exited non-zero on its first run and a bite script that reads only the exit status recorded PROVEN; two re-runs gave 722/722 with the liveness gate reporting zero findings. The abort came from the liveness gate, which the read-through's row 135 records as observed once and unreproduced. A PROVEN verdict therefore needs the failing file's name and a re-run before it is trusted, not the exit status alone.
-
-A fifth false positive, from the first rectification slice. The mutant differed from its backup and the mutation was real, but it landed at the wrong site. `scripts/workflows/confirm.sh` carries `git -C "$PROJECT_DIR" rebase --abort 2>/dev/null || true` twice, at six-space indentation in the drop-step failure path and four-space indentation in the conflict path. A line-based matcher given the six-space form hit the drop-step guard, while the verdict belonged to the conflict path; the suite stayed green and the bite reported a survivor that the intended mutation would have caught. The indentation was invisible in a grep listing, which is what made the error easy. Confirm the site, not only the difference: print the mutant's diff and read which line changed, and give a repeated line enough of its context to be unambiguous. A survivor is evidence about the code path you actually mutated.
-
-Scope: bash conditional-expression semantics. Cross-reference: `docs/development/bash-coding-conventions.md`; the vacuity family is [A] 2026-09-22 "A condition on an always-true helper is a vacuous assertion", whose subject is an assertion rather than a mutation.
-
----
-
-Skill-trap coverage gaps (bash entries marked "no trap" or partially covered): consolidation into the bash-scripting-traps skill is deferred to a future skill-maintenance session; per-entry coverage is noted in each entry's Cross-reference line.
-
----
+Scope: ShellCheck directive parsing. Cross-reference: `p-33` in [`shellcheck.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/shellcheck.md).
 
 ### [A] 2026-09-25  --  A guard that errexit already provides cannot be pinned by a unit
 
 ```text
 state: open
-scoped: M3.1 T1 -- the read-through brief's disposition rule for a surviving bite
+scoped: M3.1 T1 -- the disposition rule for a surviving bite
 legacy: none
 mitigation: when a bite survives, classify the row by running the deletion and comparing the outcome for the code's callers, never by argument. If no input changes output or exit status, the row is a code row: delete the line, write no unit. Do not add a gate for the idiom, because whether `cmd || exit 1` decides anything depends on the call context: errexit is suspended for the whole body of a function invoked in a condition.
 ```
@@ -485,42 +549,35 @@ No unit can fail on any of the three, so the mutation survives by construction. 
 
 Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
 
-Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: the read-through brief's bite requirement and its glossary; register rows 313, 314 and 316.
+Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: [`testing/patterns/mutation-evidence.md`](../.agents/skills/testing/patterns/mutation-evidence.md) pattern 3, the rule's surviving home; the brief and the register that recorded it are retired, handover `20261028-14`.
 
-### [A] 2026-10-05  --  An apostrophe inside a `${VAR:-default}` opens a quote, so the whole script is a syntax error
-
-```text
-state: open
-scoped: M3.3.1 -- the eval harness under the module skill
-legacy: none
-mitigation: keep the default free of apostrophes, or assign the default on its own line and expand the variable where it is used. The failure is loud but mislocated: bash reports `unexpected EOF while looking for matching` at the file's last line, whatever line holds the apostrophe.
-```
-
-`PROMPT="${EVAL_PROMPT:-The working tree holds this iteration's work.}"` is a syntax error. Inside `${...}` a single quote starts a quoted string, so the apostrophe in `iteration's` opens a quote that never closes. `bash -n` reports the EOF at the end of the file, so the line to fix has to be found by counting quotes rather than by reading the message.
-
-The measured check is cheap. `grep -c "'" file` against the file gives an odd count, and the offending lines are the ones that hold exactly one. Cross-reference: `docs/development/bash-coding-conventions.md`.
-
-### [A] 2026-10-06  --  `name+=value` without `declare -i` concatenates, and a 0-prefixed total then fails as octal
+### [A] 2026-10-26  --  A rule recorded a mechanism nobody had run, and the guard it doubted holds
 
 ```text
-state: open
-scoped: none
-legacy: none
-mitigation: declare an accumulator integer (`declare -i n=0`) or assign through `$(( ))`; after a loop, compare the iteration count against the count a dry run reported instead of trusting a per-step summary line.
+state: mitigated
+scoped: M3.3.2 -- pattern-set migration
+legacy: the `[A] 2026-09-19` entry "A sourced-lib while read < file aborts a set -e caller on a missing file" (added `ddc1e76f`, removed by `677b4d8a` when rule 4.4 landed) stated that a surrounding `|| ...` does not rescue the abort "because the abort happens inside the command substitution, not at the call"
+mitigation: a guarded call survives a missing file, and what escapes the guard is the shell's own expansion under `set -u`. `p-31` in the pattern set states the case that reproduces and drops the one that does not
 ```
 
-A cleanup loop summed freed bytes with `dirbytes+=$bytes` while `dirbytes` was never declared integer, so the byte counts concatenated into one very long number. The division that formatted it then failed with `value too great for base` - a 0-prefixed integer reads as octal - and the script printed its per-directory summary for the first of four directories only. That summary was plausible, the work for the other three silently did not happen, and a second run was needed to finish it. The durable check is the count rather than the total: a loop that reports what it did should also report how many iterations it ran. Cross-reference: `docs/development/bash-coding-conventions.md`.
+Rule 4.4 reached the conventions document from the 2026-09-19 entry, and both said an unguarded read inside a sourced function aborts the call site "even if the call is wrapped in `||`". Nothing had been run to establish that. Measured on this container's bash, each case a fresh `bash -c` under `set -euo pipefail`:
 
-### [A] 2026-10-06  --  `git bundle create` takes no option after its positional arguments, and an `A && B` guard hides the failure
+| Case | Result |
+|---|---|
+| a function with a read from a missing file, called with `\|\| true` | survived, rc 0 |
+| the same read as a compound command, `\|\| true` | survived, rc 0 |
+| the same function called with no guard | rc 1, and the statements after it did not run |
+| the function called with `$1` unset under `set -u`, guarded by `\|\| true` | rc 1, the guard did not hold |
 
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: put every option before the file and the revision (`git bundle create -q <file> <rev>`), and end a guard chain with `|| { echo ...; exit 1; }` when the guarded command's failure must be visible.
-```
+So the recommendation was right and the reason was invented: a missing file is an ordinary failure that the guard catches, while an unset parameter fails during expansion, before any command runs, and no `||` on the call can see it. The wrong mechanism is the expensive half, because a reviewer holding it reports a guarded call as still broken and has a citation for saying so.
 
-The eval harness's write-back ran `git bundle create <file> <rev> -q`, which git refused with `error: unrecognized argument: -q`; nothing was written. The call sat behind `[[ "$head" != "$base" ]] && git ...`, so the status never reached the caller, and a run that produced no bundle still looked graded and complete. The missing artefact was the one the change exists to produce, and only the new test case caught it. Cross-reference: `docs/development/bash-coding-conventions.md`.
+This is the second rule in one session found asserting a mechanism rather than a behaviour. The other was `${VAR:-default}` keeping an empty value, which it does not, and whose stated right form was the wrong form written the long way. Both were carried across a migration unchanged, so neither was introduced by it, and neither could have been caught by reading: each needed one command run against the shell.
+
+A third instance came from the pass 2 seat that re-read the swept pattern set. `p-10` said an `a && b` chain "reports only `b`'s result", so "the chain returns success". Measured: `f(){ false; }; f && echo b; echo $?` prints `1`, and a function returning 3 leaves 3. The chain carries `a`'s status all along; what goes missing is that nothing reads it before the script runs its next command. The same pass found `p-26` saying an edge is "`source` or `exec`, which runs the target inside the caller's process", when `exec` replaces the caller's process image. Both are now stated as measured.
+
+The shape recurs because a rule is written from a plausible story about the failure rather than from the failure re-run. One command per claim is the whole check.
+
+Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/`, and `devlog/discussions/20261026-report-draft-pattern_provenance.md`, which records the scan that found both.
 
 ## Node
 
@@ -535,7 +592,7 @@ mitigation: when a test spawns `node --test` as a child, delete `NODE_TEST_CONTE
 
 The mutation gate for the task-queue extension replays each catalog row in a temp mirror and runs the owning suite in a child process. Its first run reported all 22 rows as survivors in 10 seconds, which is faster than the suites it claimed to have run. The cause was the harness, not the extension: `node --test` sets `NODE_TEST_CONTEXT=child-v8` in its children, and a child that inherits the marker and receives a `--test` argument treats the invocation as a recursive run. It prints "node:test run() is being called recursively within a test file. skipping running files." on stderr, runs nothing, and exits 0. Every mutant therefore looked uncaught, and the failure mode is a gate that reports a clean result on a broken subject. The tell is the wall time: a gate that replays suites finishes faster than the suites, and it is the one signal available before the subjects are re-checked by hand.
 
-The family is the [A] 2026-09-25 entry on a mutation that is not a mutation, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
+The family is the mutation-idiom rule in `p-43` and the instrument rules in `.agents/skills/testing/patterns/mutation-evidence.md`, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
 
 ---
 
@@ -558,7 +615,7 @@ mitigation: a commit whose only change is the handover Status flip or the roadma
 state: mitigated
 scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
-mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rules: [`docs/development/bash-coding-conventions.md`](../docs/development/bash-coding-conventions.md) rule 3.1. Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
+mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rule: `p-13` in [`failure-handling.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/failure-handling.md). Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
 ```
 
 ### [O] 2026-09-18  --  Mechanical-edit one-liners must carry a match-count guard and a timeout
@@ -774,6 +831,8 @@ A second, purely mechanical form recurred during the `guards.sh` integration. Ro
 Scope: the read-through's findings log and any long-running review whose rows are numbered. Cross-reference: the report's Format section, numbering policy; row 22, row 38, row 242.
 
 The same class recurred on 2026-09-27 inside a dispatched subagent's output, one level up from the findings log. A unit that replaced two tolerant-mode tests with strict-mode coverage defined a test function whose name already existed in the file and registered it a second time. Bash's last-definition-wins made the first body disappear without an error, the registration liveness gate passed because it checks both directions of the registration contract and not for a name used twice, and the suite's unit count came out one higher than the units actually added. The count is what a reviewer compares against a baseline, so an inflated count is not a cosmetic defect: it is an unverifiable number. The durable fix is a duplicate check in `scripts/check_test_liveness.sh`, filed as a T1 roadmap row (the duplicate test name check in the registration gate); the mitigation until it lands is to account for the arithmetic of the count growth after every dispatched return rather than reading the count as a fact.
+
+**Recurrence, 2026-10-26.** A `replace` whose anchor was the line it meant to insert above consumed that line. The assessment entry of `docs/adr/closed_record_corrections.md` was added by replacing the `## 2026-10-18 -- ...` heading with the new section, so the older entry lost its date heading and its four blocks sat under the newer date for a week, where its decision to defer the assessment read as the opposite of the assessment above it. Every gate stayed green, because a heading that disappears leaves valid Markdown and no gate counts headings per record. Re-read the anchor's own text after an insertion, and diff the heading set before and after: a drop of one is the signal.
 
 ### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
 

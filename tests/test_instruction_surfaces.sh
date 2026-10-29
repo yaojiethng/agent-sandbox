@@ -15,6 +15,9 @@
 #   a session row no layer covers              --  rc 1; the row is named
 #   a session row two layers cover             --  rc 1; the collision is named
 #   a layer with no `## Scope` heading         --  rc 1; the heading is named
+#   a section with no subject-table row         --  rc 1; the section is named
+#   a subject-table row naming the other layer  --  rc 1; both layers are named
+#   a subject-table row no layer carries        --  rc 1; the section is named
 #   an inventory omitting a governed prompt    --  rc 1; the prompt is named
 #   an inventory row the policy does not govern--  rc 1; the row is named
 #   a manifest with no session row             --  rc 1 (fails closed)
@@ -93,6 +96,20 @@ EOF
 |---|---|
 | `/iter` | `workflow/coding-agent/prompts/iter.md` |
 | `/wrapup` | `workflow/coding-agent/prompts/wrapup.md` |
+EOF
+  mkdir -p "$root/docs/development"
+  cat > "$root/docs/development/instruction-surface-conventions.md" <<'EOF'
+# Instruction Surface Conventions
+
+## The layers
+
+**The subject table.**
+
+| Subject | Section | Layer |
+|---|---|---|
+| the container paths | `Scope` | provider |
+| the working tree | `Scope` | project |
+| the iteration | `Iteration Lifecycle` | project |
 EOF
   cat > "$root/docs/reference/iteration_protocol.md" <<'EOF'
 ---
@@ -181,6 +198,35 @@ test_inventory_row_outside_scope_flagged() {
   assert_contains "$GATE_OUT" "the inventory names [/gm]" 'the ungoverned row is named'
 }
 
+test_section_with_no_subject_row_flagged() {
+  local root="$FIXTURE_DIR/nosubjectrow"
+  write_conforming_tree "$root"
+  printf '\n## A new section\n\nText.\n' >> "$root/AGENTS.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a section with no subject-table row fails'
+  assert_contains "$GATE_OUT" "the section 'A new section' has no subject-table row" 'the section is named'
+}
+
+test_subject_row_naming_the_other_layer_flagged() {
+  local root="$FIXTURE_DIR/wronglayer"
+  write_conforming_tree "$root"
+  sed -i 's#^| the iteration | `Iteration Lifecycle` | project |#| the iteration | `Iteration Lifecycle` | provider |#' \
+    "$root/docs/development/instruction-surface-conventions.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a subject-table row naming the other layer fails'
+  assert_contains "$GATE_OUT" "files 'Iteration Lifecycle' under 'provider', but the section is in the project layer" 'both layers are named'
+}
+
+test_subject_row_with_no_section_flagged() {
+  local root="$FIXTURE_DIR/stalesubjectrow"
+  write_conforming_tree "$root"
+  sed -i 's#^| the iteration | `Iteration Lifecycle` | project |#| the iteration | `Iteration Lifecycle` | project |\n| a retired section | `Gone` | project |#' \
+    "$root/docs/development/instruction-surface-conventions.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a subject-table row with no section fails'
+  assert_contains "$GATE_OUT" "the row for 'Gone' names the project layer, which carries no such section" 'the stale row is named'
+}
+
 test_manifest_with_no_session_row_fails_closed() {
   local root="$FIXTURE_DIR/nosession"
   write_conforming_tree "$root"
@@ -200,6 +246,9 @@ run_test test_layer_path_outside_the_session_rows_flagged
 run_test test_uncovered_session_row_flagged
 run_test test_session_row_covered_twice_flagged
 run_test test_layer_without_scope_heading_flagged
+run_test test_section_with_no_subject_row_flagged
+run_test test_subject_row_naming_the_other_layer_flagged
+run_test test_subject_row_with_no_section_flagged
 run_test test_inventory_omitting_a_scope_prompt_flagged
 run_test test_inventory_row_outside_scope_flagged
 run_test test_manifest_with_no_session_row_fails_closed

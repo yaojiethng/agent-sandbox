@@ -78,7 +78,7 @@ EOF
 # "unknown template version", not as failure.
 template_version() {
   # Absent marker is an expected, non-error outcome (caller compares empty
-  # string): absorb grep's exit 1 per bash-coding-conventions rule 4.3.
+  # string): absorb grep's exit 1 per pattern p-12.
   { grep -m1 "^# agent-sandbox template version:" "$1" || true; } | awk '{print $NF}'
 }
 

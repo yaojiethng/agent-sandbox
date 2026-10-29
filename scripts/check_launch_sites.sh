@@ -23,7 +23,7 @@
 # the repository layout, so the gate's branches run without touching the real tree.
 #
 # Exit codes: 0 = no findings, 1 = findings or the gate could not run. The finding
-# count is printed, never encoded (bash-coding-conventions.md 3.2).
+# count is printed, never encoded (pattern p-14).
 
 set -uo pipefail
 

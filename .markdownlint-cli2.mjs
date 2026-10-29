@@ -1,6 +1,6 @@
 // markdownlint-cli2 configuration for the agent-sandbox repository.
 // Enables the subset of markdownlint rules that align with
-// `.agents/skills/docs/SKILL.md`, plus two custom rules:
+// `.agents/skills/project-documentation/SKILL.md`, plus two custom rules:
 // doc-ascii (plain-ASCII prose) and doc-wrap (one paragraph per
 // physical line) and linking (link targets and heading fragments
 // resolve). Both exempt the record trees declared below, under one key.
@@ -93,12 +93,10 @@ export default {
         "src/reasoning/agent/skills/caveman/SKILL.md",
         "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
         "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",
-        "src/reasoning/agent/skills/thermo-nuclear-code-quality-review/SKILL.md",
         "src/reasoning/providers/hermes/quickstart.md",
         "src/reasoning/providers/opencode/quickstart.md",
         "src/reasoning/providers/pi/onboard-readme.md",
         "tests/integration/README.md",
-        "workflow/coding-agent/prompts/document.md",
         "workflow/coding-agent/prompts/gm.md",
         "workflow/knowledge-vault/README.md",
       ],
