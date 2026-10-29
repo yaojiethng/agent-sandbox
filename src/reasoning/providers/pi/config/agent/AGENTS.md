@@ -67,20 +67,20 @@ Before creating any new document, check the project's `AGENTS.md` for the policy
 
 ## Communication Standards
 
-General communication guidelines for all agent prose. The standard is the `communication-principle-*` corpus under `$AGENT_HOME/agent/skills/`, one judgement per skill. Each line below links the skill that holds it, and this section states no rule of its own.
+Follow these general communication guidelines for all agent prose. Read the leaf skill in full for any principle you apply. The agent names each entry when it applies.
 
-- Keep the sentence that changes a decision and delete the one that does not: [`communication-principle-cut-what-carries-nothing`](./skills/communication-principle-cut-what-carries-nothing/SKILL.md).
-- Write so the reader attaches each phrase as it arrives: [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md).
-- Define a term before the work relies on it: [`principle-define-terminology-before-use`](./skills/principle-define-terminology-before-use/SKILL.md).
-- Write for the reader, not the session that produced it: [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md).
-- Name a value rather than fixing a literal the reader must set: [`communication-principle-name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md).
-- State the primary data, not a value derived from it: [`communication-principle-only-derive-what-you-own`](./skills/communication-principle-only-derive-what-you-own/SKILL.md).
-- Print one addressing axis per presentation: [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md).
-- Choose the word that carries the most distinction and loses none: [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md).
-- Give every word one meaning and every thing one word: [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md).
-- Syntax is the agent's; semantics is the operator's: a rewrite may rearrange, join, reorder, restructure and relabel, and it may not touch the words that decide what is required, per [`communication-principle-rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md).
-- Carry one line of reasoning through the document: [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md).
-- When writing or dispatching instructions, state the intent and leave the route to the doer: [`communication-principle-state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md).
+- [`communication-principle-cut-what-carries-nothing`](./skills/communication-principle-cut-what-carries-nothing/SKILL.md): Keep the sentence that changes a decision and delete the one that does not.
+- [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md): Write so the reader attaches each phrase as it arrives.
+- [`principle-define-terminology-before-use`](./skills/principle-define-terminology-before-use/SKILL.md): Define a term before the work relies on it.
+- [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): Write for the reader, not the session that produced it.
+- [`communication-principle-name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md): Name a value rather than fixing a literal the reader must set.
+- [`communication-principle-only-derive-what-you-own`](./skills/communication-principle-only-derive-what-you-own/SKILL.md): State the primary data, not a value derived from it.
+- [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): Print one addressing axis per presentation.
+- [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): Choose the word that carries the most distinction and loses none.
+- [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md): Give every word one meaning and every thing one word.
+- [`communication-principle-rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md): Syntax is the agent's; semantics is the operator's. A rewrite may rearrange, join, reorder, restructure and relabel, and it may not touch the words that decide what is required.
+- [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): Carry one line of reasoning through the document.
+- [`communication-principle-state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): When writing or dispatching instructions, state the intent and leave the route to the doer.
 
 The judgements that fire on a whole artifact rather than a sentence: [`communication-principle-show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md) when a sentence asks the reader to interpret what could have been handed over, [`communication-principle-dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md) when a record describes work no task holds, [`communication-principle-keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md) when a subject and its parts end up apart, and [`communication-principle-hand-off-by-naming-the-boundary`](./skills/communication-principle-hand-off-by-naming-the-boundary/SKILL.md) at a prompt's last step.
 

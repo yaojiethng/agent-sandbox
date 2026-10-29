@@ -96,7 +96,7 @@ A workflow step hands off to a convention-skill. When the skill is absent the ha
 
 ## The layers
 
-The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table of the resources the harness exposes; the project layer, `AGENTS.md`, holds one of the working directories the session should use. Each table names runtime paths and nothing else.
+The two `AGENTS.md` files carry the same claim one level up. The provider layer, `src/reasoning/providers/pi/config/agent/AGENTS.md`, holds a `## Scope` table of the resources the harness exposes and an index of the principle skills under `$AGENT_HOME/agent/skills/`; the project layer, `AGENTS.md`, holds one of the working directories the session should use. Each table names runtime paths and nothing else.
 
 The two tables split the `session` rows between them, and every row belongs to exactly one layer. The split is checked in both directions.
 
