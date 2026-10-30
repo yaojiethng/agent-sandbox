@@ -1,0 +1,426 @@
+#!/usr/bin/env bash
+# tests/test_source_bump.sh
+# The source-bump tracking store: one JSON file per source, the source and
+# artifact schema, the CLI writes, and the rules the store refuses.
+#
+# Covers:
+#   clean          -- a source with two artifacts passes
+#   missing path   -- an artifact whose local path is gone fails
+#   duplicate path -- one local path under two sources fails
+#   bad fields     -- an unknown kind, a short base and an unknown status fail
+#   empty source   -- an empty source needs a reason and carries no status
+#   add            -- add creates a source, appends an edge, sorts and creates an
+#                     empty source; source facts are required only on creation
+#   record         -- record moves base, preserves origin, and leaves the file
+#                     untouched when the new base is invalid
+#   kinds          -- a runbook names its parent and a prompt is a file
+#   help           -- the CLI exposes check, add and record only
+
+set -uo pipefail
+
+# TEST_DEADLINE: 60
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
+test_setup
+
+CLI="$REPO_ROOT/scripts/source_bump.mjs"
+A="62f43a18177be6ec82da242e59ffbc490a4c22ea"
+B="5beb35b040e3de97e54fa9e386d7e42d15c295c2"
+C="cccccccccccccccccccccccccccccccccccccccc"
+
+# make_fixture -- one source with two skill edges.
+make_fixture() {
+  local root="$FIXTURE_DIR/tree" store
+  store="$root/.agents/registry/sources"
+  mkdir -p "$root/src/skills/alpha" "$root/src/skills/beta" "$store"
+
+  printf '%s\n' '---' 'name: alpha' 'description: The alpha skill.' '---' '' 'Alpha.' \
+    >"$root/src/skills/alpha/SKILL.md"
+  printf '%s\n' '---' 'name: beta' 'description: The beta skill.' '---' '' 'Beta.' \
+    >"$root/src/skills/beta/SKILL.md"
+
+  cat >"$store/test-source.json" <<EOF
+{
+  "schema": 1,
+  "id": "test-source",
+  "url": "https://example.test/source",
+  "license": "MIT",
+  "copyright": "Copyright Test",
+  "artifacts": [
+    {
+      "local_path": "src/skills/alpha",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/alpha",
+      "origin": "$A",
+      "base": "$A"
+    },
+    {
+      "local_path": "src/skills/beta",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/beta",
+      "origin": "$A",
+      "base": "$A"
+    }
+  ]
+}
+EOF
+  printf '%s\n' "$root"
+}
+
+run_cli() {
+  local root="$1"
+  shift
+  SOURCE_BUMP_ROOT="$root" node "$CLI" "$@" 2>&1
+}
+
+source_field() {
+  local file="$1" local="$2"
+  node -e '
+    const fs = require("fs");
+    const d = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const a = d.artifacts.find((item) => item.local_path === process.argv[2]);
+    console.log(`${a.origin} ${a.base}`);
+  ' "$file" "$local"
+}
+
+paths_in_store() {
+  local file="$1"
+  node -e '
+    const fs = require("fs");
+    const d = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    console.log(d.artifacts.map((item) => item.local_path).join(","));
+  ' "$file"
+}
+
+test_clean_fixture_passes() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "a source with two skill edges passes"
+  assert_contains "$out" "clean across 1 source(s) and 2 artifact(s)" "the clean report counts both"
+}
+
+test_a_missing_local_path_fails() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  rm -rf "$root/src/skills/alpha"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 1 "a missing local path fails"
+  assert_contains "$out" "local_path src/skills/alpha does not exist" "the missing path is named"
+}
+
+test_a_duplicate_local_path_fails() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  cat >"$store/other-source.json" <<EOF
+{
+  "schema": 1,
+  "id": "other-source",
+  "url": "https://example.test/other",
+  "license": "MIT",
+  "copyright": "Copyright Other",
+  "artifacts": [
+    {
+      "local_path": "src/skills/alpha",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/alpha",
+      "origin": "$A",
+      "base": "$A"
+    }
+  ]
+}
+EOF
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 1 "one local path under two sources fails"
+  assert_contains "$out" "local_path src/skills/alpha is already used by source" "the duplicate is named"
+}
+
+test_invalid_kind_bad_base_and_unknown_status_fail() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.status = "active";
+    d.artifacts[0].kind = "widget";
+    d.artifacts[1].base = "short";
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$store/test-source.json"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 1 "an invalid kind and a short base fail"
+  assert_contains "$out" "kind must be one of skill, runbook, prompt" "the kind finding is named"
+  assert_contains "$out" "base must be a 40-character commit" "the base finding is named"
+  assert_contains "$out" "unknown field status" "a status field is refused"
+}
+
+test_an_empty_source_needs_a_reason() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  cat >"$store/empty-source.json" <<'EOF'
+{
+  "schema": 1,
+  "id": "empty-source",
+  "url": "https://example.test/empty",
+  "license": "MIT",
+  "copyright": "Copyright Empty",
+  "artifacts": []
+}
+EOF
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 1 "an empty source without a reason fails"
+  assert_contains "$out" "an empty source requires a reason" "the reason is enforced"
+
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.reason = "Not forked by this repository.";
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$store/empty-source.json"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "an empty source with a reason passes"
+  assert_contains "$out" "clean across 2 source(s) and 2 artifact(s)" "the empty source is counted"
+}
+
+test_add_appends_and_sorts() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  mkdir -p "$root/src/skills/gamma"
+  printf '%s\n' '---' 'name: gamma' 'description: The gamma skill.' '---' '' 'Gamma.' \
+    >"$root/src/skills/gamma/SKILL.md"
+
+  out="$(run_cli "$root" add --store "$store" --source test-source \
+    --local src/skills/gamma --kind skill --upstream skills/gamma \
+    --origin "$A" --base "$B")"; rc=$?
+  assert_rc "$rc" 0 "add appends an edge"
+  assert_contains "$out" "added src/skills/gamma to test-source" "the added edge is named"
+  assert_eq "$(paths_in_store "$store/test-source.json")" \
+    "src/skills/alpha,src/skills/beta,src/skills/gamma" "the edges are sorted by local path"
+
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "the store passes after add"
+  assert_contains "$out" "clean across 1 source(s) and 3 artifact(s)" "the new edge is counted"
+  assert_eq "$(source_field "$store/test-source.json" src/skills/gamma)" "$A $B" "the new edge keeps origin and base"
+}
+
+test_add_creates_a_source_file() {
+  local root store out rc
+  root="$FIXTURE_DIR/tree"
+  store="$root/.agents/registry/sources"
+  mkdir -p "$root/src/skills/solo"
+  printf '%s\n' '---' 'name: solo' 'description: The solo skill.' '---' '' 'Solo.' \
+    >"$root/src/skills/solo/SKILL.md"
+
+  out="$(run_cli "$root" add --store "$store" --source solo-source \
+    --url https://example.test/solo --license MIT --copyright "Copyright Solo" \
+    --local src/skills/solo --kind skill --upstream skills/solo \
+    --origin "$A" --base "$A")"; rc=$?
+  assert_rc "$rc" 0 "add creates the source file when it is absent"
+  assert_contains "$out" "added src/skills/solo to solo-source" "the created edge is named"
+  assert_file_exists "$store/solo-source.json" "the source file exists"
+
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "the created store passes"
+  assert_contains "$out" "clean across 1 source(s) and 1 artifact(s)" "the created source is counted"
+}
+
+test_add_requires_source_facts_when_creating() {
+  local root store out rc
+  root="$FIXTURE_DIR/tree"
+  store="$root/.agents/registry/sources"
+  mkdir -p "$root/src/skills/solo"
+  printf '%s\n' '---' 'name: solo' 'description: The solo skill.' '---' '' 'Solo.' \
+    >"$root/src/skills/solo/SKILL.md"
+
+  out="$(run_cli "$root" add --store "$store" --source solo-source \
+    --local src/skills/solo --kind skill --upstream skills/solo \
+    --origin "$A" --base "$A")"; rc=$?
+  assert_rc "$rc" 2 "a new source without its facts is refused"
+  assert_contains "$out" "--url is required" "the missing source fact is named"
+  [[ ! -e "$store/solo-source.json" ]] && pass "the refused add wrote no file" \
+    || fail "the refused add wrote no file"
+}
+
+test_add_empty_source() {
+  local root store out rc
+  root="$FIXTURE_DIR/tree"
+  store="$root/.agents/registry/sources"
+
+  out="$(run_cli "$root" add --store "$store" --source empty-source \
+    --url https://example.test/empty --license MIT --copyright "Copyright Empty" \
+    --empty)"; rc=$?
+  assert_rc "$rc" 2 "an empty source without a reason is refused"
+  assert_contains "$out" "--empty requires --reason" "the missing reason is named"
+
+  out="$(run_cli "$root" add --store "$store" --source empty-source \
+    --url https://example.test/empty --license MIT --copyright "Copyright Empty" \
+    --empty --reason "Not forked by this repository.")"; rc=$?
+  assert_rc "$rc" 0 "an empty source with a reason is written"
+  assert_contains "$out" "created empty source empty-source" "the created source is named"
+  assert_not_contains "$(cat "$store/empty-source.json")" '"status"' "an empty source has no status field"
+  assert_contains "$(cat "$store/empty-source.json")" '"artifacts": []' "an empty source holds an empty artifact list"
+
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "the empty source passes the check"
+  assert_contains "$out" "clean across 1 source(s) and 0 artifact(s)" "the empty source is counted"
+}
+
+test_add_to_an_empty_source_clears_the_reason() {
+  local root store out rc
+  root="$FIXTURE_DIR/tree"
+  store="$root/.agents/registry/sources"
+  mkdir -p "$root/src/skills/late"
+  printf '%s\n' '---' 'name: late' 'description: The late skill.' '---' '' 'Late.' \
+    >"$root/src/skills/late/SKILL.md"
+
+  run_cli "$root" add --store "$store" --source late-source \
+    --url https://example.test/late --license MIT --copyright "Copyright Late" \
+    --empty --reason "The first edge has not landed." >/dev/null
+  out="$(run_cli "$root" add --store "$store" --source late-source \
+    --local src/skills/late --kind skill --upstream skills/late \
+    --origin "$A" --base "$A")"; rc=$?
+  assert_rc "$rc" 0 "an edge can be added to an empty source"
+  assert_not_contains "$(cat "$store/late-source.json")" '"reason"' "the reason leaves when the source is no longer empty"
+
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "the source passes after its first edge"
+  assert_contains "$out" "clean across 1 source(s) and 1 artifact(s)" "the first edge is counted"
+}
+
+test_add_refusal_leaves_the_file_unchanged() {
+  local root store before after out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  before="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+
+  out="$(run_cli "$root" add --store "$store" --source test-source \
+    --local src/skills/alpha --kind skill --upstream skills/alpha \
+    --origin "$A" --base "$A")"; rc=$?
+  assert_rc "$rc" 1 "a duplicate local path is refused"
+  assert_contains "$out" "src/skills/alpha is listed twice" "the duplicate edge is named"
+
+  after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+  assert_eq "$after" "$before" "the refused add wrote nothing"
+}
+
+test_record_moves_base_and_preserves_origin() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+
+  out="$(run_cli "$root" record --store "$store" --source test-source \
+    --local src/skills/alpha --base "$C")"; rc=$?
+  assert_rc "$rc" 0 "record moves one edge's base"
+  assert_contains "$out" "moved src/skills/alpha base to $C in test-source" "the moved edge is named"
+  assert_eq "$(source_field "$store/test-source.json" src/skills/alpha)" "$A $C" "origin is preserved and base moved"
+  assert_eq "$(source_field "$store/test-source.json" src/skills/beta)" "$A $A" "the other edge is untouched"
+
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "the store passes after record"
+}
+
+test_record_failure_leaves_the_file_unchanged() {
+  local root store before after out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  before="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+
+  out="$(run_cli "$root" record --store "$store" --source test-source \
+    --local src/skills/alpha --base short)"; rc=$?
+  assert_rc "$rc" 1 "an invalid base is refused"
+  assert_contains "$out" "base must be a 40-character commit" "the invalid base is named"
+
+  after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+  assert_eq "$after" "$before" "the refused record wrote nothing"
+}
+
+test_runbook_and_prompt_edges() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  mkdir -p "$root/src/skills/code-review/runbooks/review" "$root/prompts"
+  printf '%s\n' '---' 'name: code-review' 'description: The review skill.' '---' '' 'Review.' \
+    >"$root/src/skills/code-review/SKILL.md"
+  printf '%s\n' '---' 'name: review' 'description: The review runbook.' '---' '' 'Runbook.' \
+    >"$root/src/skills/code-review/runbooks/review/SKILL.md"
+  printf '%s\n' '# Auto prompt' >"$root/prompts/auto.md"
+
+  run_cli "$root" add --store "$store" --source test-source \
+    --local src/skills/code-review --kind skill --upstream skills/code-review \
+    --origin "$A" --base "$A" >/dev/null
+  run_cli "$root" add --store "$store" --source test-source \
+    --local src/skills/code-review/runbooks/review --kind runbook \
+    --parent src/skills/code-review --upstream skills/code-review/runbooks/review \
+    --origin "$A" --base "$A" >/dev/null
+  out="$(run_cli "$root" add --store "$store" --source test-source \
+    --local prompts/auto.md --kind prompt --upstream prompts/auto.md \
+    --origin "$A" --base "$A")"; rc=$?
+  assert_rc "$rc" 0 "a prompt edge is accepted"
+
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 0 "the skill, runbook and prompt store passes"
+  assert_contains "$out" "clean across 1 source(s) and 5 artifact(s)" "all three kinds are counted"
+
+  out="$(run_cli "$root" add --store "$store" --source test-source \
+    --local src/skills/code-review/runbooks/review --kind runbook \
+    --upstream skills/code-review/runbooks/review \
+    --origin "$A" --base "$A")"; rc=$?
+  assert_rc "$rc" 2 "a runbook without a parent is refused"
+  assert_contains "$out" "a runbook requires --parent" "the missing parent is named"
+}
+
+test_unknown_fields_and_hashes_are_refused() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts[0].local_sha256 = "0".repeat(64);
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$store/test-source.json"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc "$rc" 1 "a stored hash is refused"
+  assert_contains "$out" "unknown artifact field local_sha256" "the hash field is named"
+}
+
+test_help_lists_the_three_commands() {
+  local out rc
+  out="$(node "$CLI" --help 2>&1)"; rc=$?
+  assert_rc "$rc" 0 "the help exits cleanly"
+  assert_contains "$out" "source-bump check" "check is listed"
+  assert_contains "$out" "source-bump add" "add is listed"
+  assert_contains "$out" "source-bump record" "record is listed"
+  assert_not_contains "$out" "source-bump diff" "diff is not a command"
+  assert_not_contains "$out" "source-bump prepare" "prepare is not a command"
+}
+
+run_test test_clean_fixture_passes
+run_test test_a_missing_local_path_fails
+run_test test_a_duplicate_local_path_fails
+run_test test_invalid_kind_bad_base_and_unknown_status_fail
+run_test test_an_empty_source_needs_a_reason
+run_test test_add_appends_and_sorts
+run_test test_add_creates_a_source_file
+run_test test_add_requires_source_facts_when_creating
+run_test test_add_empty_source
+run_test test_add_to_an_empty_source_clears_the_reason
+run_test test_add_refusal_leaves_the_file_unchanged
+run_test test_record_moves_base_and_preserves_origin
+run_test test_record_failure_leaves_the_file_unchanged
+run_test test_runbook_and_prompt_edges
+run_test test_unknown_fields_and_hashes_are_refused
+run_test test_help_lists_the_three_commands
+
+test_done
