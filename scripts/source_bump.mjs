@@ -10,29 +10,39 @@
 // the local artifact and the design doc; it never transcribes the store.
 //
 // Commands:
-//   check  -- validate every source file and every edge; writes nothing
-//   add    -- create a source, create an empty source, or append one edge
-//   record -- move one edge's base; the origin never changes
+//   check   -- validate every source file and every edge; writes nothing
+//   add     -- create a source, create an empty source, or append one edge
+//   diff    -- print the stored base -> local change from a local clone
+//   prepare -- create a temporary base/ours/theirs workspace for the merge
+//   record  -- move one edge's base; the origin never changes
 //
-// `diff`, `prepare` and conflict resolution are not implemented here. `check`
-// never fetches, so it stays deterministic and runnable offline.
+// `diff` and `prepare` read a local upstream clone and never fetch. Conflict
+// resolution stays with the merge agent. `check` never fetches, so it stays
+// deterministic and runnable offline.
 //
 // Test seams: SOURCE_BUMP_ROOT points local-path resolution at a fixture, and
 // SOURCE_BUMP_STORE points the store at a fixture. Every command also accepts
 // --store.
 //
-// Exit codes: 0 = clean or written, 1 = findings or refused write, 2 = usage.
+// Exit codes: 0 = clean, written, or a diff printed; 1 = findings or refused
+// write; 2 = usage.
 
 import {
+  copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
   renameSync,
+  rmSync,
   statSync,
   unlinkSync,
   writeFileSync,
 } from "fs";
+import { spawnSync } from "child_process";
+import { tmpdir } from "os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 
@@ -47,6 +57,8 @@ const DEFAULT_STORE = process.env.SOURCE_BUMP_STORE
 const SOURCE_KEYS = ["schema", "id", "url", "license", "copyright", "reason", "artifacts"];
 const ARTIFACT_KEYS = ["local_path", "kind", "parent", "upstream_path", "origin", "base"];
 const KINDS = ["skill", "runbook", "prompt"];
+const MAX_BUFFER = 64 * 1024 * 1024;
+const isFileArtifact = (artifact) => artifact.kind === "prompt";
 
 const USAGE = `Usage:
   source-bump check [--store <dir>]
@@ -55,11 +67,14 @@ const USAGE = `Usage:
     --origin <commit> --base <commit> [--parent <path>] [--store <dir>]
   source-bump add --source <id> --url <url> --license <text> --copyright <text> \\
     --empty --reason <text> [--store <dir>]
+  source-bump diff --source <id> --local <path> --clone <dir> [--store <dir>]
+  source-bump prepare --source <id> --local <path> --clone <dir> \\
+    --revision <commit> [--store <dir>]
   source-bump record --source <id> --local <path> --base <commit> [--store <dir>]
   source-bump --help
 
 The store is one JSON file per source at .agents/registry/sources/<id>.json.
-The command is the only writer. diff, prepare and merge are not implemented.`;
+The command is the only writer. diff and prepare read a local clone and never fetch.`;
 
 function usageError(message) {
   console.error(`source-bump: ${message}`);
@@ -154,7 +169,7 @@ function validateArtifact(artifact, where, findings) {
     const absolute = resolve(ROOT, local);
     if (!existsSync(absolute)) {
       addFinding(findings, where, `local_path ${local} does not exist`);
-    } else if (artifact.kind === "prompt") {
+    } else if (isFileArtifact(artifact)) {
       if (!statSync(absolute).isFile()) addFinding(findings, where, `prompt local_path ${local} must be a file`);
     } else {
       if (!statSync(absolute).isDirectory()) {
@@ -479,12 +494,10 @@ function commandAdd(args) {
   }
 }
 
-function commandRecord(args) {
-  allow(args, ["store", "source", "local", "base"]);
+function resolveEdge(args) {
   const store = storeOf(args);
   const id = required(args, "source");
   const local = required(args, "local");
-  const base = required(args, "base");
   const loaded = loadEntries(store, false);
   if (loaded.findings.length > 0) {
     printFindings(loaded.findings);
@@ -499,6 +512,175 @@ function commandRecord(args) {
   if (!entry) error(`source ${id} has no tracking file`);
   const artifact = entry.source.artifacts.find((candidate) => candidate.local_path === local);
   if (!artifact) error(`source ${id} has no artifact ${local}`);
+  return { store, id, local, entry, artifact, entries: loaded.entries };
+}
+
+function upstreamOf(args) {
+  const upstream = resolve(required(args, "clone"));
+  if (!existsSync(upstream) || !statSync(upstream).isDirectory()) {
+    error(`--clone ${args.clone} is not a local directory`);
+  }
+  const check = spawnSync("git", ["-C", upstream, "rev-parse", "--git-dir"], {
+    encoding: "utf8",
+  });
+  if (check.status !== 0) error(`--clone ${args.clone} is not a git repository`);
+  return upstream;
+}
+
+function verifyCommit(upstream, commit, label) {
+  const result = spawnSync("git", ["-C", upstream, "cat-file", "-e", `${commit}^{commit}`], {
+    encoding: "utf8",
+  });
+  if (result.status !== 0) error(`upstream ${upstream} has no ${label} ${commit}`);
+}
+
+function verifyUpstreamPath(upstream, commit, artifact, label) {
+  const path = `${commit}:${artifact.upstream_path}`;
+  const result = spawnSync("git", ["-C", upstream, "cat-file", "-t", path], {
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    error(`upstream ${commit} has no ${artifact.upstream_path} at ${label}`);
+  }
+  const expected = isFileArtifact(artifact) ? "blob" : "tree";
+  const actual = (result.stdout ?? "").trim();
+  if (actual !== expected) {
+    error(`upstream ${path} is ${actual}, expected ${expected} at ${label}`);
+  }
+}
+
+function materialize(upstream, artifact, commit, dest) {
+  if (isFileArtifact(artifact)) {
+    const show = spawnSync("git", ["-C", upstream, "show", `${commit}:${artifact.upstream_path}`], {
+      encoding: null,
+      maxBuffer: MAX_BUFFER,
+    });
+    if (show.status !== 0) {
+      throw new Error(`git show ${commit}:${artifact.upstream_path} failed`);
+    }
+    writeFileSync(join(dest, basename(artifact.local_path)), show.stdout);
+    return;
+  }
+
+  const archive = spawnSync(
+    "git",
+    ["-C", upstream, "archive", "--format=tar", `${commit}:${artifact.upstream_path}`],
+    { encoding: null, maxBuffer: MAX_BUFFER },
+  );
+  if (archive.status !== 0) {
+    throw new Error(`git archive ${commit}:${artifact.upstream_path} failed`);
+  }
+  const extract = spawnSync("tar", ["-x", "-C", dest], { input: archive.stdout });
+  if (extract.status !== 0) {
+    throw new Error(`tar could not extract ${commit}:${artifact.upstream_path}`);
+  }
+}
+
+function copyLocal(artifact, dest) {
+  const local = resolve(ROOT, artifact.local_path);
+  if (isFileArtifact(artifact)) {
+    copyFileSync(local, join(dest, basename(artifact.local_path)));
+  } else {
+    cpSync(local, dest, { recursive: true });
+  }
+}
+
+function buildBaseAndOurs(upstream, artifact) {
+  const workspace = mkdtempSync(join(tmpdir(), "source-bump-"));
+  try {
+    const base = join(workspace, "base");
+    const ours = join(workspace, "ours");
+    mkdirSync(base);
+    mkdirSync(ours);
+    materialize(upstream, artifact, artifact.base, base);
+    copyLocal(artifact, ours);
+    return { workspace, base, ours };
+  } catch (failure) {
+    rmSync(workspace, { recursive: true, force: true });
+    throw failure;
+  }
+}
+
+function buildTheirs(workspace, upstream, artifact, revision) {
+  const theirs = join(workspace, "theirs");
+  try {
+    mkdirSync(theirs);
+    materialize(upstream, artifact, revision, theirs);
+    return theirs;
+  } catch (failure) {
+    rmSync(theirs, { recursive: true, force: true });
+    throw failure;
+  }
+}
+
+function resolveBase(args) {
+  const { artifact } = resolveEdge(args);
+  const upstream = upstreamOf(args);
+  verifyCommit(upstream, artifact.base, "base");
+  verifyUpstreamPath(upstream, artifact.base, artifact, "base");
+  return { artifact, upstream };
+}
+
+function commandDiff(args) {
+  allow(args, ["store", "source", "local", "clone"]);
+  const { artifact, upstream } = resolveBase(args);
+
+  const workspace = buildBaseAndOurs(upstream, artifact);
+  let failure = null;
+  try {
+    const result = spawnSync(
+      "git",
+      [
+        "diff",
+        "--no-index",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--src-prefix=a/",
+        "--dst-prefix=b/",
+        "--",
+        "base",
+        "ours",
+      ],
+      { cwd: workspace.workspace, encoding: "utf8", maxBuffer: MAX_BUFFER },
+    );
+    if (result.error) failure = `git diff failed: ${result.error.message}`;
+    else if (result.status === 0) {
+      console.log("source-bump: no local changes");
+      return;
+    } else if (result.status !== 1) failure = `git diff failed: ${(result.stderr ?? "").trim()}`;
+    else process.stdout.write(result.stdout);
+  } finally {
+    rmSync(workspace.workspace, { recursive: true, force: true });
+  }
+  if (failure) error(failure);
+}
+
+function commandPrepare(args) {
+  allow(args, ["store", "source", "local", "clone", "revision"]);
+  const { artifact, upstream } = resolveBase(args);
+  const revision = required(args, "revision");
+  if (!isCommit(revision)) usageError("--revision must be a 40-character commit");
+  if (revision === artifact.base) usageError("--revision must differ from the stored base");
+  verifyCommit(upstream, revision, "revision");
+  verifyUpstreamPath(upstream, revision, artifact, "revision");
+
+  const workspace = buildBaseAndOurs(upstream, artifact);
+  try {
+    const theirs = buildTheirs(workspace.workspace, upstream, artifact, revision);
+    console.log(`source-bump: prepared ${workspace.workspace}`);
+    console.log(`  base: ${workspace.base}`);
+    console.log(`  ours: ${workspace.ours}`);
+    console.log(`  theirs: ${theirs}`);
+  } catch (failure) {
+    rmSync(workspace.workspace, { recursive: true, force: true });
+    throw failure;
+  }
+}
+
+function commandRecord(args) {
+  allow(args, ["store", "source", "local", "base"]);
+  const { entry, id, local, entries } = resolveEdge(args);
+  const base = required(args, "base");
 
   const source = {
     ...entry.source,
@@ -506,7 +688,7 @@ function commandRecord(args) {
       candidate.local_path === local ? { ...candidate, base } : candidate,
     ),
   };
-  const next = loaded.entries.map((candidate) =>
+  const next = entries.map((candidate) =>
     candidate.path === entry.path ? { ...entry, source } : candidate,
   );
   const nextFindings = collectFindings(next);
@@ -527,16 +709,27 @@ if (args.help) {
 if (args._.length === 0) usageError("a command is required");
 if (args._.length > 1) usageError(`unexpected argument ${args._[1]}`);
 
-switch (args._[0]) {
-  case "check":
-    commandCheck(args);
-    break;
-  case "add":
-    commandAdd(args);
-    break;
-  case "record":
-    commandRecord(args);
-    break;
-  default:
-    usageError(`unknown command ${args._[0]}`);
+try {
+  switch (args._[0]) {
+    case "check":
+      commandCheck(args);
+      break;
+    case "add":
+      commandAdd(args);
+      break;
+    case "diff":
+      commandDiff(args);
+      break;
+    case "prepare":
+      commandPrepare(args);
+      break;
+    case "record":
+      commandRecord(args);
+      break;
+    default:
+      usageError(`unknown command ${args._[0]}`);
+  }
+} catch (failure) {
+  console.error(`source-bump: ${failure.message ?? failure}`);
+  process.exit(1);
 }

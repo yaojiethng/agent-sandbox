@@ -80,20 +80,24 @@ The `source-bump` command is the only writer of the tracking file. It validates 
 |---|---|---|
 | `source-bump check` | no | Validate every source file, every edge and every local path. |
 | `source-bump add` | yes | Create a source, create an empty source, or append one edge. |
+| `source-bump diff` | no | Print the stored `base -> local` change from a local clone. |
+| `source-bump prepare` | no | Create a temporary `base`, `ours` and `theirs` workspace from a local clone. |
 | `source-bump record` | yes | Move one edge's `base`; `origin` is preserved. |
 
 `add` takes the source facts only when it creates the source. An existing source refuses a changed `url`, `license` or `copyright`; changing source facts is a separate decision. `add --empty` creates an empty source and requires its reason. `record` requires an existing source and an existing edge; it does not create either.
 
-The command never fetches and the `check` command never reads the network. A source file whose upstream is unavailable still checks against the local paths and the recorded facts. `source-bump check` is a validation command, not a lint gate. A bump runs only when the operator directs it, and the store stays pinned by default.
+The command never fetches and the `check` command never reads the network. A source file whose upstream is unavailable still checks against the local paths and the recorded facts. `diff` and `prepare` take a local upstream clone; they do not update it. `source-bump check` is a validation command, not a lint gate. A bump runs only when the operator directs it, and the store stays pinned by default.
 
 <!-- snippet: illustrative -->
 ```text
 source-bump check --store .agents/registry/sources
 source-bump add --source example-source --url https://github.com/example/skills --license MIT --copyright "Copyright Example" --local src/reasoning/agent/skills/example --kind skill --upstream skills/example --origin <commit> --base <commit>
+source-bump diff --source example-source --local src/reasoning/agent/skills/example --clone <clone>
+source-bump prepare --source example-source --local src/reasoning/agent/skills/example --clone <clone> --revision <commit>
 source-bump record --source example-source --local src/reasoning/agent/skills/example --base <commit>
 ```
 
-`diff`, `prepare` and the merge workspace are not commands yet. The merge agent owns the upstream review; this CLI owns the facts around it.
+The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; this CLI owns the three inputs and the facts around them. The procedure that uses the commands is the [`source-bump` skill](../../.agents/skills/source-bump/SKILL.md).
 
 ## The agent and the CLI
 
@@ -111,7 +115,7 @@ A manual edit to the tracking file is a defect even when the result parses. The 
 
 The store does not hold a local or upstream hash. A hash is derived from the artifact and goes stale on every edit; the merge review is what decides whether the local file still matches the upstream intent.
 
-It does not hold a patch. The patch is generated from `origin` and `base` for the review, and applying it to a new upstream is a three-way merge, not a stored patch queue.
+It does not hold a patch. The diff is generated from `base` and the local artifact for the review, and applying it to a new upstream is a three-way merge, not a stored patch queue.
 
 It does not hold the adaptation prose, the design rationale or a status. Those belong to the design doc and the tree; a structured file that also carries prose cannot be validated by the CLI.
 

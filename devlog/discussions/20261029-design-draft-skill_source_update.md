@@ -148,7 +148,7 @@ The store holds upstream-derived artifacts with a known revision. A home-grown a
 
 The live store now holds the three sources and five edges. The source catalog is retired; the five forked records name the store and the shipped `NOTICE`. The exact schema, path rules and command behavior are in [`source_tracking.md`](../../docs/development/source_tracking.md).
 
-This unit implements `add`, `record` and `check`. `diff` and `prepare` are planned; the CLI does not fetch and does not merge. `check` is a validation command, not a lint gate: a bump runs only when the operator directs it, and the store stays pinned by default.
+The CLI implements `add`, `record`, `check`, `diff` and `prepare`. It never fetches and never resolves a conflict; `diff` and `prepare` take a local clone. `check` is a validation command, not a lint gate: a bump runs only when the operator directs it, and the store stays pinned by default.
 
 ## The CLI and the agent
 
@@ -167,18 +167,18 @@ A manual edit to the tracking file is a defect even when it parses. The CLI's `c
 | Command | Effect | Writes the tracking file |
 |---|---|---|
 | `source-bump add` | Create a source, create an empty source, or add a source edge for a local artifact. | yes |
-| `source-bump diff` | Print `base -> local` for review. Planned; not implemented. | no |
-| `source-bump prepare` | Resolve the stored base and the new revision, and create a temporary merge workspace with the three inputs. Planned; not implemented. | no |
+| `source-bump diff` | Print `base -> local` from a local clone for review. | no |
+| `source-bump prepare` | Create a temporary `base`, `ours` and `theirs` workspace from a local clone. | no |
 | `source-bump record` | After the merge, set `base` to the new revision, validate, and write. | yes |
 | `source-bump check` | Validate paths, sources, bases, kinds, parents and source facts. | no |
 
 `add` takes the source facts only when it creates the source. An existing source refuses a changed `url`, `license` or `copyright`; changing source facts is a separate decision. `add --empty` creates an empty source and requires its reason. The `record` command moves only `base`; it does not change `origin` or the source facts.
 
-The CLI does not fetch by default. `prepare` takes a local upstream clone or a git URL with an explicit network permission. That keeps `check` deterministic and offline; it is a validation command, not a lint gate. A bump runs only when the operator directs it, and the store stays pinned by default.
+The CLI does not fetch. `diff` and `prepare` take a local upstream clone; a git URL is cloned by the operator first. That keeps `check` deterministic and offline; it is a validation command, not a lint gate. A bump runs only when the operator directs it, and the store stays pinned by default.
 
-## How the future source-bump skill uses this
+## How the source-bump skill uses this
 
-The procedure is the subject of the open roadmap row [the source bump is a pattern](../roadmap.md). The pattern is planned at `skill-scaffolder/patterns/source-bump.md`, beside the existing [fork-and-strip pattern](../../.agents/skills/skill-scaffolder/patterns/fork-and-strip.md). This record is the reference for the merge model; the pattern owns the steps and the CLI owns the tracking file.
+The procedure is the project skill at [`source-bump/SKILL.md`](../../.agents/skills/source-bump/SKILL.md). It is not a `skill-scaffolder` pattern: a bump is an operator-directed maintenance action with its own trigger, and the procedure is inline in the skill. The skill owns the steps, the CLI owns the tracking file, and this record is the merge model.
 
 | # | Step | Output |
 |---|---|---|
@@ -214,4 +214,5 @@ The design settles these.
 These questions remain open.
 
 - **Source cache.** A pinned git clone, a filtered pi package, or network-only access to the commit. The clone is the only option that gives `git range-diff` without extra work.
+- **Workspace materialization.** `prepare` uses `git archive`, which honors the upstream's `export-ignore` and `export-subst`, and `tar` is an external dependency; a tree that relies on either can differ from the commit's actual tree.
 - **Design doc shape.** One document per source or one per artifact, with prose only. It is not the tracking file.

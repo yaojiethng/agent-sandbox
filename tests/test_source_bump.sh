@@ -14,7 +14,11 @@
 #   record         -- record moves base, preserves origin, and leaves the file
 #                     untouched when the new base is invalid
 #   kinds          -- a runbook names its parent and a prompt is a file
-#   help           -- the CLI exposes check, add and record only
+#   diff           -- diff prints the base -> local change from a clone and
+#                     leaves the store untouched
+#   prepare        -- prepare creates base, ours and theirs from a clone and
+#                     leaves the store untouched
+#   help           -- the CLI exposes check, add, diff, prepare and record
 
 set -uo pipefail
 
@@ -67,6 +71,53 @@ make_fixture() {
 }
 EOF
   printf '%s\n' "$root"
+}
+
+make_upstream() {
+  local upstream="$FIXTURE_DIR/upstream"
+  mkdir -p "$upstream/skills/alpha"
+  git init -q "$upstream"
+  printf 'Alpha A\n' >"$upstream/skills/alpha/SKILL.md"
+  printf 'A-only\n' >"$upstream/skills/alpha/old.md"
+  mkdir -p "$upstream/prompts"
+  printf 'Prompt A\n' >"$upstream/prompts/auto.md"
+  git -C "$upstream" add -A
+  git -C "$upstream" -c user.name=Test -c user.email=test@example.test commit -qm A
+  local a b
+  a="$(git -C "$upstream" rev-parse HEAD)"
+  printf 'Alpha B\n' >"$upstream/skills/alpha/SKILL.md"
+  rm "$upstream/skills/alpha/old.md"
+  printf 'B-only\n' >"$upstream/skills/alpha/new.md"
+  printf 'Prompt B\n' >"$upstream/prompts/auto.md"
+  git -C "$upstream" add -A
+  git -C "$upstream" -c user.name=Test -c user.email=test@example.test commit -qm B
+  b="$(git -C "$upstream" rev-parse HEAD)"
+  printf '%s %s\n' "$a" "$b"
+}
+
+set_edge_commits() {
+  local file="$1" local="$2" origin="$3" base="$4"
+  node -e '
+    const fs = require("fs");
+    const [file, local, origin, base] = process.argv.slice(1);
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    const artifact = data.artifacts.find((item) => item.local_path === local);
+    artifact.origin = origin;
+    artifact.base = base;
+    fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+  ' "$file" "$local" "$origin" "$base"
+}
+
+set_edge_upstream() {
+  local file="$1" local="$2" upstream="$3"
+  node -e '
+    const fs = require("fs");
+    const [file, local, upstream] = process.argv.slice(1);
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    const artifact = data.artifacts.find((item) => item.local_path === local);
+    artifact.upstream_path = upstream;
+    fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
+  ' "$file" "$local" "$upstream"
 }
 
 run_cli() {
@@ -395,15 +446,158 @@ test_unknown_fields_and_hashes_are_refused() {
   assert_contains "$out" "unknown artifact field local_sha256" "the hash field is named"
 }
 
-test_help_lists_the_three_commands() {
+test_diff_prints_the_local_change_and_leaves_the_store_untouched() {
+  local root store upstream up_a up_b before after out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  set_edge_commits "$store/test-source.json" src/skills/alpha "$up_a" "$up_a"
+  before="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+
+  out="$(run_cli "$root" diff --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream")"; rc=$?
+  assert_rc "$rc" 0 "diff prints the local change"
+  assert_contains "$out" "diff --git a/base/SKILL.md b/ours/SKILL.md" "the diff names the base and ours trees"
+  assert_contains "$out" "-Alpha A" "the upstream base line is removed"
+  assert_contains "$out" "+Alpha." "the local line is added"
+
+  after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+  assert_eq "$after" "$before" "diff wrote no store change"
+}
+
+test_diff_reports_no_local_changes() {
+  local root store upstream up_a up_b out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  set_edge_commits "$store/test-source.json" src/skills/alpha "$up_a" "$up_a"
+  printf 'Alpha A\n' >"$root/src/skills/alpha/SKILL.md"
+  printf 'A-only\n' >"$root/src/skills/alpha/old.md"
+
+  out="$(run_cli "$root" diff --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream")"; rc=$?
+  assert_rc "$rc" 0 "diff reports a clean local tree"
+  assert_contains "$out" "no local changes" "the clean report is named"
+}
+
+test_prepare_builds_the_three_trees_and_leaves_the_store_untouched() {
+  local root store upstream up_a up_b before after out rc ws
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  set_edge_commits "$store/test-source.json" src/skills/alpha "$up_a" "$up_a"
+  before="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+
+  out="$(run_cli "$root" prepare --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream" --revision "$up_b")"; rc=$?
+  assert_rc "$rc" 0 "prepare creates the merge workspace"
+  ws="$(printf '%s\n' "$out" | sed -n 's/^source-bump: prepared //p')"
+  assert_file_exists "$ws/base/SKILL.md" "the base tree is present"
+  assert_file_exists "$ws/ours/SKILL.md" "the ours tree is present"
+  assert_file_exists "$ws/theirs/SKILL.md" "the theirs tree is present"
+  assert_eq "$(cat "$ws/base/SKILL.md")" "Alpha A" "the base is the stored revision"
+  assert_contains "$(cat "$ws/ours/SKILL.md")" "Alpha." "the ours tree is the local artifact"
+  assert_eq "$(cat "$ws/theirs/SKILL.md")" "Alpha B" "the theirs tree is the new revision"
+  assert_file_exists "$ws/base/old.md" "a base-only file is present"
+  assert_file_exists "$ws/theirs/new.md" "a new upstream file is present"
+  [[ ! -e "$ws/theirs/old.md" ]] && pass "a deleted upstream file is absent" \
+    || fail "a deleted upstream file is absent"
+
+  after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+  assert_eq "$after" "$before" "prepare wrote no store change"
+  rm -rf "$ws"
+}
+
+test_prepare_refuses_a_misshapen_edge() {
+  local root store upstream up_a up_b out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  set_edge_commits "$store/test-source.json" src/skills/alpha "$up_a" "$up_a"
+  set_edge_upstream "$store/test-source.json" src/skills/alpha prompts/auto.md
+
+  out="$(run_cli "$root" prepare --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream" --revision "$up_b")"; rc=$?
+  assert_rc "$rc" 1 "a skill edge pointing at a blob is refused"
+  assert_contains "$out" "is blob, expected tree" "the object type is named"
+}
+
+test_prepare_refuses_an_absent_upstream_path() {
+  local root store upstream up_a up_b out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  set_edge_commits "$store/test-source.json" src/skills/alpha "$up_a" "$up_a"
+  set_edge_upstream "$store/test-source.json" src/skills/alpha skills/missing
+
+  out="$(run_cli "$root" prepare --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream" --revision "$up_b")"; rc=$?
+  assert_rc "$rc" 1 "an absent upstream path is refused"
+  assert_contains "$out" "has no skills/missing at base" "the absent path is named"
+}
+
+test_prepare_a_prompt_artifact() {
+  local root store upstream up_a up_b before after out rc ws
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  mkdir -p "$root/prompts"
+  printf 'Prompt.\n' >"$root/prompts/auto.md"
+  run_cli "$root" add --store "$store" --source test-source \
+    --local prompts/auto.md --kind prompt --upstream prompts/auto.md \
+    --origin "$up_a" --base "$up_a" >/dev/null
+  before="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+
+  out="$(run_cli "$root" prepare --store "$store" --source test-source \
+    --local prompts/auto.md --clone "$upstream" --revision "$up_b")"; rc=$?
+  assert_rc "$rc" 0 "prepare accepts a prompt artifact"
+  ws="$(printf '%s\n' "$out" | sed -n 's/^source-bump: prepared //p')"
+  assert_file_exists "$ws/base/auto.md" "the prompt base is present"
+  assert_file_exists "$ws/ours/auto.md" "the prompt ours is present"
+  assert_file_exists "$ws/theirs/auto.md" "the prompt theirs is present"
+  assert_eq "$(cat "$ws/base/auto.md")" "Prompt A" "the prompt base is the stored revision"
+  assert_eq "$(cat "$ws/ours/auto.md")" "Prompt." "the prompt ours is the local file"
+  assert_eq "$(cat "$ws/theirs/auto.md")" "Prompt B" "the prompt theirs is the new revision"
+
+  after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
+  assert_eq "$after" "$before" "prepare wrote no store change for a prompt"
+  rm -rf "$ws"
+}
+
+test_prepare_refuses_a_short_or_unknown_revision() {
+  local root store upstream up_a up_b out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  read -r up_a up_b < <(make_upstream)
+  upstream="$FIXTURE_DIR/upstream"
+  set_edge_commits "$store/test-source.json" src/skills/alpha "$up_a" "$up_a"
+
+  out="$(run_cli "$root" prepare --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream" --revision short)"; rc=$?
+  assert_rc "$rc" 2 "a short revision is refused"
+  assert_contains "$out" "--revision must be a 40-character commit" "the short revision is named"
+
+  out="$(run_cli "$root" prepare --store "$store" --source test-source \
+    --local src/skills/alpha --clone "$upstream" --revision "$C")"; rc=$?
+  assert_rc "$rc" 1 "an unknown revision is refused"
+  assert_contains "$out" "has no revision $C" "the missing revision is named"
+}
+
+test_help_lists_the_five_commands() {
   local out rc
   out="$(node "$CLI" --help 2>&1)"; rc=$?
   assert_rc "$rc" 0 "the help exits cleanly"
   assert_contains "$out" "source-bump check" "check is listed"
   assert_contains "$out" "source-bump add" "add is listed"
+  assert_contains "$out" "source-bump diff" "diff is listed"
+  assert_contains "$out" "source-bump prepare" "prepare is listed"
   assert_contains "$out" "source-bump record" "record is listed"
-  assert_not_contains "$out" "source-bump diff" "diff is not a command"
-  assert_not_contains "$out" "source-bump prepare" "prepare is not a command"
 }
 
 run_test test_clean_fixture_passes
@@ -421,6 +615,13 @@ run_test test_record_moves_base_and_preserves_origin
 run_test test_record_failure_leaves_the_file_unchanged
 run_test test_runbook_and_prompt_edges
 run_test test_unknown_fields_and_hashes_are_refused
-run_test test_help_lists_the_three_commands
+run_test test_diff_prints_the_local_change_and_leaves_the_store_untouched
+run_test test_diff_reports_no_local_changes
+run_test test_prepare_builds_the_three_trees_and_leaves_the_store_untouched
+run_test test_prepare_refuses_a_misshapen_edge
+run_test test_prepare_refuses_an_absent_upstream_path
+run_test test_prepare_a_prompt_artifact
+run_test test_prepare_refuses_a_short_or_unknown_revision
+run_test test_help_lists_the_five_commands
 
 test_done
