@@ -9,7 +9,7 @@ argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus descri
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list`, `work-log`, `decision-records`, `docs`, `git-discipline`, `testing`
+- `task-list`, `work-log`, `decision-records`, `project-documentation`, `git-discipline`, `testing`
 
 ## Orient
 

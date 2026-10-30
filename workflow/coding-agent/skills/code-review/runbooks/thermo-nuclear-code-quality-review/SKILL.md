@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Thermo-Nuclear Code Quality Review
 
-> Source: [cursor/plugins, thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md), landed at commit `6e3d2ea5`. Verbatim apart from two mechanical changes: the paragraph naming this repository's `_REVIEWER` role, its seat count and its attribution requirement is removed, and five paragraphs are joined onto one physical line each, as the repository's docs convention requires. No word of the review changes.
+> Source: [cursor/plugins, thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/blob/6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf/cursor-team-kit/skills/thermo-nuclear-code-quality-review/SKILL.md), landed at commit `6e3d2ea5`. Verbatim apart from two mechanical changes: the paragraph naming this repository's `_REVIEWER` role, its seat count and its attribution requirement is removed, and five paragraphs are joined onto one physical line each, as the repository's `project-documentation` convention requires. No word of the review changes.
 
 Use this skill for an unusually strict review focused on implementation quality, maintainability, abstraction quality, and codebase health.
 

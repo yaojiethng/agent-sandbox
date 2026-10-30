@@ -13,7 +13,7 @@ Every root a session can write to has a lifecycle and a visibility, and the two 
 - When an instrument, a corpus or a comparison script has to be reused by a later session.
 - When deciding whether a file may be deleted with the container.
 
-Not this: which folder a document or a record belongs to inside the repository is the `docs` and `work-log` conventions; the session's own working state is the `active-tracker` skill; whether the work is committed is the calling unit's judgement, not a property of a location.
+Not this: which folder a document or a record belongs to inside the repository is the `project-documentation` and `work-log` conventions; the session's own working state is the `active-tracker` skill; whether the work is committed is the calling unit's judgement, not a property of a location.
 
 ## The roots
 
@@ -43,7 +43,7 @@ The harness's own roots under `/opt/` are image-owned and read-only: they are in
 
 ## Non-goals
 
-- Does not choose where a document or a record goes inside the repository. That is the `docs` and `work-log` conventions.
+- Does not choose where a document or a record goes inside the repository. That is the `project-documentation` and `work-log` conventions.
 - Does not decide whether work is committed, or which branch carries it.
 - Does not describe the diff pipeline, the snapshot or the review step.
 

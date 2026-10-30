@@ -6,8 +6,8 @@
 // resolve). Both exempt the record trees declared below, under one key.
 //
 // Deliberately DISABLED (they contradict written policy):
-//   MD013 line-length -- the docs skill's one-paragraph-per-line rule
-//       forbids breaking prose at a column limit
+//   MD013 line-length -- the `project-documentation` convention's
+//       one-paragraph-per-line rule forbids breaking prose at a column limit
 //   MD060 table-column-style -- the repo writes compact tables; MD060
 //       pads cells to a uniform width and makes tables unreadable
 //

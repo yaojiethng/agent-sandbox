@@ -9,7 +9,7 @@ argument-hint: "[workflow intent and branch line - optional; e.g. full loop, wor
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list`, `work-log`, `decision-records`, `docs`
+- `task-list`, `work-log`, `decision-records`, `project-documentation`
 
 ## Mandate
 
