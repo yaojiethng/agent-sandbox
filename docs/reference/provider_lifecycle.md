@@ -99,15 +99,16 @@ The provider config reaches a session from two sources:
 | **Onboard template is a snapshot** | `src/reasoning/providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 | **Recommendations file uninitialized** | the skeleton carries empty role lines | a dispatch falls back to the pi startup default until `setup-model-recommendations` writes values |
 
-### How the three-layer skills/prompts model interacts with this split
+### How the four-layer skills/prompts model interacts with this split
 
-Sandbox-layer skills and prompts (under `agent/skills/` and `agent/prompts/` in the repo) are loaded through a different path than provider-layer or user-layer content:
+The four layers, highest precedence first, are project, provider, agent-sandbox and workflow:
 
-- **Sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the `"packages"` key in `settings.json`, whose entries name `/opt/workflow/agent` and the module root beside it, each contributing its `prompts/` and `skills/` subdirectories as roots; a key pi does not preserve costs that layer for the rest of the session. A workflow module's payload is image-baked at `/opt/workflow/agent/modules/<module>/skills|prompts` and reached through the same key. The next session starts from the image's `settings.json`, which carries it again.
-- **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from that directory.
-- **User layer** -- files the operator places in `$AGENT_HOME/agent/skills|prompts/`, which the mounts carry. Loaded by pi's discovery from the same directories.
+- **Project layer** -- `.agents/skills` and `.agents/prompts/` in the project tree. Pi auto-discovers `.agents/skills`, and the settings `prompts` key names `.agents/prompts`; the operator edits the project tree, and no image row carries either folder.
+- **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/skills|prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from those directories.
+- **Agent-sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the first `"packages"` entry in `settings.json`, which names `/opt/workflow/agent`; a key pi does not preserve costs that layer for the rest of the session.
+- **Workflow module layer** -- image-baked at `/opt/workflow/agent/modules/<module>/skills|prompts` and reached through the module's own `packages` entry, its own root. A merge into the harness root would lose the module's origin and let one module's file shadow another's.
 
-The three-layer model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#skills-and-prompts-layer-model).
+A name in more than one layer resolves first-wins in that order. The generated skill map is the gate: `scripts/check_skill_map.sh` reads pi's loader, reports collisions and holds the shipped-layer link boundary. The four-layer model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#skills-and-prompts-layer-model).
 
 ## References
 

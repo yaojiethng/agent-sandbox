@@ -9,7 +9,8 @@
 # the instruction-surface gate (check_instruction_surfaces.sh), the reach gate
 # (check_reach.sh), the statechart gate (check_statechart.sh) and the launch-site
 # gate (check_launch_sites.sh) and the source-catalog gate
-# (check_skill_sources.sh); the Markdown gate carries the doc-wrap and linking
+# (check_skill_sources.sh) and the skill-layer gate (check_skill_map.sh); the
+# Markdown gate carries the doc-wrap and linking
 # rules. BLOCKING: exits 1 when any gate reports findings or cannot run.
 #
 # All gates always run, so a failure in one never hides the others. The gates
@@ -25,7 +26,7 @@ SECONDS=0
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-GATES=(check_eval_fixtures.sh check_code_snippets.sh check_shell.sh check_lib_contract.sh check_markdown.sh check_document_shape.sh check_handover_format.sh check_record_names.sh check_doc_wrap_legacy.sh check_instruction_surfaces.sh check_container_layout.sh check_reach.sh check_statechart.sh check_numbering.sh check_launch_sites.sh check_skill_sources.sh)
+GATES=(check_eval_fixtures.sh check_code_snippets.sh check_shell.sh check_lib_contract.sh check_markdown.sh check_document_shape.sh check_handover_format.sh check_record_names.sh check_doc_wrap_legacy.sh check_instruction_surfaces.sh check_container_layout.sh check_reach.sh check_statechart.sh check_numbering.sh check_launch_sites.sh check_skill_sources.sh check_skill_map.sh)
 
 OUT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX") || exit 1
 trap 'rm -rf "$OUT_DIR"' EXIT

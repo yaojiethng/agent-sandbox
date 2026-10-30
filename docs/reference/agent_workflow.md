@@ -62,17 +62,24 @@ The `~/workspace/input/brief.md` path was previously used to inject a stub file 
 
 ### Skills and Prompts Layer Model
 
-Skills and prompt templates follow a parallel three-layer model with distinct loading mechanisms per layer:
+Skills and prompt templates share four layers, highest precedence first:
 
 | Layer | Source | Loaded via | Update mechanism |
 |---|---|---|---|
-| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` (config-seeded, survives image rebuild) | `onboard.sh --refresh` or edit `$SANDBOX_DIR/.<provider>/` |
-| **Sandbox (workflow) layer** | `agent/skills/`, `agent/prompts/`, and a module's `workflow/<module>/skills&#124;prompts/` | Image-baked at `/opt/workflow/agent/skills&#124;prompts/` and `/opt/workflow/agent/modules/<module>/skills&#124;prompts/`; the `settings.json` `packages` key names both payload roots, and each entry contributes its `skills/` and `prompts/` subdirectories | Image rebuild (`make build`) -- stable baseline independent of working tree |
-| **User layer** | `$SANDBOX_DIR/.<provider>/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` | Direct filesystem placement by operator |
+| **Project layer** | `.agents/skills/` and `.agents/prompts/` | Pi's project discovery: `.agents/skills` is auto-discovered, and `.agents/prompts` is named in the settings `prompts` key | Edit the project tree |
+| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | `$AGENT_HOME/agent/skills&#124;prompts/`, seeded from the config template at every start and bind-mounted for prompts and skills | `onboard.sh --refresh`, or edit `$SANDBOX_DIR/.<provider>/` |
+| **Agent-sandbox layer** | `src/reasoning/agent/skills&#124;prompts/` | `/opt/workflow/agent/skills&#124;prompts/`; the first `settings.json` `packages` entry | Image rebuild (`make build`) |
+| **Workflow module layer** | `workflow/<module>/skills&#124;prompts/` | `/opt/workflow/agent/modules/<module>/skills&#124;prompts/`; the module's `packages` entry | Image rebuild (`make build`) |
 
-**Why the sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
+Pi resolves a name first-wins in that order. The project layer shadows the provider layer, which shadows the agent-sandbox layer, which shadows the workflow module. A collision is a hard finding in the generated map, not a silent winner: `scripts/check_skill_map.sh` runs it as a lint gate. The map is generated at check time and is not committed.
 
-**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`, and the sandbox-layer files are not seeded there by default because the image bakes them at `/opt/workflow/`. The `settings.json` `"packages"` key bridges the gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots, one entry per payload. The sandbox layer therefore depends on that key surviving across sessions, per [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes).
+The layers are one-way. A shipped skill -- provider, agent-sandbox or workflow -- may link only within its own source root. A project skill may link anywhere in the project tree, including into a shipped layer, because the project tree is where the project layer is read. A shipped link outside its layer is a hard finding. The decision is `docs/adr/skill_layer_resolution.md`.
+
+**Why the agent-sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`src/reasoning/agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
+
+**Why the workflow module is a separate package.** A module's payload does not merge into the harness root: `workflow/<module>/` lands at `/opt/workflow/agent/modules/<module>/`, its own root. A merge would lose which module a file came from, and it would let one module's file shadow another with nothing reported. The workflow module is a package entry of its own, so it can be absent, and the package list orders it after the agent-sandbox root.
+
+**Why the package layers cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`, and the package-layer files are not seeded there by default because the image bakes them at `/opt/workflow/`. The `settings.json` `"packages"` key bridges the gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots, one entry per payload. The package layers therefore depend on that key surviving across sessions, per [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes).
 
 ## How the Workflow is Expressed
 

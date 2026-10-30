@@ -27,7 +27,7 @@ Two tests identify a workflow document:
 
 A third test separates the forms a workflow document takes. Is it steps, reference, or judgement? A runbook holds ordered steps. A reference holds facts. An advisor holds judgements and a diagnostic checklist. This distinction shapes the structure, described below.
 
-The three-layer model for where prompts and skills live is in [`agent_workflow.md`](../reference/agent_workflow.md). The provider layer, the sandbox layer, and the user layer load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
+The four-layer model for where prompts and skills live is in [`agent_workflow.md`](../reference/agent_workflow.md). The project, provider, agent-sandbox and workflow layers load different sets. An author writes for the layer the prompt or skill is baked into and does not change the loading mechanism.
 
 ## The information hierarchy
 
