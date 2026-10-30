@@ -509,18 +509,6 @@ Canonical bash coding rules: the pattern set beside the `code-review-bash` runbo
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
-### [A] 2026-08-09  --  Circular sourcing between `diff_export.sh` and `package_branch.sh`
-
-```text
-state: mitigated
-scoped: M3 T7 -- skill-maintenance backlog triage (pending circular-sourcing ADR)
-mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators. Both libs source it on disk.
-```
-
-`diff_export.sh` sources `package_branch.sh`. When `package_branch.sh` needed `_write_export_status`, it could not source `diff_export.sh` back without a cycle. The discovery was trial-and-error; no static analysis tool caught the cycle.
-
-Scope: architecture decision recorded in ADR (not yet written). Cross-reference: no skill trap covers this; should be added as an architecture trap.
-
 ### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
 
 ```text
@@ -533,23 +521,6 @@ mitigation: word the line so `shellcheck` is not the first token after `#` (for 
 ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
 
 Scope: ShellCheck directive parsing. Cross-reference: `p-33` in [`shellcheck.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/shellcheck.md).
-
-### [A] 2026-09-25  --  A guard that errexit already provides cannot be pinned by a unit
-
-```text
-state: open
-scoped: M3.1 T1 -- the disposition rule for a surviving bite
-legacy: none
-mitigation: when a bite survives, classify the row by running the deletion and comparing the outcome for the code's callers, never by argument. If no input changes output or exit status, the row is a code row: delete the line, write no unit. Do not add a gate for the idiom, because whether `cmd || exit 1` decides anything depends on the call context: errexit is suspended for the whole body of a function invoked in a condition.
-```
-
-Three instances, filed as coverage gaps (`action_kind: test`), each with a different mechanism. `scripts/workflows/apply.sh` ends `apply_run` with `exit $?`: unreachable when the preceding command failed, because errexit exits first, and a no-op when it succeeded. `scripts/resume_agent.sh` guards the picker call with `chosen="$(picker)" || exit 1`: the arm does run (`bash -c 'set -e; x="$(false)" || { echo ARM; exit 1; }; echo after'` prints ARM and exits 1), and the line is redundant only because errexit produces the same exit status without it. `scripts/workflows/draft.sh`'s `main` sets `CHANNEL_ARG="${CHANNEL_ARG:-session}"` and no reader uses the value, because `resolve_source_for_draft` applies the same default.
-
-No unit can fail on any of the three, so the mutation survives by construction. The brief's earlier text, "a surviving mutation is a coverage finding", would have pushed the next agent to write a source-text assertion, which the suite's anti-patterns forbid because it pins the text and not the behaviour.
-
-Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
-
-Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: [`testing/patterns/mutation-evidence.md`](../.agents/skills/testing/patterns/mutation-evidence.md) pattern 3, the rule's surviving home; the brief and the register that recorded it are retired, handover `20261028-14`.
 
 ### [A] 2026-10-26  --  A rule recorded a mechanism nobody had run, and the guard it doubted holds
 

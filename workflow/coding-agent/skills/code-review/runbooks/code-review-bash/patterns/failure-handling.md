@@ -158,3 +158,29 @@ fi
 Inside `[ ]` the operands are re-split and pathname-expanded like any other command's arguments, so an unquoted value can become several arguments and `-a` and `-o` are parsed by the test itself with a precedence that surprises. `[[ ]]` is a bash keyword: it keeps one operand as one operand, takes `&&` and `||`, and does not run the expansion. Shellcheck's SC2006 makes the same argument for `$( )` over backticks, and this entry does not repeat it.
 
 Replaces: `[ -n $name -a -f $path ]`, and `[ ]` where a value may hold a space.
+
+## p-62 A guard the runtime already provides is a code row
+
+```bash
+# Wrong: errexit already exits on failure, and this arm never changes success
+apply_run ...
+exit $?
+
+# Wrong: the picker returns 0 or 1, and errexit already exits on failure
+chosen="$(picker)" || exit 1
+
+# Wrong: the resolver applies the default, so no reader uses this
+CHANNEL_ARG="${CHANNEL_ARG:-session}"
+
+# Right: let errexit and the consumer decide; keep only an exit that stops a
+# second path
+apply_run ...
+exit
+
+chosen="$(picker)"
+resolve_source_for_draft "$SANDBOX_DIR" "${CHANNEL_ARG:-}" "$BUNDLE_ARG"
+```
+
+A line that repeats a check the runtime or a downstream consumer already makes can never change an outcome, so no input can distinguish its presence from its absence. Delete it and write no unit: the line is a code row, and a source-text assertion written in its place pins the text rather than the behaviour. Classify by deleting the line and comparing what the callers do, never by arguing that the guard must matter. The terminal `exit` is the exception where it stops a second path; only the `$?` goes. For the three forms, `set -e` makes `exit $?` unreachable on failure and a no-op on success; `cmd || exit 1` exits with the status errexit already gives; and a default the consumer applies again is unread. ShellCheck 0.9.0 has no check for this class, so the pattern carries it.
+
+Replaces: `exit $?` after a command under `set -e`, a `cmd || exit 1` guard errexit already covers, and a default a downstream resolver re-applies.
