@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Skill provenance graph",
+  "type": "object",
+  "required": ["model", "evidence", "nodes", "edges", "summary", "findings"],
+  "properties": {
+    "model": { "const": "skill-provenance/1" },
+    "evidence": {
+      "type": "object",
+      "required": ["commit", "dirty"],
+      "properties": {
+        "commit": { "type": "string" },
+        "dirty": { "type": "boolean" },
+        "image": { "type": ["string", "null"] },
+        "agentHome": { "type": "string" }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "role", "namespace", "layer", "path", "version", "sha256"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "const": "artifact" },
+          "role": { "enum": ["root", "target"] },
+          "namespace": { "enum": ["repo", "image", "host", "project"] },
+          "layer": { "type": "string" },
+          "path": { "type": "string" },
+          "version": { "type": "string" },
+          "sha256": { "type": "string" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "from", "to"],
+        "properties": {
+          "kind": { "enum": ["copy", "seed", "link", "same-content", "drift"] },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "expression": { "type": "string" },
+          "sourceSkill": { "type": "string" },
+          "targetSkill": { "type": "string" },
+          "resolution": { "enum": ["repo", "image", "host", "project"] },
+          "count": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["roots", "nodes", "edges", "links", "targets", "same", "drift", "unknownImage"],
+      "properties": {
+        "roots": { "type": "integer" },
+        "nodes": { "type": "integer" },
+        "edges": { "type": "integer" },
+        "links": { "type": "integer" },
+        "targets": { "type": "integer" },
+        "same": { "type": "integer" },
+        "drift": { "type": "integer" },
+        "unknownImage": { "type": "boolean" }
+      }
+    },
+    "findings": { "type": "array", "items": { "type": "string" } }
+  }
+}
