@@ -81,6 +81,26 @@
               "local_sha256": "b1b88c0c534da9017d0039d7008ef8d2ad6a40b44714560f49943f467caab3ee"
             }
           ]
+        },
+        {
+          "name": "writing-for-agents",
+          "upstream_path": "skills/productivity/writing-for-agents",
+          "local_path": "src/reasoning/agent/skills/writing-for-agents",
+          "upstream_revision": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+          "upstream_revision_date": "2026-10-19",
+          "import_commit": "0ec59c6ac0930149c6f49a174e11f7902a9cd83a",
+          "files": [
+            {
+              "path": "SKILL.md",
+              "upstream_sha256": "551adca942227b44192edba88acd4e8db911f0121ce58ad16944ccf6a896a74a",
+              "local_sha256": "7eaf9bf2294c8a1720cb482f4f4a2b53c2930140f482c691381a8859d027844b"
+            },
+            {
+              "path": "SKILL-MECHANICS.md",
+              "upstream_sha256": "c768e6307c7c10728c401c213f2c4ba71c542127eeb7ad2956aabd15a0fa0059",
+              "local_sha256": "c768e6307c7c10728c401c213f2c4ba71c542127eeb7ad2956aabd15a0fa0059"
+            }
+          ]
         }
       ]
     },

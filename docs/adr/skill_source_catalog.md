@@ -11,6 +11,71 @@
 | R3 | Drift is detected | A changed local file, a missing record, or a skill that stops pointing at its source fails a gate |
 | R4 | A regroup does not lose provenance | Moving a skill, or folding it into another skill, leaves the source facts in place and the adaptation with the surviving skill |
 
+## 2026-10-29 -- Every skill carries a record, and the catalog lists only forks
+
+**Decision:** Every skill directory under `src/reasoning/agent/skills/` has a `MAINTENANCE.md` with `## Source`, `## Adapted` and `## Name`. A forked record names a source id in the catalog; a home-grown record states `Source: home-grown.` and has no catalog entry. The scanner walks the tree, not only the catalog, so a skill that is not a fork still has to answer the question. The catalog remains the list of forked sources; it does not become an index of every skill. The tree-wide check is in [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs), and the shipped gate is [`scripts/check_skill_sources.sh`](../../scripts/check_skill_sources.sh).
+
+**Rationale:** The catalog-only check could not answer for a home-grown skill: it was not in the catalog, so nothing asked whether it had a record. A separate home-grown index would be a second list to maintain, and a source row for a home-grown skill would claim an upstream it does not have. The tree is the complete set of skills, so the tree is the subject of the completeness check, and the catalog stays the source-fact home. The four missing records in the agent-sandbox layer are the first case the gate catches.
+
+**Rejected alternatives:**
+
+### Check only the skills in the catalog
+
+Rejected on completeness. A home-grown skill is not in the catalog, so the check would pass over the exact skill that has no provenance answer. The catalog's list and the tree's list are different sets, and only the tree is complete.
+
+### A second home-grown index
+
+Rejected on single source. A list of home-grown skills would repeat the tree and go stale; the record in each skill directory is the local answer, and the tree walk discovers it.
+
+### A source row for every home-grown skill
+
+Rejected on truth. A home-grown skill has no upstream; a catalog row would invent one or use a placeholder, and the source facts would be fiction.
+
+### Require the record only in the source manifest
+
+Rejected for the same reason as the catalog-only check: the manifest is keyed by source, and a home-grown skill has none.
+
+**Edge cases / drivers:**
+
+- **A home-grown record.** `Source: home-grown.`; the record is accepted and the skill is not counted as a catalog skill.
+- **A forked record.** The `Source: \`id\`` line must name a source the catalog holds; an unknown id is a finding.
+- **A skill with no record.** The tree walk reports it even when the skill is absent from the catalog; the four agent-sandbox records were the first case.
+- **The `--write` mode.** It drops a catalog skill whose record is gone, but the tree walk still refuses the directory that remains; the two modes cannot make a missing record disappear.
+- **A nested `SKILL.md`.** The walk stops at a skill root, as pi does; a runbook under a skill is content, not a second skill.
+- **The records ship as data.** The tree is copied to `/opt/workflow/agent/skills/`; the records and the catalog are inert to the loader and readable to the agent.
+
+## 2026-10-29 -- A skill may pin its own source revision
+
+**Decision:** A skill entry may pin its own `upstream_revision`, `upstream_revision_date` and `import_commit`. The source row keeps the source identity and its default revision; the skill's values override the default for that skill alone. `writing-for-agents` is the first case: the `mattpocock-skills` row stays at `62f43a1` for the four earlier forks, and the writing entry pins `5beb35b0` (2026-10-19) with its own import commit `0ec59c6a`. The source URL, license and copyright stay on the source row; the skill record points at that row by id. The catalog entry is in [`source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json), and the writing record is in [`writing-for-agents/MAINTENANCE.md`](../../src/reasoning/agent/skills/writing-for-agents/MAINTENANCE.md).
+
+**Rationale:** One source can be imported more than once at different upstream revisions. A single source revision cannot be true for the four older forks and the later writing skill at once. A second source row would duplicate the URL, license and copyright and would split one upstream into two identities. The per-skill override keeps the source facts at their one home and records the revision where it differs. The local import commit is not the source revision; the writing entry records both, as the earlier entry requires for the source row.
+
+**Rejected alternatives:**
+
+### A second source row for the same upstream
+
+Rejected on R1. The row would repeat the URL, license and copyright, and a source update would have two copies with no gate keeping them equal. The source identity is the upstream, not the revision that happened to be imported.
+
+### Move the source row to the writing revision
+
+Rejected on provenance. The four earlier forks were imported from `62f43a1`; moving the row's revision would make their recorded hashes describe a revision they did not come from.
+
+### Put the revision in the per-skill record
+
+Rejected on R1. The record would repeat source-level values in prose, and the source manifest is the machine-readable home. The record points at the source id; the entry carries the revision.
+
+### Pin the revision only when the source row has one skill
+
+Rejected as an arbitrary exception. A source with a second import has the same problem whatever its size; the override is a property of the skill entry, so it applies uniformly.
+
+**Edge cases / drivers:**
+
+- **A skill with no override.** It uses the source row's `revision`, `revision_date` and `import_commit`; the four earlier forks do.
+- **A source update.** A new import gets its own skill entry and its own pinned revision; the source row changes only when the default itself moves.
+- **A local edit after import.** The local hash changes while the pinned upstream hash stays; the catalog reports the difference, and the record states the adaptation.
+- **A per-skill import commit without a revision.** The gate refuses it: the two fields are pinned together, and a commit with no upstream revision says nothing about the source.
+- **The installed copy.** The manifest and the records ship with the skills as data; the gate runs against the repository root.
+
 ## 2026-10-29 -- Two levels: a source manifest and a per-skill record
 
 **Decision:** The maintenance catalog has two levels. The per-source manifest at [`source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json) holds the upstream URL, the resolved revision, the license, the copyright, the import commit, the file hashes and the skills forked from that source. A per-skill `MAINTENANCE.md` holds `## Adapted`, `## Name` and a `## Source` pointer to the manifest. The manifest's skill list is generated from the records, and [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs) re-hashes every local file and fails on drift. The catalog holds only sources with at least one fork: an accessible upstream this repository does not use is named in this ADR, not added as an empty source. A source revision is resolved by matching the imported blobs to the upstream commit; the local import commit is a route, not the source revision. A nested `SKILL.md` is not a separate skill: pi's loader treats a directory containing `SKILL.md` as a skill root and does not recurse further, so a skill that becomes a section of a parent moves its adaptation to the parent's record and the manifest lists the parent as the fork.

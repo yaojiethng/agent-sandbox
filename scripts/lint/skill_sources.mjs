@@ -54,6 +54,43 @@ function recordsFor(id) {
   return records;
 }
 
+/** Every skill directory under the maintenance tree, mirroring pi's no-recurse rule. */
+function skillDirs() {
+  const dirs = [];
+  if (!existsSync(SKILLS_ROOT)) return dirs;
+  for (const entry of readdirSync(SKILLS_ROOT, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (existsSync(join(SKILLS_ROOT, entry.name, "SKILL.md"))) dirs.push(entry.name);
+  }
+  return dirs.sort();
+}
+
+/** The tree-wide record gate: every skill has a record, and every record is shaped. */
+function checkRecords(catalog) {
+  const sourceIds = new Set(catalog.sources.map((source) => source.id));
+  for (const name of skillDirs()) {
+    const record = join(SKILLS_ROOT, name, "MAINTENANCE.md");
+    if (!existsSync(record)) {
+      finding(record, `skill ${name} has no MAINTENANCE.md record`);
+      continue;
+    }
+    const text = readFileSync(record, "utf8");
+    const lines = text.split("\n");
+    for (const heading of ["## Source", "## Adapted", "## Name"]) {
+      if (!lines.includes(heading)) {
+        finding(record, `skill ${name} record is missing '${heading}'`);
+      }
+    }
+    if (!/^Source:/m.test(text)) {
+      finding(record, `skill ${name} record is missing its Source line`);
+    }
+    const match = text.match(/^Source: `([^`]+)`/m);
+    if (match && !sourceIds.has(match[1])) {
+      finding(record, `skill ${name} record names source ${match[1]}, which is not in the catalog`);
+    }
+  }
+}
+
 function checkSource(source) {
   const id = source.id ?? "(no id)";
   const where = `source ${JSON.stringify(id)}`;
@@ -118,6 +155,17 @@ function checkSource(source) {
     if (typeof skill.upstream_path !== "string" || skill.upstream_path.trim() === "") {
       finding(CATALOG, `${where}: skill ${name} upstream_path is required`);
     }
+    for (const field of ["upstream_revision", "import_commit"]) {
+      if (skill[field] !== undefined && !isCommit(skill[field])) {
+        finding(CATALOG, `${where}: skill ${name} ${field} must be a 40-character commit`);
+      }
+    }
+    if (skill.upstream_revision_date !== undefined && !isDate(skill.upstream_revision_date)) {
+      finding(CATALOG, `${where}: skill ${name} upstream_revision_date must be YYYY-MM-DD`);
+    }
+    if ((skill.upstream_revision !== undefined) !== (skill.upstream_revision_date !== undefined)) {
+      finding(CATALOG, `${where}: skill ${name} must pin upstream_revision and upstream_revision_date together`);
+    }
     if (!records.has(name) && !WRITE) {
       finding(CATALOG, `${where}: skill ${name} has no MAINTENANCE.md record`);
     }
@@ -179,6 +227,8 @@ for (const source of catalog.sources) {
     source.skills = source.skills.filter((skill) => records.has(skill.name));
   }
 }
+
+if (!WRITE) checkRecords(catalog);
 
 if (WRITE && FINDINGS.length === 0) {
   writeFileSync(CATALOG, `${JSON.stringify(catalog, null, 2)}\n`);
