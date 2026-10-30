@@ -73,12 +73,24 @@ function checkSource(source) {
   if (typeof source.copyright !== "string" || source.copyright.trim() === "") {
     finding(CATALOG, `${where}: copyright is required`);
   }
+  if (!Array.isArray(source.skills)) {
+    finding(CATALOG, `${where}: skills must be an array`);
+    return;
+  }
+  if (source.skills.length === 0) {
+    if (typeof source.reason !== "string" || source.reason.trim() === "") {
+      finding(CATALOG, `${where}: an empty source requires a reason`);
+    }
+    if (source.import_commit !== null) {
+      finding(CATALOG, `${where}: an empty source import_commit must be null`);
+    }
+    for (const name of recordsFor(id).keys()) {
+      finding(CATALOG, `${where}: record ${name} belongs to a forked source`);
+    }
+    return;
+  }
   if (!isCommit(source.import_commit)) {
     finding(CATALOG, `${where}: import_commit must be a 40-character commit`);
-  }
-  if (!Array.isArray(source.skills) || source.skills.length === 0) {
-    finding(CATALOG, `${where}: at least one skill is required`);
-    return;
   }
 
   const records = recordsFor(id);

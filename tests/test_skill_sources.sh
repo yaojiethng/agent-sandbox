@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # tests/test_skill_sources.sh
 # The source-keyed maintenance catalog: the source fields, the generated skill
-# set, the local file hashes, and the non-empty-source rule. Also probes pi's
-# loader for the nested-skill rule the ADR relies on.
+# set, the local file hashes and the empty-source rule. Also probes pi's loader
+# for the nested-skill rule the ADR relies on.
 #
 # Covers:
 #   clean          -- a source with two records and matching hashes passes
 #   drift          -- a changed local file fails the hash check
 #   missing record -- a skill without MAINTENANCE.md fails --check and is dropped
 #                     by --write
-#   empty source   -- a source with an empty skills array is refused
-#   real catalog   -- the repository catalog is clean and holds four skills
+#   empty source   -- a source with no skills needs a reason and a null import
+#                     commit; without a reason it is refused
+#   empty recorded -- an empty source with a reason passes
+#   real catalog   -- the repository catalog is clean and holds three sources
+#                     and four skills
 #   nested skill   -- pi does not discover a nested SKILL.md under a parent that
 #                     already has one
 
@@ -155,7 +158,7 @@ test_a_missing_record_fails_check_and_is_dropped_by_write() {
   assert_rc "$rc" 0 "the regenerated catalog passes"
 }
 
-test_an_empty_source_is_refused() {
+test_an_empty_source_without_a_reason_is_refused() {
   local root out rc
   root="$(make_fixture)"
   node -e '
@@ -175,15 +178,40 @@ test_an_empty_source_is_refused() {
     fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
   ' "$root/src/reasoning/agent/skills/source-catalog.json"
   out="$(run_catalog "$root" --check)"; rc=$?
-  assert_rc "$rc" 1 "a source with no skills is refused"
-  assert_contains "$out" "at least one skill is required" "the non-empty-source rule is enforced"
+  assert_rc "$rc" 1 "an empty source without a reason is refused"
+  assert_contains "$out" "an empty source requires a reason" "the reason is enforced"
+}
+
+test_an_empty_source_with_a_reason_is_recorded() {
+  local root out rc
+  root="$(make_fixture)"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.sources.push({
+      id: "empty-recorded",
+      url: "https://example.test/empty",
+      revision: "62f43a18177be6ec82da242e59ffbc490a4c22ea",
+      revision_date: "2026-04-28",
+      license: "MIT",
+      copyright: "Copyright Test",
+      import_commit: null,
+      reason: "Not forked by this repository.",
+      skills: []
+    });
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$root/src/reasoning/agent/skills/source-catalog.json"
+  out="$(run_catalog "$root" --check)"; rc=$?
+  assert_rc "$rc" 0 "an empty source with a reason passes"
+  assert_contains "$out" "clean across 2 source(s) and 2 skill(s)" "the empty source is counted"
 }
 
 test_the_repository_catalog_is_clean() {
   local out rc
   out="$(node "$SCANNER" 2>&1)"; rc=$?
   assert_rc "$rc" 0 "the repository catalog passes"
-  assert_contains "$out" "clean across 1 source(s) and 4 skill(s)" "the repository holds one source and four skills"
+  assert_contains "$out" "clean across 3 source(s) and 4 skill(s)" "the repository holds three sources and four skills"
 }
 
 test_a_nested_skill_is_not_discovered() {
@@ -203,7 +231,8 @@ test_a_nested_skill_is_not_discovered() {
 run_test test_clean_fixture_passes
 run_test test_a_changed_hash_fails
 run_test test_a_missing_record_fails_check_and_is_dropped_by_write
-run_test test_an_empty_source_is_refused
+run_test test_an_empty_source_without_a_reason_is_refused
+run_test test_an_empty_source_with_a_reason_is_recorded
 run_test test_the_repository_catalog_is_clean
 run_test test_a_nested_skill_is_not_discovered
 
