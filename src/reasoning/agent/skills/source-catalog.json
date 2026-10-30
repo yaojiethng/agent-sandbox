@@ -1,0 +1,88 @@
+{
+  "sources": [
+    {
+      "id": "mattpocock-skills",
+      "url": "https://github.com/mattpocock/skills",
+      "revision": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
+      "revision_date": "2026-04-28",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Matt Pocock",
+      "import_commit": "440577fe149cf2315f432630667d991cb3e6b2ef",
+      "skills": [
+        {
+          "name": "domain-model",
+          "upstream_path": "skills/engineering/domain-model",
+          "local_path": "src/reasoning/agent/skills/domain-model",
+          "files": [
+            {
+              "path": "ADR-FORMAT.md",
+              "upstream_sha256": "f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2",
+              "local_sha256": "6f3a61dc41712c38c0a36b8ac1deda88b866859b091cf1638b290471db735dd6"
+            },
+            {
+              "path": "CONTEXT-FORMAT.md",
+              "upstream_sha256": "8f6baaa3b1c91644bd7c600196b1aee781d5f525c7c345db8cdfbfb368329a05",
+              "local_sha256": "d2ebe9434fb0516340f26e6d7123d289cf7fa8f258b3fa559e2873d733e1ed74"
+            },
+            {
+              "path": "SKILL.md",
+              "upstream_sha256": "a70511f04cce213afc5538c2fa9289a064cf6b8ef66e6f7985be6f756ce26bc3",
+              "local_sha256": "0ca1a36018c419bcfdd144a2e13af86cb0f45fb79feb2433df075cd7f0d3b75b"
+            }
+          ]
+        },
+        {
+          "name": "grill-me",
+          "upstream_path": "skills/productivity/grill-me",
+          "local_path": "src/reasoning/agent/skills/grill-me",
+          "files": [
+            {
+              "path": "SKILL.md",
+              "upstream_sha256": "74147eb6010a65957efef2b9e0f0b3ff935c1def7fc117697151b1d0f3610556",
+              "local_sha256": "74dd582d5abe7c22d9ced418d46e77cf0b1394664159b4591e044dfbe815c84d"
+            }
+          ]
+        },
+        {
+          "name": "improve-codebase-architecture",
+          "upstream_path": "skills/engineering/improve-codebase-architecture",
+          "local_path": "src/reasoning/agent/skills/improve-codebase-architecture",
+          "files": [
+            {
+              "path": "DEEPENING.md",
+              "upstream_sha256": "9577485f4fc32c0267639a9151bb41c8af0f8f6086e4bf8b84d5b236e30604e9",
+              "local_sha256": "2fa03803da2c9e5cac843519567c03a41c347b6ae22d1871beccd48c63013358"
+            },
+            {
+              "path": "INTERFACE-DESIGN.md",
+              "upstream_sha256": "678c3e34f1339015053212b3316bf0b676c70aa251050a0613667d4e755fb35e",
+              "local_sha256": "fbf595882d7699e6a25280c268d132c42956709405dd73b9fbcea7e88ef104bb"
+            },
+            {
+              "path": "LANGUAGE.md",
+              "upstream_sha256": "6feca2140439c54a774749e8367f18350899ff69c777144ed2248cd4407949fa",
+              "local_sha256": "70cf08d27091596a1a80356e6c8f7ed15f2efa117be6ffa3f0c9364cbe3d0517"
+            },
+            {
+              "path": "SKILL.md",
+              "upstream_sha256": "61f2a5a18e7b232021007ae37dcc4b3e59aecb97e7100fabddaa2a013930f84b",
+              "local_sha256": "1f7d09c7bf92abd2f02419a7f75e882a8e6a195bc6b6c04244311016a5b9f052"
+            }
+          ]
+        },
+        {
+          "name": "setup-pre-commit",
+          "upstream_path": "skills/misc/setup-pre-commit",
+          "local_path": "src/reasoning/agent/skills/setup-pre-commit",
+          "files": [
+            {
+              "path": "SKILL.md",
+              "upstream_sha256": "872f4037cb7e6e0e340d4175c086550072959925dffc87b160d1a30dc9f63bbd",
+              "local_sha256": "b1b88c0c534da9017d0039d7008ef8d2ad6a40b44714560f49943f467caab3ee"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
