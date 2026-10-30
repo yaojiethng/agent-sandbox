@@ -1,15 +1,60 @@
-# The Skill Source Catalog
+# The Skill Source Store
 
-**Current:** 2026-10-29
+**Current:** 2026-10-30
 
 ## Requirements
 
 | # | Requirement | Meaning |
 |---|---|---|
-| R1 | Source facts have one home | The upstream URL, revision, license and file hashes appear once per source, not once per skill |
+| R1 | Source facts have one home | The upstream URL, license, copyright and the artifact edges appear once per source, in the per-source store |
 | R2 | The local answer stays local | A reader opening a skill can tell whether it was adapted or home-grown, in the skill's own directory |
-| R3 | Drift is detected | A changed local file, a missing record, or a skill that stops pointing at its source fails a gate |
-| R4 | A regroup does not lose provenance | Moving a skill, or folding it into another skill, leaves the source facts in place and the adaptation with the surviving skill |
+| R3 | The store carries no derived data | No file hash, revision date or import commit is stored; `origin` and `base` are the only commits |
+| R4 | A regroup does not lose provenance | Moving a skill, or folding it into another skill, leaves the source edge in place and the adaptation with the surviving skill |
+| R5 | The merge base is per artifact | One source can feed artifacts at different revisions, so each edge carries its own `base` |
+| R6 | The bump is operator-directed and pinned by default | A bump runs only on the operator's direction; `source-bump check` is a validation command, not a lint gate |
+| R7 | Attribution ships with the forks | The source URL, license and copyright reach the image in a shipped `NOTICE` |
+
+R3 replaced the retired drift rule on 2026-10-30. A historical entry below that names R3 refers to the drift rule that was current when it was written.
+
+## 2026-10-30 -- The catalog retires into the per-source store
+
+**Decision:** The source facts and the artifact edges live in `.agents/registry/sources/<source-id>.json`, one file per source. A source file holds `schema`, `id`, `url`, `license`, `copyright` and `artifacts`; an empty source adds `reason`. Each artifact edge holds `local_path`, `kind`, `parent`, `upstream_path`, `origin` and `base`. The store is repository-only; the `source-bump` CLI is its only writer. `origin` is the revision the artifact was first taken from; `base` is the reviewed upstream revision the next merge uses, and it moves after each review.
+
+The source catalog and the per-skill hashes are retired. The five agent-layer forks name `mattpocock-skills` and the shipped `NOTICE`; the three home-grown records keep `Source: home-grown.`. `NOTICE` at `src/reasoning/agent/skills/NOTICE` lists the URL, license and copyright for every source and ships under the existing skills `COPY`. The record gate checks complete records and known source ids, with no hash, catalog or `--write`. `source-bump check` is a validation command, not a lint gate; a bump runs only when the operator directs it, and the store stays pinned by default.
+
+**Rationale:** The catalog mixed the structured source facts, the artifact edges and a hash table that had to be refreshed after every local edit. The hash is derived data: it says the file is what it was when the catalog was written, not whether the local adaptation still matches the upstream intent. One source can also feed artifacts at different revisions, which a source-level revision cannot express. The store keeps the facts and the two commits that make a merge reproducible, and the CLI validates every write. The `NOTICE` is the one shipped copy of the attribution; the store is repository-only, so without it the image would lose the license and copyright. The record gate keeps the local answer and the known-source invariant deterministic without making the bump a gate.
+
+**Rejected alternatives:**
+
+### Keep the catalog and add the store
+
+Rejected on R1. Two source-fact homes would need a gate to keep them equal, and the catalog's hash table is exactly the derived data the redesign removes.
+
+### Keep the hashes and the drift gate
+
+Rejected on R3. A local hash is stale on every edit, and a changed local file is the normal state of an adapted fork. The hash reports the edit, not a defect; the review decides whether the upstream intent still holds.
+
+### Ship the store instead of a `NOTICE`
+
+Rejected on R7. `.agents/` is not copied into the image, so the store cannot carry the attribution to the shipped skills. A `NOTICE` in the copied skills root is the smallest shipped copy.
+
+### Make `source-bump check` a lint gate
+
+Rejected on R6. A bump is a discretionary upstream review the operator directs; a lint gate would turn a pinned store into a drift alarm and make a routine check look like a failed build.
+
+### Keep the revision date and the import commit
+
+Rejected on R3. The revision date is metadata for a review, and the local import commit is the copy that produced the tree. Neither is the merge base. `origin` and `base` carry the two revisions the merge needs.
+
+**Edge cases / drivers:**
+
+- **An empty source.** `pstack-skills` and `juliusbrussee-caveman` carry `artifacts: []` and a `reason`; the store keeps the source facts and no edge.
+- **A per-artifact base.** `writing-for-agents` sits at `5beb35b0` while its four siblings sit at `62f43a1`; the edge, not the source, carries the pair.
+- **A home-grown skill.** It is absent from the store and states `Source: home-grown.` in its record.
+- **A record naming an unknown source.** The record gate reports it; the store is the source-id set, and the CLI owns its schema.
+- **The provider pstack records.** They name no source id and stay outside this decision; **Ingest `pstack` upstream** owns their provenance.
+- **The historical catalog references.** Closed handovers and the older ADR entries still name `source-catalog.json`; they describe the system as it stood and are not rewritten.
+- **The installed copy.** `src/reasoning/agent/skills/` is copied to `/opt/workflow/agent/skills/`; the `NOTICE` and the `MAINTENANCE.md` records ship, and pi loads neither as a skill.
 
 ## 2026-10-29 -- Every skill carries a record, and the catalog lists only forks
 
@@ -46,7 +91,7 @@ Rejected for the same reason as the catalog-only check: the manifest is keyed by
 
 ## 2026-10-29 -- A skill may pin its own source revision
 
-**Decision:** A skill entry may pin its own `upstream_revision`, `upstream_revision_date` and `import_commit`. The source row keeps the source identity and its default revision; the skill's values override the default for that skill alone. `writing-for-agents` is the first case: the `mattpocock-skills` row stays at `62f43a1` for the four earlier forks, and the writing entry pins `5beb35b0` (2026-10-19) with its own import commit `0ec59c6a`. The source URL, license and copyright stay on the source row; the skill record points at that row by id. The catalog entry is in [`source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json), and the writing record is in [`writing-for-agents/MAINTENANCE.md`](../../src/reasoning/agent/skills/writing-for-agents/MAINTENANCE.md).
+**Decision:** A skill entry may pin its own `upstream_revision`, `upstream_revision_date` and `import_commit`. The source row keeps the source identity and its default revision; the skill's values override the default for that skill alone. `writing-for-agents` is the first case: the `mattpocock-skills` row stays at `62f43a1` for the four earlier forks, and the writing entry pins `5beb35b0` (2026-10-19) with its own import commit `0ec59c6a`. The source URL, license and copyright stay on the source row; the skill record points at that row by id. The catalog entry is in `src/reasoning/agent/skills/source-catalog.json`, and the writing record is in [`writing-for-agents/MAINTENANCE.md`](../../src/reasoning/agent/skills/writing-for-agents/MAINTENANCE.md).
 
 **Rationale:** One source can be imported more than once at different upstream revisions. A single source revision cannot be true for the four older forks and the later writing skill at once. A second source row would duplicate the URL, license and copyright and would split one upstream into two identities. The per-skill override keeps the source facts at their one home and records the revision where it differs. The local import commit is not the source revision; the writing entry records both, as the earlier entry requires for the source row.
 
@@ -78,7 +123,7 @@ Rejected as an arbitrary exception. A source with a second import has the same p
 
 ## 2026-10-29 -- Two levels: a source manifest and a per-skill record
 
-**Decision:** The maintenance catalog has two levels. The per-source manifest at [`source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json) holds the upstream URL, the resolved revision, the license, the copyright, the import commit, the file hashes and the skills forked from that source. A per-skill `MAINTENANCE.md` holds `## Adapted`, `## Name` and a `## Source` pointer to the manifest. The manifest's skill list is generated from the records, and [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs) re-hashes every local file and fails on drift. The catalog holds only sources with at least one fork: an accessible upstream this repository does not use is named in this ADR, not added as an empty source. A source revision is resolved by matching the imported blobs to the upstream commit; the local import commit is a route, not the source revision. A nested `SKILL.md` is not a separate skill: pi's loader treats a directory containing `SKILL.md` as a skill root and does not recurse further, so a skill that becomes a section of a parent moves its adaptation to the parent's record and the manifest lists the parent as the fork.
+**Decision:** The maintenance catalog has two levels. The per-source manifest at `src/reasoning/agent/skills/source-catalog.json` holds the upstream URL, the resolved revision, the license, the copyright, the import commit, the file hashes and the skills forked from that source. A per-skill `MAINTENANCE.md` holds `## Adapted`, `## Name` and a `## Source` pointer to the manifest. The manifest's skill list is generated from the records, and [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs) re-hashes every local file and fails on drift. The catalog holds only sources with at least one fork: an accessible upstream this repository does not use is named in this ADR, not added as an empty source. A source revision is resolved by matching the imported blobs to the upstream commit; the local import commit is a route, not the source revision. A nested `SKILL.md` is not a separate skill: pi's loader treats a directory containing `SKILL.md` as a skill root and does not recurse further, so a skill that becomes a section of a parent moves its adaptation to the parent's record and the manifest lists the parent as the fork.
 
 **Rationale:** The per-skill-only shape repeated the same upstream URL and import commit in every record. The four forks from one source would have written those facts four times, and the copies had no gate to keep them equal. `mattpocock/skills` supplied the four skills named in the `mattpocock-skills` row, and the row records the revision, license, copyright and the nine file hashes; the imported files match them, so the source facts are a property of the source, not of each skill. The adaptation and the name are properties of the skill: a reader at the skill must still get the local answer without following a central index. The split keeps both, and the generated skill list plus the local hash check make the catalog's staleness visible. The source revision had to be resolved from the files because the local import commit is a copy, not the upstream revision; the row records both. The license is recorded because the attribution obligation is part of the source record, and a catalog without it is incomplete. The catalog is not an upstream index; the later entry in this file requires a reason for an empty row. The `juliusbrussee-caveman` row is the first source this repository looked at and did not fork; the row records the reason, and the skill is not shipped.
 

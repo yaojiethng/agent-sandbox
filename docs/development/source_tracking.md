@@ -12,9 +12,9 @@ The store answers one question: which upstream revision is this local artifact b
 
 The store is one JSON file per source at `.agents/registry/sources/<source-id>.json`. The filename is the source id. A source file is independent, so a fan-out can work one source without touching another.
 
-The store is repository-only. It does not ship into the image; the image carries the artifacts and the per-skill records. The store is the maintainer's input for the next update, not runtime data.
+The store is repository-only. It does not ship into the image; the image carries the artifacts, the per-skill records and the `NOTICE`. The store is the maintainer's input for the next update, not runtime data.
 
-The live store is empty in this repository. The current `source-catalog.json` and the per-skill `MAINTENANCE.md` records remain the source of truth until the migration creates the source files and retires them.
+The live store holds the three sources and five edges. The source catalog is retired; the five forked records name the store and the shipped `NOTICE`.
 
 ## The source file
 
@@ -119,4 +119,4 @@ It does not hold the artifact itself. The local tree remains authoritative and e
 
 ## Migration
 
-The source catalog and the per-skill records remain authoritative until the migration unit creates the source files with `add` and `add --empty`, then retires the catalog and the records. `source-bump check` is fixture-tested in this unit and stays outside lint; a bump runs only when the operator directs it, and the store stays pinned by default.
+The migration has created the live source files with `add` and `add --empty`, moved the five forked edges, retired `source-catalog.json`, and pointed the five records at the store and the shipped `NOTICE`. The record gate checks the records and the known source ids. `source-bump check` stays outside lint; a bump runs only when the operator directs it, and the store stays pinned by default.

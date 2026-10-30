@@ -146,7 +146,7 @@ A source file holds the source facts and the artifact edges. The source facts ar
 
 The store holds upstream-derived artifacts with a known revision. A home-grown artifact has no upstream edge, so it is absent. The base is per artifact because one source can feed artifacts at different revisions; `writing-for-agents` already sits at a different revision from its siblings.
 
-The live store is empty. The current `source-catalog.json` and the per-skill records remain the source of truth until the migration creates the source files and retires them. The exact schema, path rules and command behavior are in [`source_tracking.md`](../../docs/development/source_tracking.md).
+The live store now holds the three sources and five edges. The source catalog is retired; the five forked records name the store and the shipped `NOTICE`. The exact schema, path rules and command behavior are in [`source_tracking.md`](../../docs/development/source_tracking.md).
 
 This unit implements `add`, `record` and `check`. `diff` and `prepare` are planned; the CLI does not fetch and does not merge. `check` is a validation command, not a lint gate: a bump runs only when the operator directs it, and the store stays pinned by default.
 
@@ -199,7 +199,7 @@ The durable record per artifact is small: local path, kind, parent for a runbook
 
 A round-trip check can regenerate `base -> local`, apply it to `base`, and compare the result with the local file. That proves the diff is derivable and the pair is coherent. It does not prove the base is the latest reviewed revision. The `source-bump record` command owns that move, and a stale base is a review failure rather than a gate failure.
 
-The license and copyright still have to ship with the forks. Moving the record out of the shipped skill tree means the image needs a shipped notice or per-skill license file. The design doc is not a substitute for attribution.
+The license and copyright ship with the forks in `NOTICE` at the agent skills root. The store is repository-only, so the notice is the image's copy; the design doc is not a substitute for attribution.
 
 ## Settled and open
 
@@ -209,9 +209,9 @@ The design settles these.
 - **Base granularity.** One base per artifact. A partial file update is represented as a local diff against that base, with the design doc naming the rejected change.
 - **Tracking file shape.** One JSON file per source at `.agents/registry/sources/<source-id>.json`, no hashes, patch or prose; the CLI is the only writer. The exact schema is in [`source_tracking.md`](../../docs/development/source_tracking.md).
 - **Gate strictness.** `source-bump check` is a validation command, not a lint gate. A bump runs only when the operator directs it, and the store stays pinned by default.
+- **Attribution.** Settled: `src/reasoning/agent/skills/NOTICE` lists the source URL, license and copyright and ships under the existing skills `COPY`.
 
 These questions remain open.
 
 - **Source cache.** A pinned git clone, a filtered pi package, or network-only access to the commit. The clone is the only option that gives `git range-diff` without extra work.
 - **Design doc shape.** One document per source or one per artifact, with prose only. It is not the tracking file.
-- **Attribution.** The shipped notice or per-skill license mechanism.

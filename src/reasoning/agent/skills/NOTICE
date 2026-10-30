@@ -1,0 +1,18 @@
+agent-sandbox ships adapted workflow skills from the upstream sources below.
+
+mattpocock-skills
+  URL: https://github.com/mattpocock/skills
+  License: MIT
+  Copyright: Copyright (c) 2026 Matt Pocock
+
+pstack-skills
+  URL: https://github.com/cursor/plugins
+  License: MIT
+  Copyright: Copyright (c) 2026 Lauren Tan
+
+juliusbrussee-caveman
+  URL: https://github.com/JuliusBrussee/caveman
+  License: Apache-2.0
+  Copyright: Copyright 2026 Julius Brussee
+
+The source records are kept in the repository at .agents/registry/sources/.

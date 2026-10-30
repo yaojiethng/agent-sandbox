@@ -69,7 +69,7 @@ None.
 | [`src/reasoning/agent/skills/state-machine-specification/MAINTENANCE.md`](../../src/reasoning/agent/skills/state-machine-specification/MAINTENANCE.md) | the home-grown record |
 | [`src/reasoning/agent/skills/write-locations/MAINTENANCE.md`](../../src/reasoning/agent/skills/write-locations/MAINTENANCE.md) | the home-grown record |
 | [`src/reasoning/agent/skills/writing-for-agents/MAINTENANCE.md`](../../src/reasoning/agent/skills/writing-for-agents/MAINTENANCE.md) | the adapted record, with the source pointer and the local changes |
-| [`src/reasoning/agent/skills/source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json) | the writing entry with its own revision, date and import commit, and its two file hashes |
+| `src/reasoning/agent/skills/source-catalog.json` | the writing entry with its own revision, date and import commit, and its two file hashes |
 | [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs) | the tree-wide record check, the record shape, the unknown-source check and the per-skill fields |
 | [`tests/test_skill_sources.sh`](../../tests/test_skill_sources.sh) | five new tests: pinned revision, invalid revision, home-grown record, tree skill without a record, unknown source |
 | [`docs/adr/skill_source_catalog.md`](../../docs/adr/skill_source_catalog.md) | the tree-wide record decision and the per-skill revision decision |

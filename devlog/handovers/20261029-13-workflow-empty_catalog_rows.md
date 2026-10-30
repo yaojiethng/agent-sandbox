@@ -63,7 +63,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json) | the caveman and pstack empty rows: `skills: []`, a `reason`, no import commit |
+| `src/reasoning/agent/skills/source-catalog.json` | the caveman and pstack empty rows: `skills: []`, a `reason`, no import commit |
 | [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs) | an empty source needs a reason and a null import commit; forked sources keep the existing checks |
 | [`tests/test_skill_sources.sh`](../../tests/test_skill_sources.sh) | the empty-row acceptance and rejection; the repository count is three sources and four skills |
 | [`docs/adr/skill_source_catalog.md`](../../docs/adr/skill_source_catalog.md) | the empty-row decision; the source values point at the manifest; the non-empty rule is superseded |

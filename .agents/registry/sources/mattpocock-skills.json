@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "id": "mattpocock-skills",
+  "url": "https://github.com/mattpocock/skills",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Matt Pocock",
+  "artifacts": [
+    {
+      "local_path": "src/reasoning/agent/skills/domain-model",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/engineering/domain-model",
+      "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
+      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+    },
+    {
+      "local_path": "src/reasoning/agent/skills/grill-me",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/productivity/grill-me",
+      "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
+      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+    },
+    {
+      "local_path": "src/reasoning/agent/skills/improve-codebase-architecture",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/engineering/improve-codebase-architecture",
+      "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
+      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+    },
+    {
+      "local_path": "src/reasoning/agent/skills/setup-pre-commit",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/misc/setup-pre-commit",
+      "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
+      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+    },
+    {
+      "local_path": "src/reasoning/agent/skills/writing-for-agents",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/productivity/writing-for-agents",
+      "origin": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+      "base": "5beb35b040e3de97e54fa9e386d7e42d15c295c2"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Source
 
-Source: home-grown. This skill has no upstream and no catalog entry.
+Source: home-grown. This skill has no upstream.
 
 ## Adapted
 

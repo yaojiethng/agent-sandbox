@@ -2,7 +2,7 @@
 
 ## Source
 
-Source: `mattpocock-skills`; see [`source-catalog.json`](../source-catalog.json).
+Source: `mattpocock-skills`; see [`NOTICE`](../NOTICE).
 
 ## Adapted
 

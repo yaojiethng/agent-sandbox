@@ -58,7 +58,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`source-catalog.json`](../../src/reasoning/agent/skills/source-catalog.json) | one source, four skills, the MIT license and the nine file hashes |
+| `src/reasoning/agent/skills/source-catalog.json` | one source, four skills, the MIT license and the nine file hashes |
 | [`scripts/lint/skill_sources.mjs`](../../scripts/lint/skill_sources.mjs) | the generator and its check |
 | [`scripts/check_skill_sources.sh`](../../scripts/check_skill_sources.sh) | the gate wrapper |
 | [`scripts/lint.sh`](../../scripts/lint.sh) | registers the source-catalog gate |

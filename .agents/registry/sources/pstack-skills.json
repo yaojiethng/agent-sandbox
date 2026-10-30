@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "id": "pstack-skills",
+  "url": "https://github.com/cursor/plugins",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Lauren Tan",
+  "reason": "The four skills are used from the config home; importing them would make every agent-sandbox project assume them, and unslop overlaps writing-for-agents.",
+  "artifacts": []
+}
