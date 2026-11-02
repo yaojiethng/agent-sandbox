@@ -1,6 +1,20 @@
 # Instruction Surface Declaration
 
-**Current:** 2026-10-17
+**Current:** 2026-11-01
+
+## 2026-11-01 -- The host bind mounts are declared beside the surfaces they expose
+
+**Decision:** The manifest gains a `mounts` section: one row per bind mount a provider's compose overlay declares, carrying the overlay's `source` and `target` verbatim and the tree the mount puts behind the surface. `scripts/check_container_layout.sh` holds the rows equal to the overlay in both directions, parsing `docker-compose.<provider>.yml` the way it parses the dockerfile.
+
+**Rationale:** A mount decides which children of an instruction surface are operator state and which are the image's copy: a skill folder on the mount survives a rebuild, and the same folder off it is overwritten at every start. That fact lived only in the overlay, so a reader of the declaration could not tell the two apart, and nothing compared them. The overlay is a file in the tree, which retires the claim in the 2026-10-05 entry below that this container cannot read it.
+
+**Rejected alternatives:**
+
+- *Generate the overlay's volumes block from the manifest* -- docker compose merges the overlay itself, and generating would change the build path for a declaration that only has to be readable and checked.
+- *Normalise the target to `$AGENT_HOME` in the rows* -- the check would then compare a derived value with a literal, and a target edited in one place only would still agree. The rows carry the overlay's text, and a reader who needs the variable reads the `env` row.
+- *Declare the mounts in the surface's own cell* -- a mount's target is already the cell's runtime path, so a row there would restate the cell and the comparison would have nothing to compare.
+
+**Edge cases / drivers:** `{{PROVIDER_NAME}}` is a template the compose generation substitutes, so a row carries it as written and the comparison stays literal. A provider that mounts nothing declares no rows, and an overlay item with no row is a finding that names that provider's file.
 
 ## 2026-10-17 -- A surface read from the project tree is declared and named by the provider's settings record
 

@@ -75,7 +75,7 @@ Each check carries a stable name, so a row can name the one it advances. The ids
 
 | Id | Executable | Constraint kinds | Where it lands | State |
 |---|---|---|---|---|
-| **E1** | the declaration | partition, resolution | row one | in flight. The manifest carries `image`, `provision`, `session` and `cells`; two cells declare no reach, four mounts are declared nowhere machine-readable, and no command prints what the manifest means |
+| **E1** | the declaration | partition, resolution | row one | landed in `20261101-04`. The manifest carries `image`, `provision`, `mounts`, `session` and `cells`; every cell declares its reach; the gate holds the mount rows equal to the compose overlay in both directions; `report` prints the surface and two runs are byte-identical |
 | **E2** | the closure check | closure, non-vacuity | row one, then a row of its own | links only. `lint/linking.mjs` refuses a Markdown link outside its cell's reach; skill invocations and path mentions are unchecked, and the use-count needs one shared reference scanner |
 | **E3** | the kind consolidation | agreement, liveness | the gate-upkeep handoff | one agreement instance (`check_container_layout.sh`) and the mutation tier, which already returns `PROVEN`, `SURVIVED` or `NO-OP` |
 | - | the conformance checker | conformance | out of scope | six scripts, cheap and close to their subjects, recorded in the handoff with its reason |

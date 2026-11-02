@@ -93,6 +93,42 @@ export function parse_envs(file) {
   return rows;
 }
 
+// compose_path ROOT PROVIDER -- the provider's compose overlay, the file that
+// declares its host-side bind mounts. Absent for a provider that mounts none.
+export function compose_path(root, provider) {
+  return join(root, PROVIDERS_REL, provider, `docker-compose.${provider}.yml`);
+}
+
+// parse_mounts FILE -- the bind mounts a compose overlay declares, as
+// { source, target }. The overlay writes each one as a `- type: bind` item with
+// a `source:` and a `target:` line, so the scan is three lines per item and
+// stops when the next item begins. A row missing either half is skipped, and
+// the equality check then reports the mount as one the manifest does not
+// declare.
+export function parse_mounts(file) {
+  const rows = [];
+  let pending = null;
+  for (const line of read_lines(file)) {
+    if (/^\s*-\s*type:\s*bind\s*$/.test(line)) {
+      pending = {};
+      continue;
+    }
+    if (pending === null) continue;
+    const source = /^\s*source:\s*(\S+)\s*$/.exec(line);
+    if (source) {
+      pending.source = source[1];
+      continue;
+    }
+    const target = /^\s*target:\s*(\S+)\s*$/.exec(line);
+    if (target) {
+      pending.target = target[1];
+      rows.push(pending);
+      pending = null;
+    }
+  }
+  return rows.filter((row) => row.source && row.target);
+}
+
 function read_lines(file) {
   try {
     return readFileSync(file, "utf8").split("\n");
@@ -282,7 +318,7 @@ function check_cells(root, manifest, providers, findings) {
     if (cell.provider !== undefined && !providers.includes(cell.provider)) {
       findings.push(`${where}: names provider '${cell.provider}', which carries no dockerfile`);
     }
-    check_reachable(where, cell, findings);
+    check_reachable(root, where, cell, findings);
     check_scoping(where, cell, providers, findings);
     check_surface(where, cell, images, provisions, roots, root, session, findings);
   }
@@ -323,12 +359,24 @@ function check_cells(root, manifest, providers, findings) {
   check_names(root, manifest, root_keys, findings);
 }
 
-// check_reachable WHERE CELL FINDINGS -- the rows the cell adds to the session
-// environment. `always` is the session's condition, so a cell that repeats it
-// is restating the environment rather than adding to it.
-function check_reachable(where, cell, findings) {
+// check_reachable ROOT WHERE CELL FINDINGS -- the rows the cell adds to the
+// session environment. `always` is the session's condition, so a cell that
+// repeats it is restating the environment rather than adding to it. The key is
+// required: an absent list and a list granting nothing read the same to every
+// consumer, so the absent one is a finding and the empty one is a decision.
+//
+// A row must also name something that exists. Which check decides that depends
+// on what the row names, so the classes are split rather than guessed at: a row
+// conditioned on the repository tree names a repository path, an `/opt/` row
+// names a path the image populates, and a row naming the installed runtime names
+// a tree the repository does not build, so nothing here can decide it and the
+// row is left to its `condition` prose.
+function check_reachable(root, where, cell, findings) {
   const rows = cell.reachable;
-  if (rows === undefined) return;
+  if (rows === undefined) {
+    findings.push(`${where}: declares no reachable; an empty list grants nothing beyond the instruction roots and the session rows`);
+    return;
+  }
   if (!Array.isArray(rows)) {
     findings.push(`${where}: reachable is not a list`);
     return;
@@ -342,7 +390,32 @@ function check_reachable(where, cell, findings) {
     if (row.condition === "always") {
       findings.push(`${where}: reachable row '${row.path}' carries 'always', which the session rows already declare`);
     }
+    if (typeof row.path !== "string" || typeof row.condition !== "string") continue;
+    if (row.condition.includes("repository tree")) {
+      if (!existsSync(join(root, row.path))) {
+        findings.push(`${where}: reachable row '${row.path}' names no repository path, and its condition is the repository tree`);
+      }
+    } else if (row.path.startsWith("/opt/")) {
+      if (image_source(root, row.path) === undefined) {
+        findings.push(`${where}: reachable row '${row.path}' names an image path no \`image\` row populates`);
+      }
+    }
   }
+}
+
+// image_source ROOT IMAGE_PATH -- the repository source that populates an image
+// path, or undefined when no \`image\` row does. The longest matching destination
+// wins, so a subdirectory resolves to the row that carries it rather than to the
+// row above it.
+export function image_source(root, imagePath) {
+  let best;
+  for (const row of pairs(root)) {
+    if (row.layer !== "image") continue;
+    if (!imagePath.startsWith(row.destination)) continue;
+    if (best === undefined || row.destination.length > best.destination.length) best = row;
+  }
+  if (best === undefined) return undefined;
+  return join(root, best.source, imagePath.slice(best.destination.length));
 }
 
 // check_scoping WHERE CELL PROVIDERS FINDINGS -- the two rules a cell's own row
@@ -613,6 +686,19 @@ export function check(root) {
   findings.push(...compare("image", manifest_rows(manifest, "image"), copies, copy_key));
   findings.push(...compare("env", manifest_rows(manifest, "env"), envs, env_key));
 
+  const mounts = [];
+  for (const provider of providers) {
+    for (const row of parse_mounts(compose_path(root, provider))) {
+      mounts.push({ provider, ...row });
+    }
+  }
+  findings.push(
+    ...compare("mounts", manifest_rows(manifest, "mounts"), mounts, mount_key, {
+      derives: "the compose overlay",
+      file_of: (row) => `${PROVIDERS_REL}/${row.provider}/docker-compose.${row.provider}.yml`,
+    }),
+  );
+
   const entrypoint = read_lines(join(root, ENTRYPOINT_REL))
     .find((line) => /^PROVISION_TEMPLATE=/.test(line));
   const template = entrypoint ? entrypoint.slice("PROVISION_TEMPLATE=".length).replace(/^"|"$/g, "") : "";
@@ -659,24 +745,70 @@ function env_key(row) {
   return `${row.provider}\t${row.name}\t${row.value}`;
 }
 
-// compare LAYER DECLARED DERIVED KEY -- the two sets against each other, with
-// the direction named, so a reader knows which side to fix.
-function compare(layer, declared, derived, key) {
+function mount_key(row) {
+  return `${row.provider}\t${row.source}\t${row.target}`;
+}
+
+// compare LAYER DECLARED DERIVED KEY [OPTIONS] -- the two sets against each
+// other, with the direction named, so a reader knows which side to fix.
+// OPTIONS.derives names the artefact the derived rows come from, and
+// OPTIONS.file_of names the file a particular row came from, since a layer's
+// rows do not all come from one file.
+function compare(
+  layer,
+  declared,
+  derived,
+  key,
+  {
+    derives = "the provider dockerfiles",
+    file_of = (row) => `${PROVIDERS_REL}/${row.provider}/${DOCKERFILE_NAME}`,
+  } = {},
+) {
   const findings = [];
   const declared_keys = new Set(declared.map(key));
   const derived_keys = new Set(derived.map(key));
 
   for (const row of declared) {
     if (!derived_keys.has(key(row))) {
-      findings.push(`${layer}: the manifest declares '${key(row)}', which the dockerfiles do not carry`);
+      findings.push(`${layer}: the manifest declares '${key(row)}', which is absent from ${derives}`);
     }
   }
   for (const row of derived) {
     if (!declared_keys.has(key(row))) {
-      findings.push(`${layer}: ${PROVIDERS_REL}/${row.provider}/${DOCKERFILE_NAME} carries '${key(row)}', which the manifest does not declare`);
+      findings.push(`${layer}: ${file_of(row)} carries '${key(row)}', which the manifest does not declare`);
     }
   }
   return findings;
+}
+
+// report ROOT -- the instruction surface as declared, one line per fact, in
+// the manifest's own order. Nothing here reads the environment, the clock or a
+// host path, so two runs over one manifest print the same bytes: that equality
+// is what the row this command closes is accepted on. A consumer that needs one
+// layer greps the tag rather than running a second command.
+export function report(root) {
+  const manifest = load_manifest(root);
+  if (!manifest) return [];
+  const lines = [];
+  for (const row of manifest_rows(manifest, "session")) {
+    lines.push(["session", row.path].join("\t"));
+  }
+  for (const [index, cell] of manifest_rows(manifest, "cells").entries()) {
+    lines.push(["cell", String(index), (cell.sources || []).join(","), cell.runtime_path].join("\t"));
+    for (const row of cell.reachable || []) {
+      lines.push(["reach", String(index), row.path, row.condition].join("\t"));
+    }
+  }
+  for (const row of manifest_rows(manifest, "mounts")) {
+    lines.push(["mount", row.provider, row.source, row.target].join("\t"));
+  }
+  for (const row of pairs(root)) {
+    lines.push([row.layer, row.provider, row.source, row.destination].join("\t"));
+  }
+  for (const row of manifest_rows(manifest, "env")) {
+    lines.push(["env", row.provider, row.name, row.value].join("\t"));
+  }
+  return lines;
 }
 
 function parse_args(argv) {
@@ -715,13 +847,18 @@ function main(argv) {
     for (const dir of dirs) process.stdout.write(`${dir}\n`);
     return dirs.length === 0 ? 1 : 0;
   }
+  if (args.command === "report") {
+    const lines = report(args.root);
+    for (const line of lines) process.stdout.write(`${line}\n`);
+    return lines.length === 0 ? 1 : 0;
+  }
   if (args.command === "check") {
     const findings = check(args.root);
     for (const finding of findings) process.stdout.write(`${finding}\n`);
     return findings.length === 0 ? 0 : 1;
   }
   process.stderr.write(
-    "usage: container-interface.mjs pairs|session|roots|check [--root DIR] [--kind skills|prompts]\n",
+    "usage: container-interface.mjs pairs|session|roots|report|check [--root DIR] [--kind skills|prompts]\n",
   );
   return 2;
 }

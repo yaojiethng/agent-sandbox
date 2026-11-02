@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # scripts/check_container_layout.sh
 # Holds src/build/container-interface.json equal to what implements it: the
-# provider dockerfiles, the entrypoint's provisioning, the provider settings
-# record and the instruction surfaces' folder sets.
+# provider dockerfiles, the compose overlays' bind mounts, the entrypoint's
+# provisioning, the provider settings record and the instruction surfaces'
+# folder sets.
 #
 # The manifest is the container interface declared once, and the dockerfiles,
 # the entrypoint and the settings are the interface as built. Neither is
@@ -10,8 +11,9 @@
 # a manifest row no `COPY` or `ENV` line carries, a line no row carries, a
 # declared instruction surface whose folder set differs from the one the image
 # sends there, an `/opt` surface the provider cannot load, a destination in the
-# agent tree no cell declares, and a project-tree surface the provider's
-# settings record does not name are all findings. The parse, the derivation
+# agent tree no cell declares, a project-tree surface the provider's settings
+# record does not name, and a bind mount the overlay and the manifest do not
+# agree on are all findings. The parse, the derivation
 # and the comparison live in src/build/container-interface.mjs, so this script
 # is the gate wrapper and nothing else.
 #
@@ -54,7 +56,7 @@ fi
 findings="$(node "$SCAN_MODULE" check --root "$SCAN_ROOT")"
 rc=$?
 if (( rc == 0 )); then
-  echo "Container-layout gate: clean; the manifest and the images agree"
+  echo "Container-layout gate: clean; the manifest, the images and the mounts agree"
   echo "Clean (${SECONDS}s)"
   exit 0
 fi
@@ -62,5 +64,5 @@ fi
 count="$(printf '%s\n' "$findings" | grep -c . || true)"
 printf '%s\n' "$findings" >&2
 echo "Container-layout gate: $count finding(s)" >&2
-echo "Blocking gate: align $MANIFEST_REL with the provider dockerfiles, the entrypoint and the settings record, or the other way round." >&2
+echo "Blocking gate: align $MANIFEST_REL with the provider dockerfiles, the compose overlays, the entrypoint and the settings record, or the other way round." >&2
 exit 1

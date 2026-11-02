@@ -1,5 +1,5 @@
 {
-  "note": "The container interface, declared once. src/build/container-interface.mjs is the only reader, and scripts/check_container_layout.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. The `session` rows are the environment of a session in a container: every instruction surface is read from that environment, so no cell restates them. A `cell` is one instruction surface. The `mount` layer is not here: the compose files declare it host-side, and this container cannot read them.",
+  "note": "The container interface, declared once. src/build/container-interface.mjs is the only reader, and scripts/check_container_layout.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. The `session` rows are the environment of a session in a container: every instruction surface is read from that environment, so no cell restates them. A `cell` is one instruction surface, and every cell declares `reachable`: an empty list says the instruction roots and the session rows are its whole reach, so an absent list is a finding rather than a silence. The `mounts` rows declare the host-side bind mounts the provider's compose overlay carries, and scripts/check_container_layout.sh holds the two equal in both directions: a mount with no row, and a row with no mount, are both findings.",
   "image": [
     {
       "provider": "pi",
@@ -83,6 +83,32 @@
       "source": "src/reasoning/providers/pi/config/",
       "template": "/opt/workflow/agent/config/",
       "home": "$AGENT_HOME/"
+    }
+  ],
+  "mounts": [
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts",
+      "target": "/home/agentuser/.pi/agent/prompts",
+      "holds": "the operator's prompt folder, bind-mounted so an edit there outlives a rebuild"
+    },
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/sessions",
+      "target": "/home/agentuser/.pi/agent/sessions",
+      "holds": "the session transcripts, which outlive every container that writes them"
+    },
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/skills",
+      "target": "/home/agentuser/.pi/agent/skills",
+      "holds": "the operator's skill folder: the tree the image seeds from, and where a local skill stays"
+    },
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/model-recommendations.md",
+      "target": "/home/agentuser/.pi/model-recommendations.md",
+      "holds": "the operator-owned role-to-model table, seeded once from a skeleton rather than from the image"
     }
   ],
   "env": [
@@ -189,7 +215,8 @@
         "src/reasoning/agent/prompts/"
       ],
       "runtime_path": "/opt/workflow/agent/prompts/",
-      "loader": "the running provider's config lists this path as a prompt root, and the agent offers each Markdown file here as a command"
+      "loader": "the running provider's config lists this path as a prompt root, and the agent offers each Markdown file here as a command",
+      "reachable": []
     },
     {
       "sources": [
@@ -304,7 +331,8 @@
       ],
       "runtime_path": "/home/agentuser/sandbox/.agents/prompts/",
       "loader": "the provider's settings record names this directory in its prompts key, so each Markdown file directly in this directory is an invocable command in a session in this project",
-      "provider": "pi"
+      "provider": "pi",
+      "reachable": []
     }
   ]
 }

@@ -38,6 +38,10 @@
 #   a module root with no package entry      --  rc 1; the record is named
 #   two prompt roots holding one file name   --  rc 1; both roots are named
 #   two skill roots holding one skill name   --  rc 1; both roots are named
+#   a reachable row naming a missing path     --  a finding, in repository space
+#   a reachable row naming an absent image path --  a finding, in image space
+#   a row naming the installed runtime        --  left to its condition, no finding
+#   the `report` CLI                          --  the whole surface, twice, identical
 #   the `pairs` CLI                          --  the image rows and the
 #                                                provisioning row, the latter
 #                                                resolved through AGENT_HOME
@@ -115,6 +119,10 @@ write_manifest() {
       "home": "$AGENT_HOME/"
     }
   ],
+  "mounts": [
+    { "provider": "pi", "source": "${SANDBOX_DIR}/.pi/agent/skills", "target": "/home/agentuser/.pi/agent/skills", "holds": "the operator's skill folder" },
+    { "provider": "pi", "source": "${SANDBOX_DIR}/.pi/model-recommendations.md", "target": "/home/agentuser/.pi/model-recommendations.md", "holds": "the operator's role table" }
+  ],
   "env": [
     { "provider": "pi", "name": "AGENT_HOME", "value": "/home/agentuser/.pi" }
   ],
@@ -134,17 +142,20 @@ write_manifest() {
     {
       "sources": ["src/reasoning/agent/skills/"],
       "runtime_path": "/opt/workflow/agent/skills/",
-      "loader": "the running provider's config lists this path as a skill root"
+      "loader": "the running provider's config lists this path as a skill root",
+      "reachable": []
     },
     {
       "sources": ["workflow/coding-agent/prompts/"],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
-      "loader": "the running provider's config enables the module's package directory"
+      "loader": "the running provider's config enables the module's package directory",
+      "reachable": []
     },
     {
       "sources": ["workflow/coding-agent/skills/"],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/skills/",
-      "loader": "the running provider's config enables the module's package directory"
+      "loader": "the running provider's config enables the module's package directory",
+      "reachable": []
     },
     {
       "sources": ["src/reasoning/providers/pi/config/"],
@@ -158,11 +169,33 @@ write_manifest() {
     {
       "sources": [".agents/skills/"],
       "runtime_path": "none",
-      "loader": "a prompt names a file here by its repository-relative path"
+      "loader": "a prompt names a file here by its repository-relative path",
+      "reachable": []
     }
   ]
 }
 EOF
+}
+
+# write_compose ROOT NAME ITEM...  --  one provider's compose overlay. Each ITEM
+# is "source=>target", written as the overlay writes it: a `type: bind` item
+# with a source and a target line.
+write_compose() {
+  local root="$1" name="$2"
+  shift 2
+  local path="$root/src/reasoning/providers/$name/docker-compose.$name.yml"
+  mkdir -p "$(dirname "$path")"
+  {
+    printf 'services:\n'
+    printf '  agent:\n'
+    printf '    volumes:\n'
+    local item
+    for item in "$@"; do
+      printf '      - type: bind\n'
+      printf '        source: %s\n' "${item%%=>*}"
+      printf '        target: %s\n' "${item##*=>}"
+    done
+  } > "$path"
 }
 
 # write_default_tree ROOT  --  the dockerfile, entrypoint, settings record and
@@ -172,6 +205,10 @@ write_default_tree() {
   local root="$1"
   write_settings "$root"
   write_manifest "$root"
+  mkdir -p "$root/docs/policies"
+  write_compose "$root" pi \
+    '${SANDBOX_DIR}/.pi/agent/skills=>/home/agentuser/.pi/agent/skills' \
+    '${SANDBOX_DIR}/.pi/model-recommendations.md=>/home/agentuser/.pi/model-recommendations.md'
   write_provider_dockerfile "$root" pi \
     'COPY src/reasoning/agent/skills/                     /opt/workflow/agent/skills/' \
     'COPY src/reasoning/agent/prompts/                    /opt/workflow/agent/prompts/' \
@@ -218,6 +255,7 @@ add_project_cell() {
       runtime_path: "/home/agentuser/sandbox/.agents/prompts/",
       loader: "the provider settings record names this directory as a prompt root",
       provider: "pi",
+      reachable: [],
     });
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
@@ -259,7 +297,7 @@ test_manifest_row_with_no_copy_line_flagged() {
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a manifest row no COPY line carries fails'
   assert_contains "$GATE_OUT" $'image: the manifest declares \'pi\tdocs/reference/' 'the row is named'
-  assert_contains "$GATE_OUT" 'which the dockerfiles do not carry' 'the direction is named'
+  assert_contains "$GATE_OUT" 'is absent from the provider dockerfiles' 'the direction is named'
 }
 
 test_copy_line_with_no_manifest_row_flagged() {
@@ -490,6 +528,101 @@ test_cell_without_a_loader_flagged() {
   assert_contains "$GATE_OUT" 'declares no loader' 'the field is named'
 }
 
+test_cell_without_reachable_flagged() {
+  local root="$FIXTURE_DIR/noreachable"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    delete manifest.cells[1].reachable;
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a cell that declares no reach fails'
+  assert_contains "$GATE_OUT" 'declares no reachable' 'the field is named'
+  assert_contains "$GATE_OUT" 'an empty list grants nothing' 'the reader is told what an empty list means'
+}
+
+test_reachable_row_naming_a_missing_repository_path_flagged() {
+  local root="$FIXTURE_DIR/reach-missing"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.cells[0].reachable.push({ path: "docs/absent/", holds: "nothing", condition: "the reader has the repository tree" });
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a repository reachable row naming a missing path fails'
+  assert_contains "$GATE_OUT" "reachable row 'docs/absent/' names no repository path" 'the row is named'
+}
+
+test_reachable_row_naming_an_absent_image_path_flagged() {
+  local root="$FIXTURE_DIR/reach-image-missing"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.cells[4].reachable.push({ path: "/opt/workflow/agent/template-absent/", holds: "nothing", condition: "pi delivery" });
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'an image reachable row naming an absent path fails'
+  assert_contains "$GATE_OUT" 'names an image path no' 'the row is named'
+}
+
+test_reachable_row_naming_the_installed_runtime_passes() {
+  local root="$FIXTURE_DIR/reach-runtime"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.cells[4].reachable.push({ path: "/usr/local/lib/node_modules/whatever/", holds: "the installed runtime", condition: "pi delivery" });
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  # The repository does not build that tree, so no check here can decide whether
+  # it exists, and the row is left to its condition. The case pins the boundary:
+  # a later check that starts guessing would flag this row.
+  assert_rc 0 "$GATE_RC" 'a row naming the installed runtime is left to its condition'
+}
+
+test_report_prints_the_surface_identically_twice() {
+  local root="$FIXTURE_DIR/report"
+  write_default_tree "$root"
+  local first second
+  first="$(node "$MODULE" report --root "$root")"
+  second="$(node "$MODULE" report --root "$root")"
+  assert_eq "$first" "$second" 'two runs print the same bytes'
+  assert_contains "$first" 'session	/opt/sandbox/lib/' 'the session rows are reported'
+  assert_contains "$first" 'cell	0	src/reasoning/agent/prompts/' 'each cell is reported with its runtime path'
+  assert_contains "$first" 'reach	0	docs/policies/' 'each reachable row is reported'
+  assert_contains "$first" 'mount	pi	' 'each mount is reported'
+  assert_contains "$first" 'image	pi	src/reasoning/agent/skills/' 'the delivery rows are reported'
+}
+
+test_mount_row_absent_from_the_overlay_flagged() {
+  local root="$FIXTURE_DIR/mount-row-only"
+  write_default_tree "$root"
+  write_compose "$root" pi '\${SANDBOX_DIR}/.pi/agent/skills=>/home/agentuser/.pi/agent/skills'
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a manifest mount row with no overlay item fails'
+  assert_contains "$GATE_OUT" 'is absent from the compose overlay' 'the side that is missing is named'
+}
+
+test_mount_in_the_overlay_not_declared_flagged() {
+  local root="$FIXTURE_DIR/mount-overlay-only"
+  write_default_tree "$root"
+  write_compose "$root" pi \
+    '\${SANDBOX_DIR}/.pi/agent/skills=>/home/agentuser/.pi/agent/skills' \
+    '\${SANDBOX_DIR}/.pi/model-recommendations.md=>/home/agentuser/.pi/model-recommendations.md' \
+    '\${SANDBOX_DIR}/.pi/agent/prompts=>/home/agentuser/.pi/agent/prompts'
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'an overlay mount with no manifest row fails'
+  assert_contains "$GATE_OUT" 'which the manifest does not declare' 'the side that is missing is named'
+  assert_contains "$GATE_OUT" 'agent/prompts' 'the mount is named'
+}
+
 test_pairs_cli_emits_both_layers() {
   local root="$FIXTURE_DIR/pairs"
   write_default_tree "$root"
@@ -645,9 +778,16 @@ run_test test_project_tree_cell_with_no_provider_flagged
 run_test test_project_tree_cell_for_a_copied_folder_flagged
 run_test test_providerless_cell_naming_a_provider_flagged
 run_test test_cell_without_a_loader_flagged
+run_test test_cell_without_reachable_flagged
 run_test test_module_root_with_no_package_entry_flagged
 run_test test_prompt_name_in_two_roots_flagged
 run_test test_skill_name_in_two_roots_flagged
+run_test test_reachable_row_naming_a_missing_repository_path_flagged
+run_test test_reachable_row_naming_an_absent_image_path_flagged
+run_test test_reachable_row_naming_the_installed_runtime_passes
+run_test test_report_prints_the_surface_identically_twice
+run_test test_mount_row_absent_from_the_overlay_flagged
+run_test test_mount_in_the_overlay_not_declared_flagged
 run_test test_pairs_cli_emits_both_layers
 run_test test_session_cli_emits_the_paths
 
