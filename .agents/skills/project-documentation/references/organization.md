@@ -34,7 +34,7 @@ The tutorial mode is unused: the reader here holds the tree and needs a model of
 
 **How-to: steps to a goal.** Solve a problem a person has, not an operation the machine can perform. Assume competence and skip teaching. Action only: no digressions, no background, no completeness for its own sake. Link those instead. Allow forks and judgment: "If you want x, do y." Name the guide by the task: "How to calibrate the radar array", not "Radar array calibration".
 
-The how-to mode is not a document here: it exists as the instruction surface, which is dispatched to an agent. That surface is managed by the `skill-scaffolder` skill, a name this reference corrects at the rename and not before, and the procedures written in this mode work under the surface's scope, which `docs/development/instruction-surface-conventions.md` `## Scope` states.
+The how-to mode is not a document here: it exists as the instruction surface, which is dispatched to an agent. That surface is managed by the `instruction-authoring` skill, and the procedures written in this mode work under the surface's scope, which `docs/development/instruction-surface-conventions.md` `## Scope` states.
 
 **Reference: facts for lookup.** Only describe. No instruction, no persuasion, no opinion. Be dry, complete, and sure. State facts, options, limits, and errors with no hedging. Mirror the structure of the thing described, so code and docs can be navigated together. Put material where readers expect it. Generate from code where possible.
 

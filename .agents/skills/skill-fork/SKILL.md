@@ -37,4 +37,4 @@ Nothing points the other way. The artifact carries no record file and no provena
 
 ## Writing a skill that is not a fork
 
-A skill written here - not installed from upstream - has no edge and no upstream. Take `skill-scaffolder` instead: it owns the authoring steps, the signpost and the authoring patterns.
+A skill written here - not installed from upstream - has no edge and no upstream. Take `instruction-authoring` instead: it owns the authoring steps, the signpost and the authoring patterns.
