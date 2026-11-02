@@ -7,8 +7,8 @@
 //      backticked token adjacent to the word "skill", on either side. The form
 //      is broad on purpose: a sentence naming an absent skill reports something
 //      broken whether it reads as an instruction or as a remark, so it fails
-//      closed. `poteto-mode` and the upstream `codebase-design` were both found
-//      this way.
+//      closed. `poteto-mode` was found this way, in a prompt that named a skill
+//      no image stages.
 //   2. An absolute path in a backticked token lands inside a root the manifest
 //      declares. The roots are derived from the manifest, never listed here:
 //      every `image` destination, the provisioning template and home, every

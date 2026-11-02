@@ -16,4 +16,4 @@ Source: `mattpocock-skills`; see [`NOTICE`](../NOTICE).
 
 ## Name
 
-The skill was `domain-model` and is now `domain-modeling`, taken from the upstream rename at `a496f55`. The rename landed with the edge's bump in the same unit; `improve-codebase-architecture` is its only caller and was rewritten against the new name there.
+The skill was `domain-model` and is now `domain-modeling`, taken from the upstream rename at `a496f55`. The rename landed with the edge's bump in the same unit. Its only caller was `improve-codebase-architecture`, which took the new name there and was dropped from the tree on 2026-11-01 with `codebase-design`, because nothing invoked either.

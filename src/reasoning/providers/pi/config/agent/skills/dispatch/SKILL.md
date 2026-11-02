@@ -1,6 +1,6 @@
 ---
 name: dispatch
-description: Dispatch one worker over a brief through the dispatch entrypoint, read-write or print-only. Use when a subagent should do real work and the model has to come from the role table rather than from this skill.
+description: Dispatch one worker over a brief through the dispatch entrypoint, read-write or print-only. Use when spawning sub-agents to do real work, so the model comes from the role table rather than from this skill.
 ---
 
 # dispatch

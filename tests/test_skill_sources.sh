@@ -224,15 +224,15 @@ test_the_store_identity_rules_are_reported_once() {
 test_a_nested_skill_is_not_discovered() {
   local root out rc
   root="$FIXTURE_DIR/loader"
-  mkdir -p "$root/code-review/improve-codebase-architecture"
+  mkdir -p "$root/code-review/nested-child"
   printf '%s\n' '---' 'name: code-review' 'description: The parent skill.' '---' '' 'Parent.' \
     >"$root/code-review/SKILL.md"
-  printf '%s\n' '---' 'name: improve-codebase-architecture' 'description: The nested child.' '---' '' 'Child.' \
-    >"$root/code-review/improve-codebase-architecture/SKILL.md"
+  printf '%s\n' '---' 'name: nested-child' 'description: The nested child.' '---' '' 'Child.' \
+    >"$root/code-review/nested-child/SKILL.md"
   out="$(node "$LOADER" "$root" 2>&1)"; rc=$?
   assert_rc 0 "$rc" "the loader probe runs"
   assert_contains "$out" "code-review" "the parent skill is discovered"
-  assert_not_contains "$out" "improve-codebase-architecture" "a nested SKILL.md is not discovered under a skill root"
+  assert_not_contains "$out" "nested-child" "a nested SKILL.md is not discovered under a skill root"
 }
 
 run_test test_clean_fixture_passes
