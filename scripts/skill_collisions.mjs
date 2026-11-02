@@ -21,17 +21,10 @@ import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { agentDirFor, configuredPackages } from "./skill_packages.mjs";
 import { LAYERS, layerOf, layerRoots, piModuleEntry } from "./skill_layers.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-
-// The session's agent directory, when the caller names none: the image sets
-// AGENT_HOME, and pi's own default falls back to the config home.
-function agentDirFor(agentDir) {
-  if (agentDir) return resolve(agentDir);
-  if (process.env.AGENT_HOME) return join(resolve(process.env.AGENT_HOME), "agent");
-  return undefined;
-}
 
 // findCollisions ROOT AGENT_DIR -- the shipped skills a configured package also
 // holds, each naming the shipped path and the added one.
@@ -40,16 +33,8 @@ export async function findCollisions({ root = REPO, agentDir } = {}) {
   const resolvedAgentDir = agentDirFor(agentDir);
   const pi = await import(pathToFileURL(piModuleEntry()).href);
 
-  const settings = pi.SettingsManager.create(resolvedRoot, resolvedAgentDir);
-  const packages = new pi.DefaultPackageManager({
-    cwd: resolvedRoot,
-    agentDir: resolvedAgentDir,
-    settingsManager: settings,
-  });
-  const addedPaths = packages
-    .listConfiguredPackages()
-    .map((entry) => entry.installedPath)
-    .filter(Boolean);
+  const { configured } = await configuredPackages({ root: resolvedRoot, agentDir: resolvedAgentDir });
+  const addedPaths = configured.map((entry) => entry.installedPath).filter(Boolean);
   if (addedPaths.length === 0) return { collisions: [], addedPackages: 0 };
 
   const shippedPaths = LAYERS.filter((layer) => layer.shipped)

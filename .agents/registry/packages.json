@@ -1,0 +1,15 @@
+{
+  "note": "The packages this project expects a session to have, as the operator pinned them. One entry per package; the check reports a named package that is not configured and a configured package no entry names. It installs, resolves and repairs nothing.",
+  "packages": [
+    {
+      "source": "/opt/workflow/agent",
+      "scope": "user",
+      "why": "the agent skill payload the image ships"
+    },
+    {
+      "source": "/opt/workflow/agent/modules/coding-agent",
+      "scope": "user",
+      "why": "the coding-agent module payload the image ships"
+    }
+  ]
+}
