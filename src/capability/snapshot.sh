@@ -159,11 +159,16 @@ snapshot_deliver() {
 # not update the tree object, so git archive (which reads the tree) produces
 # the old case, while rsync (which reads the filesystem) copies the new case.
 #
-# Compares every path from `git ls-tree -r HEAD --name-only` against the
-# filesystem. If a filesystem entry exists with a case-different name and the
-# git blob hash matches, it is a case mismatch.
+# Compares every path from `git ls-tree -r -z HEAD --name-only` against the
+# filesystem. NUL-delimited on purpose: git C-quotes non-ASCII paths in its
+# default output (core.quotePath), and a quoted path is not a filesystem path --
+# its leading quote names a directory that does not exist, so `find` fails. If a
+# filesystem entry exists with a case-different name and the git blob hash
+# matches, it is a case mismatch.
 #
-# Writes warnings to stderr. Returns 0 always (non-blocking).
+# Writes warnings to stderr. Returns 0 always (non-blocking): called unguarded
+# from seed_volume.sh under `set -e`, so no internal failure may abort the seed --
+# each command whose failure is not the finding itself carries `|| true`.
 # For the host-side fix, run: git mv <old> <tmp> && git mv <tmp> <new> && git commit
 snapshot_check_case_mismatch() {
   local SOURCE_DIR="$1"
@@ -175,13 +180,13 @@ snapshot_check_case_mismatch() {
   local -a MISMATCHES=()
   local tree_path
 
-  while IFS= read -r tree_path; do
+  while IFS= read -r -d '' tree_path; do
     [[ -z "$tree_path" ]] && continue
 
     local dir fs_entry
     dir=$(dirname "$tree_path")
     # Find the actual filesystem entry for this directory+basename, case-insensitively
-    fs_entry=$(find "$SOURCE_DIR/$dir" -maxdepth 1 -iname "$(basename "$tree_path")" -printf '%f\n' 2>/dev/null | head -1)
+    fs_entry=$(find "$SOURCE_DIR/$dir" -maxdepth 1 -iname "$(basename "$tree_path")" -printf '%f\n' -quit 2>/dev/null) || true
 
     [[ -z "$fs_entry" ]] && continue  # file not on disk
 
@@ -193,13 +198,13 @@ snapshot_check_case_mismatch() {
 
     # Different case -> check if blob matches
     local tree_blob fs_blob
-    tree_blob=$(git -C "$SOURCE_DIR" ls-tree HEAD -- "$tree_path" | awk '{print $3}') 2>/dev/null
-    fs_blob=$(git -C "$SOURCE_DIR" hash-object "$SOURCE_DIR/$dir/$fs_entry") 2>/dev/null
+    tree_blob=$(git -C "$SOURCE_DIR" ls-tree HEAD -- "$tree_path" | awk '{print $3}' 2>/dev/null) || true
+    fs_blob=$(git -C "$SOURCE_DIR" hash-object "$SOURCE_DIR/$dir/$fs_entry" 2>/dev/null) || true
 
     if [[ -n "$tree_blob" && "$tree_blob" == "$fs_blob" ]]; then
       MISMATCHES+=("$tree_path -> $dir/$fs_entry (same blob $tree_blob)")
     fi
-  done < <(git -C "$SOURCE_DIR" ls-tree -r HEAD --name-only 2>/dev/null)
+  done < <(git -C "$SOURCE_DIR" ls-tree -r -z --name-only HEAD 2>/dev/null)
 
   if [[ "${#MISMATCHES[@]}" -gt 0 ]]; then
     echo "[snapshot] WARNING: case mismatch detected between git tree and filesystem:" >&2

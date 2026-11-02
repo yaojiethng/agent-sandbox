@@ -421,6 +421,32 @@ test_case_mismatch_quiet_when_source_missing() {
   assert_empty "$out" "case mismatch check stays quiet for a missing source"
 }
 
+# Given: a committed repo carrying a tracked non-ASCII path
+# When:  snapshot_check_case_mismatch runs in a shell with errexit
+# Then:  it returns 0 and prints nothing
+# Asserts: git's C-quoted path output never reaches dirname/find -- the quoted
+#          form names a nonexistent directory, whose failing find aborted the seed
+#          under `pipefail` + `set -e`
+test_case_mismatch_non_ascii_path_is_non_fatal() {
+  local SRC="$FIXTURE_DIR/cm_unicode"
+  make_committed_repo "$SRC"
+  # Nested on purpose: the quoted form carries a leading quote onto the first
+  # directory component, so only a path with a directory in it makes find fail.
+  local doc="subdir/文档.md"
+  mkdir -p "$SRC/$(dirname "$doc")"
+  printf 'payload\n' > "$SRC/$doc"
+  git -C "$SRC" add "$doc"
+  git -C "$SRC" commit -q -m "add non-ASCII document"
+
+  local out rc=0
+  # Child shell, not a bare $(...): a command substitution in this file inherits
+  # the parent's errexit suppression and would pass even with the defect.
+  out="$(bash -c 'set -euo pipefail; source "$1"; snapshot_check_case_mismatch "$2"' \
+          _ "$REPO_ROOT/src/capability/snapshot.sh" "$SRC" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" "non-ASCII tree path is non-blocking under errexit"
+  assert_empty "$out" "non-ASCII tree path stays quiet"
+}
+
 # Given: a destination directory
 # When:  snapshot_baseline_init runs with exec-bit tracking available
 # Then:  core.fileMode is true
@@ -514,6 +540,7 @@ run_test test_worktree_honors_negation_patterns_global_excludes
 run_test                     test_case_mismatch_warns_and_names_fix
 run_test                     test_case_mismatch_quiet_when_clean
 run_test            test_case_mismatch_quiet_when_source_missing
+run_test     test_case_mismatch_non_ascii_path_is_non_fatal
 run_test           test_baseline_filemode_true_when_exec_bits_tracked
 run_test        test_baseline_filemode_false_when_exec_bits_unreliable
 run_test                          test_copy_git_preserves_timestamps
