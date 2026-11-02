@@ -233,33 +233,18 @@ export function session_paths(manifest) {
   return manifest_rows(manifest, "session").map((row) => row.path);
 }
 
-// instruction_reach ROOT REPO_PATH -- the reach the cell that declares a file
-// grants it, or null when no cell declares the file. `image` is every prefix a
-// link may target in the image's path space: the instruction roots the cells
-// declare, the session paths every surface reads, and the cell's own reachable
-// rows. `repo` is the cell's reachable rows as repository paths, the paths its
-// files read with the repository tree present. `$AGENT_HOME` stays literal and
-// is also expanded with each provider's home, because a cell writes the
-// variable and the image resolves it.
-export function instruction_reach(root, repoPath) {
-  const manifest = load_manifest(root);
-  if (!manifest) return null;
-  const cells = manifest_rows(manifest, "cells");
-  const cell = cells.find((row) =>
-    (row.sources || []).some((source) => repoPath.startsWith(source)),
-  );
-  if (!cell) return null;
-  const homes = manifest_rows(manifest, "env")
-    .filter((row) => row.name === "AGENT_HOME")
-    .map((row) => row.value);
-  const variants = (path) => [path, ...homes.map((home) => path.replace(/^\$AGENT_HOME/, home))];
-  const reachable = (cell.reachable || []).map((row) => row.path);
-  const image = [
-    ...cells.map((row) => row.runtime_path).filter((path) => path && path !== "none"),
-    ...session_paths(manifest),
-    ...reachable,
-  ].flatMap(variants);
-  return { cell, image, repo: reachable };
+// check_cell_keys WHERE CELL FINDINGS -- a cell declares the keys the
+// declaration carries. An unrecognised key is a finding rather than ignored
+// data: a row nothing reads is a decision written where nothing enforces it,
+// and the retired `reachable` list is the case this exists for.
+const CELL_KEYS = ["sources", "runtime_path", "loader", "provider"];
+
+function check_cell_keys(where, cell, findings) {
+  for (const key of Object.keys(cell)) {
+    if (!CELL_KEYS.includes(key)) {
+      findings.push(`${where}: declares '${key}', which a cell does not carry (${CELL_KEYS.join(", ")})`);
+    }
+  }
 }
 
 // check_cells ROOT MANIFEST PROVIDERS FINDINGS -- the declared instruction
@@ -318,7 +303,7 @@ function check_cells(root, manifest, providers, findings) {
     if (cell.provider !== undefined && !providers.includes(cell.provider)) {
       findings.push(`${where}: names provider '${cell.provider}', which carries no dockerfile`);
     }
-    check_reachable(root, where, cell, findings);
+    check_cell_keys(where, cell, findings);
     check_scoping(where, cell, providers, findings);
     check_surface(where, cell, images, provisions, roots, root, session, findings);
   }
@@ -357,50 +342,6 @@ function check_cells(root, manifest, providers, findings) {
   }
 
   check_names(root, manifest, root_keys, findings);
-}
-
-// check_reachable ROOT WHERE CELL FINDINGS -- the rows the cell adds to the
-// session environment. `always` is the session's condition, so a cell that
-// repeats it is restating the environment rather than adding to it. The key is
-// required: an absent list and a list granting nothing read the same to every
-// consumer, so the absent one is a finding and the empty one is a decision.
-//
-// A row must also name something that exists. Which check decides that depends
-// on what the row names, so the classes are split rather than guessed at: a row
-// conditioned on the repository tree names a repository path, an `/opt/` row
-// names a path the image populates, and a row naming the installed runtime names
-// a tree the repository does not build, so nothing here can decide it and the
-// row is left to its `condition` prose.
-function check_reachable(root, where, cell, findings) {
-  const rows = cell.reachable;
-  if (rows === undefined) {
-    findings.push(`${where}: declares no reachable; an empty list grants nothing beyond the instruction roots and the session rows`);
-    return;
-  }
-  if (!Array.isArray(rows)) {
-    findings.push(`${where}: reachable is not a list`);
-    return;
-  }
-  for (const row of rows) {
-    for (const field of ["path", "holds", "condition"]) {
-      if (typeof row[field] !== "string" || row[field].trim() === "") {
-        findings.push(`${where}: a reachable row declares no ${field}`);
-      }
-    }
-    if (row.condition === "always") {
-      findings.push(`${where}: reachable row '${row.path}' carries 'always', which the session rows already declare`);
-    }
-    if (typeof row.path !== "string" || typeof row.condition !== "string") continue;
-    if (row.condition.includes("repository tree")) {
-      if (!existsSync(join(root, row.path))) {
-        findings.push(`${where}: reachable row '${row.path}' names no repository path, and its condition is the repository tree`);
-      }
-    } else if (row.path.startsWith("/opt/")) {
-      if (image_source(root, row.path) === undefined) {
-        findings.push(`${where}: reachable row '${row.path}' names an image path no \`image\` row populates`);
-      }
-    }
-  }
 }
 
 // image_source ROOT IMAGE_PATH -- the repository source that populates an image
@@ -795,9 +736,6 @@ export function report(root) {
   }
   for (const [index, cell] of manifest_rows(manifest, "cells").entries()) {
     lines.push(["cell", String(index), (cell.sources || []).join(","), cell.runtime_path].join("\t"));
-    for (const row of cell.reachable || []) {
-      lines.push(["reach", String(index), row.path, row.condition].join("\t"));
-    }
   }
   for (const row of manifest_rows(manifest, "mounts")) {
     lines.push(["mount", row.provider, row.source, row.target].join("\t"));

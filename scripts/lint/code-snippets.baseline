@@ -15,6 +15,7 @@
 358cda4e2398ae91  docs/development/context_resolution.md
 35a8f55a6d87d4ca  docs/adr/sandbox_delivery_model.md
 36ee123fe157bf0a  docs/adr/env_resolution.md
+3985616bb51cca60  docs/development/instruction-surface-conventions.md
 4114f5cea5541e7b  docs/reference/copy_delivery.md
 41617a6b7d658bee  docs/development/provider_onboarding_guide.md
 42dadd4dd63fb72d  docs/development/quickstart.md
@@ -60,7 +61,6 @@ e3db492a0d6e6c7c  docs/development/context_resolution.md
 e57811d721ff9e3a  docs/development/interface-conventions.md
 e6803b86193e0f23  docs/development/provider_onboarding_guide.md
 e73016c7ac4e20fb  docs/reference/sandbox_host_interface.md
-e8dbcf462df7c24c  docs/development/instruction-surface-conventions.md
 ea764ca61e257fda  docs/adr/session_identifier.md
 eebfde81de79feba  docs/development/provider_onboarding_guide.md
 eee31c9332b28785  docs/development/quickstart.md

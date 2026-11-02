@@ -17,9 +17,9 @@ Link a document the reader may need to open; otherwise write its name. Inline co
 
 ## Where the link is read
 
-A link resolves where its document is read, not where it was written. A prompt, a skill, a bundled document and an `AGENTS.md` layer are each read at a path the image gives them, so a link from one reaches only a path that ships, or a path inside the reach the surface's own cell declares. Story S1.
+A link resolves where its document is read, not where it was written. A prompt, a skill, a bundled document and an `AGENTS.md` layer are each read at a path the image gives them, so a link from one reaches only a path that ships. A link from a file read in the working tree reaches the repository. Story S1.
 
-`src/build/container-interface.json` declares what each surface ships and reaches. This skill names no reachable path, so a change to the manifest changes the check with no edit here.
+`src/build/container-interface.json` declares what ships where, as one row per root: the source folder, the image destination, the provisioning template and the mounts. This skill names no destination, so a row added to the manifest changes the check with no edit here.
 
 ## Where the handoff is
 

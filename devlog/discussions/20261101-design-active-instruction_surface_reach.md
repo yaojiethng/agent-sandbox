@@ -55,7 +55,7 @@ Measured 2026-11-01 in a running session. Three of these will be false after the
 
 ## Decision
 
-**Reach is declared once, in the manifest, and everything else derives from it or is checked against it.** A cell declares its sources, its runtime path, its loader, its reach value and the zones it may reference. The one command prints the surface: scopes, the loaded set with its roots, tree-versus-image drift, promotion candidates and unresolved references. This is the report a session reads instead of a document, and it is also what lets an agent see what it ships with.
+**Reach is declared once, in the manifest, and everything else derives from it or is checked against it.** A cell declares its sources, its runtime path and its loader. What a file may reference is declared per root rather than per surface, because a reference resolves in the path space its reader holds: the image for a file that ships, the repository for one read in the working tree. The one command prints the surface: scopes, the loaded set with its roots, tree-versus-image drift, promotion candidates and unresolved references. This is the report a session reads instead of a document, and it is also what lets an agent see what it ships with.
 
 **The concepts stay separate**, because they are orthogonal and merging them forces an engine: reach (who may see what), lifecycle (what survives what), provenance (where something came from). Each gets one object and one gate.
 
@@ -64,8 +64,8 @@ Measured 2026-11-01 in a running session. Three of these will be false after the
 | Stage | Move |
 |---|---|
 | 0 | State the stopping rule, so the work has a bound |
-| 1 | One object: the manifest declares reach, and no other file states a destination |
-| 2 | One checker: every reference edge lands inside a zone its own cell declares reachable; non-vacuity fails an unexercised zone |
+| 1 | One object: the manifest declares each root and its destination, and no other file states one |
+| 2 | One checker: every reference resolves in the path space its reader holds, so a link from a shipped file to a repository-only target, a skill invocation naming a skill the tree lacks, and a path mention naming an undeclared root each fail |
 | 3 | One statement: the taxonomy owns reach in prose, every other document cites it, and a lint rule refuses a destination outside a generated block |
 | 4 | Stop the regrowth: a new consumer reads the object or arrives with its gate |
 
@@ -75,8 +75,8 @@ Each check carries a stable name, so a row can name the one it advances. The ids
 
 | Id | Executable | Constraint kinds | Where it lands | State |
 |---|---|---|---|---|
-| **E1** | the declaration | partition, resolution | row one | landed in `20261101-04`. The manifest carries `image`, `provision`, `mounts`, `session` and `cells`; every cell declares its reach; the gate holds the mount rows equal to the compose overlay in both directions; `report` prints the surface and two runs are byte-identical |
-| **E2** | the closure check | closure, non-vacuity | row one, then a row of its own | links only. `lint/linking.mjs` refuses a Markdown link outside its cell's reach; skill invocations and path mentions are unchecked, and the use-count needs one shared reference scanner |
+| **E1** | the declaration | partition, resolution | row one | landed in `20261101-04`. The manifest carries `image`, `provision`, `mounts`, `session` and `cells`; the gate holds the mount rows equal to the compose overlay in both directions; `report` prints the surface and two runs are byte-identical. The per-cell reach rows were retired in `20261101-06`: measured against their own cells, six of ten restated a declared root and no cell names a repository folder exclusively |
+| **E2** | the closure check | closure | row one, then a row of its own | links carry the rule: `lint/linking.mjs` resolves a link in the path space its reader holds. A skill invocation naming a skill the tree lacks, and an absolute path mention naming an undeclared root, are unchecked, and the use-count needs one shared reference scanner |
 | **E3** | the kind consolidation | agreement, liveness | the gate-upkeep handoff | one agreement instance (`check_container_layout.sh`) and the mutation tier, which already returns `PROVEN`, `SURVIVED` or `NO-OP` |
 | - | the conformance checker | conformance | out of scope | six scripts, cheap and close to their subjects, recorded in the handoff with its reason |
 

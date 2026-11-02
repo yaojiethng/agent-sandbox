@@ -243,5 +243,5 @@
 {"id":245,"old":"--diff-filter=ACMR -z -- '*.md'","new":"--diff-filter=ACMRD -z -- '*.md'","source":"hand-transcribed","subject":"src/capability/git-hooks/pre-commit.sh","name":"H1-no-rebase-md-gate"}
 {"source":"hand-transcribed","name":"H5-staged-file-probe","subject":"src/capability/git-hooks/pre-commit.sh","id":246,"old":"< <(git diff --cached --name-only --diff-filter=ACMR -z -- '*.md')","new":"< <(git diff --name-only --diff-filter=ACMR -z -- '*.md')"}
 {"name":"J10-install-dir-probe","subject":"scripts/install.sh","source":"hand-transcribed","new":"grep '^SOME_OTHER_KEY=' \"$REPO_ROOT/.env\"","old":"grep '^INSTALL_DIR=' \"$REPO_ROOT/.env\"","id":247}
-{"source":"tests/test_container_layout.sh","subject":"src/build/container-interface.mjs","name":"CI1-reachable-key-required","id":248,"old":"  if (rows === undefined) {","new":"  if (false) {"}
-{"source":"tests/test_container_layout.sh","subject":"src/build/container-interface.mjs","name":"CI2-reachable-row-resolves","id":249,"old":"      if (!existsSync(join(root, row.path))) {","new":"      if (false) {"}
+{"source":"tests/test_container_layout.sh","subject":"src/build/container-interface.mjs","name":"CI3-retired-cell-key-flagged","id":248,"old":"    if (!CELL_KEYS.includes(key)) {","new":"    if (false) {"}
+{"source":"tests/test_linking.sh","subject":"scripts/lint/linking.mjs","name":"L1-image-target-absent-from-image","id":249,"old":"            if (source === undefined) {","new":"            if (false) {"}

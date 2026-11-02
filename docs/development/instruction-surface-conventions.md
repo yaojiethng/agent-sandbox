@@ -32,10 +32,7 @@ The problem both surfaces are reduced for is stated in the operator's words at [
 {
   "sources": ["workflow/coding-agent/prompts/"],
   "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
-  "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command",
-  "reachable": [
-    { "path": "devlog/", "holds": "the records the workflow prompts read and write", "condition": "the reader has the repository tree" }
-  ]
+  "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command"
 }
 ```
 
@@ -45,18 +42,11 @@ The problem both surfaces are reduced for is stated in the operator's words at [
 | `runtime_path` | `/opt/...`, `$AGENT_HOME/...`, a path inside a `session` row, or `none`. |
 | `loader` | The condition, not the mechanism. A surface that belongs to no provider names no provider here. |
 | `provider` | Optional. Present only when the surface belongs to one provider, and then only to a provider that carries a dockerfile. |
-| `reachable` | The rows this surface adds to the session environment. Optional, and often absent. A row carries `path`, `holds` and `condition`. |
+| no fifth field | A cell declares no reach. What a file may reference is decided by the path space its reader holds, which the `image`, `provision`, `mounts` and `session` sections declare once per root. A cell that carries any other key fails the gate, so a retired field cannot come back as data nothing reads. |
 
 ## The session rows
 
 The `session` section holds the paths every surface is read alongside: the project tree, the workspace directories, the image's roots, and `$AGENT_HOME/`. They describe the environment rather than a surface, so a cell does not restate them.
-
-A cell's own rows carry a condition that is not `always`. The condition vocabulary is:
-
-| Condition | Meaning | Example |
-|---|---|---|
-| `<provider> delivery` | only that provider's image carries the path; legal only in that provider's cell | `/opt/workflow/agent/config/` under `pi delivery` |
-| a named state | the session is in that state | `the reader has the repository tree` |
 
 `$AGENT_HOME/` is the resolution for a provider's own config home. The variable is set in every provider image, so a surface that belongs to no provider names the variable and not the value.
 
@@ -154,7 +144,7 @@ The table is the judgement; it proves nothing about whether a ruling was right, 
 
 ## The gates
 
-Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader, and a separate reader holds the files to the reach the declaration grants.
+Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader.
 
 [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY`, `ENV`, `WORKDIR` and `CMD` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a project-tree surface whose provider's command does not carry it, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
 
@@ -162,4 +152,4 @@ Gates read the declaration through [`src/build/container-interface.mjs`](../../s
 
 [`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the reach axis to the declaration from the other side: the mount rows the manifest carries against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`. It reads both, so neither copies the other's list. A mount row added and not routed fails the row; a route with nothing behind it fails the route; a folder the table states repository-only fails when a manifest path reaches it.
 
-[`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, holds the files to their cell's reach. A link in a cell's file must land inside the set the declaration grants that cell: every instruction root, the `session` paths, and the cell's own `reachable` rows. A target outside that set fails even when the image carries it, because it names a tree the surface cannot reach. A repository link under a `reachable` row resolves there instead of in the image.
+[`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, resolves a link in the path space the citing file is read in. A file that ships is read at its image path, so its target must be a path the image carries: a relative link is resolved against the file's image directory and mapped back to the source that populates it, and an absolute one must be a declared image destination. A file read from the working tree resolves in the repository. A link from a shipped file to a repository-only target fails, because that reader holds the image rather than the tree: the record is named in a code span instead.

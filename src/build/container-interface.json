@@ -215,50 +215,28 @@
         "src/reasoning/agent/prompts/"
       ],
       "runtime_path": "/opt/workflow/agent/prompts/",
-      "loader": "the running provider's config lists this path as a prompt root, and the agent offers each Markdown file here as a command",
-      "reachable": []
+      "loader": "the running provider's config lists this path as a prompt root, and the agent offers each Markdown file here as a command"
     },
     {
       "sources": [
         "src/reasoning/agent/skills/"
       ],
       "runtime_path": "/opt/workflow/agent/skills/",
-      "loader": "the running provider's config lists this path as a skill root, and the agent loads a skill's SKILL.md and any sibling file that skill names",
-      "reachable": [
-        {
-          "path": "src/reasoning/providers/",
-          "holds": "the harness's provider sources, one folder per provider",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "loader": "the running provider's config lists this path as a skill root, and the agent loads a skill's SKILL.md and any sibling file that skill names"
     },
     {
       "sources": [
         "workflow/coding-agent/prompts/"
       ],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
-      "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command",
-      "reachable": [
-        {
-          "path": "devlog/",
-          "holds": "the records the workflow prompts read and write",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command"
     },
     {
       "sources": [
         "workflow/coding-agent/skills/"
       ],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/skills/",
-      "loader": "the running provider's config enables the module's package directory, whose skills folder contributes a skill per directory holding SKILL.md",
-      "reachable": [
-        {
-          "path": "devlog/",
-          "holds": "the roadmap and the handover chain the maintenance skills read",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "loader": "the running provider's config enables the module's package directory, whose skills folder contributes a skill per directory holding SKILL.md"
     },
     {
       "sources": [
@@ -266,19 +244,7 @@
       ],
       "runtime_path": "$AGENT_HOME/",
       "loader": "pi reads its config home at startup: the agent AGENTS.md, the settings record, the auth record and the model list",
-      "provider": "pi",
-      "reachable": [
-        {
-          "path": "/opt/workflow/agent/config/",
-          "holds": "the config template this home is seeded from at every start",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/",
-          "holds": "the pi install, its changelog and its documentation",
-          "condition": "pi delivery"
-        }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [
@@ -286,19 +252,7 @@
       ],
       "runtime_path": "$AGENT_HOME/agent/prompts/",
       "loader": "pi reads its prompt root from the agent home, which the host bind-mounts for prompts and the image seeds from its config template at every start",
-      "provider": "pi",
-      "reachable": [
-        {
-          "path": "/opt/workflow/agent/config/",
-          "holds": "the config template this folder is provisioned from at every start",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/",
-          "holds": "the pi install and its documentation, under npm's global prefix",
-          "condition": "pi delivery"
-        }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [
@@ -306,24 +260,7 @@
       ],
       "runtime_path": "$AGENT_HOME/agent/skills/",
       "loader": "pi scans its user skills directory at startup, and that directory is bind-mounted from the host and seeded from the image's config template",
-      "provider": "pi",
-      "reachable": [
-        {
-          "path": "/opt/workflow/agent/config/",
-          "holds": "the config template this folder is seeded from at every start",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/",
-          "holds": "the pi install, its changelog and its documentation",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "src/reasoning/providers/pi/",
-          "holds": "the harness's pi provider sources, which the bump skill edits",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [
@@ -331,8 +268,7 @@
       ],
       "runtime_path": "/home/agentuser/sandbox/.agents/prompts/",
       "loader": "the provider's settings record names this directory in its prompts key, so each Markdown file directly in this directory is an invocable command in a session in this project",
-      "provider": "pi",
-      "reachable": []
+      "provider": "pi"
     }
   ]
 }

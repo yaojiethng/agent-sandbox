@@ -38,8 +38,7 @@
 #   a module root with no package entry      --  rc 1; the record is named
 #   two prompt roots holding one file name   --  rc 1; both roots are named
 #   two skill roots holding one skill name   --  rc 1; both roots are named
-#   a reachable row naming a missing path     --  a finding, in repository space
-#   a reachable row naming an absent image path --  a finding, in image space
+#   a cell carrying a retired key             --  a finding, so the key stays gone
 #   a row naming the installed runtime        --  left to its condition, no finding
 #   the `report` CLI                          --  the whole surface, twice, identical
 #   the `pairs` CLI                          --  the image rows and the
@@ -134,43 +133,33 @@ write_manifest() {
     {
       "sources": ["src/reasoning/agent/prompts/"],
       "runtime_path": "/opt/workflow/agent/prompts/",
-      "loader": "the running provider's config lists this path as a prompt root",
-      "reachable": [
-        { "path": "docs/policies/", "holds": "the policies a prompt reads", "condition": "the reader has the repository tree" }
-      ]
+      "loader": "the running provider's config lists this path as a prompt root"
     },
     {
       "sources": ["src/reasoning/agent/skills/"],
       "runtime_path": "/opt/workflow/agent/skills/",
-      "loader": "the running provider's config lists this path as a skill root",
-      "reachable": []
+      "loader": "the running provider's config lists this path as a skill root"
     },
     {
       "sources": ["workflow/coding-agent/prompts/"],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
-      "loader": "the running provider's config enables the module's package directory",
-      "reachable": []
+      "loader": "the running provider's config enables the module's package directory"
     },
     {
       "sources": ["workflow/coding-agent/skills/"],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/skills/",
-      "loader": "the running provider's config enables the module's package directory",
-      "reachable": []
+      "loader": "the running provider's config enables the module's package directory"
     },
     {
       "sources": ["src/reasoning/providers/pi/config/"],
       "runtime_path": "$AGENT_HOME/",
       "loader": "pi reads its config home at startup",
-      "provider": "pi",
-      "reachable": [
-        { "path": "/opt/workflow/agent/config/", "holds": "the config template", "condition": "pi delivery" }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [".agents/skills/"],
       "runtime_path": "none",
-      "loader": "a prompt names a file here by its repository-relative path",
-      "reachable": []
+      "loader": "a prompt names a file here by its repository-relative path"
     }
   ]
 }
@@ -255,7 +244,6 @@ add_project_cell() {
       runtime_path: "/home/agentuser/sandbox/.agents/prompts/",
       loader: "the provider settings record names this directory as a prompt root",
       provider: "pi",
-      reachable: [],
     });
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
@@ -528,63 +516,18 @@ test_cell_without_a_loader_flagged() {
   assert_contains "$GATE_OUT" 'declares no loader' 'the field is named'
 }
 
-test_cell_without_reachable_flagged() {
-  local root="$FIXTURE_DIR/noreachable"
+test_cell_carrying_a_retired_key_flagged() {
+  local root="$FIXTURE_DIR/retiredkey"
   write_default_tree "$root"
   manifest_edit "$root" '
     const fs = require("fs");
     const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    delete manifest.cells[1].reachable;
+    manifest.cells[1].reachable = [{ path: "docs/", holds: "x", condition: "y" }];
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
   run_gate "$root"
-  assert_rc 1 "$GATE_RC" 'a cell that declares no reach fails'
-  assert_contains "$GATE_OUT" 'declares no reachable' 'the field is named'
-  assert_contains "$GATE_OUT" 'an empty list grants nothing' 'the reader is told what an empty list means'
-}
-
-test_reachable_row_naming_a_missing_repository_path_flagged() {
-  local root="$FIXTURE_DIR/reach-missing"
-  write_default_tree "$root"
-  manifest_edit "$root" '
-    const fs = require("fs");
-    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.cells[0].reachable.push({ path: "docs/absent/", holds: "nothing", condition: "the reader has the repository tree" });
-    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
-  '
-  run_gate "$root"
-  assert_rc 1 "$GATE_RC" 'a repository reachable row naming a missing path fails'
-  assert_contains "$GATE_OUT" "reachable row 'docs/absent/' names no repository path" 'the row is named'
-}
-
-test_reachable_row_naming_an_absent_image_path_flagged() {
-  local root="$FIXTURE_DIR/reach-image-missing"
-  write_default_tree "$root"
-  manifest_edit "$root" '
-    const fs = require("fs");
-    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.cells[4].reachable.push({ path: "/opt/workflow/agent/template-absent/", holds: "nothing", condition: "pi delivery" });
-    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
-  '
-  run_gate "$root"
-  assert_rc 1 "$GATE_RC" 'an image reachable row naming an absent path fails'
-  assert_contains "$GATE_OUT" 'names an image path no' 'the row is named'
-}
-
-test_reachable_row_naming_the_installed_runtime_passes() {
-  local root="$FIXTURE_DIR/reach-runtime"
-  write_default_tree "$root"
-  manifest_edit "$root" '
-    const fs = require("fs");
-    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.cells[4].reachable.push({ path: "/usr/local/lib/node_modules/whatever/", holds: "the installed runtime", condition: "pi delivery" });
-    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
-  '
-  run_gate "$root"
-  # The repository does not build that tree, so no check here can decide whether
-  # it exists, and the row is left to its condition. The case pins the boundary:
-  # a later check that starts guessing would flag this row.
-  assert_rc 0 "$GATE_RC" 'a row naming the installed runtime is left to its condition'
+  assert_rc 1 "$GATE_RC" 'a retired cell key fails the gate'
+  assert_contains "$GATE_OUT" "declares 'reachable', which a cell does not carry" 'the key is named'
 }
 
 test_report_prints_the_surface_identically_twice() {
@@ -596,7 +539,6 @@ test_report_prints_the_surface_identically_twice() {
   assert_eq "$first" "$second" 'two runs print the same bytes'
   assert_contains "$first" 'session	/opt/sandbox/lib/' 'the session rows are reported'
   assert_contains "$first" 'cell	0	src/reasoning/agent/prompts/' 'each cell is reported with its runtime path'
-  assert_contains "$first" 'reach	0	docs/policies/' 'each reachable row is reported'
   assert_contains "$first" 'mount	pi	' 'each mount is reported'
   assert_contains "$first" 'image	pi	src/reasoning/agent/skills/' 'the delivery rows are reported'
 }
@@ -778,13 +720,10 @@ run_test test_project_tree_cell_with_no_provider_flagged
 run_test test_project_tree_cell_for_a_copied_folder_flagged
 run_test test_providerless_cell_naming_a_provider_flagged
 run_test test_cell_without_a_loader_flagged
-run_test test_cell_without_reachable_flagged
+run_test test_cell_carrying_a_retired_key_flagged
 run_test test_module_root_with_no_package_entry_flagged
 run_test test_prompt_name_in_two_roots_flagged
 run_test test_skill_name_in_two_roots_flagged
-run_test test_reachable_row_naming_a_missing_repository_path_flagged
-run_test test_reachable_row_naming_an_absent_image_path_flagged
-run_test test_reachable_row_naming_the_installed_runtime_passes
 run_test test_report_prints_the_surface_identically_twice
 run_test test_mount_row_absent_from_the_overlay_flagged
 run_test test_mount_in_the_overlay_not_declared_flagged

@@ -368,6 +368,8 @@ Raised by the agent during handover `20261014-03`.
 **Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
 
 **Recurrence, 2026-10-24** (handover `20261024-12`, the dispatch refactor): the full run failed `test_interactive_session_select.sh: test_select_session_patch_count_shown`, which passed 37 of 37 in isolation. A third file, the same shape, and still no cause.
+
+**Recurrence, 2026-11-01** (handover `20261101-06`, a change set in the container interface and the link rule): the full run failed `test_providers_pi_preflight.sh: test_bind_mount_warns_on_missing_prompts`, which passed in isolation, and the next full run passed 1424 of 1424. A fourth file, the same shape, and still no cause.
 ---
 
 ## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
