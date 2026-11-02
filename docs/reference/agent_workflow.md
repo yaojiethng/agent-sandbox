@@ -95,7 +95,7 @@ The map is the mechanism's, and two of its subjects name this repository's own t
 
 ### Skill files
 
-Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Instruction modality` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
+Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
 An inline may become stale when its source of truth changes -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
@@ -105,15 +105,9 @@ Prompt templates are iteration tooling. They structure operator input, reduce it
 
 ### Instruction modality
 
-A sentence of instruction text is classified by the base it appeals to and the force it carries. The base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case. The force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY.
+Instruction modality is a concept for categorising the instruction text we write. It names five kinds of sentence - `rule`, `fact`, `judgement`, `permission` and `claim` - and each kind owes its writer something different, so a draft that mixes them unexamined reads as stronger or weaker than it is. Nothing gates the choice; it is applied by whoever writes the prompt or the skill.
 
-The five kinds are `rule`, `judgement`, `permission`, `fact` and `claim`. Their definitions are `docs/reference/terminology.md` `## modality`, the obligations each kind owes a writer are the `instruction-authoring` convention's, and the decision with its rejected alternatives is `docs/adr/instruction_modality.md`.
-
-The base and the standard a sentence is ranked against are context rather than text, so the classification is applied by a reader and nothing gates it.
-
-**The source of truth.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
-
-A judgement used by more than one document lives in a principle skill, so one source of truth serves them all. That is the only case where a judgement leaves the document that produces it.
+Its definitions are `docs/reference/terminology.md` `## modality`, the decision and the derivation behind the five are `docs/adr/instruction_modality.md`, and what each kind means for a writer is the `instruction-authoring` convention.
 
 ### Persistent devlog records (interim)
 
@@ -152,7 +146,7 @@ Every cell names its document in the form its reader can open. A document under 
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, decide its source of truth by the kind, per `### Instruction modality`: a resolving observer makes it a rule, and the document that produces the content owns it.
+When a rule appears to exist in two documents in this map, decide it with `principle-single-source-of-truth` and the kind table in `docs/adr/instruction_modality.md`.
 
 ## References
 

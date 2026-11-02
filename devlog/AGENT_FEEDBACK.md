@@ -616,6 +616,19 @@ The mutation gate for the task-queue extension replays each catalog row in a tem
 
 The family is the mutation-idiom rule in `p-43` and the instrument rules in `.agents/skills/testing/patterns/mutation-evidence.md`, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
 
+### [A] 2026-11-02  --  A scripted splice on a heading string matched the prose that named the heading
+
+```text
+state: open
+scoped: M3.3.3 -- the authoring surface
+legacy: none
+mitigation: anchor a splice on the heading line (`\n### Name\n`), assert it occurs once, and read the surrounding lines back after writing. A bare `indexOf(message)` finds the first mention, and a document that names its own headings in prose has one before the heading itself.
+```
+
+Rewriting `### Instruction modality` in `docs/reference/agent_workflow.md` by slicing at `indexOf("### Instruction modality")` cut from a sentence one section above that links to the heading by name, and took the heading line with it: the section lost its title and the paragraph that pointed at it lost its tail. The lint gate passed, because a file with a broken heading is still well-formed Markdown.
+
+This is the second time on this file. The 2026-11-02 handover `20261102-04` records the same failure from a different script, which is what makes it a class rather than a slip: the file names its own sections in prose in at least two places, so the first occurrence is never the heading.
+
 ---
 
 ## Gotchas  --  operator-raised entries

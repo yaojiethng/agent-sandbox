@@ -2,6 +2,19 @@
 
 **Current:** 2026-11-02
 
+## 2026-11-02 -- The kinds are tools for choosing a mechanism, not a classification of a sentence
+
+**Decision:** The five kinds are tools a writer uses to test the mechanism against the problem. The strength a kind buys comes from what holds it, so the same rule written as prose is much looser than the same rule enforced by a gate, and what a machine can decide belongs in code or a gate rather than in paper.
+
+**Rationale:** The derivation is Kratzer's, and the citation records it along with the one thing the taxonomy added: the consequence for enforcement. Applied per sentence the kinds reinstate the retired ledger's discipline without its data, because two readers assign different kinds to the same sentence and nothing reports the disagreement.
+
+**Rejected alternatives:**
+
+- *Keep the per-sentence classification and drop only the ledger* -- rejected on execution: the assignment survives as a habit nobody can check.
+- *Rank the kinds by strength and require the strongest* -- rejected on intent: the base decides the kind before the strength does, so the ranking pushes a permission toward a rule.
+
+**Edge cases / drivers:** A judgement and a rule can hold the same wording; what separates them is whether a machine decides the outcome.
+
 ## 2026-11-02 -- The kinds are five, by base and force, and the classification is a standard
 
 **Decision:** A sentence of instruction text is classified by the base it appeals to and the force it carries. The base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case. The force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY. The five kinds are `rule` (deontic necessity), `judgement` (deontic, graded), `permission` (deontic possibility), `fact` (epistemic necessity) and `claim` (epistemic possibility). The framework is Angelika Kratzer's relational semantics, in *What 'must' and 'can' must and can mean*, Linguistics and Philosophy 1:3 (1977), collected in *Modals and Conditionals* (Oxford University Press, 2012) at [doi.org/10.1007/BF00353453](https://doi.org/10.1007/BF00353453): a modal is read against a modal base and an ordering source, so the kinds are derived rather than asserted. What we took from it and what we dropped is `.agents/registry/citations/kratzer-relational-modality.json`. Each claim about the taxonomy has one home, and a later claim follows the same split: this entry for the decision, `docs/reference/terminology.md` `## modality` for the definition, the `instruction-authoring` convention for what a kind owes a writer, and `docs/reference/agent_workflow.md` for the description. That convention's home was created for it, so each later unit moves content into a place that already exists. The definitions live in `docs/reference/terminology.md` `## modality`, the obligations a writer owes live with the `instruction-authoring` convention, and this record holds the decision. The terms `norm` and `statement` retire, `claim` replaces `statement`, and this record is renamed from `norm_kinds.md`.

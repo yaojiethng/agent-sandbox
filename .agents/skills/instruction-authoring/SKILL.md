@@ -1,50 +1,57 @@
 ---
 name: instruction-authoring
-description: "Classifies each sentence of an instruction by its modality - rule, fact, judgement, permission or claim - and states what each kind owes a reader who must act on it. Use when writing or reviewing a prompt, a skill or any instruction. The mechanics of writing a skill are the `skill-scaffolder` skill's until they migrate here."
+description: "Writing or reviewing a prompt or a skill: where one is placed, named and given frontmatter, what its body may assume, and the five kinds a sentence can be with what each owes the writer. Use when authoring, reviewing or placing a prompt or a skill."
 ---
 
 # instruction-authoring
 
-A home being built. Its first subject is the modality of a sentence: what force the sentence carries, and what happens to a reader who finds it broken. The mechanics of writing a skill - its frontmatter, its carrier roots, its siblings - are [`../skill-scaffolder/SKILL.md`](../skill-scaffolder/SKILL.md)'s.
+An instruction in this repository is a prompt or a skill. Each carries one purpose and one concern: a draft that does two things is two documents. `principle-own-the-scope-you-declare` and `communication-principle-keep-a-subject-near` hold that judgement, and this skill supplies the vocabulary for the sentences inside.
 
-## What lives where
+## The five kinds
 
-| Subject | Home |
+The sentences an agent writes fall into five kinds, and the kind decides what the writer owes.
+
+| Kind | What it means for the writer |
 |---|---|
-| what `rule`, `fact`, `judgement`, `permission` and `claim` are | the glossary, `docs/reference/terminology.md` `## modality` |
-| how a sentence is classified, what each kind owes a writer, and the smell tests | this file |
-| how a skill is written, and where it lands | the `skill-scaffolder` skill |
+| `rule` | Clear, deterministic logic and a verifiable outcome. Where a machine can decide it, represent it as code or as a gate rather than as prose. |
+| `fact` | Presented alongside its evidence. An assertion without evidence is a claim. |
+| `judgement` | The instruction states the criteria and the handling method a gate would apply, and the agent is trusted to execute them. |
+| `permission` | A suggestion - "usually we do this" - and whether to take it up is the agent's. Suggested practice and conventions read as permissions, not as rules. |
+| `claim` | Verified before anything treats it as a fact. |
 
-The decision behind the five kinds, and why the classification is not a gate, is `docs/adr/instruction_modality.md`; what follows states the consequence for a writer.
+The five are defined in the glossary, [`terminology.md`](../../../docs/reference/terminology.md#modality); how they are derived, and why nothing gates them, is [`instruction_modality.md`](../../../docs/adr/instruction_modality.md) and the citation it rests on.
 
-## Classify before you draft
+## Which carrier you are writing
 
-Two questions, in order.
+| You are writing | The shape | Its sheet |
+|---|---|---|
+| a file the operator or a model starts by name | a prompt: steps, reference or both, and frontmatter carrying `description` | [`references/prompt-conventions.md`](references/prompt-conventions.md) |
+| a directory a reader opens by name | a `SKILL.md` plus the siblings it names | [`references/skill-conventions.md`](references/skill-conventions.md) |
 
-1. **What does the sentence appeal to?** An obligation the reader owes, or a state of the world the reader must accept. Deontic, or epistemic.
-2. **How strong is that appeal?** Necessity, which holds without exception. Graded, which a criterion settles. Or possibility, which allows and does not require.
+A judgement that more than one document uses lives in a `principle-` skill, so one source serves them all, and that is the only case where a judgement leaves the document that produces it. Which document owns a rule is `principle-single-source-of-truth`'s to state.
 
-The five answers are `rule`, `fact`, `judgement`, `permission` and `claim`: one space, two bases and three strengths. RFC 2119 names the strengths as MUST, SHOULD and MAY, and a sentence that uses one of those words while meaning another is the commonest defect in this file's subject.
+## Draft in this order
 
-## What each kind owes
+1. Check that the draft carries one purpose and one concern; if it carries two, it is two documents.
+2. Choose the carrier from the table, and open its sheet.
+3. Write the body to that sheet's conventions, and name every sibling you create.
+4. Where a sentence reads as the wrong kind of thing, name its kind from the five above and pay what that kind owes.
+5. Send the result to [`runbook/review.md`](runbook/review.md) when the operator asks for the review.
 
-1. **A rule names its observer.** State the artifact that fails when the sentence is broken: a gate, a test, a lint. A rule that names none is a judgement that has not admitted it.
-2. **A fact carries its evidence, or says it is an inference.** A number, a count, a state description without either is a claim wearing a fact's clothes, and it is the failure nobody reports.
-3. **A judgement states the criteria a reader applies, and a test on their own work.** A judgement with no criteria is a taste, and it cannot be applied twice the same way.
-4. **A permission names what grants it.** A permission is the weakest force and the easiest to overstate, because a reader told they may do a thing will do it. State the mechanism that allows it, such as a flag, a config key or an override. Where nothing grants it, the sentence is a suggestion, which is advice and not an instruction, and saying so is what stops a reader treating it as a grant.
-5. **A claim says that it is unevidenced.** It is allowed to exist; it is not allowed to pass as a fact. An inference marked as one is honest, and an unmarked inference is the defect.
+## What this skill carries
+
+| File | Open it when |
+|---|---|
+| [`references/prompt-conventions.md`](references/prompt-conventions.md) | the artifact is a prompt |
+| [`references/skill-conventions.md`](references/skill-conventions.md) | the artifact is a skill |
+| [`patterns/signposting.md`](patterns/signposting.md) | you are choosing a name and a `description` |
+| [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | you are deciding what stays inline, what earns a file, and what a `SKILL.md` must index |
+| [`runbook/review.md`](runbook/review.md) | a prompt or skill was just written, and the operator asked for its review |
+
+## The project conventions block
+
+A document that reads or writes this project's records opens its body with `## Project conventions`: one sentence naming the path a convention is read at and what to do when one is missing or is still the seeded stub, then the conventions it runs, each as a code span. Name only those it runs - `task-list` and `work-log` for a procedure that marks tasks and records them, and nothing else - because a list of every convention teaches a reader that the list is decoration.
 
 ## Why this cannot be a gate
 
-The taxonomy is a standard, not a rule, and that is a property of the object rather than a shortcoming of our tooling. Classifying a sentence needs the base it appeals to and the standard it is ranked against, and both are context the sentence does not carry. A gate reading the sentence alone would guess, and its guess would read as a verdict.
-
-What that means in practice: there is no ledger, no count, and no gate on this. There are the five obligations above and the smell tests below, applied by a reader.
-
-## The smell tests
-
-- An imperative with no observer is a judgement in a rule's voice.
-- A number with no source is a claim in a fact's voice.
-- A judgement whose two readers disagree is missing its criteria, not its rigour.
-- A MAY whose granter is unnamed is a suggestion wearing a permission's clothes.
-- A sentence whose removal changes nobody's action is no kind at all; delete it.
-- A MUST and a SHOULD governing one situation is one requirement written twice, with two forces.
+Nothing here is gated, because the five answer whether the mechanism fits the problem, and that is a judgement about the draft rather than a property a check can read. There is no ledger and no count: the five are applied by the writer, and a reviewer who disagrees says so in prose.

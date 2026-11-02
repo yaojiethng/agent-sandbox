@@ -57,7 +57,7 @@ An **advisor** is a prompt or skill that holds reference and judgement, run agai
 
 The advisor-role split is explicit: the advisor names its role, states when to run it, and constructs a brief. The triage and consensus steps after the advisor returns are part of the runbook that dispatched it.
 
-A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It may be the source of truth for a rule its own procedure runs, and it may inline a distillation of a rule whose source of truth is elsewhere: the inline is a convenience copy, it may go stale, and it names that source. A judgement used by more than one document lives in a principle skill, per `### Instruction modality` in [`agent_workflow.md`](../reference/agent_workflow.md#instruction-modality).
+A **skill** is an execution helper, distinct from a prompt by mechanism not by writing. It may be the source of truth for a rule its own procedure runs, and it may inline a distillation of a rule whose source of truth is elsewhere: the inline is a convenience copy, it may go stale, and it names that source.
 
 **Where a check goes is a judgement.** A check reads evidence and produces a decision, so its placement is stated in the `principle-check-placement` skill at `$AGENT_HOME/agent/skills/principle-check-placement/SKILL.md`, and a skill that holds checks points there.
 
@@ -190,7 +190,7 @@ An instruction states what the work must achieve and leaves the route to the par
 
 A workflow document may inline a distillation of a rule for context efficiency: the inline names the source of truth, and where staleness would mislead it is labelled a convenience copy. The judgement and the fast path are `principle-single-source-of-truth` at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, which is their only source of truth.
 
-The source of truth is decided by the kind, not by the layer, per `### Instruction modality` in [`agent_workflow.md`](../reference/agent_workflow.md#instruction-modality).
+The source of truth is decided by the kind, not by the layer, per [`instruction_modality.md`](../adr/instruction_modality.md).
 
 Construct defensively against two decay modes, both the delete test applied to an instruction surface: `communication-principle-cut-what-carries-nothing` at `$AGENT_HOME/agent/skills/communication-principle-cut-what-carries-nothing/SKILL.md`. A **no-op** is an instruction the agent already obeys by default. **Stale accumulation** is content kept because removing it feels risky.
 
