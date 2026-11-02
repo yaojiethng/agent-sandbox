@@ -11,7 +11,7 @@ Ground the interview in the problem before questioning the plan. Establish a pro
 2. How we are sure it is a problem. State the evidence we observed.
 3. The kind of solution we are trying to achieve.
 
-If any part is missing or vague, ask for it before the interview starts.
+Take each part from the session when the session already holds it: the goal and problem a plan session recorded, the context it gathered, and the conversation a direct invocation arrives in. Ask only for a part the session lacks. The summary is required of every session, so a caller with no prior context is asked for all three parts before the interview starts.
 
 ## Interview
 
