@@ -7,6 +7,8 @@ description: "agent-sandbox's work-log convention - the work-unit record (handov
 
 This project's work log holds three records.
 
+A record is not documentation and has no documentation mode. Its reader is a later session continuing the work, rather than a learner, a practitioner, an explainer or an index, so the four modes `project-documentation` states do not apply to it.
+
 | Record | Path | Its shape |
 |---|---|---|
 | The work-unit record | `devlog/handovers/` | [`assets/handover.md`](assets/handover.md) |

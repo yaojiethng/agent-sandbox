@@ -27,19 +27,11 @@ The policy set is every `docs/**/*_policy.md` file, in any folder. The other fol
 
 ## Folder taxonomy
 
-A document lives in exactly one `docs/` folder or in `devlog/`. Each folder holds one concern:
+A document lives in exactly one `docs/` folder or in `devlog/`. The folders, the mode each one serves and what each holds are the `project-documentation` convention's, at `.agents/skills/project-documentation/references/organization.md`; the placement rule (each document in exactly one category) is in the same convention, `.agents/skills/project-documentation/SKILL.md`.
 
-| Folder | Holds |
-|---|---|
-| `reference/` | the harness as built: contracts, states and sequences, the interface index, and the glossary |
-| `policies/` | the policy rules the agent obeys |
-| `development/` | contributor workflow, development conventions, and the procedures for changing the harness |
-| `adr/` | the rationale behind standing principles, interface shapes, and contracts; superseded or awaiting-review ADRs live in `adr/archive/` |
-| `devlog/` | the session-facing records: the roadmap, the changelog, handovers, and discussion documents |
+`reference/` reaches every session because the image mounts it; `adr/`, `development/` and `devlog/` are this project's, so a session in a provisioned project reads that project's own. `## Reach` states the axis and `scripts/check_reach.sh` holds it to the manifest.
 
-The table describes this repository's tree. `reference/` and `policies/` reach every session because the image mounts them; `adr/`, `development/` and `devlog/` are this project's, so a session in a provisioned project reads that project's own. `## Reach` states the axis and `scripts/check_reach.sh` holds it to the manifest.
-
-The placement rule (each document in exactly one category) is in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Folder tree.
+The `devlog/` records sit outside the four modes, and `.agents/skills/work-log/SKILL.md` states why.
 
 ## Durability
 

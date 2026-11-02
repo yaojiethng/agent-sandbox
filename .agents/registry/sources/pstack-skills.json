@@ -6,6 +6,22 @@
   "copyright": "Copyright (c) 2026 Lauren Tan",
   "artifacts": [
     {
+      "local_path": ".agents/skills/project-documentation/references/organization.md",
+      "kind": "instruction",
+      "parent": null,
+      "upstream_path": "pstack/skills/technical-writing/SKILL.md",
+      "origin": "ae5650febf4320793844c12c4adaa937f417f8da",
+      "base": "ae5650febf4320793844c12c4adaa937f417f8da",
+      "anchor": "## Pick the mode first (Diataxis)",
+      "record": {
+        "source": "One section of a 106-line skill, not the skill, hung under this repository's own title and arrangement. The installed package keeps `technical-writing` whole, because the three layers this file does not carry stay useful in the sandbox and nothing here competes for that name. The section is taken at the pin the clone is checked out at, `ae5650fe`, which is later than the pin on this source's other edge.",
+        "kept": "The section and everything in it, in upstream's own words and order: the two questions, the four modes, the per-mode discipline, and the no-mixing rule.",
+        "rewritten": "One character: the accent in `Diataxis`, which this repository's ASCII rule does not allow. Nothing else inside an upstream paragraph changes, so a bump diffs to insertions rather than rewrites.",
+        "added": "The file's own title and opening line, the corpora table and the two corpora outside it, one paragraph after each of three modes, and the source line in this repository's citation form. Every addition sits between upstream paragraphs rather than inside one.",
+        "dropped": "The three prose layers the skill opens with - Google developer style, STE instruction rules, Global English syntax - which are sentence-level rules for a different carrier; the section on varying rhythm; the instruction to propose abstract-metaphor offenders to `unslop`; and upstream's own `Source:` line, replaced by the citation form."
+      }
+    },
+    {
       "local_path": "src/reasoning/providers/pi/config/agent/skills/principle-guard-the-context-window",
       "kind": "skill",
       "parent": null,
