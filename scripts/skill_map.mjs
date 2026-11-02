@@ -129,9 +129,6 @@ async function main() {
     if (skill.name !== dirName) {
       warnings.push(`${layer.name}: '${skill.name}' resolves from '${relative(root, file)}' but its directory is '${dirName}'`);
     }
-    if (layer.name === "agent-sandbox" && !existsSync(join(dir, "MAINTENANCE.md"))) {
-      warnings.push(`${layer.name}: '${skill.name}' has no MAINTENANCE.md`);
-    }
     for (const md of markdownFiles(dir)) {
       for (const link of judgedLinks(md)) {
         const target = resolve(dirname(md), link.target);

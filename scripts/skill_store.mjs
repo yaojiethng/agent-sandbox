@@ -6,6 +6,10 @@
 // skills pointing at it, so a store one caller accepts cannot be one the other
 // rejects.
 //
+// The store is bumped provenance, not a registry: an edge exists because someone
+// keeps that artifact current against an upstream, so a path with no edge is a
+// path nobody bumps and never a finding.
+//
 // The store is edited by hand and validated here. `collectFindings` is the one
 // rule set; `check` and the gate are its two callers, and `canonicalText` is
 // what `source-bump format` writes and what the gate compares a file against.
@@ -15,16 +19,37 @@ import { basename, isAbsolute, join, resolve } from "node:path";
 
 export const STORE_REL = ".agents/registry/sources";
 
-export const KINDS = ["skill", "runbook", "prompt"];
+export const KINDS = ["skill", "runbook", "prompt", "instruction"];
+
+// The fields an edge's adaptation note may carry. `source` narrates where the
+// local copy came from when that needs saying; `name` records a rename; the four
+// adaptation fields are what a bump review reads before it merges.
+export const RECORD_KEYS = ["name", "source", "kept", "rewritten", "added", "dropped"];
 
 const SOURCE_KEYS = ["schema", "id", "url", "license", "copyright", "reason", "artifacts"];
-const ARTIFACT_KEYS = ["local_path", "kind", "parent", "upstream_path", "origin", "base"];
+const ARTIFACT_KEYS = [
+  "local_path",
+  "kind",
+  "parent",
+  "upstream_path",
+  "origin",
+  "base",
+  "anchor",
+  "record",
+];
 
 export const isId = (value) => typeof value === "string" && /^[a-z0-9][a-z0-9._-]*$/.test(value);
 
 export const isCommit = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value);
 
-export const isFileArtifact = (artifact) => artifact?.kind === "prompt";
+export const isFileArtifact = (artifact) =>
+  artifact?.kind === "prompt" || artifact?.kind === "instruction";
+
+// The address of an edge. A composite artifact carries one edge per source, and
+// the same source may hold two passages of one file, so the address is the
+// source, the path and the passage's anchor together.
+export const edgeAddress = (sourceId, artifact) =>
+  `${sourceId}|${artifact?.local_path ?? ""}|${artifact?.anchor ?? ""}`;
 
 export function isRelativePath(value) {
   if (typeof value !== "string" || value.trim() === "") return false;
@@ -137,6 +162,9 @@ function validateArtifact(artifact, where, findings, root) {
     }
   }
 
+  validateAnchor(artifact, where, findings, root);
+  validateRecord(artifact, where, findings);
+
   if (artifact.kind === "runbook") {
     if (!isRelativePath(artifact.parent)) {
       addFinding(findings, where, "a runbook must name its parent as a relative path");
@@ -145,6 +173,53 @@ function validateArtifact(artifact, where, findings, root) {
     }
   } else if (artifact.parent !== null) {
     addFinding(findings, where, "parent must be null unless the kind is runbook");
+  }
+}
+
+// A passage edge carries `anchor`: a verbatim line of the file it names. The gate
+// checks the line occurs once, so a rewrite that moves the passage is a finding
+// rather than a silently stale record.
+function validateAnchor(artifact, where, findings, root) {
+  if (!Object.hasOwn(artifact, "anchor")) return;
+  const anchor = artifact.anchor;
+  if (typeof anchor !== "string" || anchor.trim() === "") {
+    addFinding(findings, where, "anchor must be a non-empty line of the local file");
+    return;
+  }
+  if (!isFileArtifact(artifact)) {
+    addFinding(findings, where, "anchor needs a file kind: prompt or instruction");
+    return;
+  }
+  if (!isRelativePath(artifact.local_path)) return;
+  const absolute = resolve(root, artifact.local_path);
+  if (!existsSync(absolute)) return;
+  const text = readFileSync(absolute, "utf8");
+  const count = text.split(anchor).length - 1;
+  if (count === 0) {
+    addFinding(findings, where, `anchor does not occur in ${artifact.local_path}`);
+  } else if (count > 1) {
+    addFinding(findings, where, `anchor occurs ${count} times in ${artifact.local_path}; it must be unique`);
+  }
+}
+
+// The adaptation note. Every field is optional, because an edge is registered at
+// vendoring time and the note is written as the fork is stripped; the fields are
+// a fixed set so a typo is a finding rather than a field nothing reads.
+function validateRecord(artifact, where, findings) {
+  if (!Object.hasOwn(artifact, "record")) return;
+  const record = artifact.record;
+  if (record === null || typeof record !== "object" || Array.isArray(record)) {
+    addFinding(findings, where, "record must be an object");
+    return;
+  }
+  for (const key of Object.keys(record)) {
+    if (!RECORD_KEYS.includes(key)) addFinding(findings, where, `unknown record field ${key}`);
+  }
+  for (const [key, value] of Object.entries(record)) {
+    if (!RECORD_KEYS.includes(key)) continue;
+    if (typeof value !== "string" || value.trim() === "") {
+      addFinding(findings, where, `record.${key} must be a non-empty string`);
+    }
   }
 }
 
@@ -181,10 +256,11 @@ function validateSource(source, where, findings, root) {
   for (const artifact of source.artifacts) {
     validateArtifact(artifact, where, findings, root);
     if (artifact && typeof artifact.local_path === "string") {
-      if (seen.has(artifact.local_path)) {
+      const address = edgeAddress(source.id, artifact);
+      if (seen.has(address)) {
         addFinding(findings, where, `artifact ${artifact.local_path} is listed twice`);
       }
-      seen.add(artifact.local_path);
+      seen.add(address);
     }
   }
 }
@@ -195,7 +271,7 @@ function validateSource(source, where, findings, root) {
 // write the canonical form, which would otherwise refuse the file it repairs.
 export function collectFindings(entries, { root, form = true }) {
   const findings = identityFindings(entries);
-  const locals = new Map();
+  const addresses = new Map();
   for (const entry of entries) {
     const source = entry.source;
     validateSource(source, entry.path, findings, root);
@@ -210,14 +286,15 @@ export function collectFindings(entries, { root, form = true }) {
 
     for (const artifact of Array.isArray(source.artifacts) ? source.artifacts : []) {
       if (!artifact || typeof artifact.local_path !== "string") continue;
-      if (locals.has(artifact.local_path)) {
+      const address = edgeAddress(source.id, artifact);
+      if (addresses.has(address)) {
         addFinding(
           findings,
           entry.path,
-          `local_path ${artifact.local_path} is already used by source ${locals.get(artifact.local_path)}`,
+          `edge ${artifact.local_path} is already used by source ${addresses.get(address)}`,
         );
       } else {
-        locals.set(artifact.local_path, source.id ?? "(no id)");
+        addresses.set(address, source.id ?? "(no id)");
       }
     }
   }
@@ -225,7 +302,7 @@ export function collectFindings(entries, { root, form = true }) {
 }
 
 function normalizeArtifact(artifact) {
-  return {
+  const normalized = {
     local_path: artifact.local_path,
     kind: artifact.kind,
     parent: artifact.parent ?? null,
@@ -233,6 +310,15 @@ function normalizeArtifact(artifact) {
     origin: artifact.origin,
     base: artifact.base,
   };
+  if (Object.hasOwn(artifact, "anchor")) normalized.anchor = artifact.anchor;
+  if (Object.hasOwn(artifact, "record")) {
+    const record = {};
+    for (const key of RECORD_KEYS) {
+      if (Object.hasOwn(artifact.record, key)) record[key] = artifact.record[key];
+    }
+    normalized.record = record;
+  }
+  return normalized;
 }
 
 function normalizeSource(source) {
@@ -246,7 +332,14 @@ function normalizeSource(source) {
   if (source.artifacts.length === 0) normalized.reason = source.reason;
   normalized.artifacts = source.artifacts
     .slice()
-    .sort((left, right) => (left.local_path < right.local_path ? -1 : left.local_path > right.local_path ? 1 : 0))
+    .sort((left, right) => {
+      if (left.local_path !== right.local_path) {
+        return left.local_path < right.local_path ? -1 : 1;
+      }
+      const leftAnchor = left.anchor ?? "";
+      const rightAnchor = right.anchor ?? "";
+      return leftAnchor < rightAnchor ? -1 : leftAnchor > rightAnchor ? 1 : 0;
+    })
     .map(normalizeArtifact);
   return normalized;
 }

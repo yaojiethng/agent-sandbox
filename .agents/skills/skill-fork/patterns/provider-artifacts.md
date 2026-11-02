@@ -17,4 +17,4 @@ The inventory a fork walks at step 3 of [`fork-and-strip.md`](fork-and-strip.md)
 
 ## Maintaining the list
 
-A row is added by the fork that meets the artifact, and the fork's `MAINTENANCE.md` names the row. A row is removed only when no provider in use carries it, and the removal is its own change with the reason. The list is not a copy of one provider's documentation; it is the inventory this repository has met.
+A row is added by the fork that meets the artifact, and the fork's edge names the row in its `record`. A row is removed only when no provider in use carries it, and the removal is its own change with the reason. The list is not a copy of one provider's documentation; it is the inventory this repository has met.

@@ -7,14 +7,44 @@
 | # | Requirement | Meaning |
 |---|---|---|
 | R1 | Source facts have one home | The upstream URL, license, copyright and the artifact edges appear once per source, in the per-source store |
-| R2 | The local answer stays local | A reader opening a skill can tell whether it was adapted or home-grown, in the skill's own directory |
+| R2 | The local answer stays local | Retired on 2026-11-01: the store is the answer, and no artifact carries a provenance line |
 | R3 | The store carries no derived data | No file hash, revision date or import commit is stored; `origin` and `base` are the only commits |
 | R4 | A regroup does not lose provenance | Moving a skill, or folding it into another skill, leaves the source edge in place and the adaptation with the surviving skill |
 | R5 | The merge base is per artifact | One source can feed artifacts at different revisions, so each edge carries its own `base` |
-| R6 | The bump is operator-directed and pinned by default | A bump runs only on the operator's direction, and nothing in the gate compares a stored revision with upstream |
+| R6 | The bump is operator-directed and pinned by default | A bump runs only on the operator's direction, nothing in the gate compares a stored revision with upstream, and nothing requires an artifact to carry an edge |
 | R7 | Attribution ships with the forks | The source URL, license and copyright reach the image in a shipped `NOTICE` |
 
-R3 replaced the retired drift rule on 2026-10-30. A historical entry below that names R3 refers to the drift rule that was current when it was written. R6 was restated on 2026-11-01: the gate validates the store, and what keeps a bump operator-directed is that no check reads a revision.
+R3 replaced the retired drift rule on 2026-10-30. A historical entry below that names R3 refers to the drift rule that was current when it was written. R2 retired and R6 narrowed on 2026-11-01: the store is opt-in bump data, so a path with no edge is a path nobody bumps.
+
+## 2026-11-01 -- The record moves into the store, and the store is opt-in
+
+**Decision:** An artifact's adaptation history lives in the store, in an edge's `record`: `name`, `source`, `kept`, `rewritten`, `added` and `dropped`, each optional and each one non-empty string. The fourteen per-artifact `MAINTENANCE.md` files leave the tree. An edge gains `anchor`, a verbatim line of `local_path`, so one edge can cover a passage inside a file the repository otherwise owns; `kind` gains `instruction` for a file that is neither a skill, a runbook nor a prompt. An edge's address is the source, the `local_path` and the `anchor`, so one artifact may carry an edge per source and a skill built from three forks has three contributions to describe.
+
+The store is bump data and nothing else. An edge exists because someone keeps that artifact current against an upstream, so the gate asks for no record: a path with no edge is a path nobody bumps, and `R2` retires with the marker that would have said otherwise. A missing edge is the operator's to notice, because the cost lands at the next bump, when there are no facts to build it on.
+
+The gate validates the store alone - the schema, every edge's path against the tree, every anchor against its file, the address uniqueness, and the canonical form - which is the coverage the write path could not give and the record shape no longer needs.
+
+**Cost, stated:** the six records that said nothing a bump could read are gone rather than migrated, and the reasoning they carried lives only in the handovers that wrote them. The record's reader is the maintainer running a bump, so a record of a fork nobody bumps has no reader.
+
+### Keep the record beside the artifact
+
+Rejected. A record file needs the artifact to own a directory, so a flat `prompts/` folder cannot hold one, a single instruction file has nowhere to put one, and the record of a passage has nowhere at all. The store already held the source facts and the revision, and splitting the adaptation from them gave the bump review two files to read and one of them optional.
+
+### A `source:` marker in the artifact, with the store as the definition
+
+Rejected. The marker repeats a fact the store owns, so the gate could not adjudicate a disagreement between the two copies, and the artifact would carry a field pi does not read. The single direction is what makes the check possible: the store names a path, and the path is checked against the tree.
+
+### A `home-grown` source so the store covers every skill
+
+Rejected. It would make the store a registry, which requires `url`, `license`, `copyright`, `origin` and `base` to be null for artifacts that have no provenance to record. Coverage of that kind answers no question a bump asks.
+
+### Let an edge carry no commit, for a fork whose revision was never recorded
+
+Rejected. The `principle-guard-the-context-window` fork was installed by hand from the pstack set with no revision recorded, and its edge pins the last upstream commit before the skill entered the tree. `origin` records the first pinned revision, which is the first taken-from revision only when the fork recorded one; the edge's `record.source` says so where the bump review reads it. A nullable commit would put that caveat in the schema instead of in the note.
+
+### Keep the bump a skill, and fork-and-strip a pattern under another skill
+
+Rejected. The bump and fork-and-strip are the same usage - operator-directed, one artifact, steps with a done-check - so they take the same form, and both now sit under `skill-fork` as its patterns. A pattern has no description, which is why the two acts need no single description that names both.
 
 ## 2026-11-01 -- The gate validates the store, and no command writes it
 
@@ -115,7 +145,7 @@ Rejected for the same reason as the catalog-only check: the manifest is keyed by
 
 ## 2026-10-29 -- A skill may pin its own source revision
 
-**Decision:** A skill entry may pin its own `upstream_revision`, `upstream_revision_date` and `import_commit`. The source row keeps the source identity and its default revision; the skill's values override the default for that skill alone. `writing-for-agents` is the first case: the `mattpocock-skills` row stays at `62f43a1` for the four earlier forks, and the writing entry pins `5beb35b0` (2026-10-19) with its own import commit `0ec59c6a`. The source URL, license and copyright stay on the source row; the skill record points at that row by id. The catalog entry is in `src/reasoning/agent/skills/source-catalog.json`, and the writing record is in [`writing-for-agents/MAINTENANCE.md`](../../src/reasoning/agent/skills/writing-for-agents/MAINTENANCE.md).
+**Decision:** A skill entry may pin its own `upstream_revision`, `upstream_revision_date` and `import_commit`. The source row keeps the source identity and its default revision; the skill's values override the default for that skill alone. `writing-for-agents` is the first case: the `mattpocock-skills` row stays at `62f43a1` for the four earlier forks, and the writing entry pins `5beb35b0` (2026-10-19) with its own import commit `0ec59c6a`. The source URL, license and copyright stay on the source row; the skill record points at that row by id. The catalog entry is in `src/reasoning/agent/skills/source-catalog.json`, and the writing record is in `writing-for-agents/MAINTENANCE.md`.
 
 **Rationale:** One source can be imported more than once at different upstream revisions. A single source revision cannot be true for the four older forks and the later writing skill at once. A second source row would duplicate the URL, license and copyright and would split one upstream into two identities. The per-skill override keeps the source facts at their one home and records the revision where it differs. The local import commit is not the source revision; the writing entry records both, as the earlier entry requires for the source row.
 

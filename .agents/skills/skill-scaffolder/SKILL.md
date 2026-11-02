@@ -1,6 +1,6 @@
 ---
 name: skill-scaffolder
-description: Automates the creation of a new agent Skill by generating directories and SKILL.md templates, and reviews a skill against the bars it was written to. Use when the user asks to create, scaffold, or clone a skill, or to review one for rule loss and length.
+description: "Writes a new agent skill - the steps, the signpost, the body and the file - and reviews a skill against the bars it was written to. Use when the user asks to create or scaffold a skill, or to review one for rule loss and length. A skill installed from upstream belongs to the `skill-fork` skill."
 ---
 
 # Skill Scaffolder Workflow
@@ -9,7 +9,7 @@ You are an expert at creating reusable agent Skills. When the user asks to creat
 
 ## Workflow Steps
 
-1. **Clarify Intent:** Ask the user what specific workflow, constraints, or task they want the new skill to specialize in. When the new skill wraps a script or a command, read [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md): the skill turns an underspecified intent into a call and stops at the command line; the script owns the call. When the request is to install or adapt an upstream skill, read [`patterns/fork-and-strip.md`](patterns/fork-and-strip.md) before step 2: the source pin, the strip and the maintenance record are part of the intent.
+1. **Clarify Intent:** Ask the user what specific workflow, constraints, or task they want the new skill to specialize in. When the new skill wraps a script or a command, read [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md): the skill turns an underspecified intent into a call and stops at the command line; the script owns the call. When the request is to install or adapt an upstream skill, hand it to the `skill-fork` skill: a fork inherits its content rather than inventing it, and the edge it registers is that skill's to write.
 2. **Determine Target Path:** Ask where the skill is delivered from.
    - Every session, from the config home: `src/reasoning/providers/pi/config/agent/skills/<kebab-case-name>/SKILL.md`. The image seeds it to `$AGENT_HOME/agent/skills/` at every start.
    - Every session, from a module's payload: `workflow/<module>/skills/<kebab-case-name>/SKILL.md`.
@@ -43,8 +43,6 @@ A skill may carry siblings beside `SKILL.md`. The `SKILL.md` index names each on
 | File | Open when |
 |---|---|
 | [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | the content grows past one body and you must decide what stays inline and what becomes a sibling |
-| [`patterns/fork-and-strip.md`](patterns/fork-and-strip.md) | the skill is an upstream skill being installed or adapted |
-| [`patterns/provider-artifacts.md`](patterns/provider-artifacts.md) | the fork's inventory step needs the list of provider-specific artifacts |
 | [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | the new skill wraps a script or a command with a fixed call shape |
 | [`patterns/signposting.md`](patterns/signposting.md) | the new skill's name or description is being chosen, or an existing signpost is reviewed |
 | [`runbook/review.md`](runbook/review.md) | a skill has just been written, or a skill or prompt is about to change, and it needs the rule-loss and length review |

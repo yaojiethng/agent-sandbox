@@ -9,8 +9,8 @@
 #   collision      -- one name in two layers fails and names both
 #   forbidden link -- an agent-sandbox link into the provider layer fails
 #   broken link    -- a relative link with no target fails
-#   warning        -- an agent-sandbox skill without MAINTENANCE.md passes with
-#                     a warning
+#   no record      -- an agent-sandbox skill with no record file passes, because
+#                     provenance is opt-in bump data and the gate does not ask for it
 #   empty tree     -- four declared layers holding no skill fail
 #   repository     -- the real tree is clean across four layers
 
@@ -51,24 +51,6 @@ $body
 EOF
 }
 
-write_record() {
-  local dir="$1"
-  cat >"$dir/MAINTENANCE.md" <<'EOF'
-# Maintenance record
-
-## Source
-
-Home-grown.
-
-## Adapted
-
-None.
-
-## Name
-
-The skill name.
-EOF
-}
 
 # make_fixture -- one skill in each layer the table declares, plus a project
 # skill that links into a shipped layer.
@@ -82,7 +64,6 @@ make_fixture() {
   agent="$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill"
   write_skill "$project" project-skill "Project skill." \
     "See [the agent skill]($(relative_to "$project" "$agent/SKILL.md"))."
-  write_record "$agent"
   printf '%s\n' "$root"
 }
 
@@ -130,13 +111,12 @@ test_a_broken_link_fails() {
   assert_contains "$out" "does not resolve" "the finding names the missing target"
 }
 
-test_a_missing_record_is_a_warning() {
+test_a_skill_with_no_record_passes() {
   local root out rc
   root="$(make_fixture)"
-  rm "$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill/MAINTENANCE.md"
   out="$(run_map "$root")"; rc=$?
-  assert_rc 0 "$rc" "a missing agent-sandbox record is a warning, not a hard finding"
-  assert_contains "$out" "warning: agent-sandbox: 'agent-sandbox-skill' has no MAINTENANCE.md" "the warning names the skill"
+  assert_rc 0 "$rc" "a skill with no record file passes"
+  assert_not_contains "$out" "MAINTENANCE" "nothing asks for a record file"
 }
 
 test_an_empty_tree_fails() {
@@ -162,7 +142,7 @@ run_test test_clean_fixture_passes
 run_test test_a_collision_fails_and_names_both_layers
 run_test test_a_shipped_link_outside_its_layer_fails
 run_test test_a_broken_link_fails
-run_test test_a_missing_record_is_a_warning
+run_test test_a_skill_with_no_record_passes
 run_test test_an_empty_tree_fails
 run_test test_the_repository_map_is_clean
 

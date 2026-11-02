@@ -192,7 +192,24 @@ test_a_missing_local_path_fails() {
   assert_contains "$out" "local_path src/skills/alpha does not exist" "the missing path is named"
 }
 
-test_a_duplicate_local_path_fails() {
+test_a_bad_record_field_fails() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts[0].record = { kept: 5, mine: "a field nothing reads" };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$store/test-source.json"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc 1 "$rc" "a record field that is not a string fails"
+  assert_contains "$out" "record.kept must be a non-empty string" "the bad value is named"
+  assert_contains "$out" "unknown record field mine" "the unknown field is named"
+}
+
+test_an_artifact_in_two_sources_is_allowed() {
   local root store out rc
   root="$(make_fixture)"
   store="$root/.agents/registry/sources"
@@ -216,8 +233,24 @@ test_a_duplicate_local_path_fails() {
 }
 EOF
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc 1 "$rc" "one local path under two sources fails"
-  assert_contains "$out" "local_path src/skills/alpha is already used by source" "the duplicate is named"
+  assert_rc 0 "$rc" "one artifact built from two sources passes"
+  assert_contains "$out" "clean across 2 source(s) and 3 artifact(s)" "the report counts both edges"
+}
+
+test_a_duplicate_edge_in_one_source_fails() {
+  local root store out rc
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts.push({ ...d.artifacts[0] });
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$store/test-source.json"
+  out="$(run_cli "$root" check --store "$store")"; rc=$?
+  assert_rc 1 "$rc" "the same edge twice in one source fails"
+  assert_contains "$out" "is listed twice" "the duplicate edge is named"
 }
 
 test_invalid_kind_bad_base_and_unknown_status_fail() {
@@ -584,7 +617,9 @@ test_the_gate_and_check_agree() {
 
 run_test test_clean_fixture_passes
 run_test test_a_missing_local_path_fails
-run_test test_a_duplicate_local_path_fails
+run_test test_a_bad_record_field_fails
+run_test test_an_artifact_in_two_sources_is_allowed
+run_test test_a_duplicate_edge_in_one_source_fails
 run_test test_invalid_kind_bad_base_and_unknown_status_fail
 run_test test_an_empty_source_needs_a_reason
 run_test test_format_canonicalises_without_changing_a_value

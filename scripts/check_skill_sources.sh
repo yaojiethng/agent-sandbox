@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # scripts/check_skill_sources.sh
-# The workflow skill record gate: every agent-layer skill carries a
-# `MAINTENANCE.md`, a forked record names a source id from the per-source store,
-# a home-grown record says so, and the store itself is valid and canonical. The
-# gate checks no hash and no revision, and it never fetches.
+# The source store gate: the store at .agents/registry/sources/ is what a bump
+# reads, and this gate holds it valid - schema, every edge's path and passage
+# anchor, the uniqueness of an edge's address, and each file's canonical form.
+# It asks for no record: a path with no edge is a path nobody bumps.
 #
-# The rule is stated in docs/adr/skill_source_catalog.md and the record shape in
-# the per-skill `MAINTENANCE.md` files. The scanner is
+# The rule is stated in docs/development/source_tracking.md and
+# docs/adr/skill_source_catalog.md. The scanner is
 # scripts/lint/skill_sources.mjs.
 #
 # Test seams: SKILL_SOURCE_ROOT points the tree at a fixture, and

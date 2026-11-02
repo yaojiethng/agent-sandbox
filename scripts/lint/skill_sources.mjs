@@ -1,91 +1,40 @@
-// The workflow skill record gate.
+// The source store gate.
 //
-// Every skill directory under `src/reasoning/agent/skills/` carries a
-// `MAINTENANCE.md`. The record holds `## Source`, `## Adapted` and `## Name`;
-// a forked record names a source id from the per-source store at
-// `.agents/registry/sources/`, and a home-grown record says `Source: home-grown.`
+// The store at `.agents/registry/sources/` is the record of what a bump reads:
+// an edge carries its source, the local artifact, the upstream path and the
+// revision the next merge starts from. This gate holds it valid - the schema,
+// every edge's path and passage anchor, the uniqueness of an edge's address, and
+// each file's canonical form - so a bump cannot start from a broken record.
 //
-// The gate checks the records, the source ids, and the store itself: its schema,
-// its paths, its uniqueness rules and its canonical form. It checks no hash and
-// no revision, and it never fetches, so a pinned store is not a drift alarm.
+// It is not a registry and it checks no completeness: a path with no edge is a
+// path nobody bumps. It checks no hash and no revision, and it never fetches, so
+// a pinned store is not a drift alarm.
 //
 // Test seams: SKILL_SOURCE_ROOT points the tree at a fixture, and
 // SKILL_SOURCE_STORE points the store at a fixture.
 //
 // Exit codes: 0 = clean, 1 = findings or the store cannot be read.
 
-import { existsSync, readFileSync } from "fs";
-import { dirname, join, resolve, basename } from "path";
+import { resolve } from "path";
+import { dirname } from "path";
 import { fileURLToPath } from "url";
 
-import { LAYERS, discoverSkillDirs } from "../skill_layers.mjs";
-import { STORE_REL, collectFindings, readStore, storeIds } from "../skill_store.mjs";
+import { STORE_REL, collectFindings, readStore } from "../skill_store.mjs";
 
 const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ROOT = process.env.SKILL_SOURCE_ROOT
   ? resolve(process.env.SKILL_SOURCE_ROOT)
   : MODULE_ROOT;
-const SKILLS_ROOT = join(ROOT, LAYERS.find((layer) => layer.name === "agent-sandbox").source);
 const STORE = process.env.SKILL_SOURCE_STORE
   ? resolve(process.env.SKILL_SOURCE_STORE)
-  : join(ROOT, STORE_REL);
-const FINDINGS = [];
+  : join_root();
 
-const finding = (path, message) => FINDINGS.push(`${path}: ${message}`);
-
-/** Every skill directory under the agent layer, by pi's no-recurse rule. */
-function skillDirs() {
-  return discoverSkillDirs(SKILLS_ROOT).sort();
+function join_root() {
+  return resolve(ROOT, STORE_REL);
 }
 
-/** The store's own validity, its canonical form, and the ids the records name.
- * The rules are `scripts/skill_store.mjs`'s; this is one of its two callers, the
- * other being `source-bump check`. */
-function sourceIds() {
-  const { entries, findings } = readStore(STORE);
-  for (const entry of findings) FINDINGS.push(entry);
-  for (const entry of collectFindings(entries, { root: ROOT })) FINDINGS.push(entry);
-  return storeIds(entries);
-}
-
-function checkRecords(ids) {
-  const dirs = skillDirs();
-  if (dirs.length === 0) {
-    finding(SKILLS_ROOT, "the agent skill layer holds no skill directory");
-    return;
-  }
-  for (const dir of dirs) {
-    const name = basename(dir);
-    const record = join(dir, "MAINTENANCE.md");
-    if (!existsSync(record)) {
-      finding(record, `skill ${name} has no MAINTENANCE.md record`);
-      continue;
-    }
-    const text = readFileSync(record, "utf8");
-    const lines = text.split("\n");
-    for (const heading of ["## Source", "## Adapted", "## Name"]) {
-      if (!lines.includes(heading)) {
-        finding(record, `skill ${name} record is missing '${heading}'`);
-      }
-    }
-    if (!/^Source:/m.test(text)) {
-      finding(record, `skill ${name} record is missing its Source line`);
-      continue;
-    }
-    if (/^Source:\s*home-grown\b/m.test(text)) continue;
-    const match = text.match(/^Source:\s*`([^`]+)`/m);
-    if (!match) {
-      finding(record, `skill ${name} record must name a source id or state home-grown`);
-      continue;
-    }
-    if (!ids.has(match[1])) {
-      finding(record, `skill ${name} record names source ${match[1]}, which is not in the store`);
-    }
-  }
-}
-
-const ids = sourceIds();
-checkRecords(ids);
+const { entries, findings } = readStore(STORE);
+const FINDINGS = [...findings, ...collectFindings(entries, { root: ROOT })];
 
 if (FINDINGS.length > 0) {
   for (const entry of FINDINGS) console.error(entry);
@@ -93,6 +42,8 @@ if (FINDINGS.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `skill sources: clean across ${skillDirs().length} skill record(s) and ${ids.size} source(s)`,
+const artifacts = entries.reduce(
+  (total, entry) => total + (Array.isArray(entry.source?.artifacts) ? entry.source.artifacts.length : 0),
+  0,
 );
+console.log(`skill sources: clean across ${entries.length} source(s) and ${artifacts} artifact(s)`);

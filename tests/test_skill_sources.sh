@@ -1,25 +1,21 @@
 #!/usr/bin/env bash
 # tests/test_skill_sources.sh
-# The workflow skill record gate: every agent-layer skill carries a record, a
-# forked record names a source in the per-source store, and a home-grown record
-# says so. The gate carries no hash and no catalog.
+# The source store gate: the store is the record a bump reads, and the gate
+# holds it valid - schema, paths, anchors, edge addresses and canonical form. It
+# asks for no record: a path with no edge is a path nobody bumps.
 #
 # Covers:
-#   clean          -- two records naming one source pass
-#   missing record -- a skill without MAINTENANCE.md fails
-#   home-grown     -- a record that states home-grown is accepted
-#   unknown source -- a record naming a missing source fails
-#   tree skill     -- a skill with no record fails even when the store is clean
-#   repository     -- every agent-layer skill carries a record that resolves
-#   nested skill   -- pi does not discover a nested SKILL.md under a parent that
-#                     already has one
-#   grouped skill  -- a skill under a directory with no SKILL.md is discovered
-#   empty layer    -- a tree with no skill directory fails instead of passing
-#   store identity -- a malformed id, a filename mismatch and a duplicate id,
+#   clean          -- a canonical store with one edge passes
+#   no edge        -- a skill with no edge passes, because provenance is opt-in
+#   absent path    -- an edge whose local_path is gone fails
+#   no SKILL.md    -- a skill edge whose directory holds no SKILL.md fails
+#   anchor         -- an anchor absent from its file, or present twice, fails
+#   composite      -- one local_path under two sources passes
+#   duplicate edge -- the same edge twice in one source fails
+#   canonical form -- a store file that is not canonical fails
+#   repository     -- the real store is clean
+#   identity       -- a malformed id, a filename mismatch and a duplicate id,
 #                     each reported once
-#   store rules    -- an unknown field, a local_path that is gone and a file
-#                     that is not canonical each fail the gate
-#   duplicate path -- one local_path under two sources fails the gate
 
 set -uo pipefail
 
@@ -29,60 +25,64 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 SCANNER="$REPO_ROOT/scripts/lint/skill_sources.mjs"
-LOADER="$REPO_ROOT/tests/skill_source_loader.mjs"
+A=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+B=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
-# make_fixture -- two skill records naming one source in the store.
+skill() {
+  local dir="$1" name="$2"
+  mkdir -p "$dir"
+  printf '%s\n' '---' "name: $name" "description: The $name skill." '---' '' "$name." >"$dir/SKILL.md"
+}
+
+source_file() {
+  local store="$1" id="$2"; shift 2
+  printf '{\n  "schema": 1,\n  "id": "%s",\n  "url": "https://example.test/%s",\n  "license": "MIT",\n  "copyright": "Copyright Test",\n  "artifacts": [\n%s\n  ]\n}\n' \
+    "$id" "$id" "$(printf '%s' "$*" | sed 's/^/    /; s/^     /    /')" >"$store/$id.json"
+}
+
+edge() {
+  local local_path="$1" kind="$2" extra="${3:-}"
+  printf '{\n  "local_path": "%s",\n  "kind": "%s",\n  "parent": null,\n  "upstream_path": "upstream/%s",\n  "origin": "%s",\n  "base": "%s"%s\n}' \
+    "$local_path" "$kind" "$(basename "$local_path")" "$A" "$A" "$extra"
+}
+
+# make_fixture -- a tree with one skill and an instruction file, and a canonical
+# store holding one skill edge and one passage edge.
 make_fixture() {
   local root="$FIXTURE_DIR/tree" store
   store="$root/.agents/registry/sources"
-  mkdir -p "$root/src/reasoning/agent/skills/alpha" \
-    "$root/src/reasoning/agent/skills/beta" "$store"
+  mkdir -p "$store"
+  skill "$root/src/reasoning/agent/skills/alpha" alpha
+  skill "$root/src/reasoning/agent/skills/beta" beta
+  printf '%s\n' '# Layer' '' 'When writing code, take the first rung that holds.' '' 'Done.' \
+    >"$root/AGENTS.md"
 
-  printf '%s\n' '---' 'name: alpha' 'description: The alpha skill.' '---' '' 'Alpha.' \
-    >"$root/src/reasoning/agent/skills/alpha/SKILL.md"
-  printf '%s\n' '---' 'name: beta' 'description: The beta skill.' '---' '' 'Beta.' \
-    >"$root/src/reasoning/agent/skills/beta/SKILL.md"
-
-  cat >"$root/src/reasoning/agent/skills/alpha/MAINTENANCE.md" <<'EOF'
-# Maintenance record
-
-## Source
-
-Source: `test-source`; see [`NOTICE`](../NOTICE).
-
-## Adapted
-
-Kept.
-
-## Name
-
-alpha
-EOF
-  cat >"$root/src/reasoning/agent/skills/beta/MAINTENANCE.md" <<'EOF'
-# Maintenance record
-
-## Source
-
-Source: `test-source`; see [`NOTICE`](../NOTICE).
-
-## Adapted
-
-Kept.
-
-## Name
-
-beta
-EOF
-
-  cat >"$store/test-source.json" <<'EOF'
+  cat >"$store/test-source.json" <<EOF
 {
   "schema": 1,
   "id": "test-source",
   "url": "https://example.test/source",
   "license": "MIT",
   "copyright": "Copyright Test",
-  "reason": "The fixture has no forked artifact.",
-  "artifacts": []
+  "artifacts": [
+    {
+      "local_path": "AGENTS.md",
+      "kind": "instruction",
+      "parent": null,
+      "upstream_path": "AGENTS.md",
+      "origin": "$A",
+      "base": "$A",
+      "anchor": "When writing code, take the first rung that holds."
+    },
+    {
+      "local_path": "src/reasoning/agent/skills/alpha",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/alpha",
+      "origin": "$A",
+      "base": "$A"
+    }
+  ]
 }
 EOF
   printf '%s\n' "$root"
@@ -93,226 +93,152 @@ run_gate() {
   SKILL_SOURCE_ROOT="$root" node "$SCANNER" 2>&1
 }
 
-test_clean_fixture_passes() {
+test_a_clean_store_passes() {
   local root out rc
   root="$(make_fixture)"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 0 "$rc" "two records naming one source pass"
-  assert_contains "$out" "clean across 2 skill record(s) and 1 source(s)" "the report counts records and sources"
+  assert_rc 0 "$rc" "a canonical store with two edges passes"
+  assert_contains "$out" "clean across 1 source(s) and 2 artifact(s)" "the report counts sources and edges"
 }
 
-test_a_missing_record_fails() {
+test_a_skill_with_no_edge_passes() {
   local root out rc
   root="$(make_fixture)"
-  rm "$root/src/reasoning/agent/skills/beta/MAINTENANCE.md"
+  skill "$root/src/reasoning/agent/skills/gamma" gamma
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a skill without a record fails"
-  assert_contains "$out" "skill beta has no MAINTENANCE.md record" "the missing record is named"
+  assert_rc 0 "$rc" "an unrecorded skill is not a finding"
+  assert_not_contains "$out" "gamma" "nothing names the skill nobody bumps"
 }
 
-test_a_home_grown_record_is_accepted() {
+test_an_absent_local_path_fails() {
   local root out rc
   root="$(make_fixture)"
-  mkdir -p "$root/src/reasoning/agent/skills/gamma"
-  printf '%s\n' '---' 'name: gamma' 'description: A home-grown skill.' '---' '' 'Gamma.' \
-    >"$root/src/reasoning/agent/skills/gamma/SKILL.md"
-  cat >"$root/src/reasoning/agent/skills/gamma/MAINTENANCE.md" <<'EOF'
-# Maintenance record
-
-## Source
-
-Source: home-grown. No upstream.
-
-## Adapted
-
-Home-grown.
-
-## Name
-
-gamma
-EOF
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts[1].local_path = "src/reasoning/agent/skills/gone";
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$root/.agents/registry/sources/test-source.json"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 0 "$rc" "a home-grown record passes"
-  assert_contains "$out" "clean across 3 skill record(s) and 1 source(s)" "the home-grown skill is not in the source count"
+  assert_rc 1 "$rc" "an edge whose artifact is gone fails"
+  assert_contains "$out" "local_path src/reasoning/agent/skills/gone does not exist" "the absent path is named"
 }
 
-test_a_record_naming_an_unknown_source_fails() {
+test_a_skill_edge_needs_a_skill_md() {
   local root out rc
   root="$(make_fixture)"
-  mkdir -p "$root/src/reasoning/agent/skills/gamma"
-  printf '%s\n' '---' 'name: gamma' 'description: A skill with an unknown source.' '---' '' 'Gamma.' \
-    >"$root/src/reasoning/agent/skills/gamma/SKILL.md"
-  cat >"$root/src/reasoning/agent/skills/gamma/MAINTENANCE.md" <<'EOF'
-# Maintenance record
-
-## Source
-
-Source: `missing-source`; see the store.
-
-## Adapted
-
-Kept.
-
-## Name
-
-gamma
-EOF
+  rm "$root/src/reasoning/agent/skills/alpha/SKILL.md"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a record naming an unknown source fails"
-  assert_contains "$out" "names source missing-source, which is not in the store" "the unknown source is named"
+  assert_rc 1 "$rc" "a skill edge whose directory has no SKILL.md fails"
+  assert_contains "$out" "has no SKILL.md" "the missing entry point is named"
 }
 
-test_a_tree_skill_without_a_record_fails() {
+test_a_broken_anchor_fails() {
   local root out rc
   root="$(make_fixture)"
-  mkdir -p "$root/src/reasoning/agent/skills/gamma"
-  printf '%s\n' '---' 'name: gamma' 'description: A skill with no record.' '---' '' 'Gamma.' \
-    >"$root/src/reasoning/agent/skills/gamma/SKILL.md"
+  printf '%s\n' '# Layer' '' 'The passage moved.' '' 'Done.' >"$root/AGENTS.md"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a skill with no record fails even when the store is clean"
-  assert_contains "$out" "skill gamma has no MAINTENANCE.md record" "the tree-wide finding names the skill"
-}
+  assert_rc 1 "$rc" "an anchor absent from its file fails"
+  assert_contains "$out" "anchor does not occur in AGENTS.md" "the absent anchor is named"
 
-test_the_repository_records_are_clean() {
-  local out rc
-  out="$(node "$SCANNER" 2>&1)"; rc=$?
-  assert_rc 0 "$rc" "the repository records pass"
-  assert_contains "$out" "clean across" "the live tree reports a clean run"
-  assert_not_contains "$out" "finding:" "the live tree reports no finding"
-  assert_contains "$out" "skill record(s)" "the report counts records rather than naming a size"
-}
-
-test_a_grouped_skill_is_discovered() {
-  local root out rc
-  root="$(make_fixture)"
-  mkdir -p "$root/src/reasoning/agent/skills/group/gamma"
-  printf '%s\n' '---' 'name: gamma' 'description: A grouped skill.' '---' '' 'Gamma.' \
-    >"$root/src/reasoning/agent/skills/group/gamma/SKILL.md"
+  printf '%s\n' '# Layer' '' 'Take the first rung.' 'Take the first rung.' >"$root/AGENTS.md"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts[0].anchor = "Take the first rung.";
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$root/.agents/registry/sources/test-source.json"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a skill grouped under a non-skill directory is scanned"
-  assert_contains "$out" "skill gamma has no MAINTENANCE.md record" "the grouped skill's missing record is named"
+  assert_rc 1 "$rc" "an anchor that occurs twice fails"
+  assert_contains "$out" "it must be unique" "the ambiguity is named"
 }
 
-test_an_empty_skill_layer_fails() {
-  local root="$FIXTURE_DIR/empty" out rc
-  mkdir -p "$root/.agents/registry/sources"
-  out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a tree with no skill directory fails"
-  assert_contains "$out" "the agent skill layer holds no skill directory" "the empty layer is named"
-}
-
-test_the_store_identity_rules_are_reported_once() {
+test_one_artifact_in_two_sources_passes() {
   local root out rc store
   root="$(make_fixture)"
   store="$root/.agents/registry/sources"
-  printf '%s\n' '{"schema":1,"id":"Bad_Id","url":"https://example.test/a","license":"MIT","copyright":"C","reason":"r","artifacts":[]}' \
-    >"$store/Bad_Id.json"
-  printf '%s\n' '{"schema":1,"id":"other-id","url":"https://example.test/b","license":"MIT","copyright":"C","reason":"r","artifacts":[]}' \
-    >"$store/mismatched.json"
-  cp "$store/test-source.json" "$store/copied-source.json"
-  out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a store with bad ids fails"
-  assert_contains "$out" "Bad_Id.json: id must be a lowercase source id" "a malformed id is named"
-  assert_contains "$out" "mismatched.json: id other-id does not match the filename mismatched" "a filename mismatch is named"
-  assert_contains "$out" "id test-source is already used by" "a duplicate id is named"
-  local counted
-  counted="$(printf '%s\n' "$out" | grep -c 'id must be a lowercase source id')"
-  if [[ "$counted" == "1" ]]; then
-    pass "a malformed id is reported once, not once per validator"
-  else
-    fail "the malformed id was reported $counted times"
-  fi
-}
-
-test_a_nested_skill_is_not_discovered() {
-  local root out rc
-  root="$FIXTURE_DIR/loader"
-  mkdir -p "$root/code-review/nested-child"
-  printf '%s\n' '---' 'name: code-review' 'description: The parent skill.' '---' '' 'Parent.' \
-    >"$root/code-review/SKILL.md"
-  printf '%s\n' '---' 'name: nested-child' 'description: The nested child.' '---' '' 'Child.' \
-    >"$root/code-review/nested-child/SKILL.md"
-  out="$(node "$LOADER" "$root" 2>&1)"; rc=$?
-  assert_rc 0 "$rc" "the loader probe runs"
-  assert_contains "$out" "code-review" "the parent skill is discovered"
-  assert_not_contains "$out" "nested-child" "a nested SKILL.md is not discovered under a skill root"
-}
-
-test_the_store_rules_fail_the_gate() {
-  local root out rc store
-  root="$(make_fixture)"
-  store="$root/.agents/registry/sources"
-  cat >"$store/test-source.json" <<'EOF'
+  cat >"$store/other-source.json" <<EOF
 {
   "schema": 1,
-  "id": "test-source",
-  "url": "https://example.test/source",
+  "id": "other-source",
+  "url": "https://example.test/other",
   "license": "MIT",
-  "copyright": "Copyright Test",
-  "status": "live",
-  "artifacts": [
-    {
-      "local_path": "src/reasoning/agent/skills/absent",
-      "kind": "skill",
-      "parent": null,
-      "upstream_path": "skills/absent",
-      "origin": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-    }
-  ]
-}
-EOF
-  out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "a store the validator rejects fails the gate"
-  assert_contains "$out" "unknown field status" "an unknown field is named"
-  assert_contains "$out" "local_path src/reasoning/agent/skills/absent does not exist" "the absent path is named"
-  assert_contains "$out" "is not in canonical form" "the hand-written file is named"
-}
-
-test_a_duplicate_local_path_fails_the_gate() {
-  local root out rc store
-  root="$(make_fixture)"
-  store="$root/.agents/registry/sources"
-  # The same path in two sources. other-source sorts first, so test-source
-  # reports the collision.
-  for id in other-source test-source; do
-    cat >"$store/$id.json" <<EOF
-{
-  "schema": 1,
-  "id": "$id",
-  "url": "https://example.test/$id",
-  "license": "MIT",
-  "copyright": "Copyright Test",
+  "copyright": "Copyright Other",
   "artifacts": [
     {
       "local_path": "src/reasoning/agent/skills/alpha",
       "kind": "skill",
       "parent": null,
-      "upstream_path": "skills/alpha",
-      "origin": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "upstream_path": "skills/alpha-half",
+      "origin": "$B",
+      "base": "$B"
     }
   ]
 }
 EOF
-  done
   out="$(run_gate "$root")"; rc=$?
-  assert_rc 1 "$rc" "one path under two sources fails the gate"
-  assert_contains "$out" "local_path src/reasoning/agent/skills/alpha is already used by source other-source" \
-    "the collision is named"
+  assert_rc 0 "$rc" "a composite artifact passes"
+  assert_contains "$out" "clean across 2 source(s) and 3 artifact(s)" "both contributions are counted"
 }
 
-run_test test_clean_fixture_passes
-run_test test_a_missing_record_fails
-run_test test_a_home_grown_record_is_accepted
-run_test test_a_record_naming_an_unknown_source_fails
-run_test test_a_tree_skill_without_a_record_fails
-run_test test_the_repository_records_are_clean
-run_test test_a_grouped_skill_is_discovered
-run_test test_an_empty_skill_layer_fails
+test_a_duplicate_edge_in_one_source_fails() {
+  local root out rc
+  root="$(make_fixture)"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts.push({ ...d.artifacts[0] });
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$root/.agents/registry/sources/test-source.json"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "the same edge twice in one source fails"
+  assert_contains "$out" "is listed twice" "the duplicate is named"
+}
+
+test_a_non_canonical_file_fails() {
+  local root out rc
+  root="$(make_fixture)"
+  node -e '
+    const fs = require("fs");
+    const p = process.argv[1];
+    const d = JSON.parse(fs.readFileSync(p, "utf8"));
+    d.artifacts[0].record = { dropped: "nothing", kept: "the method" };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
+  ' "$root/.agents/registry/sources/test-source.json"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "an unordered record fails the gate"
+  assert_contains "$out" "is not in canonical form" "the form finding names the file"
+}
+
+test_the_store_identity_rules_are_reported_once() {
+  local root out rc
+  root="$(make_fixture)"
+  printf '%s\n' '{"schema": 1, "id": "Bad_Id", "url": "https://e.test/x", "license": "MIT", "copyright": "C", "reason": "none", "artifacts": []}' \
+    >"$root/.agents/registry/sources/mismatch.json"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "a malformed id fails"
+  assert_contains "$out" "id must be a lowercase source id" "the shape is named"
+}
+
+test_the_repository_store_is_clean() {
+  local out rc
+  out="$(node "$SCANNER" 2>&1)"; rc=$?
+  assert_rc 0 "$rc" "the repository store is clean"
+  assert_contains "$out" "skill sources: clean across" "the report is printed"
+}
+
+run_test test_a_clean_store_passes
+run_test test_a_skill_with_no_edge_passes
+run_test test_an_absent_local_path_fails
+run_test test_a_skill_edge_needs_a_skill_md
+run_test test_a_broken_anchor_fails
+run_test test_one_artifact_in_two_sources_passes
+run_test test_a_duplicate_edge_in_one_source_fails
+run_test test_a_non_canonical_file_fails
 run_test test_the_store_identity_rules_are_reported_once
-run_test test_a_nested_skill_is_not_discovered
-run_test test_the_store_rules_fail_the_gate
-run_test test_a_duplicate_local_path_fails_the_gate
+run_test test_the_repository_store_is_clean
 
 test_done

@@ -4,7 +4,7 @@ reader: [maintainer]
 
 # Source Tracking
 
-**Role:** Defines the tracking store for upstream-derived workflow artifacts, the shape of one source file, the CLI that writes it, and the boundary between the CLI and the merge agent.
+**Role:** Defines the tracking store for upstream-derived workflow artifacts, the shape of one source file, the gate that holds it valid, and the boundary between the maintainer and the merge agent.
 
 The store answers one question: which upstream revision is this local artifact based on, and which revision will the next merge review? The local artifact stays in the tree and is authoritative. The store records the derivation edge; it does not build the artifact from the upstream.
 
@@ -12,9 +12,9 @@ The store answers one question: which upstream revision is this local artifact b
 
 The store is one JSON file per source at `.agents/registry/sources/<source-id>.json`. The filename is the source id. A source file is independent, so a fan-out can work one source without touching another.
 
-The store is repository-only. It does not ship into the image; the image carries the artifacts, the per-skill records and the `NOTICE`. The store is the maintainer's input for the next update, not runtime data.
+The store is repository-only. It does not ship into the image; the image carries the artifacts and the `NOTICE`. The store is the maintainer's input for the next update, not runtime data.
 
-The store is the live list. Every file it holds names a source some artifact derives from, and every forked record names the store and the shipped `NOTICE`. The source catalog is retired.
+The store is bump data, and it is opt-in. An edge exists because someone keeps that artifact current against an upstream; a path with no edge is a path nobody bumps, and nothing requires one. The artifact carries no record of its own and no provenance line, so the store is where a maintainer looks. The source catalog is retired.
 
 ## The source file
 
@@ -28,7 +28,7 @@ A source file holds the source facts and the artifact edges. It holds no hashes,
 | `license` | yes | The upstream license name. |
 | `copyright` | yes | The upstream copyright line. |
 | `reason` | only when `artifacts` is empty | Why the source has no artifact in this repository. |
-| `artifacts` | yes | The artifact edges, sorted by `local_path`. |
+| `artifacts` | yes | The artifact edges, sorted by address. |
 
 An empty source carries `artifacts: []` and a non-empty `reason`. It carries no `status` field: the source is a row a reader can find, and the reason is what makes the empty row meaningful. A non-empty source carries no `reason`.
 
@@ -62,15 +62,19 @@ An artifact edge names one local artifact, the upstream path it came from, and t
 | Field | Meaning |
 |---|---|
 | `local_path` | The artifact path from the repository root. |
-| `kind` | `skill`, `runbook` or `prompt`. |
-| `parent` | The owning skill path for a runbook; `null` for a skill or a prompt. |
+| `kind` | `skill`, `runbook`, `prompt` or `instruction`. |
+| `parent` | The owning skill path for a runbook; `null` for everything else. |
 | `upstream_path` | The artifact path in the upstream repository. |
 | `origin` | The revision the artifact was first taken from. It never changes. |
 | `base` | The upstream revision the next merge reviews. It moves after every reviewed update. |
+| `anchor` | A verbatim line of `local_path`, present only when the edge covers a passage rather than the whole file. |
+| `record` | The adaptation note, whose fields are `name`, `source`, `kept`, `rewritten`, `added` and `dropped`, each optional. |
 
-A skill and a runbook are directories with a `SKILL.md`; a prompt is a file. A runbook names its parent; a prompt names none. The CLI checks the local path against the kind, so a prompt cannot claim a directory and a skill cannot claim a loose file.
+A skill and a runbook are directories with a `SKILL.md`; a prompt and an instruction are files. A runbook names its parent; nothing else names one. The gate checks the local path against the kind, so a prompt cannot claim a directory and a skill cannot claim a loose file, and it checks an `anchor` occurs exactly once in the file it names, so a passage edge that has drifted is a finding.
 
-`origin` and `base` are full 40-character commits. The two are equal at the first fork. A merge moves `base` to the reviewed upstream revision and leaves `origin` alone. The design doc, not this store, records the adaptations and the reason a change was kept or rejected.
+`origin` and `base` are full 40-character commits. The two are equal at the first fork. A merge moves `base` to the reviewed upstream revision and leaves `origin` alone. The adaptation note is what the merge review reads before it starts: the fields name what the fork kept, changed, added and left out, and why. The design doc still holds the intent the note does not carry.
+
+One artifact may carry several edges, one per source: a skill built from three upstream skills has three contributions to describe, and each edge carries its own note. The address of an edge is the source, the `local_path` and the `anchor` together, and two edges in one source may not share it.
 
 ## The CLI
 
@@ -95,13 +99,13 @@ source-bump diff --source example-source --local src/reasoning/agent/skills/exam
 source-bump prepare --source example-source --local src/reasoning/agent/skills/example --clone <clone> --revision <commit>
 ```
 
-The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; these commands own the three inputs and the facts around them. The procedure that uses the commands is the [`source-bump` skill](../../.agents/skills/source-bump/SKILL.md).
+The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; these commands own the three inputs and the facts around them. The procedure that uses the commands is [`skill-fork/patterns/upstream-bump.md`](../../.agents/skills/skill-fork/patterns/upstream-bump.md).
 
 ## The agent and the store
 
 | Owner | Writes |
 |---|---|
-| The agent | the source file: source facts, artifact edges, `origin` and `base` |
+| The agent | the source file: source facts, artifact edges, `origin`, `base` and the adaptation note |
 | Merge agent | the local artifact and the design doc |
 | Operator | the decision to take an upstream revision and the disposition of a conflict |
 
@@ -117,10 +121,10 @@ The store does not hold a local or upstream hash. A hash is derived from the art
 
 It does not hold a patch. The diff is generated from `base` and the local artifact for the review, and applying it to a new upstream is a three-way merge, not a stored patch queue.
 
-It does not hold the adaptation prose, the design rationale or a status. Those belong to the design doc and the tree; a structured file that also carries prose cannot be validated.
+It does not hold the design rationale or a status. The adaptation note is bounded to six named fields, so it stays checkable; the reasoning behind the fork is the design doc's, and the artifact's own text is the tree's.
 
 It does not hold the artifact itself. The local tree remains authoritative and editable while the maintenance work runs.
 
 ## Migration
 
-The migration created the live source files, moved the five forked edges, retired `source-catalog.json`, and pointed the five records at the store and the shipped `NOTICE`. The record gate now checks the store as well as the records, and it checks no revision, so a bump still runs only when the operator directs it and the store stays pinned by default.
+The migration created the live source files, moved the forked edges and retired `source-catalog.json`. On 2026-11-01 the fourteen per-artifact `MAINTENANCE.md` records left the tree: eight became edges with their adaptation note, one passage edge was added for the ladder in the pi `AGENTS.md`, and six said nothing a bump could read, so they retired with the reasoning already in the handovers that wrote them. The gate now validates the store alone and asks for no record, and it checks no revision, so a bump still runs only when the operator directs it and the store stays pinned by default.

@@ -11,7 +11,14 @@
       "parent": null,
       "upstream_path": "skills/engineering/domain-modeling",
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "The skill was `domain-model` and is now `domain-modeling`, taken from the upstream rename at `a496f55`. The rename landed with this edge's bump in the same unit. Its only caller was `improve-codebase-architecture`, which took the new name there and was dropped from the tree on 2026-11-01 with `codebase-design`, because nothing invoked either.",
+        "kept": "The domain-modeling method, the glossary, the glossary-map structure, the examples, and the ADR triggers.",
+        "rewritten": "The file names are `GLOSSARY.md` and `GLOSSARY-MAP.md`, matching the upstream rename from `CONTEXT.md`. `ADR-FORMAT.md` describes this project's living decision-record format, because the upstream sequential-numbering template conflicts with the `decision-records` convention; `SKILL.md` links that convention beside it. `SKILL.md` and `GLOSSARY-FORMAT.md` carry the ASCII punctuation sweep and labeled fenced blocks.",
+        "added": "The pointer to the `decision-records` convention.",
+        "dropped": "The upstream `CONTEXT-FORMAT.md`, replaced by `GLOSSARY-FORMAT.md`, and the upstream ADR numbering and optional-section template."
+      }
     },
     {
       "local_path": "src/reasoning/agent/skills/grill-me",
@@ -19,7 +26,14 @@
       "parent": null,
       "upstream_path": "skills/productivity/grill-me",
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "`grill-me` stays. The name is the operator's phrase for the act, and the skill is still the user-invoked entry.",
+        "kept": "The user-invoked entry, the `disable-model-invocation` flag, and the instruction to invoke `grilling` for the interview.",
+        "rewritten": "The invocation names the `grilling` skill's `SKILL.md` rather than the upstream provider's Skill tool. The body carries this repository's problem-summary contract before the invocation.",
+        "added": "The three-part problem summary and the rule that every branch is tested against it. The summary was first added at commit `405cd770` and moved here when the upstream split the interview into `grilling`.",
+        "dropped": "Nothing. The upstream body is the invocation, and this repository's summary sits before it."
+      }
     },
     {
       "local_path": "src/reasoning/agent/skills/grilling",
@@ -27,7 +41,14 @@
       "parent": null,
       "upstream_path": "skills/productivity/grilling",
       "origin": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "`grilling` stays. It is the upstream name for the interview method.",
+        "kept": "The design tree, the rounds, the frontier, the recommended answer for each question, and the fact-finding rule.",
+        "rewritten": "The round glyphs are ASCII (`**Q1**` and `->`), and the sub-agent call goes through the `dispatch` skill instead of the upstream provider's sub-agent spawn.",
+        "added": "Nothing.",
+        "dropped": "The `agents/openai.yaml` provider metadata."
+      }
     },
     {
       "local_path": "src/reasoning/agent/skills/handoff",
@@ -35,7 +56,14 @@
       "parent": null,
       "upstream_path": "skills/productivity/handoff",
       "origin": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "`handoff` stays. It is the act, and the document is still for another agent to pick up.",
+        "kept": "The document requirements: summarise the conversation, name the suggested skills, reference other artifacts by path, redact sensitive information, and tailor the document to the next session.",
+        "rewritten": "The save path is `.scratchpad/handoff.md`, this repository's session scratch, rather than the OS temp directory. The suggested-skills section names the skills to read rather than a provider Skill tool.",
+        "added": "Nothing.",
+        "dropped": "The `agents/openai.yaml` provider metadata."
+      }
     },
     {
       "local_path": "src/reasoning/agent/skills/retro",
@@ -43,7 +71,14 @@
       "parent": null,
       "upstream_path": "skills/engineering/retro",
       "origin": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "`retro` stays. It is the act, and the session is still the subject.",
+        "kept": "The categories, the implementation-versus-review split, and the instruction to present candidates by severity.",
+        "rewritten": "The repository references now name `AGENTS.md`, `devlog/AGENT_FEEDBACK.md`, `docs/` and the skill trees, and the check command is `scripts/lint.sh` and `scripts/run_tests.sh`. The style guide is read from `writing-for-agents` by name.",
+        "added": "The destination for a durable candidate: `devlog/AGENT_FEEDBACK.md`, or a roadmap row when it creates work.",
+        "dropped": "`CLAUDE.md`, `CODING_STANDARDS.md` and the `agents/openai.yaml` provider metadata, which this repository does not hold."
+      }
     },
     {
       "local_path": "src/reasoning/agent/skills/setup-pre-commit",
@@ -51,7 +86,14 @@
       "parent": null,
       "upstream_path": "skills/misc/setup-pre-commit",
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "`setup-pre-commit` stays. The name is the act, and the skill is still the one that installs the hook.",
+        "kept": "The setup steps, the scripts and the notes.",
+        "rewritten": "Fenced blocks are labeled `text`. No content changed.",
+        "added": "Nothing.",
+        "dropped": "Nothing."
+      }
     },
     {
       "local_path": "src/reasoning/agent/skills/writing-for-agents",
@@ -59,7 +101,14 @@
       "parent": null,
       "upstream_path": "skills/productivity/writing-for-agents",
       "origin": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
+      "record": {
+        "name": "`writing-for-agents` stays. The name is the act, and the skill is still the reference for writing a document an agent consumes.",
+        "kept": "The writing method, the two loads, the information hierarchy, the split rules, the leading-word and pruning discipline, and `SKILL-MECHANICS.md` unchanged.",
+        "rewritten": "`SKILL.md` adds the source blockquote, names each repository principle in a code span where the upstream stood alone, and uses `->` where the upstream uses the arrow glyph. The provider-layer links a later local edit added are gone; the principle names remain inline.",
+        "added": "The source blockquote and the inline principle names.",
+        "dropped": "The repository-only links into the provider layer. The upstream method is intact."
+      }
     }
   ]
 }

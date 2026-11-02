@@ -4,6 +4,21 @@
   "url": "https://github.com/cursor/plugins",
   "license": "MIT",
   "copyright": "Copyright (c) 2026 Lauren Tan",
-  "reason": "One artifact is forked from this set, the context-window principle. The rest of the set arrives as a declared dependency rather than an ingestion, because importing it would make every agent-sandbox project assume it and unslop overlaps writing-for-agents.",
-  "artifacts": []
+  "artifacts": [
+    {
+      "local_path": "src/reasoning/providers/pi/config/agent/skills/principle-guard-the-context-window",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "harness/pstack/claude-code/skills/principle-guard-the-context-window",
+      "origin": "190d28736eff128ec94f502a22c7fe0c4b56cd37",
+      "base": "190d28736eff128ec94f502a22c7fe0c4b56cd37",
+      "record": {
+        "source": "The upstream text was installed by hand into the agent config home and carried no provenance record, so the revision it was taken from is not recorded. The skill was specialized by hand against the upstream, so the differences from this pin are that specialization rather than drift. The lineage rests on the text: the skill shares eleven six-word runs with the pstack corpus, and it is the only skill in the tree that shares anything beyond an incidental phrase. The commits above are the first pin - the last upstream commit before this skill entered the tree at `c72df68b` - and not a recorded origin.",
+        "kept": "The name, the `**Why:**` sentence, and the shape of a short principle with a pattern list. The name is kept because the judgement holds for any agentic work rather than for one surface, so it takes the bare `principle-` form under the project's suggested skill-naming scheme, `[<domain>-]principle-<judgement>`.",
+        "rewritten": "Three clauses arrived that rebutted text the file no longer contained, addressed to whoever had made the edit rather than to a reader. The upstream text asserted that the context window is finite and non-renewable within a session, which is a capacity fact an agent cannot measure, and it instructed the reader to set turn budgets and account for mechanism costs, which name no counter and no price. Both are gone. In their place is a rule that names the reading which settles the question, and a rule that makes a pass countable. The two bullets upstream dropped, routing bulk to a subagent and keeping hot content inline, are restored, because both are executable and a skill that forbids nothing is not a guard.",
+        "added": "`context.sh`, so measuring the room is a command rather than an intention. It reads the provider's own `usage.totalTokens` from `$PI_SESSION_FILE` and takes the denominator from the model catalog, so the number is measured rather than estimated. The skill is installed to `$AGENT_HOME/skills/principle-guard-the-context-window/`, which is the path `SKILL.md` names for `context.sh`.",
+        "dropped": "A stopgap note that stated the file would be overwritten by a package bump. It was false, because no package ships this skill, and it was addressed to an editor rather than to the agent reading the skill."
+      }
+    }
+  ]
 }
