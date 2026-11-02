@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 // scripts/skill_graph.mjs
 //
-// The tested provenance graph for the skill artifacts. The builder is a pure
-// function of an evidence bundle; the renderer is downstream and contains no
-// graph logic.
+// The provenance graph for the skill artifacts: where each copy came from, what
+// links across a boundary, and which copies no longer match.
+//
+// A diagnostic, not a wire contract. Its readers are an agent auditing a copy,
+// locating a skill, or exploring what a change reaches, and the operator reading
+// the render. So a question it cannot answer is a finding in the graph, never a
+// silent pass: a missing manifest, a row that reaches no root, a link whose
+// target root is absent. Nothing validates the JSON as a format, and no gate
+// runs --check, because it compares this tree with an image built from an earlier
+// commit.
 //
 // Evidence -> buildGraph() -> graph JSON -> toMermaid() -> Pele -> SVG
 //
@@ -13,10 +20,10 @@
 //   node scripts/skill_graph.mjs --check
 //   node scripts/skill_graph.mjs --evidence FILE [--json|--mermaid|--check]
 //
-// --check exits 1 on a structural finding and on drift: a copy that no longer
+// --check exits 1 on a finding from the graph or on drift: a copy that no longer
 // matches what it was made from is the fact the check exists for. The renderer
-// renders a graph with drift and fails only on a structural finding, so a diff
-// can be inspected before it blocks. An unknown image digest is a warning.
+// renders drift and fails only on a graph finding, so a diff is inspected before
+// it blocks. An unknown image digest is a warning.
 //
 // The graph is intentionally a focus view: artifact roots and the target
 // artifacts of cross-boundary links, not all 58 skills.
@@ -252,92 +259,6 @@ function rootVersion(root, evidence) {
 }
 
 
-// validateShape -- the graph against its declared contract. The schema beside
-// this script is the contract, so a field the builder adds and the schema lacks,
-// or an enum value the builder invents, is reported here rather than in a
-// second hand-written list that can drift from it.
-const SCHEMA_FILE = resolve(dirname(fileURLToPath(import.meta.url)), "skill_graph.schema.json");
-
-function typeMatches(value, type) {
-  if (type === "array") return Array.isArray(value);
-  if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value);
-  if (type === "integer") return Number.isInteger(value);
-  if (type === "null") return value === null;
-  return typeof value === type;
-}
-
-// checkShape VALUE SHAPE WHERE -- one value against one rule: the rule's own
-// scalar keywords first, then its object rules. A value of the wrong type is
-// reported and not descended into, so a broken input reads as a finding rather
-// than as a crash or a page of noise.
-const SHAPE_KEYWORDS = new Set([
-  "const",
-  "enum",
-  "type",
-  "minimum",
-  "items",
-  "properties",
-  "required",
-  "additionalProperties",
-  "$schema",
-  "title",
-  "description",
-]);
-
-function checkShape(value, shape, where, findings) {
-  if (!shape || typeof shape !== "object") return findings;
-  for (const keyword of Object.keys(shape)) {
-    if (!SHAPE_KEYWORDS.has(keyword)) findings.push(`schema: keyword '${keyword}' is not implemented`);
-  }
-  if (shape.const !== undefined && value !== shape.const) {
-    findings.push(`${where}: expected ${JSON.stringify(shape.const)}`);
-  }
-  if (Array.isArray(shape.enum) && !shape.enum.includes(value)) {
-    findings.push(`${where}: ${JSON.stringify(value)} is not one of ${shape.enum.join(", ")}`);
-  }
-  if (shape.type !== undefined) {
-    const types = [].concat(shape.type);
-    if (!types.some((type) => typeMatches(value, type))) {
-      findings.push(`${where}: must be ${types.join(" or ")}`);
-      return findings;
-    }
-  }
-  if (shape.minimum !== undefined && typeof value === "number" && value < shape.minimum) {
-    findings.push(`${where}: must be at least ${shape.minimum}`);
-  }
-  if (Array.isArray(value)) {
-    if (shape.items) {
-      value.forEach((item, index) => checkShape(item, shape.items, `${where}[${index}]`, findings));
-    }
-    return findings;
-  }
-  if (value === null || typeof value !== "object") return findings;
-  const properties = shape.properties || {};
-  for (const field of shape.required || []) {
-    if (value[field] === undefined) findings.push(`${where}: missing required field '${field}'`);
-  }
-  if (shape.additionalProperties === false) {
-    for (const field of Object.keys(value)) {
-      if (!Object.hasOwn(properties, field)) findings.push(`${where}: field '${field}' is not declared`);
-    }
-  }
-  for (const [field, rule] of Object.entries(properties)) {
-    if (value[field] === undefined) continue;
-    checkShape(value[field], rule, `${where}.${field}`, findings);
-  }
-  return findings;
-}
-
-export function validateGraph(graph) {
-  let schema;
-  try {
-    schema = JSON.parse(readFileSync(SCHEMA_FILE, "utf8"));
-  } catch (error) {
-    return [`schema: cannot read ${SCHEMA_FILE}: ${error.message}`];
-  }
-  return checkShape(graph, schema, "graph", []);
-}
-
 function nodeForRoot(root, evidence) {
   return {
     id: `root:${root.id}`,
@@ -390,6 +311,38 @@ function resolveTarget(link, root, roots, evidence) {
   return { target, targetRoot, targetSkill: skills[0] || null };
 }
 
+// The three edge kinds, each constructed with the fields its kind needs, so a
+// link without its expression or a comparison edge that disagrees with its
+// hashes cannot be written at all.
+function linkEdge(sourceId, target, link, resolution) {
+  return {
+    kind: "link",
+    from: `root:${sourceId}`,
+    to: target.id,
+    expression: link.target,
+    sourceSkill: link.fromSkill || "(root)",
+    targetSkill: resolution.skill,
+    sourceFile: link.file,
+    line: link.line,
+    resolution: resolution.namespace,
+    evidence: `${sourceId}:${link.file}:${link.line}`,
+    count: 1,
+  };
+}
+
+function compareEdge(from, to) {
+  return {
+    kind: from.sha256 === to.sha256 ? "same-content" : "drift",
+    from: from.id,
+    to: to.id,
+    evidence: `sha256:${from.sha256} / ${to.sha256}`,
+  };
+}
+
+function buildEdge(step, from, to) {
+  return { kind: step.kind, from: `root:${from.id}`, to: `root:${to.id}`, evidence: step.evidence };
+}
+
 function addNode(nodes, node) {
   if (!nodes.has(node.id)) nodes.set(node.id, node);
 }
@@ -402,10 +355,6 @@ function addEdge(edges, edge) {
   } else {
     edges.set(key, { ...edge, count: 1 });
   }
-}
-
-function compare(a, b) {
-  return a.sha256 === b.sha256 ? "same-content" : "drift";
 }
 
 // relativeToRoot -- a skill's path inside its layer root. A skill is the same
@@ -468,12 +417,7 @@ export function buildGraph(evidence) {
       } else {
         const peerNode = peerSkill ? nodeForSkill(peer, peerSkill, evidence) : nodeForRoot(peer, evidence);
         addNode(nodes, peerNode);
-        addEdge(edges, {
-          kind: compare(targetNode, peerNode),
-          from: targetNode.id,
-          to: peerNode.id,
-          evidence: `sha256:${targetNode.sha256} / ${peerNode.sha256}`,
-        });
+        addEdge(edges, compareEdge(targetNode, peerNode));
       }
     }
 
@@ -482,19 +426,13 @@ export function buildGraph(evidence) {
     if (existingLink) {
       existingLink.count++;
     } else {
-      edges.set(linkKey, {
-        kind: "link",
-        from: `root:${sourceRoot.id}`,
-        to: targetNode.id,
-        expression: link.target,
-        sourceSkill: link.fromSkill || "(root)",
-        targetSkill: resolved.targetSkill?.name || "(root)",
-        sourceFile: link.file,
-        line: link.line,
-        resolution: resolved.targetRoot.namespace,
-        evidence: `${sourceRoot.id}:${link.file}:${link.line}`,
-        count: 1,
-      });
+      edges.set(
+        linkKey,
+        linkEdge(sourceRoot.id, targetNode, link, {
+          namespace: resolved.targetRoot.namespace,
+          skill: resolved.targetSkill?.name || "(root)",
+        }),
+      );
     }
   }
 
@@ -505,18 +443,8 @@ export function buildGraph(evidence) {
       findings.push(`build: ${build.kind} '${build.from}' -> '${build.to}' names a missing root`);
       continue;
     }
-    addEdge(edges, {
-      kind: build.kind,
-      from: `root:${from.id}`,
-      to: `root:${to.id}`,
-      evidence: build.evidence,
-    });
-    addEdge(edges, {
-      kind: compare(from, to),
-      from: `root:${from.id}`,
-      to: `root:${to.id}`,
-      evidence: `sha256:${from.sha256} / ${to.sha256}`,
-    });
+    addEdge(edges, buildEdge(build, from, to));
+    addEdge(edges, compareEdge(nodes.get(`root:${from.id}`), nodes.get(`root:${to.id}`)));
   }
 
   const sortedNodes = [...nodes.values()].sort((a, b) => {
@@ -561,47 +489,12 @@ export function buildGraph(evidence) {
 export function checkGraph(graph, options = {}) {
   const findings = [...(graph.findings || [])];
   const warnings = [...(graph.warnings || [])];
-
-  // The declared shape first. A graph that violates it is not walked: the rules
-  // below assume well-typed nodes, and a walk over a broken one turns one defect
-  // into a crash or a page of noise.
-  const shape = validateGraph(graph);
-  findings.push(...shape);
-  if (shape.length === 0) checkStructure(graph, findings);
-  const drifts = shape.length === 0 ? graph.edges.filter((edge) => edge.kind === "drift") : [];
-
+  const drifts = (graph.edges || []).filter((edge) => edge.kind === "drift");
   if (!options.allowDrift && drifts.length > 0) {
     findings.push(`drift: ${drifts.length} source/image relation(s) differ`);
   }
   if (!graph.evidence?.image) warnings.push("image: no digest available; labeled image:unknown");
   return { findings, warnings, drifts };
-}
-
-// checkStructure GRAPH FINDINGS -- the rules the schema cannot state: every edge
-// endpoint exists, a link edge names its expression, and a comparison edge
-// agrees with the hashes it was computed from.
-function checkStructure(graph, findings) {
-  const ids = new Set(graph.nodes.map((node) => node.id));
-  for (const edge of graph.edges || []) {
-    if (!ids.has(edge.from) || !ids.has(edge.to)) {
-      findings.push(`edge: ${edge.kind} ${edge.from} -> ${edge.to} has a missing endpoint`);
-    }
-    if (edge.kind === "link" && !edge.expression) {
-      findings.push(`edge: link ${edge.from} -> ${edge.to} has no expression`);
-    }
-    if (edge.kind !== "same-content" && edge.kind !== "drift") continue;
-    const from = graph.nodes.find((node) => node.id === edge.from);
-    const to = graph.nodes.find((node) => node.id === edge.to);
-    if (!from || !to) continue;
-    const equal = from.sha256 === to.sha256;
-    if (edge.kind === "same-content" && !equal) {
-      findings.push(`edge: same-content ${edge.from} -> ${edge.to} has unequal hashes`);
-    }
-    if (edge.kind === "drift" && equal) {
-      findings.push(`edge: drift ${edge.from} -> ${edge.to} has equal hashes`);
-    }
-  }
-  return findings;
 }
 
 function escapeLabel(value) {

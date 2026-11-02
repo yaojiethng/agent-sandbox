@@ -12,8 +12,8 @@
 // mount. Pele defaults to <out>/vendor/pele.js; set PELE_MODULE to override.
 //
 // Exit: 0 on a rendered graph, even when the graph contains drift, so a diff can
-// be inspected before it blocks. A structural graph finding is exit 1 and the
-// graph is not rendered. `skill_graph.mjs --check` is the release check, run by
+// be inspected before it blocks. A graph finding is exit 1 and the graph is not
+// rendered. `skill_graph.mjs --check` is the release check, run by
 // hand: no gate in `scripts/lint.sh` runs it, because it compares this tree with
 // the image built from an earlier commit.
 
@@ -53,7 +53,7 @@ for (const warning of checked.warnings) console.log(`warning: ${warning}`);
 for (const drift of checked.drifts) console.log(`drift: ${drift.from} -> ${drift.to}`);
 for (const finding of checked.findings) console.error(`finding: ${finding}`);
 if (checked.findings.length > 0) {
-  console.error(`render_skill_graph: ${checked.findings.length} structural finding(s)`);
+  console.error(`render_skill_graph: ${checked.findings.length} graph finding(s)`);
   process.exit(1);
 }
 

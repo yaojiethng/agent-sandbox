@@ -7,7 +7,6 @@
 # Covers:
 #   golden graph    -- the fixture's JSON is byte-for-byte stable
 #   golden Mermaid  -- the serializer is stable
-#   schema          -- the schema parses and the graph carries the required shape
 #   separation      -- source and image target nodes are distinct
 #   resolution      -- a project relative link targets repo; an absolute /opt link targets image
 #   duplicate       -- two links from one skill to one target become one edge, count 2
@@ -27,7 +26,6 @@
 #   project copy    -- a manifest row reaching the project layer builds its copy edge
 #   other copy      -- a link to a declared destination outside /opt is kept
 #   seeded copy     -- a home copy is compared with the image it came from
-#   schema          -- a graph violating the declared contract is rejected
 #   working dir     -- the graph reads the repository, not the shell's directory
 #   render          -- Pele renders the fixture Mermaid to SVG with the labels
 
@@ -42,7 +40,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GRAPH="$REPO_ROOT/scripts/skill_graph.mjs"
 LAYERS="$REPO_ROOT/scripts/skill_layers.mjs"
 RENDERER="$REPO_ROOT/scripts/render_skill_graph.mjs"
-SCHEMA="$REPO_ROOT/scripts/skill_graph.schema.json"
 FIXTURES="$REPO_ROOT/tests/fixtures/skill_graph"
 BASE="$FIXTURES/base.json"
 EXPECTED_JSON="$FIXTURES/base.expected.json"
@@ -92,14 +89,6 @@ test_golden_mermaid_is_stable() {
     pass "the fixture Mermaid matches the golden source"
   else
     fail "the fixture Mermaid differs from the golden source (see /tmp/skill_graph_mermaid.diff)"
-  fi
-}
-
-test_schema_parses() {
-  if node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$SCHEMA" 2>/dev/null; then
-    pass "the graph schema parses"
-  else
-    fail "the graph schema does not parse"
   fi
 }
 
@@ -329,41 +318,6 @@ test_a_seeded_copy_is_compared_with_its_source() {
   assert_not_contains "$out" '"to": "skill:repo:provider:probe-skill"' "the home copy is not compared with the repository copy"
 }
 
-test_the_schema_rejects_an_invalid_graph() {
-  local out
-  out="$(GRAPH_MODULE="$REPO_ROOT/scripts/skill_graph.mjs" GRAPH_FILE="$EXPECTED_JSON" node -e '
-    const fs = require("fs");
-    const { pathToFileURL } = require("url");
-    import(pathToFileURL(process.env.GRAPH_MODULE).href).then(({ checkGraph }) => {
-      const graph = JSON.parse(fs.readFileSync(process.env.GRAPH_FILE, "utf8"));
-      graph.nodes[0].namespace = "bogus";
-      graph.nodes[1].kind = "widget";
-      graph.nodes[2].unexpected = true;
-      graph.edges[0].line = "not a number";
-      delete graph.summary.drift;
-      graph.edges[0].count = 0;
-      graph.findings = [42];
-      graph.evidence = null;
-      console.log(checkGraph(graph, { allowDrift: true }).findings.join("\n"));
-      const broken = { ...graph, nodes: null };
-      console.log(checkGraph(broken, { allowDrift: true }).findings.join("\n"));
-      const brokenEdges = { ...graph, edges: [null] };
-      console.log(checkGraph(brokenEdges, { allowDrift: true }).findings.join("\n"));
-    });
-  ' 2>&1)"
-  assert_contains "$out" "is not one of repo, image, host" "an invalid namespace is rejected"
-  assert_contains "$out" 'expected "artifact"' "an invalid kind is rejected"
-  assert_contains "$out" "field 'unexpected' is not declared" "an undeclared field is rejected"
-  assert_contains "$out" "line: must be integer" "a mistyped field is rejected"
-  assert_contains "$out" "summary: missing required field 'drift'" "a required field of a nested object is enforced"
-  assert_contains "$out" "count: must be at least 1" "a numeric minimum is enforced"
-  assert_contains "$out" "findings[0]: must be string" "an item rule is enforced"
-  assert_contains "$out" "evidence: must be object" "a wrong-typed object is reported, not descended into"
-  assert_contains "$out" "graph.nodes: must be array" "a null node list is a shape finding"
-  assert_not_contains "$out" "missing endpoint" "a malformed graph is not walked"
-  assert_contains "$out" "graph.edges[0]: must be object" "a malformed edge list is a shape finding, not a crash"
-}
-
 # write_manifest ROOT IMAGE HOME -- the manifest rows the collector reads: the
 # image rows for the two shipped layers, the provider home, and its provision row.
 write_manifest() {
@@ -464,7 +418,6 @@ test_pele_renders_the_fixture() {
 
 run_test test_golden_graph_is_stable
 run_test test_golden_mermaid_is_stable
-run_test test_schema_parses
 run_test test_source_and_image_targets_are_separate
 run_test test_link_resolution_names_the_namespace
 run_test test_base_check_is_clean
@@ -484,7 +437,6 @@ run_test test_an_unresolved_agent_home_link_is_a_finding
 run_test test_a_project_image_row_builds_its_copy_edge
 run_test test_a_link_to_another_declared_destination_is_kept
 run_test test_a_seeded_copy_is_compared_with_its_source
-run_test test_the_schema_rejects_an_invalid_graph
 run_test test_the_graph_reads_the_repository_not_the_working_directory
 run_test test_pele_renders_the_fixture
 
