@@ -2,7 +2,7 @@
 date: 2026-10-31
 milestone: M3.3.3 - The skill maintenance pipeline
 type: Documentation
-status: Active
+status: Closed
 ---
 
 # Handover - Attribute the pstack lineage

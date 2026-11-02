@@ -1,5 +1,5 @@
 ---
-status: Active
+status: Closed
 milestone: M3.2.2
 type: Workflow
 date: 2026-10-29
@@ -38,7 +38,7 @@ Land the two bash rules the consolidation row says no document owns, and correct
 
 ## Decisions pending
 
-- The owner for general code-quality rules: a `patterns/` list beside a general runbook, as recommended at the scope gate, a section in `docs/development/`, or the vendored runbook. The third is refused by its own provenance line; the first two are open.
+None. The owner question was answered the same day by [`20261029-03`](20261029-03-workflow-general_code_quality_plane.md): the rule with content is the seam pattern `p-61` in `script-boundaries.md`, no vendored carrier is subsumed, and the one part still open, the `conventions.md` pointer, moved to a roadmap row at that handover's close.
 
 ## Findings
 
