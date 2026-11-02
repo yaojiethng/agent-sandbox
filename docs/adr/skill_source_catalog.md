@@ -1,6 +1,6 @@
 # The Skill Source Store
 
-**Current:** 2026-10-30
+**Current:** 2026-11-01
 
 ## Requirements
 
@@ -11,10 +11,34 @@
 | R3 | The store carries no derived data | No file hash, revision date or import commit is stored; `origin` and `base` are the only commits |
 | R4 | A regroup does not lose provenance | Moving a skill, or folding it into another skill, leaves the source edge in place and the adaptation with the surviving skill |
 | R5 | The merge base is per artifact | One source can feed artifacts at different revisions, so each edge carries its own `base` |
-| R6 | The bump is operator-directed and pinned by default | A bump runs only on the operator's direction; `source-bump check` is a validation command, not a lint gate |
+| R6 | The bump is operator-directed and pinned by default | A bump runs only on the operator's direction, and nothing in the gate compares a stored revision with upstream |
 | R7 | Attribution ships with the forks | The source URL, license and copyright reach the image in a shipped `NOTICE` |
 
-R3 replaced the retired drift rule on 2026-10-30. A historical entry below that names R3 refers to the drift rule that was current when it was written.
+R3 replaced the retired drift rule on 2026-10-30. A historical entry below that names R3 refers to the drift rule that was current when it was written. R6 was restated on 2026-11-01: the gate validates the store, and what keeps a bump operator-directed is that no check reads a revision.
+
+## 2026-11-01 -- The gate validates the store, and no command writes it
+
+**Decision:** The store is edited by hand. The record gate `scripts/check_skill_sources.sh` validates it - the schema, every edge's path, the uniqueness of `local_path` across sources, and each file's canonical form - through the rule set in `scripts/skill_store.mjs`. `source-bump add` and `source-bump record` are retired; `format` writes canonical form and sets no field value, and `check`, `diff` and `prepare` stay as they were.
+
+The earlier entry made the CLI the store's only writer. That rule held validity only on the path that went through the CLI: `source_bump check` was in no gate, so a merge, a rebase or a hand edit left the store unvalidated and nothing reported it. The write commands' refusals were the validator's own findings printed earlier, so moving the validator behind a gate loses no rule and covers every other route in.
+
+**Cost, stated:** a source fact is immutable during a bump only because the old `add` would not accept the flag. Nothing derives `url`, `license` or `copyright`, so no check can tell a deliberate change from an accidental one; review is what catches it, and the requirement R6 no longer claims otherwise.
+
+### Keep the CLI as the only writer, and add `move`
+
+Rejected. A rename would have needed a third write command, and the write surface costs a command and its tests for every act while the validator it calls already existed for `check`. The store is 3 files and 7 flat edges: no derived value, no record referencing another by id, and one cross-file rule.
+
+### Make `source-bump check` a lint gate
+
+Rejected on 2026-10-30 on R6, because a gate would "turn a pinned store into a drift alarm". That reason is about currency, and this gate holds validity: `check` never fetches, never compares a stored revision with upstream, and never reads a revision at all. The rejection does not reach the operation being gated, so R6 is restated rather than broken.
+
+### Delete the write commands and keep the CLI's validator private
+
+Rejected. The validator would then live in a command-line script that the gate imports, and the two callers could drift; `scripts/skill_store.mjs` is the reader both already share.
+
+### Write canonical form from a script outside the CLI
+
+Rejected. The gates in this repository are scanners and the writers are commands; a form writer with no command would be a second name for `format`, and `format` is already the smallest thing that satisfies the gate.
 
 ## 2026-10-30 -- The catalog retires into the per-source store
 

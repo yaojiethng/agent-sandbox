@@ -17,6 +17,9 @@
 #   empty layer    -- a tree with no skill directory fails instead of passing
 #   store identity -- a malformed id, a filename mismatch and a duplicate id,
 #                     each reported once
+#   store rules    -- an unknown field, a local_path that is gone and a file
+#                     that is not canonical each fail the gate
+#   duplicate path -- one local_path under two sources fails the gate
 
 set -uo pipefail
 
@@ -235,6 +238,70 @@ test_a_nested_skill_is_not_discovered() {
   assert_not_contains "$out" "nested-child" "a nested SKILL.md is not discovered under a skill root"
 }
 
+test_the_store_rules_fail_the_gate() {
+  local root out rc store
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  cat >"$store/test-source.json" <<'EOF'
+{
+  "schema": 1,
+  "id": "test-source",
+  "url": "https://example.test/source",
+  "license": "MIT",
+  "copyright": "Copyright Test",
+  "status": "live",
+  "artifacts": [
+    {
+      "local_path": "src/reasoning/agent/skills/absent",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/absent",
+      "origin": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}
+EOF
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "a store the validator rejects fails the gate"
+  assert_contains "$out" "unknown field status" "an unknown field is named"
+  assert_contains "$out" "local_path src/reasoning/agent/skills/absent does not exist" "the absent path is named"
+  assert_contains "$out" "is not in canonical form" "the hand-written file is named"
+}
+
+test_a_duplicate_local_path_fails_the_gate() {
+  local root out rc store
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  # The same path in two sources. other-source sorts first, so test-source
+  # reports the collision.
+  for id in other-source test-source; do
+    cat >"$store/$id.json" <<EOF
+{
+  "schema": 1,
+  "id": "$id",
+  "url": "https://example.test/$id",
+  "license": "MIT",
+  "copyright": "Copyright Test",
+  "artifacts": [
+    {
+      "local_path": "src/reasoning/agent/skills/alpha",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "skills/alpha",
+      "origin": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}
+EOF
+  done
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "one path under two sources fails the gate"
+  assert_contains "$out" "local_path src/reasoning/agent/skills/alpha is already used by source other-source" \
+    "the collision is named"
+}
+
 run_test test_clean_fixture_passes
 run_test test_a_missing_record_fails
 run_test test_a_home_grown_record_is_accepted
@@ -245,5 +312,7 @@ run_test test_a_grouped_skill_is_discovered
 run_test test_an_empty_skill_layer_fails
 run_test test_the_store_identity_rules_are_reported_once
 run_test test_a_nested_skill_is_not_discovered
+run_test test_the_store_rules_fail_the_gate
+run_test test_a_duplicate_local_path_fails_the_gate
 
 test_done

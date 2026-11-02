@@ -74,42 +74,42 @@ A skill and a runbook are directories with a `SKILL.md`; a prompt is a file. A r
 
 ## The CLI
 
-The `source-bump` command is the only writer of the tracking file. It validates before it writes, and it writes the file atomically, so a refused update leaves the previous file in place.
+The store is edited by hand. The gate in [`check_skill_sources.sh`](../../scripts/check_skill_sources.sh) validates every file and holds its canonical form, and the CLI carries the merge instruments and the two commands that report or repair the store without inventing a field: `check` prints what the gate would, and `format` writes the canonical form.
 
 | Command | Writes the store | Purpose |
 |---|---|---|
-| `source-bump check` | no | Validate every source file, every edge and every local path. |
-| `source-bump add` | yes | Create a source, create an empty source, or append one edge. |
+| `source-bump check` | no | Print every finding the gate holds: the schema, the edges, the paths and the canonical form. |
+| `source-bump format` | canonical form only | Rewrite each file in sorted, fixed-key-order, two-space form; a field value is never set. |
 | `source-bump diff` | no | Print the stored `base -> local` change from a local clone. |
 | `source-bump prepare` | no | Create a temporary `base`, `ours` and `theirs` workspace from a local clone. |
-| `source-bump record` | yes | Move one edge's `base`; `origin` is preserved. |
 
-`add` takes the source facts only when it creates the source. An existing source refuses a changed `url`, `license` or `copyright`; changing source facts is a separate decision. `add --empty` creates an empty source and requires its reason. `record` requires an existing source and an existing edge; it does not create either.
+A source fact changes only by an operator decision, and review is what catches a change to `url`, `license` or `copyright`: nothing derives them, so no check can tell a deliberate edit from an accidental one.
 
-The command never fetches and the `check` command never reads the network. A source file whose upstream is unavailable still checks against the local paths and the recorded facts. `diff` and `prepare` take a local upstream clone; they do not update it. `source-bump check` is a validation command, not a lint gate. A bump runs only when the operator directs it, and the store stays pinned by default.
+The commands never fetch and `check` never reads the network. A source file whose upstream is unavailable still checks against the local paths and the recorded facts. `diff` and `prepare` take a local upstream clone; they do not update it. A bump runs only when the operator directs it, and the store stays pinned by default.
 
 <!-- snippet: illustrative -->
 ```text
 source-bump check --store .agents/registry/sources
-source-bump add --source example-source --url https://github.com/example/skills --license MIT --copyright "Copyright Example" --local src/reasoning/agent/skills/example --kind skill --upstream skills/example --origin <commit> --base <commit>
+source-bump format --store .agents/registry/sources
 source-bump diff --source example-source --local src/reasoning/agent/skills/example --clone <clone>
 source-bump prepare --source example-source --local src/reasoning/agent/skills/example --clone <clone> --revision <commit>
-source-bump record --source example-source --local src/reasoning/agent/skills/example --base <commit>
 ```
 
-The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; this CLI owns the three inputs and the facts around them. The procedure that uses the commands is the [`source-bump` skill](../../.agents/skills/source-bump/SKILL.md).
+The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; these commands own the three inputs and the facts around them. The procedure that uses the commands is the [`source-bump` skill](../../.agents/skills/source-bump/SKILL.md).
 
-## The agent and the CLI
+## The agent and the store
 
 | Owner | Writes |
 |---|---|
-| `source-bump` CLI | the source file: source facts, artifact edges, `origin` and `base` |
+| The agent | the source file: source facts, artifact edges, `origin` and `base` |
 | Merge agent | the local artifact and the design doc |
 | Operator | the decision to take an upstream revision and the disposition of a conflict |
 
+The gate is the store's validator, so an edit is judged by what it produced rather than by which command produced it. It runs on every commit, which is the coverage a write path cannot give: a merge, a rebase and a hand edit all arrive at the same check.
+
 The tracking file and the design doc are separate artifacts. The tracking file holds machine state; the design doc holds prose: the intent, the essential changes, the rejected options and the conflict areas. Putting the design prose in the tracking file would repeat the mixed record the redesign removes.
 
-A manual edit to the tracking file is a defect even when the result parses. The CLI canonicalizes the order and validates every write; an edit the CLI did not make has no such check.
+A hand edit is the normal route, and `source-bump format` brings a file to canonical form. An edit that changed a field value is a review question, not a gate finding.
 
 ## What the store does not hold
 
@@ -117,10 +117,10 @@ The store does not hold a local or upstream hash. A hash is derived from the art
 
 It does not hold a patch. The diff is generated from `base` and the local artifact for the review, and applying it to a new upstream is a three-way merge, not a stored patch queue.
 
-It does not hold the adaptation prose, the design rationale or a status. Those belong to the design doc and the tree; a structured file that also carries prose cannot be validated by the CLI.
+It does not hold the adaptation prose, the design rationale or a status. Those belong to the design doc and the tree; a structured file that also carries prose cannot be validated.
 
 It does not hold the artifact itself. The local tree remains authoritative and editable while the maintenance work runs.
 
 ## Migration
 
-The migration has created the live source files with `add` and `add --empty`, moved the five forked edges, retired `source-catalog.json`, and pointed the five records at the store and the shipped `NOTICE`. The record gate checks the records and the known source ids. `source-bump check` stays outside lint; a bump runs only when the operator directs it, and the store stays pinned by default.
+The migration created the live source files, moved the five forked edges, retired `source-catalog.json`, and pointed the five records at the store and the shipped `NOTICE`. The record gate now checks the store as well as the records, and it checks no revision, so a bump still runs only when the operator directs it and the store stays pinned by default.

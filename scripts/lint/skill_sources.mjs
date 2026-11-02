@@ -5,9 +5,9 @@
 // a forked record names a source id from the per-source store at
 // `.agents/registry/sources/`, and a home-grown record says `Source: home-grown.`
 //
-// The gate checks the records and the source ids. It does not check the store
-// schema, a hash or a revision; the `source-bump` CLI is the store's writer and
-// validator, and a bump runs only when the operator directs it.
+// The gate checks the records, the source ids, and the store itself: its schema,
+// its paths, its uniqueness rules and its canonical form. It checks no hash and
+// no revision, and it never fetches, so a pinned store is not a drift alarm.
 //
 // Test seams: SKILL_SOURCE_ROOT points the tree at a fixture, and
 // SKILL_SOURCE_STORE points the store at a fixture.
@@ -19,7 +19,7 @@ import { dirname, join, resolve, basename } from "path";
 import { fileURLToPath } from "url";
 
 import { LAYERS, discoverSkillDirs } from "../skill_layers.mjs";
-import { STORE_REL, identityFindings, readStore, storeIds } from "../skill_store.mjs";
+import { STORE_REL, collectFindings, readStore, storeIds } from "../skill_store.mjs";
 
 const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ROOT = process.env.SKILL_SOURCE_ROOT
@@ -38,12 +38,13 @@ function skillDirs() {
   return discoverSkillDirs(SKILLS_ROOT).sort();
 }
 
-/** The source ids the per-source store declares. The store's schema is the CLI's;
- * its path, its read and its identity rules are `scripts/skill_store.mjs`'s. */
+/** The store's own validity, its canonical form, and the ids the records name.
+ * The rules are `scripts/skill_store.mjs`'s; this is one of its two callers, the
+ * other being `source-bump check`. */
 function sourceIds() {
   const { entries, findings } = readStore(STORE);
   for (const entry of findings) FINDINGS.push(entry);
-  for (const entry of identityFindings(entries)) FINDINGS.push(entry);
+  for (const entry of collectFindings(entries, { root: ROOT })) FINDINGS.push(entry);
   return storeIds(entries);
 }
 

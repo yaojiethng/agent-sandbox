@@ -2,7 +2,8 @@
 # scripts/check_skill_sources.sh
 # The workflow skill record gate: every agent-layer skill carries a
 # `MAINTENANCE.md`, a forked record names a source id from the per-source store,
-# and a home-grown record says so. The gate checks no hash and no catalog.
+# a home-grown record says so, and the store itself is valid and canonical. The
+# gate checks no hash and no revision, and it never fetches.
 #
 # The rule is stated in docs/adr/skill_source_catalog.md and the record shape in
 # the per-skill `MAINTENANCE.md` files. The scanner is

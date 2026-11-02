@@ -5,7 +5,7 @@ description: Bump a forked workflow artifact to a reviewed upstream revision. Us
 
 # Source Bump
 
-Updates one upstream-derived artifact to a reviewed upstream revision. The local artifact is authoritative; the tracking store records where it came from and which revision the next merge reviews. The CLI is the only writer of the store, and the merge is a discretionary judgement.
+Updates one upstream-derived artifact to a reviewed upstream revision. The local artifact is authoritative; the tracking store records where it came from and which revision the next merge reviews. The store is edited by hand and held valid by the gate, and the merge is a discretionary judgement.
 
 ## The boundary
 
@@ -20,11 +20,11 @@ A home-grown artifact has no edge. Stop; there is nothing to bump.
 | Command | Run from this repository |
 |---|---|
 | `source-bump check` | `node scripts/source_bump.mjs check` |
+| `source-bump format` | `node scripts/source_bump.mjs format` |
 | `source-bump diff` | `node scripts/source_bump.mjs diff --source <id> --local <path> --clone <clone>` |
 | `source-bump prepare` | `node scripts/source_bump.mjs prepare --source <id> --local <path> --clone <clone> --revision <new>` |
-| `source-bump record` | `node scripts/source_bump.mjs record --source <id> --local <path> --base <new>` |
 
-The command names are the CLI's; the invocation adds the repository's script path. The CLI is the only writer of the store.
+The command names are the CLI's; the invocation adds the repository's script path. The store is written by hand and validated by `scripts/check_skill_sources.sh`, which runs on every commit; `check` prints the same findings and `format` writes the canonical form.
 
 ## Read first
 
@@ -64,7 +64,7 @@ If an input is missing, stop and ask. Do not infer a revision, a source id, or a
 
 7. **Verify.** Run `bash scripts/lint.sh` and `bash scripts/run_tests.sh`, then the artifact's own checks. Update `MAINTENANCE.md` `## Adapted` if the adaptation changed, and update the design doc with what the merge changed. Done when the local artifact and its records are green.
 
-8. **Move the base.** Run `node scripts/source_bump.mjs record --source <id> --local <path> --base <new>`, then `node scripts/source_bump.mjs check`. Done when the edge's base is the new revision, its origin is unchanged, and no other edge moved.
+8. **Move the base.** Set the edge's `base` to the new revision in its source file, leaving `origin` and every other edge alone, then run `node scripts/source_bump.mjs format` and `node scripts/source_bump.mjs check`. Done when the edge's base is the new revision, its origin is unchanged, no other edge moved, and the check is clean.
 
 9. **Commit the bump.** Commit the local artifact, its maintenance and design records, and the source file. Use a `workflow:` subject that names the artifact and the short revision; the body states the source and the revision range. Done when the tree is clean and the commit holds the local artifact and the store, with no patch file and no generated skill.
 
@@ -76,7 +76,7 @@ A file deleted upstream is a deletion only when the local side did not change it
 
 ## The store
 
-The source facts are immutable during a bump. A changed URL, license or copyright is a separate operator decision; the CLI refuses it. The `origin` stays at the first fork; `base` moves only after the merge is green. Do not edit the JSON by hand, even when the edit parses.
+The source facts are immutable during a bump. A changed URL, license or copyright is a separate operator decision; the CLI refuses it. The `origin` stays at the first fork; `base` moves only after the merge is green.
 
 The shipped attribution is [`NOTICE`](../../../src/reasoning/agent/skills/NOTICE). The store is repository-only and does not ship. A license change updates the notice only after the operator decides it.
 
