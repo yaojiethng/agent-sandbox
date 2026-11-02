@@ -12,7 +12,7 @@ Source: `mattpocock-skills`; see [`NOTICE`](../NOTICE).
 
 **Added.** This maintenance record, the `domain-modeling` call in the grilling loop, and `disable-model-invocation: true`.
 
-**Dropped.** Nothing. `DEEPENING.md`, `INTERFACE-DESIGN.md` and `LANGUAGE.md` stay, because this repository holds no `codebase-design` skill to move them to; `SKILL.md` points at them where the upstream points at that skill.
+**Dropped.** Nothing. `DEEPENING.md`, `INTERFACE-DESIGN.md` and `LANGUAGE.md` stay, and `SKILL.md` points at them where the upstream points at the `codebase-design` skill: the copies carry the dispatch adaptation and a prose form of the vocabulary, and `.agents/skills`/`src/reasoning/agent/skills/codebase-design/` now holds the upstream skill beside them. Closing that duplication is a roadmap row.
 
 ## Name
 

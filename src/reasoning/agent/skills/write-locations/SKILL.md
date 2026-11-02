@@ -29,6 +29,8 @@ Not this: which folder a document or a record belongs to inside the repository i
 
 The harness's own roots under `/opt/` are image-owned and read-only: they are installed, never written. The manifest `src/build/container-interface.json` declares the session roots and what each holds, so it is the source the table above follows; a root the manifest does not declare is not a place to write.
 
+**The agent's home is the operator's to own and the agent's to manage.** `$AGENT_HOME/` is a write root like any other: the agent reads and writes the settings, the prompts, the skills and the model table there, and for pi that is often the interface the operator uses to control the configuration at all. The host mounts the subdirectories that must outlive a container, which is why an edit there survives a rebuild and reaches later sessions; the mount follows from that persistence rather than setting a permission. What the agent's write cannot do is reach the review: a change that belongs in the repository goes in the working tree.
+
 **Name what a location survives, and never say "durable" alone.** A file in the working tree survives the container, a file in session scratch does not survive the session, and that difference is the whole point: a session-scoped root dies with the session's volume, so it cannot carry work to the next one.
 
 ## The judgements
