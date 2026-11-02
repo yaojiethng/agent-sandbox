@@ -57,9 +57,9 @@ Measured 2026-11-01 in a running session. Three of these will be false after the
 
 **Reach is declared once, in the manifest, and everything else derives from it or is checked against it.** A cell declares its sources, its runtime path, its loader, its reach value and the zones it may reference. The one command prints the surface: scopes, the loaded set with its roots, tree-versus-image drift, promotion candidates and unresolved references. This is the report a session reads instead of a document, and it is also what lets an agent see what it ships with.
 
-**Three concepts stay separate**, because they are orthogonal and merging them forces an engine: reach (who may see what), lifecycle (what survives what), provenance (where something came from). Each gets one object and one gate.
+**The concepts stay separate**, because they are orthogonal and merging them forces an engine: reach (who may see what), lifecycle (what survives what), provenance (where something came from). Each gets one object and one gate.
 
-**The work runs in five stages, in this order**, because each makes the next cheap and because prose first is what has been tried for milestones.
+**The work runs in the order below**, because each stage makes the next cheap and because prose first is what has been tried for milestones.
 
 | Stage | Move |
 |---|---|
@@ -71,7 +71,7 @@ Measured 2026-11-01 in a running session. Three of these will be false after the
 
 ## The executables
 
-Four checks are in the design and three are in scope, each with a stable name so a row can say which one it advances.
+Each check carries a stable name, so a row can name the one it advances. The ids are local to this table: a row in another document cites a check by its name and links this record, because an id assigned by position goes stale the moment a row is added, and nothing would report it.
 
 | Id | Executable | Constraint kinds | Where it lands | State |
 |---|---|---|---|---|

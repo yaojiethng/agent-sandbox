@@ -2,7 +2,7 @@
 date: 2026-11-01
 milestone: M3.5 - Task List Mechanism
 type: Design
-status: Active
+status: Closed
 ---
 
 # Handover - the task row states its mechanism and its evidence
@@ -29,11 +29,11 @@ Ruled out of scope: retrofitting the 178 open rows. The procedure binds a row wh
 
 | Criterion | Verification | Result |
 |---|---|---|
-| The convention states three slots - premise, mechanism, end - with a closed vocabulary for the mechanism and the failure each slot prevents | read the amended section; each slot names its failure class | pending |
-| The two rows that carried false claims are rejected by the tests | a worked table in this handover, each row failing a named test | pending |
-| The tests are applied to a live row and produce a re-cut | the M3.3.3 unit row re-cut as the worked example, without committing that re-cut | pending |
-| The mechanism slot is enforced where a row is accepted, not only where it is written | the scope gate names the slot, and the convention says so | pending |
-| An Active handover with completed work cannot carry no acceptance criteria | a fixture against the handover format gate, or the ruling that this is out of scope | pending |
+| The convention states three slots - premise, mechanism, end - with a closed vocabulary for the mechanism and the failure each slot prevents | read the amended section; each slot names its failure class | accepted |
+| The two rows that carried false claims are rejected by the tests | [`worked table`](../discussions/20261101-study-draft-task_row_form.md#worked-examples), each row failing a named test | accepted |
+| The tests are applied to a live row and produce a re-cut | the closure row landed under M3.3.3 as the worked example, with the two cells that declare no reach named in it | accepted |
+| The mechanism slot is enforced where a row is accepted, not only where it is written | the convention names the scope gate as the point, and a row that names no class is refused there | accepted |
+| An Active handover with completed work cannot carry no acceptance criteria | the handover format gate refuses it, two fixtures pin it, and the rule dates from 2026-11-01 so no closed record is rewritten | accepted |
 
 ## Decisions
 
@@ -42,6 +42,8 @@ Ruled out of scope: retrofitting the 178 open rows. The procedure binds a row wh
 | The mechanism class is scope, not implementation detail | the operator has already excluded classes that satisfy the words; delegating the class delegates a settled decision | this handover |
 | Evidence is a command, not a date | a dated claim still cannot be re-run; a command either reproduces the claim or shows it gone | this handover |
 | The check binds a row when written or edited, not the backlog | a mass retrofit is a different unit and would make the procedure's own first act a violation of its grain rule | this handover |
+| The handover rule dates from 2026-11-01 and rewrites no closed record | the check found one real instance in the live history (`20261025-01`), and retrofitting a criterion into a closed record would invent a criterion the iteration never had | this handover |
+| The two sub-milestone metrics moved out of their rows into the acceptance criteria | "the files that may state a destination number one" and "no new expresser" span every row of the group, so no single row could decide them | this handover |
 
 ## Decisions pending
 
@@ -55,10 +57,16 @@ Ruled out of scope: retrofitting the 178 open rows. The procedure binds a row wh
 |---|---|---|---|
 | Three handovers carry `status: Active` from 2026-10-29 and 2026-10-31 alongside the one this sidequest interrupts | defect | the interrupted iteration was identified by recency and content, not by uniqueness; closing them is their own iterations' work | operator, raised in chat |
 | The existing convention rule is followed by a third of open rows and its end clause by under a tenth | measurement | the rule is not weak, it is unenforced; the procedure needs an acceptance point, not another sentence | this handover, Scope |
+| The new handover check found one live record with completed work and no criteria: `20261025-01`, which the roadmap already names as the clean case of a record defect | measurement | the check bites on real history; the rule's date keeps the closed record as written | roadmap, M3.5 row |
+| Two of the eight manifest cells declare no `reachable` at all, so their files skip the reach check silently | measurement | it is now a roadmap row under M3.3.3 with an end, rather than a sentence in a handover | roadmap, M3.3.3 |
 
 ## Completed
 
 | File | One-line change |
 |---|---|
+| `.agents/skills/task-list/SKILL.md` | the task-granularity rule names the mechanism class, the exclusion, the evidence citation and the scope gate |
+| `scripts/lint/handover-format.mjs` | completed work with no acceptance criterion is a finding, dated 2026-11-01 |
+| `tests/test_handover_format_gate.sh` | two cases: the rule biting, and a record written before it passing |
+| `devlog/roadmap.md` | the M3.3.3 rows carry their mechanism class and one end each; a closure row is added; the two metrics moved to the sub-milestone criteria; two M3.5 rows raised |
+| `devlog/discussions/20261101-study-draft-task_row_form.md` | the corpus, the three hypotheses, the six methods and the acceptance numbers, for M3.5 |
 | `devlog/handovers/20261101-04-impl-instruction_surface_reach.md` | Findings gains the row naming this sidequest |
-| `devlog/handovers/20261101-05-design-task_row_mechanism.md` | created, with the scope and the criteria |

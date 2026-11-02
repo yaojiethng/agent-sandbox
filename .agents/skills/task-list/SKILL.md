@@ -74,7 +74,7 @@ Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited. A mileston
 
 **Dependencies** - a sub-milestone names the prior sub-milestones it depends on, explicitly.
 
-**Task granularity** - identify the file and nature of change. Omit implementation detail; link to the discussion document if context is needed.
+**Task granularity** - identify the file and nature of change, and name the class that must carry the outcome: `code`, `gate`, `data`, `record` or `procedure`. Where the milestone has excluded a class, the row names the exclusion. A row whose premise is a fact cites the record that carries the command showing it. The scope gate presents the class with the row, and a row that names none is refused there. Omit implementation detail; link to the discussion document if context is needed.
 
 **The Milestone Summary table** uses indentation to show parent-child nesting via the fractal numbering. Each sub-milestone is indented under its parent with `&nbsp;&nbsp;` prefixes. Links point to specific sections (roadmap anchors, future-roadmap anchors or changelog section anchors), never to file roots. A link names the whole heading of its target, so a heading that carries a suffix yields a longer fragment; a status or a removal note belongs in the entry body, not in the heading.
 
