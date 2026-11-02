@@ -4,7 +4,7 @@
 // The provenance graph for the skill artifacts: where each copy came from, what
 // links across a boundary, and which copies no longer match.
 //
-// A diagnostic, not a wire contract. Its readers are an agent auditing a copy,
+// A diagnostic, not a wire contract: docs/adr/skill_provenance_diagnostic.md. Its readers are an agent auditing a copy,
 // locating a skill, or exploring what a change reaches, and the operator reading
 // the render. So a question it cannot answer is a finding in the graph, never a
 // silent pass: a missing manifest, a row that reaches no root, a link whose
