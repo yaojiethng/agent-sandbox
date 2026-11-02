@@ -51,7 +51,10 @@ None.
 
 ## Findings
 
-None.
+| Finding | Type | Impact | Triaged to |
+|---|---|---|---|
+| A sidequest opens on the row-writing procedure (`20261101-05-design-task_row_mechanism.md`), because this work's rows cannot be re-cut under the current entry rule | scope | the rows stay as they are until the sidequest closes; this iteration keeps E1 step 2 | this handover, Findings |
+| Three handovers carry `status: Active` from 2026-10-29 and 2026-10-31 alongside this one | defect | the interrupted iteration was identified by recency and content; the stale three are their own iterations' closes | operator, raised in chat |
 
 ## Completed
 
