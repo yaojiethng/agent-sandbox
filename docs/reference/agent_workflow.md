@@ -87,7 +87,7 @@ The agent-sandbox workflow is expressed across three layers with a strict author
 
 ### Where the rules live
 
-The policy form is retired: no document holds a rule set for the whole workflow. A rule is stated where its procedure enforces it, a convention is stated in the project's convention-skill under `.agents/skills/`, and a judgement used by more than one document is stated in a skill; `### Norm kinds` gives the test for which one a sentence is. Duplicate rules across documents are a defect still -- one place is the source of truth and every other links to it.
+The policy form is retired: no document holds a rule set for the whole workflow. A rule is stated where its procedure enforces it, a convention is stated in the project's convention-skill under `.agents/skills/`, and a judgement used by more than one document is stated in a skill; `### Instruction modality` gives the test for which one a sentence is. Duplicate rules across documents are a defect still -- one place is the source of truth and every other links to it.
 
 The convention corpus is `.agents/skills/`, the reference layer is `docs/reference/`, and the contributor and maintenance documents are `docs/development/`. The protocol that binds the loop's runbooks to each other is [`iteration_protocol.md`](iteration_protocol.md), the one document of the retired form that survived, and the policy map below names the place that specifies each area of the workflow.
 
@@ -95,7 +95,7 @@ The map is the mechanism's, and two of its subjects name this repository's own t
 
 ### Skill files
 
-Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Norm kinds` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
+Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Instruction modality` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
 
 An inline may become stale when its source of truth changes -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
@@ -103,27 +103,17 @@ An inline may become stale when its source of truth changes -- this is acceptabl
 
 Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the source of truth of every rule it borrows. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
 
-### Norm kinds
+### Instruction modality
 
-Every prose sentence in the policy set has one kind and one source of truth. The kind answers whether anything detects a breach. The source of truth answers who produces the content.
+A sentence of instruction text is classified by the base it appeals to and the force it carries. The base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case. The force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY.
 
-**The kind.** Classify in this order.
+The five kinds are `rule`, `judgement`, `permission`, `fact` and `claim`. Their definitions are `docs/reference/terminology.md` `## modality`, the obligations each kind owes a writer are the `instruction-authoring` convention's, and the decision with its rejected alternatives is `docs/adr/instruction_modality.md`.
 
-1. Does the sentence instruct, or does it describe? A sentence that asks the reader to do nothing is a description.
-2. If it instructs, name the artifact that fails when the sentence is broken, and resolve it. That artifact is a gate in `scripts/lint.sh`, a file under `scripts/lint/`, a skill directory a prompt dispatches, or a named step in a prompt file. If it resolves, the sentence is a rule and the artifact is its observer.
-3. If no artifact resolves, the sentence is a judgement. A guessed observer is not an observer.
-
-| Kind | Does | Detected by |
-|---|---|---|
-| rule | instructs | an artifact that resolves today, and fails on a breach |
-| judgement | instructs how to decide a case | nothing |
-| description | states what is | nothing |
+The base and the standard a sentence is ranked against are context rather than text, so the classification is applied by a reader and nothing gates it.
 
 **The source of truth.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
 
 A judgement used by more than one document lives in a principle skill, so one source of truth serves them all. That is the only case where a judgement leaves the document that produces it.
-
-This is the one place the kinds are defined. A document that states one locally links here instead.
 
 ### Persistent devlog records (interim)
 
@@ -162,7 +152,7 @@ Every cell names its document in the form its reader can open. A document under 
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, decide its source of truth by the kind, per `### Norm kinds`: a resolving observer makes it a rule, and the document that produces the content owns it.
+When a rule appears to exist in two documents in this map, decide its source of truth by the kind, per `### Instruction modality`: a resolving observer makes it a rule, and the document that produces the content owns it.
 
 ## References
 

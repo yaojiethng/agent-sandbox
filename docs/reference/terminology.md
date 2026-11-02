@@ -10,6 +10,31 @@ reader: [agent, operator]
 
 These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
+## modality
+
+The base a sentence appeals to and the force it carries: what a reader owes, or what a reader must accept, and how strongly. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
+
+### Identity
+
+- `rule`, `judgement`, `permission`, `fact`, `claim`
+- the base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case
+- the force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY
+- formerly `norm`, `norm kind` and `sentence kind`, all deprecated; `statement` is the former name of `claim`
+
+### Scope
+
+The sentences of instruction text: a prompt, a skill, and the conventions they read. It does not classify an artifact, where `kind` in `.agents/registry/sources/` names a skill, a runbook, a prompt or an instruction.
+
+### Relationships
+
+- A `rule` names the artifact that fails when it is broken.
+- A `fact` carries its evidence, or is marked as an inference.
+- A `permission` names what grants it.
+- The decision, the framework it follows and what that framework gave us, and why the classification is a standard rather than a gate: `docs/adr/instruction_modality.md`.
+- The obligations each kind owes are the `instruction-authoring` convention's.
+
+**Last updated:** 2026-11-02
+
 ## session
 
 One container lifecycle, from container start to teardown. The harness unit of execution. Has a resume path and a persisted state file.

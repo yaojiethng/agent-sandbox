@@ -5,15 +5,15 @@ description: "Apply when one rule, judgement or definition is about to exist in 
 
 # Single source of truth
 
-A norm has one source of truth, and every other place that carries it points at that source.
+A rule or a judgement has one source of truth, and every other place that carries it points at that source.
 
 **The pattern.**
 
-1. Name the norm's kind, per `/opt/sandbox/docs/reference/agent_workflow.md` `### Norm kinds`.
+1. Name the sentence's kind, per `/opt/sandbox/docs/reference/agent_workflow.md` `### Instruction modality`.
 2. Put it in the source of truth that kind carries.
 3. Make every other carrier a pointer to that source.
 
-**Why.** Two copies of one norm drift. The reader then holds a version that no observer checks and no author updates, and the drift is silent, because each copy reads as current. A duplicate also forces the reader to decide which copy governs, and no record answers that.
+**Why.** Two copies of one rule drift. The reader then holds a version that no observer checks and no author updates, and the drift is silent, because each copy reads as current. A duplicate also forces the reader to decide which copy governs, and no record answers that.
 
 The field states the prohibition as do not repeat yourself. The half that carries the load is knowledge rather than text, so a second copy of the words is a defect while it states the same knowledge twice, and not otherwise. An inline that names the source of truth states no second knowledge, which is the exception the next part states.
 
@@ -27,4 +27,4 @@ The field states the prohibition as do not repeat yourself. The half that carrie
 
 **A policy file owns a rule.** The policy set is every `docs/**/*_policy.md` file, in any folder. A file of that name that owns no rule is misnamed: fold its content into its owner, give it the name of its kind, or delete it.
 
-**The test.** Point at the norm's source of truth, and at every carrier that names it. A carrier that states the norm without pointing at its source of truth is a second source of truth, and the next edit reaches one of the two.
+**The test.** Point at the rule's source of truth, and at every carrier that names it. A carrier that states the rule without pointing at its source of truth is a second source of truth, and the next edit reaches one of the two.

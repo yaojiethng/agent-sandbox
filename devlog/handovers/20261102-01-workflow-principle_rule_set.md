@@ -1,7 +1,7 @@
 ---
 date: 2026-11-02
 milestone: M3.3.3 - The skill maintenance pipeline
-status: Active
+status: Closed
 type: Workflow
 ---
 

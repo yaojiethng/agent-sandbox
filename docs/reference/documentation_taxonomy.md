@@ -10,7 +10,7 @@ This document is the index and view of the documentation ecosystem. It states no
 
 | Document | What it is | Durability | Identification | Governed by |
 |---|---|---|---|---|
-| Policy document (`docs/**/*_policy.md`) | retired 2026-10-22: a rule set for the whole workflow, which no document holds now. A rule is stated where its procedure enforces it, and a convention in `.agents/skills/` | -- | -- | `docs/adr/norm_kinds.md` states what counts as a rule |
+| Policy document (`docs/**/*_policy.md`) | retired 2026-10-22: a rule set for the whole workflow, which no document holds now. A rule is stated where its procedure enforces it, and a convention in `.agents/skills/` | -- | -- | `docs/adr/instruction_modality.md` states what counts as each kind |
 | ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` |
 | Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- What each document type owes |
 | Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`; the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
@@ -78,7 +78,7 @@ Documents promote along a path, and each step is an obligation whose source of t
 
 ## Boundary
 
-Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`agent_workflow.md`](agent_workflow.md#norm-kinds). The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
+Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`agent_workflow.md`](agent_workflow.md#instruction-modality). The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
 
 Everything under a project's `.agents/` is project-scoped: that project's sessions read it and no other project's session does. A document read more widely names a path there only where a mechanism that ships guarantees the path exists, so a shipped document names the convention a project may state rather than the one it has.
 
@@ -89,7 +89,7 @@ Everything under a project's `.agents/` is project-scoped: that project's sessio
 | "I am new here -- what documents exist and which do I need?" | this document |
 | "What is a concept document against an ADR or a discussion?" | Promotion topology |
 | "Where does this file go?" | Folder taxonomy (this document); the placement rule is in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Folder tree |
-| "Is this statement a rule or a description? Where is the source of truth of a rule?" | [`agent_workflow.md`](agent_workflow.md#norm-kinds) |
+| "What kind is this sentence, and where is its source of truth?" | [`agent_workflow.md`](agent_workflow.md#instruction-modality) |
 | "How do I write the prose?" | the `communication-principle-*` corpus, indexed in the provider `AGENTS.md` |
 | "What content is forbidden in an architecture document?" | `communication-principle-dont-forecast-undone-work`; the `doc-maintenance` register names the symptom |
 | "What does the lint check? What must a record satisfy?" | `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md` -- The lint rule set |

@@ -1,6 +1,21 @@
-# Norm kinds
+# Instruction modality
 
-**Current:** 2026-10-22
+**Current:** 2026-11-02
+
+## 2026-11-02 -- The kinds are five, by base and force, and the classification is a standard
+
+**Decision:** A sentence of instruction text is classified by the base it appeals to and the force it carries. The base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case. The force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY. The five kinds are `rule` (deontic necessity), `judgement` (deontic, graded), `permission` (deontic possibility), `fact` (epistemic necessity) and `claim` (epistemic possibility). The framework is Angelika Kratzer's relational semantics, in *What 'must' and 'can' must and can mean*, Linguistics and Philosophy 1:3 (1977), collected in *Modals and Conditionals* (Oxford University Press, 2012) at [doi.org/10.1007/BF00353453](https://doi.org/10.1007/BF00353453): a modal is read against a modal base and an ordering source, so the kinds are derived rather than asserted. What we took from it and what we dropped is `.agents/registry/citations/kratzer-relational-modality.json`. Each claim about the taxonomy has one home, and a later claim follows the same split: this entry for the decision, `docs/reference/terminology.md` `## modality` for the definition, the `instruction-authoring` convention for what a kind owes a writer, and `docs/reference/agent_workflow.md` for the description. That convention's home was created for it, so each later unit moves content into a place that already exists. The definitions live in `docs/reference/terminology.md` `## modality`, the obligations a writer owes live with the `instruction-authoring` convention, and this record holds the decision. The terms `norm` and `statement` retire, `claim` replaces `statement`, and this record is renamed from `norm_kinds.md`.
+
+**Rationale:** The three-kind test asked one question, whether an artifact detects a breach, so it answered a question about enforcement rather than about the sentence. Two cells went missing and both produced defects a reader cannot see: a number with no source read as a description, because nothing detects it, and a permission read as a rule, because nothing detects it either. Separating the base from the force tells apart what a sentence appeals to from whether anything catches a breach of it, which is the difference between an epistemic and a deontic failure. It also explains the 2026-10-22 result rather than working around it: two readers agree on an artifact's existence in a way they cannot agree on a force, because the standard a sentence is ranked against is context the sentence does not carry. The classification is therefore a standard, applied by a reader, and a gate over it would guess.
+
+**Rejected alternatives:**
+
+- *Three kinds, with evidence a requirement on descriptions* -- it hides the failure the taxonomy exists to name inside a kind that owes nothing, so an unevidenced claim reads exactly like a fact.
+- *Four kinds labelled prescriptive, empirical, evaluative and hypothetical directive* -- a claim is not a directive, and the split between the deontic and the epistemic is the taxonomy's spine; `hypothetical` also names a claim's content rather than its force.
+- *Classify by keyword, with MUST, SHOULD and MAY as the signal* -- the 2026-10-17 sample gave 12 of 20 agreement between two readers on a semantic test, and a keyword reads the word a writer reached for rather than the force the sentence carries.
+- *Gate the classification, or keep a ledger of it* -- retired on 2026-10-22 for the reasons above, which this split makes structural rather than incidental.
+
+**Edge cases / drivers:** A permission that names no granter is a suggestion, and saying so is what stops a reader treating advice as a grant. A MUST and a SHOULD governing one situation is one requirement written twice with two forces, which is a scope defect before it is a modality one.
 
 ## 2026-10-22 -- The kind test stands, and its ledger does not
 

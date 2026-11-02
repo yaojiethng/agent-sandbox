@@ -93,5 +93,5 @@ The explanatory loop content moves to `docs/reference/autonomous_agent_loop.md`:
 
 - Design record: [`20260928-design-settled-loop_workflows_migration.md`](../../devlog/discussions/archive/20260928-design-settled-loop_workflows_migration.md)
 - Planning handover: `20260928-04`
-- Separation rule: [`norm_kinds.md`](norm_kinds.md), and the retired framing at `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`
+- Separation rule: [`instruction_modality.md`](instruction_modality.md), and the retired framing at `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`
 - Framework loop workflow: `docs/reference/autonomous_agent_loop.md`
