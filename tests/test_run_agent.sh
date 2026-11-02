@@ -494,6 +494,42 @@ test_dry_run_overlay_missing_refused() {
   fi
 }
 
+# Given: a fresh copy session whose seeder exits non-zero with no output
+# When:  the seeder fails
+# Then:  the start says the seeder printed nothing and prints the reproduce command
+# Asserts: the message no longer claims output that does not exist, and a failure
+#          with no stream at all still points at the log and the manual re-run
+test_seeder_failure_without_output_says_so() {
+  local FIX="$FIXTURE_DIR/seed_silent"
+  make_run_agent_fixture "$FIX" pi
+  export PROJECT_DIR="$FIX/project"
+  mkdir -p "$PROJECT_DIR"
+
+  local out="$FIX/out.txt" rc=0
+  (
+    export PATH="$STUB_DIR:$PATH"
+    export DOCKER_STUB_RUN_RC=1
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy \
+      --reset-volume < /dev/null
+  ) > "$out" 2>&1 || rc=$?
+
+  local log="$SANDBOX_DIR/.compose/${SESSION_ID}.seed.log"
+  if [[ $rc -ne 0 ]] \
+     && ! grep -q "Seeder output above" "$out" \
+     && grep -q "The seeder printed nothing" "$out" \
+     && grep -q "name seed-debug seeder" "$out" \
+     && [[ -f "$log" ]]; then
+    pass "silent seeder failure: names the absent output, the reproduce command, and the log"
+  else
+    fail "silent seeder failure: rc=$rc log=$([[ -f $log ]] && echo present || echo missing) out='$(cat "$out")'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -503,6 +539,7 @@ run_test test_setup_hook_present_runs_and_proceeds
 run_test test_setup_hook_failure_aborts_with_attribution
 run_test test_flatten_flag_accepted
 run_test test_help_prints_run_agent_usage
+run_test test_seeder_failure_without_output_says_so
 run_test test_seeder_timeout_names_the_timeout
 run_test test_provider_config_dir_precreated
 run_test test_seeder_invocation_has_no_tty
