@@ -1,15 +1,25 @@
 #!/usr/bin/env node
 // scripts/skill_collisions.mjs
 //
-// Report a skill name an added package holds that a shipped layer also holds.
-// pi keeps the first skill it reaches for a name and records the loser as a
-// diagnostic nobody reads, so an added package can stop a shipped skill from
-// being the one the session loads, with no line of output.
+// Report a skill name an added package holds that a shipped copy also holds, in
+// the set the session actually loads.
 //
-// The report is a fact about the project's package list: it names both paths,
-// changes no bytes and fails nothing. pi's loader decides every name and the
-// installed packages are pi's own settings, so this reads both from pi rather
-// than resolving either a second time.
+// The load set is the thing that can race for a name: pi's user root, the
+// project root, then each configured package, first-wins. The repository's own
+// source tree is not in it - the image carries its payload, and a session loads
+// that copy - so comparing a committed path against a loaded path compares a
+// build input with a build output. Those two differ by a build, not by a
+// configuration, and that difference is drift, which the provenance graph owns.
+//
+// A name held twice inside the load set is a real race, and pi resolves it
+// silently: it keeps the first path and records the loser as a diagnostic nobody
+// reads. Two of ours is our own seeding (the home is provisioned from the image
+// payload, which is also configured as a package), so the report keeps only the
+// mixed case, where a package the project added displaces a copy we ship or is
+// displaced by it. Ours is a path the container manifest declares: an image
+// destination or a provision home.
+//
+// The report names both paths, changes no bytes and fails nothing.
 //
 // CLI:
 //   node scripts/skill_collisions.mjs [--root DIR] [--agent-dir DIR] [--json]
@@ -18,62 +28,53 @@
 // fix is the operator's package list.
 
 import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { agentDirFor, configuredPackages } from "./skill_packages.mjs";
-import { LAYERS, layerOf, layerRoots, piModuleEntry } from "./skill_layers.mjs";
+import { inside, layerRoots, piModuleEntry } from "./skill_layers.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// findCollisions ROOT AGENT_DIR -- the shipped skills a configured package also
-// holds, each naming the shipped path and the added one.
+// ours ROOT -- the directories the container manifest declares as ours: each
+// shipped layer's image destination and its provision home. Everything else in
+// the load set was added by the project.
+async function ourRoots(root) {
+  const { image, host } = await layerRoots(root);
+  return [...image.values(), ...host.values()].map((entry) => entry.path).filter(Boolean);
+}
+
+// findCollisions ROOT AGENT_DIR -- the mixed collisions of the session's load
+// set, each naming the shipped path and the added one.
 export async function findCollisions({ root = REPO, agentDir } = {}) {
   const resolvedRoot = resolve(root);
   const resolvedAgentDir = agentDirFor(agentDir);
   const pi = await import(pathToFileURL(piModuleEntry()).href);
 
   const { configured } = await configuredPackages({ root: resolvedRoot, agentDir: resolvedAgentDir });
-  const addedPaths = configured.map((entry) => entry.installedPath).filter(Boolean);
-  if (addedPaths.length === 0) return { collisions: [], addedPackages: 0 };
+  const packagePaths = configured.map((entry) => entry.installedPath).filter(Boolean);
+  const load = pi.loadSkills({
+    cwd: resolvedRoot,
+    agentDir: resolvedAgentDir,
+    skillPaths: packagePaths,
+    includeDefaults: true,
+  });
 
-  const shippedPaths = LAYERS.filter((layer) => layer.shipped)
-    .map((layer) => resolve(resolvedRoot, layer.source))
-    .filter((path) => existsSync(path));
-  if (shippedPaths.length === 0) return { collisions: [], addedPackages: addedPaths.length };
+  const ours = await ourRoots(resolvedRoot);
+  const isOurs = (path) => ours.some((dir) => inside(path, dir));
+  const exists = packagePaths.filter((path) => existsSync(path)).length;
 
-  const load = { cwd: resolvedRoot, agentDir: resolvedAgentDir, includeDefaults: false };
-  const shipped = pi.loadSkills({ ...load, skillPaths: shippedPaths });
-  const added = pi.loadSkills({ ...load, skillPaths: addedPaths });
-  const byName = new Map(shipped.skills.map((skill) => [skill.name, skill]));
-
-  // The image and the provider home hold a copy of the same shipped payload, and
-  // a session configures them as packages. That pair is one artifact in two
-  // places, not a collision: a name is only displaced when the added copy is
-  // something other than the declared copy of the shipped one.
-  const { image, host } = layerRoots(resolvedRoot);
-  const copies = new Map();
-  for (const layer of LAYERS) {
-    const paths = [image.get(layer.name)?.path, host.get(layer.name)?.path].filter(Boolean);
-    if (paths.length > 0) copies.set(layer.name, paths);
-  }
-  const sameArtifact = (shippedPath, addedPath) => {
-    const layer = layerOf(shippedPath, resolvedRoot);
-    if (!layer) return false;
-    const rel = shippedPath.slice(resolve(resolvedRoot, layer.source).length).replace(/^\/+/, "");
-    return (copies.get(layer.name) || []).some((root) => join(root, rel) === addedPath);
-  };
-
-  const collisions = added.skills
-    .filter((skill) => byName.has(skill.name))
-    .map((skill) => ({ skill, shipped: byName.get(skill.name) }))
-    .filter(({ skill, shipped }) => !sameArtifact(shipped.filePath, skill.filePath))
-    .map(({ skill, shipped }) => ({
-      name: skill.name,
-      shippedPath: shipped.filePath,
-      addedPath: skill.filePath,
+  const collisions = load.diagnostics
+    .filter((diagnostic) => diagnostic.type === "collision")
+    .map((diagnostic) => diagnostic.collision)
+    .filter((collision) => isOurs(collision.winnerPath) !== isOurs(collision.loserPath))
+    .map((collision) => ({
+      name: collision.name,
+      shippedPath: isOurs(collision.winnerPath) ? collision.winnerPath : collision.loserPath,
+      addedPath: isOurs(collision.winnerPath) ? collision.loserPath : collision.winnerPath,
     }));
-  return { collisions, addedPackages: addedPaths.length };
+
+  return { collisions, loaded: load.skills.length, packages: exists };
 }
 
 function line(collision) {

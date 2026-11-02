@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # tests/test_skill_collisions.sh
-# The skill-name collision report: a shipped name an added package also holds is
-# named with both paths, the declared image copy of a shipped payload is not a
-# collision, and a session with no collision prints nothing.
+# The skill-name collision report: a name a package the project added holds is
+# reported when it meets a copy we ship, in the set the session actually loads.
+# A name held twice by our own copies is our seeding, not a collision, and a
+# session with no collision prints nothing.
 #
 # Covers:
-#   added package -- a package holding a shipped name reports both paths and the name
-#   image copy     -- the declared image copy of the same payload reports nothing
-#   no collision   -- a package holding no shipped name prints nothing
-#   no packages    -- a session with no configured package prints nothing
-#   exit           -- the report exits 0 with and without a collision
+#   added package -- a package holding a shipped name reports both loaded paths
+#   ours twice    -- the image payload configured as a package is not an addition
+#   not loaded    -- the repository's committed copy is not a participant
+#   no collision  -- a package holding no shipped name prints nothing
+#   no packages   -- a session with no configured package prints nothing
+#   exit          -- the report exits 0 with and without a collision
 
 set -uo pipefail
 
@@ -22,8 +24,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPORT="$REPO_ROOT/scripts/skill_collisions.mjs"
 LAYERS="$REPO_ROOT/scripts/skill_layers.mjs"
 
-# shipped_dir ROOT -- the provider layer's source directory under a fixture root.
-shipped_dir() {
+# provider_source ROOT -- the provider layer's committed source directory.
+provider_source() {
   local root="$1" source
   source="$(node "$LAYERS" --list | awk -F'\t' '$1 == "provider" { print $2 }')"
   printf '%s\n' "$root/$source"
@@ -35,69 +37,85 @@ write_skill() {
   printf -- '---\nname: %s\ndescription: fixture skill\n---\n\nFixture.\n' "$2" >"$1/$2/SKILL.md"
 }
 
-# fixture_root -- a tree with one shipped skill, a manifest that declares its
-# image destination, and an agent home. Prints "root<TAB>home<TAB>package".
+# fixture_root -- a project with a manifest that declares where the provider
+# payload lands, a seeded home, and a directory for a package the project adds.
+# Prints "root<TAB>agentdir<TAB>package<TAB>image".
 fixture_root() {
-  local base root home pkg
+  local base root agentdir pkg image
   base="$(mktemp -d)"
   root="$base/project"
-  home="$base/home"
+  agentdir="$base/home/agent"
   pkg="$base/pkg"
-  mkdir -p "$root/src/build" "$home"
-  write_skill "$(shipped_dir "$root")" probe
+  image="$base/image/agent/skills"
+  mkdir -p "$root/src/build" "$agentdir/skills" "$image"
+  write_skill "$(provider_source "$root")" probe
+  write_skill "$image" probe
+  cp "$(provider_source "$root")/probe/SKILL.md" "$image/probe/SKILL.md"
+  write_skill "$agentdir/skills" probe
   cat >"$root/src/build/container-interface.json" <<EOF
-{"image":[{"provider":"pi","source":"src/reasoning/providers/pi/config/","destination":"$base/image/"}],"env":[],"provision":[]}
+{
+  "image": [{"provider": "pi", "source": "src/reasoning/providers/pi/config/", "destination": "$base/image/"}],
+  "env": [{"provider": "pi", "name": "AGENT_HOME", "value": "$base/home"}],
+  "provision": [{"provider": "pi", "source": "src/reasoning/providers/pi/config/", "template": "$base/image/", "home": "\$AGENT_HOME/"}]
+}
 EOF
-  printf '%s\t%s\t%s\n' "$root" "$home" "$pkg"
+  printf '%s\t%s\t%s\t%s\n' "$root" "$agentdir" "$pkg" "$base/image/agent/skills"
 }
 
-# configure_package HOME PACKAGE -- the settings file pi reads for user packages.
+# configure_package AGENTDIR PACKAGE -- the settings file pi reads for user packages.
 configure_package() {
   printf '{"packages":["%s"]}\n' "$2" >"$1/settings.json"
 }
 
-test_an_added_package_holding_a_shipped_name_is_reported() {
-  local root home pkg out rc
-  IFS=$'\t' read -r root home pkg < <(fixture_root)
+test_a_package_holding_a_shipped_name_is_reported() {
+  local root agentdir pkg image out rc
+  IFS=$'\t' read -r root agentdir pkg image < <(fixture_root)
   write_skill "$pkg/skills" probe
-  configure_package "$home" "$pkg"
-  out="$(node "$REPORT" --root "$root" --agent-dir "$home" 2>&1)"
+  configure_package "$agentdir" "$pkg"
+  out="$(node "$REPORT" --root "$root" --agent-dir "$agentdir" 2>&1)"
   rc=$?
   assert_eq "$rc" 0 "the report fails nothing"
   assert_contains "$out" "skill collision: 'probe'" "the collision names the skill"
-  assert_contains "$out" "$(shipped_dir "$root")/probe/SKILL.md" "the collision names the shipped path"
+  assert_contains "$out" "$agentdir/skills/probe/SKILL.md" "the collision names the loaded shipped path"
   assert_contains "$out" "$pkg/skills/probe/SKILL.md" "the collision names the added path"
 }
 
-test_the_declared_image_copy_is_not_a_collision() {
-  local root home pkg out image
-  IFS=$'\t' read -r root home pkg < <(fixture_root)
-  image="$(dirname "$root")/image/agent/skills/probe"
-  mkdir -p "$image"
-  cp "$(shipped_dir "$root")/probe/SKILL.md" "$image/SKILL.md"
-  configure_package "$home" "$(dirname "$root")/image"
-  out="$(node "$REPORT" --root "$root" --agent-dir "$home" 2>&1)"
-  assert_not_contains "$out" "skill collision" "one payload in two declared places is not a collision"
+test_the_image_payload_is_ours_twice_not_an_addition() {
+  local root agentdir pkg image out
+  IFS=$'\t' read -r root agentdir pkg image < <(fixture_root)
+  configure_package "$agentdir" "$image"
+  out="$(node "$REPORT" --root "$root" --agent-dir "$agentdir" 2>&1)"
+  assert_empty "$out" "the same payload loaded twice is our seeding, not a collision"
+}
+
+test_the_committed_copy_is_not_a_participant() {
+  local root agentdir pkg image out
+  IFS=$'\t' read -r root agentdir pkg image < <(fixture_root)
+  write_skill "$pkg/skills" probe
+  configure_package "$agentdir" "$pkg"
+  out="$(node "$REPORT" --root "$root" --agent-dir "$agentdir" --json 2>&1)"
+  assert_not_contains "$out" "$(provider_source "$root")" "the committed source is not in the load set and is not reported"
 }
 
 test_a_package_with_no_shipped_name_reports_nothing() {
-  local root home pkg out
-  IFS=$'\t' read -r root home pkg < <(fixture_root)
+  local root agentdir pkg image out
+  IFS=$'\t' read -r root agentdir pkg image < <(fixture_root)
   write_skill "$pkg/skills" other-skill
-  configure_package "$home" "$pkg"
-  out="$(node "$REPORT" --root "$root" --agent-dir "$home" 2>&1)"
+  configure_package "$agentdir" "$pkg"
+  out="$(node "$REPORT" --root "$root" --agent-dir "$agentdir" 2>&1)"
   assert_empty "$out" "a clean session prints nothing"
 }
 
 test_a_session_with_no_package_reports_nothing() {
-  local root home pkg out
-  IFS=$'\t' read -r root home pkg < <(fixture_root)
-  out="$(node "$REPORT" --root "$root" --agent-dir "$home" 2>&1)"
+  local root agentdir pkg image out
+  IFS=$'\t' read -r root agentdir pkg image < <(fixture_root)
+  out="$(node "$REPORT" --root "$root" --agent-dir "$agentdir" 2>&1)"
   assert_empty "$out" "no configured package means nothing to report"
 }
 
-run_test test_an_added_package_holding_a_shipped_name_is_reported
-run_test test_the_declared_image_copy_is_not_a_collision
+run_test test_a_package_holding_a_shipped_name_is_reported
+run_test test_the_image_payload_is_ours_twice_not_an_addition
+run_test test_the_committed_copy_is_not_a_participant
 run_test test_a_package_with_no_shipped_name_reports_nothing
 run_test test_a_session_with_no_package_reports_nothing
 
