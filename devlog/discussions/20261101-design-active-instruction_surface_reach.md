@@ -1,6 +1,6 @@
 # The instruction surface declares its reach once
 
-**Status:** draft
+**Status:** active
 
 ## Context
 
@@ -8,13 +8,13 @@ The trigger was a review that could not end on a fact. A collision report was bu
 
 The concept is small and already written down. `docs/reference/documentation_taxonomy.md` `## Reach` states it: reach is who reads a document, it belongs to the root that carries the document, and no document declares its own. Substitute a skill for a document and the same sentence is the payload rule. **Reach is one predicate with two carriers** - the context layer decides which reader a sentence reaches, the payload scope decides which sessions a skill is visible to - and a third carrier, the gate, decides what a file may reference.
 
-What makes it expensive is not the concept but the number of places that re-express it. Sixteen files state it, depend on it or gate it, and this survey found all sixteen only by reading the tree and the running container.
+What makes it expensive is not the concept but the number of places that re-express it. Eighteen files state it, depend on it or gate it - thirteen that state or depend on it and five that gate or scan it - and this survey found all eighteen only by reading the tree and the running container.
 
 | Relation to the decision | Files |
 |---|---|
 | States it | [`container-interface.json`](../../src/build/container-interface.json) (its `image`, `provision`, `session` and `cells` sections), [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`, [`agent_workflow.md`](../reference/agent_workflow.md), [`instruction-surface-conventions.md`](../development/instruction-surface-conventions.md), `provider.dockerfile`, `docker-compose.pi.yml`, `settings.json`, `preflight.sh`, `onboard.sh`, [`skill_layers.mjs`](../../scripts/skill_layers.mjs) `LAYERS`, [`.agents/registry/packages.json`](../../.agents/registry/packages.json) |
-| Depends on it | [`container-interface.mjs`](../../src/build/container-interface.mjs), [`skill_graph.mjs`](../../scripts/skill_graph.mjs), [`lint/linking.mjs`](../../scripts/lint/linking.mjs) |
-| Gates it | [`check_container_layout.sh`](../../scripts/check_container_layout.sh), [`check_reach.sh`](../../scripts/check_reach.sh) with [`lint/reach.mjs`](../../scripts/lint/reach.mjs), [`check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) |
+| Depends on it | [`container-interface.mjs`](../../src/build/container-interface.mjs), [`skill_graph.mjs`](../../scripts/skill_graph.mjs) |
+| Gates it | [`check_container_layout.sh`](../../scripts/check_container_layout.sh), [`check_reach.sh`](../../scripts/check_reach.sh) with [`lint/reach.mjs`](../../scripts/lint/reach.mjs), [`check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh), and [`lint/linking.mjs`](../../scripts/lint/linking.mjs), which already refuses a link landing outside the reach its cell declares |
 
 Two multipliers make an edit expensive, and they compound. Vertically, each delivery mechanism speaks its own language - `COPY`, rsync, a mounts list, a settings package list, a JSON cell, a taxonomy route - so one decision has six dialects. Horizontally, each authority level restates it - ADR, reference document, development convention, code comment, roadmap row, handover - so one claim has six elevations. An edit costs the product, which is why "add one skill" feels heavy and why prose drifts: the prose is a cache of a lookup nobody runs.
 
@@ -26,7 +26,7 @@ Measured 2026-11-01 in a running session. Three of these will be false after the
 
 | Observation | Command |
 |---|---|
-| The home holds 81 skills, 30 of them byte-identical to the image's provider payload; the image copy is stamped at build time and the home copy at container start, so the entrypoint writes through the bind mount on every start | `node .scratchpad/probe_skills.mjs`; `stat -c '%y %n'` on a skill in each tree |
+| The home holds 81 skills, 30 of them byte-identical to the image's provider payload; the image copy is stamped at build time and the home copy at container start, so the entrypoint writes through the bind mount on every start | `node --input-type=module -e` against the installed loader: `SettingsManager.create(cwd, "<agent home>/agent")`, `new DefaultResourceLoader({cwd, agentDir, settingsManager})`, `.reload()`, then print `getSkills()`. Prints `110 diagnostics 0 roots 4` today; `stat -c '%y %n'` on a skill in each tree dates the copy |
 | The loader reports 110 skills from four roots with zero collision diagnostics, so the payload is loaded once | `SettingsManager.create(cwd, "/home/agentuser/.pi/agent")` then `DefaultResourceLoader.reload()`, printing `getSkills()` |
 | `agent/{skills,prompts,sessions}` are host-backed (device 2096) while `agent/{settings,AGENTS,models,auth}.json` and `agent/extensions/` are container-local (device 87) | `/proc/mounts`; `stat -c '%d'` |
 | The image is behind the tree: `domain-model` against `domain-modeling`, three skills absent from the image, `principle-delegation-over-machinery` not shipped, and an orphaned `prose-review/runbooks/document-truth` still in the image | `diff -rq src/reasoning/agent/skills /opt/workflow/agent/skills` and the same for the provider and module trees |
@@ -68,6 +68,17 @@ Measured 2026-11-01 in a running session. Three of these will be false after the
 | 2 | One checker: every reference edge lands inside a zone its own cell declares reachable; non-vacuity fails an unexercised zone |
 | 3 | One statement: the taxonomy owns reach in prose, every other document cites it, and a lint rule refuses a destination outside a generated block |
 | 4 | Stop the regrowth: a new consumer reads the object or arrives with its gate |
+
+## The executables
+
+Four checks are in the design and three are in scope, each with a stable name so a row can say which one it advances.
+
+| Id | Executable | Constraint kinds | Where it lands | State |
+|---|---|---|---|---|
+| **E1** | the declaration | partition, resolution | row one | in flight. The manifest carries `image`, `provision`, `session` and `cells`; two cells declare no reach, four mounts are declared nowhere machine-readable, and no command prints what the manifest means |
+| **E2** | the closure check | closure, non-vacuity | row one, then a row of its own | links only. `lint/linking.mjs` refuses a Markdown link outside its cell's reach; skill invocations and path mentions are unchecked, and the use-count needs one shared reference scanner |
+| **E3** | the kind consolidation | agreement, liveness | the gate-upkeep handoff | one agreement instance (`check_container_layout.sh`) and the mutation tier, which already returns `PROVEN`, `SURVIVED` or `NO-OP` |
+| - | the conformance checker | conformance | out of scope | six scripts, cheap and close to their subjects, recorded in the handoff with its reason |
 
 **The gate properties are proposed separately.** The seven constraint kinds the eighteen gates express, their mapping and their consolidation are in [`gate-constraints-handoff.md`](../../.agents/drafts/gate-constraints-handoff.md), linked from the gate-upkeep procedure row, because retiring or replacing a gate is that milestone's act. The consolidation of the conformance gates is out of scope here.
 
