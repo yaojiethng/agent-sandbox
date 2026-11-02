@@ -1,6 +1,20 @@
 # Module Instruction Payload
 
-**Current:** 2026-10-06
+**Current:** 2026-11-01
+
+## 2026-11-01 -- Skill ingestion is harness-owned, and a module carries no tooling
+
+**Decision:** The skill-ingestion pipeline stays this repository's own: `skill-fork` and its fork, provider-artifact and bump patterns remain project skills under `.agents/skills/`, and the source store, its CLI and its gate stay project and harness state. No module is created and no module name is chosen. The work of shipping it later is filed as a deferred task in [`roadmap_future.md`](../../devlog/roadmap_future.md#skill-ingestion-as-a-workflow-module-indefinitely-deferred). This entry points at it because a maintainer asking what a module may carry asks that question here.
+
+**Rationale:** A module carries `prompts/` and `skills/` by the 2026-10-05 decision and is enabled by one package entry, so a project may omit it and receive neither folder. Two of the pipeline's three members are not that shape: the store is data in the project tree, the CLI and the validator are harness scripts, and the gate is registered in the umbrella's gate list, which no module owns. A module that carried the tooling would still leave a project that omitted it without the store's only check, so packaging the pipeline in a form that can be switched off would break the thing being packaged. Shipping it also needs two surfaces that do not exist: a project declaration of where its registry lives, which M3.4.2 owns, and a way for a shipped module to register a lint gate. And no consumer waits, because the only second project in the roadmap is not started.
+
+**Rejected alternatives:**
+
+- *Ship the tooling inside the module* -- the payload is prompts and skills, and the store's check is a commit-time gate in the harness umbrella; a module can carry neither, and a project omitting the module would lose the check while keeping the store.
+- *Ship the check as a skill procedure instead of a gate* -- the procedure would run only when an agent remembered it, which is the failure the gate was built to end.
+- *Keep the roadmap row open with a reopening clause* -- a clause in a closed row holds no work and is read by nobody; the deferred section holds the prefactors, and this entry is the pointer a maintainer meets when asking the question.
+
+**Edge cases / drivers:** The module form keeps its subject. A pack of skills somebody else wrote, enabled or omitted by one package entry and carrying no tooling, is what it was built for, and the roadmap's `The four pstack skills are optional, not base` holds that case. A project that vendors skills of its own reopens the deferred task rather than this decision.
 
 ## 2026-10-06 -- The payload ships in pi's image only, and two providers start on a fresh install
 

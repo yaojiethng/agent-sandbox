@@ -272,3 +272,24 @@ One version constant, one image label, one warn-only preflight check, and a hard
 ### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
 
 **Deferred / not-in-scope (design walk `20260818-02`, persistence-model decision).** The current model (copy and bind-mount) does not persist environment changes across runs: apt installs, `pi update --self`, `pi install` live in the per-run container writable layer, torn down at every run end (per-run writable-layer parity). Persisting them is explicitly NOT in scope for the current model -- containers are per-run; persistence is delivered exclusively by mounted sources. It would be nice to have. Candidate, parked, if per-run install cost proves punishing: a persisted install-cache volume fed per run (durable-by-designation), not a second writable layer.
+
+### Skill Ingestion as a Workflow Module (indefinitely deferred)
+
+**Status:** Indefinitely deferred, raised 2026-11-01 by handover `20261101-10`. Every requirement needed to start it is in this section; a session that picks it up should not have to re-derive why the move is expensive. The ruling it follows is in [`module_instruction_payload.md`](../docs/adr/module_instruction_payload.md), and the closed roadmap row is `Skill ingestion stays this repository's tool, not a shipped module`.
+
+**Reopens when:** a second project vendors a skill of its own, or the project-declaration seam lands.
+
+**Objective:** move the skill-ingestion pipeline into `workflow/<module>/`, so a project can enable ingestion or leave it off. It is repository-local today because two of its three members are project and harness state, and a module carries `prompts/` and `skills` only.
+
+**Depends on:** M3.4.2 `Environment declaration seam`, and a way for a shipped module to register a lint gate.
+
+**The prefactors, in the order they bind:**
+
+- [ ] **The project declares where its registry lives** -- `source_bump.mjs` resolves its root to the repository it runs in and expects `.agents/registry/sources/`; M3.4.2 owns where a project declares a path like that. Ends when a project names its registry root in a declaration the CLI reads, and a fixture project's store sits somewhere other than that fixed path.
+- [ ] **A shipped module can register a lint gate** -- `scripts/lint.sh` holds the gate list and a module's payload is its two folders, so a module cannot add a commit-time check. Ends when a gate shipped with a module runs under the umbrella, with a test that a failing module gate fails the umbrella and names its module.
+- [ ] **The store's tooling has a transport** -- `scripts/skill_store.mjs` and `scripts/source_bump.mjs` are repository scripts, and their tests run against the tree. Ends when both resolve from one installed location in any project, and the suite runs against that copy.
+- [ ] **The workflow layer enumerates modules from the manifest** -- `scripts/skill_layers.mjs` names the coding-agent module's skills folder literally, so a second module is invisible to the layer map, the collision gate and the reference gate. Ends when a second module appears in all three with no name added by hand.
+- [ ] **The registry's owner is decided** -- whether `.agents/registry/sources/` is project data, each project owning its edges, or payload shipped with the module. Ends when one is chosen and the canonical-form gate reads the store from the place that choice names.
+- [ ] **The module's membership is decided** -- whether the module means "vendor a skill" and carries `skill-fork` alone, or "do skill work" and carries the authoring side too, which needs the merged instruction-writing surface first; and whether `backlog-triage` leaves the coding-agent module. Ends when the payload is listed and no skill names a member of two modules.
+- [ ] **The name is chosen** -- `skill-management` is a candidate and not a decision, and the name is owed by a module that exists. Ends when the directory exists under that name.
+- [ ] **This repository migrates** -- its own skills move into the module and its provider config enables it. Ends when `.agents/skills/` holds no skill the module ships, and the layer map reports the module as the skills' source.

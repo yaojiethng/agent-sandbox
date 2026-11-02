@@ -15,6 +15,10 @@ An upstream artifact comes into this tree as a fork: it keeps what earns its pla
 | bump this, take the new upstream revision, re-base this fork | [`patterns/upstream-bump.md`](patterns/upstream-bump.md) |
 | which artifacts does this provider have that we must strip | [`patterns/provider-artifacts.md`](patterns/provider-artifacts.md) |
 
+## The pipeline it belongs to
+
+Ingestion has three members: this skill's fork pattern brings an upstream artifact in, the store edge keeps its source and adaptation so a bump has facts to read, and the shipped [`backlog-triage`](../../../workflow/coding-agent/prompts/backlog-triage.md) prompt turns what the pipeline leaves into filed work. It stays in this repository rather than moving into a workflow module, because the store and its gate are harness state; [`module_instruction_payload.md`](../../../docs/adr/module_instruction_payload.md) states why, and the deferred work of shipping it is in [`roadmap_future.md`](../../../devlog/roadmap_future.md#skill-ingestion-as-a-workflow-module-indefinitely-deferred).
+
 A fork is opt-in maintenance. An artifact with no edge is one nobody bumps, and nothing requires an edge; the store exists so that a bump has facts to read, and its reader is the maintainer running one.
 
 ## The edge is the boundary
