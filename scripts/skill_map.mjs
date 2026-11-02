@@ -12,131 +12,34 @@
 //     the project tree is where it is read.
 //
 // The map is printed, never committed. The source facts stay in the provenance
-// lockfile; the resolution stays a view.
+// lockfile; the resolution stays a view. The layer table and the discovery rule
+// are `scripts/skill_layers.mjs`, shared with the graph.
 //
 // Usage:
 //   node scripts/skill_map.mjs [--root DIR] [--json]
 //
 // Exit: 0 = no hard finding, 1 = a hard finding or the gate could not run.
 
-import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { existsSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-// Precedence is highest first. It is the order pi's package manager resolves:
-// project auto-discovery, then user auto-discovery, then package resources.
-// The two package roots are one rank; the settings list orders them, and the
-// agent root comes before the module root.
-const LAYERS = [
-  {
-    name: "project",
-    source: ".agents/skills",
-    runtime: "/home/agentuser/sandbox/.agents/skills/",
-    linkRoot: ".",
-  },
-  {
-    name: "provider",
-    source: "src/reasoning/providers/pi/config/agent/skills",
-    runtime: "$AGENT_HOME/agent/skills/",
-    linkRoot: "src/reasoning/providers/pi/config/agent/skills",
-  },
-  {
-    name: "agent-sandbox",
-    source: "src/reasoning/agent/skills",
-    runtime: "/opt/workflow/agent/skills/",
-    linkRoot: "src/reasoning/agent/skills",
-  },
-  {
-    name: "workflow",
-    source: "workflow/coding-agent/skills",
-    runtime: "/opt/workflow/agent/modules/coding-agent/skills/",
-    linkRoot: "workflow/coding-agent/skills",
-  },
-];
+import {
+  LAYERS,
+  discoverSkillDirs,
+  inside,
+  layerOf,
+  markdownFiles,
+  markdownLinks,
+  piModuleEntry,
+} from "./skill_layers.mjs";
 
-const PACKAGE = join("@earendil-works", "pi-coding-agent");
-const ENTRY = join("dist", "index.js");
-
-function piEntry() {
-  try {
-    const bin = execFileSync("sh", ["-c", "command -v pi"], { encoding: "utf8" }).trim();
-    let dir = dirname(realpathSync(bin));
-    for (let hop = 0; hop < 8; hop++) {
-      const module = join(dir, "node_modules", PACKAGE, ENTRY);
-      if (existsSync(module)) return module;
-      dir = dirname(dir);
-    }
-  } catch {
-    // Fall through to PI_PACKAGE_DIR.
-  }
-  if (process.env.PI_PACKAGE_DIR) {
-    const module = join(process.env.PI_PACKAGE_DIR, ENTRY);
-    if (existsSync(module)) return module;
-  }
-  throw new Error("pi's package could not be resolved; set PI_PACKAGE_DIR");
-}
-
-function inside(path, root) {
-  const rel = relative(resolve(root), resolve(path));
-  return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !rel.startsWith(sep));
-}
-
-function layerOf(path, root) {
-  for (const layer of LAYERS) {
-    const source = resolve(root, layer.source);
-    if (inside(path, source)) return layer;
-  }
-  return null;
-}
-
-function discoverSkills(dir, out) {
-  if (!existsSync(dir)) return;
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  if (entries.some((entry) => entry.isFile() && entry.name === "SKILL.md")) {
-    out.push(dir);
-    return;
-  }
-  for (const entry of entries) {
-    if (entry.isDirectory() && entry.name !== "node_modules") {
-      discoverSkills(join(dir, entry.name), out);
-    }
-  }
-}
-
-function markdownFiles(dir, out) {
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  for (const entry of entries) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) markdownFiles(path, out);
-    else if (entry.isFile() && entry.name.endsWith(".md")) out.push(path);
-  }
-}
-
-const LINK = /\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-
-function linksIn(file) {
-  const links = [];
-  const text = readFileSync(file, "utf8")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/~~~[\s\S]*?~~~/g, "")
-    .replace(/`[^`]*`/g, "");
-  for (const match of text.matchAll(LINK)) {
-    const target = match[1];
-    if (/^(?:[a-z][a-z0-9+.-]*:|\/|#|\$)/i.test(target)) continue;
-    links.push({ target: target.split("#")[0], raw: target });
-  }
-  return links;
+// A link the map judges is a relative file target: a scheme, an absolute path,
+// an in-page fragment and a home-relative path are all somebody else's.
+function judgedLinks(file) {
+  return markdownLinks(file).filter(
+    (link) => !/^(?:[a-z][a-z0-9+.-]*:|\/|#|\$)/i.test(link.raw),
+  );
 }
 
 async function main() {
@@ -158,24 +61,18 @@ async function main() {
   const findings = [];
   const warnings = [];
   const discovered = [];
-  const layerForDir = new Map();
   for (const layer of LAYERS) {
     const source = resolve(root, layer.source);
     if (!existsSync(source) || !statSync(source).isDirectory()) {
       findings.push(`layer ${layer.name}: source '${layer.source}' is missing`);
       continue;
     }
-    const dirs = [];
-    discoverSkills(source, dirs);
-    for (const dir of dirs) {
-      discovered.push(dir);
-      layerForDir.set(dir, layer);
-    }
+    discovered.push(...discoverSkillDirs(source));
   }
 
   let loadSkills;
   try {
-    ({ loadSkills } = await import(pathToFileURL(piEntry()).href));
+    ({ loadSkills } = await import(pathToFileURL(piModuleEntry()).href));
   } catch (error) {
     console.error(`skill map: cannot load pi's loader: ${error.message}`);
     return 1;
@@ -235,10 +132,8 @@ async function main() {
     if (layer.name === "agent-sandbox" && !existsSync(join(dir, "MAINTENANCE.md"))) {
       warnings.push(`${layer.name}: '${skill.name}' has no MAINTENANCE.md`);
     }
-    const files = [];
-    markdownFiles(dir, files);
-    for (const md of files) {
-      for (const link of linksIn(md)) {
+    for (const md of markdownFiles(dir)) {
+      for (const link of judgedLinks(md)) {
         const target = resolve(dirname(md), link.target);
         if (!existsSync(target)) {
           findings.push(`link: ${relative(root, md)} -> '${link.raw}' does not resolve`);
@@ -253,13 +148,9 @@ async function main() {
           }
           continue;
         }
-        if (!inside(target, resolve(root, layer.linkRoot))) {
+        if (!inside(target, resolve(root, layer.source))) {
           findings.push(
             `forbidden link: ${layer.name} '${relative(root, md)}' -> '${link.raw}' leaves its layer root (${layer.source})`,
-          );
-        } else if (targetLayer && targetLayer.name !== layer.name) {
-          findings.push(
-            `forbidden link: ${layer.name} '${relative(root, md)}' -> '${link.raw}' reaches ${targetLayer.name}`,
           );
         }
       }
@@ -267,11 +158,11 @@ async function main() {
   }
 
   const total = loaded.size;
+  if (total === 0) findings.push("map: the declared layers hold no skill");
   const summary = {
     layers: LAYERS.map((layer) => ({
       name: layer.name,
       source: layer.source,
-      runtime: layer.runtime,
       skills: byLayer.get(layer.name)?.length ?? 0,
     })),
     skills: total,
@@ -301,4 +192,6 @@ async function main() {
   return findings.length === 0 ? 0 : 1;
 }
 
-process.exit(await main());
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exit(await main());
+}

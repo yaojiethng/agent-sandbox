@@ -34,7 +34,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   renameSync,
   rmSync,
   statSync,
@@ -46,13 +45,15 @@ import { tmpdir } from "os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 
+import { STORE_REL, identityFindings, isId, readStore } from "./skill_store.mjs";
+
 const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ROOT = process.env.SOURCE_BUMP_ROOT
   ? resolve(process.env.SOURCE_BUMP_ROOT)
   : MODULE_ROOT;
 const DEFAULT_STORE = process.env.SOURCE_BUMP_STORE
   ? resolve(process.env.SOURCE_BUMP_STORE)
-  : join(ROOT, ".agents", "registry", "sources");
+  : join(ROOT, STORE_REL);
 
 const SOURCE_KEYS = ["schema", "id", "url", "license", "copyright", "reason", "artifacts"];
 const ARTIFACT_KEYS = ["local_path", "kind", "parent", "upstream_path", "origin", "base"];
@@ -88,7 +89,6 @@ function error(message) {
 }
 
 const isCommit = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value);
-const isId = (value) => typeof value === "string" && /^[a-z0-9][a-z0-9._-]*$/.test(value);
 
 function isRelativePath(value) {
   if (typeof value !== "string" || value.trim() === "") return false;
@@ -97,10 +97,6 @@ function isRelativePath(value) {
   return !parts.includes("..") && !parts.includes("");
 }
 
-function isInsideRoot(path) {
-  const rel = relative(ROOT, resolve(ROOT, path));
-  return rel === "" || (!rel.startsWith("..") && !rel.split(sep).includes(".."));
-}
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -163,8 +159,6 @@ function validateArtifact(artifact, where, findings) {
   const local = artifact.local_path;
   if (!isRelativePath(local)) {
     addFinding(findings, where, "local_path must be a relative path inside the repository");
-  } else if (!isInsideRoot(local)) {
-    addFinding(findings, where, `local_path ${local} is outside the repository`);
   } else {
     const absolute = resolve(ROOT, local);
     if (!existsSync(absolute)) {
@@ -212,7 +206,6 @@ function validateSource(source, where, findings) {
     if (!SOURCE_KEYS.includes(key)) addFinding(findings, where, `unknown field ${key}`);
   }
   if (source.schema !== 1) addFinding(findings, where, "schema must be 1");
-  if (!isId(source.id)) addFinding(findings, where, "id must be a lowercase source id");
   if (typeof source.url !== "string" || !source.url.startsWith("https://")) {
     addFinding(findings, where, "url must be an https URL");
   }
@@ -254,25 +247,12 @@ function validateSource(source, where, findings) {
 }
 
 function collectFindings(entries) {
-  const findings = [];
-  const ids = new Map();
+  const findings = identityFindings(entries);
   const locals = new Map();
   for (const entry of entries) {
     const source = entry.source;
     validateSource(source, entry.path, findings);
     if (!source || typeof source !== "object") continue;
-
-    if (typeof source.id === "string") {
-      if (ids.has(source.id)) {
-        addFinding(findings, entry.path, `id ${source.id} is already used by ${ids.get(source.id)}`);
-      } else {
-        ids.set(source.id, entry.path);
-      }
-      const expectedId = basename(entry.file, ".json");
-      if (source.id !== expectedId) {
-        addFinding(findings, entry.path, `id ${source.id} does not match the filename ${expectedId}`);
-      }
-    }
 
     for (const artifact of Array.isArray(source.artifacts) ? source.artifacts : []) {
       if (!artifact || typeof artifact.local_path !== "string") continue;
@@ -290,30 +270,7 @@ function collectFindings(entries) {
   return findings;
 }
 
-function loadEntries(store, allowMissing) {
-  if (!existsSync(store)) {
-    if (allowMissing) return { entries: [], findings: [] };
-    return { entries: [], findings: [`${store}: the tracking store does not exist`] };
-  }
-  const files = readdirSync(store)
-    .filter((file) => file.endsWith(".json"))
-    .sort();
-  if (files.length === 0 && !allowMissing) {
-    return { entries: [], findings: [`${store}: the tracking store holds no source files`] };
-  }
-  const entries = [];
-  const findings = [];
-  for (const file of files) {
-    const path = join(store, file);
-    try {
-      const source = JSON.parse(readFileSync(path, "utf8"));
-      entries.push({ file, path, source });
-    } catch (readError) {
-      findings.push(`${path}: ${readError.message}`);
-    }
-  }
-  return { entries, findings };
-}
+const loadEntries = (store, allowMissing) => readStore(store, { allowMissing });
 
 function printFindings(findings) {
   for (const finding of findings) console.error(finding);

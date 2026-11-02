@@ -13,107 +13,47 @@
 //   node scripts/skill_graph.mjs --check
 //   node scripts/skill_graph.mjs --evidence FILE [--json|--mermaid|--check]
 //
-// --check exits 1 on a structural finding. Drift is not a structural finding;
-// it is a valid edge kind the graph must show. An unknown image digest is a
-// warning, not a failure.
+// --check exits 1 on a structural finding and on drift: a copy that no longer
+// matches what it was made from is the fact the check exists for. The renderer
+// renders a graph with drift and fails only on a structural finding, so a diff
+// can be inspected before it blocks. An unknown image digest is a warning.
 //
 // The graph is intentionally a focus view: artifact roots and the target
 // artifacts of cross-boundary links, not all 58 skills.
 
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-const REPO = process.cwd();
-const AGENT_HOME = process.env.AGENT_HOME || "/home/agentuser/.pi";
+import {
+  LAYERS,
+  discoverSkillDirs,
+  inside,
+  isDirectory,
+  layerRoots,
+  markdownFiles,
+  markdownLinks,
+  walkFiles,
+} from "./skill_layers.mjs";
+
+// The graph's subject is the repository this script belongs to, not the shell's
+// working directory: a check run from a subdirectory would otherwise collect no
+// roots and report clean over nothing.
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const IMAGE_DIGEST = process.env.SKILL_GRAPH_IMAGE_DIGEST || null;
 
-const LINK = /\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-const IGNORE = new Set([".git", "node_modules", ".scratchpad"]);
-
-const LAYER_ORDER = ["project", "provider", "agent-sandbox", "workflow"];
-const NAMESPACE_ORDER = ["repo", "image", "host", "project"];
-
-const ROOT_DEFS = [
-  {
-    id: "repo:agent-sandbox",
-    namespace: "repo",
-    layer: "agent-sandbox",
-    path: "src/reasoning/agent/skills",
-  },
-  {
-    id: "repo:workflow",
-    namespace: "repo",
-    layer: "workflow",
-    path: "workflow/coding-agent/skills",
-  },
-  {
-    id: "repo:provider",
-    namespace: "repo",
-    layer: "provider",
-    path: "src/reasoning/providers/pi/config/agent/skills",
-  },
-  {
-    id: "project",
-    namespace: "project",
-    layer: "project",
-    path: ".agents/skills",
-  },
-  {
-    id: "image:agent-sandbox",
-    namespace: "image",
-    layer: "agent-sandbox",
-    path: "/opt/workflow/agent/skills",
-  },
-  {
-    id: "image:workflow",
-    namespace: "image",
-    layer: "workflow",
-    path: "/opt/workflow/agent/modules/coding-agent/skills",
-  },
-  {
-    id: "image:provider",
-    namespace: "image",
-    layer: "provider",
-    path: "/opt/workflow/agent/config/agent/skills",
-  },
-  {
-    id: "host:provider",
-    namespace: "host",
-    layer: "provider",
-    path: join(AGENT_HOME, "agent", "skills"),
-  },
-];
+const NAMESPACE_ORDER = ["repo", "image", "host"];
 
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
 }
 
-function isDirectory(path) {
-  try {
-    return statSync(path).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-function walk(dir, out = []) {
-  if (!isDirectory(dir)) return out;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (IGNORE.has(entry.name)) continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) walk(path, out);
-    else if (entry.isFile()) out.push(path);
-  }
-  return out;
-}
-
 // treeHash -- the directory's content identity: sorted relative path + file hash.
 function treeHash(dir) {
   if (!isDirectory(dir)) return null;
-  const rows = walk(dir)
+  const rows = walkFiles(dir)
     .map((path) => {
       const rel = relative(dir, path).split(sep).join("/");
       return `${rel}\0${sha256(readFileSync(path))}`;
@@ -129,38 +69,21 @@ function frontmatterName(file) {
     basename(dirname(file));
 }
 
-// discoverSkills -- pi's no-recurse rule: a directory with SKILL.md is a root.
+// discoverSkills -- the layer's skill roots as graph nodes. pi's no-recurse rule
+// is skill_layers.mjs's; this adds the node's identity.
 function discoverSkills(dir, rootPath, out = []) {
-  if (!isDirectory(dir)) return out;
-  const entries = readdirSync(dir, { withFileTypes: true });
-  if (entries.some((entry) => entry.isFile() && entry.name === "SKILL.md")) {
-    const name = frontmatterName(join(dir, "SKILL.md"));
+  for (const skillDir of discoverSkillDirs(dir)) {
+    const rel = relative(dir, skillDir).split(sep).join("/");
     out.push({
-      name,
-      path: rootPath,
-      sha256: treeHash(dir),
+      name: frontmatterName(join(skillDir, "SKILL.md")),
+      path: posix.join(rootPath, rel),
+      sha256: treeHash(skillDir),
     });
-    return out;
-  }
-  for (const entry of entries) {
-    if (entry.isDirectory() && !IGNORE.has(entry.name)) {
-      const child = join(dir, entry.name);
-      const rel = relative(dir, child).split(sep).join("/");
-      discoverSkills(child, posix.join(rootPath, rel), out);
-    }
   }
   return out;
 }
 
-function linkLine(text, index) {
-  return text.slice(0, index).split("\n").length;
-}
-
-function parseLinks(file, rootPath, rootId, skills, repoRoot) {
-  const text = readFileSync(file, "utf8")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/~~~[\s\S]*?~~~/g, "")
-    .replace(/`[^`]*`/g, "");
+function parseLinks(raw, file, rootPath, rootId, skills, repoRoot, resolves) {
   const absoluteRoot = isAbsolute(rootPath) ? rootPath : join(repoRoot, rootPath);
   const rel = relative(absoluteRoot, file).split(sep).join("/");
   if (rel.startsWith("..")) return [];
@@ -170,17 +93,19 @@ function parseLinks(file, rootPath, rootId, skills, repoRoot) {
       .filter((skill) => filePath === skill.path || filePath.startsWith(`${skill.path}/`))
       .sort((a, b) => b.path.length - a.path.length)[0]?.name || null;
   const links = [];
-  for (const match of text.matchAll(LINK)) {
-    const target = match[1].split("#")[0];
+  for (const link of raw) {
+    const target = link.target;
     if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue;
-    if (target.startsWith("/") && !target.startsWith("/opt/")) continue;
-    if (target.startsWith("$") && !target.startsWith("$AGENT_HOME/")) continue;
+    // A relative target is judged by the layer boundary rules; an absolute or
+    // home-rooted one is kept only when a declared root resolves it, so a moved
+    // destination moves the links written to it instead of dropping them.
+    if ((target.startsWith("/") || target.startsWith("$")) && !resolves(target)) continue;
     links.push({
       fromRoot: rootId,
       fromSkill: sourceSkill,
       file: rel,
       target,
-      line: linkLine(text, match.index),
+      line: link.line,
     });
   }
   return links;
@@ -194,123 +119,223 @@ function git(root, args) {
   }
 }
 
-function readCopies(root) {
-  const path = join(root, "src/reasoning/providers/pi/provider.dockerfile");
-  if (!existsSync(path)) return [];
-  const rows = [];
-  for (const line of readFileSync(path, "utf8").split("\n")) {
-    const match = /^COPY\s+(\S+)\s+(\S+)\s*$/.exec(line);
-    if (match) rows.push({ source: match[1], destination: match[2], line: line.trim() });
-  }
-  return rows;
+// rootDefs -- one repository root per layer, the image root each layer's payload
+// occupies, and the provider home the image seeds. The layer table owns which
+// directory is a layer; the manifest's image rows own the destinations; the
+// session's environment owns the provider home.
+function rootId(layer, namespace) {
+  return `${namespace}:${layer.name}`;
 }
 
-function mountRows(target) {
-  const rows = [];
-  let text = "";
-  try {
-    text = readFileSync("/proc/self/mountinfo", "utf8");
-  } catch {
-    return rows;
+function rootDefs(declared) {
+  const defs = LAYERS.map((layer) => ({
+    id: rootId(layer, "repo"),
+    namespace: "repo",
+    layer: layer.name,
+    path: layer.source,
+  }));
+  for (const namespace of ["image", "host"]) {
+    for (const layer of LAYERS) {
+      const root = declared[namespace].get(layer.name);
+      if (root) defs.push({ id: rootId(layer, namespace), namespace, layer: layer.name, path: root.path });
+    }
   }
-  for (const line of text.split("\n")) {
-    const parts = line.split(" ");
-    if (parts.length < 5) continue;
-    const mountTarget = parts[4];
-    const separator = parts.indexOf("-");
-    if (separator < 0 || separator + 2 >= parts.length) continue;
-    const mountSource = parts[separator + 2];
-    if (mountTarget === target) rows.push({ target: mountTarget, source: mountSource, line });
-  }
-  return rows;
+  return defs;
+}
+
+function absoluteOf(definition, repoRoot) {
+  return isAbsolute(definition.path) ? definition.path : join(repoRoot, definition.path);
 }
 
 export function collectEvidence(root = REPO) {
   const repoRoot = resolve(root);
+  const declared = layerRoots(repoRoot);
+  const defs = rootDefs(declared);
+  const findings = [...declared.findings];
+  const warnings = [];
   const roots = [];
-  for (const definition of ROOT_DEFS) {
-    const absolute = isAbsolute(definition.path)
-      ? definition.path
-      : join(repoRoot, definition.path);
-    if (!isDirectory(absolute)) continue;
-    const skills = discoverSkills(absolute, definition.path);
+  for (const definition of defs) {
+    const absolute = absoluteOf(definition, repoRoot);
+    if (!isDirectory(absolute)) {
+      const message = `root: ${definition.id} is missing at ${definition.path}`;
+      if (definition.namespace === "host") warnings.push(message);
+      else findings.push(message);
+      continue;
+    }
     roots.push({
       ...definition,
       sha256: treeHash(absolute),
-      skills,
+      skills: discoverSkills(absolute, definition.path),
     });
   }
 
+  // resolves TARGET -- whether a declared root holds an absolute or home-rooted
+  // target. The manifest owns the destinations; this only asks them.
+  const resolves = (target) => {
+    const expanded = target.startsWith("$AGENT_HOME/") && declared.agentHome
+      ? target.replace("$AGENT_HOME", declared.agentHome)
+      : target;
+    if (!expanded.startsWith("/")) return false;
+    return roots.some((entry) => inside(expanded, absoluteOf(entry, repoRoot)));
+  };
+
   const links = [];
   for (const rootDef of roots) {
-    const absolute = isAbsolute(rootDef.path) ? rootDef.path : join(repoRoot, rootDef.path);
-    for (const file of walk(absolute)) {
-      if (file.endsWith(".md")) {
-        links.push(...parseLinks(file, rootDef.path, rootDef.id, rootDef.skills, repoRoot));
+    for (const file of markdownFiles(absoluteOf(rootDef, repoRoot))) {
+      const raw = markdownLinks(file);
+      // A home-rooted link whose home the manifest does not resolve is reported
+      // rather than dropped: the target exists and the declaration does not.
+      if (!declared.agentHome && raw.some((link) => link.target.startsWith("$AGENT_HOME/"))) {
+        findings.push(`link: ${relative(repoRoot, file)} targets \$AGENT_HOME, whose home the manifest does not resolve`);
       }
+      links.push(...parseLinks(raw, file, rootDef.path, rootDef.id, rootDef.skills, repoRoot, resolves));
     }
   }
 
   const rootIds = new Set(roots.map((entry) => entry.id));
   const build = [];
-  const copyMap = new Map([
-    ["src/reasoning/agent/skills/", ["repo:agent-sandbox", "image:agent-sandbox"]],
-    ["workflow/coding-agent/skills/", ["repo:workflow", "image:workflow"]],
-    ["src/reasoning/providers/pi/config/", ["repo:provider", "image:provider"]],
-  ]);
-  for (const row of readCopies(repoRoot)) {
-    const pair = copyMap.get(row.source);
-    if (!pair) continue;
-    if (!rootIds.has(pair[0]) || !rootIds.has(pair[1])) continue;
+  // A copy edge is a manifest row: the repository root a layer is read from and
+  // the image root the same payload occupies. A row that reaches a layer but
+  // whose root is absent from the tree is reported, not skipped.
+  for (const layer of LAYERS) {
+    const imageRoot = declared.image.get(layer.name);
+    const from = rootId(layer, "repo");
+    const to = rootId(layer, "image");
+    if (!imageRoot) continue;
+    if (!rootIds.has(from) || !rootIds.has(to)) continue;
     build.push({
       kind: "copy",
-      from: pair[0],
-      to: pair[1],
-      evidence: `provider.dockerfile: ${row.line}`,
+      from,
+      to,
+      evidence: `container-interface.json: ${imageRoot.row.source} -> ${imageRoot.row.destination}`,
     });
   }
-  if (rootIds.has("image:provider") && rootIds.has("host:provider")) {
+  for (const layer of LAYERS) {
+    const hostRoot = declared.host.get(layer.name);
+    const from = rootId(layer, "image");
+    const to = rootId(layer, "host");
+    if (!hostRoot || !rootIds.has(from) || !rootIds.has(to)) continue;
     build.push({
       kind: "seed",
-      from: "image:provider",
-      to: "host:provider",
-      evidence: "entrypoint.sh: config template seeded into AGENT_HOME",
+      from,
+      to,
+      evidence: `container-interface.json: provision ${hostRoot.row.provider} -> ${hostRoot.path}`,
     });
   }
 
   return {
     repo: {
-      root: ".",
+      root: repoRoot,
       commit: git(repoRoot, ["rev-parse", "HEAD"]) || "unknown",
       dirty: git(repoRoot, ["status", "--porcelain"]).length > 0,
     },
     image: {
       digest: IMAGE_DIGEST,
     },
-    agentHome: AGENT_HOME,
+    agentHome: declared.agentHome,
     roots,
     links,
     build,
-    mounts: mountRows(join(AGENT_HOME, "agent", "skills")),
+    findings,
+    warnings,
   };
-}
-
-function inside(path, root) {
-  const rel = relative(root, path);
-  return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !rel.startsWith(sep));
 }
 
 function rootVersion(root, evidence) {
   if (root.namespace === "repo") {
     return `repo:${evidence.repo.commit}${evidence.repo.dirty ? ":dirty" : ""}`;
   }
-  if (root.namespace === "project") {
-    return `project:${evidence.repo.commit}${evidence.repo.dirty ? ":dirty" : ""}`;
-  }
   if (root.namespace === "image") {
     return `image:${evidence.image.digest || "unknown"}`;
   }
   return `host:${root.sha256.slice(0, 12)}`;
+}
+
+
+// validateShape -- the graph against its declared contract. The schema beside
+// this script is the contract, so a field the builder adds and the schema lacks,
+// or an enum value the builder invents, is reported here rather than in a
+// second hand-written list that can drift from it.
+const SCHEMA_FILE = resolve(dirname(fileURLToPath(import.meta.url)), "skill_graph.schema.json");
+
+function typeMatches(value, type) {
+  if (type === "array") return Array.isArray(value);
+  if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value);
+  if (type === "integer") return Number.isInteger(value);
+  if (type === "null") return value === null;
+  return typeof value === type;
+}
+
+// checkShape VALUE SHAPE WHERE -- one value against one rule: the rule's own
+// scalar keywords first, then its object rules. A value of the wrong type is
+// reported and not descended into, so a broken input reads as a finding rather
+// than as a crash or a page of noise.
+const SHAPE_KEYWORDS = new Set([
+  "const",
+  "enum",
+  "type",
+  "minimum",
+  "items",
+  "properties",
+  "required",
+  "additionalProperties",
+  "$schema",
+  "title",
+  "description",
+]);
+
+function checkShape(value, shape, where, findings) {
+  if (!shape || typeof shape !== "object") return findings;
+  for (const keyword of Object.keys(shape)) {
+    if (!SHAPE_KEYWORDS.has(keyword)) findings.push(`schema: keyword '${keyword}' is not implemented`);
+  }
+  if (shape.const !== undefined && value !== shape.const) {
+    findings.push(`${where}: expected ${JSON.stringify(shape.const)}`);
+  }
+  if (Array.isArray(shape.enum) && !shape.enum.includes(value)) {
+    findings.push(`${where}: ${JSON.stringify(value)} is not one of ${shape.enum.join(", ")}`);
+  }
+  if (shape.type !== undefined) {
+    const types = [].concat(shape.type);
+    if (!types.some((type) => typeMatches(value, type))) {
+      findings.push(`${where}: must be ${types.join(" or ")}`);
+      return findings;
+    }
+  }
+  if (shape.minimum !== undefined && typeof value === "number" && value < shape.minimum) {
+    findings.push(`${where}: must be at least ${shape.minimum}`);
+  }
+  if (Array.isArray(value)) {
+    if (shape.items) {
+      value.forEach((item, index) => checkShape(item, shape.items, `${where}[${index}]`, findings));
+    }
+    return findings;
+  }
+  if (value === null || typeof value !== "object") return findings;
+  const properties = shape.properties || {};
+  for (const field of shape.required || []) {
+    if (value[field] === undefined) findings.push(`${where}: missing required field '${field}'`);
+  }
+  if (shape.additionalProperties === false) {
+    for (const field of Object.keys(value)) {
+      if (!Object.hasOwn(properties, field)) findings.push(`${where}: field '${field}' is not declared`);
+    }
+  }
+  for (const [field, rule] of Object.entries(properties)) {
+    if (value[field] === undefined) continue;
+    checkShape(value[field], rule, `${where}.${field}`, findings);
+  }
+  return findings;
+}
+
+export function validateGraph(graph) {
+  let schema;
+  try {
+    schema = JSON.parse(readFileSync(SCHEMA_FILE, "utf8"));
+  } catch (error) {
+    return [`schema: cannot read ${SCHEMA_FILE}: ${error.message}`];
+  }
+  return checkShape(graph, schema, "graph", []);
 }
 
 function nodeForRoot(root, evidence) {
@@ -328,7 +353,7 @@ function nodeForRoot(root, evidence) {
 
 function nodeForSkill(root, skill, evidence) {
   return {
-    id: `skill:${root.id}:${skill.name}`,
+    id: `skill:${root.id}:${relativeToRoot(root.path, skill.path)}`,
     kind: "artifact",
     role: "target",
     namespace: root.namespace,
@@ -340,20 +365,27 @@ function nodeForSkill(root, skill, evidence) {
 }
 
 function resolveTarget(link, root, roots, evidence) {
+  const repoRoot = evidence.repo?.root || ".";
+  const absoluteOf = (path) => (isAbsolute(path) ? path : join(repoRoot, path));
   let target = link.target;
   if (target.startsWith("$AGENT_HOME/")) {
     target = target.replace("$AGENT_HOME", evidence.agentHome);
   }
   if (!target.startsWith("/")) {
-    target = posix.resolve(posix.dirname(posix.join(root.path, link.file)), target);
+    // Joining, not resolving: a repository-relative target must not be resolved
+    // against the process's working directory.
+    target = posix.normalize(posix.join(posix.dirname(posix.join(root.path, link.file)), target));
   }
+  // One resolver: a root holds the target when the same normalisation says so,
+  // whichever form the target and the root path were written in.
+  const absolute = absoluteOf(target);
   const candidates = roots
-    .filter((entry) => inside(target, entry.path))
+    .filter((entry) => inside(absolute, absoluteOf(entry.path)))
     .sort((a, b) => b.path.length - a.path.length);
   const targetRoot = candidates[0] || null;
   if (!targetRoot) return { target, targetRoot: null, targetSkill: null };
   const skills = targetRoot.skills
-    .filter((skill) => inside(target, skill.path))
+    .filter((skill) => inside(absolute, absoluteOf(skill.path)))
     .sort((a, b) => b.path.length - a.path.length);
   return { target, targetRoot, targetSkill: skills[0] || null };
 }
@@ -376,15 +408,34 @@ function compare(a, b) {
   return a.sha256 === b.sha256 ? "same-content" : "drift";
 }
 
+// relativeToRoot -- a skill's path inside its layer root. A skill is the same
+// skill in two copies when this is equal, whatever the frontmatter says.
+function relativeToRoot(rootPath, skillPath) {
+  return skillPath.slice(rootPath.length).replace(/^\/+/, "");
+}
+
+
+
 export function buildGraph(evidence) {
-  const findings = [];
+  const findings = [...(evidence.findings || [])];
   const nodes = new Map();
   const edges = new Map();
   const roots = evidence.roots || [];
   const rootById = new Map(roots.map((root) => [root.id, root]));
+  // The peer a copy is compared with is the declared build relation: a
+  // repository root is compared with the copy made from it, and every other root
+  // with the copy it was made from. A bundle that declares no build edge
+  // declares no peer.
+  const copiedTo = new Map();
+  const copiedFrom = new Map();
+  for (const step of evidence.build || []) {
+    if (step.kind === "copy") copiedTo.set(step.from, step.to);
+    copiedFrom.set(step.to, step.from);
+  }
+  const peerOf = (root) =>
+    rootById.get((root.namespace === "repo" ? copiedTo : copiedFrom).get(root.id)) || null;
   for (const root of roots) addNode(nodes, nodeForRoot(root, evidence));
 
-  const targetNodes = new Map();
   for (const link of evidence.links || []) {
     const sourceRoot = rootById.get(link.fromRoot);
     if (!sourceRoot) {
@@ -400,42 +451,42 @@ export function buildGraph(evidence) {
       : nodeForRoot(resolved.targetRoot, evidence);
     addNode(nodes, targetNode);
 
-    const targetKey = `${resolved.targetRoot.id}:${resolved.targetSkill?.name || "(root)"}`;
-    if (!targetNodes.has(targetKey)) {
-      targetNodes.set(targetKey, targetNode);
-    }
-
-    const sibling = roots.find(
-      (root) => root.layer === resolved.targetRoot.layer && root.namespace !== resolved.targetRoot.namespace,
-    );
-    if (sibling) {
-      const siblingSkill = resolved.targetSkill
-        ? sibling.skills.find((skill) => skill.name === resolved.targetSkill.name)
+    const peer = peerOf(resolved.targetRoot);
+    if (peer) {
+      const peerSkill = resolved.targetSkill
+        ? peer.skills.find(
+            (skill) =>
+              relativeToRoot(peer.path, skill.path) ===
+              relativeToRoot(resolved.targetRoot.path, resolved.targetSkill.path),
+          )
         : null;
-      const siblingNode = siblingSkill
-        ? nodeForSkill(sibling, siblingSkill, evidence)
-        : nodeForRoot(sibling, evidence);
-      addNode(nodes, siblingNode);
-      addEdge(edges, {
-        kind: compare(targetNode, siblingNode),
-        from: targetNode.id,
-        to: siblingNode.id,
-        evidence: `sha256:${targetNode.sha256} / ${siblingNode.sha256}`,
-      });
+      if (resolved.targetSkill && !peerSkill) {
+        // A skill the peer copy does not hold is a fact about the copy, not a
+        // comparison: hashing a skill tree against a layer tree would report
+        // drift for every such skill and mean nothing.
+        findings.push(`copy: ${peer.namespace} ${peer.layer} does not hold skill '${resolved.targetSkill.name}'`);
+      } else {
+        const peerNode = peerSkill ? nodeForSkill(peer, peerSkill, evidence) : nodeForRoot(peer, evidence);
+        addNode(nodes, peerNode);
+        addEdge(edges, {
+          kind: compare(targetNode, peerNode),
+          from: targetNode.id,
+          to: peerNode.id,
+          evidence: `sha256:${targetNode.sha256} / ${peerNode.sha256}`,
+        });
+      }
     }
 
     const linkKey = `link|${sourceRoot.id}|${targetNode.id}|${link.fromSkill || "(root)"}`;
     const existingLink = edges.get(linkKey);
     if (existingLink) {
       existingLink.count++;
-      existingLink.expressions.push(link.target);
     } else {
       edges.set(linkKey, {
         kind: "link",
         from: `root:${sourceRoot.id}`,
         to: targetNode.id,
         expression: link.target,
-        expressions: [link.target],
         sourceSkill: link.fromSkill || "(root)",
         targetSkill: resolved.targetSkill?.name || "(root)",
         sourceFile: link.file,
@@ -492,6 +543,7 @@ export function buildGraph(evidence) {
     nodes: sortedNodes,
     edges: sortedEdges,
     findings,
+    warnings: evidence.warnings || [],
   };
   graph.summary = {
     roots: sortedNodes.filter((node) => node.role === "root").length,
@@ -508,17 +560,28 @@ export function buildGraph(evidence) {
 
 export function checkGraph(graph, options = {}) {
   const findings = [...(graph.findings || [])];
-  const warnings = [];
-  const drifts = (graph.edges || []).filter((edge) => edge.kind === "drift");
-  const ids = new Set();
-  for (const node of graph.nodes || []) {
-    if (ids.has(node.id)) findings.push(`node: duplicate id '${node.id}'`);
-    ids.add(node.id);
-    for (const field of ["namespace", "layer", "path", "version", "sha256", "role"]) {
-      if (!node[field]) findings.push(`node: ${node.id} has no ${field}`);
-    }
-    if (node.role === "target" && !node.path) findings.push(`node: ${node.id} has no path`);
+  const warnings = [...(graph.warnings || [])];
+
+  // The declared shape first. A graph that violates it is not walked: the rules
+  // below assume well-typed nodes, and a walk over a broken one turns one defect
+  // into a crash or a page of noise.
+  const shape = validateGraph(graph);
+  findings.push(...shape);
+  if (shape.length === 0) checkStructure(graph, findings);
+  const drifts = shape.length === 0 ? graph.edges.filter((edge) => edge.kind === "drift") : [];
+
+  if (!options.allowDrift && drifts.length > 0) {
+    findings.push(`drift: ${drifts.length} source/image relation(s) differ`);
   }
+  if (!graph.evidence?.image) warnings.push("image: no digest available; labeled image:unknown");
+  return { findings, warnings, drifts };
+}
+
+// checkStructure GRAPH FINDINGS -- the rules the schema cannot state: every edge
+// endpoint exists, a link edge names its expression, and a comparison edge
+// agrees with the hashes it was computed from.
+function checkStructure(graph, findings) {
+  const ids = new Set(graph.nodes.map((node) => node.id));
   for (const edge of graph.edges || []) {
     if (!ids.has(edge.from) || !ids.has(edge.to)) {
       findings.push(`edge: ${edge.kind} ${edge.from} -> ${edge.to} has a missing endpoint`);
@@ -526,25 +589,19 @@ export function checkGraph(graph, options = {}) {
     if (edge.kind === "link" && !edge.expression) {
       findings.push(`edge: link ${edge.from} -> ${edge.to} has no expression`);
     }
-    if (edge.kind === "same-content" || edge.kind === "drift") {
-      const from = graph.nodes.find((node) => node.id === edge.from);
-      const to = graph.nodes.find((node) => node.id === edge.to);
-      if (from && to) {
-        const equal = from.sha256 === to.sha256;
-        if (edge.kind === "same-content" && !equal) {
-          findings.push(`edge: same-content ${edge.from} -> ${edge.to} has unequal hashes`);
-        }
-        if (edge.kind === "drift" && equal) {
-          findings.push(`edge: drift ${edge.from} -> ${edge.to} has equal hashes`);
-        }
-      }
+    if (edge.kind !== "same-content" && edge.kind !== "drift") continue;
+    const from = graph.nodes.find((node) => node.id === edge.from);
+    const to = graph.nodes.find((node) => node.id === edge.to);
+    if (!from || !to) continue;
+    const equal = from.sha256 === to.sha256;
+    if (edge.kind === "same-content" && !equal) {
+      findings.push(`edge: same-content ${edge.from} -> ${edge.to} has unequal hashes`);
+    }
+    if (edge.kind === "drift" && equal) {
+      findings.push(`edge: drift ${edge.from} -> ${edge.to} has equal hashes`);
     }
   }
-  if (!options.allowDrift && drifts.length > 0) {
-    findings.push(`drift: ${drifts.length} source/image relation(s) differ`);
-  }
-  if (!graph.evidence?.image) warnings.push("image: no digest available; labeled image:unknown");
-  return { findings, warnings, drifts };
+  return findings;
 }
 
 function escapeLabel(value) {
@@ -608,18 +665,20 @@ function readEvidence(file) {
 }
 
 function usage() {
-  console.log("usage: node scripts/skill_graph.mjs [--json|--mermaid|--check] [--evidence FILE]");
+  console.log("usage: node scripts/skill_graph.mjs [--json|--mermaid|--check] [--evidence FILE] [--root DIR]");
 }
 
 async function main() {
   const args = process.argv.slice(2);
   let evidenceFile = process.env.SKILL_GRAPH_EVIDENCE || null;
+  let root = REPO;
   let mode = "json";
   for (let index = 0; index < args.length; index++) {
     if (args[index] === "--json") mode = "json";
     else if (args[index] === "--mermaid") mode = "mermaid";
     else if (args[index] === "--check") mode = "check";
     else if (args[index] === "--evidence") evidenceFile = args[++index] || "";
+    else if (args[index] === "--root") root = resolve(args[++index] || "");
     else if (args[index] === "--help" || args[index] === "-h") {
       usage();
       return 0;
@@ -628,7 +687,7 @@ async function main() {
       return 2;
     }
   }
-  const evidence = evidenceFile ? readEvidence(evidenceFile) : collectEvidence(REPO);
+  const evidence = evidenceFile ? readEvidence(evidenceFile) : collectEvidence(root);
   const graph = buildGraph(evidence);
   if (mode === "mermaid") {
     process.stdout.write(toMermaid(graph));

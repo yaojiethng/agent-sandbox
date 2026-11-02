@@ -14,74 +14,48 @@
 //
 // Exit codes: 0 = clean, 1 = findings or the store cannot be read.
 
-import { existsSync, readFileSync, readdirSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { dirname, join, resolve, basename } from "path";
 import { fileURLToPath } from "url";
+
+import { LAYERS, discoverSkillDirs } from "../skill_layers.mjs";
+import { STORE_REL, identityFindings, readStore, storeIds } from "../skill_store.mjs";
 
 const MODULE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ROOT = process.env.SKILL_SOURCE_ROOT
   ? resolve(process.env.SKILL_SOURCE_ROOT)
   : MODULE_ROOT;
-const SKILLS_ROOT = join(ROOT, "src", "reasoning", "agent", "skills");
+const SKILLS_ROOT = join(ROOT, LAYERS.find((layer) => layer.name === "agent-sandbox").source);
 const STORE = process.env.SKILL_SOURCE_STORE
   ? resolve(process.env.SKILL_SOURCE_STORE)
-  : join(ROOT, ".agents", "registry", "sources");
+  : join(ROOT, STORE_REL);
 const FINDINGS = [];
 
 const finding = (path, message) => FINDINGS.push(`${path}: ${message}`);
-const isId = (value) => typeof value === "string" && /^[a-z0-9][a-z0-9._-]*$/.test(value);
 
-/** Every skill directory under the workflow tree, mirroring pi's no-recurse rule. */
+/** Every skill directory under the agent layer, by pi's no-recurse rule. */
 function skillDirs() {
-  if (!existsSync(SKILLS_ROOT)) return [];
-  return readdirSync(SKILLS_ROOT, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .filter((entry) => existsSync(join(SKILLS_ROOT, entry.name, "SKILL.md")))
-    .map((entry) => entry.name)
-    .sort();
+  return discoverSkillDirs(SKILLS_ROOT).sort();
 }
 
-/** The source ids the per-source store declares. The store schema is the CLI's. */
+/** The source ids the per-source store declares. The store's schema is the CLI's;
+ * its path, its read and its identity rules are `scripts/skill_store.mjs`'s. */
 function sourceIds() {
-  const ids = new Set();
-  if (!existsSync(STORE)) {
-    finding(STORE, "the source store does not exist");
-    return ids;
-  }
-  const files = readdirSync(STORE)
-    .filter((file) => file.endsWith(".json"))
-    .sort();
-  if (files.length === 0) {
-    finding(STORE, "the source store holds no source files");
-    return ids;
-  }
-  for (const file of files) {
-    const path = join(STORE, file);
-    let source;
-    try {
-      source = JSON.parse(readFileSync(path, "utf8"));
-    } catch (error) {
-      finding(path, `cannot parse the source file: ${error.message}`);
-      continue;
-    }
-    if (!isId(source.id)) {
-      finding(path, "the source file has no valid id");
-      continue;
-    }
-    if (source.id !== basename(file, ".json")) {
-      finding(path, `id ${source.id} does not match the filename ${basename(file, ".json")}`);
-    }
-    if (ids.has(source.id)) {
-      finding(path, `id ${source.id} is listed twice`);
-    }
-    ids.add(source.id);
-  }
-  return ids;
+  const { entries, findings } = readStore(STORE);
+  for (const entry of findings) FINDINGS.push(entry);
+  for (const entry of identityFindings(entries)) FINDINGS.push(entry);
+  return storeIds(entries);
 }
 
 function checkRecords(ids) {
-  for (const name of skillDirs()) {
-    const record = join(SKILLS_ROOT, name, "MAINTENANCE.md");
+  const dirs = skillDirs();
+  if (dirs.length === 0) {
+    finding(SKILLS_ROOT, "the agent skill layer holds no skill directory");
+    return;
+  }
+  for (const dir of dirs) {
+    const name = basename(dir);
+    const record = join(dir, "MAINTENANCE.md");
     if (!existsSync(record)) {
       finding(record, `skill ${name} has no MAINTENANCE.md record`);
       continue;

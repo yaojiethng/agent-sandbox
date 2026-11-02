@@ -43,13 +43,13 @@ $name
 EOF
 }
 
-# make_fixture -- one same-named skill in each of the four layers.
+# make_fixture -- one same-named skill in each layer the table declares.
 make_fixture() {
   local root="$FIXTURE_DIR/tree"
-  write_skill "$root/.agents/skills/probe-skill" probe-skill
-  write_skill "$root/src/reasoning/providers/pi/config/agent/skills/probe-skill" probe-skill
-  write_skill "$root/src/reasoning/agent/skills/probe-skill" probe-skill
-  write_skill "$root/workflow/coding-agent/skills/probe-skill" probe-skill
+  local name source
+  while IFS=$'\t' read -r name source _; do
+    write_skill "$root/$source/probe-skill" probe-skill
+  done < <(node "$REPO_ROOT/scripts/skill_layers.mjs" --list)
   printf '%s\n' "$root"
 }
 

@@ -11,12 +11,15 @@
 // Defaults: live evidence from the repository, output in the workspace output
 // mount. Pele defaults to <out>/vendor/pele.js; set PELE_MODULE to override.
 //
-// Exit: 0 on a rendered graph, even when the graph contains drift. A structural
-// graph finding is exit 1; the graph is not rendered.
+// Exit: 0 on a rendered graph, even when the graph contains drift, so a diff can
+// be inspected before it blocks. A structural graph finding is exit 1 and the
+// graph is not rendered. `skill_graph.mjs --check` is the release check, run by
+// hand: no gate in `scripts/lint.sh` runs it, because it compares this tree with
+// the image built from an earlier commit.
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   buildGraph,
@@ -25,7 +28,7 @@ import {
   toMermaid,
 } from "./skill_graph.mjs";
 
-const ROOT = resolve(join(new URL(".", import.meta.url).pathname, ".."));
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 let evidenceFile = null;
 let out = "/home/agentuser/workspace/output";

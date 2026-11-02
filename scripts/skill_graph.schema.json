@@ -2,11 +2,13 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Skill provenance graph",
   "type": "object",
-  "required": ["model", "evidence", "nodes", "edges", "summary", "findings"],
+  "required": ["model", "evidence", "nodes", "edges", "summary", "findings", "warnings"],
+  "additionalProperties": false,
   "properties": {
     "model": { "const": "skill-provenance/1" },
     "evidence": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["commit", "dirty"],
       "properties": {
         "commit": { "type": "string" },
@@ -19,12 +21,13 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["id", "kind", "role", "namespace", "layer", "path", "version", "sha256"],
         "properties": {
           "id": { "type": "string" },
           "kind": { "const": "artifact" },
           "role": { "enum": ["root", "target"] },
-          "namespace": { "enum": ["repo", "image", "host", "project"] },
+          "namespace": { "enum": ["repo", "image", "host"] },
           "layer": { "type": "string" },
           "path": { "type": "string" },
           "version": { "type": "string" },
@@ -36,6 +39,7 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["kind", "from", "to"],
         "properties": {
           "kind": { "enum": ["copy", "seed", "link", "same-content", "drift"] },
@@ -44,13 +48,17 @@
           "expression": { "type": "string" },
           "sourceSkill": { "type": "string" },
           "targetSkill": { "type": "string" },
-          "resolution": { "enum": ["repo", "image", "host", "project"] },
+          "resolution": { "enum": ["repo", "image", "host"] },
+          "sourceFile": { "type": "string" },
+          "line": { "type": "integer" },
+          "evidence": { "type": "string" },
           "count": { "type": "integer", "minimum": 1 }
         }
       }
     },
     "summary": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["roots", "nodes", "edges", "links", "targets", "same", "drift", "unknownImage"],
       "properties": {
         "roots": { "type": "integer" },
@@ -63,6 +71,7 @@
         "unknownImage": { "type": "boolean" }
       }
     },
-    "findings": { "type": "array", "items": { "type": "string" } }
+    "findings": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } }
   }
 }

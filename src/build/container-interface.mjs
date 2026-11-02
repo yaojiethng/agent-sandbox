@@ -32,7 +32,7 @@
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
-const MANIFEST_REL = "src/build/container-interface.json";
+export const MANIFEST_REL = "src/build/container-interface.json";
 const PROVIDERS_REL = "src/reasoning/providers";
 const ENTRYPOINT_REL = "src/reasoning/entrypoint.sh";
 const DOCKERFILE_NAME = "provider.dockerfile";

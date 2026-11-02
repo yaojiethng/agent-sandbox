@@ -10,9 +10,13 @@
 #   home-grown     -- a record that states home-grown is accepted
 #   unknown source -- a record naming a missing source fails
 #   tree skill     -- a skill with no record fails even when the store is clean
-#   repository     -- the live tree is clean across eight records and three sources
+#   repository     -- every agent-layer skill carries a record that resolves
 #   nested skill   -- pi does not discover a nested SKILL.md under a parent that
 #                     already has one
+#   grouped skill  -- a skill under a directory with no SKILL.md is discovered
+#   empty layer    -- a tree with no skill directory fails instead of passing
+#   store identity -- a malformed id, a filename mismatch and a duplicate id,
+#                     each reported once
 
 set -uo pipefail
 
@@ -90,7 +94,7 @@ test_clean_fixture_passes() {
   local root out rc
   root="$(make_fixture)"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc "$rc" 0 "two records naming one source pass"
+  assert_rc 0 "$rc" "two records naming one source pass"
   assert_contains "$out" "clean across 2 skill record(s) and 1 source(s)" "the report counts records and sources"
 }
 
@@ -99,7 +103,7 @@ test_a_missing_record_fails() {
   root="$(make_fixture)"
   rm "$root/src/reasoning/agent/skills/beta/MAINTENANCE.md"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc "$rc" 1 "a skill without a record fails"
+  assert_rc 1 "$rc" "a skill without a record fails"
   assert_contains "$out" "skill beta has no MAINTENANCE.md record" "the missing record is named"
 }
 
@@ -125,7 +129,7 @@ Home-grown.
 gamma
 EOF
   out="$(run_gate "$root")"; rc=$?
-  assert_rc "$rc" 0 "a home-grown record passes"
+  assert_rc 0 "$rc" "a home-grown record passes"
   assert_contains "$out" "clean across 3 skill record(s) and 1 source(s)" "the home-grown skill is not in the source count"
 }
 
@@ -151,7 +155,7 @@ Kept.
 gamma
 EOF
   out="$(run_gate "$root")"; rc=$?
-  assert_rc "$rc" 1 "a record naming an unknown source fails"
+  assert_rc 1 "$rc" "a record naming an unknown source fails"
   assert_contains "$out" "names source missing-source, which is not in the store" "the unknown source is named"
 }
 
@@ -162,15 +166,59 @@ test_a_tree_skill_without_a_record_fails() {
   printf '%s\n' '---' 'name: gamma' 'description: A skill with no record.' '---' '' 'Gamma.' \
     >"$root/src/reasoning/agent/skills/gamma/SKILL.md"
   out="$(run_gate "$root")"; rc=$?
-  assert_rc "$rc" 1 "a skill with no record fails even when the store is clean"
+  assert_rc 1 "$rc" "a skill with no record fails even when the store is clean"
   assert_contains "$out" "skill gamma has no MAINTENANCE.md record" "the tree-wide finding names the skill"
 }
 
 test_the_repository_records_are_clean() {
   local out rc
   out="$(node "$SCANNER" 2>&1)"; rc=$?
-  assert_rc "$rc" 0 "the repository records pass"
-  assert_contains "$out" "clean across 11 skill record(s) and 3 source(s)" "the live tree holds eleven records and three sources"
+  assert_rc 0 "$rc" "the repository records pass"
+  assert_contains "$out" "clean across" "the live tree reports a clean run"
+  assert_not_contains "$out" "finding:" "the live tree reports no finding"
+  assert_contains "$out" "skill record(s)" "the report counts records rather than naming a size"
+}
+
+test_a_grouped_skill_is_discovered() {
+  local root out rc
+  root="$(make_fixture)"
+  mkdir -p "$root/src/reasoning/agent/skills/group/gamma"
+  printf '%s\n' '---' 'name: gamma' 'description: A grouped skill.' '---' '' 'Gamma.' \
+    >"$root/src/reasoning/agent/skills/group/gamma/SKILL.md"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "a skill grouped under a non-skill directory is scanned"
+  assert_contains "$out" "skill gamma has no MAINTENANCE.md record" "the grouped skill's missing record is named"
+}
+
+test_an_empty_skill_layer_fails() {
+  local root="$FIXTURE_DIR/empty" out rc
+  mkdir -p "$root/.agents/registry/sources"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "a tree with no skill directory fails"
+  assert_contains "$out" "the agent skill layer holds no skill directory" "the empty layer is named"
+}
+
+test_the_store_identity_rules_are_reported_once() {
+  local root out rc store
+  root="$(make_fixture)"
+  store="$root/.agents/registry/sources"
+  printf '%s\n' '{"schema":1,"id":"Bad_Id","url":"https://example.test/a","license":"MIT","copyright":"C","reason":"r","artifacts":[]}' \
+    >"$store/Bad_Id.json"
+  printf '%s\n' '{"schema":1,"id":"other-id","url":"https://example.test/b","license":"MIT","copyright":"C","reason":"r","artifacts":[]}' \
+    >"$store/mismatched.json"
+  cp "$store/test-source.json" "$store/copied-source.json"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "a store with bad ids fails"
+  assert_contains "$out" "Bad_Id.json: id must be a lowercase source id" "a malformed id is named"
+  assert_contains "$out" "mismatched.json: id other-id does not match the filename mismatched" "a filename mismatch is named"
+  assert_contains "$out" "id test-source is already used by" "a duplicate id is named"
+  local counted
+  counted="$(printf '%s\n' "$out" | grep -c 'id must be a lowercase source id')"
+  if [[ "$counted" == "1" ]]; then
+    pass "a malformed id is reported once, not once per validator"
+  else
+    fail "the malformed id was reported $counted times"
+  fi
 }
 
 test_a_nested_skill_is_not_discovered() {
@@ -182,7 +230,7 @@ test_a_nested_skill_is_not_discovered() {
   printf '%s\n' '---' 'name: improve-codebase-architecture' 'description: The nested child.' '---' '' 'Child.' \
     >"$root/code-review/improve-codebase-architecture/SKILL.md"
   out="$(node "$LOADER" "$root" 2>&1)"; rc=$?
-  assert_rc "$rc" 0 "the loader probe runs"
+  assert_rc 0 "$rc" "the loader probe runs"
   assert_contains "$out" "code-review" "the parent skill is discovered"
   assert_not_contains "$out" "improve-codebase-architecture" "a nested SKILL.md is not discovered under a skill root"
 }
@@ -193,6 +241,9 @@ run_test test_a_home_grown_record_is_accepted
 run_test test_a_record_naming_an_unknown_source_fails
 run_test test_a_tree_skill_without_a_record_fails
 run_test test_the_repository_records_are_clean
+run_test test_a_grouped_skill_is_discovered
+run_test test_an_empty_skill_layer_fails
+run_test test_the_store_identity_rules_are_reported_once
 run_test test_a_nested_skill_is_not_discovered
 
 test_done

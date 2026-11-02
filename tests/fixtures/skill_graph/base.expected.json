@@ -18,6 +18,16 @@
       "sha256": "repo-agent-root"
     },
     {
+      "id": "root:repo:project",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "repo",
+      "layer": "project",
+      "path": ".agents/skills",
+      "version": "repo:0123456789abcdef0123456789abcdef01234567",
+      "sha256": "project-root"
+    },
+    {
       "id": "root:repo:provider",
       "kind": "artifact",
       "role": "root",
@@ -46,16 +56,6 @@
       "path": "src/reasoning/agent/skills/propagation-check",
       "version": "repo:0123456789abcdef0123456789abcdef01234567",
       "sha256": "source-propagation"
-    },
-    {
-      "id": "skill:repo:workflow:check-in",
-      "kind": "artifact",
-      "role": "target",
-      "namespace": "repo",
-      "layer": "workflow",
-      "path": "workflow/coding-agent/skills/check-in",
-      "version": "repo:0123456789abcdef0123456789abcdef01234567",
-      "sha256": "source-check-in"
     },
     {
       "id": "root:image:agent-sandbox",
@@ -116,16 +116,6 @@
       "path": "/home/agentuser/.pi/agent/skills",
       "version": "host:host-provide",
       "sha256": "host-provider-root"
-    },
-    {
-      "id": "root:project",
-      "kind": "artifact",
-      "role": "root",
-      "namespace": "project",
-      "layer": "project",
-      "path": ".agents/skills",
-      "version": "project:0123456789abcdef0123456789abcdef01234567",
-      "sha256": "project-root"
     }
   ],
   "edges": [
@@ -133,40 +123,33 @@
       "kind": "copy",
       "from": "root:repo:agent-sandbox",
       "to": "root:image:agent-sandbox",
-      "evidence": "provider.dockerfile: COPY src/reasoning/agent/skills/",
+      "evidence": "container-interface.json: src/reasoning/agent/skills/ -> /opt/workflow/agent/skills/",
       "count": 1
     },
     {
       "kind": "link",
-      "from": "root:project",
+      "from": "root:repo:project",
       "to": "skill:image:workflow:check-in",
       "expression": "/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md",
-      "expressions": [
-        "/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md"
-      ],
       "sourceSkill": "testing",
       "targetSkill": "check-in",
       "sourceFile": "testing/SKILL.md",
       "line": 11,
       "resolution": "image",
-      "evidence": "project:testing/SKILL.md:11",
+      "evidence": "repo:project:testing/SKILL.md:11",
       "count": 1
     },
     {
       "kind": "link",
-      "from": "root:project",
+      "from": "root:repo:project",
       "to": "skill:repo:agent-sandbox:propagation-check",
       "expression": "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
-      "expressions": [
-        "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
-        "../../../src/reasoning/agent/skills/propagation-check/SKILL.md"
-      ],
       "sourceSkill": "testing",
       "targetSkill": "propagation-check",
       "sourceFile": "testing/SKILL.md",
       "line": 10,
       "resolution": "repo",
-      "evidence": "project:testing/SKILL.md:10",
+      "evidence": "repo:project:testing/SKILL.md:10",
       "count": 2
     },
     {
@@ -178,13 +161,6 @@
     },
     {
       "kind": "same-content",
-      "from": "skill:image:workflow:check-in",
-      "to": "skill:repo:workflow:check-in",
-      "evidence": "sha256:source-check-in / source-check-in",
-      "count": 1
-    },
-    {
-      "kind": "same-content",
       "from": "skill:repo:agent-sandbox:propagation-check",
       "to": "skill:image:agent-sandbox:propagation-check",
       "evidence": "sha256:source-propagation / source-propagation",
@@ -192,13 +168,14 @@
     }
   ],
   "findings": [],
+  "warnings": [],
   "summary": {
     "roots": 8,
-    "nodes": 12,
-    "edges": 6,
+    "nodes": 11,
+    "edges": 5,
     "links": 3,
-    "targets": 4,
-    "same": 3,
+    "targets": 3,
+    "same": 2,
     "drift": 0,
     "unknownImage": false
   }

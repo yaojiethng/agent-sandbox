@@ -150,7 +150,7 @@ test_clean_fixture_passes() {
   root="$(make_fixture)"
   store="$root/.agents/registry/sources"
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "a source with two skill edges passes"
+  assert_rc 0 "$rc" "a source with two skill edges passes"
   assert_contains "$out" "clean across 1 source(s) and 2 artifact(s)" "the clean report counts both"
 }
 
@@ -160,7 +160,7 @@ test_a_missing_local_path_fails() {
   store="$root/.agents/registry/sources"
   rm -rf "$root/src/skills/alpha"
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 1 "a missing local path fails"
+  assert_rc 1 "$rc" "a missing local path fails"
   assert_contains "$out" "local_path src/skills/alpha does not exist" "the missing path is named"
 }
 
@@ -188,7 +188,7 @@ test_a_duplicate_local_path_fails() {
 }
 EOF
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 1 "one local path under two sources fails"
+  assert_rc 1 "$rc" "one local path under two sources fails"
   assert_contains "$out" "local_path src/skills/alpha is already used by source" "the duplicate is named"
 }
 
@@ -206,7 +206,7 @@ test_invalid_kind_bad_base_and_unknown_status_fail() {
     fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
   ' "$store/test-source.json"
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 1 "an invalid kind and a short base fail"
+  assert_rc 1 "$rc" "an invalid kind and a short base fail"
   assert_contains "$out" "kind must be one of skill, runbook, prompt" "the kind finding is named"
   assert_contains "$out" "base must be a 40-character commit" "the base finding is named"
   assert_contains "$out" "unknown field status" "a status field is refused"
@@ -227,7 +227,7 @@ test_an_empty_source_needs_a_reason() {
 }
 EOF
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 1 "an empty source without a reason fails"
+  assert_rc 1 "$rc" "an empty source without a reason fails"
   assert_contains "$out" "an empty source requires a reason" "the reason is enforced"
 
   node -e '
@@ -238,7 +238,7 @@ EOF
     fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
   ' "$store/empty-source.json"
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "an empty source with a reason passes"
+  assert_rc 0 "$rc" "an empty source with a reason passes"
   assert_contains "$out" "clean across 2 source(s) and 2 artifact(s)" "the empty source is counted"
 }
 
@@ -253,13 +253,13 @@ test_add_appends_and_sorts() {
   out="$(run_cli "$root" add --store "$store" --source test-source \
     --local src/skills/gamma --kind skill --upstream skills/gamma \
     --origin "$A" --base "$B")"; rc=$?
-  assert_rc "$rc" 0 "add appends an edge"
+  assert_rc 0 "$rc" "add appends an edge"
   assert_contains "$out" "added src/skills/gamma to test-source" "the added edge is named"
   assert_eq "$(paths_in_store "$store/test-source.json")" \
     "src/skills/alpha,src/skills/beta,src/skills/gamma" "the edges are sorted by local path"
 
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "the store passes after add"
+  assert_rc 0 "$rc" "the store passes after add"
   assert_contains "$out" "clean across 1 source(s) and 3 artifact(s)" "the new edge is counted"
   assert_eq "$(source_field "$store/test-source.json" src/skills/gamma)" "$A $B" "the new edge keeps origin and base"
 }
@@ -276,12 +276,12 @@ test_add_creates_a_source_file() {
     --url https://example.test/solo --license MIT --copyright "Copyright Solo" \
     --local src/skills/solo --kind skill --upstream skills/solo \
     --origin "$A" --base "$A")"; rc=$?
-  assert_rc "$rc" 0 "add creates the source file when it is absent"
+  assert_rc 0 "$rc" "add creates the source file when it is absent"
   assert_contains "$out" "added src/skills/solo to solo-source" "the created edge is named"
   assert_file_exists "$store/solo-source.json" "the source file exists"
 
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "the created store passes"
+  assert_rc 0 "$rc" "the created store passes"
   assert_contains "$out" "clean across 1 source(s) and 1 artifact(s)" "the created source is counted"
 }
 
@@ -296,7 +296,7 @@ test_add_requires_source_facts_when_creating() {
   out="$(run_cli "$root" add --store "$store" --source solo-source \
     --local src/skills/solo --kind skill --upstream skills/solo \
     --origin "$A" --base "$A")"; rc=$?
-  assert_rc "$rc" 2 "a new source without its facts is refused"
+  assert_rc 2 "$rc" "a new source without its facts is refused"
   assert_contains "$out" "--url is required" "the missing source fact is named"
   [[ ! -e "$store/solo-source.json" ]] && pass "the refused add wrote no file" \
     || fail "the refused add wrote no file"
@@ -310,19 +310,19 @@ test_add_empty_source() {
   out="$(run_cli "$root" add --store "$store" --source empty-source \
     --url https://example.test/empty --license MIT --copyright "Copyright Empty" \
     --empty)"; rc=$?
-  assert_rc "$rc" 2 "an empty source without a reason is refused"
+  assert_rc 2 "$rc" "an empty source without a reason is refused"
   assert_contains "$out" "--empty requires --reason" "the missing reason is named"
 
   out="$(run_cli "$root" add --store "$store" --source empty-source \
     --url https://example.test/empty --license MIT --copyright "Copyright Empty" \
     --empty --reason "Not forked by this repository.")"; rc=$?
-  assert_rc "$rc" 0 "an empty source with a reason is written"
+  assert_rc 0 "$rc" "an empty source with a reason is written"
   assert_contains "$out" "created empty source empty-source" "the created source is named"
   assert_not_contains "$(cat "$store/empty-source.json")" '"status"' "an empty source has no status field"
   assert_contains "$(cat "$store/empty-source.json")" '"artifacts": []' "an empty source holds an empty artifact list"
 
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "the empty source passes the check"
+  assert_rc 0 "$rc" "the empty source passes the check"
   assert_contains "$out" "clean across 1 source(s) and 0 artifact(s)" "the empty source is counted"
 }
 
@@ -340,11 +340,11 @@ test_add_to_an_empty_source_clears_the_reason() {
   out="$(run_cli "$root" add --store "$store" --source late-source \
     --local src/skills/late --kind skill --upstream skills/late \
     --origin "$A" --base "$A")"; rc=$?
-  assert_rc "$rc" 0 "an edge can be added to an empty source"
+  assert_rc 0 "$rc" "an edge can be added to an empty source"
   assert_not_contains "$(cat "$store/late-source.json")" '"reason"' "the reason leaves when the source is no longer empty"
 
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "the source passes after its first edge"
+  assert_rc 0 "$rc" "the source passes after its first edge"
   assert_contains "$out" "clean across 1 source(s) and 1 artifact(s)" "the first edge is counted"
 }
 
@@ -357,7 +357,7 @@ test_add_refusal_leaves_the_file_unchanged() {
   out="$(run_cli "$root" add --store "$store" --source test-source \
     --local src/skills/alpha --kind skill --upstream skills/alpha \
     --origin "$A" --base "$A")"; rc=$?
-  assert_rc "$rc" 1 "a duplicate local path is refused"
+  assert_rc 1 "$rc" "a duplicate local path is refused"
   assert_contains "$out" "src/skills/alpha is listed twice" "the duplicate edge is named"
 
   after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
@@ -371,13 +371,13 @@ test_record_moves_base_and_preserves_origin() {
 
   out="$(run_cli "$root" record --store "$store" --source test-source \
     --local src/skills/alpha --base "$C")"; rc=$?
-  assert_rc "$rc" 0 "record moves one edge's base"
+  assert_rc 0 "$rc" "record moves one edge's base"
   assert_contains "$out" "moved src/skills/alpha base to $C in test-source" "the moved edge is named"
   assert_eq "$(source_field "$store/test-source.json" src/skills/alpha)" "$A $C" "origin is preserved and base moved"
   assert_eq "$(source_field "$store/test-source.json" src/skills/beta)" "$A $A" "the other edge is untouched"
 
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "the store passes after record"
+  assert_rc 0 "$rc" "the store passes after record"
 }
 
 test_record_failure_leaves_the_file_unchanged() {
@@ -388,7 +388,7 @@ test_record_failure_leaves_the_file_unchanged() {
 
   out="$(run_cli "$root" record --store "$store" --source test-source \
     --local src/skills/alpha --base short)"; rc=$?
-  assert_rc "$rc" 1 "an invalid base is refused"
+  assert_rc 1 "$rc" "an invalid base is refused"
   assert_contains "$out" "base must be a 40-character commit" "the invalid base is named"
 
   after="$(sha256sum "$store/test-source.json" | cut -d' ' -f1)"
@@ -416,17 +416,17 @@ test_runbook_and_prompt_edges() {
   out="$(run_cli "$root" add --store "$store" --source test-source \
     --local prompts/auto.md --kind prompt --upstream prompts/auto.md \
     --origin "$A" --base "$A")"; rc=$?
-  assert_rc "$rc" 0 "a prompt edge is accepted"
+  assert_rc 0 "$rc" "a prompt edge is accepted"
 
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 0 "the skill, runbook and prompt store passes"
+  assert_rc 0 "$rc" "the skill, runbook and prompt store passes"
   assert_contains "$out" "clean across 1 source(s) and 5 artifact(s)" "all three kinds are counted"
 
   out="$(run_cli "$root" add --store "$store" --source test-source \
     --local src/skills/code-review/runbooks/review --kind runbook \
     --upstream skills/code-review/runbooks/review \
     --origin "$A" --base "$A")"; rc=$?
-  assert_rc "$rc" 2 "a runbook without a parent is refused"
+  assert_rc 2 "$rc" "a runbook without a parent is refused"
   assert_contains "$out" "a runbook requires --parent" "the missing parent is named"
 }
 
@@ -442,7 +442,7 @@ test_unknown_fields_and_hashes_are_refused() {
     fs.writeFileSync(p, JSON.stringify(d, null, 2) + "\n");
   ' "$store/test-source.json"
   out="$(run_cli "$root" check --store "$store")"; rc=$?
-  assert_rc "$rc" 1 "a stored hash is refused"
+  assert_rc 1 "$rc" "a stored hash is refused"
   assert_contains "$out" "unknown artifact field local_sha256" "the hash field is named"
 }
 
@@ -457,7 +457,7 @@ test_diff_prints_the_local_change_and_leaves_the_store_untouched() {
 
   out="$(run_cli "$root" diff --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream")"; rc=$?
-  assert_rc "$rc" 0 "diff prints the local change"
+  assert_rc 0 "$rc" "diff prints the local change"
   assert_contains "$out" "diff --git a/base/SKILL.md b/ours/SKILL.md" "the diff names the base and ours trees"
   assert_contains "$out" "-Alpha A" "the upstream base line is removed"
   assert_contains "$out" "+Alpha." "the local line is added"
@@ -478,7 +478,7 @@ test_diff_reports_no_local_changes() {
 
   out="$(run_cli "$root" diff --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream")"; rc=$?
-  assert_rc "$rc" 0 "diff reports a clean local tree"
+  assert_rc 0 "$rc" "diff reports a clean local tree"
   assert_contains "$out" "no local changes" "the clean report is named"
 }
 
@@ -493,7 +493,7 @@ test_prepare_builds_the_three_trees_and_leaves_the_store_untouched() {
 
   out="$(run_cli "$root" prepare --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream" --revision "$up_b")"; rc=$?
-  assert_rc "$rc" 0 "prepare creates the merge workspace"
+  assert_rc 0 "$rc" "prepare creates the merge workspace"
   ws="$(printf '%s\n' "$out" | sed -n 's/^source-bump: prepared //p')"
   assert_file_exists "$ws/base/SKILL.md" "the base tree is present"
   assert_file_exists "$ws/ours/SKILL.md" "the ours tree is present"
@@ -522,7 +522,7 @@ test_prepare_refuses_a_misshapen_edge() {
 
   out="$(run_cli "$root" prepare --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream" --revision "$up_b")"; rc=$?
-  assert_rc "$rc" 1 "a skill edge pointing at a blob is refused"
+  assert_rc 1 "$rc" "a skill edge pointing at a blob is refused"
   assert_contains "$out" "is blob, expected tree" "the object type is named"
 }
 
@@ -537,7 +537,7 @@ test_prepare_refuses_an_absent_upstream_path() {
 
   out="$(run_cli "$root" prepare --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream" --revision "$up_b")"; rc=$?
-  assert_rc "$rc" 1 "an absent upstream path is refused"
+  assert_rc 1 "$rc" "an absent upstream path is refused"
   assert_contains "$out" "has no skills/missing at base" "the absent path is named"
 }
 
@@ -556,7 +556,7 @@ test_prepare_a_prompt_artifact() {
 
   out="$(run_cli "$root" prepare --store "$store" --source test-source \
     --local prompts/auto.md --clone "$upstream" --revision "$up_b")"; rc=$?
-  assert_rc "$rc" 0 "prepare accepts a prompt artifact"
+  assert_rc 0 "$rc" "prepare accepts a prompt artifact"
   ws="$(printf '%s\n' "$out" | sed -n 's/^source-bump: prepared //p')"
   assert_file_exists "$ws/base/auto.md" "the prompt base is present"
   assert_file_exists "$ws/ours/auto.md" "the prompt ours is present"
@@ -580,19 +580,19 @@ test_prepare_refuses_a_short_or_unknown_revision() {
 
   out="$(run_cli "$root" prepare --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream" --revision short)"; rc=$?
-  assert_rc "$rc" 2 "a short revision is refused"
+  assert_rc 2 "$rc" "a short revision is refused"
   assert_contains "$out" "--revision must be a 40-character commit" "the short revision is named"
 
   out="$(run_cli "$root" prepare --store "$store" --source test-source \
     --local src/skills/alpha --clone "$upstream" --revision "$C")"; rc=$?
-  assert_rc "$rc" 1 "an unknown revision is refused"
+  assert_rc 1 "$rc" "an unknown revision is refused"
   assert_contains "$out" "has no revision $C" "the missing revision is named"
 }
 
 test_help_lists_the_five_commands() {
   local out rc
   out="$(node "$CLI" --help 2>&1)"; rc=$?
-  assert_rc "$rc" 0 "the help exits cleanly"
+  assert_rc 0 "$rc" "the help exits cleanly"
   assert_contains "$out" "source-bump check" "check is listed"
   assert_contains "$out" "source-bump add" "add is listed"
   assert_contains "$out" "source-bump diff" "diff is listed"

@@ -46,8 +46,8 @@
       "skills": []
     },
     {
-      "id": "project",
-      "namespace": "project",
+      "id": "repo:project",
+      "namespace": "repo",
       "layer": "project",
       "path": ".agents/skills",
       "sha256": "project-root",
@@ -106,21 +106,21 @@
   ],
   "links": [
     {
-      "fromRoot": "project",
+      "fromRoot": "repo:project",
       "fromSkill": "testing",
       "file": "testing/SKILL.md",
       "target": "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
       "line": 10
     },
     {
-      "fromRoot": "project",
+      "fromRoot": "repo:project",
       "fromSkill": "testing",
       "file": "testing/SKILL.md",
       "target": "/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md",
       "line": 11
     },
     {
-      "fromRoot": "project",
+      "fromRoot": "repo:project",
       "fromSkill": "testing",
       "file": "testing/SKILL.md",
       "target": "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
@@ -132,8 +132,7 @@
       "kind": "copy",
       "from": "repo:agent-sandbox",
       "to": "image:agent-sandbox",
-      "evidence": "provider.dockerfile: COPY src/reasoning/agent/skills/"
+      "evidence": "container-interface.json: src/reasoning/agent/skills/ -> /opt/workflow/agent/skills/"
     }
-  ],
-  "mounts": []
+  ]
 }

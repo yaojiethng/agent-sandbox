@@ -3,36 +3,16 @@
 //
 // The probe is the knowledge test's oracle: it calls pi's own `loadSkills`
 // with project, provider, agent-sandbox and workflow roots, so a collision
-// shows which layer wins and which layers are shadowed.
+// shows which layer wins and which layers are shadowed. The roots and the pi
+// entry are `scripts/skill_layers.mjs`'s, so the probe cannot drift from the
+// map and the graph.
 //
 // Usage: node tests/skill_layer_loader.mjs <fixture-root>
 
-import { execFileSync } from "node:child_process";
-import { existsSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const PACKAGE = join("@earendil-works", "pi-coding-agent");
-const ENTRY = join("dist", "index.js");
-
-function packageEntry() {
-  try {
-    const bin = execFileSync("sh", ["-c", "command -v pi"], { encoding: "utf8" }).trim();
-    let dir = dirname(realpathSync(bin));
-    for (let hop = 0; hop < 8; hop++) {
-      const module = join(dir, "node_modules", PACKAGE, ENTRY);
-      if (existsSync(module)) return module;
-      dir = dirname(dir);
-    }
-  } catch {
-    // Fall through to PI_PACKAGE_DIR.
-  }
-  if (process.env.PI_PACKAGE_DIR) {
-    const module = join(process.env.PI_PACKAGE_DIR, ENTRY);
-    if (existsSync(module)) return module;
-  }
-  throw new Error("pi's package could not be resolved; set PI_PACKAGE_DIR");
-}
+import { LAYERS, layerOf as layerOwning, piModuleEntry } from "../scripts/skill_layers.mjs";
 
 const root = resolve(process.argv[2] || "");
 if (!process.argv[2]) {
@@ -40,24 +20,10 @@ if (!process.argv[2]) {
   process.exit(2);
 }
 
-const layers = [
-  { name: "project", path: resolve(root, ".agents/skills") },
-  {
-    name: "provider",
-    path: resolve(root, "src/reasoning/providers/pi/config/agent/skills"),
-  },
-  { name: "agent-sandbox", path: resolve(root, "src/reasoning/agent/skills") },
-  { name: "workflow", path: resolve(root, "workflow/coding-agent/skills") },
-];
+const layers = LAYERS.map((layer) => ({ name: layer.name, path: resolve(root, layer.source) }));
+const layerOf = (file) => layerOwning(file, root)?.name || "unknown";
 
-const layerOf = (file) => {
-  for (const layer of layers) {
-    if (file === layer.path || file.startsWith(`${layer.path}/`)) return layer.name;
-  }
-  return "unknown";
-};
-
-const { loadSkills } = await import(pathToFileURL(packageEntry()).href);
+const { loadSkills } = await import(pathToFileURL(piModuleEntry()).href);
 const result = loadSkills({
   cwd: root,
   agentDir: join(root, ".scratchpad", "agent"),

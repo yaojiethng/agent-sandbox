@@ -11,6 +11,7 @@
 #   broken link    -- a relative link with no target fails
 #   warning        -- an agent-sandbox skill without MAINTENANCE.md passes with
 #                     a warning
+#   empty tree     -- four declared layers holding no skill fail
 #   repository     -- the real tree is clean across four layers
 
 set -uo pipefail
@@ -22,6 +23,20 @@ test_setup
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAP="$REPO_ROOT/scripts/skill_map.mjs"
+LAYERS="$REPO_ROOT/scripts/skill_layers.mjs"
+
+# layer_dir -- a layer's directory under a fixture root, read from the layer
+# table so a moved layer moves the fixture with it.
+layer_dir() {
+  local root="$1" name="$2" source
+  source="$(node "$LAYERS" --list | awk -F'\t' -v n="$name" '$1 == n { print $2 }')"
+  printf '%s\n' "$root/$source"
+}
+
+# relative_to -- the relative path from one absolute path to another.
+relative_to() {
+  node -e 'process.stdout.write(require("node:path").relative(process.argv[1], process.argv[2]))' "$1" "$2"
+}
 
 write_skill() {
   local dir="$1" name="$2" description="$3" body="${4:-}"
@@ -55,20 +70,18 @@ The skill name.
 EOF
 }
 
-# make_fixture -- one skill in each of the four layers, plus a project skill
-# that links into a shipped layer.
+# make_fixture -- one skill in each layer the table declares, plus a project
+# skill that links into a shipped layer.
 make_fixture() {
   local root="$FIXTURE_DIR/tree"
-  local project="$root/.agents/skills/project-skill"
-  local provider="$root/src/reasoning/providers/pi/config/agent/skills/provider-skill"
-  local agent="$root/src/reasoning/agent/skills/agent-skill"
-  local workflow="$root/workflow/coding-agent/skills/workflow-skill"
-
+  local name source project agent
+  while IFS=$'\t' read -r name source _; do
+    write_skill "$root/$source/$name-skill" "$name-skill" "The $name layer skill."
+  done < <(node "$LAYERS" --list)
+  project="$(layer_dir "$root" project)/project-skill"
+  agent="$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill"
   write_skill "$project" project-skill "Project skill." \
-    "See [the agent skill](../../../src/reasoning/agent/skills/agent-skill/SKILL.md)."
-  write_skill "$provider" provider-skill "Provider skill."
-  write_skill "$agent" agent-skill "Agent skill."
-  write_skill "$workflow" workflow-skill "Workflow skill."
+    "See [the agent skill]($(relative_to "$project" "$agent/SKILL.md"))."
   write_record "$agent"
   printf '%s\n' "$root"
 }
@@ -90,18 +103,18 @@ test_clean_fixture_passes() {
 test_a_collision_fails_and_names_both_layers() {
   local root out rc
   root="$(make_fixture)"
-  write_skill "$root/src/reasoning/providers/pi/config/agent/skills/project-skill" project-skill "A second project-skill."
+  write_skill "$(layer_dir "$root" provider)/project-skill" project-skill "A second project-skill."
   out="$(run_map "$root")"; rc=$?
   assert_rc 1 "$rc" "one name in two layers fails"
   assert_contains "$out" "collision: 'project-skill' is held by project" "the winner's layer is named"
-  assert_contains "$out" "provider" "the loser's layer is named"
+  assert_contains "$out" "and provider (" "the loser's layer is named by the finding"
 }
 
 test_a_shipped_link_outside_its_layer_fails() {
   local root out rc
   root="$(make_fixture)"
   printf '\nSee [the provider skill](../../../providers/pi/config/agent/skills/provider-skill/SKILL.md).\n' \
-    >>"$root/src/reasoning/agent/skills/agent-skill/SKILL.md"
+    >>"$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill/SKILL.md"
   out="$(run_map "$root")"; rc=$?
   assert_rc 1 "$rc" "an agent-sandbox link into the provider layer fails"
   assert_contains "$out" "forbidden link: agent-sandbox" "the finding names the source layer"
@@ -111,7 +124,7 @@ test_a_shipped_link_outside_its_layer_fails() {
 test_a_broken_link_fails() {
   local root out rc
   root="$(make_fixture)"
-  printf '\n[missing](missing.md)\n' >>"$root/.agents/skills/project-skill/SKILL.md"
+  printf '\n[missing](missing.md)\n' >>"$(layer_dir "$root" project)/project-skill/SKILL.md"
   out="$(run_map "$root")"; rc=$?
   assert_rc 1 "$rc" "a relative link with no target fails"
   assert_contains "$out" "does not resolve" "the finding names the missing target"
@@ -120,10 +133,21 @@ test_a_broken_link_fails() {
 test_a_missing_record_is_a_warning() {
   local root out rc
   root="$(make_fixture)"
-  rm "$root/src/reasoning/agent/skills/agent-skill/MAINTENANCE.md"
+  rm "$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill/MAINTENANCE.md"
   out="$(run_map "$root")"; rc=$?
   assert_rc 0 "$rc" "a missing agent-sandbox record is a warning, not a hard finding"
-  assert_contains "$out" "warning: agent-sandbox: 'agent-skill' has no MAINTENANCE.md" "the warning names the skill"
+  assert_contains "$out" "warning: agent-sandbox: 'agent-sandbox-skill' has no MAINTENANCE.md" "the warning names the skill"
+}
+
+test_an_empty_tree_fails() {
+  local root out rc name source
+  root="$FIXTURE_DIR/empty"
+  while IFS=$'\t' read -r name source _; do
+    mkdir -p "$root/$source"
+  done < <(node "$LAYERS" --list)
+  out="$(run_map "$root")"; rc=$?
+  assert_rc 1 "$rc" "four declared layers holding no skill fail"
+  assert_contains "$out" "map: the declared layers hold no skill" "the empty map is named"
 }
 
 test_the_repository_map_is_clean() {
@@ -139,6 +163,7 @@ run_test test_a_collision_fails_and_names_both_layers
 run_test test_a_shipped_link_outside_its_layer_fails
 run_test test_a_broken_link_fails
 run_test test_a_missing_record_is_a_warning
+run_test test_an_empty_tree_fails
 run_test test_the_repository_map_is_clean
 
 test_done
