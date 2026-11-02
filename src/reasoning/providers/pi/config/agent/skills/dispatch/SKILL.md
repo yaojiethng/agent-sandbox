@@ -1,11 +1,11 @@
 ---
 name: dispatch
-description: Dispatch one worker over a brief through the dispatch entrypoint, read-write or print-only. Use when spawning sub-agents to do real work, so the model comes from the role table rather than from this skill.
+description: Dispatch one or more workers over a brief through the dispatch entrypoint. Use when asked to spawn or dispatch sub-agents. Read the model recommendations from the role table.
 ---
 
 # dispatch
 
-Dispatch one worker over one brief. A worker edits, runs tests, and returns work. The role names the model, and this skill names none.
+Dispatch one or more workers, one brief each. A worker edits, runs tests, and returns work. The role names the model, and this skill names none.
 
 ## What a worker is
 
@@ -59,7 +59,7 @@ The attempt is stopped as soon as its log carries a refusal, because a refused p
 - Does not write the report. The worker reports; the caller acts.
 - Does not own the brief. The brief's content is the calling unit's, and this skill passes it unchanged.
 - Does not verify the work. The caller checks the tree, per the `prove-it-works` principle skill.
-- Does not fan out. One brief, one worker; a parallel fan-out that holds a worktree per worker is the harness's `taskq_*` shape, not this one.
+- Does not fan out. One call is one worker, and several workers are several calls; a parallel fan-out that holds a worktree per worker is the harness's `taskq_*` shape, not this one.
 - Does not isolate the tree. The worker runs in the working tree and the caller commits. A worktree per worker is the `taskq_*` shape.
 - Does not triage or fix the worker's output. Whether a gap is fixed or filed is the caller's decision.
 
