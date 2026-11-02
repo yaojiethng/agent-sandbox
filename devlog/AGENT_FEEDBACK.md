@@ -29,6 +29,21 @@ The fix belongs where the range is named: one sentence in the runbook or its she
 
 ---
 
+## [A] 2026-11-01  --  A report was built before checking that the loader already prints one
+
+```text
+state: open
+scoped: M3.3.3 - The skill maintenance pipeline; any task whose premise is that a surface nobody reads already holds the fact
+legacy: none
+mitigation: before building a report over another party's data, run that party's own surface and read what it prints; a handoff's claim that a diagnostic is unread is a claim to check, not a premise to build on
+```
+
+The task asked for a session-start report naming a skill name held twice, on the premise that pi records the collision "in a diagnostic nobody reads". pi renders a `[Skill conflicts]` block at every session start, naming the winner and each skipped path, and a quiet startup still shows it. Two versions of a script were written, tested and corrected before anyone ran the loader's own output. Both are deleted and the task closed with no code.
+
+The pattern is not "read the docs first". The premise arrived inside a task, in the operator's voice, and that is the voice an agent is least likely to check. The same session had written the rule for it two commits earlier: name the party that already answers the question, and hand the question to it. Writing that rule was easier than applying it to a task handed over with confidence.
+
+---
+
 ## [A] 2026-10-31  --  The review runbook grades structure without the artifact's purpose
 
 ```text

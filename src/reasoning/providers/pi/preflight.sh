@@ -119,25 +119,6 @@ _reset_models_store_freshness() {
 }
 
 # ---------------------------------------------------------------------------
-# Skill-name collisions
-# ---------------------------------------------------------------------------
-# pi keeps the first skill it reaches for a name and records the loser as a
-# diagnostic nobody reads, so an added package can stop a skill the image ships
-# from being the one the session loads, in silence. The report names both paths
-# and fails nothing: the fix is the operator's package list.
-#
-# The tree carries the report because the shipped stack is defined against the
-# tree's own layer table; a project without it gets no report rather than a
-# second copy of that table.
-
-_preflight_report_skill_collisions() {
-  local report="${SANDBOX_DIR:-}/scripts/skill_collisions.mjs"
-  [[ -n "${SANDBOX_DIR:-}" && -f "$report" ]] || return 0
-  command -v node >/dev/null 2>&1 || return 0
-  node "$report" --root "$SANDBOX_DIR" >&2 || true
-}
-
-# ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
@@ -145,4 +126,3 @@ _preflight_check_bind_mounts
 _preflight_check_agents_md
 _ensure_harness_keys
 _reset_models_store_freshness
-_preflight_report_skill_collisions
