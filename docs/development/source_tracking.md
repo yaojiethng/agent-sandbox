@@ -14,7 +14,7 @@ The store is one JSON file per source at `.agents/registry/sources/<source-id>.j
 
 The store is repository-only. It does not ship into the image; the image carries the artifacts, the per-skill records and the `NOTICE`. The store is the maintainer's input for the next update, not runtime data.
 
-The live store holds the three sources and five edges. The source catalog is retired; the five forked records name the store and the shipped `NOTICE`.
+The live store holds the three sources and eight edges. The source catalog is retired; the eight forked records name the store and the shipped `NOTICE`.
 
 ## The source file
 

@@ -170,7 +170,7 @@ test_the_repository_records_are_clean() {
   local out rc
   out="$(node "$SCANNER" 2>&1)"; rc=$?
   assert_rc "$rc" 0 "the repository records pass"
-  assert_contains "$out" "clean across 8 skill record(s) and 3 source(s)" "the live tree holds eight records and three sources"
+  assert_contains "$out" "clean across 11 skill record(s) and 3 source(s)" "the live tree holds eleven records and three sources"
 }
 
 test_a_nested_skill_is_not_discovered() {

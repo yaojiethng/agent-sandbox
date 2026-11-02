@@ -6,14 +6,14 @@ Source: `mattpocock-skills`; see [`NOTICE`](../NOTICE).
 
 ## Adapted
 
-**Kept.** The relentless interview, the one-question-at-a-time rule, the recommended answer for each question, and the instruction to explore the codebase instead of asking what it can answer.
+**Kept.** The user-invoked entry, the `disable-model-invocation` flag, and the instruction to invoke `grilling` for the interview.
 
-**Rewritten.** This project added a problem-summary section at commit `405cd770`, and the interview now tests each branch against it. The upstream text opens directly on the interview. The section now states where the three parts come from: a session that already holds the goal, problem and gathered context supplies them, and the skill asks only for a part the session lacks. Its two callers are `/plan`, which records the goal and problem and gathers context before the interview, and a direct invocation, whose conversation is the context.
+**Rewritten.** The invocation names the `grilling` skill's `SKILL.md` rather than the upstream provider's Skill tool. The body carries this repository's problem-summary contract before the invocation.
 
-**Added.** This maintenance record.
+**Added.** The three-part problem summary and the rule that every branch is tested against it. The summary was first added at commit `405cd770` and moved here when the upstream split the interview into `grilling`.
 
-**Dropped.** Nothing.
+**Dropped.** Nothing. The upstream body is the invocation, and this repository's summary sits before it.
 
 ## Name
 
-`grill-me` stays. The name is the operator's phrase for the act, and the skill is still the one a reader reaches for when a plan needs stress-testing.
+`grill-me` stays. The name is the operator's phrase for the act, and the skill is still the user-invoked entry.

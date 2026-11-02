@@ -1,6 +1,7 @@
 ---
 name: grill-me
 description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
+disable-model-invocation: true
 ---
 
 ## Problem summary first
@@ -15,10 +16,4 @@ Take each part from the session when the session already holds it: the goal and 
 
 ## Interview
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
-
-Test every branch against the problem summary. A branch that does not serve the stated problem is resolved or dropped before the plan widens.
-
-Ask the questions one at a time.
-
-If a question can be answered by exploring the codebase, explore the codebase instead.
+Read the `grilling` skill's `SKILL.md` in full and follow it. Test every branch against the problem summary: a branch that does not serve the stated problem is resolved or dropped before the plan widens.
