@@ -14,7 +14,7 @@
 - *Ship the check as a skill procedure instead of a gate* -- the procedure would run only when an agent remembered it, which is the failure the gate was built to end.
 - *Keep the roadmap row open with a reopening clause* -- a clause in a closed row holds no work and is read by nobody; the deferred section holds the prefactors, and this entry is the pointer a maintainer meets when asking the question.
 
-**Edge cases / drivers:** The module form keeps its subject. A pack of skills somebody else wrote, enabled or omitted by one package entry and carrying no tooling, is what it was built for, and the roadmap's `The four pstack skills are optional, not base` holds that case. A project that vendors skills of its own reopens the deferred task rather than this decision.
+**Edge cases / drivers:** The module form keeps its subject. A pack of skills somebody else wrote, enabled or omitted by one package entry and carrying no tooling, is what it was built for, and that subject is unoccupied today: the set the form was raised for stays in the installed home and is in no layer. A project that wants to ship a pack, or that vendors skills of its own, reopens the deferred task rather than this decision.
 
 ## 2026-10-06 -- The payload ships in pi's image only, and two providers start on a fresh install
 
