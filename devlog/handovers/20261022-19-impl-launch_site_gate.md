@@ -54,5 +54,5 @@ None.
 | [`run_case.sh`](../../workflow/coding-agent/skills/eval/scripts/run_case.sh), [`test_eval_harness.sh`](../../tests/test_eval_harness.sh) | the eval harness calls the entrypoint and composes no provider |
 | [`SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/SKILL.md) | the worker carries the instruction and names no launcher flag |
 | [`opencode-dispatch/dispatch.sh`](../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | deleted; its launcher retired into the entrypoint |
-| [`auto.md`](../../.agents/prompts/auto.md), [`close-the-model-bypass-run.md`](../../.agents/drafts/close-the-model-bypass-run.md) | the carriers name the entrypoint |
+| `auto.md`, [`close-the-model-bypass-run.md`](../../.agents/drafts/close-the-model-bypass-run.md) | the carriers name the entrypoint |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closed |
