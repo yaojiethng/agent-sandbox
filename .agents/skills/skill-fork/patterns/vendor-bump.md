@@ -1,8 +1,10 @@
-# Bump a fork to a new upstream revision
+# Bump a vendored fork to a new upstream revision
 
 Open this when the operator directs a bump. The move is to bring one artifact forward to a reviewed upstream revision without losing what the fork changed, then move the stored base so the next review starts from where this one ended.
 
 ## The boundary
+
+This pattern is one carrier. An artifact a session loads from an installed package has no local copy and no merge; that bump is [`package-bump.md`](package-bump.md). One name has one route, so a name an installed package provides cannot also be vendored until the package excludes it.
 
 A bump runs only when the operator directs it. The store is pinned by default; a new upstream commit is not a reason to bump.
 

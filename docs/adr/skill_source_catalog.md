@@ -16,6 +16,25 @@
 
 R3 replaced the retired drift rule on 2026-10-30. A historical entry below that names R3 refers to the drift rule that was current when it was written. R2 retired and R6 narrowed on 2026-11-01: the store is opt-in bump data, so a path with no edge is a path nobody bumps.
 
+## 2026-11-01 -- The store covers vendored artifacts, and an installed package is the other carrier
+
+**Decision:** Upstream text reaches this repository through one of two carriers, and the store records only the first. A **vendored** artifact is in-tree text whose origin an edge records, bumped by a three-way merge. An **installed** package is declared in the sandbox's `settings.json` and loaded from a clone under the sandbox home; the repository carries the declaration's shape and never the text or the revision. One rule joins them: a name has one route, so a name an installed package provides is excluded from that package before the same name can be vendored.
+
+**Rationale:** The store exists so a bump has facts, and the facts differ by carrier. A vendored bump needs an origin, a base and an adaptation note, because the local copy is editable and the merge needs three inputs. A package bump needs none of them: the clone is the payload, git holds its revision, and nothing in the tree changes. Recording an installed package as an edge would fail on its first field, because an edge's `local_path` must resolve inside the repository and a package's text lives in the sandbox home.
+
+The revision has no home in this repository by the same argument the record itself rests on: a value describes the thing that holds it. A committed install revision would make one sandbox's checkout a claim about every other sandbox, and each sandbox holds whatever was last taken there. The clone is the pin, and a fresh sandbox reclones at the revision the operator names.
+
+**The filter is where the boundary is written.** A package entry excludes a name in the settings, and the paths there are relative to the package root, so `-skills/<name>` excludes one skill while `-<name>` matches nothing and reports nothing. That trap is pinned by `tests/test_installed_package.sh`, because a reader who gets it wrong sees an excluded skill arrive beside the vendored copy with no finding to explain it.
+
+**Rejected alternatives:**
+
+- *Record an installed package in the store as an edge* -- an edge's `local_path` resolves inside the repository, and a package's text is in the sandbox home; the schema would need a second path kind that the gate can never check.
+- *Record the installed revision in a committed manifest* -- the value describes one machine, and the next sandbox reads it as a fact about itself.
+- *Let the vendored copy win a name collision instead of excluding it* -- pi resolves a duplicate name first-wins and reports the losers at session start, so the outcome would depend on root order and would read as an accident rather than a rule.
+- *Make the package bump a branch of the vendored bump* -- the two share no step: one merges three inputs against a local copy, the other moves a checkout and touches no file in the tree.
+
+**Edge cases / drivers:** A package that also ships prompts or extensions needs the same filter per resource type, and the entry's object form already accepts one key per type. An installation whose clone is absent loads nothing and says nothing, so `scripts/skill_packages.mjs` reports it: that is the state a fresh sandbox starts in, and it is the one failure the carrier cannot report about itself.
+
 ## 2026-11-01 -- The record moves into the store, and the store is opt-in
 
 **Decision:** An artifact's adaptation history lives in the store, in an edge's `record`: `name`, `source`, `kept`, `rewritten`, `added` and `dropped`, each optional and each one non-empty string. The fourteen per-artifact `MAINTENANCE.md` files leave the tree. An edge gains `anchor`, a verbatim line of `local_path`, so one edge can cover a passage inside a file the repository otherwise owns; `kind` gains `instruction` for a file that is neither a skill, a runbook nor a prompt. An edge's address is the source, the `local_path` and the `anchor`, so one artifact may carry an edge per source and a skill built from three forks has three contributions to describe.

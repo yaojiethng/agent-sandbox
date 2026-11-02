@@ -5,14 +5,22 @@ description: Fork an upstream skill, runbook, prompt or instruction into this tr
 
 # skill-fork
 
-An upstream artifact comes into this tree as a fork: it keeps what earns its place, loses what belongs to the upstream's provider, and carries an edge in the source store so a later bump knows what it came from. This skill owns that lifecycle, both halves of it.
+Upstream text reaches this repository one of two ways, and each has its own procedure.
+
+| Carrier | What it means | The test that settles it |
+|---|---|---|
+| vendored | an in-tree artifact whose text came from an upstream; this repository carries and maintains it | the store at `.agents/registry/sources/` holds an edge for it |
+| installed | text a package brings, which a session loads from the sandbox home; this repository carries only the declaration | a `packages` entry in the sandbox's `settings.json` resolves to it |
+
+`in-tree` is the container both words sit under, so a home-grown skill is in-tree and not vendored. One rule joins the two carriers: **a name has one route.** A name an installed package provides cannot also be vendored until the package excludes it and the store holds its edge.
 
 ## Which half
 
 | The operator says | Open |
 |---|---|
-| vendor this, fork this, install this upstream skill | [`patterns/fork-and-strip.md`](patterns/fork-and-strip.md) |
-| bump this, take the new upstream revision, re-base this fork | [`patterns/upstream-bump.md`](patterns/upstream-bump.md) |
+| vendor this, fork this, take this upstream skill into the tree | [`patterns/fork-and-strip.md`](patterns/fork-and-strip.md) |
+| bump this fork, take the new upstream revision, re-base this fork | [`patterns/vendor-bump.md`](patterns/vendor-bump.md) |
+| bump the installed package, update the pstack install | [`patterns/package-bump.md`](patterns/package-bump.md) |
 | which artifacts does this provider have that we must strip | [`patterns/provider-artifacts.md`](patterns/provider-artifacts.md) |
 
 ## The pipeline it belongs to
@@ -23,7 +31,7 @@ A fork is opt-in maintenance. An artifact with no edge is one nobody bumps, and 
 
 ## The edge is the boundary
 
-The store at `.agents/registry/sources/` is the record, and it points at the tree: an edge names the local path, the upstream path and the revision the next merge starts from. `.agents/skills/skill-fork/patterns/upstream-bump.md` `## Register an edge` states the shape and the fields; write it at vendoring time, because that is when the facts are known.
+The store at `.agents/registry/sources/` is the record, and it points at the tree: an edge names the local path, the upstream path and the revision the next merge starts from. `patterns/vendor-bump.md` `## Register an edge` states the shape and the fields; write it at vendoring time, because that is when the facts are known.
 
 Nothing points the other way. The artifact carries no record file and no provenance line, so a reader who wants to know where a skill came from opens the store. Keeping the two in step is the operator's, since a wrong edge breaks the next bump and nothing else.
 

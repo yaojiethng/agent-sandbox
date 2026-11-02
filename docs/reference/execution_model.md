@@ -136,7 +136,7 @@ This is the expected record of what lives where across a session.
 | What | Where it lives | Survives `docker compose down`? |
 |---|---|---|
 | Agent WORKDIR `/home/agentuser/sandbox` (project worktree, `node_modules` from `npm install`, session work) | named volume `{{SESSION_ID}}-sandbox-data` | [x] yes (named volume persists) |
-| Agent state `.pi/{prompts,sessions,skills}` | bind-mounted to `$SANDBOX_DIR/.pi/...` | [x] yes (host) |
+| Agent state `.pi/{prompts,sessions,skills}` and `.pi/agent/packages` | bind-mounted to `$SANDBOX_DIR/.pi/...`; `packages` holds a clone per installed package, loaded in place | [x] yes (host) |
 | Model recommendations `.pi/model-recommendations.md` | single-file bind mount to `$SANDBOX_DIR/.pi/model-recommendations.md` | [x] yes (host) |
 | Harness workspace `.workspace/{session-diffs,input,output}` | bind-mounted to `$SANDBOX_DIR/.workspace/...` | [x] yes (host) |
 | Seed content (shared dispatcher delivery) | streamed via rsync into the volume with `cp -a .git` (full) or a fresh baseline (flatten) | n/a (one-shot transfer) |

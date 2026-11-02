@@ -99,7 +99,7 @@ source-bump diff --source example-source --local src/reasoning/agent/skills/exam
 source-bump prepare --source example-source --local src/reasoning/agent/skills/example --clone <clone> --revision <commit>
 ```
 
-The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; these commands own the three inputs and the facts around them. The procedure that uses the commands is [`skill-fork/patterns/upstream-bump.md`](../../.agents/skills/skill-fork/patterns/upstream-bump.md).
+The merge workspace is temporary; the local artifact stays the editable copy. The merge agent owns the conflict resolution; these commands own the three inputs and the facts around them. The procedure that uses the commands is [`skill-fork/patterns/vendor-bump.md`](../../.agents/skills/skill-fork/patterns/vendor-bump.md).
 
 ## The agent and the store
 
@@ -124,6 +124,8 @@ It does not hold a patch. The diff is generated from `base` and the local artifa
 It does not hold the design rationale or a status. The adaptation note is bounded to six named fields, so it stays checkable; the reasoning behind the fork is the design doc's, and the artifact's own text is the tree's.
 
 It does not hold the artifact itself. The local tree remains authoritative and editable while the maintenance work runs.
+
+It does not hold an installed package. Upstream text that arrives as a pi package is loaded from a clone under the sandbox home, and the repository carries only the declaration; its bump is [`skill-fork/patterns/package-bump.md`](../../.agents/skills/skill-fork/patterns/package-bump.md), and `scripts/skill_packages.mjs` reports a package whose path is gone.
 
 ## Migration
 

@@ -8,6 +8,7 @@ echo "Running Pi provider onboard hook..."
 mkdir -p "$SANDBOX_DIR/.pi/agent/sessions"
 mkdir -p "$SANDBOX_DIR/.pi/agent/prompts"
 mkdir -p "$SANDBOX_DIR/.pi/agent/skills"
+mkdir -p "$SANDBOX_DIR/.pi/agent/packages"
 mkdir -p "$SANDBOX_DIR/.pi/agent/extensions"
 
 # Give the container its copy of the role table. A single-file bind mount needs

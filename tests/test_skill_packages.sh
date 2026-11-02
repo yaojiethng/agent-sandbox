@@ -10,7 +10,9 @@
 #   gate shape     -- an entry with no source, no reason, a bad scope or a repeat fails
 #   gate empty     -- a manifest naming no package fails
 #   drift missing  -- a manifest entry that is not configured is reported
-#   drift unlisted -- a configured package no entry names is reported
+#   drift unlisted -- a configured remote package no entry names is reported
+#   drift local    -- a configured local path is not the manifest's business
+#   drift absent   -- a configured package whose path is gone is reported
 #   drift clean    -- a manifest that matches the configuration reports nothing
 
 set -uo pipefail
@@ -82,13 +84,31 @@ test_a_manifest_entry_that_is_not_configured_is_reported() {
   assert_contains "$out" "package missing: '/opt/absent'" "a named package that is not configured is reported"
 }
 
-test_a_configured_package_the_manifest_omits_is_reported() {
+test_a_configured_git_package_the_manifest_omits_is_reported() {
+  local root out
+  root="$(fixture_root)"
+  write_manifest "$root" '{"packages":[]}'
+  printf '{"packages":["git:github.com/example/tools@v1"]}\n' >"$root/home/settings.json"
+  out="$(node "$REPORT" --root "$root" --agent-dir "$root/home" 2>&1)"
+  assert_contains "$out" "package unlisted: 'git:github.com/example/tools@v1'" "a configured remote package no entry names is reported"
+}
+
+test_a_local_package_the_manifest_omits_is_not_reported() {
   local root out
   root="$(fixture_root)"
   write_manifest "$root" '{"packages":[]}'
   printf '{"packages":["%s/pkg"]}\n' "$root" >"$root/home/settings.json"
   out="$(node "$REPORT" --root "$root" --agent-dir "$root/home" 2>&1)"
-  assert_contains "$out" "package unlisted: '$root/pkg'" "a configured package no entry names is reported"
+  assert_empty "$out" "a local path is machine state, so the manifest owns nothing about it"
+}
+
+test_a_configured_package_whose_path_is_absent_is_reported() {
+  local root out
+  root="$(fixture_root)"
+  write_manifest "$root" '{"packages":[]}'
+  printf '{"packages":["%s/ghost"]}\n' "$root" >"$root/home/settings.json"
+  out="$(node "$REPORT" --root "$root" --agent-dir "$root/home" 2>&1)"
+  assert_contains "$out" "package absent: '$root/ghost'" "a configured package whose path is gone is reported"
 }
 
 test_a_manifest_that_matches_reports_nothing() {
@@ -105,7 +125,9 @@ run_test test_a_tree_with_no_manifest_fails
 run_test test_a_malformed_entry_fails
 run_test test_a_manifest_naming_nothing_fails
 run_test test_a_manifest_entry_that_is_not_configured_is_reported
-run_test test_a_configured_package_the_manifest_omits_is_reported
+run_test test_a_configured_git_package_the_manifest_omits_is_reported
+run_test test_a_local_package_the_manifest_omits_is_not_reported
+run_test test_a_configured_package_whose_path_is_absent_is_reported
 run_test test_a_manifest_that_matches_reports_nothing
 
 test_done
