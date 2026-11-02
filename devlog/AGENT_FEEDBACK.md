@@ -29,6 +29,23 @@ The fix belongs where the range is named: one sentence in the runbook or its she
 
 ---
 
+## [A] 2026-10-31  --  The review runbook grades structure without the artifact's purpose
+
+```text
+state: open
+scoped: workflow/coding-agent/skills/code-review/runbooks/thermo-nuclear-code-quality-review/SKILL.md (vendored verbatim from cursor/plugins), and the brief the loop writes for each seat
+legacy: none
+mitigation: the brief states what the artifact is for and who reads it, and a blocker must name a wrong answer or a cost that shows under a named consumer; a "could be simpler" that no consumer can feel is a note, not a blocker
+```
+
+The runbook is a generic maintainability standard: eight non-negotiable rules, thirty-odd things to flag aggressively, sixteen preferred remedies, and an approval bar of "presumptive blockers". It never asks what the artifact is for. On the skill graph that gap ran fifteen rounds: rule 5 ("prefer explicit typed models or shared contracts over loosely-shaped ad-hoc objects") demanded the schema, rule 5 again ("ask whether the boundary should be made explicit") demanded a reader for the schema, and round 15's seat then applied the runbook's own "delete a whole layer of indirection" to the validator those earlier rounds had required. Each reading was faithful; the standard carries no line that could settle between them, because the artifact's readers - an agent querying the graph, an operator reading the render - appear nowhere in it.
+
+Two properties make the drift structural rather than accidental. A fresh seat holds no memory of the earlier rounds' remedies, so it cannot see that it is asking for the opposite. And "assume there is often a code judo move available" plus "end each round on a verdict" is a mandate to find something every round, so convergence has to come from outside the standard - from the purpose, which it does not name.
+
+What the loop did buy is real and worth keeping: a link resolved against the shell's directory, a malformed graph walked after being reported, two readers of one store, 49 test assertions with their arguments reversed, and five gates that printed a pass over input they had failed to read. Those were wrong answers, and the runbook's own pressure is what found them. The fix is not a weaker standard but a bound one: the intent goes in the brief, and a blocker has to name a consumer.
+
+---
+
 ## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
 
 ```text

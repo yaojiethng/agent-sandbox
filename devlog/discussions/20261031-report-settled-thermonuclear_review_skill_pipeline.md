@@ -2,7 +2,7 @@
 date: 2026-10-31
 milestone: M3.3.3 - The skill maintenance pipeline
 type: report
-status: draft
+status: settled
 ---
 
 # Report - Thermo-nuclear review of the skill pipeline
@@ -39,9 +39,13 @@ Two seats disagreed in six of the fifteen rounds; a blocker from one seat counte
 
 Verification at the head of this range: `bash scripts/lint.sh` clean across 17 gates, `bash scripts/run_tests.sh` 1414 of 1414, and each round's seat log recorded under `.scratchpad/review/`.
 
-## What the loop did not converge on
+## How it closed
 
-One blocker is open, and the two seats' remedies contradict earlier ones: round 15's seat 2 blocks on the edge model being one optional-field bag re-checked by a bespoke schema engine, and prescribes deleting `checkGraph`, `checkShape` and the schema in favour of constructive edge helpers, while rounds 9 to 11 blocked precisely because the schema was not enforced and prescribed a validator. Both cannot be satisfied at once, and which contract owns the graph's shape -- the schema file or the builder's types -- is a design decision, not a defect a fix round can close. It is left for the operator.
+The loop did not converge on its own; it was stopped and the last blocker was decided. Round 15's seat 2 blocked on the edge model being one optional-field bag re-checked by a bespoke schema engine, and prescribed deleting `checkShape`, `validateGraph` and the schema in favour of constructive edge helpers, while rounds 9 to 11 had blocked precisely because the schema was not enforced and prescribed a validator. The two remedies cannot both hold, and the operator's ruling settled it: **the graph is a diagnostic its readers query, not a validated wire format.** Its consumers are an agent auditing a copy, locating a skill or exploring what a change reaches, and the operator reading the render; nothing validates the JSON as a format and no gate runs the check.
+
+That ruling deleted the scheme of guarantees the loop had been building. `scripts/skill_graph.schema.json` and the validator behind it are gone, and the by-kind obligations they restated are held by three constructors beside `addNode` and `addEdge`: `linkEdge` (an expression, a source site, a resolution), `compareEdge` (computed from the two hashes it names) and `buildEdge` (the manifest row that declares it), so an edge missing its kind's fields cannot be written. What survives is the part a reader uses: every question the graph cannot answer is a finding in the graph - a manifest that will not parse, a row that reaches no root, an absent host root, a skill its copy lacks - which is cheap and is the difference between "no drift" and "no data". `checkGraph` now reports the graph's own findings, the drift count and the unknown-image warning, and nothing else.
+
+The ruling also corrected the roadmap row that had ranked the check over the render, and the same axis explains the loop's length: the runbook grades structure against a generic maintainability ideal and never asks what the artifact is for, so a fresh seat each round could always find one more guarantee to demand. Recorded in `devlog/AGENT_FEEDBACK.md`.
 
 The loop also surfaced, and did not close, a set of recorded non-blockers. The ones a reader will meet first: `scripts/skill_map.mjs` and `scripts/lint/skill_sources.mjs` both own the `MAINTENANCE.md` rule at different severities; `scripts/source_bump.mjs` repeats the load-store-validate-refuse prologue at three commands; `scripts/render_skill_graph.mjs` is a second CLI over the same module and keeps `allowDrift: true` beside a `--check` that fails on drift; the vendored renderer's licence is copied from a gitignored session path; and `scripts/skill_graph.mjs --check` is run by no gate, because it compares this tree with an image built from an earlier commit.
 
@@ -54,7 +58,6 @@ The `code-review` shell and the `thermo-nuclear-code-quality-review` runbook tha
 | Artifact | Source of truth |
 |---|---|
 | `scripts/skill_layers.mjs`, `scripts/skill_graph.mjs`, `scripts/skill_map.mjs`, `scripts/skill_store.mjs`, `scripts/source_bump.mjs`, `scripts/lint/skill_sources.mjs`, `scripts/render_skill_graph.mjs` | this commit; the executable sources. |
-| `scripts/skill_graph.schema.json` | the graph's declared contract, validated by `checkGraph`. |
 | `tests/test_skill_graph.sh`, `tests/test_skill_map.sh`, `tests/test_skill_sources.sh`, `tests/test_source_bump.sh`, `tests/skill_layer_loader.mjs`, `tests/skill_source_loader.mjs`, `tests/knowledge/knowledge_skill_layer_resolution.sh`, `tests/fixtures/skill_graph/*` | this commit. |
-| `devlog/AGENT_FEEDBACK.md` | the review-range finding, entry `2026-10-31`. |
+| `devlog/AGENT_FEEDBACK.md` | the review-range finding and the purpose-axis finding, both entry `2026-10-31`. |
 | The seat logs and briefs | `.scratchpad/review/round-1` to `round-15`, session-local and not committed. |
