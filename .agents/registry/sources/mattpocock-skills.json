@@ -6,12 +6,12 @@
   "copyright": "Copyright (c) 2026 Matt Pocock",
   "artifacts": [
     {
-      "local_path": "src/reasoning/agent/skills/domain-model",
+      "local_path": "src/reasoning/agent/skills/domain-modeling",
       "kind": "skill",
       "parent": null,
-      "upstream_path": "skills/engineering/domain-model",
+      "upstream_path": "skills/engineering/domain-modeling",
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
-      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
     },
     {
       "local_path": "src/reasoning/agent/skills/grill-me",
@@ -43,7 +43,7 @@
       "parent": null,
       "upstream_path": "skills/engineering/improve-codebase-architecture",
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
-      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
     },
     {
       "local_path": "src/reasoning/agent/skills/retro",
@@ -59,7 +59,7 @@
       "parent": null,
       "upstream_path": "skills/misc/setup-pre-commit",
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
-      "base": "62f43a18177be6ec82da242e59ffbc490a4c22ea"
+      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
     },
     {
       "local_path": "src/reasoning/agent/skills/writing-for-agents",

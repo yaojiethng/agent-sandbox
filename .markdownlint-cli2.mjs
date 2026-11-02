@@ -91,7 +91,6 @@ export default {
         "docs/reference/terminology.md",
         "docs/development/interface-conventions.md",
         "src/reasoning/agent/skills/caveman/SKILL.md",
-        "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
         "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",
         "src/reasoning/providers/hermes/quickstart.md",
         "src/reasoning/providers/opencode/quickstart.md",

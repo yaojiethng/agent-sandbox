@@ -8,7 +8,7 @@ Source: `mattpocock-skills`; see [`NOTICE`](../NOTICE).
 
 **Kept.** The setup steps, the scripts and the notes.
 
-**Rewritten.** Fenced blocks are labeled `text`, and the em dash is replaced by the ASCII double hyphen. No content changed.
+**Rewritten.** Fenced blocks are labeled `text`. No content changed.
 
 **Added.** This maintenance record.
 
