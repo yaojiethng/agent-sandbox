@@ -64,6 +64,7 @@ declare -A SUBJECT_TESTS=(
   [scripts/workflows/draft.sh]="test_draft_workflow.sh test_draft_state.sh"
   [src/build/container-interface.mjs]="test_container_layout.sh"
   [scripts/lint/linking.mjs]="test_linking.sh"
+  [scripts/lint/references.mjs]="test_references.sh"
   [src/build/compose.sh]="test_compose_wait.sh test_trace_compose_gen.sh"
   [src/capability/entrypoint.sh]="test_capability_entrypoint_mount.sh test_dry_run_probe.sh"
   [src/capability/git-hooks/pre-commit.sh]="test_git_hook.sh"
