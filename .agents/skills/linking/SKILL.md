@@ -29,12 +29,22 @@ Place a handoff link where the handoff happens, and name the section it hands to
 
 A step-level reference carries a section anchor. A document-level reference is a plain document link. Where an agent must locate a section programmatically, give the grep command instead of a link. Story S4.
 
+## Citations
+
+A citation is a pointer to the evidence behind a claim, and its target may be inside the repository or outside it. Story S2.
+
+An internal citation follows the rules above: link the handover, the ADR or the record that evidences the claim.
+
+An external citation names a source this repository reads but does not carry: a standard, a paper, a specification. Write the publisher, the title, the version or date, and the URL. The gate skips an external target, which `scripts/lint/linking.mjs` does by design, so the version is the only thing that pins which revision the claim rests on.
+
+What we took from that source and what we dropped is a record rather than a link: `.agents/registry/citations/<id>.json`, whose fields `docs/development/source_tracking.md` `## Citations` states. The citing text names the source, and the record holds the adaptation.
+
 ## The stories
 
 | Story | The use case | Served by |
 |---|---|---|
 | S1 | an agent reads a shipped document in a container and follows a pointer to the rule it needs | where the link is read; name a target the citing text cannot reach |
-| S2 | a later reader follows a citation back to its evidence | what to link; name transient evidence |
+| S2 | a later reader follows a citation back to its evidence | what to link; name transient evidence; the external form under `## Citations` |
 | S3 | a runbook hands work to another prompt, and the reader needs the entry point | where the handoff is |
 | S4 | an agent locates a section without a human converting a heading into a fragment | how to form one |
 

@@ -127,6 +127,24 @@ It does not hold the artifact itself. The local tree remains authoritative and e
 
 It does not hold an installed package. Upstream text that arrives as a pi package is loaded from a clone under the sandbox home, and the repository carries only the declaration; its bump is [`skill-fork/patterns/package-bump.md`](../../.agents/skills/skill-fork/patterns/package-bump.md), and `scripts/skill_packages.mjs` reports a package whose path is gone.
 
+## Citations
+
+A citation is a source this repository reads but does not carry: a standard, a paper, a specification. It is not a forked source, and it lives apart from the store because the two have different validity rules. A fork's edge must resolve against the tree and a forty-character pin. A citation resolves to a document somebody else publishes, and its pin is a version or a date.
+
+One file per citation, at `.agents/registry/citations/<id>.json`:
+
+| Field | Holds |
+|---|---|
+| `id` | the filename stem, and the name a citing document uses |
+| `title`, `author`, `publisher` | what identifies the document to a reader who must find it |
+| `url` | the canonical address, checked against the network when the citation is written |
+| `version` | the revision read, because an address alone pins nothing |
+| `record` | `source`, `kept`, `rewritten`, `added`, `dropped`, in the vocabulary the store's edges use |
+
+Nothing validates these files. The store's gate exists to resolve a pin against a git tree, and a citation has no tree; a validator written over three examples would encode a guess. What keeps a citation honest is its `version` and its `record`, and what keeps it current is a reader who follows the address.
+
+The citation file does not list the documents that cite it. The arrow runs one way, as it does for the store: the citing text names the source, so a second document can adopt the same citation without an edit here.
+
 ## Migration
 
 The migration created the live source files, moved the forked edges and retired `source-catalog.json`. On 2026-11-01 the fourteen per-artifact `MAINTENANCE.md` records left the tree: eight became edges with their adaptation note, one passage edge was added for the ladder in the pi `AGENTS.md`, and six said nothing a bump could read, so they retired with the reasoning already in the handovers that wrote them. The gate now validates the store alone and asks for no record, and it checks no revision, so a bump still runs only when the operator directs it and the store stays pinned by default.
