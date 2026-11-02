@@ -71,7 +71,7 @@ Skills and prompt templates share four layers, highest precedence first:
 | **Agent-sandbox layer** | `src/reasoning/agent/skills&#124;prompts/` | `/opt/workflow/agent/skills&#124;prompts/`; the first `settings.json` `packages` entry | Image rebuild (`make build`) |
 | **Workflow module layer** | `workflow/<module>/skills&#124;prompts/` | `/opt/workflow/agent/modules/<module>/skills&#124;prompts/`; the module's `packages` entry | Image rebuild (`make build`) |
 
-Pi resolves a name first-wins in that order. The project layer shadows the provider layer, which shadows the agent-sandbox layer, which shadows the workflow module. A collision is a hard finding in the generated map, not a silent winner: `scripts/check_skill_map.sh` runs it as a lint gate. The map is generated at check time and is not committed.
+Pi resolves a name first-wins in that order. The project layer shadows the provider layer, which shadows the agent-sandbox layer, which shadows the workflow module. A collision among these four layers is a hard finding in the generated map, not a silent winner: `scripts/check_skill_map.sh` runs it as a lint gate. The map is generated at check time and is not committed. A collision in the session's own load set, including a package the project added, is pi's to report and resolve; the decision is `docs/adr/skill_collision_delegation.md`.
 
 The layers are one-way. A shipped skill -- provider, agent-sandbox or workflow -- may link only within its own source root. A project skill may link anywhere in the project tree, including into a shipped layer, because the project tree is where the project layer is read. A shipped link outside its layer is a hard finding. The decision is `docs/adr/skill_layer_resolution.md`.
 
