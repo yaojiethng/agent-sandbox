@@ -2,9 +2,11 @@
 
 ## Source
 
-Forked from the `pont`/`pstack` agent skill set that the `poteto` skills are forked from, as `principle-guard-the-context-window`. The upstream text was installed by hand into the agent config home and carried no provenance, so the exact upstream revision is not recorded. What is known is the shape it arrived in and what this fork changed, recorded below.
+Forked from the `pstack` agent skill set, as `principle-guard-the-context-window`. The upstream text was installed by hand into the agent config home and carried no provenance record, so the exact upstream revision is not recorded. The lineage rests on the text: this skill shares eleven six-word runs with the pstack corpus, and it is the only skill in the tree that shares anything beyond an incidental phrase.
 
 `context.sh` beside `SKILL.md` has no upstream counterpart and was written here.
+
+The rest of the pstack set is not vendored. It arrives as a declared dependency, per the skill dependency declaration record at `docs/adr/skill_dependency_declaration.md` in the repository; this skill is the one artifact the repository forks from it.
 
 ## Adapted
 

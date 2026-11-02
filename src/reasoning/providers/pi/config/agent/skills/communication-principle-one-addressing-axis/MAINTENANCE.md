@@ -2,11 +2,11 @@
 
 ## Source
 
-Forked from the `pont`/`pstack` agent skill set that the `poteto` skills are forked from, as `communication-principle-one-addressing-axis`. The upstream text was installed by hand into the agent config home and carried no provenance record, so the exact upstream revision is not known. What is known is the shape it arrived in and what this fork changed, recorded below.
+Source: home-grown. The text arrived in the agent config home and came into the tree at `c72df68b` after a writing pass, and the record written then attributed it to the `pstack` agent skill set. That attribution is dropped: pstack carries no skill of this name, this text shares no six-word run with the pstack corpus, and the one skill in the tree whose pstack lineage the corpus does corroborate shares eleven. What the config home held cannot be established, so the adaptation below is the history of this file rather than of an upstream.
 
 ## Adapted
 
-**Kept.** The name, the one-sentence rule, the pattern table, and the `**Why.**` paragraph's opening claim that the operator answers by index. The `communication-principle-` prefix stays because the judgement governs every prose surface, chat included, and the domain prefix is what scopes it there.
+**Kept.** The one-sentence rule, the pattern table, and the `**Why.**` paragraph's opening claim that the operator answers by index. The `communication-principle-` prefix stays because the judgement governs every prose surface, chat included, and the domain prefix is what scopes it there.
 
 **Rewritten.** Three sections restated rules that already had owners. `Where a number earns its place` restated the opening rule of the `numbering` convention, so it now names that convention and states no rule of its own. `Where the list is gone` restated the convention's write-back rule, and now keeps only the judgement the convention does not state, that a durable artifact takes a descriptive name rather than a position carried out of a transient list. The section `Where many references land on one item` stated the same rule as `documentation_policy.md` `### Numbering`, and that rule moved here on operator direction, because a skill reaches a writer mid-draft and a policy file does not.
 
