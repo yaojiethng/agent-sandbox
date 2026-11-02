@@ -33,10 +33,10 @@ The command names are the CLI's; the invocation adds the repository's script pat
 | The source file at `.agents/registry/sources/<source-id>.json` | The source facts, the edge, `origin` and `base`. |
 | [`source_tracking.md`](../../../docs/development/source_tracking.md) | The schema and the CLI contract. |
 | [`20261029` design record](../../../devlog/discussions/20261029-design-draft-skill_source_update.md) | The merge model and the intent that the diff cannot carry. |
-| The local artifact; its `MAINTENANCE.md` for a skill or runbook | What the fork kept, rewrote, added and dropped, and why. |
+| The local artifact; its `MAINTENANCE.md` for a skill, runbook or prompt | What the fork kept, rewrote, added and dropped, and why. |
 | [`fork-and-strip.md`](../skill-scaffolder/patterns/fork-and-strip.md) | The creation counterpart; a bump re-adapts an existing fork. |
 
-The store carries no design-doc path. Use the artifact's `MAINTENANCE.md` (a skill or runbook) and the source-bump design record as the intent; a prompt has no maintenance record, so ask the operator for its intent. If neither records why the fork exists, stop and ask the operator. Do not invent a design doc.
+The store carries no design-doc path. Use the artifact's `MAINTENANCE.md` (a skill, runbook or prompt) and the source-bump design record as the intent; when a prompt has no record, ask the operator for its intent. If neither records why the fork exists, stop and ask the operator. Do not invent a design doc.
 
 ## Inputs
 
@@ -52,7 +52,7 @@ If an input is missing, stop and ask. Do not infer a revision, a source id, or a
 
 1. **Find the edge.** Run `node scripts/source_bump.mjs check`, then open the source file and find the edge whose `local_path` is the artifact. If the edge is absent, stop. Done when the store is clean and the edge names `upstream_path`, `origin` and `base`.
 
-2. **Read the intent.** Read the local artifact and the design record; for a skill or runbook, also its `MAINTENANCE.md`; for a prompt, ask the operator for the intent. Done when you can state what the fork added, rewrote and dropped, and which areas are likely to conflict.
+2. **Read the intent.** Read the local artifact and the design record; for a skill, runbook or prompt, also its `MAINTENANCE.md`; when a prompt has none, ask the operator for the intent. Done when you can state what the fork added, rewrote and dropped, and which areas are likely to conflict.
 
 3. **Review the local change.** Run `node scripts/source_bump.mjs diff --source <id> --local <path> --clone <clone>`. Read the `base -> local` diff. Done when every hunk is either an intended adaptation or understood as incidental.
 
@@ -60,7 +60,7 @@ If an input is missing, stop and ask. Do not infer a revision, a source id, or a
 
 5. **Merge each path.** For a skill or runbook, take the union of the paths in `base`, `ours` and `theirs`, and write each result to `<local>/<path>`. For a prompt, the path is `basename(<local>)` and the destination is `<local>`. When a path is present in all three trees, run `git merge-file -p <ws>/ours/<path> <ws>/base/<path> <ws>/theirs/<path> > <destination>`. A path only in `theirs` is added; a path only in `ours` stays; a path only in `base` is already absent locally. A path in `base` and `ours` but not `theirs` is deleted unless the local change must survive; a path in `base` and `theirs` but not `ours` stays deleted unless the upstream change conflicts with the deletion, in which case decide it by the intent. A path in `ours` and `theirs` but not `base` is a both-added file: keep the local content, review the upstream addition, and decide it by the intent; `git merge-file` has no base file for it. A conflict leaves markers and `git merge-file` exits 1. Done when every path is accounted for and no markers remain.
 
-6. **Resolve by the intent.** Read the design record and, for a skill or runbook, the artifact's adaptation; for a prompt, use the operator's intent. Decide each conflict by what the fork means, not by accepting one side wholesale. Done when the local artifact reads as the re-adapted fork and the design doc can name what was kept, changed or rejected.
+6. **Resolve by the intent.** Read the design record and, for a skill, runbook or prompt, the artifact's adaptation; when a prompt has none, use the operator's intent. Decide each conflict by what the fork means, not by accepting one side wholesale. Done when the local artifact reads as the re-adapted fork and the design doc can name what was kept, changed or rejected.
 
 7. **Verify.** Run `bash scripts/lint.sh` and `bash scripts/run_tests.sh`, then the artifact's own checks. Update `MAINTENANCE.md` `## Adapted` if the adaptation changed, and update the design doc with what the merge changed. Done when the local artifact and its records are green.
 
