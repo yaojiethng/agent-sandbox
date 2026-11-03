@@ -13,6 +13,7 @@
 #   composite      -- one local_path under two sources passes
 #   duplicate edge -- the same edge twice in one source fails
 #   canonical form -- a store file that is not canonical fails
+#   source line    -- an artifact carrying its own source line fails
 #   repository     -- the real store is clean
 #   identity       -- a malformed id, a filename mismatch and a duplicate id,
 #                     each reported once
@@ -239,6 +240,16 @@ run_test test_one_artifact_in_two_sources_passes
 run_test test_a_duplicate_edge_in_one_source_fails
 run_test test_a_non_canonical_file_fails
 run_test test_the_store_identity_rules_are_reported_once
+test_a_source_line_in_the_artifact_fails() {
+  local root out rc
+  root="$(make_fixture)"
+  printf '%s\n' '' '> Source: [upstream](https://example.test), landed at abc.' >>"$root/src/reasoning/agent/skills/alpha/SKILL.md"
+  out="$(run_gate "$root")"; rc=$?
+  assert_rc 1 "$rc" "a file carrying its own source line fails"
+  assert_contains "$out" "the store is the only provenance record" "the finding names the rule"
+}
+
+run_test test_a_source_line_in_the_artifact_fails
 run_test test_the_repository_store_is_clean
 
 test_done

@@ -105,8 +105,8 @@
       "record": {
         "name": "`writing-for-agents` stays. The name is the act, and the skill is still the reference for writing a document an agent consumes.",
         "kept": "The writing method, the two loads, the information hierarchy, the split rules, the leading-word and pruning discipline, and `SKILL-MECHANICS.md` unchanged.",
-        "rewritten": "`SKILL.md` adds the source blockquote, names each repository principle in a code span where the upstream stood alone, and uses `->` where the upstream uses the arrow glyph. The provider-layer links a later local edit added are gone; the principle names remain inline.",
-        "added": "The source blockquote and the inline principle names.",
+        "rewritten": "`SKILL.md` names each repository principle in a code span where the upstream stood alone, and uses `->` where the upstream uses the arrow glyph. The provider-layer links a later local edit added are gone; the principle names remain inline. The source blockquote this edge listed until 2026-11-03 is deleted: no artifact carries a provenance line, and the store's gate reports one that appears.",
+        "added": "The inline principle names.",
         "dropped": "The repository-only links into the provider layer. The upstream method is intact."
       }
     }

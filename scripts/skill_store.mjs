@@ -163,6 +163,7 @@ function validateArtifact(artifact, where, findings, root) {
   }
 
   validateAnchor(artifact, where, findings, root);
+  validateProvenanceLine(artifact, where, findings, root);
   validateRecord(artifact, where, findings);
 
   if (artifact.kind === "runbook") {
@@ -173,6 +174,20 @@ function validateArtifact(artifact, where, findings, root) {
     }
   } else if (artifact.parent !== null) {
     addFinding(findings, where, "parent must be null unless the kind is runbook");
+  }
+}
+
+// The store is the only provenance record. A source line in the file is a second
+// copy of a fact the edge already holds, and the two drift: the review runbook's
+// line named a change the upstream never made, and nothing caught it.
+function validateProvenanceLine(artifact, where, findings, root) {
+  if (!isRelativePath(artifact.local_path)) return;
+  const target = isFileArtifact(artifact)
+    ? resolve(root, artifact.local_path)
+    : resolve(root, artifact.local_path, "SKILL.md");
+  if (!existsSync(target)) return;
+  if (/^\s*>\s*Source:/m.test(readFileSync(target, "utf8"))) {
+    addFinding(findings, where, `local_path ${artifact.local_path} carries a source line; the store is the only provenance record`);
   }
 }
 

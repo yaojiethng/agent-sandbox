@@ -33,7 +33,7 @@ A fork is opt-in maintenance. An artifact with no edge is one nobody bumps, and 
 
 The store at `.agents/registry/sources/` is the record, and it points at the tree: an edge names the local path, the upstream path and the revision the next merge starts from. `patterns/vendor-bump.md` `## Register an edge` states the shape and the fields; write it at vendoring time, because that is when the facts are known.
 
-Nothing points the other way. The artifact carries no record file and no provenance line, so a reader who wants to know where a skill came from opens the store. Keeping the two in step is the operator's, since a wrong edge breaks the next bump and nothing else.
+Nothing points the other way, and the store's gate holds that: an artifact carries no record file and no source line, and one that appears is a finding. A copy of the source in the file drifts from the edge -- the review runbook's line named a change the upstream never made -- so a reader who wants to know where a skill came from opens the store. Keeping the edge true is the operator's, since a wrong edge breaks the next bump and nothing else.
 
 ## Writing a skill that is not a fork
 

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "cursor-plugins",
+  "url": "https://github.com/cursor/plugins",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Cursor",
+  "artifacts": [
+    {
+      "local_path": "workflow/coding-agent/skills/code-review/runbooks/thermo-nuclear-code-quality-review",
+      "kind": "runbook",
+      "parent": "workflow/coding-agent/skills/code-review",
+      "upstream_path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
+      "origin": "6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf",
+      "base": "6e3d2ea56d7d446b955eaae6ac4c8eef8bf504cf",
+      "record": {
+        "name": "`thermo-nuclear-code-quality-review` stays; it is the upstream name, and `code-review`'s table resolves the operator's alias `thermonuclear-review` to it.",
+        "source": "The file carried a provenance line until 2026-11-03, naming a paragraph about this repository's `_REVIEWER` role that it said had been removed. The upstream path at `6e3d2ea5` holds no such paragraph, and `git log -S _REVIEWER` over it finds none at any revision, so the line was removed and this record states the diff it should have stated.",
+        "kept": "The review's requirements, its bar for approval, its forbidden moves and its output format, word for word.",
+        "rewritten": "Five paragraph groups are joined onto one physical line each, the upstream's opening blockquote prompt among them, as `project-documentation` requires. No sentence changed.",
+        "added": "The `name`, `description` and `disable-model-invocation` frontmatter, which the upstream file does not carry.",
+        "dropped": "The sibling agent definition at `cursor-team-kit/agents/thermo-nuclear-code-quality-review.md`, which the local copy does not take."
+      }
+    }
+  ]
+}

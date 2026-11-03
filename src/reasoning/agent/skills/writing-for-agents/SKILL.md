@@ -3,8 +3,6 @@ name: writing-for-agents
 description: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 ---
 
-> Source: [mattpocock/skills, writing-for-agents](https://github.com/mattpocock/skills/blob/5beb35b040e3de97e54fa9e386d7e42d15c295c2/skills/productivity/writing-for-agents/SKILL.md), landed at commit `5beb35b0`. Verbatim apart from two mechanical changes: the arrow glyph becomes `->`, which this repository's gates require in prose, and each point below restating a principle this repository already holds names that principle rather than standing as a second origin. What that rewrite may and may not touch is `communication-principle-rewrite-syntax-never-semantics`'s judgement.
-
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
 When the document you're writing is a skill, read [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter, invocation choice, and router skills.
