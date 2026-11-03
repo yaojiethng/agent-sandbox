@@ -2,6 +2,17 @@
 
 **Current:** 2026-11-02
 
+## 2026-11-03 -- A rule lives only where a reader can reach it and an observer can catch it
+
+**Decision:** A workflow document holds the rules its own procedure enforces, and every rule it borrows is named and pointed at, never restated. A rule's carrier is ranked by reach and by observation, and a prompt is the weakest: it is read only when invoked, and nothing checks its content. So a rule that another document must obey cannot live in a prompt alone.
+
+**Rationale:** The 2026-10-17 test names what a sentence is and says nothing about where a rule can safely sit. That leaves open the failure this entry closes: a rule whose only carrier is unreachable to the documents that obey it, and whose drift no observer reports.
+
+**Rejected alternatives:**
+
+- *State it as an absolute, "a prompt is never the only source of truth for a rule"* -- a prompt legitimately owns the rules its own procedure enforces, so the absolute was a copy that had drifted out of `agent_workflow.md` `### Where the rules live` and into being false.
+- *Leave the ranking unstated and rely on the observer test* -- the test decides a sentence's kind, and the carrier question survives it.
+
 ## 2026-11-02 -- The kinds are tools for choosing a mechanism, not a classification of a sentence
 
 **Decision:** The five kinds are tools a writer uses to test the mechanism against the problem. The strength a kind buys comes from what holds it, so the same rule written as prose is much looser than the same rule enforced by a gate, and what a machine can decide belongs in code or a gate rather than in paper.

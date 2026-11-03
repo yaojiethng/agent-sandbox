@@ -14,9 +14,11 @@ A name another skill already holds does not load, because the first skill discov
 
 A rename reaches every document that cites the name, so a rename carries a list of files to change.
 
+**The scheme this repository suggests.** Nothing checks a name. A principle follows `[<domain>-]principle-<judgement>`: a bare `principle-` where the judgement holds for any agentic work, and a domain prefix where it is confined to one (`communication-principle-write-for-the-reader`, `bash-coding-principle-<judgement>` for language-specific work). The scheme shadows `pstack`'s, so a name states the class and never the provenance; the skill's maintenance record states where it came from. Every other skill follows `<verb-noun>`, so `/<action>` reads to the operator as "do <action>", the shape `node run <action>` already holds. A mode keeps the `-mode` suffix.
+
 **The description.** Spend the description on words an agent can match: the work the skill does, named by its object, and the situations that call for it. Two phrases for one situation spend the space twice.
 
-A skill only the operator invokes is read from the operator's list, so its description uses the words that operator searches with.
+A skill only the operator invokes is read from the operator's list, so its description uses the words that operator searches with. A router skill names the other skills and when to reach for each, for when the operator-invoked set outgrows one list.
 
 **The signpost.** A skill's name and description are its signpost: the only words an agent holds before it loads the body. Use `communication-principle-maximize-conceptual-leverage` at `$AGENT_HOME/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md` to choose the leading word and record it as `metadata: leitwort:`.
 

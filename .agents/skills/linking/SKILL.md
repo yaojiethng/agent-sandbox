@@ -13,6 +13,7 @@ Link a document the reader may need to open; otherwise write its name. Inline co
 
 - **Link a durable target from another durable document.** A documentation or policy document links the ADR that records the fact, and the ADR links the handover that evidences it.
 - **Name a target the citing text cannot reach.** Where the citing document ships into the image and the target does not, write the target's repository path in a code span. Story S1.
+- **Name a project skill the reader's file cannot load.** A `.agents/skills/<name>/` path is legal from a shipped document only where `initialize` seeds that name, because the seeding is what delivers it; where it does not, the rule is stated in the text the reader holds. Story S1.
 - **Name transient evidence.** A handover, a discussion page and a session export are named in a code span and never linked. They are the targets that move, which the principle states as a class.
 
 ## Where the link is read

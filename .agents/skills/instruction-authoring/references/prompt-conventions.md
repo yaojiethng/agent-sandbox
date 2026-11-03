@@ -14,7 +14,7 @@ So a link reaches only a path that ships, and a document that ships nowhere is n
 
 Write it in the imperative or the third person, and pick one per prompt: the loop prompts use the imperative (`iter`: "Open a new iteration"), while `plan` uses the third person. Do not claim one voice for the set.
 
-The frontmatter is YAML. An unquoted value cannot hold a colon, a leading dash or a trailing colon; wrap such a value in double quotes and escape an inner double quote. An apostrophe needs no quoting. Pi drops a prompt whose frontmatter does not parse, with no message in the session, so it never appears in the command list.
+The frontmatter is YAML. An unquoted value cannot hold a colon, a leading dash or a trailing colon; wrap such a value in double quotes and escape an inner double quote. An apostrophe needs no quoting. Pi drops a prompt whose frontmatter does not parse, with no message in the session, so it never appears in the command list. `scripts/check_document_shape.sh` fails the gate on any unparseable block in the tree.
 
 **`argument-hint`.** Where the prompt accepts an argument, state the argument's shape and whether it is optional. `iter` names the type words it accepts; `plan` marks its argument required.
 

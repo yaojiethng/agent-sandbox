@@ -9,10 +9,10 @@
 //      sentence-case title, `**The pattern.**`, `**Why.**`, any named part, then
 //      `**The test.**`
 //
-// Enforces docs/development/prompt-authoring-conventions.md `## Structure of a
-// workflow document` and `## The principle shape`,
-// `.agents/skills/project-documentation/SKILL.md` `## How a document opens`, and the
-// decision in docs/adr/principle_skill_shape.md.
+// Enforces .agents/skills/instruction-authoring/references/skill-conventions.md
+// `## Frontmatter` and `## A judgement skill`, its `prompt-conventions.md`
+// `## Frontmatter`, `.agents/skills/project-documentation/SKILL.md` `## How a document
+// opens`, and the decision in docs/adr/principle_skill_shape.md.
 //
 // Every set is derived. The instruction roots come from the manifest's cells, so
 // a new surface enters with the declaration. A principle is named by its

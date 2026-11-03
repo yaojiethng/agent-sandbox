@@ -35,6 +35,22 @@ The sentences of instruction text: a prompt, a skill, and the conventions they r
 
 **Last updated:** 2026-11-02
 
+## workflow document
+
+A prompt or a skill: instruction text an agent executes. Its form is a second axis, decided by what the body carries rather than by the carrier.
+
+### Scope
+
+- The carrier: a prompt, one file the operator or a model starts by name; a skill, a directory a reader opens by name.
+- The form: a runbook, an advisor, a reference or a helper, each of which may be either carrier.
+
+### Relationships
+
+- A workflow document is instruction text, a wider class that also holds the conventions and references a workflow document reads.
+- The authoring rules are this project's `instruction-authoring` convention, which does not ship.
+
+**Last updated:** 2026-11-03
+
 ## session
 
 One container lifecycle, from container start to teardown. The harness unit of execution. Has a resume path and a persisted state file.

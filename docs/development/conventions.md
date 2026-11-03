@@ -8,7 +8,8 @@ Index of coding and interface conventions for the agent-sandbox project. Each ca
 | Bash coding | [`code-review-bash`](../../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/SKILL.md) | Language rules as patterns beside the runbook, each carrying the wrong form it replaces, and the review that applies them |
 | Module dependency direction | [`context_resolution.md#dependency-direction`](context_resolution.md#dependency-direction) | Which module may depend on which, in every language: the graph, the boundary rules, and what an edge is per language |
 | Testing | [`testing/SKILL.md`](../../.agents/skills/testing/SKILL.md) | Judgements and patterns for writing a test |
-| Prompt and skill authoring | [`prompt-authoring-conventions.md`](prompt-authoring-conventions.md) | Workflow-document structure, runbook vs advisor, subject scoping, document-type identification |
+| Prompt and skill authoring | `.agents/skills/instruction-authoring/SKILL.md` | The drafting order; a prompt's, a skill's and a form's conventions; the review |
+| the draft gate | [`prompt-authoring-conventions.md`](prompt-authoring-conventions.md) | what makes a prompt a draft, and what releases it |
 | Instruction surfaces | [`instruction-surface-conventions.md`](instruction-surface-conventions.md) | Declaring a prompt or skill surface in the interface manifest: fields, conditions, scope, layers, gates |
 
 Policy documents govern process, not code shape. Conventions govern code shape within their category. A code-shape rule that holds in every language is neither: the provider layer's `## When writing code` and the project layer's `When writing code` carry it. A rule specific to one language joins that language's category above.
