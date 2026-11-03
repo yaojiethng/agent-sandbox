@@ -2,7 +2,7 @@
 date: 2026-11-02
 milestone: T7 - Harness Specialization / Sandbox Persistence
 type: Implementation
-status: Active
+status: Closed
 ---
 
 # Handover - The seed path assumes the shape of its input
@@ -69,4 +69,4 @@ This record is written after the fact, at operator direction. The two commits la
 | `tests/test_seed_volume.sh` | `test_seeder_names_the_failing_command`. |
 | `tests/test_run_agent.sh` | `test_seeder_failure_without_output_says_so`. |
 | `devlog/roadmap.md` | The T7 row that carries the broad repair. |
-| `.agents/drafts/20261102-01-impl-seed_path_input_assumptions.md` | This handover. |
+| `devlog/handovers/20261102-08-impl-seed_path_input_assumptions.md` | This handover. |
