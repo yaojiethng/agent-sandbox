@@ -57,6 +57,7 @@ Print the suggestion and stop. The brief can go two ways, and the operator picks
 
 - **A run.** The next runbook reads it: [`iter.md`](iter.md) for one unit, [`plan.md`](plan.md) for a decision.
 - **A saved file.** The brief lands at `.agents/drafts/` for a later run.
+- **A parked prompt.** A prompt the operator has workshopped but is not ready to run lands in `.agents/drafts/` with `**Status:** draft`. Landing it is not a review and costs none; the `instruction-authoring` convention holds the release rule, and this prompt does not release it.
 
 `/scope` writes neither without the operator's word, and it opens no handover, no roadmap row and no commit.
 

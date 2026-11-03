@@ -8,7 +8,7 @@
 
 **Rationale:** The repository arrived at the same four independently, as a folder taxonomy, an instruction surface and a record set, so the frame names a boundary that was already being enforced at four places without a name. Naming it makes the boundary checkable at a fifth: a text whose quadrant cannot be named is a text whose reader cannot be named, and that is the defect a placement argument keeps rediscovering.
 
-The how-to quadrant is the one the frame changes. A procedure written for a reader who must be present goes stale under an agent workflow, because the reader who needs it invokes a skill and never opens the document; the instruction surface is where that quadrant is occupied, which is why no folder holds runbooks. The `prompt-authoring-conventions.md` that retired on 2026-11-02 was a how-to living in `docs/development/`, and it had drifted from the skills it described, which is the failure the frame predicts.
+The how-to quadrant is the one the frame changes. A procedure written for a reader who must be present goes stale under an agent workflow, because the reader who needs it invokes a skill and never opens the document; the instruction surface is where that quadrant is occupied, which is why no folder holds runbooks. The `prompt-authoring-conventions.md` that retired on 2026-11-03 was a how-to living in `docs/development/`, and it had drifted from the skills it described, which is the failure the frame predicts.
 
 **Rejected alternatives:**
 
