@@ -61,7 +61,7 @@
         "name": "`handoff` stays. It is the act, and the document is still for another agent to pick up.",
         "kept": "The document requirements: summarise the conversation, name the suggested skills, reference other artifacts by path, redact sensitive information, and tailor the document to the next session.",
         "rewritten": "The save path is `.scratchpad/handoff.md`, this repository's session scratch, rather than the OS temp directory. The suggested-skills section names the skills to read rather than a provider Skill tool.",
-        "added": "Nothing.",
+        "added": "The fixed-form cases, stated after the general summary, which is scoped to the handoff document: a prompt describing a work item is written verbatim into `.agents/drafts/`, an error report is written there as a runnable brief carrying the error, its reproduction, the evidence and the consequence, and a skill is routed to the `instruction-authoring` convention instead. The draft files carry `**Status:** draft`, and releasing one follows the `instruction-authoring` release rule.",
         "dropped": "The `agents/openai.yaml` provider metadata."
       }
     },
