@@ -15,10 +15,10 @@ This file is tied into the session's Findings section for recording and into the
 ## [O] 2026-10-31  --  The review runbook lost the sentence that fixed its commit range
 
 ```text
-state: open
+state: mitigated
 scoped: M3.3.3 - The skill maintenance pipeline
 legacy: none
-mitigation: name the range by hand before the first seat, from the branch point the harness recorded (`.git/SESSION_STATE`'s `init_sha`, the same point `/package-branch` takes), and have the operator confirm it
+mitigation: the `code-review` shell's input row now owns the range -- the operator's when named, otherwise the branch point the session started at, `.git/SESSION_STATE`'s `init_sha`, proposed for the operator to confirm -- and `references/loop.md` cites it; handover `20261103-02`
 ```
 
 The `code-review` shell says a review is given "a scope to read", its `references/loop.md` says "Name the range", and the `thermo-nuclear-code-quality-review` runbook says "the current branch's changes". None of the three states where the branch point comes from. The instruction that did was lost when the skill moved to the runbook format, so the range is now inferred at the call site, by the party that has the least evidence for it.
