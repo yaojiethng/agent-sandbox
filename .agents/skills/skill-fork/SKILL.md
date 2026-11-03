@@ -20,6 +20,7 @@ Upstream text reaches this repository one of two ways, and each has its own proc
 |---|---|
 | vendor this, fork this, take this upstream skill into the tree | [`patterns/fork-and-strip.md`](patterns/fork-and-strip.md) |
 | bump this fork, take the new upstream revision, re-base this fork | [`patterns/vendor-bump.md`](patterns/vendor-bump.md) |
+| a fork is already in the tree and the store holds no edge for it | [`patterns/vendor-bump.md`](patterns/vendor-bump.md) `## Register an edge` |
 | bump the installed package, update the pstack install | [`patterns/package-bump.md`](patterns/package-bump.md) |
 | which artifacts does this provider have that we must strip | [`patterns/provider-artifacts.md`](patterns/provider-artifacts.md) |
 

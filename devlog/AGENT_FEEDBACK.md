@@ -64,10 +64,12 @@ What the loop did buy is real and worth keeping: a link resolved against the she
 ## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
 
 ```text
-state: probation
-scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`
+state: open
+scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`; .agents/skills/skill-fork/SKILL.md `## Which half`; .agents/skills/skill-fork/patterns/vendor-bump.md `## Register an edge`
 legacy: none
 mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
+
+reopened 2026-11-03, same class, different door: the rule was in context and the deciding document was not on the read path. A routing table now names every task the store serves, so a task with no home is a visible gap, and the section a store field is written in names the ADR that decides the field set. Measured on the read-set from the session log and two cold probes; see handover `20261103-04`. The prior mitigation stays, and it did not cover this door: no description rewrite reaches a file the reader never opens.
 ```
 
 Asked for a reference page on writing a document, I wrote one that opened by describing the gap it filled, then carried a heading per step and a closing section: 33 lines against the 14 that already covered the same five steps in the tree. The two judgements that forbid exactly that were named in the file I was editing and quoted in the layer loaded at session start, and neither fired.
@@ -79,6 +81,10 @@ The second half of the fix is the one that does not depend on selection. Both pa
 This is the same class as the 2026-10-27 entry below, a rule held and not applied while drafting, with a different mechanism: there the sentence carried an argument the reader was not in, here the trigger could not be evaluated until the sentence was finished. What would settle it is a recurrence in the same form, a draft whose subject is the document or the session rather than the thing the document is about.
 
 Cross-references: `## The principle shape` in `docs/development/prompt-authoring-conventions.md`; handover `20261029-01`.
+
+**Recurrence, 2026-11-03.** Writing a store edge, the agent proposed a schema field (`absent`) whose job the bump's three-way merge already does, and `principle-delegation-over-machinery` - whose description names "a schema, a second record of someone else's guarantee" - was in the loaded layer and did not fire. The trace from this session's tool-call log: 231 calls, and of the nine rules bearing on the decision, three were read; the two that settle it (`vendor-bump.md` steps 2 and 7, and the ADR's R3) were opened only after the operator objected. `fork-and-strip.md`, which registers an edge at steps 1 and 5, was never opened, because the artifact was already in the tree and no routing row named that task.
+
+Two probes say what the fix is and is not. A cold agent asked to "catch a stale record" found R3 in the ADR and rejected its own hash proposal, so the failure is not reproducible from a cold start: it was a narrow goal inside a long session, not a wording defect. A second cold agent given the narrow task now reads `vendor-bump.md`, `skill-fork/SKILL.md`, `skill_source_catalog.md` and `source_tracking.md` before writing. The fix is a routing row and a named decision, not a reminder; a reminder would have been unfalsifiable.
 
 ---
 

@@ -45,6 +45,8 @@ A bump needs an edge, and the facts an edge holds are known when the artifact is
 
 A source file adds `schema`, `id`, `url`, `license` and `copyright` above `artifacts`, and `reason` instead of `artifacts` when it holds no edge. Write the file by hand, then run `format` and `check`.
 
+The `record` is a summary, and the local diff against `base` is the fact: a bump re-derives that diff and rewrites the record when the adaptation changed (`## The bump` step 7). So write the record, then read it back against `git diff <base> -- <local>` and confirm it names each change and invents none. **A field that restates what that diff already gives is a second mechanism, not a check.** The field set is decided in [`skill_source_catalog.md`](../../../../docs/adr/skill_source_catalog.md), whose rejected alternatives answer most new ones.
+
 One artifact may carry several edges, one per source: a skill built from three upstream skills has three contributions to describe. Two edges in one source must not share a `local_path` and an `anchor`.
 
 ## Commands
