@@ -36,7 +36,7 @@ Agents are oriented at iteration start through two sources of context, injected 
 
 ### Provider layer
 
-Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
+Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/agent/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
 
 Provider-layer content is narrow and environment-specific. It does not carry project workflow, iteration conventions, or collaboration principles.
 
@@ -62,14 +62,28 @@ The `~/workspace/input/brief.md` path was previously used to inject a stub file 
 
 ### Skills and Prompts Layer Model
 
-Skills and prompt templates share four layers, highest precedence first:
+Skills and prompt templates share four layers, highest precedence first. Where each repository root lands in the container is the manifest's own table, generated from `src/build/container-interface.json`; the layers below say how it is loaded and what updates it.
+
+<!-- BEGIN GENERATED: surface-table -->
+| Source | Destination | Provider |
+|---|---|---|
+| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | hermes, opencode, pi |
+| `src/reasoning/providers/pi/preflight.sh` | `/opt/sandbox/bin/provider-preflight.sh` | pi |
+| `docs/reference/` | `/opt/sandbox/docs/reference/` | hermes, opencode, pi |
+| `src/libs/` | `/opt/sandbox/lib/` | hermes, opencode, pi |
+| `src/reasoning/providers/pi/config/` | `/opt/workflow/agent/config/` | pi |
+| `workflow/coding-agent/prompts/` | `/opt/workflow/agent/modules/coding-agent/prompts/` | pi |
+| `workflow/coding-agent/skills/` | `/opt/workflow/agent/modules/coding-agent/skills/` | pi |
+| `src/reasoning/agent/prompts/` | `/opt/workflow/agent/prompts/` | pi |
+| `src/reasoning/agent/skills/` | `/opt/workflow/agent/skills/` | pi |
+<!-- END GENERATED: surface-table -->
 
 | Layer | Source | Loaded via | Update mechanism |
 |---|---|---|---|
 | **Project layer** | `.agents/skills/` and `.agents/prompts/` | Pi's project discovery: `.agents/skills` is auto-discovered, and `.agents/prompts` is named in the settings `prompts` key | Edit the project tree |
-| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | `$AGENT_HOME/agent/skills&#124;prompts/`, seeded from the config template at every start and bind-mounted for prompts and skills | `onboard.sh --refresh`, or edit `$SANDBOX_DIR/.<provider>/` |
-| **Agent-sandbox layer** | `src/reasoning/agent/skills&#124;prompts/` | `/opt/workflow/agent/skills&#124;prompts/`; the first `settings.json` `packages` entry | Image rebuild (`make build`) |
-| **Workflow module layer** | `workflow/<module>/skills&#124;prompts/` | `/opt/workflow/agent/modules/<module>/skills&#124;prompts/`; the module's `packages` entry | Image rebuild (`make build`) |
+| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | Seeded from the config template at every start, and bind-mounted for prompts and skills | `onboard.sh --refresh`, or edit `$SANDBOX_DIR/.<provider>/` |
+| **Agent-sandbox layer** | `src/reasoning/agent/skills&#124;prompts/` | The first `settings.json` `packages` entry | Image rebuild (`make build`) |
+| **Workflow module layer** | `workflow/<module>/skills&#124;prompts/` | The module's `packages` entry | Image rebuild (`make build`) |
 
 Pi resolves a name first-wins in that order. The project layer shadows the provider layer, which shadows the agent-sandbox layer, which shadows the workflow module. A collision among these four layers is a hard finding in the generated map, not a silent winner: `scripts/check_skill_map.sh` runs it as a lint gate. The map is generated at check time and is not committed. A collision in the session's own load set, including a package the project added, is pi's to report and resolve; the decision is `docs/adr/skill_collision_delegation.md`.
 

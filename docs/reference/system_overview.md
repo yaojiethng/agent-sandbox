@@ -70,7 +70,7 @@ How a document states a layer's state is the `project-documentation` convention'
 
 **Diff and apply** -- on capability layer exit, the diff pipeline produces per-commit `.diff` files, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` into a session-scoped directory under `session-diffs/{session,autosave}/`. The operator runs `make draft` to apply patches to a working branch, or `make apply DIFF=<path>` to apply a diff file directly (unstaged). Host-side `make package-branch` provides equivalent export capability outside the container.
 
-**Per-project config** -- each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context -- session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `src/reasoning/providers/<n>/config/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model).
+**Per-project config** -- each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context -- session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `src/reasoning/providers/<n>/config/agent/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model).
 
 ## Detailed References
 

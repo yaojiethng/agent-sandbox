@@ -96,7 +96,7 @@ The provider config reaches a session from two sources:
 |---|---|---|
 | **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
 | **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; hermes and opencode are shaped this way by decision, and pi carries a template |
-| **Onboard template is a snapshot** | `src/reasoning/providers/<n>/config/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
+| **Onboard template is a snapshot** | `src/reasoning/providers/<n>/config/agent/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 | **Recommendations file uninitialized** | the skeleton carries empty role lines | a dispatch falls back to the pi startup default until `setup-model-recommendations` writes values |
 
 ### How the four-layer skills/prompts model interacts with this split
