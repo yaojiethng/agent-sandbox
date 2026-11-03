@@ -52,4 +52,4 @@ A skill runs from its own root, so a link is relative to the directory the skill
 
 ## The review
 
-[`../runbook/review.md`](../runbook/review.md) reads a skill against the rule-loss and length bars. A set of skills that has grown by accretion goes to `prose-review`'s `instruction-cleanup` runbook instead.
+[`../runbooks/review.md`](../runbooks/review.md) reads a skill against the rule-loss and length bars. A set of skills that has grown by accretion goes to `prose-review`'s `instruction-cleanup` runbook instead.

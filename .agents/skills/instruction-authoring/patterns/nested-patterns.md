@@ -17,6 +17,9 @@ Keep a **judgement** inline when it is short and states a quality with no cheap 
 | `patterns/<subject>.md` | a **pattern**: "when you see X, instead do Y", especially for a mechanical task | the concrete code or form |
 | `assets/<name>.<ext>` | a **fill-in form** an author copies | the template file |
 | `references/<subject>.md` | **long background** the reader consults rather than applies | prose and examples |
+| `runbooks/<subject>.md`, or `runbooks/<subject>/SKILL.md` | a **procedure**: ordered steps toward one stated end | the steps, each with the criterion it ends on |
+
+The directory is `runbooks/`, plural, in every skill that carries one; a runbook that is itself invoked by name is a directory with a `SKILL.md` under it.
 
 A **convention**, criteria in prose with remediation for the negative case, stays inline unless it is long enough to need its own file; then it goes to `references/`.
 

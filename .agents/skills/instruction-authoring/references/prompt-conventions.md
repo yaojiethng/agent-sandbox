@@ -32,4 +32,4 @@ A name changes when the scope changes, and the rename ships with the documentati
 
 ## The review
 
-One prompt or skill that was just written goes to [`../runbook/review.md`](../runbook/review.md). A set of instruction text that has grown by accretion goes to `prose-review`'s `instruction-cleanup` runbook. Neither runs without the operator's word.
+One prompt or skill that was just written goes to [`../runbooks/review.md`](../runbooks/review.md). A set of instruction text that has grown by accretion goes to `prose-review`'s `instruction-cleanup` runbook. Neither runs without the operator's word.

@@ -17,7 +17,7 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 
 4. **Write the title and the description last, from the body.** The description is the only text a model holds when it decides to load the rest, so it states what the body does and the words a reader would arrive with, per [`signposting.md`](patterns/signposting.md). A skill the model cannot fire has its description read from the operator's list, so that one is written for the operator. The title names the subject, not the mechanism.
 
-5. **Review it.** [`review.md`](runbook/review.md), on the operator's word, and fix what it names before the work is called done.
+5. **Review it.** [`review.md`](runbooks/review.md), on the operator's word, and fix what it names before the work is called done.
 
 6. **Release it.** An artifact not yet released lives in `.agents/drafts/`, a root no gate scans and no dispatch reads. Landing there costs nothing: an unreleased artifact is parked, not reviewed, and its residence in that folder is the whole of its state, so the file itself carries no status line. Release is one commit that moves the file into its live root, confirms the frontmatter parses, runs the documentation pass and passes the gates. It takes the operator's word, and no agent releases its own draft. It also takes a review when the artifact was written by an agent - a worker unit, a dispatched seat, or the session's own new text - and is offered one, not required, when the operator wrote it; an author the session cannot attribute takes the review.
 
@@ -31,7 +31,7 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 | [`patterns/signposting.md`](patterns/signposting.md) | how to choose a name, a title and a description | step 4 |
 | [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | what stays inline and what earns a file | the body outgrows one |
 | [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | a skill that wraps a script stops at the command line, and the script owns the call | the artifact wraps a mechanism |
-| [`runbook/review.md`](runbook/review.md) | the rule-loss and length review | step 5 |
+| [`runbooks/review.md`](runbooks/review.md) | the rule-loss and length review | step 5 |
 
 ## The five kinds
 

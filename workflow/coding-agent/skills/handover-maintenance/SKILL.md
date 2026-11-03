@@ -23,8 +23,8 @@ This skill is the index. The checks live in two runbooks, one per subject, and e
 
 | Runbook | Subject | Open it when | Dispatched by |
 |---|---|---|---|
-| [`runbook/content.md`](runbook/content.md) | the handover the current iteration is writing | at the scope gate, before the criteria are released, and again at the pre-close | `/iter` steps 5 and 7, `wrapup` B9 |
-| [`runbook/chain.md`](runbook/chain.md) | the chain of handovers already closed | a periodic or event-driven audit, or a workflow that reads the chain | an operator audit, `check-in`'s thoroughness run |
+| [`runbooks/content.md`](runbooks/content.md) | the handover the current iteration is writing | at the scope gate, before the criteria are released, and again at the pre-close | `/iter` steps 5 and 7, `wrapup` B9 |
+| [`runbooks/chain.md`](runbooks/chain.md) | the chain of handovers already closed | a periodic or event-driven audit, or a workflow that reads the chain | an operator audit, `check-in`'s thoroughness run |
 
 ## The shape every handover is checked against
 
