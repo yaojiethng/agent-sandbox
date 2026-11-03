@@ -88,7 +88,7 @@ A component that should survive and is gone, or one that should be removed and i
 
 **3.9 A row bundling unrelated defects.** Report a row carrying its own priority order in its own text -- a bucket, not a task.
 
-**3.10 Mis-filed rows.** A row lands in the active sub-milestone's task list unless the operator directs otherwise. The project's `task-list` convention, Filing rules, `**Roadmap task placement**`, owns the default. Report a row that sits elsewhere, and report the operator direction when one exists; a track's blurb is not a direction, and the subject of a track claims no row.
+**3.10 Mis-filed rows.** A row sits in the milestone whose objective names its subject, unless the operator placed it elsewhere on a stated reason. The project's `task-list` convention, Filing rules, `**Roadmap task placement**`, owns that rule. Report a row in a milestone that neither owns the subject nor carries the operator's direction; a track's blurb is not a direction, and the subject of a track claims no row.
 
 **3.11 The summary table agrees with the sections it names.** For each row, read the linked heading and the status it declares. A row that says `Complete` whose section still carries open tasks is a finding; a row whose fragment matches no heading is a finding; two records naming one milestone differently are a finding. The `/milestone-close` `## Update the records` step 1 owns that rule.
 

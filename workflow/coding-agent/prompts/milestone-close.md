@@ -71,7 +71,7 @@ In `devlog/roadmap.md`:
 Give every item the milestone leaves open a recorded source of truth before the close:
 
 - An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
-- An item that will not be picked up next goes to `roadmap.md` as a named task under the `task-list` convention's `**Roadmap task placement**`; the operator names the destination milestone.
+- An item that will not be picked up next goes to `roadmap.md` as a named task under the `task-list` convention's `**Roadmap task placement**`; the agent proposes the destination milestone with its reason, and the operator decides.
 - An item already resident elsewhere in `roadmap.md` or `roadmap_future.md` is named, not duplicated.
 
 ## Close the milestone
