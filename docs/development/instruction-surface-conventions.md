@@ -58,6 +58,20 @@ A surface whose runtime path sits inside a `session` row is read from the projec
 
 Two surfaces declare one provider's config home: the home itself, which carries the agent `AGENTS.md` and the settings record, and the prompt and skill folders inside it.
 
+### What a project receives, and what this repository holds
+
+Reach is a property of the reader, not of the subject: this document describes what ships and is itself repository-only.
+
+| Artifact | A provisioned project receives it | Where the fact is decided |
+|---|---|---|
+| a cell's files | yes, the image carries them | `src/build/container-interface.json` |
+| the seeded convention stubs | yes, `initialize` copies them into `.agents/skills/` | `initialize`'s `assets/conventions/` |
+| `.agents/prompts/`, `.agents/skills/` | no, they travel with this project | the project tree |
+| `docs/`, `devlog/`, `.agents/registry/` | no | this repository |
+| this document | no | here |
+
+A shipped file names a repository-only document as a name, which the linking gate allows, and the reader in a provisioned project cannot open it. A shipped file whose procedure depends on one states the rule itself.
+
 ## A surface the project tree carries
 
 `.agents/prompts/` is the repository's own prompt root, beside `.agents/skills/`, which pi discovers by walking from the working directory to the git root. No equivalent rule covers prompts, so the surface is declared and the provider's settings record names it:
@@ -142,18 +156,29 @@ The table is the judgement; it proves nothing about whether a ruling was right, 
 | merge | the section duplicates another section that already owns the subject, so the two become one |
 | shrink | the section is in its own layer but carries text another file already states, so the duplicate goes and a pointer stays |
 
+## Reading the surface from the tree
+
+A fact held as data is read from the tree, not from prose here:
+
+| Question | Command |
+|---|---|
+| which surfaces exist, and where each lands | `bash scripts/check_surface_table.sh` |
+| which layer a skill resolves to, and how the loader orders them | `node scripts/skill_map.mjs` |
+| what the seeded convention corpus holds | `ls workflow/coding-agent/skills/initialize/assets/conventions/` |
+| whether every claim on this page still holds | `bash scripts/lint.sh` |
+
 ## The gates
 
-Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader.
+Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader. Each script's header states the rule it holds and the document that owns it; `bash scripts/lint.sh` runs them.
 
-[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY`, `ENV`, `WORKDIR` and `CMD` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a project-tree surface whose provider's command does not carry it, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
+[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' lines, the entrypoint's template, the settings record and each cell's folder set, so a row no line carries, a line no row carries, a path outside the provider's roots and one name held by two roots under one key are each a finding.
 
-[`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope`. A section with no row, a row naming the layer the section is not in, and a row whose section no layer carries are each a finding. The table is the ruling; the check catches drift.
+[`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the two layers' `## Scope` tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope`. A section with no row, a row naming the layer the section is not in, and a row whose section no layer carries are each a finding.
 
-[`scripts/check_surface_table.sh`](../../scripts/check_surface_table.sh) holds the mapping where a reference document states it: [`src/build/surface_table.mjs`](../../src/build/surface_table.mjs) renders the manifest's `image` rows into a marked block, so the table is the model's own output and a hand edit inside it is a finding. Outside the block, a table row that names a declared source and its destination restates the mapping and fails, and so does a backticked repository path the tree does not hold, with a `<placeholder>` segment resolved against each provider's directory. A sentence that mentions an image path is not the rule's subject: a table is where this corpus states a mapping, and moving the sentence into the block would cost the reader.
+[`scripts/check_surface_table.sh`](../../scripts/check_surface_table.sh) holds the mapping where a reference document states it: the table inside the marked block is the manifest's own output, so a hand edit inside it is a finding, and outside the block a table row naming a declared source and its destination, or a backticked repository path the tree does not hold, is a finding.
 
-[`scripts/check_references.sh`](../../scripts/check_references.sh) holds the two reference rules over the files the declaration names: a skill invocation, in the broad form of a backticked token beside the word "skill", must name a skill the tree provides, and an absolute mention inside a zone the manifest builds must name a root it declares. Both corpora are derived: the files are the Markdown under each cell's `sources`, and the skill names are the `*/SKILL.md` directories in the tree, so a project-scope skill counts as provided. A path outside every declared zone is not the rule's subject: the question is whether a reference into a zone the manifest builds names a root it builds, not whether the container has a `/dev`.
+[`scripts/check_references.sh`](../../scripts/check_references.sh) holds two rules over the files the declaration names: a skill invocation must name a skill the tree provides, and an absolute mention inside a built zone must name a root the declaration builds. Both corpora are derived from the tree, so a project-scope skill counts as provided.
 
-[`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the reach axis to the declaration from the other side: the mount rows the manifest carries against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`. It reads both, so neither copies the other's list. A mount row added and not routed fails the row; a route with nothing behind it fails the route; a folder the table states repository-only fails when a manifest path reaches it.
+[`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the manifest's mount rows against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`, reading both so neither copies the other's list. A folder the table calls repository-only fails when a manifest path reaches it.
 
-[`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, resolves a link in the path space the citing file is read in. A file that ships is read at its image path, so its target must be a path the image carries: a relative link is resolved against the file's image directory and mapped back to the source that populates it, and an absolute one must be a declared image destination. A file read from the working tree resolves in the repository. A link from a shipped file to a repository-only target fails, because that reader holds the image rather than the tree: the record is named in a code span instead.
+[`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, resolves a link in the path space the citing file is read in: a shipped file's relative link is resolved against its image directory and mapped back to the source that populates it, an absolute one must be a declared image destination, and a link from a shipped file to a repository-only target fails, because that reader holds the image rather than the tree.
