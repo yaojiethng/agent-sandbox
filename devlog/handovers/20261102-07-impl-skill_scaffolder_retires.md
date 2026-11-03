@@ -63,3 +63,5 @@ None.
 | this record | six criteria accepted, four decisions, four findings |
 
 The scaffolder's description claimed "the steps, the signpost, the body and the file". What it carried that the skill did not was two routing sentences, and both are now the skill's.
+
+[CORRECTION -- 2026-11-03: a third open row, **The prose-entrypoint principle is an authoring pattern**, still named `skill-scaffolder` after this unit; the check-in's `chore:` commit repoints it.]

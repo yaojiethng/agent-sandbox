@@ -63,4 +63,6 @@ None. The retirement row is scoped already, and the two findings below are filed
 | [`devlog/roadmap.md`](roadmap.md) | the row for this unit, above the retirement row, and the closed row's label aligned from "both carriers" to "both artifacts" because the word is retired |
 | this record | six criteria accepted with the command and its result, six decisions, five findings each with a destination |
 
-The two sheets are byte-identical to their state at `c30f8569`: the citation line was written into both and withdrawn, because one sentence in two files is the duplicate this skill exists to catch. It is stated once, in step 3.
+The two sheets are byte-identical to their state before that write: the citation line was written into both and withdrawn, because one sentence in two files is the duplicate this skill exists to catch. It is stated once, in step 3.
+
+[CORRECTION -- 2026-11-03: the sibling-table finding's row is now filed, as **The sibling table names three directory kinds and the tree carries four**.]

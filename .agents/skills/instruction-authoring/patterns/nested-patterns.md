@@ -20,6 +20,8 @@ Keep a **judgement** inline when it is short and states a quality with no cheap 
 
 A **convention**, criteria in prose with remediation for the negative case, stays inline unless it is long enough to need its own file; then it goes to `references/`.
 
+A body that carries two documentation modes splits by mode first, and [`organization.md`](../../project-documentation/references/organization.md) states that half; this table then decides what each part becomes.
+
 ## The size floor
 
 When the body is short, do not split. Four one-line judgements do not need four files, and one code snippet does not need a directory. A sibling earns its file by the length of the form or example it carries, or by a situation a reader can name. A file that holds one line is a directory entry, not a dispatch.

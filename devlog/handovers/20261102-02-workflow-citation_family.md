@@ -13,7 +13,7 @@ The linking convention gains the form a citation to an outside source takes, and
 
 ## Scope
 
-This iteration delivers the second unit of the roadmap row **Move the documentation-writing and skill-writing guidelines under `skill-scaffolder`**, after the principle's rule-set case landed at `2a67fdab`.
+This iteration delivers the second unit of the roadmap row **Move the documentation-writing and skill-writing guidelines under `skill-scaffolder`**, after the principle's rule-set case landed, handover `20261102-01`.
 
 **In scope.** The `linking` convention's `## Citations` section and the `S2` row it names; `docs/development/source_tracking.md` `## Citations`, which holds the record's fields; and three citation records, RFC 2119, Diataxis and Kaplow's rules-versus-standards.
 

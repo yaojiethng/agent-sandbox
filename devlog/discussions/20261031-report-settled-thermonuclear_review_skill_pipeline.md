@@ -19,23 +19,25 @@ Two seats disagreed in six of the fifteen rounds; a blocker from one seat counte
 
 | Round | Blocker | Closed by |
 |---|---|---|
-| 1 | Four readers carried a copy each of the layer table, the link grammar, the containment test, pi's discovery rule and its package entry. | `55e0c7a6`: `scripts/skill_layers.mjs`. |
-| 1 | The graph parsed each `COPY` row, discarded the destination, and restated the pairs as string literals. | `55e0c7a6`: the image roots and copy edges come from the manifest's rows. |
-| 2 | The graph took its subject from the shell's directory and reported clean over no evidence. | `35308fba`: the repository resolves from the module URL, and a missing row is a finding. |
-| 2 | The record gate restated the agent layer's path and scanned one level deep. | `35308fba`: it imports the table and pi's discovery rule. |
-| 3 | The host half of the graph was hand-asserted: a literal `AGENT_HOME` fallback, an exemption for a missing host root, and a seed edge from an unread string. | `9492185f`, then `5b60d337`: the host root and seed edge come from the provision and env rows. |
-| 3 | The record gate printed clean over an empty agent layer. | `9492185f`: zero discovered directories is a finding. |
-| 4 | A manifest row that reached no root was skipped in silence; a skill the peer copy lacked was hashed against the layer and reported as drift. | `5b60d337`: one pass reports what it cannot build; the missing skill is named. |
-| 5 | A missing or unparseable manifest produced an empty graph and a clean check. | `10ca9f0c`: the finding names the file. |
-| 6 | The layer map reported clean over four declared layers holding no skill. | `b8db8443`: a map with no skill is a finding. |
-| 7 | The store had two readers; a skill node was keyed by its frontmatter name, so two directories sharing one name lost a node. | `2065d028`: `scripts/skill_store.mjs`, and node ids from the skill's path. |
-| 8 | The store's identity rule had three sites and reported one bad id twice; `checkGraph` reported a missing path twice. | `bc487b0c`. |
-| 9 | The branches the fix rounds added had no tests; the graph's schema had no reader. | `5501a1e5`: `checkGraph` validates against the schema. |
-| 10 | The schema was read in one direction only: `items` rules and nested `required` lists were inert. | `43a2c5a8`: `checkShape` recurses. |
-| 11 | A rule reached through `items` was never applied; a wrong-typed value was descended into and crashed. | `b4f8b608`: one value-first check. |
-| 12 | One identity computed twice: the project layer's root id was `project:project` while the build loops looked up `project`; a malformed graph was reported and then walked. | `bf38d1c9`. |
-| 13 | `namespace` carried two axes, so four consumers each carried an exception for one layer. | `6743a36f`: namespace names a location; the project layer is `repo:project`. |
-| 14 | A link's scope was decided by a `/opt/` prefix and a copy's peer by a namespace preference, where the manifest declares both. | `5739e01c`; the resolution normalisation that disagreed with the scope check followed in `7b86f6cc`. |
+| 1 | Four readers carried a copy each of the layer table, the link grammar, the containment test, pi's discovery rule and its package entry. | `scripts/skill_layers.mjs`. |
+| 1 | The graph parsed each `COPY` row, discarded the destination, and restated the pairs as string literals. | the image roots and copy edges come from the manifest's rows. |
+| 2 | The graph took its subject from the shell's directory and reported clean over no evidence. | the repository resolves from the module URL, and a missing row is a finding. |
+| 2 | The record gate restated the agent layer's path and scanned one level deep. | it imports the table and pi's discovery rule. |
+| 3 | The host half of the graph was hand-asserted: a literal `AGENT_HOME` fallback, an exemption for a missing host root, and a seed edge from an unread string. | the host root and seed edge come from the provision and env rows. |
+| 3 | The record gate printed clean over an empty agent layer. | zero discovered directories is a finding. |
+| 4 | A manifest row that reached no root was skipped in silence; a skill the peer copy lacked was hashed against the layer and reported as drift. | one pass reports what it cannot build; the missing skill is named. |
+| 5 | A missing or unparseable manifest produced an empty graph and a clean check. | the finding names the file. |
+| 6 | The layer map reported clean over four declared layers holding no skill. | a map with no skill is a finding. |
+| 7 | The store had two readers; a skill node was keyed by its frontmatter name, so two directories sharing one name lost a node. | `scripts/skill_store.mjs`, and node ids from the skill's path. |
+| 8 | The store's identity rule had three sites and reported one bad id twice; `checkGraph` reported a missing path twice. | one identity check per id, and one missing-path report. |
+| 9 | The branches the fix rounds added had no tests; the graph's schema had no reader. | `checkGraph` validated against the schema; the round-15 ruling cut both. |
+| 10 | The schema was read in one direction only: `items` rules and nested `required` lists were inert. | `checkShape` recursed, and the round-15 ruling cut it. |
+| 11 | A rule reached through `items` was never applied; a wrong-typed value was descended into and crashed. | one value-first check, cut with the schema by the round-15 ruling. |
+| 12 | One identity computed twice: the project layer's root id was `project:project` while the build loops looked up `project`; a malformed graph was reported and then walked. | one identity per layer root, and a malformed graph is refused before it is walked. |
+| 13 | `namespace` carried two axes, so four consumers each carried an exception for one layer. | namespace names a location; the project layer is `repo:project`. |
+| 14 | A link's scope was decided by a `/opt/` prefix and a copy's peer by a namespace preference, where the manifest declares both. | the scope and the peer come from the manifest; the resolution normalisation that disagreed with the scope check followed. |
+
+[CORRECTION -- 2026-11-03: the branch was rebased after this report was composed, so the commit ids this table carried no longer resolve and each row now names the change it landed instead. Rounds 9 to 11 built the schema and its validator, which the round-15 ruling then cut, so those three rows record a fix the tree no longer holds.]
 
 Verification at the head of this range: `bash scripts/lint.sh` clean across 17 gates, `bash scripts/run_tests.sh` 1414 of 1414, and each round's seat log recorded under `.scratchpad/review/`.
 
@@ -47,7 +49,7 @@ That ruling deleted the scheme of guarantees the loop had been building. `script
 
 The ruling also corrected the roadmap row that had ranked the check over the render, and the same axis explains the loop's length: the runbook grades structure against a generic maintainability ideal and never asks what the artifact is for, so a fresh seat each round could always find one more guarantee to demand. Recorded in `devlog/AGENT_FEEDBACK.md`.
 
-The loop also surfaced, and did not close, a set of recorded non-blockers. The ones a reader will meet first: `scripts/skill_map.mjs` and `scripts/lint/skill_sources.mjs` both own the `MAINTENANCE.md` rule at different severities; `scripts/source_bump.mjs` repeats the load-store-validate-refuse prologue at three commands; `scripts/render_skill_graph.mjs` is a second CLI over the same module and keeps `allowDrift: true` beside a `--check` that fails on drift; the vendored renderer's licence is copied from a gitignored session path; and `scripts/skill_graph.mjs --check` is run by no gate, because it compares this tree with an image built from an earlier commit.
+The loop also surfaced, and did not close, a set of recorded non-blockers. Two were retired with the surface they named, by the store migration that removed the `MAINTENANCE.md` rule and the `add` and `record` commands (`20261101-08`, `20261101-09`), so they are gone from this list. The ones that still stand: `scripts/render_skill_graph.mjs` is a second CLI over the same module and keeps `allowDrift: true` beside a `--check` that fails on drift; the vendored renderer's licence is copied from a gitignored session path; and `scripts/skill_graph.mjs --check` is run by no gate, because it compares this tree with an image built from an earlier commit.
 
 ## The lost instruction
 

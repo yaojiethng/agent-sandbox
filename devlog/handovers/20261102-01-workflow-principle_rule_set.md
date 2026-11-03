@@ -58,3 +58,5 @@ None.
 | `src/reasoning/providers/pi/config/agent/skills/principle-own-the-scope-you-declare/SKILL.md` | the rule-granularity case, in six places |
 | `devlog/handovers/20261102-01-workflow-principle_rule_set.md` | this record |
 | `devlog/roadmap.md` | the row that carries the close read of the rule-set case, with its two ends and a checkable end state |
+
+[CORRECTION -- 2026-11-03: the row the last finding names carries the title "`principle-own-the-scope-you-declare` states its judgement once, at one grain or two"; no row carries the title that cell gave, so the pointer could not be followed in one hop. The remaining material was unstaged when the container was recreated and did not survive; the close read starts from the file as it stands.]

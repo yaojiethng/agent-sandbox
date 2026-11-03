@@ -44,6 +44,6 @@ A reference document may state what a procedure must not break, which is why `do
 
 Don't mix modes: no reference tables inside a tutorial, no tutorial hand-holding inside reference, no arguing inside a how-to. Split and link instead.
 
-Where a document needs two modes, split it: a convention-skill states the rule, and the ADR states why that rule beat its alternatives.
+Where a document needs two modes, split it: a convention-skill states the rule, and the ADR states why that rule beat its alternatives. A skill body splits the same way, and each part is the sibling [`nested-patterns.md`](../../instruction-authoring/patterns/nested-patterns.md) names.
 
 Source: Daniele Procida, *Diataxis: a systematic framework for technical documentation authoring*, `diataxis.fr`, read 2026-11-02, https://diataxis.fr/. The adaptation is `.agents/registry/citations/diataxis.json`.
