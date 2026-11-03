@@ -98,7 +98,7 @@ The repository keeps the two kinds apart because a prompt root reads files into 
 
 A module may declare the project conventions it needs. A **convention** is a structure over a subset of content - the task list, the work log, the decision records. Each convention is served by a project-owned **convention-skill** under `.agents/skills/`.
 
-The workflow ships a **default convention-skill corpus** in the `initialize` skill's `assets/conventions/`, one directory per convention. A shipped skill is a **stub**: it states that a skill is expected, that what was found is a stub, and a few open questions offered without direction. It is a failure mode for the agent to reason over, not a default convention. `initialize` installs and updates the corpus into the project. A stated convention is the project's own, so the corpus does not carry one: this repository's `instruction-authoring` bar is stated here and is not seeded, and a project that wants one writes it.
+The workflow ships a **default convention-skill corpus**; the `initialize` skill states what it holds, what a stub is and how it is installed. A shipped skill is a stub and not a default convention, so it is a failure mode for the agent to reason over. A stated convention is the project's own, so the corpus does not carry one: this repository's `instruction-authoring` bar is stated here and is not seeded, and a project that wants one writes it.
 
 A workflow step hands off to a convention-skill. When the skill is absent the handoff fails and the agent recovers; the workflow imposes nothing and runs no gate over a project, whose hooks it does not control. The corpus lives under a skill's `assets/` directory, so it ships with the `skills/` payload folder and no new surface is declared. A convention may cover more than one structure; `work-log` carries the work-unit record and the exploration record.
 
@@ -114,7 +114,7 @@ The two tables split the `session` rows between them, and every row belongs to e
 
 A rule about where sections belong is maintenance material and lives here, not in either layer. The reader of a layer is an agent doing the work, and the dividing test is whether the working agent can act on the sentence now, which a pointer passes and a filing rule fails. The rule's two reach points are a layer's pointer in `## Scope` and the check's failure message.
 
-**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source and its installed copy are one file: edit the source and copy it to `$AGENT_HOME/agent/AGENTS.md`. Both layers pass the same gates as the rest of the tree.
+**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source is its only source: the `provision` row in `src/build/container-interface.json` names it, and the entrypoint copies it into `$AGENT_HOME/agent/` at every start, so no maintainer copies it by hand. Both layers pass the same gates as the rest of the tree.
 
 **Standing in for the general provider layer.** A sentence true of every provider -- the sandbox boundary, no push, no secrets, the tool set -- has no provider-neutral always-loaded carrier: `src/reasoning/agent/` holds prompts and skills, and each provider seeds its own config home from its own template. Until that carrier exists, the pi provider layer stands in for the general provider layer, and such a sentence is filed there. Building the carrier is a filed roadmap row.
 
@@ -146,15 +146,7 @@ A rule about where sections belong is maintenance material and lives here, not i
 
 The table is the judgement; it proves nothing about whether a ruling was right, which is what the ruling classes are for.
 
-**Ruling classes.** Every section ends in exactly one, and a ruling is recorded on the iteration's handover.
-
-| Ruling | Meaning |
-|---|---|
-| keep | the section is in its own layer and stays as written |
-| move | the section belongs to the other layer; it moves whole |
-| split | the section holds sentences for both layers; each sentence moves to its owner |
-| merge | the section duplicates another section that already owns the subject, so the two become one |
-| shrink | the section is in its own layer but carries text another file already states, so the duplicate goes and a pointer stays |
+**Ruling classes.** A ruling is one of five, and the five are stated by the review procedure that produces them, [`instruction-cleanup`](../../workflow/coding-agent/skills/prose-review/runbooks/instruction-cleanup/SKILL.md) `## Returns`. A ruling is recorded on the iteration's handover.
 
 ## Reading the surface from the tree
 
@@ -171,14 +163,11 @@ A fact held as data is read from the tree, not from prose here:
 
 Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader. Each script's header states the rule it holds and the document that owns it; `bash scripts/lint.sh` runs them.
 
-[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' lines, the entrypoint's template, the settings record and each cell's folder set, so a row no line carries, a line no row carries, a path outside the provider's roots and one name held by two roots under one key are each a finding.
-
-[`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the two layers' `## Scope` tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope`. A section with no row, a row naming the layer the section is not in, and a row whose section no layer carries are each a finding.
-
-[`scripts/check_surface_table.sh`](../../scripts/check_surface_table.sh) holds the mapping where a reference document states it: the table inside the marked block is the manifest's own output, so a hand edit inside it is a finding, and outside the block a table row naming a declared source and its destination, or a backticked repository path the tree does not hold, is a finding.
-
-[`scripts/check_references.sh`](../../scripts/check_references.sh) holds two rules over the files the declaration names: a skill invocation must name a skill the tree provides, and an absolute mention inside a built zone must name a root the declaration builds. Both corpora are derived from the tree, so a project-scope skill counts as provided.
-
-[`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the manifest's mount rows against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`, reading both so neither copies the other's list. A folder the table calls repository-only fails when a manifest path reaches it.
-
-[`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, resolves a link in the path space the citing file is read in: a shipped file's relative link is resolved against its image directory and mapped back to the source that populates it, an absolute one must be a declared image destination, and a link from a shipped file to a repository-only target fails, because that reader holds the image rather than the tree.
+| Script | What it reads |
+|---|---|
+| [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) | the manifest against the provider dockerfiles' lines, the entrypoint's template, the settings record and each cell's folder set |
+| [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) | the two layers' `## Scope` tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope` |
+| [`scripts/check_surface_table.sh`](../../scripts/check_surface_table.sh) | the generated mapping inside the reference document's marked block, and a table row naming a declared source outside it |
+| [`scripts/check_references.sh`](../../scripts/check_references.sh) | a skill invocation naming a skill the tree provides, and an absolute mention inside a built zone naming a declared root |
+| [`scripts/check_reach.sh`](../../scripts/check_reach.sh) | the manifest's mount rows against `documentation_taxonomy.md` `## Reach` |
+| [`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs) | a link in the path space the citing file is read in, under the Markdown gate |

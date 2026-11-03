@@ -32,6 +32,8 @@ Three parts, and a return missing any of them is not yet a review.
 
 **The ruling log.** One line per candidate, carrying where the instruction came from, the ruling, and what would refine it. A ruling one document supports reads differently from one the whole set supports, and the log says which.
 
+A ruling on a section of an `AGENTS.md` layer is one of five: **keep** (the section is in its own layer and stays as written), **move** (it belongs to the other layer and moves whole), **split** (it holds sentences for both layers, and each moves to its owner), **merge** (it duplicates a section that already owns the subject, so the two become one), **shrink** (it carries text another file already states, so the duplicate goes and a pointer stays).
+
 **The open list.** What the review could not settle, or settled on thin evidence, as work rather than as an opinion. A refinement names the condition that would settle it; a wish to improve does not.
 
 What the cleaned surface reads like is judged by `writing-for-agents`, `write-for-the-reader` and `rewrite-syntax-never-semantics`.
