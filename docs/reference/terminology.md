@@ -142,7 +142,6 @@ The one file that names a role's assignments: `.agents/model-recommendations.md`
 
 - Path: `.agents/model-recommendations.md`.
 - A caller that must read another table names it in `DISPATCH_REC_FILE`.
-- A file at `$AGENT_HOME/model-recommendations.md` is an installed copy of the same content, not a role table.
 
 ### Scope
 

@@ -10,7 +10,7 @@
 // because a caller reads the same text whichever entry point refused.
 
 import { DispatchError, UsageError } from './errors.ts';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export type Runtime = 'pi' | 'opencode';
@@ -40,13 +40,10 @@ const OPENCODE_PROVIDERS = 'opencode';
 export function defaultTableFile(env: NodeJS.ProcessEnv = process.env): string {
   if (env.DISPATCH_REC_FILE) return env.DISPATCH_REC_FILE;
   // The table is version controlled with the repository, so the tree this
-  // module lives in is read before the agent home. The agent-home copy is a
-  // single-file bind mount in a container, so it is the fallback rather than
-  // the choice.
+  // module lives in is its only source. A container carries no second copy,
+  // and a missing file is reported by the read rather than papered over here.
   const root = env.DISPATCH_REPO_ROOT || resolve(import.meta.dirname, '..', '..', '..');
-  const copy = `${root}/.agents/model-recommendations.md`;
-  if (existsSync(copy)) return copy;
-  return `${env.AGENT_HOME || `${env.HOME ?? ''}/.pi`}/model-recommendations.md`;
+  return `${root}/.agents/model-recommendations.md`;
 }
 
 /** The one constructor of an assignment: key, text and runtime are derived. */

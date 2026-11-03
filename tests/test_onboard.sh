@@ -218,10 +218,12 @@ test_provider_config_modes_resist_umask() {
   umask "$OLD_UMASK"
 
   local DIR_MODE FILE_MODE
-  DIR_MODE="$(stat -c '%a' "$SANDBOX_DIR/.pi/agent" 2>/dev/null)"
-  FILE_MODE="$(stat -c '%a' "$SANDBOX_DIR/.pi/agent/AGENTS.md" 2>/dev/null)"
-  assert_eq "$DIR_MODE" "775" "provider config dir mode is 775 under umask 077"
-  assert_eq "$FILE_MODE" "664" "provider config file mode is 664 under umask 077"
+  DIR_MODE="$(stat -c '%a' "$SANDBOX_DIR/.pi/agent/skills" 2>/dev/null)"
+  FILE_MODE="$(stat -c '%a' "$SANDBOX_DIR/.pi/agent/skills/active-tracker/SKILL.md" 2>/dev/null)"
+  assert_eq "$DIR_MODE" "775" "provider state dir mode is 775 under umask 077"
+  assert_eq "$FILE_MODE" "664" "seeded skill file mode is 664 under umask 077"
+  assert_eq "$(stat -c '%a' "$SANDBOX_DIR/.pi/agent/AGENTS.md" 2>/dev/null)" "" \
+    "no config file is seeded: the image owns it"
 }
 
 # ---------------------------------------------------------------------------

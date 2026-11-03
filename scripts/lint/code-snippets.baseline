@@ -38,13 +38,13 @@
 996fb0c663e551c4  docs/development/interface-conventions.md
 9a56c7051badc60c  docs/adr/docker_output_presentation.md
 9a5bc0f0de8a8ebf  docs/development/context_resolution.md
+9ce1bb0272584f67  docs/reference/execution_model.md
 a4afb3e1f8ddbe41  docs/reference/sandbox_lifecycle.md
 aa026049dac86e21  docs/development/interface-conventions.md
 ad2692d344907ba0  docs/reference/project_onboarding_guide.md
 ad2caf021079abd3  docs/development/interface-conventions.md
 af0fcb9cef9e3c02  docs/reference/project_onboarding_guide.md
 b2b6ce06a8b2df67  docs/development/provider_onboarding_guide.md
-b9ddd47852e2e482  docs/reference/execution_model.md
 bc5af6d68f2b91c7  docs/development/quickstart.md
 bd45dcb104f1dd12  docs/reference/sandbox_identity.md
 c0f1c04b65325b76  docs/development/host_requirements.md

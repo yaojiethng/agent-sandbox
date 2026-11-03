@@ -281,7 +281,13 @@ _provision_providers() {
       mkdir -p "$PROVIDER_SANDBOX_DIR"
       # -p plus --chmod forces dirs=775, files=664 at write time; without -p
       # rsync ignores --chmod and the invoking umask wins.
+      # The image owns every config file and the entrypoint copies it into
+      # AGENT_HOME at each start, so no config file belongs on the host. The
+      # directories under config/agent/ are the mount sources, and they are
+      # seeded here because the overlays need a source on the first run.
       rsync -rtp --chmod=Du=rwx,Dg=rwx,Do=rx,Fu=rw,Fg=rw,Fo=r \
+        --exclude='agent/AGENTS.md' --exclude='agent/auth.json' \
+        --exclude='agent/models.json' --exclude='agent/settings.json' \
         "$PROVIDER_CONFIG_DIR/." "$PROVIDER_SANDBOX_DIR/"
 
       # UID Mapping handles permissions  --  no ACL fix needed

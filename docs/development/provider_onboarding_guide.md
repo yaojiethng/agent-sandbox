@@ -80,7 +80,7 @@ Copy the directory into the image and let the entrypoint do the seeding. The pro
 
 ## Step 7 (optional) -- `setup.sh`
 
-Sourced by [`scripts/run_agent.sh`](../../scripts/run_agent.sh) before compose generation. A non-zero exit aborts the session with the failure attributed to the provider. It can export vars the overlays interpolate and can pre-create the host config directory. Functions from [`src/build/compose.sh`](../../src/build/compose.sh) and [`src/libs/`](../../src/libs/) are in scope. Reference: [`pi/setup.sh`](../../src/reasoning/providers/pi/setup.sh).
+Sourced by [`scripts/run_agent.sh`](../../scripts/run_agent.sh) before compose generation. A non-zero exit aborts the session with the failure attributed to the provider. It can export vars the overlays interpolate and can pre-create the host config directory. Functions from [`src/build/compose.sh`](../../src/build/compose.sh) and [`src/libs/`](../../src/libs/) are in scope. No provider ships one today.
 
 ## Step 8 -- Verify
 
