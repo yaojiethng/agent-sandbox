@@ -19,7 +19,7 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 
 5. **Review it.** [`review.md`](runbook/review.md), on the operator's word, and fix what it names before the work is called done.
 
-6. **Release it.** An artifact not yet released lives in `.agents/drafts/`, a root no gate scans and no dispatch reads. Landing there costs nothing: an unreleased artifact is parked, not reviewed, and the file carries `**Status:** draft`. Release is one commit that moves the file into its live root, confirms the frontmatter parses, runs the documentation pass and passes the gates. It takes the operator's word, and no agent releases its own draft. It also takes a review when the artifact was written by an agent - a worker unit, a dispatched seat, or the session's own new text - and is offered one, not required, when the operator wrote it; an author the session cannot attribute takes the review.
+6. **Release it.** An artifact not yet released lives in `.agents/drafts/`, a root no gate scans and no dispatch reads. Landing there costs nothing: an unreleased artifact is parked, not reviewed, and its residence in that folder is the whole of its state, so the file itself carries no status line. Release is one commit that moves the file into its live root, confirms the frontmatter parses, runs the documentation pass and passes the gates. It takes the operator's word, and no agent releases its own draft. It also takes a review when the artifact was written by an agent - a worker unit, a dispatched seat, or the session's own new text - and is offered one, not required, when the operator wrote it; an author the session cannot attribute takes the review.
 
 ## What this skill carries
 

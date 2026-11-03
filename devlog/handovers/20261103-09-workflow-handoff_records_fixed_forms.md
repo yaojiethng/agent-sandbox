@@ -21,6 +21,7 @@ Give `handoff` the cases where the operator already knows what the artifact is, 
 |---|---|---|
 | Both forms land in `.agents/drafts/` and carry the marker the folder already uses | `sed -n '12,15p' src/reasoning/agent/skills/handoff/SKILL.md` | Agent [x] |
 | An error report carries the four parts and no imposed headings; a skill is routed elsewhere | `sed -n '12,17p' src/reasoning/agent/skills/handoff/SKILL.md` | Agent [x] |
+| The drafts folder carries the state, not the file | Sixteen files in `.agents/drafts/` carried three conventions for one fact: `**Status:** draft` on seven, `status: Active` on one, nothing on eight. `20261002-19` decision 1 already called the folder the durable gate, and the path is the fact; a marker beside it is a second owner, unchecked by any gate, that a promoted file would carry into a live root as a false statement. Instruction artifacts carry no status field at all: one of 184 carries one, and it is the handover template asset | `instruction-authoring` step 6, `/scope`, this skill |
 | A release confirms the frontmatter parses | `grep -n 'confirms the frontmatter parses' .agents/skills/instruction-authoring/SKILL.md` | Agent [x] |
 | The vendored adaptation is recorded | `bash scripts/check_skill_sources.sh` clean across 5 sources and 11 artifacts | Agent [x] |
 | The shipped skill reaches nothing it cannot | `bash scripts/lint.sh` clean, 20 gates | Agent [x] |
