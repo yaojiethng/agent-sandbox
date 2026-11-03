@@ -42,8 +42,6 @@ Run through every task entry in the active sub-milestone.
 
 **1.4 A closed item carries no open work.** Walk every `- [x]` item's indented children. Report any open child and the parent that carries it, naming the completion context the parent is missing. The project's `task-list` convention, The record's shape, owns the marker-nesting invariant.
 
-Completion criterion: 1.1 through 1.4 hold.
-
 ### Step 2 - Compaction compliance
 
 Run this step over each item in the active sub-milestone.
@@ -113,7 +111,7 @@ Parts 2 and 3 read only the section this run wrote or amended; an entry closed e
 2. No task was marked `- [x]` before the operator verified it. Read the handover's Step 7 acceptance-criteria status.
 3. The compaction proposal text is drafted and ready for operator review.
 
-Completion criterion: all three hold, or the report names the failing condition. A premature `- [x]` blocks the pass until the operator resolves it, and is reported as an escalation.
+A premature `- [x]` blocks the pass until the operator resolves it, and is reported as an escalation.
 
 ### Step 5 - Report the run
 
@@ -128,8 +126,6 @@ Write the report as JSONL at the path the dispatcher set, in the schema [`check-
 **The recommendation follows the check, not the size of the edit.** A violation whose correct form the convention or the `/milestone-close` procedures determine is fixable now, however many rows it touches. A violation under a broader roadmap unit already in flight names that unit and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is an escalation: no record in this set settles it. The schema passed with this dispatch carries the values and their conditions.
 
 Report each check with no finding as a skip, and a check that did not run as a skip with that reason: silence reads as a clean record.
-
-Completion criterion: the report is written at the dispatcher's path, and every check carries a line with either a finding or a skip.
 
 ## Output shape
 

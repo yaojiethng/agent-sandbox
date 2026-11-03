@@ -9,7 +9,7 @@ A document carries the sections its work needs, and a short one may carry none. 
 1. **Title and scope.** A title, then a `Scope` line stating the boundary.
 2. **Purpose.** What it is for, and what it is not.
 3. **When to use.** The conditions that invoke it, and what replaces it otherwise.
-4. **The work.** Steps, each ending on a completion criterion; or a reference region, which has no step to finish.
+4. **The work.** Steps, each ending on the observable that shows it done, stated as a completion criterion where the step's own sentences do not already say it; or a reference region, which has no step to finish.
 5. **The handoff.** The next document and the boundary, where this one hands on.
 6. **Non-goals.** What it deliberately does not do.
 7. **Failure modes and invariants.** What can go wrong, and what must stay true.

@@ -22,7 +22,7 @@ The frontmatter is YAML. An unquoted value cannot hold a colon, a leading dash o
 
 ## The body
 
-A prompt is steps, reference or both, per `writing-for-agents` `## Information hierarchy`, and each step ends on a completion criterion. A prompt that reads or writes project records opens with the conventions block the [skill's front door](../SKILL.md) states.
+A prompt is steps, reference or both, per `writing-for-agents` `## Information hierarchy`, and where a step ends is [`forms.md`](forms.md) item 4. A prompt that reads or writes project records opens with the conventions block the [skill's front door](../SKILL.md) states.
 
 ## Naming
 
