@@ -290,6 +290,20 @@ One version constant, one image label, one warn-only preflight check, and a hard
 - [ ] **The store's tooling has a transport** -- `scripts/skill_store.mjs` and `scripts/source_bump.mjs` are repository scripts, and their tests run against the tree. Ends when both resolve from one installed location in any project, and the suite runs against that copy.
 - [ ] **The workflow layer enumerates modules from the manifest** -- `scripts/skill_layers.mjs` names the coding-agent module's skills folder literally, so a second module is invisible to the layer map, the collision gate and the reference gate. Ends when a second module appears in all three with no name added by hand.
 - [ ] **The registry's owner is decided** -- whether `.agents/registry/sources/` is project data, each project owning its edges, or payload shipped with the module. Ends when one is chosen and the canonical-form gate reads the store from the place that choice names.
-- [ ] **The module's membership is decided** -- whether the module means "vendor a skill" and carries `skill-fork` alone, or "do skill work" and carries the authoring side too, which needs the merged instruction-writing surface first; and whether `backlog-triage` leaves the coding-agent module. Ends when the payload is listed and no skill names a member of two modules.
+- [ ] **The module's membership is decided** -- whether the module means "vendor a skill" and carries `skill-fork` alone, or "do skill work" and carries the authoring side too, which needs the [merged instruction-writing surface](#merge-instruction-authoring-and-project-documentation-deferred-unscheduled) first; and whether `backlog-triage` leaves the coding-agent module. Ends when the payload is listed and no skill names a member of two modules.
 - [ ] **The name is chosen** -- `skill-management` is a candidate and not a decision, and the name is owed by a module that exists. Ends when the directory exists under that name.
 - [ ] **This repository migrates** -- its own skills move into the module and its provider config enables it. Ends when `.agents/skills/` holds no skill the module ships, and the layer map reports the module as the skills' source.
+
+### Merge Instruction-Authoring and Project-Documentation (deferred, unscheduled)
+
+**Status:** Deferred, unscheduled, raised 2026-11-04 while merging the boundary-violation rule into `principle-single-source-of-truth`. The two conventions overlap at the placement layer, but they have different scopes, readers and release rules. This task decides whether they should become one convention. It does not assume the merge.
+
+**Reopens when:** the SSOT scoping merge lands and `instruction-authoring` points at `project-documentation/references/organization.md` for placement, or when the two conventions drift again.
+
+**Objective:** decide whether one authoring convention should own both the documentation and the instruction surface, and if so, merge them without losing the distinct release rules.
+
+**Scope:** the two conventions, their references, the placement rule, the readers and the release paths. [`project-documentation`](../.agents/skills/project-documentation/SKILL.md) governs `docs/`; [`instruction-authoring`](../.agents/skills/instruction-authoring/SKILL.md) governs prompts and skills. Diataxis covers both, per [`documentation_quadrants.md`](../docs/adr/documentation_quadrants.md), and the how-to mode is the instruction surface. A merge is justified only if the shared placement rule outweighs the cost of one convention carrying two purposes. If they stay separate, [`organization.md`](../.agents/skills/project-documentation/references/organization.md) is the single placement source and `instruction-authoring` points at it. Out of scope: the SSOT skill merge and the immediate cross-reference.
+
+**Depends on:** the SSOT scoping merge, because it is the first test of whether `organization.md` can be the shared placement source.
+
+**Acceptance criteria:** a recorded decision, merge or keep separate, with the rationale. If merge, one convention carries the placement rule and the two authoring branches, and no release rule is lost. If keep separate, `organization.md` is the single placement source and `instruction-authoring` points at it. Ends when no placement rule is stated twice.

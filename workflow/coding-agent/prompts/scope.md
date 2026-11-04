@@ -30,6 +30,10 @@ Ask all four, in order, before rewriting the ask, and answer them in chat. The o
 3. **What specific methods and tools would they use?** `principle-build-the-lever`, `principle-check-placement`, `principle-exhaust-the-design-space`.
 4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-show-dont-describe`.
 
+## Check the boundary
+
+Before forming the brief, check whether the scope duplicates a responsibility another component owns. If it does, stop and raise the boundary violation to the operator. Do not decide the fix. See `principle-single-source-of-truth`.
+
 ## Rewrite the ask
 
 Write the brief to ask for exactly what the four answers describe, and do not preserve the original framing where an answer changed it. Then state what the rewrite changed, one line per change.
