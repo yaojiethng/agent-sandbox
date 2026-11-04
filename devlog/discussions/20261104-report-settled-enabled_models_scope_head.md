@@ -88,7 +88,7 @@ A non-glob pattern that does not resolve is matched fuzzily against available mo
 
 An empty scope is not a fail-closed state. `buildSessionOptions` leaves the model unset, and the SDK's `findInitialModel` runs with `scopedModels: []`. The saved default fails the auth test, so step 3 walks `defaultModelPerProvider` and selected `openrouter/moonshotai/kimi-k2.6`. Removing the expensive provider patterns does not make the missing key loud; it changes which silent fallback wins.
 
-When no provider is authenticated, the scope resolves empty and pi does not refuse to start. It selects a placeholder model with provider `unknown`, id `unknown`, empty `baseUrl`, and zero context. The first request fails. A startup guard would have to be added; the settings list cannot produce one.
+When no provider is authenticated, the scope resolves empty and pi does not refuse to start. It selects a placeholder model with provider `unknown`, id `unknown`, empty `baseUrl`, and zero context. The first request fails. The harness does not add a startup guard: it passes the environment and starts pi, and pi resolves credentials and offers `/login`. The principle and its rejected alternatives are in [`provider_auth_resolution.md`](../../docs/adr/provider_auth_resolution.md).
 
 The scope still bounds the session. When the saved default is authenticated but outside the scope, the scope wins and the session starts on the scope head. That is the legitimate case for a scope, and it is the case the old mitigation described. It is not the case that produced haiku.
 
@@ -132,7 +132,7 @@ The head-equals-default assertion should not survive any of A, B, or C in its cu
 
 ## Outcome
 
-The operator approved option B and released the unit on 2026-11-04. The chain is in `src/reasoning/providers/pi/config/agent/settings.json`, and `failover/*` is gone. The head-equals-default assertion is retired for `tests/knowledge/knowledge_pi_model_selection.sh`, a comment-free RPC test over the four auth configurations. The `model-refresh` README and `default-model.ts` state the measured CLI preference. The no-auth placeholder is filed as its own T12 row. The upstream report stays with the T12 `pi upstream` row. The durable-settings question is at M3.2.3. Implementation handover `20261104-02`.
+The operator approved option B and released the unit on 2026-11-04. The chain is in `src/reasoning/providers/pi/config/agent/settings.json`, and `failover/*` is gone. The head-equals-default assertion is retired for `tests/knowledge/knowledge_pi_model_selection.sh`, a comment-free RPC test over the four auth configurations. The `model-refresh` README and `default-model.ts` state the measured CLI preference. The no-auth row is withdrawn: the harness does not guard it, and the principle is [`provider_auth_resolution.md`](../../docs/adr/provider_auth_resolution.md). The upstream report stays with the T12 `pi upstream` row. The durable-settings question is at M3.2.3. Implementation handover `20261104-02`.
 
 The settings change reaches a project only after `make build` or `make start REFRESH=1`; `make refresh` does not rebuild the provider image.
 
