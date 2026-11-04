@@ -1,12 +1,14 @@
 /**
  * The saved default the model scope discarded.
  *
- * pi's `findInitialModel` consults the resolved scope before the saved
- * `defaultProvider`/`defaultModel` pair and returns the scope head without
- * reading the default, so a configured default is dropped with no message. The
- * extension supplies the catalog the resolver reads; it does not re-implement
- * the ladder and does not call `ctx.setModel`. What it can do is say that the
- * preference was discarded.
+ * pi's model resolver consults the resolved scope before the saved
+ * `defaultProvider`/`defaultModel` pair when the CLI passes no model, and
+ * returns the scope head without reading the default, so a configured default
+ * is dropped with no message. The CLI selects a saved default first when it
+ * resolves inside the scope and has auth, so the discard this extension
+ * announces is a saved default outside the scope. The extension supplies the
+ * catalog the resolver reads; it does not re-implement the ladder and does not
+ * call `ctx.setModel`. What it can do is say that the preference was discarded.
  *
  * The applicability guard mirrors pi's own step-3 test: the default counts only
  * when it resolves to a model and that model's provider has configured auth.
