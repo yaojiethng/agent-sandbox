@@ -115,22 +115,22 @@ stateDiagram-v2
         state "rec_handover_closed -- the unit's record is closed" as rec_handover_closed
         state "rec_roadmap_open -- a row is open" as rec_roadmap_open
         state "rec_roadmap_closed -- a row is closed with its outcome" as rec_roadmap_closed
-        state "rec_discussion_draft -- a design or study is in draft" as rec_discussion_draft
-        state "rec_discussion_settled -- the record is settled or closed" as rec_discussion_settled
+        state "rec_discussion_open -- an enquiry is in flight" as rec_discussion_open
+        state "rec_discussion_concluded -- the enquiry concluded, its row still open" as rec_discussion_concluded
         state "rec_adr_accepted -- a decision record is current" as rec_adr_accepted
         it_scope_gate --> rec_handover_active : the handover is opened
         rec_handover_active --> rec_handover_closed : /commit lands the status flip
         plan_released --> rec_roadmap_open : a row is filed
         it_closed --> rec_roadmap_closed : the write-back closes the row
-        plan_interview --> rec_discussion_draft : a design or study opens
-        it_closed --> rec_discussion_settled : a record whose work landed closes
+        plan_interview --> rec_discussion_open : a design or study opens
+        it_closed --> rec_discussion_concluded : an enquiry reaches its result
         plan_released --> rec_adr_accepted : a settled decision gets an ADR
         rec_handover_closed --> sess_oriented : the next iteration reads the prior record
         rec_roadmap_open --> it_open : the operator picks the row
         rec_roadmap_open --> plan_scoping : the milestone's rows are read
         rec_roadmap_closed --> chk_roadmap : the closed rows are the compaction's input
-        rec_discussion_draft --> it_scope_gate : the design record is the scope's input
-        rec_discussion_settled --> it_scope_gate : the settled record is the design
+        rec_discussion_open --> it_scope_gate : the record is the scope's input
+        rec_discussion_concluded --> it_scope_gate : the concluded record is the design
         rec_adr_accepted --> it_implementing : the decision constrains the work
     }
 
@@ -195,9 +195,55 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `rec_handover_closed` | records | the unit's record is closed |
 | `rec_roadmap_open` | records | a row is open |
 | `rec_roadmap_closed` | records | a row is closed with its outcome |
-| `rec_discussion_draft` | records | a design or study is in draft |
-| `rec_discussion_settled` | records | a record is settled or closed |
+| `rec_discussion_open` | records | an enquiry is in flight |
+| `rec_discussion_concluded` | records | the enquiry concluded, its row still open |
 | `rec_adr_accepted` | records | a decision record is current |
+
+## The discussion record
+
+One record is one instance of a two-region machine. What its enquiry has established, and whether a roadmap row still names the file, are independent facts: the first is the record's state, carried in its name and its `**Status:**` line, and the second is its tenancy, read from `devlog/roadmap.md`. The record dies only where the two meet.
+
+<!-- snippet: illustrative -->
+```mermaid
+stateDiagram-v2
+    state "Tenancy -- who names the record" as rec_disc_tenancy {
+        [*] --> rec_disc_owned
+        rec_disc_owned --> rec_disc_orphaned : the last naming roadmap row closes
+        rec_disc_orphaned --> rec_disc_owned : an open row takes the record over
+    }
+    state "Enquiry -- what the record has established" as rec_disc_enquiry {
+        [*] --> rec_disc_open
+        rec_disc_open --> rec_disc_concluded : the result lands
+        rec_disc_open --> rec_disc_rejected : the operator decides against
+    }
+    rec_disc_concluded --> rec_disc_retired : the file is deleted
+    rec_disc_rejected --> rec_disc_retired : the file is deleted
+    rec_disc_retired --> [*]
+    note right of rec_disc_tenancy
+        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires only from a concluded or rejected enquiry whose tenancy has become orphaned.
+    end note
+```
+
+| Id | Region | Label |
+|---|---|---|
+| `rec_disc_owned` | tenancy | an open roadmap row names the record |
+| `rec_disc_orphaned` | tenancy | no open roadmap row names it, so the file is a deletion candidate |
+| `rec_disc_open` | enquiry | the enquiry is in flight |
+| `rec_disc_concluded` | enquiry | the enquiry reached its result, and the record is evidence for it |
+| `rec_disc_rejected` | enquiry | the operator decided against |
+| `rec_disc_retired` | -- | the file is deleted, and the row that outlives it names no file |
+
+The four types differ in what makes `rec_disc_concluded` true -- a story's approach agreed and its rows written, a study's comparison decided, a design's ADR entry landed, a report's run finished -- and in which dependent sends that event. They do not differ in their states, so there is one machine and four guards.
+
+**Invariants.**
+
+- State: a record at rest is `rec_disc_owned` unless the sweep has not yet run; `rec_disc_orphaned` is observed by the gate, never held on purpose.
+- State: a live record carries exactly one enquiry state and one tenancy state.
+- Transition: a record reaches `rec_disc_retired` only from `rec_disc_concluded` or `rec_disc_rejected`.
+- Guard: deletion fires only while tenancy is `rec_disc_orphaned`, so a record whose row is open is never swept.
+- Guard: an enquiry opens only while in-flight knowledge must outlive the iteration, which is the `work-log` convention's determination.
+
+**The checks.** `scripts/check_record_names.sh` holds the state vocabulary and the naming shape. The per-transition cases, and the mapping check that every transition here has one, are not written; the row is named in `## Gaps`.
 
 ## Commands
 

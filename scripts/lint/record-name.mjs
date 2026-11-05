@@ -25,15 +25,15 @@ import { fileURLToPath } from "url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const DEFAULT_CUTOVER = "20261026";
+const DEFAULT_CUTOVER = "20261105";
 
 /** The exploration-record type vocabulary, from the work-log convention. */
 const TYPES = ["story", "study", "design", "report"];
 
-/** The status vocabulary, shared by all four types. */
-const STATUSES = ["draft", "active", "settled", "superseded", "rejected", "archived"];
+/** The state vocabulary, shared by all four types. */
+const STATUSES = ["open", "concluded", "rejected"];
 
-/** The conforming name: date, type, status, description. */
+/** The conforming name: date, type, state, description. */
 const CONFORMING = /^(\d{8})-([a-z]+)-([a-z]+)-([a-z0-9][a-z0-9._-]*)\.md$/;
 
 /** The handover name: date, per-day index, shortform, slug. */

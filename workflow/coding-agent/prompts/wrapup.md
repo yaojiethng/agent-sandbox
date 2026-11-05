@@ -1,5 +1,5 @@
 ---
-description: "Close an active-operator session: consolidate the close into one shared runbook that /iter and /plan invoke, writing back the roadmap task, closing ADRs and discussion docs whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
+description: "Close an active-operator session: consolidate the close into one shared runbook that /iter and /plan invoke, writing back the roadmap task, settling the ADR entries and retiring the discussion records whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
 argument-hint: "[optional: a session to close]"
 ---
 
@@ -69,9 +69,9 @@ Every row of the handover's `Decisions pending` table closes before the handover
 
 A row left open here is a question the operator meets twice, which is the cost this section exists to remove. A table holding only the canonical marker is closed with no work.
 
-### B8. Close ADRs and discussion docs whose work landed
+### B8. Settle the ADR entries and retire the records whose work landed
 
-Close the `docs/adr/` and `devlog/discussions/` documents whose work landed this session. The record-check report from the release gate names the `[CORRECTION]` or `[AMENDMENT]` form each finding needs; this step writes the block. A document whose recorded work shipped but that stays open after the session is a stale record, so close it here. A finding the gate missed is `late`, per B4.
+Write the `[CORRECTION]` or `[AMENDMENT]` block the release gate's record check names into each `docs/adr/` entry whose work landed this session. A discussion record is not settled, it is retired: the one whose roadmap row closes here is deleted, and the one an open row takes over is re-pointed rather than deleted, per `.agents/skills/decision-records/SKILL.md`. A document whose recorded work shipped but that stays open after the session is a stale record, so settle it here. A finding the gate missed is `late`, per B4.
 
 ### B9. Check what the close wrote
 
@@ -87,13 +87,13 @@ The close stops here; the commit begins at [`/commit`](commit.md) Part C.
 
 ### B10. Report the close
 
-State that the close succeeded: the write-back, the records closed, and any deviation the post-commit self-check recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. A fresh session starts from [`gm.md`](gm.md).
+State that the close succeeded: the write-back, the records settled, and any deviation the post-commit self-check recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. A fresh session starts from [`gm.md`](gm.md).
 
 ## Failure modes
 
 - **The close restates the commit.** `/commit` owns the commit rules. A caller that re-states them is the duplication this split removes.
 - **The commit is skipped because the close ran.** A close that reports success without a landed commit leaves the record closed in the tree and open in history. Hand off to `/commit` and report its result.
-- **An ADR or discussion doc stays open after its work shipped.** A stale open record misleads the next session. Close it in B8, or name the reason it stays open in the handover's Scope.
+- **An ADR entry, or a discussion record whose row closed, stays open after its work shipped.** A stale open record misleads the next session. Settle it in B8, or name the reason it stays open in the handover's Scope.
 - **The write-back lands as its own commit.** The roadmap write-back and the `Status: Closed` edit belong in the delivery commit, never a separate one.
 - **The commit lands past a finding B9 raised.** The close wrote that record, so no earlier check read it, and the commit carries a defect no run reported. Fix it before the commit.
 

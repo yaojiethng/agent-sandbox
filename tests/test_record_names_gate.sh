@@ -42,7 +42,7 @@ write_record() {
     printf -- '---\n'
     printf 'date: 2026-10-26\n'
     printf 'type: Report\n'
-    printf 'status: settled\n'
+    printf 'status: concluded\n'
     printf -- '---\n\n'
     printf '# A record\n'
   } > "$path"
@@ -50,7 +50,7 @@ write_record() {
 
 test_conforming_name_passes() {
   local root="$FIXTURE_DIR/t1" rc=0 out
-  write_record "$root/devlog/discussions/20261026-report-settled-x.md"
+  write_record "$root/devlog/discussions/20261105-report-concluded-x.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a conforming name passes'
   assert_contains "$out" 'clean across 1 record' 'the scan reports what it read'
@@ -58,7 +58,7 @@ test_conforming_name_passes() {
 
 test_index_in_a_discussion_name_flagged() {
   local root="$FIXTURE_DIR/t2" rc=0 out
-  write_record "$root/devlog/discussions/20261026-06-report-settled-x.md"
+  write_record "$root/devlog/discussions/20261105-06-report-concluded-x.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 1 "$rc" 'a per-day index in a discussion name fails'
   assert_contains "$out" 'per-day index' 'the index slot is named'
@@ -67,7 +67,7 @@ test_index_in_a_discussion_name_flagged() {
 
 test_missing_status_flagged() {
   local root="$FIXTURE_DIR/t3" rc=0 out
-  write_record "$root/devlog/discussions/20261026-report-x.md"
+  write_record "$root/devlog/discussions/20261105-report-x.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 1 "$rc" 'a name with no status fails'
   assert_contains "$out" 'YYYYMMDD-{type}-{status}-{description}' 'the shape is named'
@@ -75,7 +75,7 @@ test_missing_status_flagged() {
 
 test_unknown_type_flagged() {
   local root="$FIXTURE_DIR/t4" rc=0 out
-  write_record "$root/devlog/discussions/20261026-note-settled-x.md"
+  write_record "$root/devlog/discussions/20261105-note-concluded-x.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 1 "$rc" 'an unknown type fails'
   assert_contains "$out" '"note" is not one of' 'the vocabulary is named'
@@ -83,7 +83,7 @@ test_unknown_type_flagged() {
 
 test_unknown_status_flagged() {
   local root="$FIXTURE_DIR/t5" rc=0 out
-  write_record "$root/devlog/discussions/20261026-report-finished-x.md"
+  write_record "$root/devlog/discussions/20261105-report-finished-x.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 1 "$rc" 'an unknown status fails'
   assert_contains "$out" '"finished" is not one of' 'the vocabulary is named'
@@ -107,8 +107,8 @@ test_named_file_ignores_cutover() {
 
 test_archive_not_scanned() {
   local root="$FIXTURE_DIR/t8" rc=0 out
-  write_record "$root/devlog/discussions/archive/20261026-report-x.md"
-  write_record "$root/devlog/discussions/20261026-report-settled-live.md"
+  write_record "$root/devlog/discussions/archive/20261105-report-x.md"
+  write_record "$root/devlog/discussions/20261105-report-concluded-live.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a record under archive/ is not scanned'
   assert_contains "$out" 'clean across 1 record' 'and the live record is the only subject'

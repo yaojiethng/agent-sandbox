@@ -19,7 +19,7 @@ This document is the index and view of the documentation ecosystem. It states no
 | Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | identity `M` and `T` codes; no renumbering | the project's `task-list` convention |
 | Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | append-only; no unit numbers | the project's `task-list` convention |
 | Handover (`devlog/handovers/`) | one session's record of the work done | transient | identity `YYYYMMDD-NN`; `F`, `Q`, `D` units | the project's `.agents/skills/work-log/SKILL.md` convention |
-| Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | identity date, type, slug; `F`, `Q` units | the `work-log` convention, `.agents/skills/work-log/SKILL.md` |
+| Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: owned by an open roadmap row and deleted when that row closes, per the `work-log` convention | identity date, type, slug; `F`, `Q` units | the `work-log` convention, `.agents/skills/work-log/SKILL.md` |
 
 The scheme each class uses belongs to the project's numbering convention, where the project states one; the column above names the scheme and states no rule. The judgement behind a numbered list is `communication-principle-one-addressing-axis` at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`.
 
@@ -35,7 +35,7 @@ The `devlog/` records sit outside the four modes, and `.agents/skills/work-log/S
 
 ## Durability
 
-A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: it stays as a reference for future work units for the course of the implementation it describes, then becomes subsumable and may be cleaned up or subsumed. A handover decays; a tmp file or chat record is never kept. The durable source of truth of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
+A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: its life is the roadmap row that owns it, and `.agents/skills/work-log/SKILL.md` determines when that life begins and ends. This document classifies the kind and states no rule about its life. A handover decays; a tmp file or chat record is never kept. The durable source of truth of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
 
 ## Reach
 
@@ -72,7 +72,7 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 
 Documents promote along a path, and each step is an obligation whose source of truth is a policy or a convention-skill.
 
-- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins.
+- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change, and the record lives until its row closes. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins, and A discussion record lives until its task does.
 - **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- The record set.
 - **Concept to architecture.** The concept states the model; the architecture document carries the implementation design. What a concept document describes is in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- What each document type owes.
 

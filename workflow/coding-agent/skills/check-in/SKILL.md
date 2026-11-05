@@ -49,7 +49,7 @@ The survey reads state; it does not repair it. Apply the repository's read disci
 - Recent git history (`git log --oneline -20`): what landed, and the time gap since the last iteration.
 - Open entries in `devlog/AGENT_FEEDBACK.md` -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.
 - Stale-state sweep: `git status`, `git stash list`, `git branch` -- uncommitted changes, stashes, leftover branches.
-- Settled design docs in `devlog/discussions/` with no implementation handover referencing them yet.
+- Discussion records in `devlog/discussions/` whose roadmap row has closed -- each is a deletion candidate.
 
 Surface discrepancies, do not fix them: an open roadmap item whose work already landed on disk; a done item still carrying forward-looking text; a finding marked open whose fix landed; a feedback entry describing files that no longer exist; a test suite whose last recorded run is red or stale. Each becomes an inventory row or a finding, never a silent correction.
 
