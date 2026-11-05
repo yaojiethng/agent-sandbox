@@ -20,8 +20,6 @@ ls devlog/handovers/ | sort | tail -1 | xargs -I{} read devlog/handovers/{}
 read devlog/roadmap.md
 ```
 
-No other files are needed at this stage.
-
 ## Roadmap maintenance check
 
 Run before creating the handover.
@@ -30,7 +28,7 @@ Verify the roadmap reflects the state the prior handover claims. If the roadmap 
 
 ## Directive
 
-Read the prior handover's Objective and Findings for context before evaluating the directive. The prior handover carries no continuation scope: the roadmap is the sole task list, and a missing directive is an unmet scope-gate precondition, not something the agent derives.
+Read the prior handover's Objective and Findings before evaluating the directive. A missing directive is an unmet scope-gate precondition: the roadmap is the sole task list, and the agent does not derive a directive from the handover.
 
 The types are the type vocabulary in the project's `work-log` convention, `.agents/skills/work-log/SKILL.md`; this table is the directive word a caller may write.
 
@@ -47,7 +45,7 @@ The types are the type vocabulary in the project's `work-log` convention, `.agen
 
 If the directive slot is empty:
 
-- Stop and ask the operator for the directive. A scope gate confirms a scope the operator named; an empty directive is that precondition unmet, and the agent does not derive one. Exception: a reply to a wrapup report that names a next task -- "ok", or the operator picking up the report's suggestion -- is the directive, not an empty scope.
+- Stop and ask the operator for the directive. Exception: a reply to a wrapup report that names a next task -- "ok", or the operator picking up the report's suggestion -- is the directive.
 
 If the directive slot is non-empty:
 
@@ -73,7 +71,7 @@ If scope cannot be confidently derived, ask the operator one question at a time 
 
 **Purpose reconciliation.** Before presenting the scope, check the iteration's expressed purpose against the current tree. A purpose already silently resolved by landed work becomes recording or retiring that resolution, not re-implementing it.
 
-This step defines scope but does not stop for a release. The scope gate below confirms it together with the acceptance criteria.
+This step does not stop for a release; the scope gate below confirms scope and criteria together.
 
 ## Step 3  --  Design
 
@@ -90,7 +88,7 @@ Decisions are recorded by default in the handover's `## Decisions` table, which 
 
 Record decisions in the roadmap and handover per the project's `task-list` convention, and if the design settles an implementation decision, create an ADR before releasing, per the project's `decision-records` convention.
 
-Exit condition: all design questions resolved and recorded, any suggestion carried to the scope gate, and the ADR created if applicable. Confirmation happens at the scope gate, not here.
+Exit condition: all design questions resolved and recorded, any suggestion carried to the scope gate, and the ADR created if applicable.
 
 ## Step 4  --  Information gathering pass
 
@@ -98,11 +96,11 @@ After design is confirmed, read in order: the roadmap task, the design decisions
 
 ## Scope gate
 
-This is the collapsed gate the operator-involved workflows share. It confirms scope **and** acceptance criteria together, and clears on a single operator approval. Step 2 defined the scope; this gate presents it and the AC table as one release.
+It confirms scope **and** acceptance criteria together, and clears on a single operator approval.
 
 Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (e.g. `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule lives in the `roadmap-maintenance` skill's promotion invariant.
 
-Present the handover's `Decisions pending` table with the scope. Design runs before this gate, so a design question the agent could not settle is already recorded; presenting it here is what lets the operator answer it in the same reply that releases the scope. A `Decisions pending` table holding only the canonical marker needs no presentation -- say so in one line rather than showing an empty table.
+Present the handover's `Decisions pending` table with the scope, so the operator answers in the reply that releases it. A table holding only the canonical marker needs no presentation -- say so in one line.
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
@@ -113,9 +111,9 @@ Run the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handov
 
 An acceptance criterion describes a delta: something observable that was false or absent before the iteration and true or present after it. These rules decide whether one is well-formed.
 
-- **Universal preconditions are not criteria.** `make test passes clean` and `bash -n` gate every iteration equally and add no iteration-specific information. Verify them as prerequisites instead; they do not take a row.
-- **Every criterion is traceable.** For a bugfix the delta is implicit and the original error log is the anchor. For a feature or rework the delta traces to a story pain point, a requirement, or a design decision. A criterion that traces to nothing concrete is likely not needed.
-- **Verify at the weakest sufficient level.** Preference order: unit test, then integration test, then manual script, then an operator-run command with documented expected output. Use the minimal level that reliably asserts the delta.
+- **Universal preconditions are not criteria.** `make test passes clean` and `bash -n` gate every iteration equally. Verify them as prerequisites; they take no row.
+- **Every criterion is traceable.** A bugfix traces to its error log; a feature or rework to a story pain point, a requirement, or a design decision. One that traces to nothing concrete is likely not needed.
+- **Verify at the weakest sufficient level.** Preference order: unit test, then integration test, then manual script, then an operator-run command with documented expected output.
 - **A rename or delete carries a paired negative check.** The positive check asserts the new path exists; the negative asserts the old one does not. Both are required.
 - **A rename checks its companion files.** Grep for tests, knowledge tests and fixtures matching the old path pattern, and include or defer each explicitly.
 - **A recurring bug class gets one generic guard.** A bug representing a class -- a bash trap, a common mis-pattern, something review often misses -- gets one repo-wide check, not a per-file test. A one-off logic error does not need one.
@@ -126,7 +124,7 @@ When the handover's `## Decisions` table is not empty, or the iteration created 
 
 **Pre-verify every criterion the agent can verify now.** For each criterion whose `Verification` is a runnable command, run the command and show the output. For "read first N lines" criteria, show `head -N`.
 
-**When writing ACs that require test verification**, use `make test` (which runs `scripts/run_tests.sh`, globbing `tests/test_*.sh`) as the standard command. Do not run `tests/knowledge/` tests for implementation ACs  --  they document external tool behaviour or diagnostic scripts, not system behaviour, and are excluded from `make test` by design (see the `testing` skill's test homes).
+**A test-verified AC** runs `make test`, which globs `tests/test_*.sh`. `tests/knowledge/` documents external tool behaviour and is not an implementation's subject, per the `testing` skill's test homes.
 
 Present together:
 
@@ -138,7 +136,7 @@ Present together:
 - What is explicitly deferred and why
 - Any questions that must be resolved before work can begin
 
-Re-read each criterion and verify it is satisfiable given the confirmed scope. A criterion that would fail on a correct implementation is a specification bug  --  resolve it now, not at pre-close.
+Re-read each criterion and verify it is satisfiable given the confirmed scope; one that would fail on a correct implementation is a specification bug, resolved now.
 
 Everything you present is a proposal: the operator reviews, approves, and commits (the project `AGENTS.md` Output Format owns this rule). Do not produce any file, code, or structural output until the operator releases this gate.
 
@@ -159,7 +157,7 @@ The handover write-back fires at three moments in the runbook's operation:
 
 - **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task.
 - **On discovery:** a bug, contradiction, design gap, obstacle, or new file in scope is a Findings row in the same turn it is found, before it is mentioned in chat; if it changes the approach, surface it in chat before proceeding.
-- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row. A row is an instruction to a later session, so it states the intent and leaves the method to the doer, per `$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`.
+- **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row. The row states the intent and leaves the method to the doer, per `$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`.
 
 **Prompt-scope discipline.** A campaign or review prompt must not contradict its own success criteria. Name the in-scope targets explicitly. If a criterion can only be met by a change that looks out of scope, make the criterion flag-only or name the target. When the agent detects such a contradiction at runtime, stop and ask the operator for a ruling; do not resolve it silently.
 
@@ -181,11 +179,11 @@ Every row must carry a status. A deferred or not-started row must be written bac
 
 6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbooks/content.md) of `handover-maintenance` over this handover. Read the findings from the handover's `## Findings` table, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
 
-The operator's explicit forward signal on this pre-close summary is the release gate's release. A message that reviews output without a clear forward signal does not satisfy the exit condition.
+The operator's explicit forward signal on this pre-close summary is the release gate's release; a reply that reviews the output without it is not one.
 
 ## Release gate
 
-This is the common acceptance gate the operator-involved workflows share. Present the acceptance criteria status table, the findings queue, and the commit message. Every criterion carries a status, every finding carries a destination, and the commit body stays within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup` and the commit to `/commit`. Exit condition: explicit release received.
+Present the acceptance criteria status table, the findings queue, and the commit message. Every criterion carries a status, every finding carries a destination, and the commit body stays within the git policy's body budget. Do not close until the operator releases. After this gate's release, the close hands off to `/wrapup` and the commit to `/commit`. Exit condition: explicit release received. Compaction, changelog drafting, escalation clearance and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md); this prompt does not run them.
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
@@ -196,15 +194,11 @@ Steps that stay specific to `/iter` because they gate the release, not the mecha
 1. **Step 7 pre-close summary** (above) presents the AC table, roadmap write-back, propagation replay, and commit message to the operator before the release gate -- the operator, not the close, judges the work.
 2. **Findings publication.** The gate decides each destination. The close publishes each destination, and the operator confirms the attribution.
 
-## The acceptance gate
-
-`/iter` stops at the acceptance gate. It presents the acceptance criteria table, the roadmap write-back, the propagation replay, and the commit message. It also presents the findings queue and the record-check reports. The operator releases, [`/wrapup`](wrapup.md) takes the iteration through the close, and [`/commit`](commit.md) lands the delivery commit. Compaction, changelog drafting, escalation clearance, and the pre-close review gate are milestone-grain work, owned by [`/milestone-close`](milestone-close.md). This prompt does not run them.
-
 **Defects found by a reviewer are fixed, not filed.** A finding naming a defect in what this iteration produced is fixed here, even when it surfaced at the pre-close gate. The rule is [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) `### Close invariants` `Defect resolution`; this step applies it before the release gate.
 
 ## File Tracking
 
-There is no document registry; the docs tree is the authoritative file list. The iteration's file list is the scope proposal's, presented at the scope gate.
+The iteration's file list is the scope proposal's, presented at the scope gate.
 
 ## Policy
 
