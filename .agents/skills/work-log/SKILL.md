@@ -108,6 +108,8 @@ The `milestone` field names the task group the iteration belongs to. The task li
 
 `devlog/discussions/` holds one record per line of enquiry, and this convention decides its life: the record is opened only while in-flight knowledge must outlive the iteration, and it is deleted when the roadmap row that names it closes, or re-pointed to an open row that inherits it. The ground is `principle-single-source-of-truth` -- once the ADR holds the subject in the same mode, the record is a second source. [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md) classifies the kind, and the [`decision-records`](../decision-records/SKILL.md) convention owns the ADR the evidence settles into, not the record.
 
+Two gates hold the life: `scripts/check_record_names.sh` for the name and the state, and `scripts/check_record_lifecycle.sh` for the deletion and for the row that links a record. Each states the rule it applies when it fails.
+
 ### A discussion record's filename
 
 ```text
@@ -123,7 +125,7 @@ YYYYMMDD-{type}-{state}-{description}.md
 
 Hyphens delimit and underscores separate words. A name carries no emoji, no unicode, no space and no per-day index: that slot belongs to the handover record, and one date already holds both kinds of record.
 
-A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention and its inbound links are updated. A record dated before 2026-11-05 keeps the old state tokens -- `draft`, `active`, `settled`, `superseded`, `archived` -- under the same rule.
+A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention, its inbound links are updated, and a state token the vocabulary has retired is brought into the current set.
 
 A file under `docs/` is not a discussion record and does not take this name.
 

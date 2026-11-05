@@ -243,7 +243,7 @@ The four types differ in what makes `rec_disc_concluded` true -- a story's appro
 - Guard: deletion fires only while tenancy is `rec_disc_orphaned`, so a record whose row is open is never swept.
 - Guard: an enquiry opens only while in-flight knowledge must outlive the iteration, which is the `work-log` convention's determination.
 
-**The checks.** `scripts/check_record_names.sh` holds the state vocabulary and the naming shape. The per-transition cases, and the mapping check that every transition here has one, are not written; the row is named in `## Gaps`.
+**The checks.** `scripts/check_record_names.sh` holds the state vocabulary and the naming shape, and `scripts/check_record_lifecycle.sh` holds the deletion guard and the closed-row rule. The per-transition cases, and the mapping check that every transition here has one, are not written; the row is named in `## Gaps`.
 
 ## Commands
 

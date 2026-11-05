@@ -50,11 +50,11 @@ Run this step over each item in the active sub-milestone.
 
 **2.2 Outcome summary marker.** The `- [x]` marker survives the compaction. Report a compacted item without the marker.
 
-**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in the `/milestone-close` compaction procedure, step 1, component by component.
+**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in the `/milestone-close` compaction procedure, step 1, component by component. A link the table marks removed and the item still carries is the finding, and the same link over a record no longer on disk is a second one.
 
 | Component | Expected | Check |
 |---|---|---|
-| Design document links | Survive | Present when the item had one |
+| Design document links | Removed | Absent from the closed row; a record the row still needed was re-pointed to an open row before the close |
 | Not-in-scope and deferred tags | Survive | Present when the item had them |
 | File lists in parentheses after the item name | Removed | Absent from the header |
 | Implementation notes and partial specs | Removed | Absent from the summary |

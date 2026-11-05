@@ -22,10 +22,9 @@
 import { readdirSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { RECORD_CUTOVER } from "./record-cutover.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-
-const DEFAULT_CUTOVER = "20261105";
 
 /** The exploration-record type vocabulary, from the work-log convention. */
 const TYPES = ["story", "study", "design", "report"];
@@ -40,7 +39,7 @@ const CONFORMING = /^(\d{8})-([a-z]+)-([a-z]+)-([a-z0-9][a-z0-9._-]*)\.md$/;
 const HANDOVER_SHAPE = /^(\d{8})-(\d{2})-(.+)$/;
 
 function parseArgs(argv) {
-  const opts = { root: REPO_ROOT, cutover: DEFAULT_CUTOVER, force: false, files: [] };
+  const opts = { root: REPO_ROOT, cutover: RECORD_CUTOVER, force: false, files: [] };
   for (const arg of argv) {
     if (arg.startsWith("--root=")) opts.root = arg.slice("--root=".length);
     else if (arg.startsWith("--cutover=")) opts.cutover = arg.slice("--cutover=".length);
