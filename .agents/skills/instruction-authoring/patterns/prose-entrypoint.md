@@ -1,43 +1,50 @@
 # Prose entrypoint over a mechanism
 
-Open this when you write a skill that wraps a script, a command, or any mechanism with a fixed call shape. Where a caller may hold the intent but not the invocation, expose two surfaces: the skill turns the intent into a call, and the script owns the call.
+Open this when an instruction wraps a script, a library or a service with a fixed call shape.
 
 ## The pattern
 
+The mechanism and the instruction are two surfaces over one utility. The mechanism is what can be designed and tested; the instruction is the human-friendly surface, and it turns an intent into a call. The mechanism keeps the invocation.
+
 | Instead of | Give |
 |---|---|
-| a skill whose body teaches the flags | a skill whose body produces the invocation |
-| a script with no prose surface | the script for a caller who knows the call, the skill for one who does not |
-| a skill that performs the mechanism itself | a skill that stops at the command line |
-| a second copy of the call inside each consumer | one script, called by every consumer |
-| a run's values hidden inside the skill | the pin stated at the call site, visible in the invocation |
+| an instruction that teaches the flags | one that produces the invocation |
+| an instruction that performs the mechanism itself | one that stops at the command line |
+| the call copied into each consumer | one script, called by every consumer |
+| a run's values held inside the instruction | the pin at the call site |
 
-## Why
-
-A skill that teaches an invocation becomes a second copy of it, and a copy drifts from the thing it copied. The failure is silent, because both surfaces still work; they simply stop agreeing. Dispatch is the measured instance: three resolvers, five fault lines, and one reviewer skill whose own text states three different model pairs, because every surface carried its own copy of the call.
+A skill or a prompt may carry the entrypoint; step 2 settles which, so this pattern starts once that is settled.
 
 ## When it applies
 
-All three must hold, and each is checkable before the skill is written.
+All three must hold.
 
-1. The invocation is exact enough that a wrong one fails silently or expensively: required flags, an ordering, a value to read back afterwards.
-2. A caller exists whose request names a goal rather than a call, so the caller would otherwise guess.
-3. The mechanism changes independently of that intent, so a one-time copy of the command would go stale.
+| It applies when | Because |
+|---|---|
+| A wrong invocation fails silently or expensively | the instruction is what stops the call going wrong |
+| The caller's request names a goal, not a call | otherwise there is nothing to translate |
+| The mechanism changes independently of that intent | a one-time copy of the call goes stale |
 
 ## When it does not apply
 
-Any one of these is enough to withhold the skill.
+Any one withholds the instruction.
 
-1. One known call site, owned by whoever owns the mechanism. Test the call there instead of translating it.
-2. One command with no required flags that fails loudly and immediately. A skill over it adds a hop and no information.
-3. The skill would have to choose policy rather than translate intent, such as which model by taste or how many reviewers a change deserves. Policy belongs to a table or a decision record, where it can be reviewed.
-4. The caller is a program. Give it the script; a prose surface has no reader there.
-5. The work needs state held across calls, such as a session or a lock. The mechanism owns its state, and a skill cannot hold it.
+| Withhold when | Because |
+|---|---|
+| One call site, and the mechanism's owner owns it | test the call there instead of translating it |
+| The command takes no flags and fails immediately when miscalled | an instruction over it adds a hop and no information |
+| The instruction would pick policy -- which model, how many reviewers | policy belongs where it can be reviewed, a table or a decision record |
+| The caller is a program | give it the script; prose has no reader there |
+| The run holds state across calls -- a session, a lock | the mechanism owns its state, and an instruction cannot hold it |
+
+## Why
+
+An instruction that teaches an invocation is a second copy of it, and the copy stops agreeing with the original with nothing reporting it. Dispatch is the measured instance: three resolvers, and one reviewer skill whose own text states three different model pairs.
 
 ## The boundary
 
-Two outputs keep the pair honest. The skill's output is a command line, so a caller can read, copy and refuse it; the script's output is what ran and what it resolved to, including the effective value read back. A skill that returns prose about what it did has taken the mechanism back.
+The instruction's output is a command line, so a caller can read, copy and refuse it; the mechanism's output is what ran and what it resolved to. A body that teaches the flags has taken the invocation back, and an output that reports on what it did has taken the mechanism back.
 
 ## The test
 
-Name the caller whose request is underspecified, and the failure that a wrong invocation produces. If either name is missing, do not write the skill; if both are present, keep the skill's body on the translation and give the invocation to the script.
+Name the caller whose request is underspecified and the failure a wrong invocation produces. With either missing, write no instruction.
