@@ -15,15 +15,15 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 You are merging draft branches into a target branch. The operator named the drafts and the target. Your deliverable is every draft's content landed on the target one-for-one, with the inter-draft conflicts resolved once, and the target history linear.
 
-Merging replays current draft exports one-for-one. It is not a port: the drafts are finished sessions whose content lands as-is. When a branch's work must be re-realized against a changed target, use `/rebase` instead.
+Merging replays current draft exports one-for-one. It is not a port: when a branch's work must be re-realized against a changed target, use `/rebase` instead.
 
 Four rules govern this run.
 
-First, replay commits, never merge. A draft's content commits are cherry-picked one-for-one in their original order, each keeping its message, its author, and its handover. No merge commit is produced, and no squash folds the drafts together. The target history must read as if the work was done there.
+First, replay commits, never merge. A draft's content commits are cherry-picked one-for-one in their original order, each keeping its message, its author, and its handover. No merge commit is produced, and no squash folds the drafts together; the target history reads as if the work was done there.
 
 Second, merge the drafts synchronously. All named drafts land in one pass, in export order, oldest first. Every later draft resolves its overlaps against everything the earlier drafts already landed. A draft is not merged against the target alone; it is merged against the accumulated tree.
 
-Third, exclude the metadata. A draft branch's first commit is `.draft-state`, a record of the export: source branch, hashes, timestamps. It is never replayed, and the file never appears in the result. On the new base it would record false state. `.rej` files and stray untracked files are excluded the same way, and flagged to the operator.
+Third, exclude the metadata. A draft branch's first commit is `.draft-state`, a record of the export: source branch, hashes, timestamps. It is never replayed, and the file never appears in the result. `.rej` files and stray untracked files are excluded the same way, and flagged to the operator.
 
 Fourth, stop on real divergence. Textual conflicts, additive merges, and stale counts are your work to resolve. A design contradiction between a draft and the target, or between two drafts, is the operator's; ask before guessing.
 
@@ -41,7 +41,7 @@ The argument slot may carry extra context: operator rulings, supersession concer
 
 Map the branch graph before reading any commit.
 
-- Each draft's export base: `from_hash` in its `.draft-state`. A draft whose base is the current target tip replays cleanly in isolation; a draft whose base is older lands against everything the target gained since.
+- Each draft's export base: `from_hash` in its `.draft-state`. A draft whose base is older lands against everything the target gained since.
 - The target's commits since the oldest base: `git log --oneline <oldest-base>..<target>`.
 - Each draft's content commits: `git log --oneline <from_hash>..<draft>` -- then drop the `.draft-state` commit. Classify each remaining commit: its type, its files, and the handover it carries.
 - Draft-to-draft overlap: which files two drafts both changed since their common base. The roadmap, the feedback record, and the read-through register are the usual shared files, and their edits are usually disjoint regions.
@@ -49,20 +49,20 @@ Map the branch graph before reading any commit.
 
 ## Sort the replay
 
-Order the drafts by `session-ts`, oldest first. Within a draft, keep the commit order. The replay is one cherry-pick at a time; there is no batch mode, because every conflict must be resolved against the tree as it stands.
+Order the drafts by `session-ts`, oldest first. Within a draft, keep the commit order. The replay is one cherry-pick at a time; there is no batch mode.
 
-Before touching any file, pin the target's base: the replay starts at the target's current tip. Replay the earliest draft first, then each later draft in turn. A draft whose own base is old contributes its commits onto whatever the earlier drafts have already established; expect its conflicts to come from both sides.
+Before touching any file, pin the target's base: the replay starts at the target's current tip. Replay the earliest draft first, then each later draft in turn.
 
 ## Exclude pipeline artifacts
 
 A draft export carries metadata that is not content.
 
-- The `.draft-state` commit is skipped. It records the export -- source branch, `from_hash`, timestamps -- and on the merged branch it would assert a state that never existed there.
+- The `.draft-state` commit is skipped.
 - The `.draft-state` file is absent from the result. Verify with `git cat-file -e HEAD:.draft-state`, which must fail.
 - `.rej` files are rejected patch remnants. On a current export they mean the iteration's change did not land; flag them, do not carry them.
 - Stray untracked files in the working tree describe sessions outside the branch. Flag them to the operator; do not carry them.
 
-Name every exclusion in your report. The operator expects the result to be free of draft metadata.
+Name every exclusion in your report.
 
 ## Resolve conflicts
 

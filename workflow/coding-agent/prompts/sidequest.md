@@ -17,13 +17,11 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## When to use
 
-Run `/sidequest` when the operator raises work the open iteration does not own and that cannot wait for the next iteration.
-
 - A task inside the open iteration's scope is that iteration's work. Amend the scope; do not open a sidequest.
 - No iteration is open, or none is `Active`: the work is a normal iteration. Run `/iter`.
 - The work needs decisions before it can be shaped: run `/plan`.
 
-The operator invokes a sidequest. The agent does not open one on its own.
+The operator invokes a sidequest; the agent does not open one on its own.
 
 ## Orient
 
@@ -31,9 +29,9 @@ Read the most recent handover and the roadmap, as `/iter` Orient does.
 
 ## Identify the interrupted iteration
 
-The interrupted iteration is the handover whose status is `Active`. When more than one is `Active`, the one the operator names is the parent; when none is, stop and say so, because the work is then a normal iteration and `/iter` owns it.
+The interrupted iteration is the handover whose status is `Active`. When more than one is `Active`, the one the operator names is the parent; when none is, stop and say so.
 
-Record the parent's handle. The sidequest names it twice: in its own Scope continuation line, and in the parent's Findings.
+Record the parent's handle.
 
 ## Create the sidequest handover
 
@@ -46,7 +44,7 @@ Two writes belong to this step, and both land before the scope gate:
 
 ## Scope gate
 
-The scope gate is `/iter`'s. The difference is where the scope comes from: the operator's direction supplies the task, and no roadmap row is required at open. Present the scope and the acceptance criteria together, and wait for the operator's release.
+The scope gate is `/iter`'s. The difference is where the scope comes from: the operator's direction supplies the task, and no roadmap row is required at open.
 
 Confirm the sidequest sits outside the interrupted iteration's scope. A sidequest that turns out to sit inside it stops here and becomes a scope amendment on the parent.
 
@@ -56,7 +54,7 @@ Run `/iter` Step 6 as written: produce changes against the confirmed scope, writ
 
 ## Pre-close and release
 
-Present the pre-close summary and wait for the release gate, per `/iter` Step 7 and Release gate. The five sections are unchanged.
+Present the pre-close summary and wait for the release gate, per `/iter` Step 7 and Release gate. The six sections are unchanged.
 
 ## Close
 
