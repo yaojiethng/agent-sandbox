@@ -19,13 +19,13 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, its milestone section, its open items, and the Milestone Summary table. Read the most recent handover in `devlog/handovers/`. Read `devlog/AGENT_FEEDBACK.md` open entries.
 
-Determine the finish state: a caller can finish at any nesting level. A finish that cannot factor under the current level indicates the next milestone steps up one nesting level. Confirm with the operator that a milestone should be opened or reshaped.
+Determine the finish state. Confirm with the operator that a milestone should be opened or reshaped.
 
 ## Audit the task pool
 
 The task pool is the remaining open tasks in the roadmap at and below the current lineage. Read the current milestone's open tasks and its child sub-milestones; do not cross into unrelated milestones.
 
-Group the tasks in the pool into task categories, and grade the categories on the decision axes the check-in skill defines ([`check-in`](/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md), from the repository root): Size, Progress and Impact. That skill owns the axes and their value sets; read them there rather than restating them here.
+Group the tasks in the pool into task categories, and grade the categories on the decision axes the check-in skill defines ([`check-in`](/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md), from the repository root): Size, Progress and Impact. That skill owns the axes and their value sets.
 
 Present the task categories and their grades to the operator in a table.
 
@@ -38,11 +38,11 @@ Present one reorganization proposal to the operator. The proposal covers the who
 - which existing milestones are overfull and should split;
 - the nesting level each milestone sits at.
 
-Milestone numbering is fractal and nests to any depth -- M{n}, M{n}.{m}, M{n}.{m}.{o}. Numbering uses integers only; follow the Milestone numbering section of the project's `task-list` convention for the numbering rules and the Milestone Summary table's indentation.
+Milestone numbering nests to any depth -- M{n}, M{n}.{m}, M{n}.{m}.{o} -- and uses integers only; follow the Milestone numbering section of the project's `task-list` convention for the numbering rules and the Milestone Summary table's indentation.
 
-You may propose nested sub-milestones where the pool decomposes cleanly. If the pool cannot factor at the current level, propose the shape one nesting level up. If the shape has genuine variants, rank them (1-3) -- the operator still decides once, on one point.
+If the pool cannot factor at the current level, propose the shape one nesting level up. If the shape has genuine variants, rank them (1-3) -- the operator still decides once, on one point.
 
-A milestone is a bin; a new milestone is an empty bin. Wait for one operator decision that fixes the milestone set and their titles before any organization. A good title shapes a clean scope.
+A milestone is a bin; a new milestone is an empty bin. Wait for one operator decision that fixes the milestone set and their titles before any organization.
 
 ## Organize the milestones
 
@@ -67,4 +67,4 @@ When several milestones exist, select one as next active with the operator. Upda
 
 Follow the record's shape in the project's `task-list` convention when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
 
-**The milestone phase's design step is [`plan.md`](plan.md)'s.** [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md)'s milestone phase opens or revises stories, investigates or designs, and resolves the stories before Gate 3 releases the sub-milestone. That step runs at milestone grain, so it is `/plan`'s rather than `/iter`'s. This prompt names the route; it does not run the step.
+**The milestone phase's design step is [`plan.md`](plan.md)'s**, at milestone grain: [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md)'s milestone phase opens or revises stories, investigates or designs, and resolves them before Gate 3 releases the sub-milestone. This prompt names the route; it does not run the step.

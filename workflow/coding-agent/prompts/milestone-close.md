@@ -35,7 +35,7 @@ Surface every open `[A]` (agent) and `[O]` (operator) entry and every pending sw
 - **maintain** -- the fix is not stress-tested. Extend probation.
 - **escalate** -- the problem resurfaced. Re-scope with awareness of the prior fix.
 
-Reconcile the feedback per the operator's decisions. Do not decide a probation entry yourself; the operator owns the decision. Escalation of far-reaching correctness work defers the close until the work completes. Low-urgency escalation files as a named task at the top of the next milestone.
+Reconcile the feedback per the operator's decisions; no probation entry is yours to decide. Escalation of far-reaching correctness work defers the close until the work completes. Low-urgency escalation files as a named task at the top of the next milestone.
 
 ## Compact the task list
 
@@ -56,7 +56,7 @@ Every number the close asserts must come from the live record rather than memory
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order. The project's `task-list` convention's `references/changelog.md` owns the entry's structure and its writing guidance; read it there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
+Append the milestone's entry to `devlog/changelog.md` in milestone order. The project's `task-list` convention's `references/changelog.md` owns the entry's structure and its writing guidance; read it there. Output the entry as a fenced block labelled `changelog`, for the operator to append verbatim.
 
 ## Update the records
 
@@ -76,16 +76,16 @@ Give every item the milestone leaves open a recorded source of truth before the 
 
 ## Close the milestone
 
-Before the record edits and the close commit, present to the operator the compaction summary, the changelog entry, and the close boundary. Wait for explicit release before applying them. The operator's direction to close is the last input before the close commit.
+Before the record edits and the close commit, present to the operator the compaction summary, the changelog entry, and the close boundary. Wait for explicit release before applying them.
 
 Then:
 
 1. Mark every acceptance criterion accepted in the handover.
 2. Run scope reconciliation and the deferred-resolution gate at milestone grain; see [iteration_protocol.md](/opt/sandbox/docs/reference/iteration_protocol.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
 3. Set the handover `Status: Closed` before the commit -- the commit is the close.
-4. Land one delivery commit per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`. Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of the active types there. The M2.7 and M3.1 closes both typed `plan`.
+4. Land one delivery commit per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`. Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of the active types there.
 
-After the close commit, stop: report the landed commit and the updated records. No substantive work lands after the operator's close direction.
+After the close commit, stop: report the landed commit and the updated records; nothing substantive lands after it.
 
 ## Invariants
 
