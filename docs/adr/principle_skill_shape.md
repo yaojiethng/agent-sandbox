@@ -2,6 +2,20 @@
 
 **Current:** 2026-11-05
 
+## 2026-11-05 -- The cut test is the document's purpose, and the principle is renamed
+
+**Decision:** `communication-principle-cut-what-serves-nothing` replaces `communication-principle-cut-what-carries-nothing`. A document's purpose is fixed by its Diataxis mode, so the question a sentence answers is whether it serves that purpose, not whether it carries information. A sentence serving another mode's purpose is cut and pointed at, because the document of that mode is the authority for that job and a copy here drifts from it unseen -- `principle-single-source-of-truth`'s unit, one subject in one mode, applied across documents.
+
+**Rationale:** Carrying nothing was defined against no purpose, so the test presupposed a reader who acts: in a document whose reader came to understand or to consult, every informing sentence passed, and an explanation inside a how-to was invisible to the rule that exists to remove it. The mode is the purpose, and it makes the two failures one: a sentence true anywhere and a sentence belonging to another document both answer the same question, and fail it. Diataxis is where the corpus already takes its mode vocabulary from, recorded at `docs/adr/documentation_quadrants.md`, so the principle names the framework instead of restating a taxonomy.
+
+**Rejected alternatives:**
+
+- *Keep the name and widen the definition.* **Intent failure**: the name states the old test, and a reader who routes on it applies the information test whatever the body says.
+- *Carry the framework's quadrant map in the principle.* **Boundary failure**: the mapping from quadrant to this repository's corpus is `documentation_quadrants.md`'s, and a shipped principle repeating it drifts from the ADR.
+- *Treat the mode mismatch as a principle of its own.* **Execution failure**: it is one question reached two ways, so a second principle would answer it twice.
+
+**Edge cases / drivers:** The rename moved eight carriers -- the seed and installed copy, the shipped index, four principle cross-references, `project-documentation`, `scope.md`, and the `writing-for-agents` fork's inline names -- which is the cost of a name that states a test. The fork's registry record carries the divergence.
+
 ## 2026-11-05 -- A judgement about writing an instruction is a pattern, and the corpus keeps judgements about any text
 
 **Decision:** `principle-prose-entrypoint-over-mechanism` retires, and the judgement lives at `instruction-authoring/patterns/prose-entrypoint.md`. Its subject is the instruction artifact -- a skill or a prompt -- and its object is a script, a library or a service with a fixed call shape: two surfaces over one utility, where the mechanism is what can be designed and tested and the instruction is the human-friendly surface that turns an intent into a call. Which surface carries the entrypoint stays step 2's decision, cited from the pattern and not restated in it. `SKILL.md` step 2 now states the complement of its own criterion: a judgement that applies to any text makes a principle skill, and a judgement about the writing of an instruction is a pattern in that skill. The installed copy is removed.

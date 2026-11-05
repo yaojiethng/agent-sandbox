@@ -69,7 +69,7 @@ Before creating any new document, check the project's `AGENTS.md` for the policy
 
 Follow these general communication guidelines for all agent prose. Read the leaf skill in full for any principle you apply. The agent names each entry when it applies.
 
-- [`communication-principle-cut-what-carries-nothing`](./skills/communication-principle-cut-what-carries-nothing/SKILL.md): Keep the sentence that changes a decision and delete the one that does not.
+- [`communication-principle-cut-what-serves-nothing`](./skills/communication-principle-cut-what-serves-nothing/SKILL.md): A document has one purpose -- its Diataxis mode -- and a sentence serving another belongs to the document of that mode.
 - [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md): Write so the reader attaches each phrase as it arrives.
 - [`communication-principle-define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): Define a term before the work relies on it.
 - [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): Write for the reader, not the session that produced it.

@@ -29,7 +29,7 @@ Set it only where the body already teaches the word, because a candidate the bod
 
 **Fires on.** A skill or a document that needs a word the reader thinks with, and a draft that spells the concept out in phrases.
 
-**What it does not cover.** Whether a sentence stays at all: `communication-principle-cut-what-carries-nothing`. Which claim to make: the principle of the domain in hand.
+**What it does not cover.** Whether a sentence stays at all: `communication-principle-cut-what-serves-nothing`. Which claim to make: the principle of the domain in hand.
 
 **The test.** Read the text. Is there one word the reader will carry away? Does each sentence use it, or add to its definition? A text with two words for one concept, or a concept spelled out in phrases, has not anchored.
 
