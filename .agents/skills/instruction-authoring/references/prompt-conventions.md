@@ -20,10 +20,6 @@ The frontmatter is YAML. An unquoted value cannot hold a colon, a leading dash o
 
 **`$ARGUMENTS`.** A prompt that forwards the operator's text to its body opens with `> $ARGUMENTS` after the frontmatter. Write `$ARGUMENTS`, not `$@`: pi substitutes both, OpenCode substitutes only `$ARGUMENTS`, so one spelling serves both runtimes from one file. The decision is `docs/adr/instruction_surface_declaration.md`.
 
-## The body
-
-A prompt is steps, reference or both, per `writing-for-agents` `## Information hierarchy`, and where a step ends is [`forms.md`](forms.md) item 4. A prompt that reads or writes project records opens with the conventions block the [skill's front door](../SKILL.md) states.
-
 ## Naming
 
 A prompt's name states its subject, not its mechanism: a noun phrase (`task-queue`, `milestone-close`), or a gerund that names the activity (`documentation-pass`). Avoid `helper`, `utils`, and names that restate the loading mechanism.

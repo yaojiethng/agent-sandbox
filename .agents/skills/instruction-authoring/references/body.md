@@ -10,7 +10,7 @@ A document carries the sections its work needs, and a short one may carry none. 
 2. **Purpose.** What it is for, and what it is not.
 3. **When to use.** The conditions that invoke it, and what replaces it otherwise.
 4. **The work.** Steps, each ending on the observable that shows it done, stated as a completion criterion where the step's own sentences do not already say it; or a reference region, which has no step to finish.
-5. **The handoff.** The next document and the boundary, where this one hands on.
+5. **The handoff.** The next document and the boundary, where this one hands on, in the four moves [`patterns/handoff.md`](../patterns/handoff.md) offers.
 6. **Non-goals.** What it deliberately does not do.
 7. **Failure modes and invariants.** What can go wrong, and what must stay true.
 
@@ -20,7 +20,7 @@ A document carries the sections its work needs, and a short one may carry none. 
 
 ## Runbook
 
-A runbook holds ordered steps, whether it is a prompt or a skill. Each step ends on a criterion that says when the step is done, per `principle-say-what-done-looks-like`. A runbook is not the form a dispatched worker takes: a worker runs one segment and reports, per the `dispatch` convention, so a runbook that wants fan-out dispatches the work rather than being dispatched itself. One that hands to another document names the boundary in four moves, per `communication-principle-hand-off-by-naming-the-boundary`.
+A runbook holds ordered steps, whether it is a prompt or a skill. Each step ends on a criterion that says when the step is done, per `principle-say-what-done-looks-like`. A runbook is not the form a dispatched worker takes: a worker runs one segment and reports, per the `dispatch` convention, so a runbook that wants fan-out dispatches the work rather than being dispatched itself. One that hands to another document may name the boundary in four moves, per [`patterns/handoff.md`](../patterns/handoff.md).
 
 ## Advisor
 

@@ -2,6 +2,21 @@
 
 **Current:** 2026-11-05
 
+## 2026-11-05 -- The handoff judgement is scoped to an invoked unit, and lives in the authoring sheet
+
+**Decision:** `communication-principle-hand-off-by-naming-the-boundary` retires into `instruction-authoring`, at `patterns/handoff.md`, and the principle corpus stops carrying it. The judgement is in force for a unit that is **invoked and whose end continues into another run**; code, a reference, a tutorial and an ADR each fail that criterion, the ADR for a second reason, that `decision-records` already owns its supersession field. `references/forms.md` is renamed `references/body.md`, and its runbook section and its shared-shape slot cite the pattern rather than carry it.
+
+**Rationale:** The previous entry widened this judgement to any handoff, on the ground that the seam exists at every level. That ground is real and it is not the test: the four moves name what a continuing job owes the job after it, so a text with no run to continue, or no run at all, meets them by accident. Left in the principle corpus, a judgement about one document class claimed the standing of a judgement about any text, which costs every session a loaded description and every reader a claim that does not hold for their file. The pattern form keeps the instruction available to the writer who needs it without asserting it as a rule everywhere: a runbook that ends inside its own scope omits the handoff, so the sheet may cite a pattern and may not impose a step.
+
+**Rejected alternatives:**
+
+- *Keep it in the corpus and scope the description.* **Intent failure**: the corpus is defined by applying to any text, so a scoped member makes the corpus's own claim false rather than correcting it.
+- *Leave the four moves in the runbook section of the body sheet.* **Boundary failure**: the sheet states the body's shape for every form, so a four-move procedure there reads as required of an advisor and a reference too, and the file already carried three forms it could not impose on all of them.
+- *Repoint `principle-match-precision-to-stakes` at the new pattern.* **Layer failure**: a shipped principle may not name a project path, and the two judgements shared only the word "stop".
+- *File a new roadmap row instead of reopening the closed one.* **Record failure**: the superseded ruling would have sat beside the replacement with no mark on it, so a reader would find two closures of one question.
+
+**Edge cases / drivers:** The pattern is offered, not required, so no gate holds its four moves; the shipped index loses its entry and gains nothing, because the subject is no longer a whole-artifact judgement in that corpus. `prose-review` cites the body sheet from another module, so the rename was found by grep and not by the sheet's own carried-file table. Closed records keep the old filename, since they describe what happened then.
+
 ## 2026-11-05 -- The unit is a subject and a mode, and a principle claims no moment
 
 **Decision:** `principle-own-the-scope-you-declare` retires into `principle-single-source-of-truth`, which becomes the one home of the organizational judgement. The unit of ownership is a **subject together with a mode** -- tutorial, how-to, reference, explanation, from the Diataxis frame `docs/reference/documentation_taxonomy.md` records. One subject may be served by four documents, one per mode; two documents serving one mode for one subject are a second source. Content of one mode sitting in a document of another is out of place, and the four handling methods are link, move, remove, and widen. The agent may link and move; removing, or widening a unit to take material another unit carries, is the operator's. A rule is the same unit at its smallest grain.
@@ -17,7 +32,7 @@ A principle claims no moment. It is in force whenever the work is in front of th
 - *Scope the handoff principle to skill authoring.* **Neither**: it is the seam at every level, so it stays in the general corpus, widened rather than narrowed.
 - *Sweep `**Fires on.**` across the corpus now.* **Out of scope**: the rule is stated here and applied to the files this unit touches; a corpus-wide pass is its own task.
 
-**Edge cases / drivers:** The five-item account the retired file carried -- input, decision, output, directions, evidence -- is not a checklist and does not survive as one. Its content is material of four modes, and the placement rule sends each to its own: the conditions a workflow runs under stay with the workflow, why they exist goes to the record of the decision, the contract its output must meet goes to the reference. `references/forms.md` carries the worked splits. The four mode names are public, so the principle carries them with a one-clause gloss of each, which is what its unit of ownership needs. The folder mapping and the authoring guidance for each mode are this repository's, in `references/organization.md`, which names the principle for the classification.
+**Edge cases / drivers:** The five-item account the retired file carried -- input, decision, output, directions, evidence -- is not a checklist and does not survive as one. Its content is material of four modes, and the placement rule sends each to its own: the conditions a workflow runs under stay with the workflow, why they exist goes to the record of the decision, the contract its output must meet goes to the reference. `references/body.md` carries the worked splits. The four mode names are public, so the principle carries them with a one-clause gloss of each, which is what its unit of ownership needs. The folder mapping and the authoring guidance for each mode are this repository's, in `references/organization.md`, which names the principle for the classification.
 
 ## 2026-10-28 -- The principle shape carries no claim field
 
