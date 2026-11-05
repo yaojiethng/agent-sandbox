@@ -34,6 +34,6 @@ If you cannot tell whether the move is reversible, that is a gap, so treat the m
 
 A gap you do not name cannot be checked, so a wrong result it hides arrives as a surprise. An assumption is the sentence a breach contradicts instead.
 
-**What it does not cover.** What the instruction is about, how much room it costs, or how bad the consequence would be. The last cannot be known before the move. Its scope: `principle-own-the-scope-you-declare`. Where one document stops: `communication-principle-hand-off-by-naming-the-boundary`.
+**What it does not cover.** What the instruction is about, how much room it costs, or how bad the consequence would be. The last cannot be known before the move. Where one unit stops: `communication-principle-hand-off-by-naming-the-boundary`.
 
 **The test.** Name the assumption, the gaps, the undo path and the reporter. Name one thing you did not verify, and say why the instruction stands without it.

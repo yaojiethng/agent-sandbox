@@ -1,44 +1,39 @@
 ---
 name: principle-single-source-of-truth
-description: "Apply when scoping anything, or when one responsibility is about to have two sources. The SSOT law: a scope that duplicates a responsibility another component owns is a boundary violation and a second source of truth; stop and raise it to the operator, and do not decide the fix."
+description: "Apply when work or text is being divided into parts, or when two places seem to carry the same material: one subject in one mode has one source of truth."
 metadata:
   leitwort: SSOT
 ---
 
 # Single source of truth
 
-A responsibility has one source of truth. That is the SSOT law: every other place that carries it points at that source. A scope that duplicates a responsibility another component owns is a boundary violation and a second source of truth. Do not build it. If you see one, something is wrong: the scope or the design. Stop and raise it to the operator.
+One subject in one mode has one source of truth: two documents may serve one subject, and one mode has one document.
 
 **The pattern.**
 
-1. List the responsibilities the scope will own.
-2. For each, name the component that already owns it.
-3. If one is already owned, stop. You have a boundary violation.
-4. Raise it to the operator. Name the responsibility, the component that owns it, and the scope that would duplicate it.
-5. Do not proceed until the operator decides.
+Name the mode of the material in front of you before asking which document owns it, because the mode is the answer. A procedure says what to do. A reference states what is true. An explanation states why, and what it beat. A tutorial teaches it the first time. One subject may be carried by all four.
 
-When the responsibility is a rule or a judgement carried in text, place it by the organization rule in `.agents/skills/project-documentation/references/organization.md`: pick the mode first, then the corpus, with the how-to mode held by the instruction surface. Then deconflict the scope. If an existing document already owns that scope, the new document is a second source. Extend the existing document, or stop and raise the boundary violation. A new document must have a scope no existing document owns.
+It is two documents serving one mode for one subject that is the violation. The second one is a second source, and no reader can tell which governs.
 
-**Why.** A boundary violation caught at scoping is cheap. Caught after the work is built, the duplicate has consumers and failures of its own, and the boundary is harder to redraw. The violation is evidence that the scope or the design is wrong. It is not a decision the agent gets to take silently.
+Extent follows the mode. A unit carries what its own mode owes and none of another's. The explanation of why the unit is shaped this way belongs with the record of the decision; the contract of what it produces belongs with the thing described. Both name the same subject, and neither repeats the unit.
 
-Two copies of one rule also drift. The reader holds a version that no observer checks and no author updates, and the drift is silent, because each copy reads as current. A duplicate also forces the reader to decide which copy governs, and no record answers that.
+A rule is the same unit at its smallest grain, and its mode is reference, because it states what is true of a situation. Two rules for one situation are one rule, however differently worded. A rule a reader must hold another rule to apply is coupled, and the coupling is the defect rather than the length.
 
-The field states the prohibition as do not repeat yourself. The half that carries the load is knowledge rather than text, so a second copy of the words is a defect while it states the same knowledge twice, and not otherwise. An inline that names the source of truth states no second knowledge, which is the exception the next part states.
+When material is out of place, four methods apply, and whether the owner already exists picks between them.
 
-**What a violation looks like.** The scope adds a validation, state, rule, document, skill, instruction or code path that another component already owns. The component may be a library, an app, a service, or another part of the tree. The scope needs a parallel vocabulary to keep the two sources apart. The scope's failure is not the failure it was meant to catch. The scope repeats an output the other component already produces. The scope is defensive over-engineering: it does not trust the component. It is a leaky boundary.
+- **Link it**, where the owner exists and this text only needs to reach it.
+- **Move it**, where the owner exists and this text was carrying it.
+- **Remove it**, where it duplicates the owner and nothing reads this copy.
+- **Widen the unit**, where the material is genuinely this unit's and the declared extent was too narrow.
 
-**The agent does not choose the fix.** Do not silently reuse, move, remove or justify the second source. The operator may decide to reuse the component, move the responsibility, remove the duplicate, or justify a second source. That is the operator's decision. The principle raises the violation.
+The agent may link and move. Removing, or widening a unit to take material another unit carries, is the operator's: name the responsibility, the unit that owns it, and the unit that would duplicate it, and stop.
 
-**A fast path is not a second source of truth.** A workflow document may inline a short form of a rule for context efficiency. It stays a fast path while the rule keeps its source of truth and the inline names that source. Remove either and the inline becomes a second source of truth.
+**Why.** A violation caught while scoping is cheap; caught after the work is built, the duplicate has readers of its own and the boundary is harder to redraw. Two copies also drift, silently, because each reads as current.
 
-**One rule's parts sitting apart is a different defect.** `communication-principle-keep-a-subject-near` owns it, at `$AGENT_HOME/agent/skills/communication-principle-keep-a-subject-near/SKILL.md`.
+**What a violation looks like.** Something another unit already carries, restated here: a validation, a state, a rule, a step, a code path, a contract. A parallel vocabulary kept to hold the two apart. A failure that is not the failure this unit was meant to catch. An output the other unit already produces. Defensiveness that does not trust the owner, which is a leaky boundary rather than a safe one.
 
-**A bridge document is a duplicate with extra steps.** A document whose only job is to connect two others duplicates content across a third place. Collapse it into the more relevant of the two and link them directly.
+**A fast path is not a second source.** An inline that names its source is a pointer, and it stays one while the name is there. Remove the name and it is a copy.
 
-**A definition and its record are two objects.** The document whose workflow produces the thing owns the definition. The record owns its own shape.
+**The awkward cases.** A document needing two modes splits: a convention states the rule, the record states why it beat its alternatives. A bridge document whose only job is to join two others is a duplicate with extra steps: collapse it into the more relevant of the two. A definition belongs to the unit whose work produces the thing.
 
-**A policy file owns a rule.** The policy set is every `docs/**/*_policy.md` file, in any folder. A file of that name that owns no rule is misnamed: fold its content into its owner, give it the name of its kind, or delete it.
-
-**The test.** During scoping, list the responsibilities the change will own. For each, name the component that already owns it. If one is already owned, stop and raise the boundary violation. Do not proceed.
-
-For a rule or a judgement, point at the source of truth and at every carrier that names it. A carrier that states the rule without pointing at its source of truth is a second source of truth, and the next edit reaches one of the two.
+**The test.** Name the subject and the mode of the material, then name the unit that owns that pair. If it is another unit, the material is out of place here. If it is this one and something else carries it, that copy is the second source.

@@ -13,6 +13,8 @@ One document, one mode. Two questions pick it: does the content inform action (d
 
 Use the compass on a whole document or on one sentence.
 
+One mode per document, and the four modes themselves, are `principle-single-source-of-truth`'s judgement: its unit of ownership is a subject together with a mode, so the classification lives with it. What this file owns is what each mode is written like, and which folder holds it in this repository.
+
 ## The corpora
 
 Each mode is one of this repository's corpora, and each corpus is one folder except the how-to, which is not a folder at all.

@@ -14,6 +14,8 @@ A document carries the sections its work needs, and a short one may carry none. 
 6. **Non-goals.** What it deliberately does not do.
 7. **Failure modes and invariants.** What can go wrong, and what must stay true.
 
+**The modes split the material.** A workflow document is how-to, so it carries the conditions it runs under and the steps it takes. Why those conditions exist is explanation, and belongs with the record of the decision that set them. The contract its output must meet is reference, and belongs with the thing described. One subject appears in all three, and none of them repeats another, per `principle-single-source-of-truth`.
+
 **The project conventions block.** A document that reads or writes project records opens with a `## Project conventions` section before its first step. It lists the conventions it uses, each read at `.agents/skills/<name>/SKILL.md`, and states the failure when that file is absent or holds the seeded stub: control passes to the agent, which decides with the steering it has loaded, and the document prescribes no fallback. It names the convention, never the project's paths, so a project with a different layout is served by its own skill. `gm` is the minimal case.
 
 ## Runbook

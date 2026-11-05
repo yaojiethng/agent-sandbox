@@ -17,7 +17,7 @@ description: "Apply when an agent rewrites, tightens, reorders or merges instruc
 
 **Fires on.** A rewrite of instruction text, by the agent rather than by its author, where the meaning must survive.
 
-**What it does not cover.** Whether the rewritten text reads well: the other principles in this corpus. Whether the text belongs where it sits: `principle-own-the-scope-you-declare`.
+**What it does not cover.** Whether the rewritten text reads well: the other principles in this corpus. Whether the text belongs where it sits: `principle-single-source-of-truth`.
 
 The agent may rearrange, join, reorder, restructure, and organize the contents and add headings as general descriptors of the instruction, because none of that moves what the instruction requires. It may not touch the words that decide what is required: the quantifiers, the negations, the modals, the logical connectives, the actors, the conditions, the exceptions, and the keywords the instruction is anchored on.
 

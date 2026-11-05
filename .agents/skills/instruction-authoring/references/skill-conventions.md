@@ -32,7 +32,7 @@ A skill whose directory name carries `principle-` is a judgement, and its body i
 
 `docs/adr/principle_skill_shape.md` records the decision and `scripts/check_document_shape.sh` holds it, so no copy of the shape is stated here.
 
-The exemplar is `communication-principle-show-dont-describe`. The description and the `**Fires on.**` part state the trigger, and selection reads the description alone: a description names the situation the agent is in, not a property of finished text, because a property of the text can be read only once it exists.
+The exemplar is `communication-principle-show-dont-describe`. Selection reads the description alone, so a description names a situation the agent is in rather than a property of finished text, because a property can be read only once the text exists. A principle claims no moment: it is in force whenever the work is in front of the reader, and a part naming where it applies says what to look at.
 
 Every principle answers one of five questions, and the question decides where a new one files:
 

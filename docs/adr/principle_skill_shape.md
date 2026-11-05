@@ -1,6 +1,23 @@
 # Principle Skill Shape
 
-**Current:** 2026-10-28
+**Current:** 2026-11-05
+
+## 2026-11-05 -- The unit is a subject and a mode, and a principle claims no moment
+
+**Decision:** `principle-own-the-scope-you-declare` retires into `principle-single-source-of-truth`, which becomes the one home of the organizational judgement. The unit of ownership is a **subject together with a mode** -- tutorial, how-to, reference, explanation, from the Diataxis frame `docs/reference/documentation_taxonomy.md` records. One subject may be served by four documents, one per mode; two documents serving one mode for one subject are a second source. Content of one mode sitting in a document of another is out of place, and the four handling methods are link, move, remove, and widen. The agent may link and move; removing, or widening a unit to take material another unit carries, is the operator's. A rule is the same unit at its smallest grain.
+
+A principle claims no moment. It is in force whenever the work is in front of the reader, and the `**Fires on.**` habit is replaced by a part that says where a reader meets it. A description names a situation for selection only, which is a routing fact and not a claim about the principle's reach; `references/skill-conventions.md` states the difference.
+
+**Rationale:** The two files stated one judgement and no reader could tell which governed. The cause was an undefined unit: "a document owns the scope it declares" never said what a scope is, so any document could claim any content, and a second document of a different mode read as a duplicate when it was not. Defining the unit as subject and mode makes the duplicate decidable and leaves a subject's four documents legitimately distinct. The merge also removes the over-narrow reading: the retired file's description said "a workflow document", while its judgement holds for a module, a folder, a namespace and a rule alike. Removing the moment claim follows the same reasoning: a principle stated as belonging to a moment is not called up at the others, which is a plausible cause of the violations rather than a description of them.
+
+**Rejected alternatives:**
+
+- *Keep two files and cut only the duplicated sentence.* **Intent failure**: the unit stays undefined, so the duplicate regrows with the next edit, which is how it arrived.
+- *Widen the scope file and leave SSOT alone.* **Intent failure**: two homes for one judgement, and the reader still cannot tell which governs.
+- *Scope the handoff principle to skill authoring.* **Neither**: it is the seam at every level, so it stays in the general corpus, widened rather than narrowed.
+- *Sweep `**Fires on.**` across the corpus now.* **Out of scope**: the rule is stated here and applied to the files this unit touches; a corpus-wide pass is its own task.
+
+**Edge cases / drivers:** The five-item account the retired file carried -- input, decision, output, directions, evidence -- is not a checklist and does not survive as one. Its content is material of four modes, and the placement rule sends each to its own: the conditions a workflow runs under stay with the workflow, why they exist goes to the record of the decision, the contract its output must meet goes to the reference. `references/forms.md` carries the worked splits. The four mode names are public, so the principle carries them with a one-clause gloss of each, which is what its unit of ownership needs. The folder mapping and the authoring guidance for each mode are this repository's, in `references/organization.md`, which names the principle for the classification.
 
 ## 2026-10-28 -- The principle shape carries no claim field
 

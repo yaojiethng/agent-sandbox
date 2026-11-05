@@ -85,6 +85,8 @@ The resolver, the invocation and the failure rules belong to the `dispatch` skil
 
 Agent output is complete and ready for review when it follows the format rules below.
 
+Every file serves one subject in one mode. Two documents may serve one subject in different modes; two serving one subject in one mode are a second source. The mode decides the folder, per the diataxis frame in [`.agents/skills/project-documentation/references/organization.md`](.agents/skills/project-documentation/references/organization.md), and the judgement is `principle-single-source-of-truth`'s.
+
 **Documents** -- Markdown, one file per document, correct folder and header per the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`. Drafting rule: skeleton first for an ADR, a concept document or an architecture document -- propose the section skeleton in chat and confirm before writing prose.
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
