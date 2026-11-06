@@ -1,305 +1,162 @@
-# The change flow: a track, a trunk, and the grain
+# The change flow: prepare, queue, accept
 
 **Status:** open
 
 ## Context
 
-The feature flow is settled in its shape but not in its prose: a container works a branch, the branch replays into the trunk, and the trunk is fast-forwarded. Two corrections fixed the model. The branch that opens the merge request owns its merge-back: it may write any file, and it resolves its own conflicts; the trunk merges a resolved request and never resolves. And there is no second lane: the merge unit's grain is a judgement, so a small fix or contract change can travel down the same lane ahead of the milestone it would otherwise be bundled with.
+The earlier chart was over the branch's work, with mergeability mixed into it. That is the wrong subject: the branch has its own lifecycle, and only a small part of it is the question the trunk asks -- can this branch be accepted now? The machine over that question has three states, and every one is a git predicate.
 
-This record writes the resulting statechart down, states the early-change-and-rebase rule, and lists the workflow bugs the model exposes.
+The "request" vocabulary came from a human review protocol: a pull or merge request exists so a person can read, approve and click. There is no reviewer here. One operator orders the work; one consumer accepts it. So the unit is a **prepared branch**, and the queue is an **order**.
 
 ## Decision
 
-A change is a **merge unit**. Its grain is chosen by the operator or orchestrator at the merge gate: a whole milestone delivery, or a slice of it made available early. The rules do not vary with the grain.
+Three primitives:
 
-- A branch is `ready` only when its tree applies to the current trunk head with no unresolved conflict (`CleanAtHead`).
-- The trunk never edits a file to make a merge work, and never resolves a conflict on the branch's behalf (`TrunkNeverResolves`).
-- One unit is applied at a time.
-- A live branch rebases when the trunk moves; a branch that cannot rebase cleanly stops and asks.
-- The branch that opened the early slice rebases afterwards, and its later milestone delivery drops the already-merged unit.
+- **Prepare** -- a worker rebases a branch onto the current head and resolves every conflict. The branch is **ready** when the head is a proper ancestor of its tip, so it fast-forwards.
+- **Queue** -- the operator orders the ready branches. A **stack** is a contiguous run in which each branch is prepared on the one before it.
+- **Accept** -- the consumer fast-forwards the trunk to the next ready branch. The head advances.
 
-The defect flow is this model's `blocked` state expanded: a branch needs a semantic change to shared code or a shared contract, the change is authored once and merged as a unit, and the branch rebases. It is not a second model.
+The branch-work machine (`cut`, `working`, `blocked`, `parked`) is a separate machine. It is not mergeability.
+
+The trunk has one state, **`stable`**. The head is a value. `accept` is an atomic transition back to `stable`, not a state named `accepting` or `advanced`.
 
 ## The chart
 
 ```mermaid
 ---
-title: "The merge request: a track, a trunk, and the grain"
+title: "The mergeability of a branch"
 ---
 stateDiagram-v2
   state "Legend" as legend {
-    lg0: clearing
-    lg1: waiting
-    lg2: merge
-    lg3: verified
-    lg4: forbidden
-    lg5: Breaks CleanAtHead or TrunkNeverResolves
-    lg6: Breaks CleanAtHead in some cases
-    lg7: Path to the CleanAtHead or TrunkNeverResolves bug
+    lg0: notReady
+    lg1: ready
+    lg2: accepted
   }
-  class lg0 blue
-  class lg1 orange
-  class lg2 purple
-  class lg3 teal
-  class lg4 pink
-  class lg5 breaks
-  class lg6 mayBreak
-  class lg7 bugPath
-  s0: Cut from the head
-  s1: Working
-  s2: Blocked: needs a shared change
-  s3: Parked and exported
-  s4: Ready to merge
-  s5: Replaying the milestone
-  s6: Replaying a slice
-  s7: Stale request (forbidden)
-  s8: Stale
-  s9: Verified
-  s10: Merged
-  s11: Trunk resolves it (forbidden)
+  class lg0 orange
+  class lg1 teal
+  class lg2 blue
+  s0: Not ready
+  s1: Ready
+  s2: Accepted
   [*] --> s0
-  s0 --> s1: cut from the head
-  s1 --> s2: it needs a shared change
-  s1 --> s3: you park it and export
-  s1 --> s4: it is ready to merge
-  s2 --> s3: you park it and export
-  s4 --> s3: you park it and export
-  s4 --> s4: another branch's unit lands
-  s4 --> s5: you choose the whole milestone
-  s4 --> s6: you choose a slice early
-  s2 --> s1: it rebases onto it
-  s4 --> s7: it submits a stale tree
-  s4 --> s8: the head moved under it
-  s5 --> s9: the trunk applies it
-  s6 --> s9: the trunk applies it
-  s7 --> s9: the trunk applies it
-  s8 --> s1: it rebases
-  s8 --> s11: the trunk resolves it
-  s9 --> s10: the trunk merges the milestone
-  s9 --> s1: the trunk merges the slice, the branch continues
-  classDef breaks fill:#ffecee,stroke:#e72e3b,stroke-width:2.5px,color:#cd2834
-  classDef mayBreak fill:#fff3e6,stroke:#e8730c,stroke-width:2.5px,color:#b85a06
-  class s0 blue
-  class s0 bugPath
-  class s1 blue
-  class s1 bugPath
-  class s2 orange
-  class s3 blue
-  class s4 orange
-  class s4 bugPath
-  class s5 purple
-  class s6 purple
-  class s7 pink
-  class s7 breaks
-  class s7 bugPath
-  class s8 orange
-  class s8 bugPath
-  class s9 teal
-  class s9 mayBreak
-  class s10 blue
-  class s10 mayBreak
-  class s11 pink
-  class s11 breaks
-  class s11 bugPath
-
+  s0 --> s1: prepare
+  s1 --> s0: the head advances
+  s1 --> s2: accept
+  class s0 orange
+  class s1 teal
+  class s2 blue
 ```
 
-## The early-change and rebase workflow
+## The three states
 
-A change is made available early when another branch needs it before the branch's milestone is complete. The unit is authored standalone from the start.
+| State | Predicate | Meaning |
+|---|---|---|
+| `not-ready` | the head is not an ancestor of the tip | it cannot be fast-forwarded |
+| `ready` | the head is a proper ancestor of the tip | it fast-forwards |
+| `accepted` | the tip is an ancestor of the head | it is on the trunk |
 
-1. **Author it as its own unit.** The change is a typed commit (`fix:`, `refactor:` or `workflow:`), self-contained, with its own closed handover, applying at the current trunk head. It is not a `wip:` and not a fragment of a later iteration.
-2. **Judge the grain.** The operator or orchestrator decides the unit is urgent enough to merge ahead of the milestone it would otherwise join. The judgement is criticality, not a special lane.
-3. **Merge the unit.** The branch rebases onto the trunk head, resolves every conflict, and presents the tree. The trunk merges or refuses it; it does not edit it.
-4. **Every live branch rebases.** The trunk head moved, so each open branch rebases before its next delivery. A branch that cannot resolve cleanly stops and asks.
-5. **The branch that opened the slice continues.** The author's branch rebases onto the new head; the already-merged unit drops, and the remaining milestone commits follow as their own unit.
+`stale` is not a state. It is the event "the head advanced" applied to a `ready` branch, which lands it back in `not-ready`. The worker may label that edge "re-prepare," but the mergeability value is `not-ready`.
 
-The blocked branch is released at step 4. Until then it is `blocked`: it cannot author a second variant of a semantic change.
+The transitions are three: `not-ready -> ready` on prepare, `ready -> accepted` on accept, and `ready -> not-ready` when the head advances. `accepted` and `not-ready` are stable under a head advance.
+
+Mergeability is derived, not stored. `ready` is `git merge-base --is-ancestor <head> <tip>`, `accepted` is the inverse, and `not-ready` is neither. The chart is a diagnostic over the repository, not a variable the system writes.
+
+## The accept operation
+
+`accept` is a guarded atomic transition, not a state:
+
+- **Guard:** the branch is `ready` and it is at the head of the queue.
+- **Stage:** verify it at the head in a scratch worktree: the suite and the lint gate.
+- **Commit:** `update-ref refs/heads/trunk <tip> <head>` -- a compare-and-swap against the head that was checked.
+- **Success:** the head becomes the tip.
+- **Failure:** nothing is written; the head is unchanged.
+
+`ready` makes the fast-forward total: a pointer move cannot fail for a semantic reason, because the branch resolved every conflict during prepare. The only remaining failures are environmental -- the head moved between the check and the CAS, a lock, an I/O error -- and the CAS catches exactly that.
+
+This is the `make draft` / `make confirm` shape. Draft stages and verifies; confirm is the CAS. Verify before the CAS and there is nothing to roll back. Move first and verify after, and the rollback is the inverse CAS, which is why the old head is captured in the transaction.
+
+The runbook does not need an `accepting` state, an `advanced` state, or a rollback state. It needs the guard, the stage and the CAS.
+
+## The early-change workflow
+
+A change is made available early when another branch needs it before the branch's milestone is complete. The change is a prepared unit like any other.
+
+1. **Prepare.** The worker rebases the change onto the head, resolves every conflict, and makes it fast-forwardable. The change is its own unit: a typed commit with its own closed handover.
+2. **Queue.** The operator orders it. The grain is which range is queued now: a slice, or the whole milestone.
+3. **Accept.** The consumer CASes the head forward.
+4. **Re-evaluate.** Every queued branch is re-checked. A branch no longer based on the head is `not-ready` and re-prepares.
+5. **Continue.** The branch that opened the slice re-prepares its remaining commits as their own unit.
+
+A stack is a contiguous run. After the parent is accepted, the child's tip already descends from the new head, so its accept is also a fast-forward and needs no re-prepare.
 
 ## Critical workflow bugs
 
-The model exposes six defects in the current prose. Each is a carrier of the old "integration is recovery" framing or of a missing rule.
-
 | Bug | Carrier | Why it blocks |
 |---|---|---|
-| The normal integration path is documented only as recovery. | `references/recovery.md` rows "Unlanded export" and "Unportable"; `workflow_statechart.md`'s `recovery` region; `git-discipline`'s runbook table, which calls merge "an export is corrupted or partial." | The early slice is a normal merge. The only entry to `/merge` says the work is lost, so an agent treats a live merge as a rescue. |
-| `/merge` takes a draft export, not a live branch or a commit subset. | `merge.md`'s input contract ("a `draft/`-prefixed export") and "within a draft, keep the commit order." | The early slice is one commit on a feature branch. No input names it, so the operator must export the whole branch or hand-edit. |
-| The branch model says `main` is the only long-lived branch. | `references/branching.md`, "Protected branches." | We work on `feat/M_3-orchestration`, a long-lived branch that is the merge target. The doc denies the topology in use: no lifetime, name or replay obligation. |
-| Nothing obliges a live branch to rebase when the trunk moves. | `references/branching.md`'s lifecycle; `rebase.md`, which is invoked only when a branch is already stale. | The early slice lands and every other branch is based on an old head. `CleanAtHead` is unenforced. |
-| The early slice's unit shape is undefined. | `git-discipline`'s grouping and fold rules; `merge.md`/`rebase.md` "one commit per iteration" and "each commit carries its handover." | An early slice lands before its iteration closes. As a `wip:` it puts a `wip:` on the trunk; as part of an iteration it is a partial unit with no handover. |
-| `/rebase` assumes every commit carries a handover. | `rebase.md`, "read the handover of every stale iteration." | The branch's post-slice delivery contains the split-out unit, whose handover is not there to read. |
+| The normal integration path is documented only as recovery. | `references/recovery.md`; `workflow_statechart.md`'s `recovery` region. | Prepare and accept are the normal path. The only entry says the work is lost. |
+| The accept is a replay, not a fast-forward. | `merge.md`'s cherry-pick replay. | The trunk authors the replay and resolves conflicts, so the CAS is impossible and the consumer is not atomic. |
+| The branch model says `main` is the only long-lived branch. | `references/branching.md`. | The long-lived track we work on has no stated lifetime, name or prepare obligation. |
+| Nothing obliges a branch to prepare when the head moves. | `references/branching.md`'s lifecycle. | A queued branch can become `not-ready` and no rule sends it back. |
+| The early slice's unit and handover shape is undefined. | `git-discipline`'s grouping and fold rules. | A `wip:` can land on the trunk, or the slice is a partial unit with no handover. |
+| `/rebase` assumes every commit carries a handover. | `rebase.md`. | The post-slice remainder contains the split-out unit, whose handover is not there to read. |
 
 ## What the model leaves out
 
-One track and one trunk. The multiple tracks are abstracted by `OtherLands`: any other branch's unit moves the head. The feature flow, the seam internals, the operator's triage reason and the set of simultaneous defects are outside. The grain is a judgement, not an invariant; the model checks the obligations that hold whatever grain is chosen.
+The branch-work machine, the commit graph, the queue's order, the operator's grain reason, and the set of simultaneous branches. The mergeability value is derived in a real repository; the model stores it because TLC needs a variable. The model checks that the guard is structural: `accept` is enabled only from `ready`.
 
 ## Checked evidence
 
-TLC reaches 90 states and 170 steps under `head <= 3`. `CleanAtHead` breaks only on the path **Ready, then another unit lands, then it submits a stale tree**. `TrunkNeverResolves` breaks only on **Stale, then the trunk resolves it**. `TypeOK` and `NoDeadlock` hold, including the park/export route. The chart above is generated from the model.
+TLC reaches 11 states and 22 steps under `head <= 3`. The chart draws 3 states and 3 arrows. `TypeOK` and `NoDeadlock` hold. There is no forbidden path to mark, because the guard is the machine: an accept from `not-ready` is not a transition.
 
-The spec and its view are reproduced below so the chart can be rebuilt.
-
-## Reproduce
+Reproduce with:
 
 ```sh
 PATH="$HOME/.local/bin:$PATH" "$HOME/.pi/agent/skills/statechart/scripts/statechart" \
-  ParallelTracks.tla --view view.mjs --out out
+  Mergeability.tla --view view.mjs --out out
 ```
 
-The output folder must be new or empty. TLC exits 1 because the two forbidden rules break; that is the finding.
+The output folder must be new or empty.
 
 ## Appendix: the model
 
 ```tla
----- MODULE ParallelTracks ----
+---- MODULE Mergeability ----
 EXTENDS Naturals, TLC
 
-VARIABLES phase, base, head, grain, trunk, trunkResolved
+VARIABLES state, head
 
-vars == <<phase, base, head, grain, trunk, trunkResolved>>
+vars == <<state, head>>
 
 TypeOK ==
-  /\ phase \in {"cut", "working", "blocked", "ready", "stale",
-                "replaying", "verified", "merged", "parked"}
-  /\ base \in Nat
+  /\ state \in {"notReady", "ready", "accepted"}
   /\ head \in Nat
-  /\ grain \in {"none", "milestone", "slice"}
-  /\ trunk \in {"idle", "replaying", "verifying"}
-  /\ trunkResolved \in BOOLEAN
 
 Init ==
-  /\ phase = "cut"
-  /\ base = 0
+  /\ state = "notReady"
   /\ head = 0
-  /\ grain = "none"
-  /\ trunk = "idle"
-  /\ trunkResolved = FALSE
 
-Cut ==
-  /\ phase = "cut"
-  /\ phase' = "working"
-  /\ base' = head
-  /\ UNCHANGED <<head, grain, trunk, trunkResolved>>
+Prepare ==
+  /\ state = "notReady"
+  /\ state' = "ready"
+  /\ UNCHANGED head
 
-Block ==
-  /\ phase = "working"
-  /\ phase' = "blocked"
-  /\ UNCHANGED <<base, head, grain, trunk, trunkResolved>>
-
-OtherLands ==
-  /\ trunk = "idle"
+Accept ==
+  /\ state = "ready"
+  /\ state' = "accepted"
   /\ head' = head + 1
-  /\ UNCHANGED <<phase, base, grain, trunk, trunkResolved>>
 
-Unblock ==
-  /\ phase = "blocked"
-  /\ base < head
-  /\ phase' = "working"
-  /\ base' = head
-  /\ UNCHANGED <<head, grain, trunk, trunkResolved>>
-
-Ready ==
-  /\ phase = "working"
-  /\ base = head
-  /\ phase' = "ready"
-  /\ UNCHANGED <<base, head, grain, trunk, trunkResolved>>
-
-GoStale ==
-  /\ phase = "ready"
-  /\ base < head
-  /\ phase' = "stale"
-  /\ UNCHANGED <<base, head, grain, trunk, trunkResolved>>
-
-Rebase ==
-  /\ phase \in {"working", "stale"}
-  /\ base < head
-  /\ phase' = "working"
-  /\ base' = head
-  /\ UNCHANGED <<head, grain, trunk, trunkResolved>>
-
-ChooseMilestone ==
-  /\ trunk = "idle"
-  /\ phase = "ready"
-  /\ base = head
-  /\ grain' = "milestone"
-  /\ trunk' = "replaying"
-  /\ phase' = "replaying"
-  /\ UNCHANGED <<base, head, trunkResolved>>
-
-ChooseSlice ==
-  /\ trunk = "idle"
-  /\ phase = "ready"
-  /\ base = head
-  /\ grain' = "slice"
-  /\ trunk' = "replaying"
-  /\ phase' = "replaying"
-  /\ UNCHANGED <<base, head, trunkResolved>>
-
-Apply ==
-  /\ trunk = "replaying"
-  /\ phase = "replaying"
-  /\ trunk' = "verifying"
-  /\ phase' = "verified"
-  /\ UNCHANGED <<base, head, grain, trunkResolved>>
-
-AcceptMilestone ==
-  /\ trunk = "verifying"
-  /\ phase = "verified"
-  /\ grain = "milestone"
+HeadAdvances ==
   /\ head' = head + 1
-  /\ base' = head + 1
-  /\ trunk' = "idle"
-  /\ grain' = "none"
-  /\ phase' = "merged"
-  /\ UNCHANGED trunkResolved
-
-AcceptSlice ==
-  /\ trunk = "verifying"
-  /\ phase = "verified"
-  /\ grain = "slice"
-  /\ head' = head + 1
-  /\ base' = head + 1
-  /\ trunk' = "idle"
-  /\ grain' = "none"
-  /\ phase' = "working"
-  /\ UNCHANGED trunkResolved
-
-Park ==
-  /\ phase \in {"working", "blocked", "ready"}
-  /\ phase' = "parked"
-  /\ UNCHANGED <<base, head, grain, trunk, trunkResolved>>
+  /\ state' = IF state = "ready" THEN "notReady" ELSE state
 
 Done ==
-  /\ phase \in {"merged", "parked"} \/ trunkResolved
+  /\ state \in {"accepted", "notReady"}
   /\ UNCHANGED vars
 
-OfferStale ==
-  /\ trunk = "idle"
-  /\ phase = "ready"
-  /\ base < head
-  /\ trunk' = "replaying"
-  /\ phase' = "replaying"
-  /\ grain' = "slice"
-  /\ UNCHANGED <<base, head, trunkResolved>>
-
-TrunkResolve ==
-  /\ trunk = "idle"
-  /\ phase = "stale"
-  /\ trunk' = "verifying"
-  /\ phase' = "verified"
-  /\ trunkResolved' = TRUE
-  /\ UNCHANGED <<base, head, grain>>
-
 Next ==
-  \/ Cut \/ Block \/ OtherLands \/ Unblock \/ Ready \/ GoStale \/ Rebase
-  \/ ChooseMilestone \/ ChooseSlice \/ Apply \/ AcceptMilestone \/ AcceptSlice \/ Park \/ Done
-  \/ OfferStale \/ TrunkResolve
+  \/ Prepare \/ Accept \/ HeadAdvances \/ Done
 
 Spec == Init /\ [][Next]_vars
-
-CleanAtHead == phase \in {"replaying", "verified", "merged"} => base = head
-
-TrunkNeverResolves == trunkResolved = FALSE
 
 StateConstraint == head <= 3
 
@@ -307,63 +164,42 @@ StateConstraint == head <= 3
 ```
 
 ```js
-const label = (v) => {
-  if (v.trunkResolved) return "Trunk resolves it (forbidden)";
-  if (v.phase === "replaying" && v.base < v.head) return "Stale request (forbidden)";
-  switch (v.phase) {
-    case "cut": return "Cut from the head";
-    case "working": return "Working";
-    case "blocked": return "Blocked: needs a shared change";
-    case "ready": return "Ready to merge";
-    case "stale": return "Stale";
-    case "replaying":
-      return v.grain === "milestone" ? "Replaying the milestone" : "Replaying a slice";
-    case "verified": return "Verified";
-    case "merged": return "Merged";
-    case "parked": return "Parked and exported";
-    default: return v.phase;
+export const state = (v) => {
+  switch (v.state) {
+    case "notReady":
+      return "Not ready";
+    case "ready":
+      return "Ready";
+    case "accepted":
+      return "Accepted";
+    default:
+      return v.state;
   }
 };
 
-export const state = label;
-
 export const group = (v) => {
-  if (v.trunkResolved) return "forbidden";
-  if (v.phase === "replaying" && v.base < v.head) return "forbidden";
-  if (v.phase === "replaying") return "merge";
-  if (v.phase === "verified") return "verified";
-  if (["blocked", "ready", "stale"].includes(v.phase)) return "waiting";
-  return "clearing";
+  if (v.state === "ready") return "ready";
+  if (v.state === "accepted") return "accepted";
+  return "notReady";
 };
 
 export const colors = {
-  clearing: "blue",
-  waiting: "orange",
-  merge: "purple",
-  verified: "teal",
-  forbidden: "pink",
+  notReady: "orange",
+  ready: "teal",
+  accepted: "blue",
 };
 
-export const title = "The merge request: a track, a trunk, and the grain";
+export const title = "The mergeability of a branch";
 
 const steps = {
-  Cut: "cut from the head",
-  Block: "it needs a shared change",
-  OtherLands: "another branch's unit lands",
-  Unblock: "it rebases onto it",
-  Ready: "it is ready to merge",
-  GoStale: "the head moved under it",
-  Rebase: "it rebases",
-  ChooseMilestone: "you choose the whole milestone",
-  ChooseSlice: "you choose a slice early",
-  Apply: "the trunk applies it",
-  AcceptMilestone: "the trunk merges the milestone",
-  AcceptSlice: "the trunk merges the slice, the branch continues",
-  Park: "you park it and export",
-  OfferStale: "it submits a stale tree",
-  TrunkResolve: "the trunk resolves it",
+  Prepare: "prepare",
+  Accept: "accept",
+  HeadAdvances: "the head advances",
   Done: null,
 };
 
-export const step = (action) => steps[action] ?? null;
+export const step = (action, from, to) => {
+  if (action === "HeadAdvances" && from.state === to.state) return null;
+  return steps[action] ?? null;
+};
 ```

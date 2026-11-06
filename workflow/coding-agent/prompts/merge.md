@@ -1,6 +1,6 @@
 ---
-description: Merge a merge request into the trunk. You are on the trunk; replay a unit already resolved at the current head, keep the trunk linear, verify the accumulated tree, and refuse a request that does not apply.
-argument-hint: "[unit: branch and commit range] [target branch]"
+description: Accept a prepared branch into the trunk. You are on the trunk; fast-forward to a branch whose tip descends from the head, verify the staged tree, and refuse a branch that is not ready.
+argument-hint: "[branch] [trunk head]"
 ---
 
 > $ARGUMENTS
@@ -13,41 +13,40 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## The scenario
 
-You are on the trunk, and a merge request is ready. Confirm it before you start:
+You are on the trunk, and a branch is ready. Confirm it before you start:
 
 - `git rev-parse --abbrev-ref HEAD` names the trunk.
 - `git status --porcelain` is empty: the trunk carries no uncommitted work.
-- `git log --oneline <trunk>..<unit>` is non-empty: the unit is not already on the trunk.
-- A dry-run replay of the unit at the head reports no conflict.
+- `git merge-base --is-ancestor <trunk> <branch>` succeeds: the trunk head is an ancestor of the branch tip, so the accept is a fast-forward.
 
-If a check fails, you are not in this scenario. Stop and ask; do not resolve the request on the trunk.
+If a check fails, you are not in this scenario. Stop and ask; do not resolve the branch on the trunk.
 
 ## Intent
 
-Land one resolved unit on the trunk and verify the accumulated tree. A unit is a branch and a commit range: the whole branch is the common case, and a range is how an early slice is named.
+Fast-forward the trunk to a ready branch and verify the staged tree. The branch prepared itself; the trunk only moves its pointer.
 
 ## Inputs
 
 | Input | Meaning |
 |---|---|
-| unit | the source branch and the commit range it covers |
-| target | the trunk branch the unit lands on |
+| branch | the prepared branch |
+| trunk head | the commit the accept is expected to replace |
 
 ## The obligation
 
-- Replay the unit's commits one for one, each keeping its message and its handover. No merge commit, no squash.
-- The unit applies at the current trunk head. If it does not, stop: send it back to the branch. Do not resolve it here.
-- A textual conflict, an additive overlap or a stale count is the branch's to resolve. A design contradiction is the operator's; ask.
-- Verify the tree, not the report: the replay count, the suite and the lint gate.
+- Accept only a branch whose tip descends from the head.
+- Stage the branch at the head in a scratch worktree and run the suite and the lint gate.
+- Commit with a compare-and-swap: `update-ref <trunk> <tip> <old-head>`. If it loses, nothing changed.
+- Never edit or resolve. A conflict sends the branch back to prepare.
 
 ## Method
 
-The replay mechanics are the ones already in use: read each commit and the handover it carries, exclude the export metadata, apply one commit at a time, and run the repo's checks. The `git-discipline` convention owns the commit rules; its recovery reference owns the lost-work classes. This runbook restates neither.
+The accept is the compare-and-swap above. The `git-discipline` convention owns the commit rules. This runbook restates neither.
 
 ## Stop
 
-Stop and ask when the unit does not apply at the head, when two units contradict each other in design, or when the operator has not chosen the unit's grain and order.
+Stop and ask when the branch is not ready, when the staged checks fail, or when the compare-and-swap loses.
 
 ## Close
 
-Report the unit, its commit count, the replay result and the verification numbers. End with the one question: is every unit's intent landed on the trunk?
+Report the branch, the old and the new head, and the checks. End with the one question: did the head advance?
