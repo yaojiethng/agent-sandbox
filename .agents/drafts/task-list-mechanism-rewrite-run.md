@@ -22,7 +22,7 @@ Write this premise down before any design work, and confirm or kill it from the 
 
 The premise is that prose is the state store. The roadmap holds machine state and human text in the same characters, so a state change is a text edit, and text edits serialize on the file.
 
-Three facts support it. The `active-milestone` field in [`roadmap.md`](../../devlog/roadmap.md) is a scalar, and the project's `task-list` convention defines it as naming the milestone work is scoped to. Three runbooks write that one field. The churn study found 197 references to a roadmap row by position, and a row has no identity other than its prose. Twelve invariant families are rule-only, so an unmet invariant is a review duty.
+Three facts support it. The `active-milestone` field in [`roadmap.md`](../../devlog/roadmap.md) was a scalar, defined as naming the milestone work was scoped to; three runbooks wrote it. M3.5.3 deleted it and derived the set from the summary table, so the premise is historical. The churn study found 197 references to a roadmap row by position, and a row has no identity other than its prose. Twelve invariant families are rule-only, so an unmet invariant is a review duty.
 
 If the census in Phase 1 shows that milestone serialization is not the dominant cost, say so and rescope the run to the cost that is dominant. The premise is the thing under test, not the conclusion.
 
@@ -75,7 +75,7 @@ Five slices over disjoint evidence sets. No slice reads another slice's files.
 
 Slice A carries the number that prices the whole rewrite, so it gets the tightest brief and the strongest verification. A first pass with `jq` over the transcripts emitted 4 usable operator lines against 6425 user-role records, measured 2026-10-15, so the extraction is unbuilt and the slice owns building it.
 
-Slice D is the one that finds the undisclosed bottlenecks. It must answer whether the handover format serializes, whether the review gate forces one item at a time, whether `active-milestone` appears as a scalar anywhere else such as branch naming or the session-diff pipeline, and what else in the harness assumes a single writer. Name what it checked and what it did not.
+Slice D is the one that finds the undisclosed bottlenecks. It must answer whether the handover format serializes, whether the review gate forces one item at a time, whether `active-milestone` appeared as a scalar anywhere else such as branch naming or the session-diff pipeline, and what else in the harness assumes a single writer. Name what it checked and what it did not.
 
 ### Phase 2, the domain model
 

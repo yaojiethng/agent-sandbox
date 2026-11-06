@@ -40,10 +40,6 @@ make_repo() {
   printf 'ids: 20-39\n' > "$root/devlog/handovers/M9.1/README.md"
   printf 'ids: 40-59\n' > "$root/devlog/handovers/M9.2/README.md"
   cat > "$root/devlog/roadmap.md" <<'EOF'
----
-active-milestone: M9.1 - Fixture session A
----
-
 # Fixture Roadmap
 
 - [ ] **M9.1 row** -- fixture session A.

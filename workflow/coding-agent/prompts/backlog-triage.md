@@ -35,7 +35,7 @@ Routing:
 
 ## Step 1 - Build the candidate set
 
-Read `devlog/roadmap.md`. Take the `active-milestone` frontmatter field and that milestone's section when the argument is empty; take the named milestone or task group when the argument names one. Also read `devlog/roadmap_future.md` for rows that name a destination in a future milestone, so a row is not classified as absent merely because its milestone is not active.
+Read `devlog/roadmap.md`. Take the Milestone Summary table's `In progress` rows and their sections when the argument is empty; take the named milestone or task group when the argument names one. Also read `devlog/roadmap_future.md` for rows that name a destination in a future milestone, so a row is not classified as absent merely because its milestone is not active.
 
 One candidate per open row. A row is open when its checkbox is unchecked. Record for each: the row text, the milestone it sits under, and any sibling text on the same line or in the same bullet that narrows it.
 

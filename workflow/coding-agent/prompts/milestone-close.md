@@ -17,9 +17,9 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Orient
 
-Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, the named milestone's section, and the Milestone Summary table. Read the latest handover (`bash scripts/worklog.sh latest`). Read `devlog/AGENT_FEEDBACK.md` open entries.
+Read `devlog/roadmap.md`. Read the Milestone Summary table, the `In progress` rows, the named milestone's section and its open items. Read the latest handover (`bash scripts/worklog.sh latest`). Read `devlog/AGENT_FEEDBACK.md` open entries.
 
-The milestone name always comes from the operator. Never infer it from the branch, the frontmatter field, or the last handover.
+The milestone name always comes from the operator. Never infer it from the branch or the last handover.
 
 ## Verify completeness
 
@@ -63,7 +63,7 @@ Append the milestone's entry to `devlog/changelog.md` in milestone order. The pr
 In `devlog/roadmap.md`:
 
 1. **Summary table:** flip the milestone's row to `Complete` with a changelog link. Leave the parent `In progress` unless all its direct children are complete. Done when every row's status and fragment match the section it names.
-2. **Frontmatter:** set `active-milestone` to the parent milestone when a sub-milestone closes, or to the next milestone at a full top-level close. Done when it names the milestone this close leaves active.
+2. **Active set:** the closed milestone's row no longer reads `In progress`. Leave the parent's row as its children require; at a full top-level close the promoted milestone's row reads `In progress`. No frontmatter field is written. Done when the rows name the milestones this close leaves active.
 3. **Top-level close (full milestone only):** write the changelog entry per the step above; remove the completed milestone's detail section from `## Upcoming Milestones`; change its Summary row to `[Complete -- see changelog]` carrying the milestone's changelog anchor; then promote the next incomplete milestone in Summary-table order, moving its section out of `roadmap_future.md` under `## Upcoming Milestones` with its row reading `In progress`, promoting a parent and its sub-milestones as one block. Done when the row's anchor resolves, no detail section for the milestone remains, and the promoted milestone's section has left `roadmap_future.md`.
 
 ## Escalate deferred work

@@ -81,7 +81,7 @@ Three edge types: **workflow-implemented** (a prompt performs the transition), *
 
 Three gate states, each an arrow's source rather than a resting place for closing work: `it_scope_gate`, `it_acceptance_gate`, `ms_close_gate`. Closing is the work that follows the acceptance decision, not a state.
 
-One milestone is modelled, the active one. Its successors are handwaved behind `ms:successor?`, so a per-milestone state set does not appear, and several milestones may be shaped at once without the diagram growing. The autonomous-run prompts -- `/auto`, `/goal`, `/sequential-work`, `/parallel-work` -- are out of the diagram until the milestone that lands them; the two built prompts among them live in the drafts tree, and `/backlog-triage` drives no transition of its own.
+The active milestones are modelled as the summary table's `In progress` rows, so several may be active at once and the diagram carries no per-milestone state set. Successors are handwaved behind `ms:successor?`, so several milestones may be shaped without the diagram growing. The autonomous-run prompts -- `/auto`, `/goal`, `/sequential-work`, `/parallel-work` -- are out of the diagram until the milestone that lands them; the two built prompts among them live in the drafts tree, and `/backlog-triage` drives no transition of its own.
 
 `/iter` runs one iteration and stops at the acceptance gate; `/wrapup` closes the handover and `/commit` lands the commit. The next iteration opens only after the operator picks a task, and when the milestone has no open row left the operator calls `/milestone-close` instead.
 

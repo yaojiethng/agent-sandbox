@@ -45,7 +45,7 @@ stateDiagram-v2
 
     state "Milestone grain" as milestone {
         state "ms_none -- no active milestone" as ms_none
-        state "ms_active -- one milestone is active, iterations run against it" as ms_active
+        state "ms_active -- one or more milestones are active, the summary table's In progress rows" as ms_active
         state "ms_close_gate -- compaction and changelog presented, awaiting release" as ms_close_gate
         state "ms_closed -- the close is recorded, its bookkeeping commit landed" as ms_closed
         [*] --> ms_none
@@ -174,7 +174,7 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `chk_corpus` | checks | the `initialize` skill runs |
 | `chk_close` | checks | both record checks rerun over the rows the close wrote |
 | `ms_none` | milestone | no milestone is active |
-| `ms_active` | milestone | one milestone is active; iterations run against it |
+| `ms_active` | milestone | one or more milestones are active; the summary table's `In progress` rows |
 | `ms_close_gate` | milestone | compaction and changelog presented, awaiting release |
 | `ms_closed` | milestone | the close is recorded and its bookkeeping commit landed |
 | `it_open` | iteration | no `Active` handover on this track; awaiting a directive |

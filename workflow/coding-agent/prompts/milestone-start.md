@@ -17,7 +17,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Orient
 
-Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, its milestone section, its open items, and the Milestone Summary table. Read the latest handover (`bash scripts/worklog.sh latest`). Read `devlog/AGENT_FEEDBACK.md` open entries.
+Read `devlog/roadmap.md`. Read the Milestone Summary table, the `In progress` rows, the selected milestone's section and its open items. Read the latest handover (`bash scripts/worklog.sh latest`). Read `devlog/AGENT_FEEDBACK.md` open entries.
 
 Determine the finish state. Confirm with the operator that a milestone should be opened or reshaped.
 
@@ -61,9 +61,8 @@ Run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/
 
 When several milestones exist, select one as next active with the operator. Update every record the selection touches:
 
-- `roadmap.md` Milestone Summary table row -- set the active milestone to `In progress`.
-- The milestone's section -- add the full task checklist to the active one; non-active milestones carry an objective paragraph only.
-- `roadmap.md` frontmatter `active-milestone` -- set it to the active milestone, at the level the operator selected.
+- `roadmap.md` Milestone Summary table row -- set the selected milestone to `In progress`. The active set is every such row, so this is the only activity write.
+- The milestone's section -- add the full task checklist to the selected one; non-active milestones carry an objective paragraph only.
 
 Follow the record's shape in the project's `task-list` convention when writing the summary row and the checklist/objective split; it owns both. Confirm with the operator that the milestone is open before stopping.
 

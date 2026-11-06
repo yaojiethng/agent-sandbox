@@ -21,7 +21,7 @@ The roadmap and its two companions are one record: a milestone title, a status, 
 
 ## The milestone identifier
 
-The roadmap's `active-milestone` frontmatter and a handover's `milestone` field carry the same value: the milestone's identifier, a space-hyphen-space, then its name. The identifier is a dotted path (`M3.3.1`, `T12`) and the name is the one the milestone carries in the roadmap. If a handover's `milestone` field names a milestone the roadmap does not carry, the handover is unassigned.
+A handover's `milestone` field names a milestone in the roadmap's active set: the milestone's identifier, a space-hyphen-space, then its name. The active set is every Milestone Summary row reading `In progress`. The identifier is a dotted path (`M3.3.1`, `T12`) and the name is the one the milestone carries in the roadmap. If a handover's `milestone` field names a milestone the roadmap does not carry, or whose summary row does not read `In progress`, the handover is unassigned.
 
 ## Marking a task done
 
@@ -42,7 +42,7 @@ A milestone is a node in the roadmap's tree, not a workflow with a record of its
 | State | Meaning |
 |---|---|
 | `shaped` | the milestone exists, is titled, and holds filed tasks; it is not active |
-| `active` | the milestone is the one iterations run against |
+| `active` | the milestone is one of those iterations run against; its summary row reads `In progress` |
 | `closing` | every row is `[x]`; the close is running |
 | `closed` | the close landed; the detail moved to the changelog |
 
@@ -80,7 +80,7 @@ Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited. A mileston
 
 **Persistent sections** - Milestone Summary table, Upcoming Milestones, Future Security & Network Hardening, and Governance Hardening are structural and must not be removed. Remove an empty section immediately.
 
-**Frontmatter** - `active-milestone` names the milestone work is scoped to, at the level it sits at. A milestone open, a sub-milestone close and a full top-level close each set it; the runbooks that run those moments own the settings.
+**The active set is derived, not stored.** Every Milestone Summary row reading `In progress` is active, and a handover's `milestone` names one of them. A milestone open or a close flips its row's status and writes no other field; the roadmap carries no frontmatter for activity.
 
 ## Filing rules
 
