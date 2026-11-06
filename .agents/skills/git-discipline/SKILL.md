@@ -61,7 +61,8 @@ A branch name carries the commit type, the milestone and a slug, in that order. 
 | [`merge-queue`](../../../workflow/coding-agent/prompts/merge-queue.md) | you are the scheduler; order the ready branches, leaving the not-ready out |
 | [`accept-fast-forward`](../../../workflow/coding-agent/prompts/accept-fast-forward.md) | you are on the trunk and a branch is ready; accept it by fast-forward compare-and-swap, and never resolve it |
 | [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a draft branch's series holds an inversion, before the branch is packaged for review |
-| [`recovery`](references/recovery.md) | the record and the repository disagree, and the state the record claims decides the repair |
+| [`recovery`](../../../workflow/coding-agent/skills/recovery/SKILL.md) | the record and the repository disagree; the operator starts `/recovery` and the skill classifies the description |
+| [`correction`](references/correction.md) | the repository agrees with the record and the operator disagrees; the commit is wrong or the series is messy |
 
 Each runbook states its own procedure.
 

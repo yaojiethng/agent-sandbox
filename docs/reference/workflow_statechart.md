@@ -97,17 +97,20 @@ stateDiagram-v2
 
     state "Recovery" as recovery {
         state "rep_partial -- the record's intent and the disk disagree; the unit is rebuilt" as rep_partial
-        state "rep_bad -- the commit is wrong; it is amended or dropped" as rep_bad
-        state "rep_messy -- the series is noisy; history-cleanup rewrites it" as rep_messy
         state "rep_absent -- the record claims a commit the repository lacks; it is rebuilt" as rep_absent
-        it_implementing --> rep_partial : the record and the disk disagree
+        it_implementing --> rep_partial : /recovery, the description is partial
         rep_partial --> it_committed : rebuilt from the record
-        it_committed --> rep_bad : the commit is wrong
-        rep_bad --> it_closed : /record-correction folds the fix
-        it_committed --> rep_messy : the series is noisy
-        rep_messy --> chk_history : the operator runs history-cleanup
-        it_committed --> rep_absent : the record claims a commit the repository lacks
+        it_committed --> rep_absent : /recovery, the description is absent
         rep_absent --> it_committed : rebuilt, one commit per iteration
+    }
+
+    state "Correction" as correction {
+        state "cor_bad -- the commit is wrong; it is amended or dropped" as cor_bad
+        state "cor_messy -- the series is noisy; history-cleanup rewrites it" as cor_messy
+        it_committed --> cor_bad : /record-correction, the commit is wrong
+        cor_bad --> it_closed : the fix folds into the closed commit
+        it_committed --> cor_messy : the series is noisy
+        cor_messy --> chk_history : the operator runs history-cleanup
     }
 
     state "Records at rest" as records {
@@ -186,9 +189,9 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `plan_interview` | planning | the `grill-me` skill is probing the design |
 | `plan_released` | planning | rows, stories and ADRs are written back |
 | `rep_partial` | recovery | the record's intent and the disk disagree; the unit is rebuilt |
-| `rep_bad` | recovery | the commit is wrong; it is amended or dropped |
-| `rep_messy` | recovery | the series is noisy; history-cleanup rewrites it |
 | `rep_absent` | recovery | the record claims a commit the repository lacks; it is rebuilt |
+| `cor_bad` | correction | the commit is wrong; it is amended or dropped |
+| `cor_messy` | correction | the series is noisy; history-cleanup rewrites it |
 | `rec_handover_active` | records | the unit's record is open |
 | `rec_handover_closed` | records | the unit's record is closed |
 | `rec_roadmap_open` | records | a row is open |
@@ -258,7 +261,8 @@ Every prompt in the unit loop is an event here, and the command table's row set 
 | `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
-| `/record-correction` | `rep_bad` | `it_closed` | `/prepare-rebase` when the fold needs a port |
+| `/recovery` | `it_implementing`, `it_committed` | the repaired state | none |
+| `/record-correction` | `cor_bad` | `it_closed` | `/prepare-rebase` when the fold needs a port |
 | `/read-back` | `rep_partial` | `rep_partial` | none |
 | `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
 | `/commit` | a closed unit | `it_committed` | none |
@@ -290,7 +294,7 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 | Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> chk_close -> ms_active` |
 | The close checks the rows it wrote | `it_acceptance_gate -> chk_close -> it_closed` |
 | Recovering partial work | `it_implementing -> rep_partial -> it_committed -> it_open` |
-| Recovering a wrong commit | `it_committed -> rep_bad -> it_closed -> it_committed -> it_open` |
+| Recovering a wrong commit | `it_committed -> cor_bad -> it_closed -> it_committed -> it_open` |
 | A project bootstrapped and oriented | `sess_start -> sess_initialized -> sess_oriented -> it_open` |
 | The record checks before a release | `it_implementing -> chk_roadmap -> chk_record -> it_acceptance_gate` |
 
@@ -316,6 +320,6 @@ Each check is a query a reader makes on the chart and the defect the query finds
 
 - **Story coverage.** The stories cover the main paths, not every edge: the recovery and records edges are drawn and no story routes them. The query is the edge set minus the pairs the stories use.
 - **`/auto` and `/goal`.** Reserved for M4 by `docs/adr/coding_agent_loop_workflow.md`, which is repository-only and cannot be linked from here; no transition, and no node.
-- **`history-cleanup`.** The operator dispatches it by hand, naming the units to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the recovery case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
+- **`history-cleanup`.** The operator dispatches it by hand, naming the units to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the correction case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
 - **Drafting a document.** No command and no state of its own: a document is written inside `it_implementing` under the project documentation convention's drafting reference, and the publishing path this map once drew was `/document`'s, removed with that prompt. `chk_docs` is the check that reads the result.
 - **The render capability.** Not built. The chart targets Mermaid 12.1.0, and the intended render target, Pele's compatibility page, could not be read from this container.
