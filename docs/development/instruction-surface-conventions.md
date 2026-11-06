@@ -136,6 +136,7 @@ A rule about where sections belong is maintenance material and lives here, not i
 | an absent document | `Missing Documents` | project |
 | the iteration | `Iteration Lifecycle` | project |
 | the reading list a session opens with | `Iteration Start` | project |
+| operator requests and their entry points | `Operator commands` | project |
 | the container paths this layer covers | `Scope` | provider |
 | the two containers and the tool set | `The Container` | provider |
 | write rules | `Write Discipline` | provider |

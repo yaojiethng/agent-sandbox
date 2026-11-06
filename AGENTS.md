@@ -63,6 +63,20 @@ What is read before any work starts is the two `AGENTS.md` files and one line pe
 - **Add by replacing.** A rule, skill, prompt or reference document lands with the removal of something of comparable size in the same commit, or one sentence naming why nothing can be removed.
 - **A budget is a number.** The gate behind this section holds the caps for the two files and for descriptions and fails the tree past them.
 
+## Operator commands
+
+An install writes to `$AGENT_HOME/agent/skills/` and changes no file in this tree. A vendor writes to `.agents/skills/`.
+
+| The operator says | The intent | Where execution is defined |
+|---|---|---|
+| "install a skill" | copy an upstream skill as a personal install | the skill's `SKILL.md`; `write-locations` |
+| "vendor" or "fork" a skill | bring an upstream skill into this tree | `skill-fork` |
+| "dispatch" or "spawn a subagent" | run one worker over a brief | `dispatch` |
+| "statechart this" | model the flow and draw it | `statechart` |
+| "package" or "export" the branch | package the branch for the host | `/package-branch` |
+
+When the phrase fits more than one row, ask which is meant.
+
 ## Feedback and Gotchas Record
 
 - [`devlog/AGENT_FEEDBACK.md`](devlog/AGENT_FEEDBACK.md) -- the single living record of the coding agent's experience and recurring mistakes. Entries are tagged `[A]` (raised by the agent) or `[O]` (raised by the operator). Reviewed by the operator. Before writing an entry, grep the file for an existing entry on the same topic; record a recurrence on that entry (re-open it, note the prior fix in `legacy:`) instead of creating a new one. The agent surfaces open entries to the operator at the sub-milestone pre-close review gate.
