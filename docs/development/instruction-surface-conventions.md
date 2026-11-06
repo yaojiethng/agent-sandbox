@@ -32,10 +32,7 @@ The problem both surfaces are reduced for is stated in the operator's words at [
 {
   "sources": ["workflow/coding-agent/prompts/"],
   "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
-  "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command",
-  "reachable": [
-    { "path": "devlog/", "holds": "the records the workflow prompts read and write", "condition": "the reader has the repository tree" }
-  ]
+  "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command"
 }
 ```
 
@@ -45,18 +42,11 @@ The problem both surfaces are reduced for is stated in the operator's words at [
 | `runtime_path` | `/opt/...`, `$AGENT_HOME/...`, a path inside a `session` row, or `none`. |
 | `loader` | The condition, not the mechanism. A surface that belongs to no provider names no provider here. |
 | `provider` | Optional. Present only when the surface belongs to one provider, and then only to a provider that carries a dockerfile. |
-| `reachable` | The rows this surface adds to the session environment. Optional, and often absent. A row carries `path`, `holds` and `condition`. |
+| no fifth field | A cell declares no reach. What a file may reference is decided by the path space its reader holds, which the `image`, `provision`, `mounts` and `session` sections declare once per root. A cell that carries any other key fails the gate, so a retired field cannot come back as data nothing reads. |
 
 ## The session rows
 
 The `session` section holds the paths every surface is read alongside: the project tree, the workspace directories, the image's roots, and `$AGENT_HOME/`. They describe the environment rather than a surface, so a cell does not restate them.
-
-A cell's own rows carry a condition that is not `always`. The condition vocabulary is:
-
-| Condition | Meaning | Example |
-|---|---|---|
-| `<provider> delivery` | only that provider's image carries the path; legal only in that provider's cell | `/opt/workflow/agent/config/` under `pi delivery` |
-| a named state | the session is in that state | `the reader has the repository tree` |
 
 `$AGENT_HOME/` is the resolution for a provider's own config home. The variable is set in every provider image, so a surface that belongs to no provider names the variable and not the value.
 
@@ -67,6 +57,20 @@ A surface with a runtime path ships in an image, and its files are read by an ag
 A surface whose runtime path sits inside a `session` row is read from the project tree the session mounts, and it is loaded: a path under the project tree names a folder the running session reads, so the surface is invocable rather than linked to. No image row sends it anywhere - the project is already where it is read - and a provider is named, because the loader is that provider's settings record.
 
 Two surfaces declare one provider's config home: the home itself, which carries the agent `AGENTS.md` and the settings record, and the prompt and skill folders inside it.
+
+### What a project receives, and what this repository holds
+
+Reach is a property of the reader, not of the subject: this document describes what ships and is itself repository-only.
+
+| Artifact | A provisioned project receives it | Where the fact is decided |
+|---|---|---|
+| a cell's files | yes, the image carries them | `src/build/container-interface.json` |
+| the seeded convention stubs | yes, `initialize` copies them into `.agents/skills/` | `initialize`'s `assets/conventions/` |
+| `.agents/prompts/`, `.agents/skills/` | no, they travel with this project | the project tree |
+| `docs/`, `devlog/`, `.agents/registry/` | no | this repository |
+| this document | no | here |
+
+A shipped file names a repository-only document as a name, which the linking gate allows, and the reader in a provisioned project cannot open it. A shipped file whose procedure depends on one states the rule itself.
 
 ## A surface the project tree carries
 
@@ -94,7 +98,7 @@ The repository keeps the two kinds apart because a prompt root reads files into 
 
 A module may declare the project conventions it needs. A **convention** is a structure over a subset of content - the task list, the work log, the decision records. Each convention is served by a project-owned **convention-skill** under `.agents/skills/`.
 
-The workflow ships a **default convention-skill corpus** in the `initialize` skill's `assets/conventions/`, one directory per convention. A shipped skill is a **stub**: it states that a skill is expected, that what was found is a stub, and a few open questions offered without direction. It is a failure mode for the agent to reason over, not a default convention. `initialize` installs and updates the corpus into the project.
+The workflow ships a **default convention-skill corpus**; the `initialize` skill states what it holds, what a stub is and how it is installed. A shipped skill is a stub and not a default convention, so it is a failure mode for the agent to reason over. A stated convention is the project's own, so the corpus does not carry one: this repository's `instruction-authoring` bar is stated here and is not seeded, and a project that wants one writes it.
 
 A workflow step hands off to a convention-skill. When the skill is absent the handoff fails and the agent recovers; the workflow imposes nothing and runs no gate over a project, whose hooks it does not control. The corpus lives under a skill's `assets/` directory, so it ships with the `skills/` payload folder and no new surface is declared. A convention may cover more than one structure; `work-log` carries the work-unit record and the exploration record.
 
@@ -110,7 +114,7 @@ The two tables split the `session` rows between them, and every row belongs to e
 
 A rule about where sections belong is maintenance material and lives here, not in either layer. The reader of a layer is an agent doing the work, and the dividing test is whether the working agent can act on the sentence now, which a pointer passes and a filing rule fails. The rule's two reach points are a layer's pointer in `## Scope` and the check's failure message.
 
-**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source and its installed copy are one file: edit the source and copy it to `$AGENT_HOME/agent/AGENTS.md`. Both layers pass the same gates as the rest of the tree.
+**Editing a layer.** A section added, renamed or moved takes its subject-table row in the same change, and the ruling is recorded on the iteration's handover. The provider layer's repo source is its only source: the `provision` row in `src/build/container-interface.json` names it, and the entrypoint copies it into `$AGENT_HOME/agent/` at every start, so no maintainer copies it by hand. Both layers pass the same gates as the rest of the tree.
 
 **Standing in for the general provider layer.** A sentence true of every provider -- the sandbox boundary, no push, no secrets, the tool set -- has no provider-neutral always-loaded carrier: `src/reasoning/agent/` holds prompts and skills, and each provider seeds its own config home from its own template. Until that carrier exists, the pi provider layer stands in for the general provider layer, and such a sentence is filed there. Building the carrier is a filed roadmap row.
 
@@ -142,24 +146,28 @@ A rule about where sections belong is maintenance material and lives here, not i
 
 The table is the judgement; it proves nothing about whether a ruling was right, which is what the ruling classes are for.
 
-**Ruling classes.** Every section ends in exactly one, and a ruling is recorded on the iteration's handover.
+**Ruling classes.** A ruling is one of five, and the five are stated by the review procedure that produces them, [`instruction-cleanup`](../../workflow/coding-agent/skills/prose-review/runbooks/instruction-cleanup/SKILL.md) `## Returns`. A ruling is recorded on the iteration's handover.
 
-| Ruling | Meaning |
+## Reading the surface from the tree
+
+A fact held as data is read from the tree, not from prose here:
+
+| Question | Command |
 |---|---|
-| keep | the section is in its own layer and stays as written |
-| move | the section belongs to the other layer; it moves whole |
-| split | the section holds sentences for both layers; each sentence moves to its owner |
-| merge | the section duplicates another section that already owns the subject, so the two become one |
-| shrink | the section is in its own layer but carries text another file already states, so the duplicate goes and a pointer stays |
+| which surfaces exist, and where each lands | `bash scripts/check_surface_table.sh` |
+| which layer a skill resolves to, and how the loader orders them | `node scripts/skill_map.mjs` |
+| what the seeded convention corpus holds | `ls workflow/coding-agent/skills/initialize/assets/conventions/` |
+| whether every claim on this page still holds | `bash scripts/lint.sh` |
 
 ## The gates
 
-Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader, and a separate reader holds the files to the reach the declaration grants.
+Gates read the declaration through [`src/build/container-interface.mjs`](../../src/build/container-interface.mjs), which is its only reader. Each script's header states the rule it holds and the document that owns it; `bash scripts/lint.sh` runs them.
 
-[`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) holds the manifest equal to what implements it: the provider dockerfiles' `COPY`, `ENV`, `WORKDIR` and `CMD` lines, the entrypoint's provisioning template, the provider settings record, and each cell's folder set. It fails on a manifest row no line carries, a line no row carries, a declared folder set that differs from the one derived, an `/opt` runtime path that is not a root in the provider's settings record, a destination in the agent tree that no cell declares, a surface with no runtime path that names an image path, a surface with no provider that names one in its loader, a project-tree surface whose provider's command does not carry it, a malformed row, two cells claiming one folder or one runtime path, a module root that no settings entry enables, and one name held by two roots under one key.
-
-[`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) holds the claims that live outside the manifest: the two `AGENTS.md` layer tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope`. A section with no row, a row naming the layer the section is not in, and a row whose section no layer carries are each a finding. The table is the ruling; the check catches drift.
-
-[`scripts/check_reach.sh`](../../scripts/check_reach.sh) holds the reach axis to the declaration from the other side: the mount rows the manifest carries against the route table in [`documentation_taxonomy.md`](../reference/documentation_taxonomy.md) `## Reach`. It reads both, so neither copies the other's list. A mount row added and not routed fails the row; a route with nothing behind it fails the route; a folder the table states repository-only fails when a manifest path reaches it.
-
-[`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs), under the Markdown gate, holds the files to their cell's reach. A link in a cell's file must land inside the set the declaration grants that cell: every instruction root, the `session` paths, and the cell's own `reachable` rows. A target outside that set fails even when the image carries it, because it names a tree the surface cannot reach. A repository link under a `reachable` row resolves there instead of in the image.
+| Script | What it reads |
+|---|---|
+| [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) | the manifest against the provider dockerfiles' lines, the entrypoint's template, the settings record and each cell's folder set |
+| [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) | the two layers' `## Scope` tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope` |
+| [`scripts/check_surface_table.sh`](../../scripts/check_surface_table.sh) | the generated mapping inside the reference document's marked block, and a table row naming a declared source outside it |
+| [`scripts/check_references.sh`](../../scripts/check_references.sh) | a skill invocation naming a skill the tree provides, and an absolute mention inside a built zone naming a declared root |
+| [`scripts/check_reach.sh`](../../scripts/check_reach.sh) | the manifest's mount rows against `documentation_taxonomy.md` `## Reach` |
+| [`scripts/lint/linking.mjs`](../../scripts/lint/linking.mjs) | a link in the path space the citing file is read in, under the Markdown gate |

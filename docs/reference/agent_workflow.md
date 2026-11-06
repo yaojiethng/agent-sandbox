@@ -36,7 +36,7 @@ Agents are oriented at iteration start through two sources of context, injected 
 
 ### Provider layer
 
-Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
+Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/agent/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
 
 Provider-layer content is narrow and environment-specific. It does not carry project workflow, iteration conventions, or collaboration principles.
 
@@ -62,17 +62,38 @@ The `~/workspace/input/brief.md` path was previously used to inject a stub file 
 
 ### Skills and Prompts Layer Model
 
-Skills and prompt templates follow a parallel three-layer model with distinct loading mechanisms per layer:
+Skills and prompt templates share four layers, highest precedence first. Where each repository root lands in the container is the manifest's own table, generated from `src/build/container-interface.json`; the layers below say how it is loaded and what updates it.
+
+<!-- BEGIN GENERATED: surface-table -->
+| Source | Destination | Provider |
+|---|---|---|
+| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | hermes, opencode, pi |
+| `src/reasoning/providers/pi/preflight.sh` | `/opt/sandbox/bin/provider-preflight.sh` | pi |
+| `docs/reference/` | `/opt/sandbox/docs/reference/` | hermes, opencode, pi |
+| `src/libs/` | `/opt/sandbox/lib/` | hermes, opencode, pi |
+| `src/reasoning/providers/pi/config/` | `/opt/workflow/agent/config/` | pi |
+| `workflow/coding-agent/prompts/` | `/opt/workflow/agent/modules/coding-agent/prompts/` | pi |
+| `workflow/coding-agent/skills/` | `/opt/workflow/agent/modules/coding-agent/skills/` | pi |
+| `src/reasoning/agent/prompts/` | `/opt/workflow/agent/prompts/` | pi |
+| `src/reasoning/agent/skills/` | `/opt/workflow/agent/skills/` | pi |
+<!-- END GENERATED: surface-table -->
 
 | Layer | Source | Loaded via | Update mechanism |
 |---|---|---|---|
-| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` (config-seeded, survives image rebuild) | `onboard.sh --refresh` or edit `$SANDBOX_DIR/.<provider>/` |
-| **Sandbox (workflow) layer** | `agent/skills/`, `agent/prompts/`, and a module's `workflow/<module>/skills&#124;prompts/` | Image-baked at `/opt/workflow/agent/skills&#124;prompts/` and `/opt/workflow/agent/modules/<module>/skills&#124;prompts/`; the `settings.json` `packages` key names both payload roots, and each entry contributes its `skills/` and `prompts/` subdirectories | Image rebuild (`make build`) -- stable baseline independent of working tree |
-| **User layer** | `$SANDBOX_DIR/.<provider>/agent/skills&#124;prompts/` | Pi auto-discovery from `~/.pi/agent/skills&#124;prompts/` | Direct filesystem placement by operator |
+| **Project layer** | `.agents/skills/` and `.agents/prompts/` | Pi's project discovery: `.agents/skills` is auto-discovered, and `.agents/prompts` is named in the settings `prompts` key | Edit the project tree |
+| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | Seeded from the config template at every start, and bind-mounted for prompts and skills | `onboard.sh --refresh`, or edit `$SANDBOX_DIR/.<provider>/` |
+| **Agent-sandbox layer** | `src/reasoning/agent/skills&#124;prompts/` | The first `settings.json` `packages` entry | Image rebuild (`make build`) |
+| **Workflow module layer** | `workflow/<module>/skills&#124;prompts/` | The module's `packages` entry | Image rebuild (`make build`) |
 
-**Why the sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
+Pi resolves a name first-wins in that order. The project layer shadows the provider layer, which shadows the agent-sandbox layer, which shadows the workflow module. A collision among these four layers is a hard finding in the generated map, not a silent winner: `scripts/check_skill_map.sh` runs it as a lint gate. The map is generated at check time and is not committed. A collision in the session's own load set, including a package the project added, is pi's to report and resolve; the decision is `docs/adr/skill_collision_delegation.md`.
 
-**Why the sandbox layer cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`, and the sandbox-layer files are not seeded there by default because the image bakes them at `/opt/workflow/`. The `settings.json` `"packages"` key bridges the gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots, one entry per payload. The sandbox layer therefore depends on that key surviving across sessions, per [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes).
+The layers are one-way. A shipped skill -- provider, agent-sandbox or workflow -- may link only within its own source root. A project skill may link anywhere in the project tree, including into a shipped layer, because the project tree is where the project layer is read. A shipped link outside its layer is a hard finding. The decision is `docs/adr/skill_layer_resolution.md`.
+
+**Why the agent-sandbox layer is image-baked.** When dogfooding a project, there are potentially two copies of skills and prompts -- one in the working tree (`src/reasoning/agent/`) and one baked into the image at `/opt/workflow/agent/`. The image-baked copy provides a stable baseline: even if the working tree is broken mid-development, the core sandbox workflow (session startup, diff/branch packaging, sandbox-awareness) remains functional. This decoupling also ensures portability -- a project using agent-sandbox as a harness inherits these workflow files regardless of what the project's working tree contains.
+
+**Why the workflow module is a separate package.** A module's payload does not merge into the harness root: `workflow/<module>/` lands at `/opt/workflow/agent/modules/<module>/`, its own root. A merge would lose which module a file came from, and it would let one module's file shadow another with nothing reported. The workflow module is a package entry of its own, so it can be absent, and the package list orders it after the agent-sandbox root.
+
+**Why the package layers cannot rely solely on auto-discovery.** Pi auto-discovers skills from `~/.pi/agent/skills/` and prompts from `~/.pi/agent/prompts/`, and the package-layer files are not seeded there by default because the image bakes them at `/opt/workflow/`. The `settings.json` `"packages"` key bridges the gap: it names the harness payload root `/opt/workflow/agent` and the module root beside it, and pi loads each package's `skills/` and `prompts/` subdirectories as roots, one entry per payload. The package layers therefore depend on that key surviving across sessions, per [Config Flow and Fragility Notes](../reference/provider_lifecycle.md#config-flow-and-fragility-notes).
 
 ## How the Workflow is Expressed
 
@@ -80,7 +101,7 @@ The agent-sandbox workflow is expressed across three layers with a strict author
 
 ### Where the rules live
 
-The policy form is retired: no document holds a rule set for the whole workflow. A rule is stated where its procedure enforces it, a convention is stated in the project's convention-skill under `.agents/skills/`, and a judgement used by more than one document is stated in a skill; `### Norm kinds` gives the test for which one a sentence is. Duplicate rules across documents are a defect still -- one place is the source of truth and every other links to it.
+The policy form is retired: no document holds a rule set for the whole workflow. A rule is stated where its procedure enforces it, a convention is stated in the project's convention-skill under `.agents/skills/`, and a judgement used by more than one document is stated in a skill; `### Instruction modality` gives the test for which one a sentence is. Duplicate rules across documents are a defect still -- one place is the source of truth and every other links to it.
 
 The convention corpus is `.agents/skills/`, the reference layer is `docs/reference/`, and the contributor and maintenance documents are `docs/development/`. The protocol that binds the loop's runbooks to each other is [`iteration_protocol.md`](iteration_protocol.md), the one document of the retired form that survived, and the policy map below names the place that specifies each area of the workflow.
 
@@ -88,35 +109,19 @@ The map is the mechanism's, and two of its subjects name this repository's own t
 
 ### Skill files
 
-Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses; `### Norm kinds` below places it there so one source serves them all. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The authoring bar for skill files is in `docs/development/prompt-authoring-conventions.md`.
+Skill files are execution helpers, and one of them may be the source of truth for a judgement that more than one document uses. A skill may also inline a distillation of a rule whose source of truth is elsewhere, for context efficiency. Inlining is a deliberate optimisation, not an alternative to documentation: the inline is a fast path to that source, and it names the source of truth. The rules for writing a skill are in this project's `instruction-authoring` convention, which does not ship.
 
 An inline may become stale when its source of truth changes -- this is acceptable because the inline is explicitly a convenience copy, not the source of truth.
 
 ### Prompt templates
 
-Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the source of truth of every rule it borrows. The authoring bar for prompt templates is in `docs/development/prompt-authoring-conventions.md`.
+Prompt templates are iteration tooling. They structure operator input, reduce iteration startup cost, and direct the agent to the right section at the right moment. A prompt holds the rules its procedure runs, and points at the source of truth of every rule it borrows. The rules for writing a prompt are in this project's `instruction-authoring` convention, which does not ship.
 
-### Norm kinds
+### Instruction modality
 
-Every prose sentence in the policy set has one kind and one source of truth. The kind answers whether anything detects a breach. The source of truth answers who produces the content.
+Instruction modality is a concept for categorising the instruction text we write. It names five kinds of sentence - `rule`, `fact`, `judgement`, `permission` and `claim` - and each kind owes its writer something different, so a draft that mixes them unexamined reads as stronger or weaker than it is. Nothing gates the choice; it is applied by whoever writes the prompt or the skill.
 
-**The kind.** Classify in this order.
-
-1. Does the sentence instruct, or does it describe? A sentence that asks the reader to do nothing is a description.
-2. If it instructs, name the artifact that fails when the sentence is broken, and resolve it. That artifact is a gate in `scripts/lint.sh`, a file under `scripts/lint/`, a skill directory a prompt dispatches, or a named step in a prompt file. If it resolves, the sentence is a rule and the artifact is its observer.
-3. If no artifact resolves, the sentence is a judgement. A guessed observer is not an observer.
-
-| Kind | Does | Detected by |
-|---|---|---|
-| rule | instructs | an artifact that resolves today, and fails on a breach |
-| judgement | instructs how to decide a case | nothing |
-| description | states what is | nothing |
-
-**The source of truth.** The document whose workflow produces the content owns it. That does not vary with kind, so a policy holding judgements is normal, because the policy's workflow produces them.
-
-A judgement used by more than one document lives in a principle skill, so one source of truth serves them all. That is the only case where a judgement leaves the document that produces it.
-
-This is the one place the kinds are defined. A document that states one locally links here instead.
+Its definitions are `docs/reference/terminology.md` `## modality`, the decision and the derivation behind the five are `docs/adr/instruction_modality.md`, and what each kind means for a writer is the `instruction-authoring` convention.
 
 ### Persistent devlog records (interim)
 
@@ -155,7 +160,7 @@ Every cell names its document in the form its reader can open. A document under 
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the two-layer model and the role of each layer -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider-layer files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, decide its source of truth by the kind, per `### Norm kinds`: a resolving observer makes it a rule, and the document that produces the content owns it.
+When a rule appears to exist in two documents in this map, decide it with `principle-single-source-of-truth` and the kind table in `docs/adr/instruction_modality.md`.
 
 ## References
 

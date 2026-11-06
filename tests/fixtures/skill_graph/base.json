@@ -1,0 +1,138 @@
+{
+  "repo": {
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "dirty": false,
+    "root": "."
+  },
+  "image": {
+    "digest": "sha256:fixture-image"
+  },
+  "agentHome": "/home/agentuser/.pi",
+  "roots": [
+    {
+      "id": "repo:agent-sandbox",
+      "namespace": "repo",
+      "layer": "agent-sandbox",
+      "path": "src/reasoning/agent/skills",
+      "sha256": "repo-agent-root",
+      "skills": [
+        {
+          "name": "propagation-check",
+          "path": "src/reasoning/agent/skills/propagation-check",
+          "sha256": "source-propagation"
+        }
+      ]
+    },
+    {
+      "id": "repo:workflow",
+      "namespace": "repo",
+      "layer": "workflow",
+      "path": "workflow/coding-agent/skills",
+      "sha256": "repo-workflow-root",
+      "skills": [
+        {
+          "name": "check-in",
+          "path": "workflow/coding-agent/skills/check-in",
+          "sha256": "source-check-in"
+        }
+      ]
+    },
+    {
+      "id": "repo:provider",
+      "namespace": "repo",
+      "layer": "provider",
+      "path": "src/reasoning/providers/pi/config/agent/skills",
+      "sha256": "repo-provider-root",
+      "skills": []
+    },
+    {
+      "id": "repo:project",
+      "namespace": "repo",
+      "layer": "project",
+      "path": ".agents/skills",
+      "sha256": "project-root",
+      "skills": [
+        {
+          "name": "testing",
+          "path": ".agents/skills/testing",
+          "sha256": "project-testing"
+        }
+      ]
+    },
+    {
+      "id": "image:agent-sandbox",
+      "namespace": "image",
+      "layer": "agent-sandbox",
+      "path": "/opt/workflow/agent/skills",
+      "sha256": "repo-agent-root",
+      "skills": [
+        {
+          "name": "propagation-check",
+          "path": "/opt/workflow/agent/skills/propagation-check",
+          "sha256": "source-propagation"
+        }
+      ]
+    },
+    {
+      "id": "image:workflow",
+      "namespace": "image",
+      "layer": "workflow",
+      "path": "/opt/workflow/agent/modules/coding-agent/skills",
+      "sha256": "image-workflow-root",
+      "skills": [
+        {
+          "name": "check-in",
+          "path": "/opt/workflow/agent/modules/coding-agent/skills/check-in",
+          "sha256": "source-check-in"
+        }
+      ]
+    },
+    {
+      "id": "image:provider",
+      "namespace": "image",
+      "layer": "provider",
+      "path": "/opt/workflow/agent/config/agent/skills",
+      "sha256": "image-provider-root",
+      "skills": []
+    },
+    {
+      "id": "host:provider",
+      "namespace": "host",
+      "layer": "provider",
+      "path": "/home/agentuser/.pi/agent/skills",
+      "sha256": "host-provider-root",
+      "skills": []
+    }
+  ],
+  "links": [
+    {
+      "fromRoot": "repo:project",
+      "fromSkill": "testing",
+      "file": "testing/SKILL.md",
+      "target": "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
+      "line": 10
+    },
+    {
+      "fromRoot": "repo:project",
+      "fromSkill": "testing",
+      "file": "testing/SKILL.md",
+      "target": "/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md",
+      "line": 11
+    },
+    {
+      "fromRoot": "repo:project",
+      "fromSkill": "testing",
+      "file": "testing/SKILL.md",
+      "target": "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
+      "line": 12
+    }
+  ],
+  "build": [
+    {
+      "kind": "copy",
+      "from": "repo:agent-sandbox",
+      "to": "image:agent-sandbox",
+      "evidence": "container-interface.json: src/reasoning/agent/skills/ -> /opt/workflow/agent/skills/"
+    }
+  ]
+}

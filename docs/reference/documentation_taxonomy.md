@@ -10,7 +10,7 @@ This document is the index and view of the documentation ecosystem. It states no
 
 | Document | What it is | Durability | Identification | Governed by |
 |---|---|---|---|---|
-| Policy document (`docs/**/*_policy.md`) | retired 2026-10-22: a rule set for the whole workflow, which no document holds now. A rule is stated where its procedure enforces it, and a convention in `.agents/skills/` | -- | -- | `docs/adr/norm_kinds.md` states what counts as a rule |
+| Policy document (`docs/**/*_policy.md`) | retired 2026-10-22: a rule set for the whole workflow, which no document holds now. A rule is stated where its procedure enforces it, and a convention in `.agents/skills/` | -- | -- | `docs/adr/instruction_modality.md` states what counts as each kind |
 | ADR (`docs/adr/`) | the rationale behind a standing principle: the chosen option, the rejected alternatives, the reasons | durable | sections numbered; decisions `D` | the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` |
 | Concept document (`docs/reference/`) | a conceptual model: abstract state transitions, cross-component interactions, principles no single component owns | durable | sections numbered where the document navigates by number | the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- What each document type owes |
 | Architecture document (`docs/reference/`) | implementation design and decisions | durable | sections numbered where the document navigates by number | the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`; the freeze rule is in [`system_overview.md`](../reference/system_overview.md) |
@@ -19,7 +19,7 @@ This document is the index and view of the documentation ecosystem. It states no
 | Roadmap (`devlog/roadmap.md`) | active planning; future and TODO items land here | durable | identity `M` and `T` codes; no renumbering | the project's `task-list` convention |
 | Changelog (`devlog/changelog.md`) | the roadmap's archived half; a length boundary, not a correction | durable | append-only; no unit numbers | the project's `task-list` convention |
 | Handover (`devlog/handovers/`) | one session's record of the work done | transient | identity `YYYYMMDD-NN`; `F`, `Q`, `D` units | the project's `.agents/skills/work-log/SKILL.md` convention |
-| Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: kept as a reference for the course of the implementation it describes, then subsumable | identity date, type, slug; `F`, `Q` units | the `work-log` convention, `.agents/skills/work-log/SKILL.md` |
+| Discussion record (`devlog/discussions/`) | one session's evidence for a decision, as one of four types: story (problem framing), study (feasibility), design (decision exploration), report (post-action record) | reference-durable: owned by an open roadmap row and deleted when that row closes, per the `work-log` convention | identity date, type, slug; `F`, `Q` units | the `work-log` convention, `.agents/skills/work-log/SKILL.md` |
 
 The scheme each class uses belongs to the project's numbering convention, where the project states one; the column above names the scheme and states no rule. The judgement behind a numbered list is `communication-principle-one-addressing-axis` at `$AGENT_HOME/agent/skills/communication-principle-one-addressing-axis/SKILL.md`.
 
@@ -27,23 +27,15 @@ The policy set is every `docs/**/*_policy.md` file, in any folder. The other fol
 
 ## Folder taxonomy
 
-A document lives in exactly one `docs/` folder or in `devlog/`. Each folder holds one concern:
+A document lives in exactly one `docs/` folder or in `devlog/`. The folders, the mode each one serves and what each holds are the `project-documentation` convention's, at `.agents/skills/project-documentation/references/organization.md`; the placement rule (each document in exactly one category) is in the same convention, `.agents/skills/project-documentation/SKILL.md`.
 
-| Folder | Holds |
-|---|---|
-| `reference/` | the harness as built: contracts, states and sequences, the interface index, and the glossary |
-| `policies/` | the policy rules the agent obeys |
-| `development/` | contributor workflow, development conventions, and the procedures for changing the harness |
-| `adr/` | the rationale behind standing principles, interface shapes, and contracts; superseded or awaiting-review ADRs live in `adr/archive/` |
-| `devlog/` | the session-facing records: the roadmap, the changelog, handovers, and discussion documents |
+`reference/` reaches every session because the image mounts it; `adr/`, `development/` and `devlog/` are this project's, so a session in a provisioned project reads that project's own. `## Reach` states the axis and `scripts/check_reach.sh` holds it to the manifest.
 
-The table describes this repository's tree. `reference/` and `policies/` reach every session because the image mounts them; `adr/`, `development/` and `devlog/` are this project's, so a session in a provisioned project reads that project's own. `## Reach` states the axis and `scripts/check_reach.sh` holds it to the manifest.
-
-The placement rule (each document in exactly one category) is in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Folder tree.
+The `devlog/` records sit outside the four modes, and `.agents/skills/work-log/SKILL.md` states why.
 
 ## Durability
 
-A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: it stays as a reference for future work units for the course of the implementation it describes, then becomes subsumable and may be cleaned up or subsumed. A handover decays; a tmp file or chat record is never kept. The durable source of truth of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
+A document is durable when it is kept and maintained as a reference after the session that produced it. Maintained documents are durable. A discussion record is reference-durable: its life is the roadmap row that owns it, and `.agents/skills/work-log/SKILL.md` determines when that life begins and ends. This document classifies the kind and states no rule about its life. A handover decays; a tmp file or chat record is never kept. The durable source of truth of the approaches considered and the knowledge tests is the ADR. Rules that depend on the durable/transient line link here for the classification.
 
 ## Reach
 
@@ -80,13 +72,13 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 
 Documents promote along a path, and each step is an obligation whose source of truth is a policy or a convention-skill.
 
-- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins.
+- **Discussion to ADR.** A discussion doc settles into an ADR when the change stabilizes a principle whose consequences reach beyond the change, and the record lives until its row closes. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- When one begins, and A discussion record lives until its task does.
 - **Concept to ADR.** The concept document is the parent; the ADR is the explainer that records why the model was chosen. Rule: the `decision-records` convention, `.agents/skills/decision-records/SKILL.md` -- The record set.
 - **Concept to architecture.** The concept states the model; the architecture document carries the implementation design. What a concept document describes is in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- What each document type owes.
 
 ## Boundary
 
-Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`agent_workflow.md`](agent_workflow.md#norm-kinds). The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
+Skill files, prompt templates, tmp files, and chat records are not maintained documents. A handover is a transient session record, not a maintained document. The rule that governs what counts as authoritative is in [`agent_workflow.md`](agent_workflow.md#instruction-modality). The rules that govern a handover are in the project's `work-log` convention (`.agents/skills/work-log/SKILL.md`).
 
 Everything under a project's `.agents/` is project-scoped: that project's sessions read it and no other project's session does. A document read more widely names a path there only where a mechanism that ships guarantees the path exists, so a shipped document names the convention a project may state rather than the one it has.
 
@@ -97,7 +89,7 @@ Everything under a project's `.agents/` is project-scoped: that project's sessio
 | "I am new here -- what documents exist and which do I need?" | this document |
 | "What is a concept document against an ADR or a discussion?" | Promotion topology |
 | "Where does this file go?" | Folder taxonomy (this document); the placement rule is in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Folder tree |
-| "Is this statement a rule or a description? Where is the source of truth of a rule?" | [`agent_workflow.md`](agent_workflow.md#norm-kinds) |
+| "What kind is this sentence, and where is its source of truth?" | [`agent_workflow.md`](agent_workflow.md#instruction-modality) |
 | "How do I write the prose?" | the `communication-principle-*` corpus, indexed in the provider `AGENTS.md` |
 | "What content is forbidden in an architecture document?" | `communication-principle-dont-forecast-undone-work`; the `doc-maintenance` register names the symptom |
 | "What does the lint check? What must a record satisfy?" | `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md` -- The lint rule set |

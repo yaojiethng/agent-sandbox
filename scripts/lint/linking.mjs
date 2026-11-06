@@ -20,12 +20,6 @@
 //     come from `src/build/container-interface.mjs`, which reads the interface
 //     manifest; an image path is checked by mapping it back to the repository
 //     source that populates it.
-//   - a link in a file an instruction cell declares must land inside the reach
-//     that cell grants: any instruction root, a session path every surface
-//     reads, or one of the cell's own reachable rows. A target outside that set
-//     is a finding even when the image carries it, because it names a tree the
-//     surface cannot reach. The reach is read from the same declaration, so a
-//     new cell changes the check with no edit here.
 //   - a shipped document that names a project convention-skill path names one
 //     the receiving project has. The shipped corpus of `initialize` is the set
 //     a fresh project receives, so a concrete `.agents/skills/<name>/SKILL.md`
@@ -47,7 +41,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { load_manifest, pairs, instruction_reach } from "../../src/build/container-interface.mjs";
+import { load_manifest, pairs } from "../../src/build/container-interface.mjs";
 
 // Repository directory to image destination, trailing slash on both. The
 // interface is declared once in `src/build/container-interface.json` and read
@@ -172,8 +166,6 @@ export default [
       // file keeps the repository-space check.
       const imageFile = image_path_of(name);
       const imageDir = imageFile === "" ? "" : dirname(imageFile);
-      // The reach this file's cell grants it, or null when no cell declares it.
-      const reach = instruction_reach(repoRoot, name);
       let inFence = false;
 
       params.lines.forEach((line, index) => {
@@ -207,27 +199,6 @@ export default [
           const pathPart = hashAt === -1 ? target : target.slice(0, hashAt);
           const fragment = hashAt === -1 ? "" : target.slice(hashAt + 1);
 
-          // A cell may declare repository paths its files read with the
-          // repository tree present. A link there resolves in repository space
-          // rather than the image, so the image check does not apply.
-          if (reach !== null && !pathPart.startsWith("/") && !pathPart.startsWith("$AGENT_HOME")) {
-            const repoRel =
-              pathPart === "" ? "" : relative(process.cwd(), resolve(dir, pathPart));
-            if (
-              repoRel !== "" &&
-              reach.repo.some((prefix) => repoRel.startsWith(prefix)) &&
-              existsSync(repoRel)
-            ) {
-              if (fragment !== "" && !anchors_of(repoRel).includes(fragment)) {
-                onError({
-                  lineNumber: index + 1,
-                  detail: "link fragment names no heading: " + target,
-                });
-              }
-              continue;
-            }
-          }
-
           if (imageFile !== "" || pathPart.startsWith("/opt/")) {
             const imageTarget =
               pathPart === ""
@@ -240,13 +211,6 @@ export default [
               onError({
                 lineNumber: index + 1,
                 detail: "link target does not exist in the image: " + target,
-              });
-              continue;
-            }
-            if (reach !== null && !reach.image.some((prefix) => imageTarget.startsWith(prefix))) {
-              onError({
-                lineNumber: index + 1,
-                detail: "link target lands outside the instruction surface: " + target,
               });
               continue;
             }

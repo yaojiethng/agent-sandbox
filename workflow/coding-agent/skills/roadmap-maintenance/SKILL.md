@@ -42,8 +42,6 @@ Run through every task entry in the active sub-milestone.
 
 **1.4 A closed item carries no open work.** Walk every `- [x]` item's indented children. Report any open child and the parent that carries it, naming the completion context the parent is missing. The project's `task-list` convention, The record's shape, owns the marker-nesting invariant.
 
-Completion criterion: 1.1 through 1.4 hold.
-
 ### Step 2 - Compaction compliance
 
 Run this step over each item in the active sub-milestone.
@@ -52,11 +50,11 @@ Run this step over each item in the active sub-milestone.
 
 **2.2 Outcome summary marker.** The `- [x]` marker survives the compaction. Report a compacted item without the marker.
 
-**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in the `/milestone-close` compaction procedure, step 1, component by component.
+**2.3 Survival table.** Verify each compacted task group against the keep and remove lists in the `/milestone-close` compaction procedure, step 1, component by component. A link the table marks removed and the item still carries is the finding, and the same link over a record no longer on disk is a second one.
 
 | Component | Expected | Check |
 |---|---|---|
-| Design document links | Survive | Present when the item had one |
+| Design document links | Removed | Absent from the closed row; a record the row still needed was re-pointed to an open row before the close |
 | Not-in-scope and deferred tags | Survive | Present when the item had them |
 | File lists in parentheses after the item name | Removed | Absent from the header |
 | Implementation notes and partial specs | Removed | Absent from the summary |
@@ -90,7 +88,7 @@ A component that should survive and is gone, or one that should be removed and i
 
 **3.9 A row bundling unrelated defects.** Report a row carrying its own priority order in its own text -- a bucket, not a task.
 
-**3.10 Mis-filed rows.** A row lands in the active sub-milestone's task list unless the operator directs otherwise. The project's `task-list` convention, Filing rules, `**Roadmap task placement**`, owns the default. Report a row that sits elsewhere, and report the operator direction when one exists; a track's blurb is not a direction, and the subject of a track claims no row.
+**3.10 Mis-filed rows.** A row sits in the milestone whose objective names its subject, unless the operator placed it elsewhere on a stated reason. The project's `task-list` convention, Filing rules, `**Roadmap task placement**`, owns that rule. Report a row in a milestone that neither owns the subject nor carries the operator's direction; a track's blurb is not a direction, and the subject of a track claims no row.
 
 **3.11 The summary table agrees with the sections it names.** For each row, read the linked heading and the status it declares. A row that says `Complete` whose section still carries open tasks is a finding; a row whose fragment matches no heading is a finding; two records naming one milestone differently are a finding. The `/milestone-close` `## Update the records` step 1 owns that rule.
 
@@ -113,7 +111,7 @@ Parts 2 and 3 read only the section this run wrote or amended; an entry closed e
 2. No task was marked `- [x]` before the operator verified it. Read the handover's Step 7 acceptance-criteria status.
 3. The compaction proposal text is drafted and ready for operator review.
 
-Completion criterion: all three hold, or the report names the failing condition. A premature `- [x]` blocks the pass until the operator resolves it, and is reported as an escalation.
+A premature `- [x]` blocks the pass until the operator resolves it, and is reported as an escalation.
 
 ### Step 5 - Report the run
 
@@ -128,8 +126,6 @@ Write the report as JSONL at the path the dispatcher set, in the schema [`check-
 **The recommendation follows the check, not the size of the edit.** A violation whose correct form the convention or the `/milestone-close` procedures determine is fixable now, however many rows it touches. A violation under a broader roadmap unit already in flight names that unit and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is an escalation: no record in this set settles it. The schema passed with this dispatch carries the values and their conditions.
 
 Report each check with no finding as a skip, and a check that did not run as a skip with that reason: silence reads as a clean record.
-
-Completion criterion: the report is written at the dispatcher's path, and every check carries a line with either a finding or a skip.
 
 ## Output shape
 

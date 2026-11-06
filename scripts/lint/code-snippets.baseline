@@ -15,6 +15,7 @@
 358cda4e2398ae91  docs/development/context_resolution.md
 35a8f55a6d87d4ca  docs/adr/sandbox_delivery_model.md
 36ee123fe157bf0a  docs/adr/env_resolution.md
+3985616bb51cca60  docs/development/instruction-surface-conventions.md
 4114f5cea5541e7b  docs/reference/copy_delivery.md
 41617a6b7d658bee  docs/development/provider_onboarding_guide.md
 42dadd4dd63fb72d  docs/development/quickstart.md
@@ -37,13 +38,13 @@
 996fb0c663e551c4  docs/development/interface-conventions.md
 9a56c7051badc60c  docs/adr/docker_output_presentation.md
 9a5bc0f0de8a8ebf  docs/development/context_resolution.md
+9ce1bb0272584f67  docs/reference/execution_model.md
 a4afb3e1f8ddbe41  docs/reference/sandbox_lifecycle.md
 aa026049dac86e21  docs/development/interface-conventions.md
 ad2692d344907ba0  docs/reference/project_onboarding_guide.md
 ad2caf021079abd3  docs/development/interface-conventions.md
 af0fcb9cef9e3c02  docs/reference/project_onboarding_guide.md
 b2b6ce06a8b2df67  docs/development/provider_onboarding_guide.md
-b9ddd47852e2e482  docs/reference/execution_model.md
 bc5af6d68f2b91c7  docs/development/quickstart.md
 bd45dcb104f1dd12  docs/reference/sandbox_identity.md
 c0f1c04b65325b76  docs/development/host_requirements.md
@@ -60,7 +61,6 @@ e3db492a0d6e6c7c  docs/development/context_resolution.md
 e57811d721ff9e3a  docs/development/interface-conventions.md
 e6803b86193e0f23  docs/development/provider_onboarding_guide.md
 e73016c7ac4e20fb  docs/reference/sandbox_host_interface.md
-e8dbcf462df7c24c  docs/development/instruction-surface-conventions.md
 ea764ca61e257fda  docs/adr/session_identifier.md
 eebfde81de79feba  docs/development/provider_onboarding_guide.md
 eee31c9332b28785  docs/development/quickstart.md

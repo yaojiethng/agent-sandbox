@@ -1,0 +1,15 @@
+{
+  "id": "diataxis",
+  "title": "Diataxis: a systematic framework for technical documentation authoring",
+  "author": "Daniele Procida",
+  "publisher": "diataxis.fr",
+  "url": "https://diataxis.fr/",
+  "version": "living document at diataxis.fr, read 2026-11-02",
+  "record": {
+    "source": "The four-quadrant documentation framework, which this repository keeps reinventing under other names. Read for the axes rather than for the four names. It reaches this repository twice: as the frame adopted in `docs/adr/documentation_quadrants.md`, and as the section vendored through pstack's `technical-writing` skill into `.agents/skills/project-documentation/references/organization.md`.",
+    "kept": "The two axes and the rule that a document serves one form: a reader either acts or studies, and the material is either acquired or applied. One quadrant per document.",
+    "rewritten": "The four names are this repository's, and the mapping from quadrant to corpus is the adoption recorded at `docs/adr/documentation_quadrants.md`: learning is `docs/development`, a how-to is the instruction surface rather than a document, understanding is `docs/adr`, and information is `docs/reference`. A how-to written as a document is the case the mapping rules out, because a reader who must be present for a procedure makes the document stale.",
+    "added": "Two shapes the framework does not name. The advisor is invoked like a how-to and prescribes nothing, so it is a diagnostic shape inside that quadrant. The judgement is applied mid-work and consulted by nobody, so it sits outside the four, with the session records.",
+    "dropped": "The pedagogical framing and the map of tutorials, which serve a reader learning a tool for the first time rather than an agent working in it."
+  }
+}

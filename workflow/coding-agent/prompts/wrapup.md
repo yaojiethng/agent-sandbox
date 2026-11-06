@@ -1,5 +1,5 @@
 ---
-description: "Close an active-operator session: consolidate the close into one shared runbook that /iter and /plan invoke, writing back the roadmap task, closing ADRs and discussion docs whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
+description: "Close an active-operator session: consolidate the close into one shared runbook that /iter and /plan invoke, writing back the roadmap task, settling the ADR entries and retiring the discussion records whose work landed, closing the handover, and seeding the next iteration. The commit itself is /commit's. Also owns the decision of which close steps apply to a planning session."
 argument-hint: "[optional: a session to close]"
 ---
 
@@ -17,7 +17,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Mandate
 
-You run the consolidated close for an active-operator session that ends at its release point. One commit per unit governs it: the unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back, and every `wip:` checkpoint and typed intermediate commit folds into it. The status flip and the write-back never form their own commit. The `git-discipline` convention names the delivery commit the sole reviewable surface, and [`/commit`](commit.md) states the commit rules and runs them.
+You run the consolidated close for an active-operator session that ends at its release point. The unit ends as one delivery commit, and every `wip:` checkpoint and typed intermediate commit folds into it; the status flip and the write-back never form their own. [`/commit`](commit.md) states the commit rules and runs them.
 
 ## Called from
 
@@ -37,7 +37,7 @@ Each active-operator prompt invokes the part of this runbook that applies:
 
 ## Part B - The close (end of session, shared)
 
-Run this once, after the operator's forward signal on the release gate: that signal is this part's release, and Part B adds no second approval, per [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) gate invariants. The steps below run the close invariants in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
+Run this once, after the operator's forward signal on the release gate: that signal is this part's release, and Part B adds no second approval, per [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) gate invariants.
 
 ### B1. AC verification
 
@@ -53,7 +53,7 @@ Run the scope-reconciliation invariant in [`iteration_protocol.md`](/opt/sandbox
 
 ### B4. Roadmap write-back
 
-Confirm the released row changes are the ones on disk, and that each resolved task is marked: the rows were written before the gate, so this step reads the diff instead of applying a description. The record-check report from the gate is this step's evidence; a finding the gate missed is recorded as `late`, naming the gate that should have asked. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates: the task list requires a completed task to be marked, and the mark to ride this commit. When every sub-row of a task is resolved, close that task in the form the `/milestone-close` compaction procedure, step 1, states. A session that drew a brief from `/scope` files its work-unit table here, one row per unit, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing and records that outcome.
+Confirm the released row changes are the ones on disk, and that each resolved task is marked: the rows were written before the gate, so this step reads the diff instead of applying a description. The record-check report from the gate is this step's evidence; a finding the gate missed is recorded as `late`, naming the gate that should have asked. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates. When every sub-row of a task is resolved, close that task in the form the `/milestone-close` compaction procedure, step 1, states. A session that drew a brief from `/scope` files its work-unit table here, one row per unit, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing and records that outcome.
 
 ### B5. Carry-forward resolution
 
@@ -67,33 +67,33 @@ The destinations were decided at the gate, and each finding reached the handover
 
 Every row of the handover's `Decisions pending` table closes before the handover closes, per the project's `work-log` convention. Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work is written back as an open roadmap row and the question leaves the handover with it.
 
-A row left open here is a question the operator meets twice, which is the cost this section exists to remove. A table holding only the canonical marker is closed with no work.
+A table holding only the canonical marker is closed with no work.
 
-### B8. Close ADRs and discussion docs whose work landed
+### B8. Settle the ADR entries and retire the records whose work landed
 
-Close the `docs/adr/` and `devlog/discussions/` documents whose work landed this session. The record-check report from the release gate names the `[CORRECTION]` or `[AMENDMENT]` form each finding needs; this step writes the block. A document whose recorded work shipped but that stays open after the session is a stale record, so close it here. A finding the gate missed is `late`, per B4.
+Write the `[CORRECTION]` or `[AMENDMENT]` block the release gate's record check names into each `docs/adr/` entry whose work landed this session. A discussion record is not settled, it is retired: the one whose roadmap row closes here is deleted, and the one an open row takes over is re-pointed rather than deleted, per `.agents/skills/decision-records/SKILL.md`. A document whose recorded work shipped but that stays open after the session is a stale record, so settle it here. A finding the gate missed is `late`, per B4.
 
 ### B9. Check what the close wrote
 
-Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `handover-maintenance` skill over this session's handover, and fix what they report before the commit. The gate ran both before this part began, so it read the tree as the iteration left it; the rows B4, B6 and B8 write did not exist then, and this is the only run that reads them. A finding either skill raises here is a defect in what the close wrote, so it is fixed here and the commit does not land past it. The invariant is the close's own writes are checked, in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
+Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `handover-maintenance` skill over this session's handover, and fix what they report before the commit. The rows B4, B6 and B8 write did not exist when the gate ran, so this is the only run that reads them. A finding either skill raises here is a defect in what the close wrote: it is fixed here, and the commit does not land past it. The invariant is the close's own writes are checked, in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
 
 ## Hand the commit to /commit
 
 The close stops here; the commit begins at [`/commit`](commit.md) Part C.
 
 - **What `/commit` owns.** Preparing the handover, marking each AC accepted or pushed, setting `Status: Closed`, landing the work, the status flip and the roadmap write-back as one delivery commit, and the post-commit compliance self-check. It also owns the in-session checkpoint that runs after each committed task group.
-- **What stays here.** Every close step above: AC verification, propagation replay, scope reconciliation, the roadmap write-back, carry-forward resolution, findings publication, pending-decision resolution, closing ADRs and discussion docs, and the check on what the close wrote. The evidence `/commit` stages is the evidence these steps produced.
+- **What stays here.** Every close step above, and the evidence they produced is the evidence `/commit` stages.
 - **Where this runbook stops.** At this handoff. `/commit` runs, reports the landed commit, and returns here for the close report below.
 
 ### B10. Report the close
 
-State that the close succeeded: the write-back, the records closed, and any deviation the post-commit self-check recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. A fresh session starts from [`gm.md`](gm.md).
+State that the close succeeded: the write-back, the records settled, and any deviation the post-commit self-check recorded. Then recommend what to pick up next, agent-led: name the candidate from the roadmap's open rows, with one line on why it is next. A fresh session starts from [`gm.md`](gm.md).
 
 ## Failure modes
 
 - **The close restates the commit.** `/commit` owns the commit rules. A caller that re-states them is the duplication this split removes.
 - **The commit is skipped because the close ran.** A close that reports success without a landed commit leaves the record closed in the tree and open in history. Hand off to `/commit` and report its result.
-- **An ADR or discussion doc stays open after its work shipped.** A stale open record misleads the next session. Close it in B8, or name the reason it stays open in the handover's Scope.
+- **An ADR entry, or a discussion record whose row closed, stays open after its work shipped.** A stale open record misleads the next session. Settle it in B8, or name the reason it stays open in the handover's Scope.
 - **The write-back lands as its own commit.** The roadmap write-back and the `Status: Closed` edit belong in the delivery commit, never a separate one.
 - **The commit lands past a finding B9 raised.** The close wrote that record, so no earlier check read it, and the commit carries a defect no run reported. Fix it before the commit.
 

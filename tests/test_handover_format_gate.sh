@@ -203,6 +203,26 @@ test_active_findings_row_without_destination_passes() {
   assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
 }
 
+test_completed_without_criteria_fails() {
+  local file="$FIXTURE_DIR/t7/devlog/handovers/20261101-01-design-x.md" rc=0 out
+  write_handover "$file" 2026-11-01
+  sed -i 's/^## Acceptance criteria$/## Acceptance criteria\n\nNot yet defined./' "$file"
+  sed -i 's/^No file changes this iteration.$/| `a.sh` | changed |/' "$file"
+  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'completed work without a criterion fails'
+  assert_contains "$out" 'a completion needs a criterion that decides it' 'the missing criterion is named'
+}
+
+test_completed_before_the_rule_passes() {
+  local file="$FIXTURE_DIR/t8/devlog/handovers/20261025-01-workflow-x.md" rc=0 out
+  write_handover "$file" 2026-10-25
+  sed -i 's/^## Acceptance criteria$/## Acceptance criteria\n\nNot yet defined./' "$file"
+  sed -i 's/^No file changes this iteration.$/| `a.sh` | changed |/' "$file"
+  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a record written before the rule keeps its shape'
+  assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
+}
+
 run_test test_conforming_handover_passes
 run_test test_bold_header_flagged
 run_test test_forbidden_section_flagged
@@ -216,5 +236,7 @@ run_test test_staged_with_nothing_staged_is_clean
 run_test test_closed_findings_row_without_destination_fails
 run_test test_closed_findings_row_triaged_late_passes
 run_test test_active_findings_row_without_destination_passes
+run_test test_completed_without_criteria_fails
+run_test test_completed_before_the_rule_passes
 
 test_done

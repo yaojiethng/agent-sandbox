@@ -34,7 +34,9 @@
     "/home/agentuser/sandbox/.agents/prompts"
   ],
   "enabledModels": [
-    "failover/*",
+    "opencode-go/deepseek-v4.1-flash",
+    "openrouter/~deepseek/deepseek-flash-latest",
+    "openrouter/deepseek/deepseek-v4-flash",
     "opencode-go/*",
     "deepseek/*",
     "openrouter/z-ai/*",

@@ -13,7 +13,7 @@ Checks the documentation set and reports the claims the tree contradicts. The me
 
 The method is the point. A term-driven sweep finds only the staleness whose wording it already knows: it cannot find a claim about a term nobody listed as stale, and it cannot see two documents that contradict each other. A claim checked against the implementation finds both classes, at the cost of a read per claim.
 
-The rules live in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and the authoring bar for a prompt or a skill is in `docs/development/prompt-authoring-conventions.md`, which does not ship. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here. A project that has not stated the convention has nothing for this pass to diagnose against: report that, and run no check.
+The rules live in the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`, and the rules for writing a prompt or a skill are in the `instruction-authoring` skill, `.agents/skills/instruction-authoring/SKILL.md`. The convention owns the rules; this runbook applies them and reports, so a rule the convention does not state is a gap to report rather than a rule to invent here. A project that has not stated the convention has nothing for this pass to diagnose against: report that, and run no check.
 
 This pass writes no document and applies no correction. It reports.
 
@@ -123,7 +123,7 @@ Completion criterion: the report covers every document in scope, every finding, 
 
 **Signs of a stale claim.** A quoted output string a change altered. A command, flag or exit code a change altered. A count or a shape contract a change altered. A "reserved", "planned" or "future" row whose day has arrived.
 
-**Signs of a wasted sentence.** A sentence a reader can delete without losing required meaning. A sentence that restates what the heading already says. A no-op instruction the agent obeys by default.
+**Signs of a wasted sentence.** A sentence a reader can delete without losing required meaning. A sentence that restates what the heading already says. A no-op instruction the agent obeys by default. Content kept only because removing it feels risky: stale accumulation.
 
 ## Output shape
 

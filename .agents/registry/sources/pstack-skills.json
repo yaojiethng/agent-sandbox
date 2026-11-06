@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "pstack-skills",
+  "url": "https://github.com/cursor/plugins",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Lauren Tan",
+  "artifacts": [
+    {
+      "local_path": ".agents/skills/project-documentation/references/organization.md",
+      "kind": "instruction",
+      "parent": null,
+      "upstream_path": "pstack/skills/technical-writing/SKILL.md",
+      "origin": "ae5650febf4320793844c12c4adaa937f417f8da",
+      "base": "ae5650febf4320793844c12c4adaa937f417f8da",
+      "anchor": "## Pick the mode first (Diataxis)",
+      "record": {
+        "source": "One section of a 106-line skill, not the skill, hung under this repository's own title and arrangement. The installed package keeps `technical-writing` whole, because the three layers this file does not carry stay useful in the sandbox and nothing here competes for that name. The section is taken at the pin the clone is checked out at, `ae5650fe`, which is later than the pin on this source's other edge.",
+        "kept": "The section and everything in it, in upstream's own words and order: the two questions, the four modes, the per-mode discipline, and the no-mixing rule.",
+        "rewritten": "One character: the accent in `Diataxis`, which this repository's ASCII rule does not allow. Nothing else inside an upstream paragraph changes, so a bump diffs to insertions rather than rewrites.",
+        "added": "The file's own title and opening line, the corpora table and the two corpora outside it, one paragraph after each of three modes, and the source line in this repository's citation form. Every addition sits between upstream paragraphs rather than inside one.",
+        "dropped": "The three prose layers the skill opens with - Google developer style, STE instruction rules, Global English syntax - which are sentence-level rules for a different carrier; the section on varying rhythm; the instruction to propose abstract-metaphor offenders to `unslop`; and upstream's own `Source:` line, replaced by the citation form."
+      }
+    },
+    {
+      "local_path": "src/reasoning/providers/pi/config/agent/skills/principle-guard-the-context-window",
+      "kind": "skill",
+      "parent": null,
+      "upstream_path": "harness/pstack/claude-code/skills/principle-guard-the-context-window",
+      "origin": "190d28736eff128ec94f502a22c7fe0c4b56cd37",
+      "base": "190d28736eff128ec94f502a22c7fe0c4b56cd37",
+      "record": {
+        "source": "The upstream text was installed by hand into the agent config home and carried no provenance record, so the revision it was taken from is not recorded. The skill was specialized by hand against the upstream, so the differences from this pin are that specialization rather than drift. The lineage rests on the text: the skill shares eleven six-word runs with the pstack corpus, and it is the only skill in the tree that shares anything beyond an incidental phrase. The commits above are the first pin - the last upstream commit before this skill entered the tree at `c72df68b` - and not a recorded origin.",
+        "kept": "The name, the `**Why:**` sentence, and the shape of a short principle with a pattern list. The name is kept because the judgement holds for any agentic work rather than for one surface, so it takes the bare `principle-` form under the project's suggested skill-naming scheme, `[<domain>-]principle-<judgement>`.",
+        "rewritten": "Three clauses arrived that rebutted text the file no longer contained, addressed to whoever had made the edit rather than to a reader. The upstream text asserted that the context window is finite and non-renewable within a session, which is a capacity fact an agent cannot measure, and it instructed the reader to set turn budgets and account for mechanism costs, which name no counter and no price. Both are gone. In their place is a rule that names the reading which settles the question, and a rule that makes a pass countable. The two bullets upstream dropped, routing bulk to a subagent and keeping hot content inline, are restored, because both are executable and a skill that forbids nothing is not a guard.",
+        "added": "`context.sh`, so measuring the room is a command rather than an intention. It reads the provider's own `usage.totalTokens` from `$PI_SESSION_FILE` and takes the denominator from the model catalog, so the number is measured rather than estimated. The skill is installed to `$AGENT_HOME/skills/principle-guard-the-context-window/`, which is the path `SKILL.md` names for `context.sh`.",
+        "dropped": "A stopgap note that stated the file would be overwritten by a package bump. It was false, because no package ships this skill, and it was addressed to an editor rather than to the agent reading the skill."
+      }
+    }
+  ]
+}

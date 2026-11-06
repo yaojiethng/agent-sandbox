@@ -13,15 +13,15 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Mandate
 
-You are porting a stale branch onto a target branch. The operator named both branches and stated the port intent. Your deliverable is the stale branch's work done again correctly on the target: each iteration becomes one commit, and the target history reads as if that work had always lived there.
+You are porting a stale branch onto a target branch. Your deliverable is that work done again correctly on the target: each iteration becomes one commit, and the target history reads as if that work had always lived there.
 
 Three rules govern this run.
 
-First, replay intent, not diffs. A formulaic rebase copies hunks; a port re-realizes what each iteration was for against the target's current state. Content the target already carries is dropped. Content the target superseded is adapted or dropped. Content that landed only as a failed patch is completed. The stale diff is the raw material, never the goal.
+First, replay intent, not diffs. A formulaic rebase copies hunks; a port re-realizes what each iteration was for against the target's current state. Content the target already carries is dropped. Content the target superseded is adapted or dropped. Content that landed only as a failed patch is completed.
 
-Second, preserve iteration granularity. One commit equals one iteration. The stale branch's commits each carry their own handover; the replayed commits keep the original messages and their handovers, in the historical order. No squash merges the iterations together, and no extra commit describes the port. The port leaves no scaffolding.
+Second, preserve iteration granularity. One commit equals one iteration. The stale branch's commits each carry their own handover; the replayed commits keep the original messages and their handovers, in the historical order. No squash merges the iterations together, and no extra commit describes the port.
 
-Third, stop on real architectural divergence. When the target's design contradicts a stale iteration's approach, or the intent is ambiguous and the records do not resolve it, stop and ask. Do not guess. Merely textual conflicts, additive merges, and stale counts are your work to resolve; design conflicts are the operator's.
+Third, stop on real architectural divergence. When the target's design contradicts a stale iteration's approach, or the intent is ambiguous and the records do not resolve it, stop and ask. Merely textual conflicts, additive merges, and stale counts are your work to resolve.
 
 ## Input contract
 
@@ -56,7 +56,7 @@ A draft export carries metadata that is not content.
 - `.rej` files are rejected patch remnants. They mean the iteration's intended change did not land. Realize the change on the current target and do not carry the `.rej`.
 - Stray untracked handovers in the working tree describe sessions outside the branch. Flag them to the operator; do not port them.
 
-Name the exclusion in your report. An operator expects the metadata file and the stray to be gone from the result.
+Name the exclusion in your report.
 
 ## Check supersession
 
@@ -74,7 +74,7 @@ Create one commit on the target for each stale iteration, in the historical orde
 
 Adapt the content as the current state requires, as if the iteration had run on the target. Fold current-state corrections (counts, suite totals, status lines) into the commit that owns the subject. Replace rejected-patch artifacts with the applied change. Resolve additive conflicts by keeping both branches' content.
 
-No port commit exists. The port record is the operator session, not a commit. If the exact stale content would contradict the target's own recent edits, the target's edits win; your job is the stale intent, layered on top of the target's reality.
+If the exact stale content would contradict the target's own recent edits, the target's edits win.
 
 ## Verify
 

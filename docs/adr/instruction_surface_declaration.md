@@ -1,6 +1,38 @@
 # Instruction Surface Declaration
 
-**Current:** 2026-10-17
+**Current:** 2026-11-01
+
+## 2026-11-01 -- A cell declares no reachable rows; a reference resolves in the path space its reader holds
+
+**Decision:** The `reachable` key leaves the manifest, and with it the clause of the 2026-10-05 entry below that a cell "declares ... plus the reachable rows it adds to the session environment". A cell declares its source folders, its runtime path, its loader, and the provider it belongs to, and nothing else.
+
+What a file may reference is not a property of the cell. It is decided by the path space the citing document is read in, which is a property of the root: a file that ships resolves a reference at its image path, and a file read from the working tree resolves it in the repository. Both are already declared, so the manifest holds one statement per root rather than a grant per surface.
+
+**Rationale:** The key was measured against the files it governed, in both directions. Six of the ten rows restated a root the manifest already declares - the image's own destinations and the provisioning template - and the cells granting them named none of those paths in any file. The rows that remained pointed at repository folders a cell's files name only incidentally: every cell's files point across `docs/`, `scripts/`, `tests/`, `devlog/` and `.agents/`, so a complete grant set per cell would be eight near-identical lists. The link gate already read the rows this way: it built the set of image prefixes a cell may reach from every cell's runtime path and every session row, then added the cell's own rows, so the rows could only ever forbid a path the session does not contain.
+
+The documented model had already dropped it. The prompt-authoring convention states that reach and delivery are axes of a root rather than of a document, and the reference rule it carries is the one applied here.
+
+**Rejected alternatives:**
+
+- *Keep the key and fill in the measured folders* -- the eight lists would repeat `docs/`, `scripts/`, `tests/` and `devlog/` per cell, and a new cross-cutting reference would mean editing every cell. That is the repetition the 2026-10-05 entry removed from the per-folder files, one level up.
+- *Keep the key and delete only the rows naming an already-declared root* -- the remainder in the measured corpus was empty: no cell names a repository folder exclusively, so the key survives holding nothing.
+- *Keep the rows as prose in each cell* -- a grant written in prose is not checked, and the failure it would describe is silent.
+
+**Edge cases / drivers:** A path outside both the image and the repository - an installed runtime, the host's own directories - is declared by the manifest section that creates its condition, `image` or `mounts`, and a file naming one is checked against that section rather than against a per-cell row. Retiring the key is one change to the declaration and to its readers; the reference rules themselves are unchanged.
+
+## 2026-11-01 -- The host bind mounts are declared beside the surfaces they expose
+
+**Decision:** The manifest gains a `mounts` section: one row per bind mount a provider's compose overlay declares, carrying the overlay's `source` and `target` verbatim and the tree the mount puts behind the surface. `scripts/check_container_layout.sh` holds the rows equal to the overlay in both directions, parsing `docker-compose.<provider>.yml` the way it parses the dockerfile.
+
+**Rationale:** A mount decides which children of an instruction surface are operator state and which are the image's copy: a skill folder on the mount survives a rebuild, and the same folder off it is overwritten at every start. That fact lived only in the overlay, so a reader of the declaration could not tell the two apart, and nothing compared them. The overlay is a file in the tree, which retires the claim in the 2026-10-05 entry below that this container cannot read it.
+
+**Rejected alternatives:**
+
+- *Generate the overlay's volumes block from the manifest* -- docker compose merges the overlay itself, and generating would change the build path for a declaration that only has to be readable and checked.
+- *Normalise the target to `$AGENT_HOME` in the rows* -- the check would then compare a derived value with a literal, and a target edited in one place only would still agree. The rows carry the overlay's text, and a reader who needs the variable reads the `env` row.
+- *Declare the mounts in the surface's own cell* -- a mount's target is already the cell's runtime path, so a row there would restate the cell and the comparison would have nothing to compare.
+
+**Edge cases / drivers:** `{{PROVIDER_NAME}}` is a template the compose generation substitutes, so a row carries it as written and the comparison stays literal. A provider that mounts nothing declares no rows, and an overlay item with no row is a finding that names that provider's file.
 
 ## 2026-10-17 -- A surface read from the project tree is declared and named by the provider's settings record
 

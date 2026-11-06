@@ -1,0 +1,182 @@
+{
+  "model": "skill-provenance/1",
+  "evidence": {
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "dirty": false,
+    "image": "sha256:fixture-image",
+    "agentHome": "/home/agentuser/.pi"
+  },
+  "nodes": [
+    {
+      "id": "root:repo:agent-sandbox",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "repo",
+      "layer": "agent-sandbox",
+      "path": "src/reasoning/agent/skills",
+      "version": "repo:0123456789abcdef0123456789abcdef01234567",
+      "sha256": "repo-agent-root"
+    },
+    {
+      "id": "root:repo:project",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "repo",
+      "layer": "project",
+      "path": ".agents/skills",
+      "version": "repo:0123456789abcdef0123456789abcdef01234567",
+      "sha256": "project-root"
+    },
+    {
+      "id": "root:repo:provider",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "repo",
+      "layer": "provider",
+      "path": "src/reasoning/providers/pi/config/agent/skills",
+      "version": "repo:0123456789abcdef0123456789abcdef01234567",
+      "sha256": "repo-provider-root"
+    },
+    {
+      "id": "root:repo:workflow",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "repo",
+      "layer": "workflow",
+      "path": "workflow/coding-agent/skills",
+      "version": "repo:0123456789abcdef0123456789abcdef01234567",
+      "sha256": "repo-workflow-root"
+    },
+    {
+      "id": "skill:repo:agent-sandbox:propagation-check",
+      "kind": "artifact",
+      "role": "target",
+      "namespace": "repo",
+      "layer": "agent-sandbox",
+      "path": "src/reasoning/agent/skills/propagation-check",
+      "version": "repo:0123456789abcdef0123456789abcdef01234567",
+      "sha256": "source-propagation"
+    },
+    {
+      "id": "root:image:agent-sandbox",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "image",
+      "layer": "agent-sandbox",
+      "path": "/opt/workflow/agent/skills",
+      "version": "image:sha256:fixture-image",
+      "sha256": "repo-agent-root"
+    },
+    {
+      "id": "root:image:provider",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "image",
+      "layer": "provider",
+      "path": "/opt/workflow/agent/config/agent/skills",
+      "version": "image:sha256:fixture-image",
+      "sha256": "image-provider-root"
+    },
+    {
+      "id": "root:image:workflow",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "image",
+      "layer": "workflow",
+      "path": "/opt/workflow/agent/modules/coding-agent/skills",
+      "version": "image:sha256:fixture-image",
+      "sha256": "image-workflow-root"
+    },
+    {
+      "id": "skill:image:agent-sandbox:propagation-check",
+      "kind": "artifact",
+      "role": "target",
+      "namespace": "image",
+      "layer": "agent-sandbox",
+      "path": "/opt/workflow/agent/skills/propagation-check",
+      "version": "image:sha256:fixture-image",
+      "sha256": "source-propagation"
+    },
+    {
+      "id": "skill:image:workflow:check-in",
+      "kind": "artifact",
+      "role": "target",
+      "namespace": "image",
+      "layer": "workflow",
+      "path": "/opt/workflow/agent/modules/coding-agent/skills/check-in",
+      "version": "image:sha256:fixture-image",
+      "sha256": "source-check-in"
+    },
+    {
+      "id": "root:host:provider",
+      "kind": "artifact",
+      "role": "root",
+      "namespace": "host",
+      "layer": "provider",
+      "path": "/home/agentuser/.pi/agent/skills",
+      "version": "host:host-provide",
+      "sha256": "host-provider-root"
+    }
+  ],
+  "edges": [
+    {
+      "kind": "copy",
+      "from": "root:repo:agent-sandbox",
+      "to": "root:image:agent-sandbox",
+      "evidence": "container-interface.json: src/reasoning/agent/skills/ -> /opt/workflow/agent/skills/",
+      "count": 1
+    },
+    {
+      "kind": "link",
+      "from": "root:repo:project",
+      "to": "skill:image:workflow:check-in",
+      "expression": "/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md",
+      "sourceSkill": "testing",
+      "targetSkill": "check-in",
+      "sourceFile": "testing/SKILL.md",
+      "line": 11,
+      "resolution": "image",
+      "evidence": "repo:project:testing/SKILL.md:11",
+      "count": 1
+    },
+    {
+      "kind": "link",
+      "from": "root:repo:project",
+      "to": "skill:repo:agent-sandbox:propagation-check",
+      "expression": "../../../src/reasoning/agent/skills/propagation-check/SKILL.md",
+      "sourceSkill": "testing",
+      "targetSkill": "propagation-check",
+      "sourceFile": "testing/SKILL.md",
+      "line": 10,
+      "resolution": "repo",
+      "evidence": "repo:project:testing/SKILL.md:10",
+      "count": 2
+    },
+    {
+      "kind": "same-content",
+      "from": "root:repo:agent-sandbox",
+      "to": "root:image:agent-sandbox",
+      "evidence": "sha256:repo-agent-root / repo-agent-root",
+      "count": 1
+    },
+    {
+      "kind": "same-content",
+      "from": "skill:repo:agent-sandbox:propagation-check",
+      "to": "skill:image:agent-sandbox:propagation-check",
+      "evidence": "sha256:source-propagation / source-propagation",
+      "count": 2
+    }
+  ],
+  "findings": [],
+  "warnings": [],
+  "summary": {
+    "roots": 8,
+    "nodes": 11,
+    "edges": 5,
+    "links": 3,
+    "targets": 3,
+    "same": 2,
+    "drift": 0,
+    "unknownImage": false
+  }
+}

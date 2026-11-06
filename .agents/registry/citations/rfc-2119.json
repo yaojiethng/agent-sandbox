@@ -1,0 +1,15 @@
+{
+  "id": "rfc-2119",
+  "title": "Key words for use in RFCs to Indicate Requirement Levels",
+  "author": "S. Bradner",
+  "publisher": "IETF",
+  "url": "https://www.rfc-editor.org/rfc/rfc2119.html",
+  "version": "RFC 2119, March 1997, as clarified by RFC 8174, May 2007",
+  "record": {
+    "source": "The ladder a protocol specification uses to grade its requirements. Read for the kind spectrum, not for the network vocabulary.",
+    "kept": "The three levels and their force: MUST is an absolute requirement, SHOULD is a case with a reason to deviate that must be stated, MAY is a permission. The three map onto this repository's rule, judgement and permission.",
+    "rewritten": "The keywords are stated as a test on the writer rather than as a vocabulary: a MUST names the artifact that fails when it is broken, which is what turns a requirement into a rule. SHOULD becomes a judgement with its criteria written beside it.",
+    "added": "The observer test. RFC 2119 says nothing about who detects a breach, and the distinction between a rule and a wish depends on it.",
+    "dropped": "The capitalization conventions that RFC 8174 clarified, and the boilerplate about reproducing the keywords in a specification. Both are the RFC's own housekeeping rather than a rule about writing."
+  }
+}

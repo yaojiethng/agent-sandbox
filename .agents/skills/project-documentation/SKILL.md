@@ -5,17 +5,11 @@ description: "Apply when writing or editing project documentation under `docs/`:
 
 # project-documentation
 
-## Folder tree
+## The folder and its mode
 
 This convention covers the project documentation under `docs/`. The `devlog/` records are the `work-log` convention's, the roadmap and changelog are `task-list`'s, and ADR entry structure is `decision-records`'s.
 
-| Folder | Holds | Ships |
-|---|---|---|
-| `docs/reference/` | how the harness works: contracts, states and sequences, the glossary | yes |
-| `docs/development/` | contributor workflow and the procedures for changing the harness | no |
-| `docs/adr/` | settled decisions, with superseded ones under `adr/archive/` | no |
-
-Each document belongs to exactly one folder. Which folder holds what, and each type's durability, is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy).
+Each document belongs to exactly one folder and serves one mode. The modes, the folder each serves, and what each folder holds are [`references/organization.md`](references/organization.md), which is this convention's organization rule. Which folder holds what, and each type's durability, is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy).
 
 An architecture document describes what the layers do today. Future work belongs in the task-list. The layer model and the stabilization rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-layer-model).
 
@@ -53,7 +47,7 @@ Propose the skeleton of an ADR or a reference document in chat before writing pr
 
 A document whose subject exists in the code and nowhere in the document set is greenfield: [`references/greenfield.md`](references/greenfield.md) scopes it against the documents that already exist before any prose is written.
 
-Write for the reader of the artifact, not for the session that produced it. Before a draft lands, read it back against two judgements: a sentence that needs the session, and a sentence the reader could drop without losing an action. `communication-principle-write-for-the-reader` and `communication-principle-cut-what-carries-nothing` state them.
+Write for the reader of the artifact, not for the session that produced it. Before a draft lands, read it back against two judgements: a sentence that needs the session, and a sentence the reader could drop without losing an action. `communication-principle-write-for-the-reader` and `communication-principle-cut-what-serves-nothing` state them.
 
 **Voice.** Write in the voice the operator heard when the decision was made: active, first person where a person did it, the claim first, one clause of reason. Read each sentence back as speech, and rewrite it if you would not say it to the operator. Address the record to the next agent session, which holds the tree, the conventions and the handover chain and can act as soon as it understands; stop there. Do not match the register of the records around you, which run heavier, and lighten any sentence of a record you are already rewriting. Where the decision was already put to the operator, carry that sentence rather than write a second version of it.
 

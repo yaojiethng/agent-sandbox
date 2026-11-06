@@ -36,12 +36,12 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Objective:** A consolidated workflow section for the deep approach to the communication domain: a taxonomy of the reader's processing costs that slices the domain into principles, a controlled vocabulary of the domain terms, and a measured answer to whether those terms signal the domain to an agent. The output is one communication surface that owns the domain.
 
-**Depends on:** M3.3.5, which owns the eval module the signalling experiment needs; and M3.3.4's principle cleanup, at minimum the removal of the duplicate declaration locations across `documentation_policy.md` `## Communication Standards`, `prompt-authoring-conventions.md`, and the `skill-scaffolder` skill.
+**Depends on:** M3.3.5, which owns the eval module the signalling experiment needs; and M3.3.4's principle cleanup, at minimum the removal of the duplicate declaration locations across `documentation_policy.md` `## Communication Standards`, `prompt-authoring-conventions.md`, and the `instruction-authoring` skill.
 
 **Tasks:**
 
 - [ ] Run the communication-domain taxonomy. Run brief: [`.agents/drafts/communication-domain-taxonomy-run.md`](../.agents/drafts/communication-domain-taxonomy-run.md).
-- [ ] **Populate the leading words across the corpus.** `metadata: leitwort:` is declared on the principle skills and most words are blank; its definition half is closed, the population pass remains. M3.3.4 ran a pass that produced one word per skill, the operator rejected the set, and it was reverted, so `proximity` and `leverage` stand, each naming its own skill's subject, and `sediment` stands on `cut-what-carries-nothing`, adopted 2026-10-28 with the body anchored to it. What a leading word is, and which word leads, is `communication-principle-maximize-conceptual-leverage`; where it goes is `skill-scaffolder`'s signposting pattern. The judging pass belongs with this sub-milestone's controlled vocabulary, where the territory is settled before a part of it is named. A gate over the field is unfiled, because presence is all a gate can read and no gate sees a thinking trace. Evidence: [`AGENT_FEEDBACK.md`](AGENT_FEEDBACK.md) **A vocabulary was chosen for flavour and reverted**.
+- [ ] **Populate the leading words across the corpus.** `metadata: leitwort:` is declared on the principle skills and most words are blank; its definition half is closed, the population pass remains. M3.3.4 ran a pass that produced one word per skill, the operator rejected the set, and it was reverted, so `proximity` and `leverage` stand, each naming its own skill's subject, and `sediment` stands on `cut-what-carries-nothing`, adopted 2026-10-28 with the body anchored to it. What a leading word is, and which word leads, is `communication-principle-maximize-conceptual-leverage`; where it goes is `instruction-authoring`'s signposting pattern. The judging pass belongs with this sub-milestone's controlled vocabulary, where the territory is settled before a part of it is named. A gate over the field is unfiled, because presence is all a gate can read and no gate sees a thinking trace. Evidence: [`AGENT_FEEDBACK.md`](AGENT_FEEDBACK.md) **A vocabulary was chosen for flavour and reverted**.
   - [x] **The field's definition is stated** -- what the word is, that it sits at `metadata: leitwort:`, and that it is set only where the body already teaches it. Closed 2026-10-28: the definition is in `communication-principle-maximize-conceptual-leverage`, the placement owner names the field, and the feedback entry is mitigated. Filed out of order; W2 stays `Not started` until its dependencies land. Handover `20261028-06`.
 
 ---
@@ -272,3 +272,38 @@ One version constant, one image label, one warn-only preflight check, and a hard
 ### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
 
 **Deferred / not-in-scope (design walk `20260818-02`, persistence-model decision).** The current model (copy and bind-mount) does not persist environment changes across runs: apt installs, `pi update --self`, `pi install` live in the per-run container writable layer, torn down at every run end (per-run writable-layer parity). Persisting them is explicitly NOT in scope for the current model -- containers are per-run; persistence is delivered exclusively by mounted sources. It would be nice to have. Candidate, parked, if per-run install cost proves punishing: a persisted install-cache volume fed per run (durable-by-designation), not a second writable layer.
+
+### Skill Ingestion as a Workflow Module (indefinitely deferred)
+
+**Status:** Indefinitely deferred, raised 2026-11-01 by handover `20261101-10`. Every requirement needed to start it is in this section; a session that picks it up should not have to re-derive why the move is expensive. The ruling it follows is in [`module_instruction_payload.md`](../docs/adr/module_instruction_payload.md), and the closed roadmap row is `Skill ingestion stays this repository's tool, not a shipped module`.
+
+**Reopens when:** a second project vendors a skill of its own, or the project-declaration seam lands.
+
+**Objective:** move the skill-ingestion pipeline into `workflow/<module>/`, so a project can enable ingestion or leave it off. It is repository-local today because two of its three members are project and harness state, and a module carries `prompts/` and `skills` only.
+
+**Depends on:** M3.4.2 `Environment declaration seam`, and a way for a shipped module to register a lint gate.
+
+**The prefactors, in the order they bind:**
+
+- [ ] **The project declares where its registry lives** -- `source_bump.mjs` resolves its root to the repository it runs in and expects `.agents/registry/sources/`; M3.4.2 owns where a project declares a path like that. Ends when a project names its registry root in a declaration the CLI reads, and a fixture project's store sits somewhere other than that fixed path.
+- [ ] **A shipped module can register a lint gate** -- `scripts/lint.sh` holds the gate list and a module's payload is its two folders, so a module cannot add a commit-time check. Ends when a gate shipped with a module runs under the umbrella, with a test that a failing module gate fails the umbrella and names its module.
+- [ ] **The store's tooling has a transport** -- `scripts/skill_store.mjs` and `scripts/source_bump.mjs` are repository scripts, and their tests run against the tree. Ends when both resolve from one installed location in any project, and the suite runs against that copy.
+- [ ] **The workflow layer enumerates modules from the manifest** -- `scripts/skill_layers.mjs` names the coding-agent module's skills folder literally, so a second module is invisible to the layer map, the collision gate and the reference gate. Ends when a second module appears in all three with no name added by hand.
+- [ ] **The registry's owner is decided** -- whether `.agents/registry/sources/` is project data, each project owning its edges, or payload shipped with the module. Ends when one is chosen and the canonical-form gate reads the store from the place that choice names.
+- [ ] **The module's membership is decided** -- whether the module means "vendor a skill" and carries `skill-fork` alone, or "do skill work" and carries the authoring side too, which needs the [merged instruction-writing surface](#merge-instruction-authoring-and-project-documentation-deferred-unscheduled) first; and whether `backlog-triage` leaves the coding-agent module. Ends when the payload is listed and no skill names a member of two modules.
+- [ ] **The name is chosen** -- `skill-management` is a candidate and not a decision, and the name is owed by a module that exists. Ends when the directory exists under that name.
+- [ ] **This repository migrates** -- its own skills move into the module and its provider config enables it. Ends when `.agents/skills/` holds no skill the module ships, and the layer map reports the module as the skills' source.
+
+### Merge Instruction-Authoring and Project-Documentation (deferred, unscheduled)
+
+**Status:** Deferred, unscheduled, raised 2026-11-04 while merging the boundary-violation rule into `principle-single-source-of-truth`. The two conventions overlap at the placement layer, but they have different scopes, readers and release rules. This task decides whether they should become one convention. It does not assume the merge.
+
+**Reopens when:** the SSOT scoping merge lands and `instruction-authoring` points at `project-documentation/references/organization.md` for placement, or when the two conventions drift again.
+
+**Objective:** decide whether one authoring convention should own both the documentation and the instruction surface, and if so, merge them without losing the distinct release rules.
+
+**Scope:** the two conventions, their references, the placement rule, the readers and the release paths. [`project-documentation`](../.agents/skills/project-documentation/SKILL.md) governs `docs/`; [`instruction-authoring`](../.agents/skills/instruction-authoring/SKILL.md) governs prompts and skills. Diataxis covers both, per [`documentation_quadrants.md`](../docs/adr/documentation_quadrants.md), and the how-to mode is the instruction surface. A merge is justified only if the shared placement rule outweighs the cost of one convention carrying two purposes. If they stay separate, [`organization.md`](../.agents/skills/project-documentation/references/organization.md) is the single placement source and `instruction-authoring` points at it. Out of scope: the SSOT skill merge and the immediate cross-reference.
+
+**Depends on:** the SSOT scoping merge, because it is the first test of whether `organization.md` can be the shared placement source.
+
+**Acceptance criteria:** a recorded decision, merge or keep separate, with the rationale. If merge, one convention carries the placement rule and the two authoring branches, and no release rule is lost. If keep separate, `organization.md` is the single placement source and `instruction-authoring` points at it. Ends when no placement rule is stated twice.

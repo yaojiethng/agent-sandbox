@@ -621,6 +621,22 @@ test_seeder_flat_verification_detects_dirty_worktree() {
   fi
 }
 
+# Given: an unguarded command fails inside a function the seeder runs
+# When:  errexit aborts the seeder
+# Then:  the abort names the line and the command
+# Asserts: the ERR trap -- a bare `set -e` abort is a silent exit, and the host
+#          start path discards the volume on a non-zero seed with no other output
+test_seeder_names_the_failing_command() {
+  local out rc=0
+  out=$(SEED_VOLUME_NO_MAIN=1 SEED_LIB_DIR="$LIBS_DIR" \
+    bash -c 'source "$1"; f() { local x; x=$(false); }; f' _ "$SEED_SCRIPT" 2>&1) || rc=$?
+  if [[ $rc -ne 0 && "$out" == *"Error: seed_volume: line "* && "$out" == *"exited 1"* ]]; then
+    pass "seeder abort names the failing command"
+  else
+    fail "seeder abort was silent (rc=$rc): $out"
+  fi
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -643,6 +659,7 @@ run_test test_seeder_prunes_unreachable_objects
 run_test test_seeder_flat_single_baseline
 run_test test_seeder_flat_verification_detects_dropped_file
 run_test test_seeder_flat_verification_detects_dirty_worktree
+run_test test_seeder_names_the_failing_command
 
 test_done
 

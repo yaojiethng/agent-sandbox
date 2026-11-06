@@ -32,7 +32,7 @@
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
-const MANIFEST_REL = "src/build/container-interface.json";
+export const MANIFEST_REL = "src/build/container-interface.json";
 const PROVIDERS_REL = "src/reasoning/providers";
 const ENTRYPOINT_REL = "src/reasoning/entrypoint.sh";
 const DOCKERFILE_NAME = "provider.dockerfile";
@@ -91,6 +91,42 @@ export function parse_envs(file) {
     if (match) rows.push({ name: match[1], value: match[2].trim() });
   }
   return rows;
+}
+
+// compose_path ROOT PROVIDER -- the provider's compose overlay, the file that
+// declares its host-side bind mounts. Absent for a provider that mounts none.
+export function compose_path(root, provider) {
+  return join(root, PROVIDERS_REL, provider, `docker-compose.${provider}.yml`);
+}
+
+// parse_mounts FILE -- the bind mounts a compose overlay declares, as
+// { source, target }. The overlay writes each one as a `- type: bind` item with
+// a `source:` and a `target:` line, so the scan is three lines per item and
+// stops when the next item begins. A row missing either half is skipped, and
+// the equality check then reports the mount as one the manifest does not
+// declare.
+export function parse_mounts(file) {
+  const rows = [];
+  let pending = null;
+  for (const line of read_lines(file)) {
+    if (/^\s*-\s*type:\s*bind\s*$/.test(line)) {
+      pending = {};
+      continue;
+    }
+    if (pending === null) continue;
+    const source = /^\s*source:\s*(\S+)\s*$/.exec(line);
+    if (source) {
+      pending.source = source[1];
+      continue;
+    }
+    const target = /^\s*target:\s*(\S+)\s*$/.exec(line);
+    if (target) {
+      pending.target = target[1];
+      rows.push(pending);
+      pending = null;
+    }
+  }
+  return rows.filter((row) => row.source && row.target);
 }
 
 function read_lines(file) {
@@ -197,33 +233,18 @@ export function session_paths(manifest) {
   return manifest_rows(manifest, "session").map((row) => row.path);
 }
 
-// instruction_reach ROOT REPO_PATH -- the reach the cell that declares a file
-// grants it, or null when no cell declares the file. `image` is every prefix a
-// link may target in the image's path space: the instruction roots the cells
-// declare, the session paths every surface reads, and the cell's own reachable
-// rows. `repo` is the cell's reachable rows as repository paths, the paths its
-// files read with the repository tree present. `$AGENT_HOME` stays literal and
-// is also expanded with each provider's home, because a cell writes the
-// variable and the image resolves it.
-export function instruction_reach(root, repoPath) {
-  const manifest = load_manifest(root);
-  if (!manifest) return null;
-  const cells = manifest_rows(manifest, "cells");
-  const cell = cells.find((row) =>
-    (row.sources || []).some((source) => repoPath.startsWith(source)),
-  );
-  if (!cell) return null;
-  const homes = manifest_rows(manifest, "env")
-    .filter((row) => row.name === "AGENT_HOME")
-    .map((row) => row.value);
-  const variants = (path) => [path, ...homes.map((home) => path.replace(/^\$AGENT_HOME/, home))];
-  const reachable = (cell.reachable || []).map((row) => row.path);
-  const image = [
-    ...cells.map((row) => row.runtime_path).filter((path) => path && path !== "none"),
-    ...session_paths(manifest),
-    ...reachable,
-  ].flatMap(variants);
-  return { cell, image, repo: reachable };
+// check_cell_keys WHERE CELL FINDINGS -- a cell declares the keys the
+// declaration carries. An unrecognised key is a finding rather than ignored
+// data: a row nothing reads is a decision written where nothing enforces it,
+// and the retired `reachable` list is the case this exists for.
+const CELL_KEYS = ["sources", "runtime_path", "loader", "provider"];
+
+function check_cell_keys(where, cell, findings) {
+  for (const key of Object.keys(cell)) {
+    if (!CELL_KEYS.includes(key)) {
+      findings.push(`${where}: declares '${key}', which a cell does not carry (${CELL_KEYS.join(", ")})`);
+    }
+  }
 }
 
 // check_cells ROOT MANIFEST PROVIDERS FINDINGS -- the declared instruction
@@ -282,7 +303,7 @@ function check_cells(root, manifest, providers, findings) {
     if (cell.provider !== undefined && !providers.includes(cell.provider)) {
       findings.push(`${where}: names provider '${cell.provider}', which carries no dockerfile`);
     }
-    check_reachable(where, cell, findings);
+    check_cell_keys(where, cell, findings);
     check_scoping(where, cell, providers, findings);
     check_surface(where, cell, images, provisions, roots, root, session, findings);
   }
@@ -323,26 +344,19 @@ function check_cells(root, manifest, providers, findings) {
   check_names(root, manifest, root_keys, findings);
 }
 
-// check_reachable WHERE CELL FINDINGS -- the rows the cell adds to the session
-// environment. `always` is the session's condition, so a cell that repeats it
-// is restating the environment rather than adding to it.
-function check_reachable(where, cell, findings) {
-  const rows = cell.reachable;
-  if (rows === undefined) return;
-  if (!Array.isArray(rows)) {
-    findings.push(`${where}: reachable is not a list`);
-    return;
+// image_source ROOT IMAGE_PATH -- the repository source that populates an image
+// path, or undefined when no \`image\` row does. The longest matching destination
+// wins, so a subdirectory resolves to the row that carries it rather than to the
+// row above it.
+export function image_source(root, imagePath) {
+  let best;
+  for (const row of pairs(root)) {
+    if (row.layer !== "image") continue;
+    if (!imagePath.startsWith(row.destination)) continue;
+    if (best === undefined || row.destination.length > best.destination.length) best = row;
   }
-  for (const row of rows) {
-    for (const field of ["path", "holds", "condition"]) {
-      if (typeof row[field] !== "string" || row[field].trim() === "") {
-        findings.push(`${where}: a reachable row declares no ${field}`);
-      }
-    }
-    if (row.condition === "always") {
-      findings.push(`${where}: reachable row '${row.path}' carries 'always', which the session rows already declare`);
-    }
-  }
+  if (best === undefined) return undefined;
+  return join(root, best.source, imagePath.slice(best.destination.length));
 }
 
 // check_scoping WHERE CELL PROVIDERS FINDINGS -- the two rules a cell's own row
@@ -613,6 +627,19 @@ export function check(root) {
   findings.push(...compare("image", manifest_rows(manifest, "image"), copies, copy_key));
   findings.push(...compare("env", manifest_rows(manifest, "env"), envs, env_key));
 
+  const mounts = [];
+  for (const provider of providers) {
+    for (const row of parse_mounts(compose_path(root, provider))) {
+      mounts.push({ provider, ...row });
+    }
+  }
+  findings.push(
+    ...compare("mounts", manifest_rows(manifest, "mounts"), mounts, mount_key, {
+      derives: "the compose overlay",
+      file_of: (row) => `${PROVIDERS_REL}/${row.provider}/docker-compose.${row.provider}.yml`,
+    }),
+  );
+
   const entrypoint = read_lines(join(root, ENTRYPOINT_REL))
     .find((line) => /^PROVISION_TEMPLATE=/.test(line));
   const template = entrypoint ? entrypoint.slice("PROVISION_TEMPLATE=".length).replace(/^"|"$/g, "") : "";
@@ -659,24 +686,67 @@ function env_key(row) {
   return `${row.provider}\t${row.name}\t${row.value}`;
 }
 
-// compare LAYER DECLARED DERIVED KEY -- the two sets against each other, with
-// the direction named, so a reader knows which side to fix.
-function compare(layer, declared, derived, key) {
+function mount_key(row) {
+  return `${row.provider}\t${row.source}\t${row.target}`;
+}
+
+// compare LAYER DECLARED DERIVED KEY [OPTIONS] -- the two sets against each
+// other, with the direction named, so a reader knows which side to fix.
+// OPTIONS.derives names the artefact the derived rows come from, and
+// OPTIONS.file_of names the file a particular row came from, since a layer's
+// rows do not all come from one file.
+function compare(
+  layer,
+  declared,
+  derived,
+  key,
+  {
+    derives = "the provider dockerfiles",
+    file_of = (row) => `${PROVIDERS_REL}/${row.provider}/${DOCKERFILE_NAME}`,
+  } = {},
+) {
   const findings = [];
   const declared_keys = new Set(declared.map(key));
   const derived_keys = new Set(derived.map(key));
 
   for (const row of declared) {
     if (!derived_keys.has(key(row))) {
-      findings.push(`${layer}: the manifest declares '${key(row)}', which the dockerfiles do not carry`);
+      findings.push(`${layer}: the manifest declares '${key(row)}', which is absent from ${derives}`);
     }
   }
   for (const row of derived) {
     if (!declared_keys.has(key(row))) {
-      findings.push(`${layer}: ${PROVIDERS_REL}/${row.provider}/${DOCKERFILE_NAME} carries '${key(row)}', which the manifest does not declare`);
+      findings.push(`${layer}: ${file_of(row)} carries '${key(row)}', which the manifest does not declare`);
     }
   }
   return findings;
+}
+
+// report ROOT -- the instruction surface as declared, one line per fact, in
+// the manifest's own order. Nothing here reads the environment, the clock or a
+// host path, so two runs over one manifest print the same bytes: that equality
+// is what the row this command closes is accepted on. A consumer that needs one
+// layer greps the tag rather than running a second command.
+export function report(root) {
+  const manifest = load_manifest(root);
+  if (!manifest) return [];
+  const lines = [];
+  for (const row of manifest_rows(manifest, "session")) {
+    lines.push(["session", row.path].join("\t"));
+  }
+  for (const [index, cell] of manifest_rows(manifest, "cells").entries()) {
+    lines.push(["cell", String(index), (cell.sources || []).join(","), cell.runtime_path].join("\t"));
+  }
+  for (const row of manifest_rows(manifest, "mounts")) {
+    lines.push(["mount", row.provider, row.source, row.target].join("\t"));
+  }
+  for (const row of pairs(root)) {
+    lines.push([row.layer, row.provider, row.source, row.destination].join("\t"));
+  }
+  for (const row of manifest_rows(manifest, "env")) {
+    lines.push(["env", row.provider, row.name, row.value].join("\t"));
+  }
+  return lines;
 }
 
 function parse_args(argv) {
@@ -715,13 +785,18 @@ function main(argv) {
     for (const dir of dirs) process.stdout.write(`${dir}\n`);
     return dirs.length === 0 ? 1 : 0;
   }
+  if (args.command === "report") {
+    const lines = report(args.root);
+    for (const line of lines) process.stdout.write(`${line}\n`);
+    return lines.length === 0 ? 1 : 0;
+  }
   if (args.command === "check") {
     const findings = check(args.root);
     for (const finding of findings) process.stdout.write(`${finding}\n`);
     return findings.length === 0 ? 0 : 1;
   }
   process.stderr.write(
-    "usage: container-interface.mjs pairs|session|roots|check [--root DIR] [--kind skills|prompts]\n",
+    "usage: container-interface.mjs pairs|session|roots|report|check [--root DIR] [--kind skills|prompts]\n",
   );
   return 2;
 }

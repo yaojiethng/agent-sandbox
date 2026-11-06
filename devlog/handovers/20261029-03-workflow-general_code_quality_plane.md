@@ -1,5 +1,5 @@
 ---
-status: Active
+status: Closed
 milestone: M3.2.2
 type: Workflow
 date: 2026-10-29
@@ -40,7 +40,7 @@ Settle where a language-agnostic code rule lives, so a review can cite one the w
 
 ## Decisions pending
 
-- **Whether the policy note goes into `conventions.md`.** One row naming the two `AGENTS.md` rules that apply to every language, and naming the liveness check as the one place dead code is caught.
+None open here. The `conventions.md` pointer was never written, so it moved to the roadmap row **The language-agnostic rules are named where a finding can cite them** under M3.1.2 when this handover closed: a question a record holds outlives no session, and a row holds it with an end.
 
 ## Findings
 

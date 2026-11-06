@@ -29,7 +29,7 @@ The value is a fact with an owner. A model id written at a call site is measured
 
 ## The Resolution Path
 
-The table is read from `DISPATCH_REC_FILE` when it is set, then from the repository's `.agents/model-recommendations.md`, then from the agent home. The first two read the same file in a normal tree; the third is the copy a container falls back to when the repository one is absent.
+The table is read from `DISPATCH_REC_FILE` when it is set, and otherwise from the repository's `.agents/model-recommendations.md`. A tree without that file has no table, and the read reports the path it looked for rather than answering from a second copy.
 
 A role is a tag matching `_[A-Z][A-Z0-9_]*`, and its line lists assignments separated by semicolons. The list is returned in the order the table wrote it, with repeats dropped and every entry validated. The head of that list is the assignment a one-model request uses, and a route is recorded under that assignment with its thinking level stripped, so two levels of one model share one record.
 

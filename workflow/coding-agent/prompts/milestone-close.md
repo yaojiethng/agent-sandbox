@@ -35,7 +35,7 @@ Surface every open `[A]` (agent) and `[O]` (operator) entry and every pending sw
 - **maintain** -- the fix is not stress-tested. Extend probation.
 - **escalate** -- the problem resurfaced. Re-scope with awareness of the prior fix.
 
-Reconcile the feedback per the operator's decisions. Do not decide a probation entry yourself; the operator owns the decision. Escalation of far-reaching correctness work defers the close until the work completes. Low-urgency escalation files as a named task at the top of the next milestone.
+Reconcile the feedback per the operator's decisions; no probation entry is yours to decide. Escalation of far-reaching correctness work defers the close until the work completes. Low-urgency escalation files as a named task at the top of the next milestone.
 
 ## Compact the task list
 
@@ -43,7 +43,7 @@ This prompt owns the milestone-grain compaction. Run the [`roadmap-maintenance`]
 
 Then compact, for each node whose direct children are all complete:
 
-1. **Compact the node** - replace each child's checklist with a `- [x]` outcome summary of 1-3 sentences. Keep the marker, the design document links and the "Not in scope" or deferred tags; drop the task breakdown, the file lists and the implementation notes, which the handover retains. A child that is work in its own right keeps its row beneath the parent; the test is in the project's `task-list` convention, Filing rules. A unit of this workflow's own execution folds into the summary. Flip the node's heading status to `Complete` when one is shown.
+1. **Compact the node** - replace each child's checklist with a `- [x]` outcome summary of 1-3 sentences. Keep the marker and the "Not in scope" or deferred tags; drop the design document link, the task breakdown, the file lists and the implementation notes, which the handover retains. A record the row still needs is re-pointed to an open row before this step, because a closed row owns nothing and `scripts/check_record_lifecycle.sh` fails on the link. A child that is work in its own right keeps its row beneath the parent; the test is in the project's `task-list` convention, Filing rules. A unit of this workflow's own execution folds into the summary. Flip the node's heading status to `Complete` when one is shown.
 2. **Check the node's own parent** - when every sibling of this node is also compacted, compact the parent the same way, to a single `- [x]` entry.
 3. **Repeat upward** until the pass reaches a node whose siblings are not all complete, or the top-level milestone.
 4. **Continue into the top-level close** when the pass reached the top-level milestone.
@@ -56,7 +56,7 @@ Every number the close asserts must come from the live record rather than memory
 
 ## Write the changelog entry
 
-Append the milestone's entry to `devlog/changelog.md` in milestone order. The project's `task-list` convention's `references/changelog.md` owns the entry's structure and its writing guidance; read it there. Output the entry as a fenced block labelled `changelog` so the operator can append its contents verbatim to `changelog.md` without reading the existing file.
+Append the milestone's entry to `devlog/changelog.md` in milestone order. The project's `task-list` convention's `references/changelog.md` owns the entry's structure and its writing guidance; read it there. Output the entry as a fenced block labelled `changelog`, for the operator to append verbatim.
 
 ## Update the records
 
@@ -71,21 +71,21 @@ In `devlog/roadmap.md`:
 Give every item the milestone leaves open a recorded source of truth before the close:
 
 - An item deferred with a destination goes to `roadmap.md` as an open row under the owning milestone, per the deferred-resolution rule in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
-- An item that will not be picked up next goes to `roadmap.md` as a named task under the `task-list` convention's `**Roadmap task placement**`; the operator names the destination milestone.
+- An item that will not be picked up next goes to `roadmap.md` as a named task under the `task-list` convention's `**Roadmap task placement**`; the agent proposes the destination milestone with its reason, and the operator decides.
 - An item already resident elsewhere in `roadmap.md` or `roadmap_future.md` is named, not duplicated.
 
 ## Close the milestone
 
-Before the record edits and the close commit, present to the operator the compaction summary, the changelog entry, and the close boundary. Wait for explicit release before applying them. The operator's direction to close is the last input before the close commit.
+Before the record edits and the close commit, present to the operator the compaction summary, the changelog entry, and the close boundary. Wait for explicit release before applying them.
 
 Then:
 
 1. Mark every acceptance criterion accepted in the handover.
 2. Run scope reconciliation and the deferred-resolution gate at milestone grain; see [iteration_protocol.md](/opt/sandbox/docs/reference/iteration_protocol.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
 3. Set the handover `Status: Closed` before the commit -- the commit is the close.
-4. Land one delivery commit per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`. Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of the active types there. The M2.7 and M3.1 closes both typed `plan`.
+4. Land one delivery commit per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`. Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of the active types there.
 
-After the close commit, stop: report the landed commit and the updated records. No substantive work lands after the operator's close direction.
+After the close commit, stop: report the landed commit and the updated records; nothing substantive lands after it.
 
 ## Invariants
 

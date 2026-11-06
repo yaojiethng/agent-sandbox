@@ -7,6 +7,8 @@ description: "agent-sandbox's work-log convention - the work-unit record (handov
 
 This project's work log holds three records.
 
+A record is not documentation and has no documentation mode. Its reader is a later session continuing the work, rather than a learner, a practitioner, an explainer or an index, so the four modes `project-documentation` states do not apply to it.
+
 | Record | Path | Its shape |
 |---|---|---|
 | The work-unit record | `devlog/handovers/` | [`assets/handover.md`](assets/handover.md) |
@@ -104,56 +106,57 @@ The `milestone` field names the task group the iteration belongs to. The task li
 
 ## The exploration record
 
-`devlog/discussions/` holds one record per line of enquiry. The type decides what the record answers, its status path and its shape.
+`devlog/discussions/` holds one record per line of enquiry, and this convention decides its life: the record is opened only while in-flight knowledge must outlive the iteration, and it is deleted when the roadmap row that names it closes, or re-pointed to an open row that inherits it. The ground is `principle-single-source-of-truth` -- once the ADR holds the subject in the same mode, the record is a second source. [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md) classifies the kind, and the [`decision-records`](../decision-records/SKILL.md) convention owns the ADR the evidence settles into, not the record.
+
+Two gates hold the life: `scripts/check_record_names.sh` for the name and the state, and `scripts/check_record_lifecycle.sh` for the deletion and for the row that links a record. Each states the rule it applies when it fails.
 
 ### A discussion record's filename
 
 ```text
-YYYYMMDD-{type}-{status}-{description}.md
+YYYYMMDD-{type}-{state}-{description}.md
 ```
 
 | Component | Rule |
 |---|---|
 | `YYYYMMDD` | the date the record opens |
 | `{type}` | one of `story`, `study`, `design`, `report` |
-| `{status}` | one of the statuses below |
+| `{state}` | one of the states below |
 | `{description}` | `[a-z0-9][a-z0-9._-]*`: lowercase letters, digits, period, underscore and hyphen, with underscores for word spaces |
 
 Hyphens delimit and underscores separate words. A name carries no emoji, no unicode, no space and no per-day index: that slot belongs to the handover record, and one date already holds both kinds of record.
 
-A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention and its inbound links are updated.
+A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention, its inbound links are updated, and a state token the vocabulary has retired is brought into the current set.
 
 A file under `docs/` is not a discussion record and does not take this name.
 
-### Statuses
+### Two facts, not one
 
-| Status | Meaning | Valid next states |
+What the enquiry has established, and whether the task that owns the record is still open, are independent. The first is the record's state, carried in its name and its `**Status:**` line. The second is its tenancy, read from the roadmap: a record is **owned** while at least one open row names it, and **orphaned** when none does.
+
+| State | Meaning | Valid next states |
 |---|---|---|
-| `draft` | First write, not yet reviewed | `active`, `rejected` |
-| `active` | Under discussion or investigation | `settled`, `rejected` |
-| `settled` | Discussion closed, decision reached | `superseded`, `archived` |
-| `superseded` | Replaced by a newer record | `archived` |
-| `rejected` | Decided against | `archived` |
-| `archived` | Terminal, no active references | -- |
+| `open` | the enquiry is in flight | `concluded`, `rejected` |
+| `concluded` | the enquiry reached its result, and the record is evidence for it | -- |
+| `rejected` | decided against | -- |
 
-One vocabulary serves all four types, in the filename and in the `**Status:**` line. A report is the exception: it starts at `draft`, moves straight to `settled`, and never passes through `active`. A rejected report is deleted or archived at the operator's direction.
+A record is deleted when it is `concluded` or `rejected` **and orphaned**: its row has closed, so the evidence has no task left to serve. Another open row may take the record over instead, which is a re-point rather than a new file, and the closed row strips its link. A record whose row is still open stays, whatever its state.
 
 ### The four types
 
-| Type | Open one when | Its shape |
+| Type | The enquiry it carries | Its shape |
 |---|---|---|
 | `story` | the sub-milestone objective is clear but the approach is not | [`assets/story.md`](assets/story.md) |
 | `study` | a story has two or more candidate approaches to compare | [`assets/study.md`](assets/study.md) |
 | `design` | the iteration's design phase resolves trade-offs between options | [`assets/design.md`](assets/design.md) |
-| `report` | an operation has finished and its record is composed after the fact | no fixed order, on the rules below |
+| `report` | a run's evidence, composed while the run is in flight | no fixed order, on the rules below |
 
-**A story graduates** when the pain point is understood, the resolvable questions are answered, the approach is agreed with its rationale, and the tasks name a file and a nature of change. Write the task-list row first, then set the status to `settled`. Tasks are not copied back into the story.
+**A story concludes** when the pain point is understood, the resolvable questions are answered, the approach is agreed with its rationale, and the tasks name a file and a nature of change. Write the task-list row first, then set the state to `concluded`. Tasks are not copied back into the story.
 
-**A closed study feeds its parent story.** The study links back from the parent's `## Study Findings`, and the agent does not delete a study record.
+**A study links its parent story.** The study links back from the parent's `## Study Findings`, and its lifetime is the parent's: the record stays while that row is open.
 
-**A design settles into an ADR.** When the design settles an implementation decision, record the decision in `docs/adr/` per the [`decision-records`](../decision-records/SKILL.md) convention and set the design's status to `settled`. The design stays the exploration record; the ADR is the authority.
+**A design concludes into an ADR.** When the design settles an implementation decision, record the decision in `docs/adr/` per the [`decision-records`](../decision-records/SKILL.md) convention and set the state to `concluded`. The ADR is the authority and the durable seat; the record is the evidence, and it is deleted once its row closes.
 
-**A report has no fixed section order.** Three rules bind it: it is composed after the fact and is never a working record; it starts at `draft` and moves straight to `settled`; and it states the context, what came of it, and the artifacts it produced, each naming the artifact's source of truth.
+**A report has no fixed section order.** Three rules bind it: it is `open` while its run is in flight and `concluded` when the run ends; it states the context, what came of it, and the artifacts it produced, each naming the artifact's source of truth; and it is deleted once its facts are in the handover or the ADR it justified.
 
 ## The feedback record
 

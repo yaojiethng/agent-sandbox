@@ -31,9 +31,12 @@
 #   the provider config root    -- its links resolve in the image too: the
 #                                 repository-relative form fails, the image path
 #                                 passes, so the root is a registered root
-#   a link outside the cell reach -- flagged, even when the image carries it
-#   a link to a reachable row     -- clean: the cell declares the path
-#   a repository link under a reachable row -- clean: the cell reads it there
+#   a link between two instruction roots -- clean: both are declared image
+#                                 destinations, so neither surface fences the
+#                                 other off
+#   a repository link, from an instruction root -- flagged: the repository tree
+#                                 is the reader's working directory, not the
+#                                 document's path space, so name the record
 #   a repository path, from a bundled document -- clean: only the instruction
 #                                 roots resolve in the image's path space
 #   a shipped document naming an unseeded convention -- flagged: the name is
@@ -315,8 +318,8 @@ test_provider_config_root_resolves_in_the_image() {
 }
 
 # provision_root NAME -- a fixture root with a prompt in a shipped module root
-# and a file in the provider config template. The template is a declared image
-# destination that the module prompt's cell does not reach.
+# and a file in the provider config template, which is a second declared image
+# destination.
 provision_root() {
   local name="$1"
   local dir="$FIXTURE_DIR/$name"
@@ -325,38 +328,31 @@ provision_root() {
   printf '%s' "$dir"
 }
 
-test_link_outside_the_cell_reach_is_flagged() {
+test_link_between_two_instruction_roots_is_clean() {
   local dir cfg out
-  dir="$(provision_root outside_reach)"
-  # The target exists in the image, and it names the provider config surface's
-  # tree rather than any path the module prompt's cell reaches.
-  printf '[tpl](/opt/workflow/agent/config/agent/template.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  dir="$(provision_root two_roots)"
+  # One declared image destination linked from another. No surface fences off
+  # a sibling any more: both are roots the manifest declares, and the reader in
+  # either one holds the image.
+  printf '# Doc\n' > "$dir/workflow/coding-agent/prompts/doc.md"
+  printf '[tpl](/opt/workflow/agent/config/agent/template.md)\n' >> "$dir/workflow/coding-agent/prompts/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_contains "$out" 'lands outside the instruction surface' 'a target outside the cell reach is flagged'
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a declared destination is reachable from another'
 }
 
-test_link_through_a_reachable_row_is_clean() {
+test_repository_link_from_an_instruction_root_is_flagged() {
   local dir cfg out
-  dir="$(provision_root reachable_row)"
-  # The same target, linked from the cell whose reachable rows name it.
-  printf '[tpl](/opt/workflow/agent/config/agent/template.md)\n' > "$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
-  cfg="$(make_cfg)"
-  out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a reachable-row target is clean'
-}
-
-test_repository_link_under_a_reachable_row_is_clean() {
-  local dir cfg out
-  dir="$(shipped_root reachable_repo)"
+  dir="$(shipped_root repository_link)"
   mkdir -p "$dir/devlog"
   printf '# Roadmap\n' > "$dir/devlog/roadmap.md"
-  # The module prompt cell declares `devlog/` reachable, so a repository link
-  # there is legal even though no image destination carries it.
+  # The file exists in the repository, and the prompt's reader holds the working
+  # tree, but the document is read at its image path, where the target is absent:
+  # the record is named rather than linked.
   printf '[roadmap](../../../devlog/roadmap.md)\n' > "$dir/workflow/coding-agent/prompts/doc.md"
   cfg="$(make_cfg)"
   out="$(mdl_run "$dir" "$cfg")"
-  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a repository path under a reachable row is clean'
+  assert_contains "$out" 'does not exist in the image' 'a repository-only target is flagged from an instruction root'
 }
 
 linking_skill_rules_cite_a_story() {
@@ -400,9 +396,8 @@ run_test test_repository_path_from_a_bundled_document_is_flagged
 run_test test_link_between_two_bundled_documents_is_clean
 run_test test_sibling_instruction_root_link_is_clean
 run_test test_provider_config_root_resolves_in_the_image
-run_test test_link_outside_the_cell_reach_is_flagged
-run_test test_link_through_a_reachable_row_is_clean
-run_test test_repository_link_under_a_reachable_row_is_clean
+run_test test_link_between_two_instruction_roots_is_clean
+run_test test_repository_link_from_an_instruction_root_is_flagged
 
 # The seeded-convention cases. The names are read from the repository's own
 # `initialize` corpus, so `work-log` is seeded and `numbering` is not. The

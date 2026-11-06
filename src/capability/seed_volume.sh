@@ -29,6 +29,12 @@
 # for every session) fail closed below; empty worktrees no-op (an empty
 # enumeration is a no-op for rsync, and the parity/baseline check still runs).
 set -euo pipefail
+# Every abort names itself. Under errexit a failing command otherwise exits in
+# silence, and the host start path (run_agent.sh) discards the volume on a
+# non-zero seed with nothing else to read: a silent exit is indistinguishable
+# from a crash. -E carries the trap into the delivery functions below.
+set -E
+trap 'echo "Error: seed_volume: line $LINENO: `$BASH_COMMAND` exited $?" >&2' ERR
 
 SRC="${SEED_SRC:-/src}"
 # The volume must be mounted at the sandbox service's own target path: a fresh

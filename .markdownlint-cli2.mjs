@@ -6,8 +6,8 @@
 // resolve). Both exempt the record trees declared below, under one key.
 //
 // Deliberately DISABLED (they contradict written policy):
-//   MD013 line-length -- the docs skill's one-paragraph-per-line rule
-//       forbids breaking prose at a column limit
+//   MD013 line-length -- the `project-documentation` convention's
+//       one-paragraph-per-line rule forbids breaking prose at a column limit
 //   MD060 table-column-style -- the repo writes compact tables; MD060
 //       pads cells to a uniform width and makes tables unreadable
 //
@@ -91,8 +91,6 @@ export default {
         "docs/reference/terminology.md",
         "docs/development/interface-conventions.md",
         "src/reasoning/agent/skills/caveman/SKILL.md",
-        "src/reasoning/agent/skills/domain-model/ADR-FORMAT.md",
-        "src/reasoning/agent/skills/improve-codebase-architecture/LANGUAGE.md",
         "src/reasoning/providers/hermes/quickstart.md",
         "src/reasoning/providers/opencode/quickstart.md",
         "src/reasoning/providers/pi/onboard-readme.md",

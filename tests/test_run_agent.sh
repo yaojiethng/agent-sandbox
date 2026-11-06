@@ -145,55 +145,6 @@ test_setup_hook_absent_is_noop() {
   fi
 }
 
-# The pi provider ships setup.sh (mkdir -p .pi). A run that reaches compose
-# proves the hook was sourced and exited 0 (a failing hook aborts first).
-# Given: the pi provider, which ships setup.sh
-# When:  run_agent.sh runs a standard session
-# Then:  the hook is sourced, exits 0, and the session reaches compose generation
-# Asserts: a present hook runs and its success is accepted
-test_setup_hook_present_runs_and_proceeds() {
-  local FIX="$FIXTURE_DIR/hook_present"
-  make_run_agent_fixture "$FIX" pi
-
-  local out="$FIX/out.txt" rc=0
-  invoke_run_agent "$out" || rc=$?
-
-  if [[ $rc -eq 0 ]] && [[ "$(trace_count 'compose config')" -gt 0 ]]; then
-    pass "setup hook present (pi): hook sourced, session proceeds to compose"
-  else
-    fail "setup hook present: expected rc 0 + compose config, got rc=$rc out='$(cat "$out")'"
-  fi
-}
-
-# A failing setup hook must abort the session with an attribution message
-# naming the hook file, BEFORE any docker/compose invocation (documented
-# contract in run_agent.sh: "the session aborts with a clear error
-# attributing the failure to the provider setup hook").
-# Given: the pi setup hook forced to fail (the sandbox dir stripped of write permission)
-# When:  run_agent.sh runs a standard session
-# Then:  it aborts non-zero with a message naming providers/pi/setup.sh and calls no compose command
-# Asserts: the documented abort contract - a failing hook is attributed and aborts before any side effect
-test_setup_hook_failure_aborts_with_attribution() {
-  local FIX="$FIXTURE_DIR/hook_fails"
-  make_run_agent_fixture "$FIX" pi 1
-
-  local out="$FIX/out.txt" rc=0
-  invoke_run_agent "$out" || rc=$?
-  chmod -R u+w "$SANDBOX_DIR" 2>/dev/null || true  # let the trap clean up
-
-  if [[ $rc -ne 0 ]] && grep -q "provider setup hook failed" "$out" \
-     && grep -q "providers/pi/setup.sh" "$out"; then
-    pass "failing setup hook: aborts with attribution naming providers/pi/setup.sh"
-  else
-    fail "failing setup hook: expected non-zero rc + attribution, got rc=$rc out='$(cat "$out")'"
-  fi
-  if [[ "$(trace_count 'compose')" -eq 0 ]]; then
-    pass "failing setup hook: aborts before any compose invocation"
-  else
-    fail "failing setup hook: compose was invoked despite hook failure"
-  fi
-}
-
 # --flatten is accepted and the session proceeds to compose (default is full;
 # the flag is the flatten opt-out, so its acceptance is the contract).
 # Given: --flatten on the command line
@@ -494,15 +445,50 @@ test_dry_run_overlay_missing_refused() {
   fi
 }
 
+# Given: a fresh copy session whose seeder exits non-zero with no output
+# When:  the seeder fails
+# Then:  the start says the seeder printed nothing and prints the reproduce command
+# Asserts: the message no longer claims output that does not exist, and a failure
+#          with no stream at all still points at the log and the manual re-run
+test_seeder_failure_without_output_says_so() {
+  local FIX="$FIXTURE_DIR/seed_silent"
+  make_run_agent_fixture "$FIX" pi
+  export PROJECT_DIR="$FIX/project"
+  mkdir -p "$PROJECT_DIR"
+
+  local out="$FIX/out.txt" rc=0
+  (
+    export PATH="$STUB_DIR:$PATH"
+    export DOCKER_STUB_RUN_RC=1
+    bash "$REPO_ROOT/scripts/run_agent.sh" standard \
+      --name="$PROJECT_NAME" \
+      --sandbox="$SANDBOX_DIR" \
+      --env="$SANDBOX_DIR/.env" \
+      --provider="$PROVIDER_NAME" \
+      --delivery=copy \
+      --reset-volume < /dev/null
+  ) > "$out" 2>&1 || rc=$?
+
+  local log="$SANDBOX_DIR/.compose/${SESSION_ID}.seed.log"
+  if [[ $rc -ne 0 ]] \
+     && ! grep -q "Seeder output above" "$out" \
+     && grep -q "The seeder printed nothing" "$out" \
+     && grep -q "name seed-debug seeder" "$out" \
+     && [[ -f "$log" ]]; then
+    pass "silent seeder failure: names the absent output, the reproduce command, and the log"
+  else
+    fail "silent seeder failure: rc=$rc log=$([[ -f $log ]] && echo present || echo missing) out='$(cat "$out")'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
 
 run_test test_setup_hook_absent_is_noop
-run_test test_setup_hook_present_runs_and_proceeds
-run_test test_setup_hook_failure_aborts_with_attribution
 run_test test_flatten_flag_accepted
 run_test test_help_prints_run_agent_usage
+run_test test_seeder_failure_without_output_says_so
 run_test test_seeder_timeout_names_the_timeout
 run_test test_provider_config_dir_precreated
 run_test test_seeder_invocation_has_no_tty

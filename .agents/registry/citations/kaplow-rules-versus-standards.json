@@ -1,0 +1,15 @@
+{
+  "id": "kaplow-rules-versus-standards",
+  "title": "Rules Versus Standards: An Economic Analysis",
+  "author": "Louis Kaplow",
+  "publisher": "Duke Law Journal, volume 42, number 3",
+  "url": "https://scholarship.law.duke.edu/dlj/vol42/iss3/2/",
+  "version": "Duke Law Journal 42:557, 1992, as published at the Duke repository",
+  "record": {
+    "source": "The cost analysis of the choice between a rule and a standard. Read for the reason a judgement is sometimes cheaper than a check, which is the question every instruction answers about itself.",
+    "kept": "The asymmetry: a rule is expensive to make and cheap to apply, a standard is cheap to make and expensive to apply, and the choice turns on how often the situation recurs and how much is at stake each time.",
+    "rewritten": "Stated as an authoring decision: the more often a situation recurs and the higher the cost of a wrong call, the more a gate earns the cost of being written. A judgement is the right form for the situation that occurs once.",
+    "added": "The observer as the measure of the cost. A gate's price in this repository is a lint entry, a test and the upkeep the gate census measures, so the rule side of the trade is priced here rather than in the abstract.",
+    "dropped": "The formal model, its welfare analysis and its treatment of adjudication costs, none of which changes the authoring decision."
+  }
+}

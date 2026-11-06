@@ -7,7 +7,7 @@ argument-hint: "[optional: a commit range to audit]"
 
 # /commit - The Delivery Commit
 
-**Scope:** the one operation that turns a unit's work into a delivery commit. It owns the in-session commit-discipline checkpoint, and at the close it owns the preparation, the landing and the post-commit verification. It does not run the close: acceptance-criteria verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings publication, closing ADRs and discussion docs, and pending-decision resolution belong to [`/wrapup`](wrapup.md). It does not run the compaction pass or the milestone-record close; those are milestone-grain and belong to `/milestone-close`.
+**Scope:** the one operation that turns a unit's work into a delivery commit. It owns the in-session commit-discipline checkpoint, and at the close it owns the preparation, the landing and the post-commit verification. It does not run the close, which [`/wrapup`](wrapup.md) owns, nor the compaction pass and the milestone-record close, which are `/milestone-close`'s.
 
 ## Project conventions
 
@@ -19,7 +19,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 A unit ends as one delivery commit carrying the work, the handover marked `Closed`, and the roadmap write-back. Four rules govern both jobs in this runbook.
 
-First, one commit per unit: every `wip:` checkpoint and typed intermediate commit folds into it -- the `git-discipline` convention names the delivery commit the sole reviewable surface. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_protocol.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the rule that failed to stop it.
+First, one commit per unit: every `wip:` checkpoint and typed intermediate commit folds into it. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-unit is reserved for the delivery commit, and the status flip and write-back never form their own commit. Third, an open handover bounds the unit: `iteration_protocol.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the rule that failed to stop it.
 
 ## Called from
 
@@ -39,7 +39,7 @@ First, one commit per unit: every `wip:` checkpoint and typed intermediate commi
 
 Run this after each committed task group within the session. It is a hygiene pass, not a release point; it does not stop the session.
 
-Commit the unit's work before its boundary, even when incomplete: a `wip:` checkpoint folds at the close, and a stash is not a record. `wip:` is a prefix and not a type, so it never reads as a delivered unit.
+Commit the unit's work before its boundary, even when incomplete: a `wip:` checkpoint folds at the close, and a stash is not a record.
 
 ### A1. Enumerate the unit's commits
 
@@ -77,9 +77,7 @@ git commit -m "<type>: ..."      # one typed commit
 
 A clean committed range uses the same fold. The close edit and write-back are staged into the same commit, never a separate one.
 
-Three kinds of transient commit fold into it: `wip:` checkpoints, a correction commit, and the close edit with its roadmap write-back.
-
-When the work commit has already landed and the close edit is still outstanding, fold the edit into that commit rather than adding one. The end state is one commit per iteration.
+When the work commit has already landed and the close edit is still outstanding, fold the edit into that commit rather than adding one.
 
 ### A6. Confirm an open handover names the unit
 

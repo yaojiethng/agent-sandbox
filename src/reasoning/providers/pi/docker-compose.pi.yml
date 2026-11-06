@@ -33,11 +33,8 @@ services:
       - type: bind
         source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/skills
         target: /home/agentuser/.pi/agent/skills
-      # Operator-owned role-to-model recommendations. Not part of the image:
-      # setup.sh seeds a slug-free skeleton on the host, then the operator or
-      # the setup-model-recommendations skill fills it. This is the one
-      # single-file mount; a writer replaces the content in place, never with
-      # mv, because mv would break the mount.
+      # Installed packages: a clone per declared package, loaded in place. The
+      # repository holds the declaration's shape, never the revision.
       - type: bind
-        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/model-recommendations.md
-        target: /home/agentuser/.pi/model-recommendations.md
+        source: ${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/packages
+        target: /home/agentuser/.pi/agent/packages

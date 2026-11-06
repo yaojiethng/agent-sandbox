@@ -20,8 +20,8 @@ This iteration continues the milestone's cheap-row pass from handover `20261023-
 | Criterion | Verification | Result |
 |---|---|---|
 | The skill is an index over two runbooks | `ls workflow/coding-agent/skills/handover-maintenance/runbook/` lists `content.md` and `chain.md`, and `SKILL.md` links both | Accepted: both files exist and the index links them |
-| The content checks live in the content runbook | `grep -n "Structured output format\|Validation tool coverage" workflow/coding-agent/skills/handover-maintenance/runbook/content.md` finds both | Accepted: both headings are present |
-| The chain checks live in the chain runbook | `grep -n "Dangling references\|The correction form" workflow/coding-agent/skills/handover-maintenance/runbook/chain.md` finds both | Accepted: both headings are present |
+| The content checks live in the content runbook | `grep -n "Structured output format\|Validation tool coverage" workflow/coding-agent/skills/handover-maintenance/runbooks/content.md` finds both | Accepted: both headings are present |
+| The chain checks live in the chain runbook | `grep -n "Dangling references\|The correction form" workflow/coding-agent/skills/handover-maintenance/runbooks/chain.md` finds both | Accepted: both headings are present |
 | No check was lost in the move | every step heading in the old skill appears in one runbook | Accepted: the two content steps and the seven chain steps cover the old nine |
 | `/iter` opens the content runbook at the scope gate | `grep -n 'content runbook' workflow/coding-agent/prompts/iter.md` finds the scope-gate dispatch | Accepted: line 100 is the Step 5 dispatch |
 | `/iter` opens it again at the pre-close | the same grep finds the Step 7 dispatch | Accepted: line 173 is the Step 7 dispatch |
@@ -49,7 +49,7 @@ None.
 | File | One-line change summary |
 |---|---|
 | [`workflow/coding-agent/skills/handover-maintenance/SKILL.md`](../../workflow/coding-agent/skills/handover-maintenance/SKILL.md) | the tracks become a runbook index, with the shared shape table and output shape |
-| [`workflow/coding-agent/skills/handover-maintenance/runbook/content.md`](../../workflow/coding-agent/skills/handover-maintenance/runbook/content.md) | the two content checks and their run points |
-| [`workflow/coding-agent/skills/handover-maintenance/runbook/chain.md`](../../workflow/coding-agent/skills/handover-maintenance/runbook/chain.md) | the chain audit, its seven steps and its failure modes |
+| [`workflow/coding-agent/skills/handover-maintenance/runbooks/content.md`](../../workflow/coding-agent/skills/handover-maintenance/runbooks/content.md) | the two content checks and their run points |
+| [`workflow/coding-agent/skills/handover-maintenance/runbooks/chain.md`](../../workflow/coding-agent/skills/handover-maintenance/runbooks/chain.md) | the chain audit, its seven steps and its failure modes |
 | [`workflow/coding-agent/prompts/iter.md`](../../workflow/coding-agent/prompts/iter.md) | the scope gate and the pre-close open the content runbook |
 | [`devlog/roadmap.md`](../roadmap.md) | the row is closed with the dispatcher named |

@@ -1,6 +1,6 @@
 # Single-Source Model Recommendations
 
-**Current:** 2026-10-22
+**Current:** 2026-11-03
 
 **Status:** active
 
@@ -15,7 +15,7 @@
 | R5 | No silent default | A role with no line stops the dispatch; nothing resolves it to a startup default, and no prompt restates a model |
 | R6 | Level travels | A recommendation carries its thinking level, not model alone |
 | R7 | Provider travels | A recommendation names the provider, not the model alone, because two providers can serve the same-named model with different capability |
-| R8 | Committed | The live values are committed with the project at `.agents/model-recommendations.md`; a container's copy is derived from them at every start |
+| R8 | Committed | The live values are committed with the project at `.agents/model-recommendations.md`, and that file is the only copy: nothing derives a second one, in a container or on the host |
 | R9 | Operator-authored | The values are the operator's, and the agent is an interface to the file: it writes what the operator states, validates no model, and runs no command that would list one |
 
 ## 2026-10-22 -- The values are the operator's, and the agent validates none of them
@@ -91,3 +91,17 @@
 **Edge cases / drivers:** The `_ADVISOR` recommendation is conditional on review shape (documentation and language reviews use `glm-5.3-flash` at high, code reviews `deepseek-v4-flash` at xhigh), not an ordered fallback; the table records the split, and a routing clause takes precedence over first-in-listed-order. Editing pi's own `AGENTS.md` must update both the repo source and the installed copy, or the running agent context and the shipped config diverge.
 
 **Reason superseded by 2026-10-14:** the committed table goes stale in the tree, and the values are operator-owned and change faster than the project layer; the home moves to the operator file, and the token shape and resolution order carry forward.
+
+## 2026-11-03 -- The container's copy of the role table is removed
+
+**Decision:** The agent-home copy of the role table is gone, with everything that maintained it: the single-file bind mount, the provider setup hook that refreshed the host file at every start, the onboard seeding, the slug-free skeleton, and the third rung of `defaultTableFile`. The table is read from `DISPATCH_REC_FILE` when it is set and otherwise from the repository's `.agents/model-recommendations.md`. A tree without that file has no table, and the read reports the path it looked for.
+
+**Rationale:** Two copies of one table answer one question twice. The fallback also answered a different one silently, so a project that had never written a table dispatched from a skeleton with empty role lines rather than saying so. The host copy was refreshed by a hook whose only job was to feed the mount, so the whole chain cost two files, a mount and a hook to serve a case the project file already covers. The config files show the shape the rest of the transport already uses: the image bakes them, the entrypoint copies them in at every start, and no host copy exists.
+
+**Rejected alternatives:**
+
+- Keep the fallback and mark it deprecated: a second answer stays reachable, and nothing reports when it is used.
+- Mount the project file into the container instead: a single-file mount breaks when a writer replaces the file with `mv`, and it would put the project's tree inside the image's config directory.
+- Keep the skeleton for a project with no table: an empty role table fails every dispatch with a role that names no model, which is a worse message than the path the read reports.
+
+**Edge cases / drivers:** The eval harness sets `DISPATCH_REC_FILE` to the table it is measuring, so it is unaffected and keeps its one override. A session that previously wrote the container copy now writes nothing there, and `setup-model-recommendations` edits the project file it already pointed at.

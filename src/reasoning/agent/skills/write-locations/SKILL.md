@@ -13,7 +13,7 @@ Every root a session can write to has a lifecycle and a visibility, and the two 
 - When an instrument, a corpus or a comparison script has to be reused by a later session.
 - When deciding whether a file may be deleted with the container.
 
-Not this: which folder a document or a record belongs to inside the repository is the `docs` and `work-log` conventions; the session's own working state is the `active-tracker` skill; whether the work is committed is the calling unit's judgement, not a property of a location.
+Not this: which folder a document or a record belongs to inside the repository is the `project-documentation` and `work-log` conventions; the session's own working state is the `active-tracker` skill; whether the work is committed is the calling unit's judgement, not a property of a location.
 
 ## The roots
 
@@ -29,6 +29,8 @@ Not this: which folder a document or a record belongs to inside the repository i
 
 The harness's own roots under `/opt/` are image-owned and read-only: they are installed, never written. The manifest `src/build/container-interface.json` declares the session roots and what each holds, so it is the source the table above follows; a root the manifest does not declare is not a place to write.
 
+**`$AGENT_HOME/` is the operator's to own and the agent's to manage.** The agent writes the settings, prompts, skills and model table there; for pi that is often how the operator controls the configuration at all. The host mounts the subdirectories that outlive a container, so the mount follows from the persistence rather than setting a permission.
+
 **Name what a location survives, and never say "durable" alone.** A file in the working tree survives the container, a file in session scratch does not survive the session, and that difference is the whole point: a session-scoped root dies with the session's volume, so it cannot carry work to the next one.
 
 ## The judgements
@@ -43,7 +45,7 @@ The harness's own roots under `/opt/` are image-owned and read-only: they are in
 
 ## Non-goals
 
-- Does not choose where a document or a record goes inside the repository. That is the `docs` and `work-log` conventions.
+- Does not choose where a document or a record goes inside the repository. That is the `project-documentation` and `work-log` conventions.
 - Does not decide whether work is committed, or which branch carries it.
 - Does not describe the diff pipeline, the snapshot or the review step.
 

@@ -30,7 +30,7 @@ SECONDS=0
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCAN_SCRIPT="$REPO_ROOT/scripts/lint/record-name.mjs"
 SCAN_ROOT="${RECORD_NAME_SCAN_ROOT:-$REPO_ROOT}"
-CUTOVER="${RECORD_NAME_CUTOVER:-20261026}"
+CUTOVER="${RECORD_NAME_CUTOVER:-}"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Record name gate: node is not on PATH; cannot scan names." >&2
@@ -64,13 +64,13 @@ cd "$REPO_ROOT" || exit 1
 
 if (( ${#FILES[@]} > 0 )); then
   if (( STAGED )); then
-    node "$SCAN_SCRIPT" --root="$SCAN_ROOT" --cutover="$CUTOVER" "${FILES[@]}"
+    node "$SCAN_SCRIPT" --root="$SCAN_ROOT" ${CUTOVER:+--cutover="$CUTOVER"} "${FILES[@]}"
   else
     node "$SCAN_SCRIPT" --root="$SCAN_ROOT" --force "${FILES[@]}"
   fi
   rc=$?
 else
-  node "$SCAN_SCRIPT" --root="$SCAN_ROOT" --cutover="$CUTOVER"
+  node "$SCAN_SCRIPT" --root="$SCAN_ROOT" ${CUTOVER:+--cutover="$CUTOVER"}
   rc=$?
 fi
 

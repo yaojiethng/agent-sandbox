@@ -17,18 +17,20 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## When to use
 
-Use when the operator hands over a task idea, a complaint about the current state, or one of their own prompts to deepen.
-
 An ask that needs decisions resolved before it can be written is [`plan.md`](plan.md)'s. Work already scoped and waiting to run is [`iter.md`](iter.md)'s.
 
 ## The four questions
 
-Ask all four, in order, before rewriting the ask, and answer them in chat. The operator reads the answers and can correct the premise before the brief costs anything. Each question's judgement is a principle skill at `$AGENT_HOME/agent/skills/`, linked rather than restated.
+Ask all four, in order, before rewriting the ask, and answer them in chat. Each question's judgement is a principle skill at `$AGENT_HOME/agent/skills/`, linked rather than restated.
 
 1. **What would a top professional in this field do here that the asker is not asking for?** `principle-attack-the-premise`.
 2. **What is the rawest material they would start from, rather than what has already been digested for me?** `principle-justify-materialization-cost`, `communication-principle-only-derive-what-you-own`, `principle-guard-the-context-window`.
 3. **What specific methods and tools would they use?** `principle-build-the-lever`, `principle-check-placement`, `principle-exhaust-the-design-space`.
 4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-show-dont-describe`.
+
+## Check the boundary
+
+Before forming the brief, check whether the scope duplicates a responsibility another component owns. If it does, stop and raise the boundary violation to the operator. Do not decide the fix. See `principle-single-source-of-truth`.
 
 ## Rewrite the ask
 
@@ -36,10 +38,10 @@ Write the brief to ask for exactly what the four answers describe, and do not pr
 
 ## Refine the plan and the prose
 
-The four answers say what the brief asks for. The principle corpus decides how it is formed and phrased, and each judgement is linked where the brief must satisfy it, never restated.
+The principle corpus decides how the brief is formed and phrased, and each judgement is linked where the brief must satisfy it, never restated.
 
 - Forming the plan: `principle-model-the-domain`, `principle-subtract-before-you-add`, `principle-never-block-on-the-human`, `principle-match-precision-to-stakes`, `principle-sequence-verifiable-units`.
-- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-what-carries-nothing`, `communication-principle-only-derive-what-you-own`, `communication-principle-show-dont-describe`, `communication-principle-align-the-mental-model`, `communication-principle-attach-as-you-read`, `communication-principle-one-addressing-axis`, `communication-principle-keep-a-subject-near`, `communication-principle-maximize-conceptual-leverage`.
+- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-what-serves-nothing`, `communication-principle-only-derive-what-you-own`, `communication-principle-show-dont-describe`, `communication-principle-align-the-mental-model`, `communication-principle-attach-as-you-read`, `communication-principle-one-addressing-axis`, `communication-principle-keep-a-subject-near`, `communication-principle-maximize-conceptual-leverage`.
 
 ## The brief's parts
 
@@ -53,10 +55,11 @@ A brief is executable when it carries:
 
 ## Hand off
 
-Print the suggestion and stop. The brief can go two ways, and the operator picks:
+Print the suggestion and stop. The brief goes one of three ways, and the operator picks:
 
 - **A run.** The next runbook reads it: [`iter.md`](iter.md) for one unit, [`plan.md`](plan.md) for a decision.
 - **A saved file.** The brief lands at `.agents/drafts/` for a later run.
+- **A parked prompt.** A prompt the operator has workshopped but is not ready to run lands in `.agents/drafts/`. Landing it is not a review; the `instruction-authoring` convention holds the release rule, and this prompt does not release it.
 
 `/scope` writes neither without the operator's word, and it opens no handover, no roadmap row and no commit.
 

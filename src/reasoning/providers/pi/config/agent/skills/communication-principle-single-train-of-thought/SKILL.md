@@ -21,6 +21,6 @@ Carry one line of reasoning through the document, and let each sentence advance 
 
 **Fires on.** A second line of reasoning placed beside the first, in a parenthesis or a caveat, or a detour that returns.
 
-**What it does not cover.** A sentence that carries nothing: `communication-principle-cut-what-carries-nothing`. A word that loses a distinction: `communication-principle-maximize-conceptual-leverage`.
+**What it does not cover.** A sentence that carries nothing: `communication-principle-cut-what-serves-nothing`. A word that loses a distinction: `communication-principle-maximize-conceptual-leverage`.
 
 **The test.** After each sentence, ask whether it advances the line the previous sentence was on. A sentence that opens a new line either closes the previous one or belongs in another document.

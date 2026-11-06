@@ -35,6 +35,21 @@ EOF
 LABEL="start"
 EOF
 
+  cat > "$root/scripts/fake.mjs" <<'EOF'
+export function guard(value) {
+  if (value === "blocked") return false;
+  return true;
+}
+EOF
+
+  cat > "$root/tests/test_fake_mjs.sh" <<'EOF'
+#!/usr/bin/env bash
+set -uo pipefail
+D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+node --input-type=module -e "import('$D/scripts/fake.mjs').then((m) => { if (m.guard('blocked') !== false) { console.error('guard failed to refuse'); process.exit(1); } })" || exit 1
+EOF
+  chmod +x "$root/tests/test_fake_mjs.sh"
+
   cat > "$root/tests/test_fake.sh" <<'EOF'
 #!/usr/bin/env bash
 set -uo pipefail
@@ -54,13 +69,15 @@ exit 0
 EOF
   chmod +x "$root/tests/test_fake.sh" "$root/tests/test_fake2.sh"
 
-  printf 'scripts/fake.sh\ttest_fake.sh test_fake2.sh\nscripts/fake2.sh\ttest_fake2.sh\n' > "$root/subjects.map"
+  printf 'scripts/fake.sh\ttest_fake.sh test_fake2.sh\nscripts/fake2.sh\ttest_fake2.sh\nscripts/fake.mjs\ttest_fake_mjs.sh\n' > "$root/subjects.map"
 
   cat > "$root/catalog.jsonl" <<EOF
 {"schema":1,"kind":"mutation-catalog"}
 {"id":1,"source":"fixture","name":"proven-row","subject":"scripts/fake.sh","old":"  if [[ \"\${1:-}\" == \"blocked\" ]]; then","new":"  if false; then"}
 {"id":2,"source":"fixture","name":"survived-row","subject":"scripts/fake2.sh","old":"LABEL=\"start\"","new":"LABEL=\"mutated\""}
 {"id":3,"source":"fixture","name":"stale-row","subject":"scripts/fake.sh","old":"text that appears nowhere","new":"irrelevant"}
+{"id":4,"source":"fixture","name":"module-row","subject":"scripts/fake.mjs","old":"  if (value === \"blocked\") return false;","new":"  if (false) return false;"}
+{"id":5,"source":"fixture","name":"unparseable-module","subject":"scripts/fake.mjs","old":"  return true;","new":"  return true(;"}
 EOF
   printf '%s\n' "$root"
 }
@@ -90,10 +107,11 @@ test_verdicts_and_register() {
   assert_contains "$output" "proven" "the bit against fake.sh is reported proven"
   assert_contains "$output" "survived" "the unchanged fake2.sh behaviour is reported survived"
   assert_contains "$output" "no-op" "the non-matching row is reported no-op"
-  assert_contains "$output" "rows:      3" "all three rows accounted"
-  assert_contains "$output" "proven:    1" "one proven"
+  assert_contains "$output" "rows:      5" "all five rows accounted"
+  assert_contains "$output" "proven:    2" "a shell mutation and a module mutation both bite"
   assert_contains "$output" "survived:  1" "one survivor"
-  assert_contains "$output" "no-op:     1" "one no-op"
+  assert_contains "$output" "no-op:     2" "a stale row and an unparseable mutant are no-ops"
+  assert_contains "$output" "mutant does not parse" "the unparseable mutant names the reason"
   assert_contains "$output" "skipped:   0" "budget did not skip"
 
   # The register holds the survivor (open) and the no-op (stale), not proven.
@@ -105,7 +123,7 @@ test_verdicts_and_register() {
   assert_contains "$register" '"name":"survived-row"' "survivor row names the mutation"
   assert_contains "$register" '"name":"stale-row"' "stale row names the mutation"
   assert_not_contains "$register" "proven-row" "a proven mutation is not a finding"
-  assert_eq "$(printf '%s\n' "$register" | grep -c '^{')" "2" "register has exactly two rows"
+  assert_eq "$(printf '%s\n' "$register" | grep -c '^{')" "3" "register holds the survivor and both no-ops"
 
   # The subjects are restored after the run.
   assert_eq "$(cat "$root/scripts/fake.sh")" "$(cat "$root/fake.orig")" "fake.sh restored"

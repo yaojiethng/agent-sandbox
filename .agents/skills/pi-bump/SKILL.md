@@ -106,7 +106,7 @@ Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for 
 - [ ] **The version assertion prints a match.** Run it from the repo root. The bump is not complete until it does.
 - [ ] `settings.json` is valid JSON (`node -e "require('./... settings.json')"`)
 - [ ] `bash scripts/lint.sh` is clean
-- [ ] Run `bash tests/knowledge/knowledge_pi_config_cycle.sh`. Its version fixtures are intentional and decoupled from the installed version.
+- [ ] Run `bash tests/knowledge/knowledge_pi_config_cycle.sh` and `bash tests/knowledge/knowledge_pi_model_selection.sh`. The config test covers the harness roots; the selection test covers the four auth cases.
 
 - [ ] The assumption table rows touched by step 2 are updated, or marked unverified with the reason
 

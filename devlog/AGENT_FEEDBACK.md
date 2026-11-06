@@ -12,13 +12,64 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [O] 2026-10-31  --  The review runbook lost the sentence that fixed its commit range
+
+```text
+state: mitigated
+scoped: M3.3.3 - The skill maintenance pipeline
+legacy: none
+mitigation: the `code-review` shell's input row now owns the range -- the operator's when named, otherwise the branch point the session started at, `.git/SESSION_STATE`'s `init_sha`, proposed for the operator to confirm -- and `references/loop.md` cites it; handover `20261103-02`
+```
+
+The `code-review` shell says a review is given "a scope to read", its `references/loop.md` says "Name the range", and the `thermo-nuclear-code-quality-review` runbook says "the current branch's changes". None of the three states where the branch point comes from. The instruction that did was lost when the skill moved to the runbook format, so the range is now inferred at the call site, by the party that has the least evidence for it.
+
+On this branch the inference has two defensible answers eleven commits apart: `init_sha a6b24204` in `.git/SESSION_STATE`, whose range is 6 commits and 42 files, and the skill-pipeline unit's own base `d1d5b636`, whose range is 17 commits and 86 files. A loop that must name its range before it spends a seat stopped to ask instead, and the round trip cost a turn of the operator's attention on the question the loop exists to settle.
+
+The fix belongs where the range is named: one sentence in the runbook or its shell, naming the branch point's source, so the range is derived rather than asked for.
+
+---
+
+## [A] 2026-11-01  --  A report was built before checking that the loader already prints one
+
+```text
+state: open
+scoped: M3.3.3 - The skill maintenance pipeline; any task whose premise is that a surface nobody reads already holds the fact
+legacy: none
+mitigation: before building a report over another party's data, run that party's own surface and read what it prints; a handoff's claim that a diagnostic is unread is a claim to check, not a premise to build on
+```
+
+The task asked for a session-start report naming a skill name held twice, on the premise that pi records the collision "in a diagnostic nobody reads". pi renders a `[Skill conflicts]` block at every session start, naming the winner and each skipped path, and a quiet startup still shows it. Two versions of a script were written, tested and corrected before anyone ran the loader's own output. Both are deleted and the task closed with no code.
+
+The pattern is not "read the docs first". The premise arrived inside a task, in the operator's voice, and that is the voice an agent is least likely to check. The same session had written the rule for it two commits earlier: name the party that already answers the question, and hand the question to it. Writing that rule was easier than applying it to a task handed over with confidence.
+
+---
+
+## [A] 2026-10-31  --  The review runbook grades structure without the artifact's purpose
+
+```text
+state: open
+scoped: workflow/coding-agent/skills/code-review/runbooks/thermo-nuclear-code-quality-review/SKILL.md (vendored verbatim from cursor/plugins), and the brief the loop writes for each seat
+legacy: none
+mitigation: the brief states what the artifact is for and who reads it, and a blocker must name a wrong answer or a cost that shows under a named consumer; a "could be simpler" that no consumer can feel is a note, not a blocker
+```
+
+The runbook is a generic maintainability standard: eight non-negotiable rules, thirty-odd things to flag aggressively, sixteen preferred remedies, and an approval bar of "presumptive blockers". It never asks what the artifact is for. On the skill graph that gap ran fifteen rounds: rule 5 ("prefer explicit typed models or shared contracts over loosely-shaped ad-hoc objects") demanded the schema, rule 5 again ("ask whether the boundary should be made explicit") demanded a reader for the schema, and round 15's seat then applied the runbook's own "delete a whole layer of indirection" to the validator those earlier rounds had required. Each reading was faithful; the standard carries no line that could settle between them, because the artifact's readers - an agent querying the graph, an operator reading the render - appear nowhere in it.
+
+Two properties make the drift structural rather than accidental. A fresh seat holds no memory of the earlier rounds' remedies, so it cannot see that it is asking for the opposite. And "assume there is often a code judo move available" plus "end each round on a verdict" is a mandate to find something every round, so convergence has to come from outside the standard - from the purpose, which it does not name.
+
+What the loop did buy is real and worth keeping: a link resolved against the shell's directory, a malformed graph walked after being reported, two readers of one store, 49 test assertions with their arguments reversed, and five gates that printed a pass over input they had failed to read. Those were wrong answers, and the runbook's own pressure is what found them. The fix is not a weaker standard but a bound one: the intent goes in the brief, and a blocker has to name a consumer.
+
+---
+
 ## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
 
 ```text
-state: probation
-scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`
+state: open
+scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`; .agents/skills/skill-fork/SKILL.md `## Which half`; .agents/skills/skill-fork/patterns/vendor-bump.md `## Register an edge`
 legacy: none
 mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
+
+reopened 2026-11-03, same class, different door: the rule was in context and the deciding document was not on the read path. A routing table now names every task the store serves, so a task with no home is a visible gap, and the section a store field is written in names the ADR that decides the field set. Measured on the read-set from the session log and two cold probes; see handover `20261103-04`. The prior mitigation stays, and it did not cover this door: no description rewrite reaches a file the reader never opens.
 ```
 
 Asked for a reference page on writing a document, I wrote one that opened by describing the gap it filled, then carried a heading per step and a closing section: 33 lines against the 14 that already covered the same five steps in the tree. The two judgements that forbid exactly that were named in the file I was editing and quoted in the layer loaded at session start, and neither fired.
@@ -30,6 +81,10 @@ The second half of the fix is the one that does not depend on selection. Both pa
 This is the same class as the 2026-10-27 entry below, a rule held and not applied while drafting, with a different mechanism: there the sentence carried an argument the reader was not in, here the trigger could not be evaluated until the sentence was finished. What would settle it is a recurrence in the same form, a draft whose subject is the document or the session rather than the thing the document is about.
 
 Cross-references: `## The principle shape` in `docs/development/prompt-authoring-conventions.md`; handover `20261029-01`.
+
+**Recurrence, 2026-11-03.** Writing a store edge, the agent proposed a schema field (`absent`) whose job the bump's three-way merge already does, and the principle now `principle-single-source-of-truth` (then `principle-delegation-over-machinery`, whose description named "a schema, a second record of someone else's guarantee") was in the loaded layer and did not fire. The trace from this session's tool-call log: 231 calls, and of the nine rules bearing on the decision, three were read; the two that settle it (`vendor-bump.md` steps 2 and 7, and the ADR's R3) were opened only after the operator objected. `fork-and-strip.md`, which registers an edge at steps 1 and 5, was never opened, because the artifact was already in the tree and no routing row named that task.
+
+Two probes say what the fix is and is not. A cold agent asked to "catch a stale record" found R3 in the ADR and rejected its own hash proposal, so the failure is not reproducible from a cold start: it was a narrow goal inside a long session, not a wording defect. A second cold agent given the narrow task now reads `vendor-bump.md`, `skill-fork/SKILL.md`, `skill_source_catalog.md` and `source_tracking.md` before writing. The fix is a routing row and a named decision, not a reminder; a reminder would have been unfalsifiable.
 
 ---
 
@@ -319,6 +374,8 @@ Raised by the agent during handover `20261014-03`.
 **Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
 
 **Recurrence, 2026-10-24** (handover `20261024-12`, the dispatch refactor): the full run failed `test_interactive_session_select.sh: test_select_session_patch_count_shown`, which passed 37 of 37 in isolation. A third file, the same shape, and still no cause.
+
+**Recurrence, 2026-11-01** (handover `20261101-06`, a change set in the container interface and the link rule): the full run failed `test_providers_pi_preflight.sh: test_bind_mount_warns_on_missing_prompts`, which passed in isolation, and the next full run passed 1424 of 1424. A fourth file, the same shape, and still no cause.
 ---
 
 ## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
@@ -509,18 +566,6 @@ Canonical bash coding rules: the pattern set beside the `code-review-bash` runbo
 
 Bash friction entries migrated from `devlog/discussions/20260809-story-active-bash_complaints.md` (deleted).
 
-### [A] 2026-08-09  --  Circular sourcing between `diff_export.sh` and `package_branch.sh`
-
-```text
-state: mitigated
-scoped: M3 T7 -- skill-maintenance backlog triage (pending circular-sourcing ADR)
-mitigation: extracted `_write_export_status` to a shared `export_status.sh` lib sourced by both. Shared functions live in leaf libraries, never in orchestrators. Both libs source it on disk.
-```
-
-`diff_export.sh` sources `package_branch.sh`. When `package_branch.sh` needed `_write_export_status`, it could not source `diff_export.sh` back without a cycle. The discovery was trial-and-error; no static analysis tool caught the cycle.
-
-Scope: architecture decision recorded in ADR (not yet written). Cross-reference: no skill trap covers this; should be added as an architecture trap.
-
 ### [A] 2026-09-19  --  A prose comment starting with the word `shellcheck` becomes a Directive
 
 ```text
@@ -533,23 +578,6 @@ mitigation: word the line so `shellcheck` is not the first token after `#` (for 
 ShellCheck parses any comment line whose first token after `#` is `shellcheck` as a directive. A prose comment that begins with the word -- for example a test-file header line reading `#   shellcheck absent  --  rc 1` -- makes the tool emit `SC1073`/`SC1072` parse errors against the file, so the ShellCheck gate fails on the repository's own scripts. The trap fires twice in one file in this iteration because the natural way to start a line about the tool is the tool's name. The failure is loud and the fix is trivial, but it looks like a false positive until the directive rule is known.
 
 Scope: ShellCheck directive parsing. Cross-reference: `p-33` in [`shellcheck.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/shellcheck.md).
-
-### [A] 2026-09-25  --  A guard that errexit already provides cannot be pinned by a unit
-
-```text
-state: open
-scoped: M3.1 T1 -- the disposition rule for a surviving bite
-legacy: none
-mitigation: when a bite survives, classify the row by running the deletion and comparing the outcome for the code's callers, never by argument. If no input changes output or exit status, the row is a code row: delete the line, write no unit. Do not add a gate for the idiom, because whether `cmd || exit 1` decides anything depends on the call context: errexit is suspended for the whole body of a function invoked in a condition.
-```
-
-Three instances, filed as coverage gaps (`action_kind: test`), each with a different mechanism. `scripts/workflows/apply.sh` ends `apply_run` with `exit $?`: unreachable when the preceding command failed, because errexit exits first, and a no-op when it succeeded. `scripts/resume_agent.sh` guards the picker call with `chosen="$(picker)" || exit 1`: the arm does run (`bash -c 'set -e; x="$(false)" || { echo ARM; exit 1; }; echo after'` prints ARM and exits 1), and the line is redundant only because errexit produces the same exit status without it. `scripts/workflows/draft.sh`'s `main` sets `CHANNEL_ARG="${CHANNEL_ARG:-session}"` and no reader uses the value, because `resolve_source_for_draft` applies the same default.
-
-No unit can fail on any of the three, so the mutation survives by construction. The brief's earlier text, "a surviving mutation is a coverage finding", would have pushed the next agent to write a source-text assertion, which the suite's anti-patterns forbid because it pins the text and not the behaviour.
-
-Gate probe, shellcheck 0.9.0 over the 193 shell files the gate scans: SC2317, "unreachable command", does not exist in that version (`shellcheck --list-optional` does not list it), so the measurement cannot be taken and a version upgrade is the precondition for revisiting; the adjacent optional check `check-set-e-suppressed` (SC2310/SC2311) returns zero findings; SC2320 (`$?` refers to echo or printf) is already on at warning severity and does not fire, because the command before `apply.sh:218` is not echo. No gate is available for this class, so the disposition rule carries the whole mitigation.
-
-Scope: any pass that mutates a production file to test a unit's claim. Cross-reference: [`testing/patterns/mutation-evidence.md`](../.agents/skills/testing/patterns/mutation-evidence.md) pattern 3, the rule's surviving home; the brief and the register that recorded it are retired, handover `20261028-14`.
 
 ### [A] 2026-10-26  --  A rule recorded a mechanism nobody had run, and the guard it doubted holds
 
@@ -593,6 +621,19 @@ mitigation: when a test spawns `node --test` as a child, delete `NODE_TEST_CONTE
 The mutation gate for the task-queue extension replays each catalog row in a temp mirror and runs the owning suite in a child process. Its first run reported all 22 rows as survivors in 10 seconds, which is faster than the suites it claimed to have run. The cause was the harness, not the extension: `node --test` sets `NODE_TEST_CONTEXT=child-v8` in its children, and a child that inherits the marker and receives a `--test` argument treats the invocation as a recursive run. It prints "node:test run() is being called recursively within a test file. skipping running files." on stderr, runs nothing, and exits 0. Every mutant therefore looked uncaught, and the failure mode is a gate that reports a clean result on a broken subject. The tell is the wall time: a gate that replays suites finishes faster than the suites, and it is the one signal available before the subjects are re-checked by hand.
 
 The family is the mutation-idiom rule in `p-43` and the instrument rules in `.agents/skills/testing/patterns/mutation-evidence.md`, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
+
+### [A] 2026-11-02  --  A scripted splice on a heading string matched the prose that named the heading
+
+```text
+state: open
+scoped: M3.3.3 -- the authoring surface
+legacy: none
+mitigation: anchor a splice on the heading line (`\n### Name\n`), assert it occurs once, and read the surrounding lines back after writing. A bare `indexOf(message)` finds the first mention, and a document that names its own headings in prose has one before the heading itself.
+```
+
+Rewriting `### Instruction modality` in `docs/reference/agent_workflow.md` by slicing at `indexOf("### Instruction modality")` cut from a sentence one section above that links to the heading by name, and took the heading line with it: the section lost its title and the paragraph that pointed at it lost its tail. The lint gate passed, because a file with a broken heading is still well-formed Markdown.
+
+This is the second time on this file. The 2026-11-02 handover `20261102-04` records the same failure from a different script, which is what makes it a class rather than a slip: the file names its own sections in prose in at least two places, so the first occurrence is never the heading.
 
 ---
 

@@ -1,0 +1,30 @@
+---
+title: skill artifact provenance · 11 nodes · 3 links · 0 drift
+---
+flowchart LR
+  %% solid = build/link; dashed = same-content; red-ish label = drift.
+  subgraph NS_repo["repo"]
+    direction TB
+    N_repo_agent_sandbox_root_skills["agent-sandbox root<br/>repo:0123456789abcdef0123456789abcdef01234567<br/>sha:repo-agent-r"]
+    N_repo_project_root_skills["project root<br/>repo:0123456789abcdef0123456789abcdef01234567<br/>sha:project-root"]
+    N_repo_provider_root_skills["provider root<br/>repo:0123456789abcdef0123456789abcdef01234567<br/>sha:repo-provide"]
+    N_repo_workflow_root_skills["workflow root<br/>repo:0123456789abcdef0123456789abcdef01234567<br/>sha:repo-workflo"]
+    N_repo_agent_sandbox_target_propagation_check["agent-sandbox/propagation-check<br/>repo:0123456789abcdef0123456789abcdef01234567<br/>sha:source-propa"]
+  end
+  subgraph NS_image["image"]
+    direction TB
+    N_image_agent_sandbox_root_skills["agent-sandbox root<br/>image:sha256:fixture-image<br/>sha:repo-agent-r"]
+    N_image_provider_root_skills["provider root<br/>image:sha256:fixture-image<br/>sha:image-provid"]
+    N_image_workflow_root_skills["workflow root<br/>image:sha256:fixture-image<br/>sha:image-workfl"]
+    N_image_agent_sandbox_target_propagation_check["agent-sandbox/propagation-check<br/>image:sha256:fixture-image<br/>sha:source-propa"]
+    N_image_workflow_target_check_in["workflow/check-in<br/>image:sha256:fixture-image<br/>sha:source-check"]
+  end
+  subgraph NS_host["host"]
+    direction TB
+    N_host_provider_root_skills["provider root<br/>host:host-provide<br/>sha:host-provide"]
+  end
+  N_repo_agent_sandbox_root_skills ==>|copy| N_image_agent_sandbox_root_skills
+  N_repo_project_root_skills -->|link: testing| N_image_workflow_target_check_in
+  N_repo_project_root_skills -->|link: testing x2| N_repo_agent_sandbox_target_propagation_check
+  N_repo_agent_sandbox_root_skills -.->|same-content| N_image_agent_sandbox_root_skills
+  N_repo_agent_sandbox_target_propagation_check -.->|same-content| N_image_agent_sandbox_target_propagation_check

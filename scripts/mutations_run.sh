@@ -6,8 +6,10 @@
 # catalog (`tests/mutations/catalog.jsonl`), one row per mutation. Each row
 # names the subject file, the old text to replace (first occurrence, exact
 # bytes, multi-line safe), and the replacement. The runner applies each
-# mutation to the subject, checks the mutation is real (mutant differs, `bash
-# -n` passes), runs the subject's own test files, and records the verdict.
+# mutation to the subject, checks the mutation is real (mutant differs, and the
+# mutant still parses in the subject's own language: `bash -n` for a script,
+# `node --check` for a module), runs the subject's own test files, and records
+# the verdict.
 #
 # Verdicts:
 #   PROVEN   - the mutation bit: a targeted test failed against the mutant.
@@ -60,6 +62,9 @@ declare -A SUBJECT_TESTS=(
   [scripts/workflows/apply.sh]="test_apply_workflow.sh test_rename_apply.sh"
   [scripts/workflows/confirm.sh]="test_confirm_workflow.sh"
   [scripts/workflows/draft.sh]="test_draft_workflow.sh test_draft_state.sh"
+  [src/build/container-interface.mjs]="test_container_layout.sh"
+  [scripts/lint/linking.mjs]="test_linking.sh"
+  [scripts/lint/references.mjs]="test_references.sh"
   [src/build/compose.sh]="test_compose_wait.sh test_trace_compose_gen.sh"
   [src/capability/entrypoint.sh]="test_capability_entrypoint_mount.sh test_dry_run_probe.sh"
   [src/capability/git-hooks/pre-commit.sh]="test_git_hook.sh"
@@ -148,6 +153,18 @@ run_targeted_tests() {
 # run_mutation ROW_JSON
 #   Applies one mutation and echoes the bare verdict on its final line:
 #   proven | survived | no-op.
+# syntax_ok FILE -- whether the mutant still parses, by the subject's own
+# language. The tier's subjects are shell scripts and ES modules, and a mutant
+# that does not parse is a no-op rather than a survivor: the tests would fail
+# for a reason the mutation does not demonstrate.
+syntax_ok() {
+  local file="$1"
+  case "$file" in
+    *.mjs|*.js) node --check "$file" >/dev/null 2>&1 ;;
+    *) bash -n "$file" >/dev/null 2>&1 ;;
+  esac
+}
+
 run_mutation() {
   local row="$1"
   local id subject old new
@@ -165,8 +182,8 @@ run_mutation() {
   else
     cp "$subject_file" "$backup"
     apply_mutation "$subject_file" "$old" "$new"
-    if ! bash -n "$subject_file" 2>/dev/null; then
-      verdict=no-op; reason="mutant fails bash -n"
+    if ! syntax_ok "$subject_file"; then
+      verdict=no-op; reason="mutant does not parse"
     elif cmp -s "$subject_file" "$backup"; then
       verdict=no-op; reason="mutation left the file unchanged"
     else

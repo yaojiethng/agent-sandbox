@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "id": "juliusbrussee-caveman",
+  "url": "https://github.com/JuliusBrussee/caveman",
+  "license": "Apache-2.0",
+  "copyright": "Copyright 2026 Julius Brussee",
+  "reason": "The local import carried a condensed variant; the skill was removed and is not shipped.",
+  "artifacts": []
+}

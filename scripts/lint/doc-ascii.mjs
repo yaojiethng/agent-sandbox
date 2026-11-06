@@ -4,8 +4,8 @@
 // en-dash (U+2013), section sign (U+00A7), pilcrow (U+00B6), and any
 // other non-ASCII code point.
 //
-// Box-drawing characters (U+2500-U+257F, the docs skill's exception for
-// ASCII-art diagrams) are excluded because markdownlint
+// Box-drawing characters (U+2500-U+257F, the `project-documentation`
+// convention's exception for ASCII-art diagrams) are excluded because markdownlint
 // never emits text tokens for fenced code blocks; the tokenizer already
 // leaves diagram content untouched. No explicit exception is needed.
 //

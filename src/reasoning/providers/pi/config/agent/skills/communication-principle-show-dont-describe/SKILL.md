@@ -24,6 +24,6 @@ A description asks the reader to interpret. An artifact asks them to copy. Give 
 
 **Fires on.** A description standing where an artifact would do, and an assumption that stands in for evidence.
 
-**What it does not cover.** Whether the reader can open the artifact: `communication-principle-link-what-the-reader-can-open`. Whether the description should exist at all: `communication-principle-cut-what-carries-nothing`.
+**What it does not cover.** Whether the reader can open the artifact: `communication-principle-link-what-the-reader-can-open`. Whether the description should exist at all: `communication-principle-cut-what-serves-nothing`.
 
 **The test.** Must the reader interpret, or can they copy? Where a rule applies, is there output that shows it was followed?

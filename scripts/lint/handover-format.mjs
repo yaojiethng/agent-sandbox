@@ -189,6 +189,31 @@ for (const file of files) {
   }
 
 
+  // A handover that reports completed work must state what decides the work is
+  // done. Without a row in `## Acceptance criteria` the Completed table is a
+  // claim no reader can check, and the pre-close gate has nothing to compare
+  // the completion against. The rule dates from 2026-11-01; a record written
+  // before it keeps the shape it had, so the rule binds new work and rewrites
+  // no closed one.
+  const CRITERIA_RULE_DATE = "20261101";
+  const countRows = (section) => {
+    if (!section) return 0;
+    const isRow = (line) => /^\s*\|/.test(line) && !/^\s*\|[\s:|-]+\|\s*$/.test(line);
+    const isSeparator = (line) => /^\s*\|[\s:|-]+\|\s*$/.test(line);
+    const rows = section.lines.filter(isRow).length;
+    const hasHeader = section.lines.some(isSeparator);
+    return Math.max(0, rows - (hasHeader ? 1 : 0));
+  };
+  const criteria = sectionBody(text, "Acceptance criteria");
+  const underRule = /^\d{4}-\d{2}-\d{2}$/.test(date) && date.replaceAll("-", "") >= CRITERIA_RULE_DATE;
+  if (underRule && countRows(sectionBody(text, "Completed")) > 0 && countRows(criteria) < 1) {
+    findings.push({
+      rel,
+      line: criteria ? criteria.line + 1 : 1,
+      msg: "Completed rows with no `## Acceptance criteria` row; a completion needs a criterion that decides it",
+    });
+  }
+
   const found = headings(text);
   const names = found.map((h) => h.name);
   for (const section of REQUIRED_SECTIONS) {

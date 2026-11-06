@@ -5,8 +5,9 @@
 # the corpus shape.
 #
 # Both checks share one file set, one walk and one parser, so they share one
-# gate. Enforced documents are docs/development/prompt-authoring-conventions.md
-# `## Structure of a workflow document` and `## The principle shape`,
+# gate. Enforced documents are `.agents/skills/instruction-authoring/references/`
+# `skill-conventions.md` `## Frontmatter` and `## A judgement skill`, its
+# `prompt-conventions.md` `## Frontmatter`,
 # `.agents/skills/project-documentation/SKILL.md` `## How a document opens`,
 # and the decision in docs/adr/principle_skill_shape.md. The scanner is
 # scripts/lint/document-shape.mjs.
@@ -56,6 +57,6 @@ rc=$?
 if (( rc == 0 )); then
   echo "Clean (${SECONDS}s)"
 else
-  echo "Blocking gate: fix the findings above (see docs/development/prompt-authoring-conventions.md and `.agents/skills/project-documentation/SKILL.md`)." >&2
+  echo "Blocking gate: fix the findings above (see `.agents/skills/instruction-authoring/references/skill-conventions.md` and `.agents/skills/project-documentation/SKILL.md`)." >&2
 fi
 exit "$rc"

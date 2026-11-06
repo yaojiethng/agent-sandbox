@@ -57,7 +57,7 @@ None.
 | [`seat-contract-run.md`](../../.agents/drafts/seat-contract-run.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`sequential-work.md`](../../.agents/drafts/sequential-work.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`task-queue.md`](../../.agents/drafts/task-queue.md) | the argument placeholder becomes `$ARGUMENTS` |
-| [`auto.md`](../../.agents/prompts/auto.md) | the argument placeholder becomes `$ARGUMENTS` |
+| `auto.md` | the argument placeholder becomes `$ARGUMENTS` |
 | [`dont-know-dont-care.md`](../../.agents/prompts/dont-know-dont-care.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`resync.md`](../../.agents/prompts/resync.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`advisor.md`](../../src/reasoning/agent/prompts/advisor.md) | the argument placeholder becomes `$ARGUMENTS` |

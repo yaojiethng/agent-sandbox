@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "dietrichgebert-ponytail",
+  "url": "https://github.com/DietrichGebert/ponytail",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 DietrichGebert",
+  "artifacts": [
+    {
+      "local_path": "src/reasoning/providers/pi/config/agent/AGENTS.md",
+      "kind": "instruction",
+      "parent": null,
+      "upstream_path": "AGENTS.md",
+      "origin": "16f6cbf4b87792938e47b0f8c650b6d80fcbc98c",
+      "base": "16f6cbf4b87792938e47b0f8c650b6d80fcbc98c",
+      "anchor": "When writing code, always take into account the following:",
+      "record": {
+        "source": "One passage, not the file: the file is otherwise this repository's own, and only the ladder came from upstream. It landed here at `de7bbd37` on 2026-07-01, which is why the pin is the last upstream commit before that date. Keep the ladder whole - steps 2, 4 and 5 state delegation, 1, 6 and 7 state minimality, and the order is the instruction.",
+        "kept": "The seven rungs and their order: does this need to exist, is it already here, does the stdlib do it, does a native feature cover it, does an installed dependency solve it, can it be one line, and only then the minimum that works.",
+        "rewritten": "Each rung is a question with its answer on the same line, separated by `->`, so the ladder reads as a table of decisions rather than as paragraphs. The arrows are ASCII. The remaining upstream text - the lazy-senior-dev framing, the root-cause rule, the six bullet rules and the list of things not to be lazy about - is not here.",
+        "added": "The instruction to skip a rung rather than answer it, on the first rung: no need to exist means the ladder stops.",
+        "dropped": "Everything above the ladder and everything below it, because this repository keeps only the ladder."
+      }
+    }
+  ]
+}

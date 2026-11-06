@@ -1,5 +1,5 @@
 {
-  "note": "The container interface, declared once. src/build/container-interface.mjs is the only reader, and scripts/check_container_layout.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. The `session` rows are the environment of a session in a container: every instruction surface is read from that environment, so no cell restates them. A `cell` is one instruction surface. The `mount` layer is not here: the compose files declare it host-side, and this container cannot read them.",
+  "note": "The container interface, declared once. src/build/container-interface.mjs is the only reader, and scripts/check_container_layout.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. The `session` rows are the environment of a session in a container: every instruction surface is read from that environment, so no cell restates them. A `cell` is one instruction surface: it declares its source folders, its runtime path and its loader, and what a file may reference is decided by the path space of the root it is read in, not by a per-cell grant (docs/adr/instruction_surface_declaration.md). The `mounts` rows declare the host-side bind mounts the provider's compose overlay carries, and scripts/check_container_layout.sh holds the two equal in both directions: a mount with no row, and a row with no mount, are both findings.",
   "image": [
     {
       "provider": "pi",
@@ -83,6 +83,32 @@
       "source": "src/reasoning/providers/pi/config/",
       "template": "/opt/workflow/agent/config/",
       "home": "$AGENT_HOME/"
+    }
+  ],
+  "mounts": [
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts",
+      "target": "/home/agentuser/.pi/agent/prompts",
+      "holds": "the operator's prompt folder, bind-mounted so an edit there outlives a rebuild"
+    },
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/sessions",
+      "target": "/home/agentuser/.pi/agent/sessions",
+      "holds": "the session transcripts, which outlive every container that writes them"
+    },
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/skills",
+      "target": "/home/agentuser/.pi/agent/skills",
+      "holds": "the operator's skill folder: the tree the image seeds from, and where a local skill stays"
+    },
+    {
+      "provider": "pi",
+      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/packages",
+      "target": "/home/agentuser/.pi/agent/packages",
+      "holds": "the installed packages: a clone per declared package, checked out at the revision the session loads"
     }
   ],
   "env": [
@@ -196,42 +222,21 @@
         "src/reasoning/agent/skills/"
       ],
       "runtime_path": "/opt/workflow/agent/skills/",
-      "loader": "the running provider's config lists this path as a skill root, and the agent loads a skill's SKILL.md and any sibling file that skill names",
-      "reachable": [
-        {
-          "path": "src/reasoning/providers/",
-          "holds": "the harness's provider sources, one folder per provider",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "loader": "the running provider's config lists this path as a skill root, and the agent loads a skill's SKILL.md and any sibling file that skill names"
     },
     {
       "sources": [
         "workflow/coding-agent/prompts/"
       ],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/prompts/",
-      "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command",
-      "reachable": [
-        {
-          "path": "devlog/",
-          "holds": "the records the workflow prompts read and write",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "loader": "the running provider's config enables the module's package directory, whose prompts folder contributes every Markdown file here as a command"
     },
     {
       "sources": [
         "workflow/coding-agent/skills/"
       ],
       "runtime_path": "/opt/workflow/agent/modules/coding-agent/skills/",
-      "loader": "the running provider's config enables the module's package directory, whose skills folder contributes a skill per directory holding SKILL.md",
-      "reachable": [
-        {
-          "path": "devlog/",
-          "holds": "the roadmap and the handover chain the maintenance skills read",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "loader": "the running provider's config enables the module's package directory, whose skills folder contributes a skill per directory holding SKILL.md"
     },
     {
       "sources": [
@@ -239,19 +244,7 @@
       ],
       "runtime_path": "$AGENT_HOME/",
       "loader": "pi reads its config home at startup: the agent AGENTS.md, the settings record, the auth record and the model list",
-      "provider": "pi",
-      "reachable": [
-        {
-          "path": "/opt/workflow/agent/config/",
-          "holds": "the config template this home is seeded from at every start",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/",
-          "holds": "the pi install, its changelog and its documentation",
-          "condition": "pi delivery"
-        }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [
@@ -259,19 +252,7 @@
       ],
       "runtime_path": "$AGENT_HOME/agent/prompts/",
       "loader": "pi reads its prompt root from the agent home, which the host bind-mounts for prompts and the image seeds from its config template at every start",
-      "provider": "pi",
-      "reachable": [
-        {
-          "path": "/opt/workflow/agent/config/",
-          "holds": "the config template this folder is provisioned from at every start",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/",
-          "holds": "the pi install and its documentation, under npm's global prefix",
-          "condition": "pi delivery"
-        }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [
@@ -279,31 +260,14 @@
       ],
       "runtime_path": "$AGENT_HOME/agent/skills/",
       "loader": "pi scans its user skills directory at startup, and that directory is bind-mounted from the host and seeded from the image's config template",
-      "provider": "pi",
-      "reachable": [
-        {
-          "path": "/opt/workflow/agent/config/",
-          "holds": "the config template this folder is seeded from at every start",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/",
-          "holds": "the pi install, its changelog and its documentation",
-          "condition": "pi delivery"
-        },
-        {
-          "path": "src/reasoning/providers/pi/",
-          "holds": "the harness's pi provider sources, which the bump skill edits",
-          "condition": "the reader has the repository tree"
-        }
-      ]
+      "provider": "pi"
     },
     {
       "sources": [
         ".agents/prompts/"
       ],
       "runtime_path": "/home/agentuser/sandbox/.agents/prompts/",
-      "loader": "the provider's settings record names this directory in its prompts key, so each Markdown file here is an invocable command in a session in this project",
+      "loader": "the provider's settings record names this directory in its prompts key, so each Markdown file directly in this directory is an invocable command in a session in this project",
       "provider": "pi"
     }
   ]

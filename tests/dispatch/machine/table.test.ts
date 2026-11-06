@@ -113,25 +113,21 @@ test('the head of a role is its preferred assignment', () => {
   assert.equal(firstAssignment('_HEAD', file).key, 'opencode/a-free');
 });
 
-test('the default table file honours the override, then the repository copy, then the agent home', () => {
+test('the default table file honours the override, then the repository copy', () => {
   assert.equal(defaultTableFile({ DISPATCH_REC_FILE: '/x/table.md' }), '/x/table.md');
   const copy = mkdtempSync(join(tmpdir(), 'dispatch-repo-'));
   mkdirSync(join(copy, '.agents'));
   writeFileSync(join(copy, '.agents', 'model-recommendations.md'), '_X: deepseek/x\n');
   assert.equal(
-    defaultTableFile({ DISPATCH_REPO_ROOT: copy, AGENT_HOME: '/home/agent' }),
+    defaultTableFile({ DISPATCH_REPO_ROOT: copy }),
     join(copy, '.agents', 'model-recommendations.md'),
   );
-  // A tree without the committed copy falls back to the agent home, which is
-  // the single-file mount a container carries.
+  // A tree without the committed copy names that path anyway: the read
+  // reports it, rather than a second copy elsewhere answering instead.
   const bare = mkdtempSync(join(tmpdir(), 'dispatch-bare-'));
   assert.equal(
     defaultTableFile({ DISPATCH_REPO_ROOT: bare, AGENT_HOME: '/home/agent' }),
-    '/home/agent/model-recommendations.md',
-  );
-  assert.equal(
-    defaultTableFile({ DISPATCH_REPO_ROOT: bare, HOME: '/home/user' }),
-    '/home/user/.pi/model-recommendations.md',
+    join(bare, '.agents', 'model-recommendations.md'),
   );
 });
 

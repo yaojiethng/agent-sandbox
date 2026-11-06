@@ -15,7 +15,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Purpose
 
-Resolve a prose review to one runbook, translate its requirements into this environment, and hand back the reports. What the reviewer judges is the runbook's; how the reviewer is given the material is this file's.
+Resolve a prose review to one runbook, translate its requirements into this environment, and hand back the reports. What the reviewer judges is the runbook's; how the reviewer is given the material is this file's. The advisor form is in the `instruction-authoring` convention's `references/body.md` `## Advisor`.
 
 The mechanism that launches a seat is the `dispatch` skill, in the agent's own skill root beside `model-recommendations.md`: it resolves the role to a model, runs one subagent, and records what the attempt ended in.
 
