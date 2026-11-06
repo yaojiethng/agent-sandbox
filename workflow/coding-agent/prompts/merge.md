@@ -1,5 +1,5 @@
 ---
-description: Accept a merge unit into the trunk. Replay a unit already resolved at the current head, keep the trunk linear, verify the accumulated tree, and refuse a tree that does not apply. The trunk never authors or resolves.
+description: Merge a merge request into the trunk. You are on the trunk; replay a unit already resolved at the current head, keep the trunk linear, verify the accumulated tree, and refuse a request that does not apply.
 argument-hint: "[unit: branch and commit range] [target branch]"
 ---
 
@@ -11,11 +11,16 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 - `git-discipline` - commit types, branch names and the delivery commit.
 
-## Role
+## The scenario
 
-You act for the **integrator**: the trunk. The unit's author has already rebased it onto the current head and resolved every conflict. Your work is to accept or refuse the tree, not to repair it.
+You are on the trunk, and a merge request is ready. Confirm it before you start:
 
-The same agent may author at another moment. On this action you do not edit the unit, resolve a conflict, or author a change to make the merge work.
+- `git rev-parse --abbrev-ref HEAD` names the trunk.
+- `git status --porcelain` is empty: the trunk carries no uncommitted work.
+- `git log --oneline <trunk>..<unit>` is non-empty: the unit is not already on the trunk.
+- A dry-run replay of the unit at the head reports no conflict.
+
+If a check fails, you are not in this scenario. Stop and ask; do not resolve the request on the trunk.
 
 ## Intent
 
@@ -25,14 +30,14 @@ Land one resolved unit on the trunk and verify the accumulated tree. A unit is a
 
 | Input | Meaning |
 |---|---|
-| unit | the source branch and the commit range it offers |
+| unit | the source branch and the commit range it covers |
 | target | the trunk branch the unit lands on |
 
 ## The obligation
 
 - Replay the unit's commits one for one, each keeping its message and its handover. No merge commit, no squash.
-- The unit applies at the current trunk head. If it does not, stop: send it back to the author. Do not resolve it here.
-- A textual conflict, an additive overlap or a stale count is the author's to resolve. A design contradiction is the operator's; ask.
+- The unit applies at the current trunk head. If it does not, stop: send it back to the branch. Do not resolve it here.
+- A textual conflict, an additive overlap or a stale count is the branch's to resolve. A design contradiction is the operator's; ask.
 - Verify the tree, not the report: the replay count, the suite and the lint gate.
 
 ## Method

@@ -4,7 +4,7 @@
 
 ## Context
 
-The feature flow is settled in its shape but not in its prose: a container works a branch, the branch replays into the trunk, and the trunk is fast-forwarded. Two corrections fixed the model. The author owns its merge-back: it may write any file, and it resolves its own conflicts; the integrator accepts a resolved tree, never an author or a resolver. And there is no second lane: the merge unit's grain is a judgement, so a small fix or contract change can travel down the same lane ahead of the milestone it would otherwise be bundled with.
+The feature flow is settled in its shape but not in its prose: a container works a branch, the branch replays into the trunk, and the trunk is fast-forwarded. Two corrections fixed the model. The branch that opens the merge request owns its merge-back: it may write any file, and it resolves its own conflicts; the trunk merges a resolved request and never resolves. And there is no second lane: the merge unit's grain is a judgement, so a small fix or contract change can travel down the same lane ahead of the milestone it would otherwise be bundled with.
 
 This record writes the resulting statechart down, states the early-change-and-rebase rule, and lists the workflow bugs the model exposes.
 
@@ -13,10 +13,10 @@ This record writes the resulting statechart down, states the early-change-and-re
 A change is a **merge unit**. Its grain is chosen by the operator or orchestrator at the merge gate: a whole milestone delivery, or a slice of it made available early. The rules do not vary with the grain.
 
 - A branch is `ready` only when its tree applies to the current trunk head with no unresolved conflict (`CleanAtHead`).
-- The integrator never edits a file to make a merge work, and never resolves a conflict on the author's behalf (`TrunkNeverResolves`).
+- The trunk never edits a file to make a merge work, and never resolves a conflict on the branch's behalf (`TrunkNeverResolves`).
 - One unit is applied at a time.
 - A live branch rebases when the trunk moves; a branch that cannot rebase cleanly stops and asks.
-- The supplier of an early slice rebases afterwards, and its later milestone delivery drops the already-merged unit.
+- The branch that opened the early slice rebases afterwards, and its later milestone delivery drops the already-merged unit.
 
 The defect flow is this model's `blocked` state expanded: a branch needs a semantic change to shared code or a shared contract, the change is authored once and merged as a unit, and the branch rebases. It is not a second model.
 
@@ -24,7 +24,7 @@ The defect flow is this model's `blocked` state expanded: a branch needs a seman
 
 ```mermaid
 ---
-title: "The merge unit: a track, a trunk, and the grain"
+title: "The merge request: a track, a trunk, and the grain"
 ---
 stateDiagram-v2
   state "Legend" as legend {
@@ -52,7 +52,7 @@ stateDiagram-v2
   s4: Ready to merge
   s5: Replaying the milestone
   s6: Replaying a slice
-  s7: Offered stale (forbidden)
+  s7: Stale request (forbidden)
   s8: Stale
   s9: Verified
   s10: Merged
@@ -65,18 +65,18 @@ stateDiagram-v2
   s2 --> s3: you park it and export
   s4 --> s3: you park it and export
   s4 --> s4: another branch's unit lands
-  s4 --> s5: you merge the whole milestone
-  s4 --> s6: you merge a slice early
+  s4 --> s5: you choose the whole milestone
+  s4 --> s6: you choose a slice early
   s2 --> s1: it rebases onto it
-  s4 --> s7: it offers a stale tree
+  s4 --> s7: it submits a stale tree
   s4 --> s8: the head moved under it
   s5 --> s9: the trunk applies it
   s6 --> s9: the trunk applies it
   s7 --> s9: the trunk applies it
   s8 --> s1: it rebases
   s8 --> s11: the trunk resolves it
-  s9 --> s10: the trunk accepts the milestone
-  s9 --> s1: the trunk accepts the slice, the track continues
+  s9 --> s10: the trunk merges the milestone
+  s9 --> s1: the trunk merges the slice, the branch continues
   classDef breaks fill:#ffecee,stroke:#e72e3b,stroke-width:2.5px,color:#cd2834
   classDef mayBreak fill:#fff3e6,stroke:#e8730c,stroke-width:2.5px,color:#b85a06
   class s0 blue
@@ -101,17 +101,18 @@ stateDiagram-v2
   class s11 pink
   class s11 breaks
   class s11 bugPath
+
 ```
 
 ## The early-change and rebase workflow
 
-A change is made available early when another branch needs it before the author's milestone is complete. The unit is authored standalone from the start.
+A change is made available early when another branch needs it before the branch's milestone is complete. The unit is authored standalone from the start.
 
 1. **Author it as its own unit.** The change is a typed commit (`fix:`, `refactor:` or `workflow:`), self-contained, with its own closed handover, applying at the current trunk head. It is not a `wip:` and not a fragment of a later iteration.
 2. **Judge the grain.** The operator or orchestrator decides the unit is urgent enough to merge ahead of the milestone it would otherwise join. The judgement is criticality, not a special lane.
-3. **Merge the unit.** The branch rebases onto the trunk head, resolves every conflict, and offers the tree. The trunk accepts it or rejects it; it does not edit it.
+3. **Merge the unit.** The branch rebases onto the trunk head, resolves every conflict, and presents the tree. The trunk merges or refuses it; it does not edit it.
 4. **Every live branch rebases.** The trunk head moved, so each open branch rebases before its next delivery. A branch that cannot resolve cleanly stops and asks.
-5. **The supplier continues.** The author's branch rebases onto the new head; the already-merged unit drops, and the remaining milestone commits follow as their own unit.
+5. **The branch that opened the slice continues.** The author's branch rebases onto the new head; the already-merged unit drops, and the remaining milestone commits follow as their own unit.
 
 The blocked branch is released at step 4. Until then it is `blocked`: it cannot author a second variant of a semantic change.
 
@@ -126,7 +127,7 @@ The model exposes six defects in the current prose. Each is a carrier of the old
 | The branch model says `main` is the only long-lived branch. | `references/branching.md`, "Protected branches." | We work on `feat/M_3-orchestration`, a long-lived branch that is the merge target. The doc denies the topology in use: no lifetime, name or replay obligation. |
 | Nothing obliges a live branch to rebase when the trunk moves. | `references/branching.md`'s lifecycle; `rebase.md`, which is invoked only when a branch is already stale. | The early slice lands and every other branch is based on an old head. `CleanAtHead` is unenforced. |
 | The early slice's unit shape is undefined. | `git-discipline`'s grouping and fold rules; `merge.md`/`rebase.md` "one commit per iteration" and "each commit carries its handover." | An early slice lands before its iteration closes. As a `wip:` it puts a `wip:` on the trunk; as part of an iteration it is a partial unit with no handover. |
-| `/rebase` assumes every commit carries a handover. | `rebase.md`, "read the handover of every stale iteration." | The supplier's post-slice delivery contains the split-out unit, whose handover is not there to read. |
+| `/rebase` assumes every commit carries a handover. | `rebase.md`, "read the handover of every stale iteration." | The branch's post-slice delivery contains the split-out unit, whose handover is not there to read. |
 
 ## What the model leaves out
 
@@ -134,7 +135,7 @@ One track and one trunk. The multiple tracks are abstracted by `OtherLands`: any
 
 ## Checked evidence
 
-TLC reaches 90 states and 170 steps under `head <= 3`. `CleanAtHead` breaks only on the path **Ready, then another unit lands, then it offers a stale tree**. `TrunkNeverResolves` breaks only on **Stale, then the trunk resolves it**. `TypeOK` and `NoDeadlock` hold, including the park/export route. The chart above is generated from the model.
+TLC reaches 90 states and 170 steps under `head <= 3`. `CleanAtHead` breaks only on the path **Ready, then another unit lands, then it submits a stale tree**. `TrunkNeverResolves` breaks only on **Stale, then the trunk resolves it**. `TypeOK` and `NoDeadlock` hold, including the park/export route. The chart above is generated from the model.
 
 The spec and its view are reproduced below so the chart can be rebuilt.
 
@@ -308,7 +309,7 @@ StateConstraint == head <= 3
 ```js
 const label = (v) => {
   if (v.trunkResolved) return "Trunk resolves it (forbidden)";
-  if (v.phase === "replaying" && v.base < v.head) return "Offered stale (forbidden)";
+  if (v.phase === "replaying" && v.base < v.head) return "Stale request (forbidden)";
   switch (v.phase) {
     case "cut": return "Cut from the head";
     case "working": return "Working";
@@ -343,7 +344,7 @@ export const colors = {
   forbidden: "pink",
 };
 
-export const title = "The merge unit: a track, a trunk, and the grain";
+export const title = "The merge request: a track, a trunk, and the grain";
 
 const steps = {
   Cut: "cut from the head",
@@ -353,13 +354,13 @@ const steps = {
   Ready: "it is ready to merge",
   GoStale: "the head moved under it",
   Rebase: "it rebases",
-  ChooseMilestone: "you merge the whole milestone",
-  ChooseSlice: "you merge a slice early",
+  ChooseMilestone: "you choose the whole milestone",
+  ChooseSlice: "you choose a slice early",
   Apply: "the trunk applies it",
-  AcceptMilestone: "the trunk accepts the milestone",
-  AcceptSlice: "the trunk accepts the slice, the track continues",
+  AcceptMilestone: "the trunk merges the milestone",
+  AcceptSlice: "the trunk merges the slice, the branch continues",
   Park: "you park it and export",
-  OfferStale: "it offers a stale tree",
+  OfferStale: "it submits a stale tree",
   TrunkResolve: "the trunk resolves it",
   Done: null,
 };

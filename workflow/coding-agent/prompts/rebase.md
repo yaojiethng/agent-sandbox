@@ -1,5 +1,5 @@
 ---
-description: Offer a merge unit from a branch. Rebase it onto the current trunk head, resolve every conflict, drop what the trunk already carries, and make it apply cleanly. The author owns the merge-back; the trunk only accepts or refuses.
+description: Prepare a merge request from a feature branch. You are on a feature branch carrying a unit the trunk does not; rebase it if the trunk has moved, resolve every conflict, drop what the trunk already carries, and make it apply cleanly. The branch owns the request; the trunk merges it.
 argument-hint: "[branch] [trunk head] [unit range - the whole branch, or a slice]"
 ---
 
@@ -11,9 +11,16 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 - `git-discipline` - commit types, branch names and the delivery commit.
 
-## Role
+## The scenario
 
-You act for the **author**: a branch. You own the unit's merge-back. You rebase it onto the current trunk head, resolve every conflict yourself, and drop what the trunk already carries. The integrator will not do this for you.
+You are on a feature branch preparing a merge request: it carries a unit the trunk does not. Confirm it before you start:
+
+- `git rev-parse --abbrev-ref HEAD` names your branch, not the trunk.
+- `git log --oneline <trunk>..HEAD` is non-empty: the branch carries a unit the trunk does not.
+
+If either check fails, you are not in this scenario. Stop and ask.
+
+If `git merge-base --is-ancestor <trunk> HEAD` fails, the trunk has moved; rebase before you open the request. If it succeeds, the branch is current; open it as it stands.
 
 ## Intent
 
@@ -25,7 +32,7 @@ Make the branch's work available as a unit that applies at the current trunk hea
 |---|---|
 | branch | the branch that carries the unit |
 | trunk head | the commit the unit must apply to |
-| unit range | the commits the unit offers; the whole branch by default |
+| unit range | the commits the unit covers; the whole branch by default |
 
 ## The obligation
 
@@ -44,4 +51,4 @@ Stop and ask when the trunk's design contradicts the unit, when the intent is am
 
 ## Close
 
-Report the branch, the unit range, the commits offered and the checks run. End with the one question: does the unit apply at the trunk head with every conflict resolved?
+Report the branch, the unit range, the commits covered and the checks run. End with the one question: does the unit apply at the trunk head with every conflict resolved?
