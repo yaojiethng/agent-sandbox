@@ -32,7 +32,8 @@
 //
 // The exempt trees are configuration, not code: the rule reads `recordTrees`
 // from its config entry, and exempts nothing when the key is absent. The list is
-// declared once in `.markdownlint-cli2.mjs` and shared with doc-wrap under the
+// declared once in `src/build/record-layout.json`, read through
+// `src/build/record-layout.mjs`, and passed to this rule and doc-wrap under the
 // same key, so one setting has one home and no rule grows its own copy.
 //
 // ESM form: `.markdownlint-cli2.mjs` imports this as a custom rule.

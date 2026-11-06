@@ -30,7 +30,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCAN_SCRIPT="$REPO_ROOT/scripts/lint/handover-format.mjs"
 SCAN_ROOT="${HANDOVER_FORMAT_SCAN_ROOT:-$REPO_ROOT}"
 CUTOVER="${HANDOVER_FORMAT_CUTOVER:-20261001}"
-
 if ! command -v node >/dev/null 2>&1; then
   echo "Handover format gate: node is not on PATH; cannot parse frontmatter." >&2
   exit 1
@@ -41,6 +40,11 @@ if [[ ! -f "$SCAN_SCRIPT" ]]; then
   exit 1
 fi
 
+HANDOVER_ROOT="$(node "$REPO_ROOT/src/build/record-layout.mjs" path handover --root "$SCAN_ROOT")" || {
+  echo "Handover format gate: record-layout.json does not declare the handover root." >&2
+  exit 1
+}
+
 FILES=()
 STAGED=0
 while (( $# > 0 )); do
@@ -49,7 +53,7 @@ while (( $# > 0 )); do
       STAGED=1
       while IFS= read -r -d '' file; do
         FILES+=("$file")
-      done < <(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- 'devlog/handovers/*.md' ':(exclude)devlog/handovers/archive/**')
+      done < <(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- "$HANDOVER_ROOT/*.md" ":(exclude)$HANDOVER_ROOT/archive/**")
       shift
       ;;
     *)

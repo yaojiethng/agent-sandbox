@@ -149,6 +149,19 @@ run_test numbering_skill_defines_every_letter
 run_test numbering_skill_rules_cite_a_story
 run_test numbering_skill_stories_are_served
 
+numbering_duplicate_handover_id_fails() {
+  local d; d="$(mktemp -d)"
+  mkdir -p "$d/devlog/handovers/M3.5.1" "$d/devlog/handovers/M3.5.2"
+  printf '# Report\n\n### F1 One\n' > "$d/devlog/handovers/M3.5.1/20260101-01-report.md"
+  printf '# Report\n\n### F1 One\n' > "$d/devlog/handovers/M3.5.2/20260101-01-report.md"
+  printf '# Note\n\nsee `20260101-01-report.md`/F1 for the detail\n' > "$d/note.md"
+  local out rc
+  out="$(run_in "$d")"; rc=$?
+  assert_eq "$rc" "1" "two records with one id fail"
+  assert_contains "$out" "names 2 documents" "the collision is named"
+  rm -rf "$d"
+}
+
 run_test numbering_contiguous_units_pass
 run_test numbering_unit_gap_fails
 run_test numbering_unit_repeat_fails
@@ -156,6 +169,7 @@ run_test numbering_section_order_holds
 run_test numbering_section_gap_fails
 run_test numbering_reference_resolves
 run_test numbering_dangling_reference_fails
+run_test numbering_duplicate_handover_id_fails
 run_test numbering_prose_carries_no_units
 run_test numbering_archive_is_not_checked
 

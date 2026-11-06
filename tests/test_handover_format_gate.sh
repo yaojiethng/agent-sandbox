@@ -113,8 +113,15 @@ test_bad_frontmatter_value_flagged() {
   assert_contains "$out" 'status' 'the field is named'
 }
 
+seed_layout() {
+  local root="$1"
+  mkdir -p "$root/src/build"
+  cp "$REPO_ROOT/src/build/record-layout.json" "$root/src/build/record-layout.json"
+}
+
 test_default_scan_flags_block_absent_record() {
   local root="$FIXTURE_DIR/t6" rc=0 out
+  seed_layout "$root"
   write_bold_handover "$root/devlog/handovers/20260101-01-workflow-old.md"
   write_handover "$root/devlog/handovers/20261004-01-workflow-new.md" 2026-10-04
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
@@ -124,11 +131,31 @@ test_default_scan_flags_block_absent_record() {
 
 test_default_scan_skips_archive() {
   local root="$FIXTURE_DIR/t9" rc=0 out
+  seed_layout "$root"
   write_bold_handover "$root/devlog/handovers/archive/20260101-01-workflow-old.md"
   write_handover "$root/devlog/handovers/20261004-01-workflow-new.md" 2026-10-04
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a record under archive/ is not scanned'
   assert_contains "$out" 'clean across 1 handover' 'and the live record is the only subject'
+}
+
+test_default_scan_walks_track_folders() {
+  local root="$FIXTURE_DIR/t13" rc=0 out
+  seed_layout "$root"
+  write_handover "$root/devlog/handovers/M3.5.1/20261004-01-workflow-x.md" 2026-10-04
+  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a nested handover is in the default scan'
+  assert_contains "$out" 'clean across 1 handover' 'the nested record is the subject'
+}
+
+test_default_scan_skips_nested_archive() {
+  local root="$FIXTURE_DIR/t14" rc=0 out
+  seed_layout "$root"
+  write_bold_handover "$root/devlog/handovers/archive/20260101-01-workflow-old.md"
+  write_handover "$root/devlog/handovers/M3.5.1/20261004-01-workflow-x.md" 2026-10-04
+  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a nested archive record is skipped'
+  assert_contains "$out" 'clean across 1 handover' 'only the live nested record is checked'
 }
 
 test_named_file_ignores_cutover() {
@@ -230,6 +257,8 @@ run_test test_missing_required_section_flagged
 run_test test_bad_frontmatter_value_flagged
 run_test test_default_scan_flags_block_absent_record
 run_test test_default_scan_skips_archive
+run_test test_default_scan_walks_track_folders
+run_test test_default_scan_skips_nested_archive
 run_test test_named_file_ignores_cutover
 run_test test_file_list_without_force_respects_cutover
 run_test test_staged_with_nothing_staged_is_clean

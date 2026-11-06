@@ -14,14 +14,15 @@
 // Suppression policy mirrors scripts/check_shell.sh: targeted context
 // only, never a blanket disable in a source file.
 
-// The record trees: closed records whose pointers and prose are read as
-// history rather than as text to maintain. Declared once here and referenced by
-// every rule that exempts them, so the list has one home and no rule grows its
-// own copy. A tree leaves the list when its records are migrated.
+// The record trees are declared once in `src/build/record-layout.json` and read
+// through `src/build/record-layout.mjs`, so every rule that exempts them shares
+// one home. A tree leaves the list when its records are migrated.
 //   devlog/handovers/    -- closed handovers, written before the current paths
 //   devlog/discussions/  -- closed discussion records, pre-M1.5 restructure
 //   docs/adr/archive/    -- superseded ADRs, kept for the decision history
-export const recordTrees = ["devlog/handovers/", "devlog/discussions/", "docs/adr/archive/"];
+import { load_layout, record_trees } from "./src/build/record-layout.mjs";
+
+export const recordTrees = record_trees(load_layout());
 
 export default {
   config: {

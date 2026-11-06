@@ -1,0 +1,26 @@
+{
+  "recordTrees": [
+    "devlog/handovers/",
+    "devlog/discussions/",
+    "docs/adr/archive/"
+  ],
+  "kinds": {
+    "handover": {
+      "root": "devlog/handovers",
+      "archive": "devlog/handovers/archive",
+      "idBlock": {
+        "start": 20,
+        "size": 20
+      },
+      "filename": "^\\d{8}-\\d{2}-.*\\.md$"
+    },
+    "discussion": {
+      "root": "devlog/discussions",
+      "archive": "devlog/discussions/archive",
+      "filename": "^\\d{8}-[a-z]+-[a-z]+-.*\\.md$"
+    },
+    "feedback": {
+      "path": "devlog/AGENT_FEEDBACK.md"
+    }
+  }
+}

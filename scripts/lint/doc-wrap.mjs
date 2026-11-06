@@ -11,7 +11,9 @@
 // line each) are exempt by construction, which matches the policy's
 // fenced-code and table-row exemptions.
 //
-// Progressive scope, in two lists, both declared in .markdownlint-cli2.mjs.
+// Progressive scope, in two lists. The record trees are declared in
+// `src/build/record-layout.json` and passed here through `.markdownlint-cli2.mjs`;
+// `legacyFiles` is declared there.
 // `recordTrees` is the shared exclusion list, the same one linking reads
 // under the same key: whole trees of closed records, whose prose is read as
 // history rather than maintained. `legacyFiles` names individual live files not

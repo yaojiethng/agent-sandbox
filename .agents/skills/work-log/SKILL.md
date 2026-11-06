@@ -11,7 +11,7 @@ A record is not documentation and has no documentation mode. Its reader is a lat
 
 | Record | Path | Its shape |
 |---|---|---|
-| The work-unit record | `devlog/handovers/` | [`assets/handover.md`](assets/handover.md) |
+| The work-unit record | `devlog/handovers/<track>/` | [`assets/handover.md`](assets/handover.md) |
 | The exploration record | `devlog/discussions/` | one of four types, below |
 | The agent-feedback and gotchas record | `devlog/AGENT_FEEDBACK.md` | stated below |
 
@@ -26,19 +26,21 @@ Write it from [`assets/handover.md`](assets/handover.md). The template carries t
 ### Filename
 
 ```text
-YYYYMMDD-NN-<shortform>-<slug>.md
+devlog/handovers/<track>/YYYYMMDD-NN-<shortform>-<slug>.md
 ```
 
 | Component | Rule |
 |---|---|
 | `YYYYMMDD` | the date |
-| `NN` | the two-digit per-day index: `max + 1` over the day's existing handovers, so the day's first is `01` |
+| `NN` | the record's identity within the day, taken from the track's reserved block (below); a track's first record on a date takes the block's first free number |
 | `<shortform>` | the type shortform, from the vocabulary below |
 | `<slug>` | the specific subject. Name the concrete thing, not a restatement of the type. Underscores for spaces; no other special character. A reader scanning a list of filenames distinguishes this iteration from others of its type without opening the file. |
 
-Example: `20260316-02-workflow-scope_gate_and_preclose_verification.md`
+Example: `devlog/handovers/M3.5.1/20260316-20-workflow-scope_gate_and_preclose_verification.md`
 
-The record with the highest date and index is the latest record. Earlier records are never overwritten.
+The folder is the track, and a record's `milestone` field names the same milestone. A track reserves a block of `NN` numbers when it opens, recorded as `ids: 20-39` in `devlog/handovers/<track>/README.md`, so two tracks writing on one date never collide. A record written before the track folders landed sits flat; its track is its `milestone` field until the migration moves it.
+
+The latest record is the tip of the track in git, not the highest filename. `scripts/worklog.sh latest` answers it, `active` answers the open record, and `reserve-id` answers the next identity. Earlier records are never overwritten.
 
 ### Vocabularies
 
@@ -103,6 +105,21 @@ The table holds the criteria the iteration derives. What makes a criterion well-
 A record with no frontmatter block is unreachable by the default scan, because the scan reads the block to find the date. Naming the file on the command line reaches it regardless of date, and is the only way to do so.
 
 The `milestone` field names the task group the iteration belongs to. The task list states its value's format, in [`../task-list/SKILL.md`](../task-list/SKILL.md).
+
+## The work-log tool
+
+`scripts/worklog.sh` is the seam between the convention and the tree. It reads the layout declared once in `src/build/record-layout.json` through `src/build/record-layout.mjs`, and it answers the derived reads a procedure would otherwise compute by hand:
+
+| Command | Answers |
+|---|---|
+| `worklog.sh latest [--track T]` | the tip record of the track, by git order |
+| `worklog.sh active [--track T]` | the one `Active` record on the track |
+| `worklog.sh track` | the track the caller is in |
+| `worklog.sh reserve-id --track T` | the next free id in the track's block |
+| `worklog.sh list [--track T]` | the track's records |
+| `worklog.sh path handover` | the declared root |
+
+A procedure calls the tool rather than listing the folder, grepping for `Status: Active`, or computing `max + 1`. The tool adds no rule of its own; this convention states what a record says.
 
 ## The exploration record
 

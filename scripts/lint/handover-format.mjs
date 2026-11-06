@@ -14,10 +14,11 @@
 // Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 // finding count is printed, never encoded in the exit code.
 
-import { readFileSync, readdirSync, existsSync } from "fs";
-import { join, dirname, resolve } from "path";
+import { readFileSync, existsSync } from "fs";
+import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
+import { load_layout, walk_kind } from "../../src/build/record-layout.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -106,12 +107,10 @@ const files = [];
 if (named.length > 0) {
   files.push(...named);
 } else {
-  const dir = join(root, "devlog", "handovers");
-  if (existsSync(dir)) {
-    for (const entry of readdirSync(dir).sort()) {
-      if (entry.endsWith(".md")) files.push(join(dir, entry));
-    }
-  }
+  // The default scan reads every live handover under the track folders declared
+  // in `record-layout.json`, and skips the archive the declaration names.
+  const layout = load_layout(root);
+  files.push(...walk_kind(root, layout, "handover"));
 }
 
 let checked = 0;
