@@ -16,7 +16,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 Read the most recent handover and the roadmap:
 
 ```text
-ls devlog/handovers/ | sort | tail -1 | xargs -I{} read devlog/handovers/{}
+read "$(bash scripts/worklog.sh latest)"
 read devlog/roadmap.md
 ```
 

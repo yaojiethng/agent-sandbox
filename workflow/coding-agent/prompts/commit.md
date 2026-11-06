@@ -52,7 +52,7 @@ List the commits. Identify each by kind: the delivery commit, `wip:` checkpoints
 ### A2. Count the failure signals
 
 - How many commits are in the range, and how many carry a delivery type?
-- Is there an open handover? `grep -l "Status: Active" devlog/handovers/*.md`
+- Is there an open handover? `bash scripts/worklog.sh active`; an empty result means none.
 - Does any commit look like a close-edit-only commit (only the `Status` flip or write-back)?
 
 More than one delivery-typed commit, or any `wip:` not yet folded, or no open handover are each a missing-record signal. Report them all.

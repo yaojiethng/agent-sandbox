@@ -72,7 +72,7 @@ Session-scoped resources: the container lifecycle, the compose project, the name
 
 ## iteration
 
-One work cycle that produces a handover and a commit. The operator unit of governance. Targets one sub-milestone step; recorded in `devlog/handovers/`.
+One work cycle that produces a handover and a commit. The operator unit of governance. Targets one sub-milestone step; recorded in `devlog/handovers/<track>/`.
 
 ### Identity
 

@@ -60,7 +60,7 @@ In an open document, insert where it belongs and renumber what follows. That is 
 
 ## Direction of flow
 
-A derived record cites its source. A handover cites a milestone, a discussion cites a decision, a roadmap row records the finding that raised it. A durable record does not cite a transient unit, because the reference would outlive its target's scope.
+A derived record cites its source. A handover cites a milestone, a discussion cites a decision, a roadmap row records the finding that raised it. A handover's `YYYYMMDD-NN` is an identity code, not an ordered unit; order is read from git. A durable record does not cite a transient unit, because the reference would outlive its target's scope.
 
 ## Do not number
 

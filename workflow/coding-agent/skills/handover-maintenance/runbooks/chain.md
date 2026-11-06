@@ -18,7 +18,7 @@ This runbook is not an iteration type. The operator invokes it, or a workflow di
 
 Determine the set of handovers to check.
 
-- Periodic: list the handovers inside the date range, in the order the project's `work-log` convention states, and take them in that order.
+- Periodic: list the handovers inside the date range, in git order, and take them in that order. Read the project's `work-log` convention for the tool and the query; where the project has no tool, list the live folder and take the records in the order the convention states.
 - Event-driven: trace the deferred item through the roadmap rows it was written back to, and the handovers that cite it.
 
 ### Step 2 - Structural scan
@@ -48,9 +48,11 @@ Handovers carry no deferred items: an item deferred with a destination is writte
 
 Read each handover's `**Status:**` value.
 
-- `Active` is valid only for the most recent handover.
+- `Active` is valid only for the most recent handover on its track.
 - `Closed` is valid for every other handover.
 - Any other value is a finding.
+
+The project's `work-log` convention names the tool that answers the per-track check; where the project has none, read the track from the record's folder or its `milestone` field.
 
 ### Step 5 - Dangling references
 

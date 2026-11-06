@@ -94,7 +94,7 @@ Only after the decisions. One iteration. In this order.
 1. `docs/reference/` - copy `iteration_protocol.md` verbatim from `/opt/sandbox/docs/reference/`. The repository owns its copy; the protocol is generic by design. These files are the link targets and wording authority for what follows.
 2. Repo-root `AGENTS.md` - the project layer. Contains the primer from decision 3, links to the protocol, the verification contract from decision 5, and the workflow intent from decision 1. Follow the wording rules of the `communication-principle-*` corpus and the form rules of the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md`.
 3. `devlog/roadmap.md` - the `active-milestone` frontmatter, the goal and definition of done from decision 4, and the first task row: the setup iteration itself, closing with handover 1.
-4. `devlog/handovers/` - the directory, ready for handover 1 at this wrap-up.
+4. `devlog/handovers/<track>/` - the first track's folder, ready for handover 1 at this wrap-up.
 5. `devlog/AGENT_FEEDBACK.md` - empty accumulation file, only under the full loop.
 6. `devlog/discussions/` - create it only when the first design doc lands. Not now.
 

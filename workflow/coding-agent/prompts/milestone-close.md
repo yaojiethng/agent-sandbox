@@ -17,7 +17,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Orient
 
-Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, the named milestone's section, and the Milestone Summary table. Read the most recent handover in `devlog/handovers/`. Read `devlog/AGENT_FEEDBACK.md` open entries.
+Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, the named milestone's section, and the Milestone Summary table. Read the latest handover (`bash scripts/worklog.sh latest`). Read `devlog/AGENT_FEEDBACK.md` open entries.
 
 The milestone name always comes from the operator. Never infer it from the branch, the frontmatter field, or the last handover.
 

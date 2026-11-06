@@ -10,6 +10,8 @@ A node is a state the loop rests in. A gate is a node where the loop waits for t
 
 **A story is a path.** A behaviour this app supports is a route through these states, and writing that route down is how the behaviour is declared. `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> it_closed -> it_committed` is the story of one delivered unit. A declared path resolves when every id in it is a state here and every consecutive pair is an edge, which is the cheapest test this map offers of its own completeness.
 
+The chart models one track. `it_open` means no `Active` handover on this track; another track may hold one while this unit waits for a directive.
+
 **An id is the name.** A state's id is what a story cites, and it does not change when the label beside it is rewritten. Ids carry no colon, so that a path is readable in a Mermaid diagram and in a shell command alike. The labels in the diagram carry the reading; the id carries the identity.
 
 The diagram is Mermaid 12.1.0, `stateDiagram-v2`, in the conservative subset: composite states, labelled transitions, notes, and no experimental directives. A render capability is planned and the intended target is Pele, at `https://pele.run/compatibility`; that page cannot be read from this container, so the chart is written to standard 12.1.0 syntax rather than to guessed restrictions. The version is stated so that a rendering difference has a version to blame.
@@ -55,7 +57,7 @@ stateDiagram-v2
     }
 
     state "Unit grain" as unit {
-        state "it_open -- no Active handover, awaiting a directive" as it_open
+        state "it_open -- no Active handover on this track, awaiting a directive" as it_open
         state "it_scope_gate -- scope table and acceptance criteria presented" as it_scope_gate
         state "it_implementing -- work is landing in the tree, findings appended" as it_implementing
         state "it_acceptance_gate -- the six-section summary presented, awaiting release" as it_acceptance_gate
@@ -175,7 +177,7 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `ms_active` | milestone | one milestone is active; iterations run against it |
 | `ms_close_gate` | milestone | compaction and changelog presented, awaiting release |
 | `ms_closed` | milestone | the close is recorded and its bookkeeping commit landed |
-| `it_open` | unit | no `Active` handover; awaiting a directive |
+| `it_open` | unit | no `Active` handover on this track; awaiting a directive |
 | `it_scope_gate` | unit | scope table and acceptance criteria presented |
 | `it_implementing` | unit | work is landing in the tree and findings are appended |
 | `it_acceptance_gate` | unit | the six-section summary is presented, awaiting release |

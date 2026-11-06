@@ -17,7 +17,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Orient
 
-Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, its milestone section, its open items, and the Milestone Summary table. Read the most recent handover in `devlog/handovers/`. Read `devlog/AGENT_FEEDBACK.md` open entries.
+Read `devlog/roadmap.md`. Read the `active-milestone` frontmatter field, its milestone section, its open items, and the Milestone Summary table. Read the latest handover (`bash scripts/worklog.sh latest`). Read `devlog/AGENT_FEEDBACK.md` open entries.
 
 Determine the finish state. Confirm with the operator that a milestone should be opened or reshaped.
 
