@@ -32,6 +32,16 @@ Fast-forward the trunk to a ready branch and verify the staged tree. The branch 
 | branch | the prepared branch |
 | trunk head | the commit the accept is expected to replace |
 
+## Why preflight, then CAS
+
+The accept is a preflight, a staged verification, then a compare-and-swap. It never acts and repairs.
+
+- The preflight is the scenario above. It refuses with a reason and changes nothing.
+- The staged verification runs the suite and the lint gate on a scratch worktree at the branch tip. A red tree changes nothing.
+- The compare-and-swap writes the trunk ref only if it still points at the head that was checked. A lost race changes nothing.
+
+The alternative, act then roll back, is rejected: the rollback is a second write that can fail, and it leaves the trunk advanced and red in the window. Verify before the commit, and there is no rollback path.
+
 ## The obligation
 
 - Accept only a branch whose tip descends from the head.
@@ -45,7 +55,7 @@ The accept is the compare-and-swap above. The `git-discipline` convention owns t
 
 ## Handoff
 
-A branch that is not ready goes back to `/prepare-rebase`. The order comes from `/merge-queue`. This runbook owns the atomic accept; it does not prepare and it does not order.
+A branch that is not ready goes back to `/prepare-rebase`. The order may come from `/merge-queue`; the direct path needs no queue. This runbook owns the preflight, the staged verification and the compare-and-swap.
 
 ## Close
 

@@ -47,7 +47,7 @@ Read the mergeability, group the stacks, and order the runs by criticality. The 
 
 ## Handoff
 
-The queue is the input to `/accept-fast-forward`, which owns the fast-forward. `/prepare-rebase` owns the branch's readiness. This runbook owns the order alone.
+If nothing is ready, hand off to `/prepare-rebase` for the branch the operator names. Otherwise hand the order to `/accept-fast-forward`. This runbook owns the order alone; it does not prepare and it does not accept.
 
 ## Close
 

@@ -16,6 +16,8 @@ Three workflows:
 - **Queue** -- `/merge-queue`: the operator orders the ready branches. A **stack** is a contiguous run in which each branch is prepared on the one before it.
 - **Accept** -- `accept-fast-forward`: the consumer fast-forwards the trunk to the next ready branch. The head advances.
 
+The queue is optional. A ready branch can go straight to `accept-fast-forward`, or through `/merge-queue` first to see the order. The graph has both edges; the queue is a view over the ready set, not a step every accept must pass.
+
 The branch-work machine (`cut`, `working`, `blocked`, `parked`) is a separate machine. It is not mergeability.
 
 The trunk has one state, **`stable`**. The head is a value. `accept` is an atomic transition back to `stable`, not a state named `accepting` or `advanced`.
@@ -82,7 +84,7 @@ The runbook does not need an `accepting` state, an `advanced` state, or a rollba
 A change is made available early when another branch needs it before the branch's milestone is complete. The change is a prepared unit like any other.
 
 1. **Prepare.** The worker rebases the change onto the head, resolves every conflict, and makes it fast-forwardable. The change is its own unit: a typed commit with its own closed handover.
-2. **Queue.** `/merge-queue` orders it. The grain is which range is queued now: a slice, or the whole milestone.
+2. **Queue (optional).** `/merge-queue` orders it; the operator can also hand the ready branch straight to accept. The grain is which range is queued now: a slice, or the whole milestone.
 3. **Accept.** `/accept-fast-forward` CASes the head forward.
 4. **Re-evaluate.** Every queued branch is re-checked. A branch no longer based on the head is `not-ready` and re-prepares.
 5. **Continue.** The branch that opened the slice re-prepares its remaining commits as their own unit.

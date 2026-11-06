@@ -47,7 +47,7 @@ Rebase onto the head, re-realize each commit's intent, keep the commit granulari
 
 ## Handoff
 
-A ready branch is handed to `/merge-queue`, which orders it. The order is handed to `/accept-fast-forward`, which accepts it. This runbook owns the rebase and the branch's fast-forwardability; it does not order and it does not accept.
+A ready branch can go straight to `/accept-fast-forward`, or to `/merge-queue` first to see the order. This runbook owns the rebase and the branch's fast-forwardability; it does not order and it does not accept.
 
 ## Close
 
