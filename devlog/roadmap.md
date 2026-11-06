@@ -1,5 +1,5 @@
 ---
-active-milestone: M3.5 - Task List Mechanism
+active-milestone: M3.5.3 - The unified record layer
 active-milestone-status: in-progress
 ---
 
@@ -53,7 +53,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.1 - The work-log record layer](#m351---the-work-log-record-layer) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.2 - The task-list mechanism](#m352---the-task-list-mechanism) | Not started |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.3 - The unified record layer](#m353---the-unified-record-layer) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.3 - The unified record layer](#m353---the-unified-record-layer) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.4 - The git and change model](changelog.md#m354---the-git-and-change-model) | [Complete - see changelog](changelog.md#m354---the-git-and-change-model) |
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](changelog.md#m361---disable-and-ship-opencode-dispatch) | [Complete - see changelog](changelog.md#m361---disable-and-ship-opencode-dispatch) |
@@ -509,7 +509,7 @@ The sub-milestone that settles the container execution model and reserves its vo
 **Sequencing:** after M3.5.2 and M3.5.4.
 
 - [ ] **The invariant census and the record-shape gate** - a table of every invariant the three record policies state, each marked gated or rule-only, and the machine-checkable subset implemented as a lint module under `scripts/`. Retires the judgement pass `roadmap-maintenance` runs twice per iteration. Nature of change: new check module, policy table.
-- [ ] **The concurrency proof** - one test in which two sessions advance two sub-milestones at once for a fixed round count, asserting no lost update and no record conflict. This is the criterion that retires the operator's first blocker. Nature of change: new test and its runner.
+- [x] **The concurrency proof** -- one test runs two concurrent writers for three fixed rounds in two linked worktrees, each session writing its own track's handover through `worklog.sh reserve-id`; the branches merge cleanly, the merge role applies both roadmap deltas, no round marker is lost, and a negative control shows two writers on one roadmap row conflict. Test [`tests/test_parallel_records.sh`](../tests/test_parallel_records.sh); handover `20261106-04`.
 - [ ] **The parallel-milestone rule** - amend the `task-list` convention, the iteration protocol document [`iteration_protocol.md`](../docs/reference/iteration_protocol.md) and the runbooks that write the field, so the active-milestone scalar becomes a set and the serialization rule is deleted rather than reinterpreted. Nature of change: convention and protocol amendment, and runbook update.
 - [ ] **Retire the legacy record** - delete the old format, its readers and its checks at the deletion date the converter contract names. Nature of change: deletion.
 - [ ] **Session (chat) log + generated-artifact archival** -- define storage rules for chat logs and any generated artifacts (perf logs, metrics) the pipeline starts producing; see `20260428-story-active-sequencing_and_knowledge_persistence.md`.
