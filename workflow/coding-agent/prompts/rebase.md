@@ -1,6 +1,6 @@
 ---
-description: Port a stale branch onto a target branch by replaying the intent of each iteration. One commit per iteration; the target history reads as if the work was done there fresh; no port artifacts remain.
-argument-hint: "[stale branch] [target branch] [port intent - what the stale branch was for, known supersession concerns]"
+description: Offer a merge unit from a branch. Rebase it onto the current trunk head, resolve every conflict, drop what the trunk already carries, and make it apply cleanly. The author owns the merge-back; the trunk only accepts or refuses.
+argument-hint: "[branch] [trunk head] [unit range - the whole branch, or a slice]"
 ---
 
 > $ARGUMENTS
@@ -11,78 +11,37 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 - `git-discipline` - commit types, branch names and the delivery commit.
 
-## Mandate
+## Role
 
-You are porting a stale branch onto a target branch. Your deliverable is that work done again correctly on the target: each iteration becomes one commit, and the target history reads as if that work had always lived there.
+You act for the **author**: a branch. You own the unit's merge-back. You rebase it onto the current trunk head, resolve every conflict yourself, and drop what the trunk already carries. The integrator will not do this for you.
 
-Three rules govern this run.
+## Intent
 
-First, replay intent, not diffs. A formulaic rebase copies hunks; a port re-realizes what each iteration was for against the target's current state. Content the target already carries is dropped. Content the target superseded is adapted or dropped. Content that landed only as a failed patch is completed.
+Make the branch's work available as a unit that applies at the current trunk head. The unit is the whole branch, or an early slice: one commit, authored as its own unit with its own closed handover.
 
-Second, preserve iteration granularity. One commit equals one iteration. The stale branch's commits each carry their own handover; the replayed commits keep the original messages and their handovers, in the historical order. No squash merges the iterations together, and no extra commit describes the port.
-
-Third, stop on real architectural divergence. When the target's design contradicts a stale iteration's approach, or the intent is ambiguous and the records do not resolve it, stop and ask. Merely textual conflicts, additive merges, and stale counts are your work to resolve.
-
-## Input contract
+## Inputs
 
 | Input | Meaning |
 |---|---|
-| stale branch | The branch carrying the work to port, typically a draft export. |
-| target branch | Where the work lands: the current working line, usually a `feat/` branch. |
-| port intent | What the stale branch was for, plus any known supersession concerns. |
+| branch | the branch that carries the unit |
+| trunk head | the commit the unit must apply to |
+| unit range | the commits the unit offers; the whole branch by default |
 
-The argument slot may carry extra context: handover references, session-log locations, or operator rulings. Use them; ask for what is missing.
+## The obligation
 
-## Establish topology
+- The tree applies at the trunk head with every conflict resolved by you.
+- Content the trunk already carries is dropped. Content it superseded is adapted or dropped.
+- One commit per unit; the unit's handover is closed and its message keeps its type prefix.
+- Stop on a semantic divergence between the unit and the trunk; ask. Do not guess a shared meaning.
 
-Map the branch graph before reading any commit.
+## Method
 
-- The merge-base of the stale branch with the target, and with main. When main's head equals the base, main has nothing to supersede anything; run the supersession check against the target instead.
-- What the target added since the divergence: `git log --oneline <merge-base>..<target>`, then the files those commits touched.
-- What the stale branch added: `git log --oneline <merge-base>..<stale>`. Classify each commit: its type, its files, and the handover it carries or references.
-- File-level overlap: which stale-touched files the target also changed since the base. Disjoint files replay cleanly; shared files need the supersession decision first. The roadmap and the project index are the usual shared files, and their edits are usually disjoint regions.
+The port mechanics are the ones already in use: read each commit's handover, re-realize its intent against the current tree, keep the commit granularity, and run the repo's checks. The `git-discipline` convention owns the commit and branch rules; `/commit` owns the unit's close. This runbook restates neither.
 
-## Collect the intent
+## Stop
 
-Read the handover of every stale iteration before touching any file. In this repo the handover rides inside its commit; read it with `git show <stale-commit>:<path>`. The pi session log is the fallback when a handover is missing or silent.
-
-For each iteration record four things: the objective, the acceptance criteria, the decisions, and the deferred items. The deferred items of one iteration often become the carried-forward scope of the next; note the thread. A commit whose handover is absent may still be understood from its message and its diff, but say that you reconstructed it.
-
-## Exclude pipeline artifacts
-
-A draft export carries metadata that is not content.
-
-- `.draft-state` records the export: source branch, hashes, timestamps. Never port it; on the new base it would record false state.
-- `.rej` files are rejected patch remnants. They mean the iteration's intended change did not land. Realize the change on the current target and do not carry the `.rej`.
-- Stray untracked handovers in the working tree describe sessions outside the branch. Flag them to the operator; do not port them.
-
-Name the exclusion in your report.
-
-## Check supersession
-
-For each stale change set, decide one of: present, superseded, merged, live, or divergent.
-
-- Present: the target already has the change, possibly as its own commit with a different hash. Drop it and say so. Per-file identity is `git diff --quiet <stale> <target> -- <file>`.
-- Superseded: the target changed the same area with a newer design. Keep the target's version; adapt the stale intent to it, or drop the intent when the newer design made it obsolete.
-- Merged: both branches changed the same document in disjoint regions, one bullet here and one row there. Keep both sides. This is the common case for the roadmap and the project index.
-- Live: the change is absent from the target and uncontradicted. Port it.
-- Divergent: the target's design contradicts the stale iteration's approach. Stop and ask; this verdict never resolves itself.
-
-## Replay
-
-Create one commit on the target for each stale iteration, in the historical order. Reuse the original commit message; it carries the type prefix and names the handover. Do not add cherry-pick provenance notes; the target history must read as original work.
-
-Adapt the content as the current state requires, as if the iteration had run on the target. Fold current-state corrections (counts, suite totals, status lines) into the commit that owns the subject. Replace rejected-patch artifacts with the applied change. Resolve additive conflicts by keeping both branches' content.
-
-If the exact stale content would contradict the target's own recent edits, the target's edits win.
-
-## Verify
-
-- The ported files equal the stale branch's trees where the replay was faithful: `git diff --quiet <stale> <target> -- <file>`, per file.
-- The tree diff against the stale branch shows only excluded artifacts, target-side content, and applied corrections.
-- The test suite is green under the repo runner; lint is clean on the changed scripts.
-- `git status` is clean apart from operator-owned strays you flagged earlier.
+Stop and ask when the trunk's design contradicts the unit, when the intent is ambiguous, or when the unit is an early slice whose grain the operator has not chosen.
 
 ## Close
 
-Report the topology, the supersession verdict per change set, the commits created, and the verification numbers. Name everything dropped and why. Surface the deferred items from the ported handovers and the strays in the working tree. End with the one question that matters: whether the port intent is fully realized on the target.
+Report the branch, the unit range, the commits offered and the checks run. End with the one question: does the unit apply at the trunk head with every conflict resolved?

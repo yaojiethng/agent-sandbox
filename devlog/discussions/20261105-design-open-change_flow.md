@@ -4,7 +4,7 @@
 
 ## Context
 
-The feature flow is settled in its shape but not in its prose: a container works a branch, the branch replays into the trunk, and the trunk is fast-forwarded. Two corrections fixed the model. The branch owns its merge-back: it may write any file, and it resolves its own conflicts; the trunk is a role that accepts a resolved tree, never an author or a resolver. And there is no second lane: the merge unit's grain is a judgement, so a small fix or contract change can travel down the same lane ahead of the milestone it would otherwise be bundled with.
+The feature flow is settled in its shape but not in its prose: a container works a branch, the branch replays into the trunk, and the trunk is fast-forwarded. Two corrections fixed the model. The author owns its merge-back: it may write any file, and it resolves its own conflicts; the integrator accepts a resolved tree, never an author or a resolver. And there is no second lane: the merge unit's grain is a judgement, so a small fix or contract change can travel down the same lane ahead of the milestone it would otherwise be bundled with.
 
 This record writes the resulting statechart down, states the early-change-and-rebase rule, and lists the workflow bugs the model exposes.
 
@@ -13,7 +13,7 @@ This record writes the resulting statechart down, states the early-change-and-re
 A change is a **merge unit**. Its grain is chosen by the operator or orchestrator at the merge gate: a whole milestone delivery, or a slice of it made available early. The rules do not vary with the grain.
 
 - A branch is `ready` only when its tree applies to the current trunk head with no unresolved conflict (`CleanAtHead`).
-- The trunk never edits a file to make a merge work, and never resolves a conflict on the branch's behalf (`TrunkNeverResolves`).
+- The integrator never edits a file to make a merge work, and never resolves a conflict on the author's behalf (`TrunkNeverResolves`).
 - One unit is applied at a time.
 - A live branch rebases when the trunk moves; a branch that cannot rebase cleanly stops and asks.
 - The supplier of an early slice rebases afterwards, and its later milestone delivery drops the already-merged unit.
