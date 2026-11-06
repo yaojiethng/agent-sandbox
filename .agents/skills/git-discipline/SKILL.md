@@ -57,8 +57,9 @@ A branch name carries the commit type, the milestone and a slug, in that order. 
 
 | Runbook | Runs when |
 |---|---|
-| [`merge`](../../../workflow/coding-agent/prompts/merge.md) | you are on the trunk and a branch is ready; accept it by fast-forward compare-and-swap, and never resolve it |
-| [`rebase`](../../../workflow/coding-agent/prompts/rebase.md) | you are on a feature branch; prepare it so the trunk can fast-forward to it, resolving every conflict |
+| [`prepare-rebase`](../../../workflow/coding-agent/prompts/prepare-rebase.md) | you are on a feature branch; prepare it so the trunk can fast-forward to it, resolving every conflict |
+| [`merge-queue`](../../../workflow/coding-agent/prompts/merge-queue.md) | you are the scheduler; order the ready branches, leaving the not-ready out |
+| [`accept-fast-forward`](../../../workflow/coding-agent/prompts/accept-fast-forward.md) | you are on the trunk and a branch is ready; accept it by fast-forward compare-and-swap, and never resolve it |
 | [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a draft branch's series holds an inversion, before the branch is packaged for review |
 | [`recovery`](references/recovery.md) | work is missing, and naming which class of loss it is decides the runbook -- this table's own rows included |
 

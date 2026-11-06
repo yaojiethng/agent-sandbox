@@ -7,19 +7,19 @@ A recovery starts by naming the state the work is in, because five of the six cl
 | Class | How it is known | Runbook |
 |---|---|---|
 | Uncommitted | `git status` names the changes, and no commit carries them | [`/commit`](../../../../workflow/coding-agent/prompts/commit.md) |
-| Unlanded export | a draft branch holds the commits, and they apply to the target as they stand | [`/merge`](../../../../workflow/coding-agent/prompts/merge.md) |
-| Unportable | the commits exist, the target has moved, and the diff no longer applies | [`/rebase`](../../../../workflow/coding-agent/prompts/rebase.md) |
+| Unlanded export | a draft branch holds the commits, and they apply to the target as they stand | [`/prepare-rebase`](../../../../workflow/coding-agent/prompts/prepare-rebase.md) |
+| Unportable | the commits exist, the target has moved, and the diff no longer applies | [`/prepare-rebase`](../../../../workflow/coding-agent/prompts/prepare-rebase.md) |
 | Malformed series | the branch's commits are inverted, or a commit is not a reviewable unit | [`history-cleanup`](../../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) |
 | Landed wrong | a closed commit carries a defect, and the commit itself is where the fix belongs | [`/record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) |
 | Absent | a record states the work exists, and no commit, branch or tree holds it | `## Rebuild`, below |
 
 A lost commit that a handover already describes is `Absent` all the same, and a branch whose commits survive but will not apply is `Unportable` even when the handover calls that iteration lost. The record states what was intended; only the repository states what is there.
 
-## Replay or port
+## Prepare, then accept
 
-Two rows move existing commits onto the current branch, and choosing the wrong one loses the work twice. `/merge` replays: the drafts are finished, and their content lands as it stands, one commit per iteration, with the conflicts resolved once. `/rebase` ports: the target moved around the work, so each commit is re-realized against the current tree, and content the target already carries or superseded is dropped.
+The normal path and the recovery path are the same three steps. `/prepare-rebase` rebases the branch onto the current head and resolves every conflict; `/merge-queue` orders it; `/accept-fast-forward` moves the pointer. A lost branch is not a separate class of work: it is a branch that is `not-ready` and must be prepared.
 
-The test is what the replay would cost. A merge resolves conflicts and lands the same commits; a port re-derives the intent of each iteration, so a clean three-way merge that leaves the tree wrong is still a port.
+The old replay-versus-port distinction is gone with the separate runbooks. `prepare-rebase` ports the intent onto the current tree, and `accept-fast-forward` never replays a commit.
 
 ## Rebuild
 

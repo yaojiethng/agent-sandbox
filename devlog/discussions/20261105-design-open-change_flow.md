@@ -10,11 +10,11 @@ The "request" vocabulary came from a human review protocol: a pull or merge requ
 
 ## Decision
 
-Three primitives:
+Three workflows:
 
-- **Prepare** -- a worker rebases a branch onto the current head and resolves every conflict. The branch is **ready** when the head is a proper ancestor of its tip, so it fast-forwards.
-- **Queue** -- the operator orders the ready branches. A **stack** is a contiguous run in which each branch is prepared on the one before it.
-- **Accept** -- the consumer fast-forwards the trunk to the next ready branch. The head advances.
+- **Prepare** -- `prepare-rebase`: a worker rebases a branch onto the current head and resolves every conflict. The branch is **ready** when the head is a proper ancestor of its tip, so it fast-forwards.
+- **Queue** -- `/merge-queue`: the operator orders the ready branches. A **stack** is a contiguous run in which each branch is prepared on the one before it.
+- **Accept** -- `accept-fast-forward`: the consumer fast-forwards the trunk to the next ready branch. The head advances.
 
 The branch-work machine (`cut`, `working`, `blocked`, `parked`) is a separate machine. It is not mergeability.
 
@@ -82,8 +82,8 @@ The runbook does not need an `accepting` state, an `advanced` state, or a rollba
 A change is made available early when another branch needs it before the branch's milestone is complete. The change is a prepared unit like any other.
 
 1. **Prepare.** The worker rebases the change onto the head, resolves every conflict, and makes it fast-forwardable. The change is its own unit: a typed commit with its own closed handover.
-2. **Queue.** The operator orders it. The grain is which range is queued now: a slice, or the whole milestone.
-3. **Accept.** The consumer CASes the head forward.
+2. **Queue.** `/merge-queue` orders it. The grain is which range is queued now: a slice, or the whole milestone.
+3. **Accept.** `/accept-fast-forward` CASes the head forward.
 4. **Re-evaluate.** Every queued branch is re-checked. A branch no longer based on the head is `not-ready` and re-prepares.
 5. **Continue.** The branch that opened the slice re-prepares its remaining commits as their own unit.
 
@@ -94,11 +94,11 @@ A stack is a contiguous run. After the parent is accepted, the child's tip alrea
 | Bug | Carrier | Why it blocks |
 |---|---|---|
 | The normal integration path is documented only as recovery. | `references/recovery.md`; `workflow_statechart.md`'s `recovery` region. | Prepare and accept are the normal path. The only entry says the work is lost. |
-| The accept is a replay, not a fast-forward. | `merge.md`'s cherry-pick replay. | The trunk authors the replay and resolves conflicts, so the CAS is impossible and the consumer is not atomic. |
+| The accept was a replay, not a fast-forward. | `accept-fast-forward.md`'s predecessor replayed. | The trunk authors the replay and resolves conflicts, so the CAS is impossible and the consumer is not atomic. |
 | The branch model says `main` is the only long-lived branch. | `references/branching.md`. | The long-lived track we work on has no stated lifetime, name or prepare obligation. |
 | Nothing obliges a branch to prepare when the head moves. | `references/branching.md`'s lifecycle. | A queued branch can become `not-ready` and no rule sends it back. |
 | The early slice's unit and handover shape is undefined. | `git-discipline`'s grouping and fold rules. | A `wip:` can land on the trunk, or the slice is a partial unit with no handover. |
-| `/rebase` assumes every commit carries a handover. | `rebase.md`. | The post-slice remainder contains the split-out unit, whose handover is not there to read. |
+| `/prepare-rebase` assumes every commit carries a handover. | `prepare-rebase.md`. | The post-slice remainder contains the split-out unit, whose handover is not there to read. |
 
 ## What the model leaves out
 

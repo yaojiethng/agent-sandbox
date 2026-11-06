@@ -102,8 +102,8 @@ stateDiagram-v2
         state "rec_correction -- a fix folds into the closed commit" as rec_correction
         state "rec_rebuild -- the work is derived again from its record" as rec_rebuild
         [*] --> rec_triage : work is reported missing, unmergeable, or wrong
-        rec_triage --> rec_merge : /merge, when it applies
-        rec_triage --> rec_rebase : /rebase, when the target moved
+        rec_triage --> rec_merge : /accept-fast-forward, when the branch is ready
+        rec_triage --> rec_rebase : /prepare-rebase, when the branch is not ready
         rec_triage --> rec_correction : /record-correction, when it landed wrong
         rec_triage --> rec_rebuild : no runbook owns the absent class
         rec_merge --> it_committed : /commit folds the corrections
@@ -262,9 +262,10 @@ Every prompt the tree carries is an event here, and the command table's row set 
 | `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
-| `/merge` | `rec_triage` | `it_committed` | `/commit` |
-| `/rebase` | `rec_triage` | `it_committed` | none |
-| `/record-correction` | `rec_triage` | `it_closed` | `/rebase` when the fold needs a port |
+| `/prepare-rebase` | `rec_triage` | `it_committed` | none |
+| `/merge-queue` | `rec_triage` | `rec_triage` | none |
+| `/accept-fast-forward` | `rec_triage` | `it_committed` | none |
+| `/record-correction` | `rec_triage` | `it_closed` | `/prepare-rebase` when the fold needs a port |
 | `/read-back` | `rec_triage` | `rec_triage` | none |
 | `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
 | `/commit` | a closed unit | `it_committed` | none |

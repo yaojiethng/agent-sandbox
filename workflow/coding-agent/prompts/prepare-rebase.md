@@ -1,5 +1,5 @@
 ---
-description: Prepare a branch for acceptance. You are on a feature branch carrying a unit the trunk does not; rebase it onto the current head, resolve every conflict, drop what the trunk already carries, and make it fast-forwardable.
+description: Prepare a branch for acceptance by rebasing it onto the trunk head. You are on a feature branch carrying a unit the trunk does not; rebase it, resolve every conflict, drop what the trunk already carries, and make it fast-forwardable.
 argument-hint: "[branch] [trunk head] [unit range - the whole branch, or a slice]"
 ---
 
@@ -43,11 +43,11 @@ Make the branch ready: its tip descends from the current head, so the trunk can 
 
 ## Method
 
-The prepare mechanics are the ones in use: rebase onto the head, re-realize each commit's intent, keep the commit granularity, and run the repo's checks. The `git-discipline` convention owns the commit and branch rules; `/commit` owns the unit's close. This runbook restates neither.
+Rebase onto the head, re-realize each commit's intent, keep the commit granularity, and run the repo's checks. The `git-discipline` convention owns the commit and branch rules; `/commit` owns the unit's close. This runbook restates neither.
 
-## Stop
+## Handoff
 
-Stop and ask when the trunk's design contradicts the unit, when the intent is ambiguous, or when the unit is an early slice whose grain the operator has not chosen.
+A ready branch is handed to `/merge-queue`, which orders it. The order is handed to `/accept-fast-forward`, which accepts it. This runbook owns the rebase and the branch's fast-forwardability; it does not order and it does not accept.
 
 ## Close
 

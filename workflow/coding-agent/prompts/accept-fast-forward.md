@@ -1,5 +1,5 @@
 ---
-description: Accept a prepared branch into the trunk. You are on the trunk; fast-forward to a branch whose tip descends from the head, verify the staged tree, and refuse a branch that is not ready.
+description: Accept a prepared branch by fast-forwarding the trunk. You are on the trunk; verify the staged tree, then compare-and-swap the head to a branch whose tip descends from it. Refuse a branch that is not ready.
 argument-hint: "[branch] [trunk head]"
 ---
 
@@ -43,9 +43,9 @@ Fast-forward the trunk to a ready branch and verify the staged tree. The branch 
 
 The accept is the compare-and-swap above. The `git-discipline` convention owns the commit rules. This runbook restates neither.
 
-## Stop
+## Handoff
 
-Stop and ask when the branch is not ready, when the staged checks fail, or when the compare-and-swap loses.
+A branch that is not ready goes back to `/prepare-rebase`. The order comes from `/merge-queue`. This runbook owns the atomic accept; it does not prepare and it does not order.
 
 ## Close
 
