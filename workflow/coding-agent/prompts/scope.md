@@ -13,7 +13,7 @@ argument-hint: "[the rough ask - required]"
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list` - the work-unit row a brief carries.
+- `task-list` - the work row a brief carries.
 
 ## When to use
 
@@ -51,13 +51,13 @@ A brief is executable when it carries:
 - the material to start from, with the path or command that produced it;
 - the method, as instruments rather than intentions;
 - the check that proves the result, as the artifact a reviewer reruns;
-- the work units, when the work is more than one slice: one row per unit, naming the unit, its commit type, the owned files and its handover, in the form `task-list` states.
+- the work rows, when the work is more than one iteration: one row per iteration, naming the iteration, its commit type, the owned files and its handover, in the form `task-list` states.
 
 ## Hand off
 
 Print the suggestion and stop. The brief goes one of three ways, and the operator picks:
 
-- **A run.** The next runbook reads it: [`iter.md`](iter.md) for one unit, [`plan.md`](plan.md) for a decision.
+- **A run.** The next runbook reads it: [`iter.md`](iter.md) for one iteration, [`plan.md`](plan.md) for a decision.
 - **A saved file.** The brief lands at `.agents/drafts/` for a later run.
 - **A parked prompt.** A prompt the operator has workshopped but is not ready to run lands in `.agents/drafts/`. Landing it is not a review; the `instruction-authoring` convention holds the release rule, and this prompt does not release it.
 

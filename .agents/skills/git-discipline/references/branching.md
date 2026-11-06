@@ -18,13 +18,13 @@ A change not tied to a milestone omits the milestone, as in `workflow/git-policy
 
 ## The branch tree
 
-The milestone tree is fractal: a milestone holds sub-milestones, and a sub-milestone holds units. The branch tree mirrors it. `main` is the root long-lived branch; every milestone node may carry a long-lived branch, a **track**, cut from its parent's track; a unit branch is the leaf.
+The milestone tree is fractal: a milestone holds sub-milestones, and a sub-milestone holds delivery branches. The branch tree mirrors it. `main` is the root long-lived branch; every milestone node may carry a long-lived branch, a **track**, cut from its parent's track; a delivery branch is the leaf.
 
 ```text
 main
   \-- feat/m3-orchestration                 track for M3
         \-- feat/m3_5-task-list             track for M3.5
-              \-- feat/m3_5_4-branch-tree   unit branch
+              \-- feat/m3_5_4-branch-tree   delivery branch
 ```
 
 A node whose work needs no separate long-lived branch is collapsed into its parent's track. The current M3.5.4 is collapsed into the M3 track. The collapse is a topology choice, not a second model: when a node does carry a track, it follows the same lifecycle as every other track.
@@ -48,13 +48,13 @@ At every node the parent branch is the trunk for its children. The trunk accepts
 
 ## The prepare obligation
 
-A branch is ready for its trunk when the trunk's head is an ancestor of its tip. When the trunk moves, the branch is `not-ready`; it re-prepares before it can be accepted. This holds at every level: a unit re-prepares onto its track, and a track re-prepares onto its parent.
+A branch is ready for its trunk when the trunk's head is an ancestor of its tip. When the trunk moves, the branch is `not-ready`; it re-prepares before it can be accepted. This holds at every level: a delivery branch re-prepares onto its track, and a track re-prepares onto its parent.
 
 The queue is a view over the ready set and never holds a `not-ready` branch. A branch left out of the queue re-prepares and re-enters.
 
 ## Lifecycle
 
-A unit branch is deleted when its trunk accepts it. A track is deleted when its node merges into its parent. A stale branch with no activity across two milestones is deleted.
+A delivery branch is deleted when its trunk accepts it. A track is deleted when its node merges into its parent. A stale branch with no activity across two milestones is deleted.
 
 ## Tagging
 

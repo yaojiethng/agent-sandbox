@@ -17,7 +17,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Mandate
 
-You run the consolidated close for an active-operator session that ends at its release point. The unit ends as one delivery commit, and every `wip:` checkpoint and typed intermediate commit folds into it; the status flip and the write-back never form their own. [`/commit`](commit.md) states the commit rules and runs them.
+You run the consolidated close for an active-operator session that ends at its release point. The iteration ends as one delivery commit, and every `wip:` checkpoint and typed intermediate commit folds into it; the status flip and the write-back never form their own. [`/commit`](commit.md) states the commit rules and runs them.
 
 ## Called from
 
@@ -25,14 +25,14 @@ Each active-operator prompt invokes the part of this runbook that applies:
 
 - `/iter` runs the close at the end of the session.
 - `/plan` runs the close at the end of a planning session, whose write-back produces roadmap rows, decisions, and ADRs rather than a delivery commit.
-- `/milestone-start` does not invoke it -- `/milestone-close` owns the milestone-record close, distinct from the unit close.
+- `/milestone-start` does not invoke it -- `/milestone-close` owns the milestone-record close, distinct from the iteration close.
 
 ## Input contract
 
 | Input | Meaning |
 |---|---|
 | session scope | The handover and roadmap rows the session changed, as the release gate released them. |
-| current branch | The branch holding the unit's work, normally `feat/*` or `milestone/*`. |
+| current branch | The branch holding the iteration's work, normally `feat/*` or `milestone/*`. |
 | record-check report | What the release gate's two record checks found, as the gate presented it. B4 reads it to tell a finding the gate raised from one it missed. |
 
 ## Part B - The close (end of session, shared)
@@ -53,7 +53,7 @@ Run the scope-reconciliation invariant in [`iteration_protocol.md`](/opt/sandbox
 
 ### B4. Roadmap write-back
 
-Confirm the released row changes are the ones on disk, and that each resolved task is marked: the rows were written before the gate, so this step reads the diff instead of applying a description. The record-check report from the gate is this step's evidence; a finding the gate missed is recorded as `late`, naming the gate that should have asked. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates. When every sub-row of a task is resolved, close that task in the form the `/milestone-close` compaction procedure, step 1, states. A session that drew a brief from `/scope` files its work-unit table here, one row per unit, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing and records that outcome.
+Confirm the released row changes are the ones on disk, and that each resolved task is marked: the rows were written before the gate, so this step reads the diff instead of applying a description. The record-check report from the gate is this step's evidence; a finding the gate missed is recorded as `late`, naming the gate that should have asked. Note the exact row change per task touched, and the completed rows the change supersedes or invalidates. When every sub-row of a task is resolved, close that task in the form the `/milestone-close` compaction procedure, step 1, states. A session that drew a brief from `/scope` files its work table here, one row per iteration, each naming a file and a nature of change. An iteration that changed no roadmap task writes back nothing and records that outcome.
 
 ### B5. Carry-forward resolution
 

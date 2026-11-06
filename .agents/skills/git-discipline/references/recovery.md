@@ -6,8 +6,8 @@ A recovery is the repair when the record and the repository disagree about work 
 
 | Class | The claim | The disagreement | Procedure |
 |---|---|---|---|
-| Partial | the unit is `implementing` | the record holds the intent, and the disk holds part of it | [`partial.md`](../../../../workflow/coding-agent/skills/recovery/runbooks/partial.md) |
-| Absent | the unit is `committed` | no commit holds the work | [`absent.md`](../../../../workflow/coding-agent/skills/recovery/runbooks/absent.md) |
+| Partial | the iteration is `implementing` | the record holds the intent, and the disk holds part of it | [`partial.md`](../../../../workflow/coding-agent/skills/recovery/runbooks/partial.md) |
+| Absent | the iteration is `committed` | no commit holds the work | [`absent.md`](../../../../workflow/coding-agent/skills/recovery/runbooks/absent.md) |
 
 The entry is `/recovery`, which hands the operator's description to the [`recovery`](../../../../workflow/coding-agent/skills/recovery/SKILL.md) skill. The skill classifies the description and opens the runbook.
 

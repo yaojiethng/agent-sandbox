@@ -17,7 +17,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Purpose
 
-An autonomous run spends the operator's goodwill. Every unit it dispatches consumes a subagent context and a commit, and a unit dispatched on a row that turned out to need a decision returns a question the operator must answer before the run can continue. Triage moves that question to the front, where the operator can answer it once, before any context is spent.
+An autonomous run spends the operator's goodwill. Every iteration it dispatches consumes a subagent context and a commit, and an iteration dispatched on a row that turned out to need a decision returns a question the operator must answer before the run can continue. Triage moves that question to the front, where the operator can answer it once, before any context is spent.
 
 The output is one table with a verdict per row. The verdict is the work: which rows run unattended, and the single question that parks each of the rest.
 
@@ -29,7 +29,7 @@ A check-in whose recommended direction is an unattended run rather than a superv
 
 Routing:
 
-- A specific multi-unit plan the operator has already released has no runbook in the tree: the dispatch family that runs one is a draft. Triage produces the candidate rows either way, and the operator runs them.
+- A specific multi-iteration plan the operator has already released has no runbook in the tree: the dispatch family that runs one is a draft. Triage produces the candidate rows either way, and the operator runs them.
 - A situational check-in that surveys the whole project and recommends a starting task is [`gm.md`](gm.md). Triage answers the narrower question of what runs unattended, and does not survey handovers, stashes, or git state.
 - The generalized dispatcher that resolves execution order and picks a dispatch shape is the M4 `/auto` milestone.
 
@@ -65,15 +65,15 @@ Where the row is parked on a decision the operator already made but the agent ha
 
 ## Step 4 - Check each runnable row against the run's own rules
 
-A row can pass the well-specifiedness test and still fail as a unit. Apply the unit rule from [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): one commit, one context, one verification, disjoint files.
+A row can pass the well-specifiedness test and still fail as an iteration. Apply the iteration rule from [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): one commit, one context, one verification, disjoint files.
 
 - A row that fails one commit is over-scoped. Park it with the question of which slice comes first.
 - A row that needs two contexts splits, and each half is its own candidate. Present the split as two rows.
 - A row whose acceptance needs another row to land first is not runnable yet. Name the row it waits on.
 
-Two runnable rows that own the same file are one unit. Merge them.
+Two runnable rows that own the same file are one iteration. Merge them.
 
-**Done when:** every runnable row passes the unit rule, or has been split or merged into rows that do.
+**Done when:** every runnable row passes the iteration rule, or has been split or merged into rows that do.
 
 ## Step 5 - Present the table
 
@@ -85,10 +85,10 @@ Return one row per candidate. The sample row is illustrative, not a live item:
 
 Verdict is one of four values:
 
-- **runnable** -- passes the well-specifiedness test and the unit rule. Dispatch it unattended.
+- **runnable** -- passes the well-specifiedness test and the iteration rule. Dispatch it unattended.
 - **needs design** -- the shape is not settled. The question is what the design must decide.
 - **needs operator decision** -- a choice only the operator can make. The question names the options.
-- **stale** -- the work landed, or the row names something that no longer exists. Say which record shows it. A stale row is a record-bug finding, not a unit.
+- **stale** -- the work landed, or the row names something that no longer exists. Say which record shows it. A stale row is a record-bug finding, not an iteration.
 
 Order the rows: runnable first, then the parked ones grouped by question, so the operator can answer a group in one reply. Follow the table with the count of runnable rows and the number of distinct questions among the parked ones. That count is the operator's real workload and is usually the number they want.
 
@@ -96,7 +96,7 @@ Then recommend the next row to dispatch, if the argument or the run's shape poin
 
 ## Non-goals
 
-- Sequencing the runnable rows into a run plan, and splitting one into units. No runbook in the tree owns it.
+- Sequencing the runnable rows into a run plan, and splitting one into iterations. No runbook in the tree owns it.
 - Surveying the project for work that is not on the roadmap.
 - Choosing a dispatch shape, or resolving execution order across a dependency graph.
 - Answering a question the operator owns.

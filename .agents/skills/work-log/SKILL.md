@@ -1,6 +1,6 @@
 ---
 name: work-log
-description: "agent-sandbox's work-log convention - the work-unit record (handovers), the exploration record (discussions) and the feedback record. Use when a workflow procedure reads or writes one of these records."
+description: "agent-sandbox's work-log convention - the handover record, the exploration record (discussions) and the feedback record. Use when a workflow procedure reads or writes one of these records."
 ---
 
 # work-log
@@ -11,13 +11,13 @@ A record is not documentation and has no documentation mode. Its reader is a lat
 
 | Record | Path | Its shape |
 |---|---|---|
-| The work-unit record | `devlog/handovers/<track>/` | [`assets/handover.md`](assets/handover.md) |
+| The handover record | `devlog/handovers/<track>/` | [`assets/handover.md`](assets/handover.md) |
 | The exploration record | `devlog/discussions/` | one of four types, below |
 | The agent-feedback and gotchas record | `devlog/AGENT_FEEDBACK.md` | stated below |
 
 A workflow procedure that reads or writes a record hands off here for its structure. This file states the rules; the template states the shape.
 
-## The work-unit record
+## The handover record
 
 One file per iteration, committed with the iteration's changes, retained for the life of the milestone. It is a log, not a document, so the drafting rules for `docs/` do not apply.
 

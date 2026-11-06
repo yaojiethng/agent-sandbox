@@ -6,7 +6,7 @@ A correction changes work the repository already holds. The repository agrees wi
 
 | Class | The claim | The change | Procedure |
 |---|---|---|---|
-| Bad | the unit is `committed` | the commit is wrong | [`/record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) |
-| Messy | the unit is `committed` | the series is inverted, or a commit is not a reviewable unit | [`history-cleanup`](../../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) |
+| Bad | the iteration is `committed` | the commit is wrong | [`/record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) |
+| Messy | the iteration is `committed` | the series is inverted, or a commit is not reviewable | [`history-cleanup`](../../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) |
 
 A correction is not a recovery. Nothing was lost; the operator directed a different result.

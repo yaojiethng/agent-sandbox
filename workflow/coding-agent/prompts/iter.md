@@ -65,9 +65,9 @@ The scope proposal carries a file table, `File | Why in scope`, one markdown lin
 
 If scope cannot be confidently derived, ask the operator one question at a time to define the task scope. Do not guess. Only when scope is clear do you continue to the design step below.
 
-**A row that is not ready is a route, not a question.** When scope cannot be derived because the row is not ready to be built, name which of the two reasons holds and hand off rather than working around it. An unresolved design decision is [`plan.md`](plan.md)'s, which owns design and alignment. A row that is not yet cut into work units is [`scope.md`](scope.md)'s, which owns the work-unit table and emits it in the brief.
+**A row that is not ready is a route, not a question.** When scope cannot be derived because the row is not ready to be built, name which of the two reasons holds and hand off rather than working around it. An unresolved design decision is [`plan.md`](plan.md)'s, which owns design and alignment. A row that is not yet cut into iterations is [`scope.md`](scope.md)'s, which owns the work table and emits it in the brief.
 
-**One iteration, one unit.** The unit rule is the policy's: one roadmap task, one vertical slice, one commit, one handover. Apply it here; do not restate it.
+**One iteration, one delivery commit.** The iteration rule is the policy's: one roadmap task, one vertical slice, one delivery commit, one handover. Apply it here; do not restate it.
 
 **Purpose reconciliation.** Before presenting the scope, check the iteration's expressed purpose against the current tree. A purpose already silently resolved by landed work becomes recording or retiring that resolution, not re-implementing it.
 

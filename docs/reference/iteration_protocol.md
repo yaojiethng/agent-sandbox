@@ -1,5 +1,5 @@
 ---
-description: "Owns the iteration grain: the two gates, the unit and close invariants the runbooks must not break, and the sidequest rule. The procedures live in the runbooks this document governs."
+description: "Owns the iteration grain: the two gates, the iteration and close invariants the runbooks must not break, and the sidequest rule. The procedures live in the runbooks this document governs."
 scope: ["/iter", "/sidequest", "/milestone-start", "/milestone-close", "/plan", "/scope", "/wrapup", "/commit"]
 reader: [agent]
 ---
@@ -32,7 +32,7 @@ A sidequest is an operator-directed work item raised while an iteration is open.
 
 **Record decisions where the work lives.** Decisions belong in the documents where they were made (roadmap, architecture docs). The handover points to those documents -- it does not reproduce their content.
 
-**Record a finding when it is found.** It belongs in the record the moment it surfaces, and its destination may be filled later; the row may not wait. The gate reads the record, so a finding held in conversation is not presented to it, and an empty table cannot be told apart from a clean unit.
+**Record a finding when it is found.** It belongs in the record the moment it surfaces, and its destination may be filled later; the row may not wait. The gate reads the record, so a finding held in conversation is not presented to it, and an empty table cannot be told apart from a clean iteration.
 
 **Confirm the scope before writing code.** The implementation details -- files, interfaces, naming -- are confirmed by the operator before any code is produced. They are the agreement, not a starting point.
 
@@ -48,9 +48,9 @@ The iteration runs from `workflow/coding-agent/prompts/iter.md`. The prompt owns
 
 The principle behind this shape -- a document's invariants must not couple to its runbook, and a loose procedure belongs in the runbook -- is `docs/adr/archive/20260721-adr-settled-policy_declarative_framing.md`'s. That decision retired with the policy form it wrote for, and the shape outlived it: this document states its invariants and does not restate an argument it no longer owns.
 
-### Unit and scope invariants
+### Iteration and scope invariants
 
-- **One iteration, one unit.** One iteration is one roadmap task, scoped as one vertical slice, landed as one commit with one handover. Propose no split by default. A slice crosses file kinds and directories, so a document, a template and a record that serve one outcome form one unit. **Split:** each part delivers an outcome of its own, closes on its own handover, and leaves the repository working after it lands; the scope proposal carries a work-unit table -- the unit, its commit type, the owned files, the handover -- released at the scope gate. **Consolidate:** no part delivers an outcome of its own; such a part is work inside one unit. The review cadence does not change the unit count: a document change released one section at a time is one iteration.
+- **One iteration, one delivery commit.** One iteration is one roadmap task, scoped as one vertical slice, landed as one delivery commit with one handover. Propose no split by default. A slice crosses file kinds and directories, so a document, a template and a record that serve one outcome form one iteration. **Split:** each part delivers an outcome of its own, closes on its own handover, and leaves the repository working after it lands; the scope proposal carries a work table -- the iteration, its commit type, the owned files, the handover -- released at the scope gate. **Consolidate:** no part delivers an outcome of its own; such a part is work inside one iteration. the review cadence does not change the iteration count: a document change released one section at a time is one iteration.
 - **No output before scope is confirmed.** The scope gate applies to every iteration type without exception. For housekeeping iterations, a target file list and the nature of the change is a sufficient scope proposal -- the gate still applies.
 - **The scope gate confirms understood intent.** The agent restates the operator's goal and the problem the work solves before presenting the formal gate, so the gate confirms that the agent understood the intent rather than re-presenting the request.
 - **Context sufficiency.** If context is insufficient for a scope proposal (key files missing, roadmap task list unclear, prior handover not available), the agent does not guess at scope; it asks the operator one question at a time until a proposal can be made, then the scope gate presents it.
