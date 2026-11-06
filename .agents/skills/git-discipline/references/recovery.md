@@ -2,28 +2,22 @@
 
 ## The classes
 
-A recovery starts by naming the state the work is in, because five of the six classes replay or repair something the repository still holds, and only the last one derives it again. The state is decided by what the repository contains, never by what a record says happened. A handover is the entry to this table: it is how a reader learns work is missing, and it is not evidence of the class.
+A recovery starts by naming the state the record claims, because the repair is chosen by that state and by how the repository disagrees with it. The claim is what the handover or the roadmap says; the evidence is what the repository holds. A recovery is the repair when the two disagree. The class is decided by the repository, never by what the record says happened; the claim only says where the repair returns.
 
-| Class | How it is known | Runbook |
-|---|---|---|
-| Uncommitted | `git status` names the changes, and no commit carries them | [`/commit`](../../../../workflow/coding-agent/prompts/commit.md) |
-| Unlanded export | a draft branch holds the commits, and they apply to the target as they stand | [`/prepare-rebase`](../../../../workflow/coding-agent/prompts/prepare-rebase.md) |
-| Unportable | the commits exist, the target has moved, and the diff no longer applies | [`/prepare-rebase`](../../../../workflow/coding-agent/prompts/prepare-rebase.md) |
-| Malformed series | the branch's commits are inverted, or a commit is not a reviewable unit | [`history-cleanup`](../../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) |
-| Landed wrong | a closed commit carries a defect, and the commit itself is where the fix belongs | [`/record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) |
-| Absent | a record states the work exists, and no commit, branch or tree holds it | `## Rebuild`, below |
+| Class | The claim | The disagreement | Runbook |
+|---|---|---|---|
+| Partial | the unit is `implementing` | the record holds the intent, and the disk holds part of it | `## Rebuild`, or resume from the record |
+| Bad | the unit is `committed` | the commit is wrong | [`/record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) |
+| Messy | the unit is `committed` | the series is inverted, or a commit is not a reviewable unit | [`history-cleanup`](../../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) |
+| Absent | the unit is `committed` | no commit holds the work | `## Rebuild`, below |
 
-A lost commit that a handover already describes is `Absent` all the same, and a branch whose commits survive but will not apply is `Unportable` even when the handover calls that iteration lost. The record states what was intended; only the repository states what is there.
+A child branch that will not rebase onto its parent is not a recovery class: that is mergeability, and `prepare-rebase` owns it. A change in the working tree that the unit has not committed is the normal `implementing -> committed` transition, not a loss.
 
-## Prepare, then accept
-
-The normal path and the recovery path are the same three steps. `/prepare-rebase` rebases the branch onto the current head and resolves every conflict; `/merge-queue` orders it; `/accept-fast-forward` moves the pointer. A lost branch is not a separate class of work: it is a branch that is `not-ready` and must be prepared.
-
-The old replay-versus-port distinction is gone with the separate runbooks. `prepare-rebase` ports the intent onto the current tree, and `accept-fast-forward` never replays a commit.
+A lost commit that a handover already describes is `Absent` all the same. The record states what was intended; only the repository states what is there.
 
 ## Rebuild
 
-Use this when the class is `Absent`.
+Use this when the class is `Absent`, or when `Partial` has lost the intent.
 
 Entry conditions: a record from a session log, a transcript, or chat history states what the lost iterations changed, and at least one handover describes them.
 

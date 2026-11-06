@@ -4,7 +4,7 @@ reader: [agent]
 
 # The Workflow Statechart
 
-This is the app's workflow surface as one statechart: every state an agent rests in, every slash command that moves it, every dispatch from one prompt to another, and every maintenance check a procedure invokes. The loop's concept document, [`autonomous_agent_loop.md`](autonomous_agent_loop.md), explains why the loop is split into workflows; this document draws the whole of it, and that one point at the chart.
+This is the app's workflow surface as one statechart: every state an agent rests in, every slash command that moves it, and every maintenance check a procedure invokes. The change flow has its own command table below, because it is a separate machine. The loop's concept document, [`autonomous_agent_loop.md`](autonomous_agent_loop.md), explains why the loop is split into workflows; this document draws the whole of it, and that one point at the chart.
 
 A node is a state the loop rests in. A gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. An arrow is a command, or the operator releasing a gate.
 
@@ -96,20 +96,18 @@ stateDiagram-v2
     }
 
     state "Recovery" as recovery {
-        state "rec_triage -- work is reported lost, unmergeable, or landed wrong" as rec_triage
-        state "rec_merge -- the export replays onto the target" as rec_merge
-        state "rec_rebase -- the stale branch ports onto the target" as rec_rebase
-        state "rec_correction -- a fix folds into the closed commit" as rec_correction
-        state "rec_rebuild -- the work is derived again from its record" as rec_rebuild
-        [*] --> rec_triage : work is reported missing, unmergeable, or wrong
-        rec_triage --> rec_merge : /accept-fast-forward, when the branch is ready
-        rec_triage --> rec_rebase : /prepare-rebase, when the branch is not ready
-        rec_triage --> rec_correction : /record-correction, when it landed wrong
-        rec_triage --> rec_rebuild : no runbook owns the absent class
-        rec_merge --> it_committed : /commit folds the corrections
-        rec_rebase --> it_committed : /commit
-        rec_correction --> it_closed : the target commit now carries the fix
-        rec_rebuild --> it_committed : rebuilt, one commit per iteration
+        state "rep_partial -- the record's intent and the disk disagree; the unit is rebuilt" as rep_partial
+        state "rep_bad -- the commit is wrong; it is amended or dropped" as rep_bad
+        state "rep_messy -- the series is noisy; history-cleanup rewrites it" as rep_messy
+        state "rep_absent -- the record claims a commit the repository lacks; it is rebuilt" as rep_absent
+        it_implementing --> rep_partial : the record and the disk disagree
+        rep_partial --> it_committed : rebuilt from the record
+        it_committed --> rep_bad : the commit is wrong
+        rep_bad --> it_closed : /record-correction folds the fix
+        it_committed --> rep_messy : the series is noisy
+        rep_messy --> chk_history : the operator runs history-cleanup
+        it_committed --> rep_absent : the record claims a commit the repository lacks
+        rep_absent --> it_committed : rebuilt, one commit per iteration
     }
 
     state "Records at rest" as records {
@@ -146,14 +144,13 @@ stateDiagram-v2
     it_implementing --> chk_record : /iter runs the handover record check
     it_implementing --> chk_docs : /iter's information-gathering pass
     sess_initialized --> chk_corpus : /bootstrap installs the corpus
-    rec_rebase --> chk_history : the operator runs history-cleanup on the inverted series
 
     chk_corpus --> sess_oriented : the corpus is installed
     chk_orientation --> sess_oriented : the report is applied
     chk_roadmap --> chk_record : the two reports meet at one gate
     chk_record --> it_acceptance_gate : the findings queue carries the report
     chk_docs --> it_implementing : the report is applied
-    chk_history --> rec_merge : the series is rewritten, then replayed
+    chk_history --> it_committed : the series is clean
 ```
 
 ## States
@@ -188,11 +185,10 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `plan_scoping` | planning | the milestone is being cut into units |
 | `plan_interview` | planning | the `grill-me` skill is probing the design |
 | `plan_released` | planning | rows, stories and ADRs are written back |
-| `rec_triage` | recovery | work is reported lost, unmergeable, or landed wrong |
-| `rec_merge` | recovery | the export replays onto the target |
-| `rec_rebase` | recovery | the stale branch ports onto the target |
-| `rec_correction` | recovery | a fix folds into the closed commit |
-| `rec_rebuild` | recovery | the work is derived again from its record |
+| `rep_partial` | recovery | the record's intent and the disk disagree; the unit is rebuilt |
+| `rep_bad` | recovery | the commit is wrong; it is amended or dropped |
+| `rep_messy` | recovery | the series is noisy; history-cleanup rewrites it |
+| `rep_absent` | recovery | the record claims a commit the repository lacks; it is rebuilt |
 | `rec_handover_active` | records | the unit's record is open |
 | `rec_handover_closed` | records | the unit's record is closed |
 | `rec_roadmap_open` | records | a row is open |
@@ -249,7 +245,7 @@ The four types differ in what makes `rec_disc_concluded` true -- a story's appro
 
 ## Commands
 
-Every prompt the tree carries is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand.
+Every prompt in the unit loop is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand. The change flow's three commands are in the next table, so the query reads both.
 
 | Command | Fires from | Leaves the agent in | Dispatches |
 |---|---|---|---|
@@ -262,16 +258,23 @@ Every prompt the tree carries is an event here, and the command table's row set 
 | `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
-| `/prepare-rebase` | `rec_triage` | `it_committed` | none |
-| `/merge-queue` | `rec_triage` | `rec_triage` | none |
-| `/accept-fast-forward` | `rec_triage` | `it_committed` | none |
-| `/record-correction` | `rec_triage` | `it_closed` | `/prepare-rebase` when the fold needs a port |
-| `/read-back` | `rec_triage` | `rec_triage` | none |
+| `/record-correction` | `rep_bad` | `it_closed` | `/prepare-rebase` when the fold needs a port |
+| `/read-back` | `rep_partial` | `rep_partial` | none |
 | `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
 | `/commit` | a closed unit | `it_committed` | none |
 | `/package-eval-snapshot` | any settled state | the same state | `eval` |
 
 `/auto` and `/goal` are reserved by the ADR for M4 and drive no transition here. A draft is not a command: a prompt that exists only under `.agents/drafts/` appears in no row of this table and in no node of the chart.
+
+## Change-flow commands
+
+The change flow is a separate machine: the mergeability of a branch against the trunk, not the unit's progress. Its three commands are listed here so the prompt set has one coverage check.
+
+| Command | Reads | Emits | Hands off |
+|---|---|---|---|
+| `/prepare-rebase` | a branch and the trunk head | a `ready` branch | `/merge-queue` or `/accept-fast-forward` |
+| `/merge-queue` | the ready branches | an order | `/accept-fast-forward`, or `/prepare-rebase` when nothing is ready |
+| `/accept-fast-forward` | a ready branch and the head | the trunk advanced | `/prepare-rebase` when the branch is not ready |
 
 ## Stories
 
@@ -286,7 +289,8 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 | A sidequest interrupts an open unit | `it_implementing -> sq_running -> sq_committed -> it_implementing` |
 | Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> chk_close -> ms_active` |
 | The close checks the rows it wrote | `it_acceptance_gate -> chk_close -> it_closed` |
-| Recovering an unportable export | `rec_triage -> rec_rebase -> it_committed -> it_open` |
+| Recovering partial work | `it_implementing -> rep_partial -> it_committed -> it_open` |
+| Recovering a wrong commit | `it_committed -> rep_bad -> it_closed -> it_committed -> it_open` |
 | A project bootstrapped and oriented | `sess_start -> sess_initialized -> sess_oriented -> it_open` |
 | The record checks before a release | `it_implementing -> chk_roadmap -> chk_record -> it_acceptance_gate` |
 
@@ -300,13 +304,13 @@ Each check is a query a reader makes on the chart and the defect the query finds
 | No dispatcher | every `chk_*` state has at least one incoming edge labelled with a command | a maintenance skill nothing runs |
 | Unchecked record write | every edge whose effect writes a `rec_*` state is followed, on every path to a gate, by a `chk_*` state or a gate the chart marks as checked | maintenance work with no check on its path |
 | Dangling dispatch | every dispatch named in the command table resolves to a file under `prompts/`, `skills/` or the reference layer | a dispatch to something that does not exist |
-| Dead end | every state outside the records region has an outbound edge; a `rec_*` state is terminal by design | a command that strands the agent |
+| Dead end | every state outside the records region has an outbound edge; a record state in the records region is terminal by design | a command that strands the agent |
 | Unsatisfied entry | a command's input contract holds in the state it fires from: `/commit` requires an open handover, `/milestone-close` requires an active milestone | a runbook's precondition the chart violates |
 | Guard collision | no state has two outbound edges on one event whose guards can both hold | an ambiguous transition |
 | Orphan record | every `rec_*` state has an inbound write edge and an outbound read edge | a record kept and never consulted |
 | Path resolution | every path in `## Stories` resolves id by id: each id is a declared state, and each consecutive pair is an edge | a story the map does not support |
 | Legend drift | the `## States` id and region columns equal the chart's declarations, in the chart's order | a state declared on one side only, or a region moved in the table |
-| Command coverage | every prompt file under `workflow/coding-agent/prompts/` appears in `## Commands` | a command the map does not know |
+| Command coverage | every prompt file under `workflow/coding-agent/prompts/` appears in `## Commands` or `## Change-flow commands` | a command the map does not know |
 
 ## Gaps
 
