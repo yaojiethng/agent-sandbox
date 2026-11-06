@@ -70,6 +70,4 @@ None.
 | `devlog/roadmap.md` | the bare-`unit` row names the remaining surfaces |
 | `devlog/handovers/M3.5.4/20261105-28-workflow-iteration_usage.md` | this record |
 
-## Next session
-
-The bare-`unit` sweep row's remaining surfaces: the statechart, the test harness, the numbering skill and the workflow skills. Then the change model's ADR and reference, the last open M3.5.4 row, and M3.5.3's parallel-milestone rule.
+[AMENDMENT -- 2026-11-06: the "Next session" section is removed; its items are held by the roadmap.]

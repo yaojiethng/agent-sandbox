@@ -69,6 +69,4 @@ None.
 | `docs/reference/terminology.md` | the usage rule: unit is not a term |
 | `devlog/handovers/M3.5.4/20261105-27-workflow-branch_topology.md` | this record |
 
-## Next session
-
-The change model's ADR and reference, the last open row of M3.5.4. Then the bare-`unit` sweep row and M3.5.3's parallel-milestone rule.
+[AMENDMENT -- 2026-11-06: the "Next session" section is removed; its items are held by the roadmap.]
