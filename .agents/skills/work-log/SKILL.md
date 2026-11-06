@@ -38,7 +38,7 @@ devlog/handovers/<track>/YYYYMMDD-NN-<shortform>-<slug>.md
 
 Example: `devlog/handovers/M3.5.1/20260316-20-workflow-scope_gate_and_preclose_verification.md`
 
-The folder is the track, and a record's `milestone` field names the same milestone. A track reserves a block of `NN` numbers when it opens, recorded as `ids: 20-39` in `devlog/handovers/<track>/README.md`, so two tracks writing on one date never collide. A record written before the track folders landed sits flat; its track is its `milestone` field until the migration moves it.
+The folder is the track, and a record's `milestone` field names the same milestone. A track reserves a block of `NN` numbers when it opens, recorded as `ids: 20-39` in `devlog/handovers/<track>/README.md`, so two tracks writing on one date never collide.
 
 The latest record is the tip of the track in git, not the highest filename. `scripts/worklog.sh latest` answers it, `active` answers the open record, and `reserve-id` answers the next identity. Earlier records are never overwritten.
 

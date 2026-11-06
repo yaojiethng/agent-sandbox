@@ -9,7 +9,7 @@ argument-hint: "[defect id, e.g. D1 - optional]"
 
 ## What the next session is for
 
-Fix, or file with an owner, the six defects below. They were exposed by a hundred-and-seventeen-cell ablation grid driven over `opencode run`, and none of them is about the model, the prompt or the corpus: each is a way the dispatch path reports success, health or slowness when the truth is the opposite. The evidence appendix is [`devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`](../../devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md), which carries the trap table and the session-store query; this document is the actionable form of it and does not restate the table.
+Fix, or file with an owner, the six defects below. They were exposed by a hundred-and-seventeen-cell ablation grid driven over `opencode run`, and none of them is about the model, the prompt or the corpus: each is a way the dispatch path reports success, health or slowness when the truth is the opposite. The evidence appendix is [`devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`](../../devlog/handovers/M3.2.2/20261026-05-workflow-opencode_run_harness_defects.md), which carries the trap table and the session-store query; this document is the actionable form of it and does not restate the table.
 
 Priority order is the order below. D1 and D2 each produced a wrong conclusion that was written into a record and later retracted, and D6 manufactures a result from nothing.
 
@@ -104,7 +104,7 @@ opencode run -m opencode/deepseek-v4.1-flash-free "Reply with exactly: PONG"   #
 
 | Record | What it holds |
 |---|---|
-| [`devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`](../../devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md) | the trap table, the corrections, and the session-store query |
+| [`devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`](../../devlog/handovers/M3.2.2/20261026-05-workflow-opencode_run_harness_defects.md) | the trap table, the corrections, and the session-store query |
 | [`docs/adr/pi_subagent_dispatch.md`](../../docs/adr/pi_subagent_dispatch.md) | the seat contract's decided part: one door, one assignment per seat, the runtime following the assignment |
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the seam's behaviour as shipped: the outcome table, the advance rule and the stop rule |
 | [`.agents/drafts/cost-aware-dispatch-run.md`](cost-aware-dispatch-run.md) | the free tier's reachability from the CLI |
