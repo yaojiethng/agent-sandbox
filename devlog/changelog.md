@@ -255,3 +255,11 @@ A role resolves to an ordered list of assignments and the runtime follows the as
 The source store became the record: each forked artifact carries an edge with its upstream revision, its local path and its adaptation note, and `fork-and-strip` and `source-bump` are the procedures that read and move it. The provenance was backfilled across the tree, package tracking and collision reporting landed beside it, and the first operator-supplied batch proved the pipeline end to end. The authoring surface consolidated into `instruction-authoring`, absorbing `skill-scaffolder` and the prompt conventions, and the instruction surface's links, generated table and onboarding seed were corrected in the same milestone. The discussion-record lifecycle was stated and gated in the same milestone.
 
 ---
+
+## M3.5.4 - The git and change model
+
+*A branch reaches the trunk by one path -- prepare, queue and accept -- and the branch tree and the record vocabulary now name their carriers once.*
+
+The change flow is three primitives over a derived mergeability value: `prepare-rebase` makes a branch fast-forwardable, `/merge-queue` orders the ready set, and `accept-fast-forward` advances the trunk by a compare-and-swap. The branch tree is fractal, with a track per milestone and the prepare obligation at every level; recovery and correction are separate families. The unit vocabulary now names the iteration, the delivery commit, the branch, the handover, the roadmap row and the item, and a gate holds the distinction.
+
+---

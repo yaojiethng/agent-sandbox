@@ -64,7 +64,7 @@ What the loop did buy is real and worth keeping: a link resolved against the she
 ## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
 
 ```text
-state: open
+state: probation
 scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`; .agents/skills/skill-fork/SKILL.md `## Which half`; .agents/skills/skill-fork/patterns/vendor-bump.md `## Register an edge`
 legacy: none
 mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
@@ -107,25 +107,6 @@ Cross-references: `## Write Discipline` in the provider layer; handover `2026102
 
 ---
 
-## [A] 2026-10-26  --  A driver loop over `opencode run` lost its work list to the child, then hung on a refusal
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: close the child stdin on every dispatch (`</dev/null`), match a refusal on every shape it arrives in, key any retry to the one transient error, and read a run's token counts from the session store before scoring it. Four traps, one loop: `opencode run` inherits stdin and consumes a redirected plan file, so the read loop reaches end of file and the grid ends after one cell with a clean exit; the free tier refusal arrives as `{"type":"FreeUsageLimitError"}` in one path and `AI_APICallError: Free usage limit reached` in another, so a detector that knows the first shape launches cells that can never answer; six concurrent processes sharing `~/.local/share/opencode/opencode.db` return `database is locked`; and a retry written as "repeat on a non-zero exit" repeats timeouts, holding a block for three times the wall cap.
-```
-
-A grid of a hundred and seventeen cells ran on the free model through `opencode run`, and the driver failed in four ways that each looked like something else. The silent one is the worst: the child process read the plan file off the inherited stdin, so the next read found end of file, the loop ended, and the summary reported a smaller grid as a finished one. Nothing exited non-zero and nothing printed.
-
-The refusal was worse in the other direction. It arrives as JSON in the error stream and as `AI_APICallError: Free usage limit reached` in the run log; the detector matched the JSON, so four cells were launched into a tier that had nothing left and each sat at its own wall cap. That reads as slowness rather than as exhaustion, and it cost twenty minutes.
-
-The lesson generalises past this backend: a driver exit code says nothing about whether its units of work ran, so count the units rather than trusting the summary, and treat "no output and no error" as a failure that needs an explanation before it is scored.
-
-The fourth trap belongs to the model rather than the driver: `--variant high` on `deepseek-v4.1-flash-free` spends 32000 reasoning tokens and returns no text, with a zero exit code, so it reads as a successful cell carrying an empty fault list. The store query that shows the token counts is in `devlog/handovers/20261026-05-workflow-opencode_run_harness_defects.md`.
-
----
-
 ## [O] 2026-10-26  --  A discussion record was named and shaped like a handover
 
 ```text
@@ -147,21 +128,6 @@ Both record kinds live in `devlog/`, and the handover is the one written most of
 
 If this file grows too long, find a durable resolution (for example, fold the recurring entries into a skill, or fix the underlying stack). Do not build an index. Long length is a signal that the underlying problem needs a permanent fix, not better indexing.
 
-## [O] 2026-10-26  --  An observation held in chat is invisible to the release gate
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: before asking for the release gate, write every observation the iteration produced into the handover's `## Findings` with a destination or a fix. The gate reads the record, not the conversation, so an observation held in chat is not presented at all.
-```
-
-Closing the two base review skills unit, three observations surfaced in the turn after the release gate: the cleanup pass still named the shared body as an artifact that no file carried, the code runbook has no provenance block, and the four unscreened payloads are now listed in the shells. The first was a carrier of the unit's own change and belonged inside it; all three belonged in the gate.
-
-The gate's evidence is the record. A finding the agent keeps in its head is read by nobody, and a release granted on a Findings table that is empty because nothing was written there is indistinguishable from a release granted on a clean unit. The remedy is mechanical: the table is filled before the summary is presented, and an observation that fits no destination is still a row, with `this handover` or a named row as its destination.
-
----
-
 ## [O] 2026-10-24  --  A roadmap measurement note became an artifact and a gate
 
 ```text
@@ -176,36 +142,6 @@ The M3.6.3 row **The model-catalog track** carried two kinds of text in one para
 Every column the row asked for was already answered: preference by the role line's order, cost by M3.6.2's ledger, a rate limit by the route record's cooled-until with its reason, provenance by the provider's sentence plus the scope, and the model list by `pi --list-models` and `opencode models`. The document's only consumer would have been the gate written to keep it true, which is the registry-nobody-reads class the 2026-10-23 derived-artifacts census recorded.
 
 The operator's correction: the mental model of the algorithm is clean and its capabilities are clean, and the agent keeps adding constraints or features that affect neither correctness nor performance. The row was retired, and the one residue is a line in `dispatch.md` naming the listing command.
-
-## [A] 2026-10-23  --  A default mechanism was hardened into a requirement
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: when a mechanism resolves something on the caller's behalf, the caller's own value is an override and not a violation. State the rule as "resolve by default, and take the caller's value when one is given", and refuse a given value only when it cannot be satisfied.
-```
-
-The seat path was built with `dispatch: --seats cannot be pinned`, a test that held the refusal, and a shipped review section saying a review's pin "is refused here". The operator's correction was one sentence: pins and manual specification that bypass auto-resolution are always allowed, and what the mechanism does on its own is a default. The ADR's headline, "names a role and never a model", was read as a prohibition rather than as the shape of the default path, and everything downstream inherited the harder reading.
-
-The tree already carried the softer statement, one paragraph away: the walk had taken `--model` as a pin since before the seat path existed, refusing nothing and simply not recording the attempt. The harder reading was new, invented while writing the seat refusals, and it survived because no test could disagree with it: the test asserted the refusal the code had just been told to make.
-
-The cost was a reversed decision inside one unit, a test deleted rather than kept, and a pass over the shipped section, the reference, the reserved terms and both ADRs. The fix's shape is the one to remember: a pin seats every seat on the one assignment, and its attempt is recorded like any other, because the memory holds evidence about the route rather than about the decision that chose it.
-
-## [A] 2026-10-23  --  A shipped document linked a target the image does not carry
-
-```text
-state: open
-scoped: none
-legacy: the same session's second instance, below, reached the opposite error from the same cause: a gate verdict predicted from reading the manifest by hand instead of run.
-mitigation: before writing a pointer in a shipped document, ask whether the target ships. A reference document is read at its image path, so a relative target the repository resolves may not resolve where the text is read; the fix is the target's repository path in a code span, which the `linking` convention's `Name a target the citing text cannot reach` already states. Where the question is a link's legality rather than its target's existence, change the line and run the gate: it answers in one cycle, and a hand read of one manifest field answers confidently and wrongly.
-```
-
-`docs/reference/dispatch.md` gained a paragraph citing a new ADR as a relative link, `../adr/pi_subagent_dispatch.md`. The linking rule failed it with `link target does not exist in the image`. A reference document ships into the container at `/opt/sandbox/docs/reference/`, so every relative target in it resolves at its image path, and `docs/adr/` does not ship. The sentence above the new one already named an ADR in a code span, one line away from the mistake.
-
-**The second instance, later the same session.** The provider `AGENTS.md` needed a pointer to a new skill at `/opt/workflow/agent/skills/write-locations/SKILL.md`. Reading the citing instruction cell's `reachable` rows, which name `/opt/workflow/agent/config/` and the pi install, the agent concluded the link was illegal and wrote a code span instead. It was legal: `instruction_reach` assembles the image set from every cell's runtime path, plus the session paths, plus the cell's own rows, so any instruction root in the image is reachable from any shipped surface. One `bash scripts/check_markdown.sh` returned 0 findings on the link. The cost was larger than the first instance's: the wrong conclusion was written into the handover as a decision and a finding, so the record had to be corrected as well as the line.
-
-The class is the same in both directions: a rule about where a pointer resolves was settled by reasoning about it instead of by running the check that owns it. The first instance reasoned about the target and the second about the gate, and both reads felt decisive.
 
 ## [A] 2026-10-21  --  A vocabulary was chosen for flavour and reverted
 
@@ -222,28 +158,6 @@ The class is a name chosen because it sounded right rather than because the arti
 
 The cost was a reverted unit and a row returned to open with its deferral recorded. The durable fix is the destination, not the discipline: the judging pass belongs to the communication-principle consolidation, where the territory is settled before anyone names a part of it.
 
-## [A] 2026-10-20  --  A test helper inherited the repository's git state and committed it
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: a fixture test changes into its own temporary directory before it writes or stages anything, and the shell that changes directory is the shell that runs `git`, so the change belongs outside a command substitution. Assert the fixture root before the first write: `[[ "$(git rev-parse --show-toplevel)" != "$REPO_ROOT" ]]`. After any test that can commit, run `git log -1` and `git status --short` and compare against the state the call started in.
-```
-
-A new test for the prose measure built its fixture with `dir="$(new_repo)"` and changed directory inside that substitution. The change died with the subshell, so the test ran in the repository root and wrote `a.md` there. Its `git add -A && git commit` then committed the working tree of an in-flight iteration into four commits named `base`, together with the fixture files, and the iteration's own changes stopped being a working-tree diff at all. The damage was recoverable because the branch was local and the four commits were the only thing on top: `git reset --mixed` to the parent commit restored the cuts as unstaged changes, and the fixture files were deleted.
-
-The class is a fixture that escapes its root. The test looked green on the first run because the assertions read the numbers the wrong directory produced, and the commit was the side effect that proved it. Two guards now hold it: the helper refuses a write when the shell is still inside the real repository, and every test changes into the fixture in the calling shell.
-
-## [A] 2026-10-20  --  `grep -q` in a pipeline under pipefail reported the writer's SIGPIPE
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: a reader that stops at its first match kills the writer with SIGPIPE, and `pipefail` hands back 141 even though the reader matched. Collect the list first and test it from a here-string. The norm gate read every observer as unresolvable this way, and the message named the observer rather than the pipeline, so the cause read as a broken tree.
-```
-
 ## [A] 2026-10-19  --  A mining brief asked for a source the records could not supply
 
 ```text
@@ -254,32 +168,6 @@ mitigation: before asking a mining dispatch for a share of the corpus from a sou
 ```
 
 The census mining brief asked for at least five failure events from the `## Findings` sections of handovers. Six candidates came back and every one was a phrase fragment -- "resume", "Keeping a subagent alive" -- with no sentence and no stated misreading, so the source contributed nothing and the corpus leaned on the other two. The Findings sections state defects about work; they rarely quote the prose that failed. The brief asked for an extraction the source does not carry, and the dispatch answered with the nearest thing it could find instead of an empty result.
-
-## [A] 2026-10-19  --  A dispatch quoted a commit sha it had mistyped
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: resolve every source reference a dispatch returns against the tree before the artifact is accepted; for a sha, `git cat-file -e`, and for a file:line, read the line and compare it with the quoted text.
-```
-
-The corpus mining dispatch returned `aaa1246d` for a commit whose real prefix is `aaa1246f`. Nothing in the returned record looked wrong, and the event text was real; only the reference was invented by one character. The other 27 references resolved. A corpus built on unverified references cannot be re-checked later, which is the whole point of carrying them, so the check belongs in the brief and in the acceptance of the dispatch's output, not in the reader's trust.
-
-## [A] 2026-10-18  --  A correction landed as a second commit instead of folding into the first
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: when a defect in your own work turns up while the session is still live, fold it into the commit that carries the work before doing anything else, and fold the handover edit with it. A correction is not new work, so it gets no new commit, no new handover, no new feedback entry and no new rule. If the fold needs `git commit --fixup` plus `git rebase -i --autosquash`, that is still the fold.
-```
-
-`582af1eb` added three strings: a pointer clause ending `which is its only home`, a section of a principle skill whose prose claimed how a defect arose, and an extra clause in that skill's description. Twenty minutes later `f82d1a0d` removed exactly those three strings and touched nothing else. Each carried its own `Closed` handover.
-
-The operator had said what to change and had not said how to land it, and `git_policy.md` read a fold into a closed iteration as requiring the operator's direction. The direction had arrived as a content instruction, the agent did not read it as one, and the correction became an iteration. The clause could not separate the two, so the default won.
-
-The compounding is the point. One defect produced two commits, two handovers, two roadmap citations and a `/history-cleanup` rewrite to undo the split. The repair did not fix the record, it added to it, and cleaning that addition then needed a fourth artifact, the detector that found the inversions. `principle-minimal-corrections` states the bar: a correction restores the intended artifact and adds nothing beside it.
 
 ## [A] 2026-10-17  --  A dispatch that hits its timeout leaves a half-applied tree
 
@@ -295,36 +183,6 @@ Two of four workers dispatched in one parallel call returned rc=124. Both logs h
 The class is a timeout that reads as "nothing happened". The mitigation for an empty log already exists in the provider layer, which treats a `rc=0` with an empty log as failure; the same rule is missing for a non-zero rc with an empty log, where the log proves nothing about the tree. Trust no summary over the artifact cuts both ways: a timed-out run has no summary, so the artifact is the only evidence, and it must be read before the work is re-planned.
 
 Raised by the agent during handover `20261017-01`.
-
-## [A] 2026-10-17  --  A typed delivery commit landed with no open handover
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: run the `/wrapup` commit-discipline checkpoint before the typed commit, not after the session; its A2 already counts "no open handover" as a missing-record signal, so the check exists and went unrun.
-```
-
-Two commits landed on the delivery branch typed as deliveries with no handover behind them: `e47d395b chore: add prompt resync to reload dogfooded agent-sandbox` and `f82b0d1d workflow: add auto forked from poteto-agent`, adding `.agents/prompts/resync.md` and `.agents/prompts/auto.md`. Nothing records why the files exist, what shape they were meant to take, or whether they were meant to stay.
-
-The record was found only at the next session's check-in, when the surface they sit in was about to be declared. A handover written after the fact cannot recover the intent, so the cost is permanent: the next reader has the files and no reason for them. The typed prefix is what made them read as closed deliverables, which is exactly the signal the one-commit rule reserves for a unit that has its record.
-
-Raised by the agent during handover `20261017-02`.
-
-## [A] 2026-10-15  --  A gate that hand-lists its subject set misses a live root
-
-```text
-state: open
-scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: 2026-10-21 -- the same class recurred in a prose sweep. Two word passes ran `grep` over a hand-listed set of six roots, and both left live carriers outside it: the provider `AGENTS.md`, the advisor prompt, and a roadmap row. Each pass reported the surface clean until an auditor read a file the pattern never opened.
-mitigation: derive a check's subject set from the declaration that owns it instead of listing it in the check. `scripts/lint/frontmatter.mjs` now reads the `cells` rows in `src/build/container-interface.json` for the prompt and skill roots, appends `.agents/skills` and `.agents/prompts`, and fails closed when the declaration is missing. For a sweep, the declaration is the tree itself: sweep from the repository root and filter the hits, rather than naming the folders to look in.
-```
-
-`scripts/lint/frontmatter.mjs` listed the folders it scanned by hand. The list held the workflow module, the pi provider config and the agent skills, and it omitted `.agents/skills/`, the project convention-skill tree pi loads. A `description` value in `.agents/skills/task-list/SKILL.md` held a colon-space (`changelog: their shape`), which YAML reads as a nested mapping, so the whole block failed to parse and pi dropped the skill. The gate reported clean across 57 files throughout.
-
-The class is a check whose subject set is an enumeration inside the check. The tree gains a root and the check keeps passing over the roots it already knew. The container interface already declared these roots as data, and the gate already read the same manifest for its shipping-document check, so the derivation was one call away. The durable rule is to read the declaration rather than restate it; a check that cannot read its declaration must fail, not scan nothing.
-
-Raised by the agent during handover `20261015-04`.
 
 ## [A] 2026-10-15  --  The decomposition of a task into work units has no owner for a manual run
 
@@ -342,21 +200,6 @@ Measured 2026-10-15 over 151 open rows in `roadmap.md` and `roadmap_future.md`: 
 The same measurement found no duplicate task rows, zero exact duplicate titles and zero duplicates on the first 45 characters, so the list does not repeat itself. The repetition the operator sees is across `roadmap.md`, `roadmap_future.md` and `changelog.md`, which the churn study measured as six duplicated subjects. That is a property of the three-file record shape rather than of the filing owner, and it belongs to the task-list mechanism milestone.
 
 One owner plus one check. The owner is `/scope`. The check is the record-shape gate that milestone stages, which fails a row carrying neither a file nor a nature of change.
-
-## [A] 2026-10-14  --  A partial model name silently binds to a different model
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: pass the full provider-prefixed model id to `--model` (for example `z-ai/glm-5.3-flash`); a short name is a substring pattern and can bind to another model with no warning.
-```
-
-`pi --provider openrouter --model glm-5.3-flash` ran `z-ai/glm-5.3-flashx`. The `--model` value is a substring pattern over the provider's model list, not an id lookup, and where several ids match it takes the last one in the list. `glm-5.3-flash` matched three ids and bound to the last, `z-ai/glm-5.3-flashx`; `glm-5.3` matched six and bound to `z-ai/glm-5.3:batch`. The full id `z-ai/glm-5.3-flash` matches one id and binds correctly. pi warns only when nothing matches (`No models match pattern`), so a near-match that selects a different model is silent.
-
-The cost is a run that reports success while measuring a model nobody chose. The brief named `glm-5.3-flash` and the session recorded `glm-5.3-flashx`; only reading the session's `model` field showed it. A dispatch that names a model should read the resolved model back from the session file before trusting the result.
-
-Raised by the agent during handover `20261014-09`.
 
 ## [A] 2026-10-14  --  A parallel suite run flaked one unit, and no cause was found
 
@@ -376,38 +219,6 @@ Raised by the agent during handover `20261014-03`.
 **Recurrence, 2026-10-24** (handover `20261024-12`, the dispatch refactor): the full run failed `test_interactive_session_select.sh: test_select_session_patch_count_shown`, which passed 37 of 37 in isolation. A third file, the same shape, and still no cause.
 
 **Recurrence, 2026-11-01** (handover `20261101-06`, a change set in the container interface and the link rule): the full run failed `test_providers_pi_preflight.sh: test_bind_mount_warns_on_missing_prompts`, which passed in isolation, and the next full run passed 1424 of 1424. A fourth file, the same shape, and still no cause.
----
-
-## [A] 2026-10-05  --  A commit body written as a second record, over the policy budget
-
-```text
-state: open
-scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: 2026-10-05 -- mitigation written into this entry: write the body to the budget before committing, and measure it.
-mitigation: write the body to `git_policy.md`'s budget before committing -- a subject of 50 characters or fewer, a body under 280 characters, no path list, and a pointer to the handover or the ADR rather than its reasoning -- and measure it, with `git log -1 --format=%b | wc -c`, because nothing else does.
-```
-
-Three of five delivery commits across two sessions exceeded the 280-character body budget: 324, 880 and 1248 characters. The longest repeated its handover's argument, which the policy forbids twice over -- the body does not repeat the handover, and a reason longer than the budget lives in the handover or the ADR with the body pointing there. The bodies also carried file paths, which the paragraph after the budget forbids.
-
-The habit is the cause, not the size of the changes: a commit body reads like a place to record the reason, and the longer the iteration, the more there is to record. No gate reads a commit message, and the operator caught the third by reading the log. The failure is loud to that reader and silent to every check, so it stays a discipline: the review gate already reads the series, and the only part written down as enforced is the type prefix. All three messages were rewritten to the budget in the fold recorded by handover `20261005-08`.
-
-**Recurrence, 2026-10-18.** Two subjects exceeded the 50-character limit in one session, at 56 and 55 characters, and both were amended to 36 after the commit landed. The bodies were inside the budget in both cases, so the failure is narrower than the original entry: the subject is the field that goes unchecked, because the habit measures the body. The mitigation above already said to measure before committing and not after, and it was not followed twice. Measure with `git log -1 --format=%s | wc -c` before the commit, not after it, and subtract one for the newline.
-
----
-
-## [A] 2026-10-05  --  A roadmap row filed under a subject track instead of the active sub-milestone
-
-```text
-state: open
-scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: none
-mitigation: before writing a roadmap row, read the `task-list` convention's Filing rules, `**Roadmap task placement**`, and apply it literally: the row lands in the current sub-milestone's task list unless the operator directs otherwise. Subject ownership decides nothing about the bin.
-```
-
-Three rows in one session were filed into a subject track rather than the active sub-milestone. The retired provider-config transport sweep went to T10, then to T10 again after the operator had already redirected it. The repository-to-image path map went to T1, on the reasoning that it unifies gates rather than settling an instruction-surface convention.
-
-The reasoning was the defect. A track's blurb reads as a claim on every row that touches its subject, so a row is filed where it "belongs" by topic. The policy default is the opposite: what the work raises lands in the sub-milestone being worked, and a track placement is a directed exception. The operator redirected all three.
-
 ---
 
 ## [A] 2026-10-03  --  A heavy test file's own deadline fails it under parallel load
@@ -496,43 +307,6 @@ legacy: none
 mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) Treat reviewer remedies as hypotheses; verify each with a repro before applying (a proposed `cmd | mapfile` was worse than the bug). (2) After a negative-test mutation, check syntax (`bash -n`) and that it fails for the intended reason, not a side effect. (3) A filtered summary that gates a conclusion must be validated against unfiltered output (`diff -rq` bare). (4) An in-place suite-claim correction carries a certified rerun recorded beside it.
 ```
 
-### [A] 2026-09-21  --  Close-milestone and iteration record discipline (T1)
-
-```text
-state: open
-scoped: M3 T1 -- close-milestone automation
-legacy: 2026-09-27 -- one policy decision landed as ten commits, one per released section, though the one-commit rule was explicit in `iteration_policy.md` and the provider `AGENTS.md`. The governance cadence in the project `AGENTS.md` was read as setting the commit count; it governs the proposal. The unit the gap lacked -- one roadmap task, one vertical slice -- is defined in `iteration_policy.md` Step 2 (handover `20260927-08`).
-legacy: 2026-10-01 -- the propagation sweep recurred against a different surface. Adding a `Decisions pending` section to the handover format swept the prompt tree and the policy tree, and missed `.agents/audits/audit.skill.md`, whose structural-completeness rule enumerates the required sections; the rule would have fired on every conforming handover. The earlier mitigation named the tests tree, which is the same gap one directory over: an enumeration of the thing being changed lives outside the tree being changed, and a grep bounded by the changed paths cannot find it.
-mitigation: the milestone close is where record integrity fails. A green committed iteration without an open handover is a record defect, not a fast close; content below the unit-of-work threshold amends an open/same-session handover rather than opening a new one (hollow iterations); roadmap open-item status must be marked `[x]` in the same iteration its resolving handover closes; keep the close surfaces short and rely on the roadmap as the sole task list; close-out propagation greps sweep the full tests tree. A section-by-section review of one task is still one unit: the cadence governs the proposal, and a unit's diff carries a writable subject.
-```
-
-### [A] 2026-09-21  --  Process improvement: gate-release and scope-first discipline (T1)
-
-```text
-state: open
-scoped: M3 T1 -- process improvements
-legacy: none
-mitigation: three process rules. (1) A released task-list gate confirms scope and acceptance criteria, not policy text; present each changed policy section verbatim and await explicit release. (2) Session-relative finding numbers are valid only in their source conversation. (3) A redesign task first establishes purpose, then scopes exploration to it; do not launch a broad sweep before realigning onto the true objective.
-```
-
-### [A] 2026-09-21  --  Doc-format discipline via lint (T3)
-
-```text
-state: open
-scoped: M3.1 -- doc-format lint rules; `scripts/lint/doc-wrap.mjs`
-legacy: the doc-wrap rule was claimed landed and live in `.markdownlint-cli2.mjs` (the 2026-09-21 add-a-lint-rule clause), which had the entry mitigated.
-mitigation: document-format rules are enforced by the lint gate, not left to memory. Non-ASCII punctuation is caught by the `doc-ascii` rule. Manually column-wrapped prose (hard-wrapped instruction blocks) currently has no detector -- add a lint rule. When composing/editing a document, check the recipient file's own formatting rules first (a file whose own policy forbids the pattern is the compliance failure). The add-a-lint-rule clause landed: the `doc-wrap` rule is live in `.markdownlint-cli2.mjs`. **Recurrence (2026-10-01):** the doc-wrap rule, though enabled (`"doc-wrap": true`) and listed as live, does not fire on a paragraph explicitly hard-wrapped across two physical lines (a two-line test paragraph in-repo reports a clean gate). The one-paragraph-per-physical-line policy in `documentation_policy.md` `### Line wrapping` is therefore not enforced by the gate; an agent must comply by hand. Re-open: the add-lint-rule mitigation did not land an effective rule. **Recurrence (2026-10-02):** the config cause is identified. `customRules` in `.markdownlint-cli2.mjs` lists only `./scripts/lint/doc-ascii.mjs`, so `doc-wrap.mjs` is never registered, while the rule block sets `"doc-wrap": true` against a rule that was not loaded. The rule itself is sound: `bash tests/test_doc_wrap_rule.sh` passes under a temp config that registers it, and the repository config fires no `doc-wrap` finding on a deliberately hard-wrapped paragraph. Fixing the config registers the rule; nothing in the rule needs to change.
-```
-
-### [A] 2026-09-28  --  Handover-table stray-pipe and write-tool trailing-newline class (U3)
-
-```text
-state: open
-scoped: recurring record defect, recurrences 4-5 in handover `20260928-08`; seed recurrences in U1, U2
-legacy: the prior U2 handover (`20260928-07`) flagged this class for monitoring in U3; the guard (lint-check every handover table before pre-close) held and caught each recurrence, but the class recurred three times in a single WIP cycle
-mitigation: the `write` tool drops the trailing newline on a full-file write (failing MD047), and handover table rows acquire stray pipe-cells or a Findings-style fourth column on an edit (failing MD056). Both are caught by lint before pre-close. The write-tool trailing-newline is a tool behaviour, not authoring: append a newline after every full-file `write`. The stray-pipe class is authoring under edit-time pressure: verify every handover table's column count before pre-close. The class persists -- consider a mechanical guard beyond the lint gate.
-```
-
 ### [A] 2026-09-28  --  Advisor re-run has low marginal value after a clean consensus (U4)
 
 ```text
@@ -609,19 +383,6 @@ Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `work
 
 ## Node
 
-### [A] 2026-09-29  --  A nested `node --test` inherits `NODE_TEST_CONTEXT` and exits 0 without running anything
-
-```text
-state: open
-scoped: none
-legacy: none
-mitigation: when a test spawns `node --test` as a child, delete `NODE_TEST_CONTEXT` from the child's environment. Before trusting a child test runner's exit status, confirm the child ran its file: the recursive-run guard warns on stderr and exits 0, so a harness that reads the status alone records every run as green.
-```
-
-The mutation gate for the task-queue extension replays each catalog row in a temp mirror and runs the owning suite in a child process. Its first run reported all 22 rows as survivors in 10 seconds, which is faster than the suites it claimed to have run. The cause was the harness, not the extension: `node --test` sets `NODE_TEST_CONTEXT=child-v8` in its children, and a child that inherits the marker and receives a `--test` argument treats the invocation as a recursive run. It prints "node:test run() is being called recursively within a test file. skipping running files." on stderr, runs nothing, and exits 0. Every mutant therefore looked uncaught, and the failure mode is a gate that reports a clean result on a broken subject. The tell is the wall time: a gate that replays suites finishes faster than the suites, and it is the one signal available before the subjects are re-checked by hand.
-
-The family is the mutation-idiom rule in `p-43` and the instrument rules in `.agents/skills/testing/patterns/mutation-evidence.md`, read one level up: a mutation harness must prove the mutant was exercised by the suite it names, not only that the harness exited zero.
-
 ### [A] 2026-11-02  --  A scripted splice on a heading string matched the prose that named the heading
 
 ```text
@@ -641,15 +402,6 @@ This is the second time on this file. The 2026-11-02 handover `20261102-04` reco
 
 Entries raised by the operator (tagged `[O]`), migrated from the former `devlog/GOTCHAS.md` (deleted in the unification).
 
-### [O] 2026-08-09  --  Set handover Status Closed before the final commit (close = the commit)
-
-```text
-state: open
-scoped: M3 -- iteration close one-commit rule (`docs/operations/git_policy.md` transient-commits; `docs/operations/iteration_policy.md` close-produces-one-commit)
-legacy: the original fix landed 2026-08-19 and held across the intervening sessions; the defect resurfaced 2026-09-24 as `docs: close` commits whose only change was the handover Status flip and roadmap write-back (recorded in handover `20260924-02`); it resurfaced again 2026-09-26 as a register-closing iteration shipped as a pile -- 13 commits (8 typed `fix:`/`docs:`/`chore:` and 4 `wip:`) across one logical iteration with no open handover, so the operator asked for a retrospective squash
-mitigation: a commit whose only change is the handover Status flip or the roadmap write-back is a defect, not a delivery commit. The close edit belongs in the iteration's single delivery commit: set `Status: Closed` and apply the write-back, then commit or amend once. Within the iteration, commit the work when useful, with `wip:` prefix only -- a mid-iteration `fix:`/`docs:`/`feat:`/`chore:` commit is a false delivery surface that reads as closed and later folds away. Do not let `wip:` checkpoints pile up to the close gate: squash each into the evolving delivery commit after a discrete task group, or amend an existing `wip:`. An iteration has an open handover from Step 1; a pile of commits at HEAD with no open handover is a missing-record signal, not progress. The 2026-09-24 governance fix prescribes the close in the transient-commits rule (git_policy) and close-produces-one-commit (iteration_policy); the 2026-09-26 fix adds the discipline-mid-iteration rule to git_policy, iteration_policy, AGENTS.md, and the `wrapup` runbook (`workflow/coding-agent/prompts/wrapup.md`). Screen each subsequent close for a pile of typed intermediates or an un-squashed `wip:` chain; drop the entry when several closes in a row show none.
-```
-
 ### [O] 2026-08-12  --  Library functions must `return`, not `exit`
 
 ```text
@@ -658,23 +410,6 @@ scoped: M3.1 -- sourced-lib / library lint rules
 legacy: not swept, fixed on contact
 mitigation: library functions sourced by entrypoint scripts must use `return 1`, not `exit 1`. All entrypoints run under `set -euo pipefail`, so a non-zero return triggers script exit identically. Bare `exit` in a sourced function is a latent bug if the function is ever called from a different context (e.g. test harness, sub-shell, interactive use). Entrypoint scripts (`scripts/*.sh`) may use `exit` legitimately. Canonical rule: `p-13` in [`failure-handling.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/failure-handling.md). Now gated by `scripts/check_lib_contract.sh`, which runs in the lint gate.
 ```
-
-### [O] 2026-09-18  --  Mechanical-edit one-liners must carry a match-count guard and a timeout
-
-```text
-state: open
-scoped: M3 T2 -- tool timeout / run-budget on the bash tool, tests, and lint
-legacy: none
-mitigation: a perl one-liner intended to count matches in a test file was written with the `/g` modifier against a full-file slurp; it matched nothing, but the loop structure ran forever, emitting a line count that grew into the hundreds of millions before the run was aborted and the log killed. The deeper fix: a mechanical transform that prints only a summary at the end is invisible while it spins. Always (1) bound the tool with `timeout`, (2) have the transform emit a match/replacement count to stderr BEFORE any output, and (3) diff against the input to verify the change before committing. A long-running transform with no stderr progress is the signal to inspect the loop, not to wait. The standing order to run every script through `timeout` is withdrawn: a blanket timeout on a simple script maxes out the wait every run. Move to a test harness with per-test timeouts.
-```
-
-**Recurrence, 2026-10-05.** A `node -e` transform rewrote a test file with `String.replace`, and the replacement string contained `$'`. In JavaScript that is not literal text: `$&`, `` $` ``, `$'` and `$1` are replacement patterns, and `$'` means the portion of the input *after* the match. The write therefore duplicated the file's tail, so the file held its own body twice. Both prescribed guards were skipped, and the run was quiet: the shrunken first copy still parsed, and the suite still reported results, so the doubling surfaced only when a later anchor stopped matching.
-
-Two additions for this failure mode. A replacement that is not a literal constant -- a shell-quoted heredoc, a path, a value from a variable -- goes through a function replacer (`text.replace(re, () => to)`) or a tool that treats it literally; the pattern characters are only honoured in a plain string. And the count check is not enough on its own: compare the output's line count or size against the input's after every transform, because a transform can succeed at the wrong edit rather than fail at the right one.
-
-**A second occurrence, the same day.** A fixture-builder script was patched with a chain of unguarded `String.replace` calls. The patch applied partly and produced two fixtures that differed in the wrong places, which the eval run would then have reported as a null result about the instruction set rather than a broken fixture. The guard belongs in the builder: assert the fixture's facts at the end of the build, and let the build fail loudly.
-
-**A third occurrence, 2026-10-06.** A folder rename replaced the bare word `architecture/` with `reference/` across every text file in the repository. The replacement hit `src/reasoning/agent/skills/improve-codebase-architecture/`, a skill directory whose name merely shares the word, and corrupted one lint exemption and one roadmap line. The count guard was present and its counts were correct; the pattern was the defect, because it was anchored to nothing. A replacement driven by a path rename matches a path form (`docs/architecture/`, `../architecture/`, the image path) and never the bare directory name, and the verification is a read of the diff, because the run is green either way. The damage surfaced two gates later, when the exempt file started failing.
 
 ### [O] 2026-09-25  --  An autonomous scope proposal must assign the work to units and commits, not only name the deliverables
 
@@ -702,24 +437,6 @@ state: open
 scoped: M3 T1 -- prompt authoring; `docs/development/prompt-authoring-conventions.md`; review prompts `advisor.md` and `thermo-nuclear-code-quality-review`
 legacy: the review-loop-entry guidance on re-runs ("re-run sparingly", AGENT_FEEDBACK `[A]` 2026-09-28 advisor re-run value) covers when a re-run earns its cost, not whether convergence is optional.
 mitigation: a review prompt must not hard-mandate "work to consensus". The convergence loop is one mode; a single-pass review is a legitimate invocation and must be allowed. Advisor-style prompts should be invokable as a single consultation without being forced to converge. Thermo-nuclear-style review prompts should be invokable with or without the convergence constraint. Every review prompt should echo a subagent invocation budget -- the prompt states how many subagent runs the loop may use, so the cost is bounded and visible before dispatch. Put the budget in the brief and the invocation. Raised 2026-09-29 when the operator observed advisor "work to consensus" is a hard constraint and thermo-nuclear carries no budget; record in handover `20260929-11`.
-```
-
-### [O] 2026-10-01  --  The roadmap's closed rows are ritual re-description, not the durable record; the handover is the durable record
-
-```text
-state: open
-scoped: M3 T1 -- roadmap policy; `docs/operations/roadmap_policy.md`
-legacy: the roadmap `roadmap_policy.md` line "The roadmap is the accumulated decision log for the milestone" and "A closed roadmap entry ... does not change" treat closed rows as durable history; the changelog is the permanent record (roadmap_future already says this).
-mitigation: an agent needs to rewrite the milestone's own task rows in the active sub-milestone when the semantics of a name shift (for example renaming `/auto` to `sequential-work`) rather than treating a closed `[x]` row as history to preserve. The handover is the durable record of each iteration's work; the changelog holds a proper description of what landed a milestone at its close. The roadmap is a living task list and its rows may be rewritten freely within the active milestone. A closed row needing correction is a narrow exception, not the default. Raised 2026-10-01 when the agent proposed leaving the roadmap's historical `/auto`/`/parallel-auto` rows untouched because it assumed they were durable history; the operator corrected: the milestone's changelog entry, not the roadmap rows, is the record that outlives the milestone.
-```
-
-### [O] 2026-10-01  --  Discussion status semantics: no clean term for a doc rolled into a handover and deleted
-
-```text
-state: open
-scoped: M3 T1 -- discussion policy status model; `docs/operations/discussion_policy.md`
-legacy: none
-mitigation: the status table defines `superseded` as "replaced by a newer doc" and `archived` as "terminal -- no active references", but neither covers a discussion doc whose content was rolled into a handover and the file deleted. The `20260721-03` spec cleanup used the word "Deleted" (not a table status) for exactly this case, and recorded the deletion while the deletion commit never landed, so two vestigial specs persisted under `settled` until 2026-10-01. There is no determination rule for `settled` vs `superseded` vs rolled-up. Proposed fix: widen `superseded` to "replaced by a newer record (doc or handover)" and state the rule -- a file is `superseded` only when a successor record explicitly absorbs it (banner or commit message); otherwise it is `settled`, and a rolled-up-and-deleted doc is deleted, not relabelled. Raised 2026-10-01 during the discussion-rename chore.
 ```
 
 ## Agent experience  --  session 20260809-04

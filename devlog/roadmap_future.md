@@ -144,24 +144,12 @@ M4.7 derives its requirements from the surface shipped at its planning time. No 
 
 ### M7 - Security and Network Hardening (Policy Layer)
 
-- [ ] Introduce `.config/workflow.yaml`
-  - [ ] Configure network access
-  - [ ] Configure resource limits (`--memory`, `--cpus`)
-  - [ ] Define allowed directories and workflow rules
-- [ ] Enforce policy configuration in container startup
-  - [ ] Add automated isolation validation checks
-- [ ] Implement `safe` mode: `--network=none` enforcement
-  - [ ] Evaluate `--network=none` mode for non-AI execution
-- [ ] Implement `restricted` mode: Restrict outbound network access
-  - [ ] Introduce outbound proxy or domain filtering to required AI endpoints
-
 #### Dependency Security
 
 Part of M7 -- supply-chain hardening for provider runtime dependencies.
 
 - [x] Pi version pinned in the provider base Dockerfile; the pin moves with the `pi-bump` unit that owns it
 - [x] Node base image pinned to specific version (`node:22.22.3-slim`)
-- [ ] Consider lockfile for `npm install -g` dependencies (transitive dependency locking)
 - [x] Bump cadence policy -- the operator decides when to bump, on new functionality needed, a critical fix, or a security vulnerability, with no automation. The bump edits the pinned version in `src/reasoning/providers/pi/base.dockerfile` and rebuilds.
 
 ---

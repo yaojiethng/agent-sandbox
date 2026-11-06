@@ -4,7 +4,7 @@ Open this when you append a changelog entry at a milestone close, or correct a c
 
 ## The entry
 
-Changelog entries live in `devlog/changelog.md`, appended in milestone order. Each entry is self-contained and can be produced without reading the rest of the file.
+Changelog entries live in `devlog/changelog.md`, appended in milestone order: the order the milestones closed in linear history, so the last entry is the most recently closed milestone. Each entry is self-contained and can be produced without reading the rest of the file.
 
 ```text
 ## M{n} - {Title}

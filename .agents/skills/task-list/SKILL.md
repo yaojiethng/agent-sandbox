@@ -9,7 +9,7 @@ description: "agent-sandbox's task-list convention - the roadmap, the future roa
 |---|---|
 | The current sub-milestone and its pending tasks | `devlog/roadmap.md` |
 | The sub-milestones planned but not active | `devlog/roadmap_future.md` |
-| The completed sub-milestones, newest first | `devlog/changelog.md` |
+| The completed sub-milestones, in the order they closed | `devlog/changelog.md` |
 
 The roadmap and its two companions are one record: a milestone title, a status, or an anchor that disagrees across them is one defect, whichever file it sits in.
 
