@@ -55,7 +55,7 @@ The accept is the compare-and-swap above. The `git-discipline` convention owns t
 
 ## Handoff
 
-A branch that is not ready goes back to `/prepare-rebase`. The order may come from `/merge-queue`; the direct path needs no queue. This runbook owns the preflight, the staged verification and the compare-and-swap.
+A branch that is not ready, including one whose trunk moved, goes back to `/prepare-rebase`. The order may come from `/merge-queue`; the direct path needs no queue. This runbook owns the preflight, the staged verification and the compare-and-swap.
 
 ## Close
 

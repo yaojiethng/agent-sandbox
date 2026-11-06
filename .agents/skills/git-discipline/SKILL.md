@@ -5,7 +5,7 @@ description: agent-sandbox's git-discipline convention - the commit message, the
 
 # git-discipline
 
-A commit is the unit a reviewer reads. This file states the message, where a correction lands, and which runbook runs each history operation.
+A commit is what a reviewer reads. This file states the message, where a correction lands, and which runbook runs each history operation.
 
 ## The commit message
 
@@ -29,12 +29,12 @@ The shape follows [Conventional Commits](https://www.conventionalcommits.org/en/
 
 ## The fold
 
-A change belongs to the commit of the work it corrects. Fold it there rather than stacking it after: a stack of one-line fixups on one logical unit is the history's least readable form, and what the fold discards from the history the handover keeps.
+A change belongs to the commit of the work it corrects. Fold it there rather than stacking it after: a stack of one-line fixups on one logical change is the history's least readable form, and what the fold discards from the history the handover keeps.
 
-- The unit of work, not the commit, is the unit of amendment. A change that alters a unit's task description, its code and its records is one amendment across all three.
+- A correction folds into the delivery commit, not into an intermediate commit. A change that alters the iteration's task description, its code and its records is one amendment across all three.
 - Amend while the history is cheap to rewrite: on the same branch, and ideally within the session that made the commit. Beyond that the operator rules.
 - Never rewrite a commit that has left this container, and never rewrite published history.
-- A temporary commit is a fine instrument where it is simpler: `fixup!`, `squash!`, or a `wip:` commit, then fold it. The end state is one commit per unit.
+- A temporary commit is a fine instrument where it is simpler: `fixup!`, `squash!`, or a `wip:` commit, then fold it. The end state is one delivery commit per iteration.
 
 A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
 
@@ -47,11 +47,17 @@ Two cases decide who rules on a correction:
 
 ## Grouping
 
-A commit is a coherent unit of change, and fewer meaningful commits beat many granular ones: a policy restructuring that touches six files is one commit, and a script with its tests is one. Unrelated changes are separate commits.
+A commit is a coherent change, and fewer meaningful commits beat many granular ones: a policy restructuring that touches six files is one commit, and a script with its tests is one. Unrelated changes are separate commits.
+
+## The delivery commit and the slice
+
+A branch carries one iteration's work, folded into one delivery commit with one closed handover. The delivery commit is what the trunk accepts; the commits inside the branch before the fold are the reviewer's reading order.
+
+A slice is an early delivery commit cut onto its own branch: the commits it names, with its own closed handover. The remainder is a child branch, its own delivery commit. A slice never lands as a `wip:`; without its own closed handover it is not a delivery commit yet.
 
 ## The branch name
 
-A branch name carries the commit type, the milestone and a slug, in that order. [`references/branching.md`](references/branching.md) states the parts, the two models and tagging.
+A branch name carries the commit type, the milestone and a slug, in that order. [`references/branching.md`](references/branching.md) states the parts, the branch tree and tagging.
 
 ## Runbooks
 

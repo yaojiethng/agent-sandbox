@@ -32,7 +32,7 @@ First, one commit per unit: every `wip:` checkpoint and typed intermediate commi
 
 | Input | Meaning |
 |---|---|
-| commit range | The unit's commits. Defaults to the commits since the last known delivery commit (the last commit with a delivery type that carried its own handover). If no base is identifiable, use the current branch tip range back to the previous merge base. |
+| commit range | The branch's commits. The base is the branch point, which is the last delivery commit on the trunk; if no base is identifiable, use the current branch tip range back to the previous merge base. |
 | current branch | The branch holding the unit's work, normally `feat/*` or `milestone/*`. |
 
 ## Part A - The checkpoint (in-session, recurring)

@@ -9,51 +9,52 @@ type/milestone_description
 | Part | Rule |
 |---|---|
 | `type` | the commit type of the work the branch carries |
-| `milestone` | the sub-milestone ID with dots replaced by underscores |
+| `milestone` | the milestone or sub-milestone ID with dots replaced by underscores |
 | `description` | lowercase, hyphen-separated, and never an underscore: that character is the milestone separator |
 
 Examples: `feat/m2_1-snapshot-pipeline`, `fix/m2_1-diff-baseline-sha`, `docs/m2_1-two-layer-model`, `workflow/m2_1-handover-policy-restructure`.
 
-A change not tied to a sub-milestone omits the milestone, as in `workflow/git-policy` or `chore/readme-typos`.
+A change not tied to a milestone omits the milestone, as in `workflow/git-policy` or `chore/readme-typos`.
 
-## Protected branches
+## The branch tree
 
-`main` is the only long-lived branch. All work happens on a type-prefixed branch and merges by review. The branch protection rules are in `docs/development/standard_operating_procedures.md#5-human--operational-protocols`.
-
-## One branch per sub-milestone
-
-Most sub-milestones fit in one to three sessions and produce a single branch. It is created at session start, receives commits across sessions, and merges to `main` when the sub-milestone is complete and reviewed.
+The milestone tree is fractal: a milestone holds sub-milestones, and a sub-milestone holds units. The branch tree mirrors it. `main` is the root long-lived branch; every milestone node may carry a long-lived branch, a **track**, cut from its parent's track; a unit branch is the leaf.
 
 ```text
-main ──────────────────────────────●── ...
-        \                         /
-         feat/m2_1-snapshot ─────
+main
+  \-- feat/m3-orchestration                 track for M3
+        \-- feat/m3_5-task-list             track for M3.5
+              \-- feat/m3_5_4-branch-tree   unit branch
 ```
 
-## The integration branch
+A node whose work needs no separate long-lived branch is collapsed into its parent's track. The current M3.5.4 is collapsed into the M3 track. The collapse is a topology choice, not a second model: when a node does carry a track, it follows the same lifecycle as every other track.
 
-When a sub-milestone is too large or too varied for one branch, it gets an integration branch named for the milestone with no type prefix, `milestone/m2_1`. Session branches are cut from it and merged back as each slice completes, and it merges to `main` when the whole sub-milestone is reviewed.
+## The track
 
-```text
-main ──────────────────────────────────────────●── ...
-        \                                      /
-         milestone/m2_1 ──────●────────●──────
-              \              /    \         /
-               feat/m2_1-snapshot  feat/m2_1-diff
-```
+A track is the long-lived branch at a milestone node. It is the workspace that node's work happens on, and it is the integration branch for the node's children.
 
-Use an integration branch when any of these hold:
+- Cut from the parent's track when the node opens.
+- Accepts its children by fast-forward.
+- Merges into the parent when the node closes.
+- Deleted after the merge.
 
-- the sub-milestone spans more than three sessions
-- it produces branches with different type prefixes, such as `feat` with `docs` and `build`
-- intermediate merges to `main` would leave the system incomplete
-- the operator wants to review the sub-milestone as one coherent unit
+The track's lifetime is the node's lifetime. It carries the type prefix of the work it predominantly carries.
 
-Otherwise the single-branch model is preferred.
+## The trunk is a role
+
+At every node the parent branch is the trunk for its children. The trunk accepts or refuses; it never authors and never resolves a conflict. The child owns its rebase and its own merge-back.
+
+`main` carries the host branch-protection rules in `docs/development/standard_operating_procedures.md#5-human--operational-protocols`. Every track carries the accept rule: it only fast-forwards.
+
+## The prepare obligation
+
+A branch is ready for its trunk when the trunk's head is an ancestor of its tip. When the trunk moves, the branch is `not-ready`; it re-prepares before it can be accepted. This holds at every level: a unit re-prepares onto its track, and a track re-prepares onto its parent.
+
+The queue is a view over the ready set and never holds a `not-ready` branch. A branch left out of the queue re-prepares and re-enters.
 
 ## Lifecycle
 
-A session branch is merged or discarded when its work is done. An integration branch is merged when the sub-milestone is complete. A stale branch with no activity across two milestones is deleted.
+A unit branch is deleted when its trunk accepts it. A track is deleted when its node merges into its parent. A stale branch with no activity across two milestones is deleted.
 
 ## Tagging
 

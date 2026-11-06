@@ -10,7 +10,7 @@ A node is a state the loop rests in. A gate is a node where the loop waits for t
 
 **A story is a path.** A behaviour this app supports is a route through these states, and writing that route down is how the behaviour is declared. `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> it_closed -> it_committed` is the story of one delivered unit. A declared path resolves when every id in it is a state here and every consecutive pair is an edge, which is the cheapest test this map offers of its own completeness.
 
-The chart models one track. `it_open` means no `Active` handover on this track; another track may hold one while this unit waits for a directive.
+The chart models one handover track. `it_open` means no `Active` handover on this track; another track may hold one while this unit waits for a directive.
 
 **An id is the name.** A state's id is what a story cites, and it does not change when the label beside it is rewritten. Ids carry no colon, so that a path is readable in a Mermaid diagram and in a shell command alike. The labels in the diagram carry the reading; the id carries the identity.
 

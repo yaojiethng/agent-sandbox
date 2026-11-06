@@ -10,6 +10,8 @@ reader: [agent, operator]
 
 These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
+`unit` is not a reserved term. It is a bag term that hides its carrier, so name the carrier: the [iteration](#iteration) for the work cycle, the delivery commit for the landed change, the branch for the carrier, and the handover for the record. The compounds `harness unit` and `operator unit` are the session and the iteration, not the work. Existing text that says `unit` is read as the carrier its sentence needs.
+
 ## modality
 
 The base a sentence appeals to and the force it carries: what a reader owes, or what a reader must accept, and how strongly. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.

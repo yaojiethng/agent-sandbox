@@ -38,6 +38,7 @@ Emit an order over the ready branches, so the consumer can accept them one at a 
 - Only ready branches enter.
 - A stack is a contiguous run: a child follows its parent, and the run is not interrupted.
 - A branch that is `not-ready` is left out; it re-prepares and re-enters.
+- A branch whose trunk moved since it was prepared is `not-ready`; it leaves the queue and re-enters only after it re-prepares.
 - Recompute on every head advance. The order is derived, not stored.
 - Do not prepare and do not accept.
 
