@@ -253,7 +253,6 @@ A skill lands in the tree by hand today. Nothing records its origin, and nothing
 **Acceptance criteria:**
 
 - An operator takes a skill the pipeline has never seen and lands it forked, stripped, recorded and running without editing the convention.
-- An operator opening any skill in the tree can say whether it was adapted or home-grown, and the answer is in its own directory.
 - A writer of a skill or a prompt reaches one instruction-writing surface, and the pipeline holds both to it.
 - `bash scripts/lint.sh` and `bash scripts/run_tests.sh` are clean.
 
@@ -283,7 +282,7 @@ A skill lands in the tree by hand today. Nothing records its origin, and nothing
 - [x] **Bump the `mattpocock/skills` source and take in `grilling`, `handoff` and `retro`** -- the source moved to `a496f55`, and the three new skills land with their records and invocation modes; `grill-me` becomes the user-invoked entry that invokes `grilling`, and `writing-for-agents` is unchanged from its base. The other three edges stay pinned. Handover `20261031-03`.
 - [x] **Refresh the remaining `mattpocock/skills` edges** -- all eight edges now sit at `a496f55`: `domain-model` took the upstream name `domain-modeling` and the `GLOSSARY.md` rename, `improve-codebase-architecture` took the HTML-report rework with its `codebase-design` calls resolved to the copies it carried at the time (dropped 2026-11-01), and `setup-pre-commit` took the colon line. The rename landed atomically with the bump, because the only caller was in the same unit. Handover `20261031-04`.
 - [x] **The gate holds the store, not the CLI** -- `add` and `record` are retired. Their refusals were the validator's findings printed earlier, and `source-bump check` was in no gate, so a merge, a rebase or a hand edit left the store unvalidated. The validator now lives in [`scripts/skill_store.mjs`](../scripts/skill_store.mjs), [`check_skill_sources.sh`](../scripts/check_skill_sources.sh) runs it and holds each file's canonical form, and `format` writes that form and sets no field value. The row `source-bump cannot rename an edge` retired with the write surface that produced it: a rename is one field. [`skill_source_catalog.md`](../docs/adr/skill_source_catalog.md) carries the dated supersession. Handover `20261101-08`.
-- [ ] **First pipeline test run: distil the operator-supplied skills** -- the operator holds skills to distil from. Each goes through the fork-and-strip convention, lands with its store edge and its adaptation note, and runs. The run is the pipeline's first measurement; its friction becomes the convention's amendments.
+- [x] **First pipeline test run: distil the operator-supplied skills** -- the first real fork was `20261029-11` (`improve-codebase-architecture`), and the first operator-requested batch of never-seen skills landed in `20261031-03` (`grilling`, `handoff`, `retro`). The friction became convention amendments in `20261101-09` and `20261103-04`, so the row's premise that the operator still holds a set to distil is superseded. Closed 2026-11-05.
 - [x] **Skill maintenance record** -- the record beside a skill's `SKILL.md` states its upstream sources, its adaptation and its name. Handover `20261018-03`.
 
 **The authoring surface it owns.**
