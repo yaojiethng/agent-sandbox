@@ -247,3 +247,11 @@ Eight policy documents were split by kind and deleted. Each mechanism moved to t
 A role resolves to an ordered list of assignments and the runtime follows the assignment, so a brief names a role and never a model, and the live recommendation values are committed with an explicit operator override. The route machine keys `<provider>/<model>`, decides from a typed outcome whose scope says what would have to change before a retry could succeed, and stops the walk where no model repairs the fault. A seat run fires several of a role's models on one brief, a pin seats every seat on one assignment for a reproducible run, and a conformance check holds every launcher to the seam. The seam then shed its accumulated shapes: one command renderer, one resolver, one assignment constructor, and one decision per rule, each held by a unit suite and a mutation gate.
 
 ---
+
+## M3.3.3 - The skill maintenance pipeline
+
+*A skill's origin and adaptation travel with it: an upstream skill can be forked, stripped, recorded and bumped from one store, and a writer of a prompt or a skill reaches one instruction-authoring surface.*
+
+The source store became the record: each forked artifact carries an edge with its upstream revision, its local path and its adaptation note, and `fork-and-strip` and `source-bump` are the procedures that read and move it. The provenance was backfilled across the tree, package tracking and collision reporting landed beside it, and the first operator-supplied batch proved the pipeline end to end. The authoring surface consolidated into `instruction-authoring`, absorbing `skill-scaffolder` and the prompt conventions, and the instruction surface's links, generated table and onboarding seed were corrected in the same milestone. The discussion-record lifecycle was stated and gated in the same milestone.
+
+---
