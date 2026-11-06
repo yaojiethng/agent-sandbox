@@ -23,7 +23,7 @@ One JSON object per line, one line per finding. The schema has one owner, this s
 | Value | Condition | What the dispatcher does |
 |---|---|---|
 | `fix-now` | the correct form is determined by the tree or the policy, and the edit is bounded to a record | applies it in the single `chore:` commit |
-| `defer` | the correct form is determined, and an existing roadmap unit of work already names the broader task | nothing. The named unit owns it; clearing it ahead of that pass is premature. The dispatcher rejects a `defer` that names no existing unit, so a `defer` never creates a row. |
+| `defer` | the correct form is determined, and an existing roadmap unit of work already names the broader task | nothing. The named row owns it; clearing it ahead of that pass is premature. The dispatcher rejects a `defer` that names no existing row, so a `defer` never creates a row. |
 | `escalate` | two sources disagree, or a value cannot be re-derived | a point below the inventory table |
 
 A recommendation names no commit, no message and no fold. The auditor recommends whether a fix is available now; the dispatcher decides how the fix lands.

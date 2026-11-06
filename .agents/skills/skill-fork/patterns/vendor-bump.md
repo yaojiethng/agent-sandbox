@@ -8,7 +8,7 @@ This pattern is one carrier. An artifact a session loads from an installed packa
 
 A bump runs only when the operator directs it. The store is pinned by default; a new upstream commit is not a reason to bump.
 
-The unit is one artifact edge, not the source. A source with two artifacts bumps one; the other keeps its base. The local file is the artifact: do not store a patch, generate a skill, or apply a two-way patch.
+The change is one artifact edge, not the source. A source with two artifacts bumps one; the other keeps its base. The local file is the artifact: do not store a patch, generate a skill, or apply a two-way patch.
 
 An artifact with no edge is one nobody bumps. Stop; there is nothing to bump. An edge exists because someone made it, and [`fork-and-strip.md`](fork-and-strip.md) is where they make it.
 

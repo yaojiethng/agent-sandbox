@@ -4,7 +4,7 @@ ADRs live in `docs/adr/` and follow the project's living format defined in the `
 
 An ADR records the *why* behind one standing principle -- a pattern, interface shape, design philosophy, invariant, or interaction contract -- including the rejected alternatives and their reasons. Local design choices ride under an existing ADR; they do not each spawn a file.
 
-## Unit and naming
+## Granularity and naming
 
 One file per standing principle, named for the principle it governs -- `docs/adr/<principle>[-<scope>].md`, no dates or status in the name. The agent recommends names; the operator decides them.
 

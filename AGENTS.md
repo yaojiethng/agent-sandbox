@@ -37,7 +37,7 @@ These principles are stable. The operating workflow and policy documents are the
 
 **One question at a time.** Ask the most important question first. Before asking anything, check whether the answer is already present in the context you have -- a question is only warranted if it genuinely cannot be resolved from what is available.
 
-**Context-aware numbering.** The numbering rule is the project convention [`.agents/skills/numbering/SKILL.md`](.agents/skills/numbering/SKILL.md): a number for an ordered unit, an identity code for an unordered one, and grouped chat labels so one token names one item. A chat item that becomes a durable artifact is stated, not labelled.
+**Context-aware numbering.** The numbering rule is the project convention [`.agents/skills/numbering/SKILL.md`](.agents/skills/numbering/SKILL.md): a number for an ordered item, an identity code for an unordered one, and grouped chat labels so one token names one item. A chat item that becomes a durable artifact is stated, not labelled.
 
 **Flag violations before editing.** Check a document against relevant rules before touching it.
 
@@ -105,10 +105,10 @@ Every file serves one subject in one mode. Two documents may serve one subject i
 
 **Governance documents** (policy files, AGENTS.md, operational docs) -- propose changes one section at a time via chat. Present the new or changed text, explain the rationale, and wait for confirmation before writing. Do not batch multiple sections into one proposal unless they are logically inseparable.
 
-**Work unit and iteration scoping.** One iteration is one roadmap task, scoped as one vertical slice and landed as one commit with one handover. Propose no split by default. When one slice cannot deliver the task's outcome, name the handling method you propose:
+**Iteration scoping.** One iteration is one roadmap task, scoped as one vertical slice and landed as one commit with one handover. Propose no split by default. When one slice cannot deliver the task's outcome, name the handling method you propose:
 
-- **Split.** Each part delivers an outcome of its own. Carry a work-unit table in the scope proposal and release it at the scope gate.
-- **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one unit.
+- **Split.** Each part delivers an outcome of its own. Carry a work table in the scope proposal and release it at the scope gate.
+- **Consolidate.** No part delivers an outcome of its own. Such a part is work inside one iteration.
 
 See [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) for the criteria and the close mechanics.
 
@@ -126,7 +126,7 @@ If a document's referencing link is marked `[REMOVED]`, the absence is expected 
 
 ## Iteration Lifecycle
 
-A design settles an incomplete milestone first, per the roadmap's `Depends on:` lines. The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md), and the unit rule and the work-unit table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and the Markdown lint gate in [`doc-maintenance`](.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) `## The lint rule set`. Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/reference/iteration_protocol.md#iteration-invariants).
+A design settles an incomplete milestone first, per the roadmap's `Depends on:` lines. The iteration -- handover first, scope confirmation, design, implementation, pre-close verification, close and seed -- is defined in [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md), and the iteration rule and the work table are in the same file. The project's [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) holds the handover's shape and structure, the Roadmap as the sole task list in the project's [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) convention, the commit and delivery rules in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and the Markdown lint gate in [`doc-maintenance`](.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md) `## The lint rule set`. Every gate requires explicit operator release, and the pre-close summary (per `/iter` Step 7) includes the Roadmap write-back row governed by the [iteration-policy close invariants](docs/reference/iteration_protocol.md#iteration-invariants).
 
 The operator signalling a new iteration -- by saying "new iteration", "next iteration", or by re-scoping the current work -- opens the handover (Open handover, per [`iteration_protocol.md`](docs/reference/iteration_protocol.md)) before any further output.
 

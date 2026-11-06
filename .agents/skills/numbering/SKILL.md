@@ -5,9 +5,9 @@ description: "Apply when writing or editing a document with ordered entries, fin
 
 # numbering
 
-A unit takes a number when a reader reads it in order and cites it in place. It takes an identity code when it is unordered, long-lived, or cited from another document. The class decides, not the unit. Every rule below names the user story it serves.
+An item takes a number when a reader reads it in order and cites it in place. It takes an identity code when it is unordered, long-lived, or cited from another document. The class decides, not the item. Every rule below names the user story it serves.
 
-## The unit letters
+## The item letters
 
 Four kinds take a letter inside a document. A letter restarts at 1 in each document or report.
 
@@ -18,21 +18,21 @@ Four kinds take a letter inside a document. A letter restarts at 1 in each docum
 | `D` | decision | a choice made, with the alternatives and the reason |
 | `R` | recommendation | an action the record proposes and has not turned into a task |
 
-A section is dotted and hierarchical, arabic, no trailing dot. A unit is its letter and its number, `F3`. A reference from another document is the document's identity, a slash, then the unit, `20261018-NN/F3`. A reference inside the document is the number alone.
+A section is dotted and hierarchical, arabic, no trailing dot. An item is its letter and its number, `F3`. A reference from another document is the document's identity, a slash, then the item, `20261018-NN/F3`. A reference inside the document is the number alone.
 
 ## The scheme per class
 
 | Class | Scheme | Form | Story |
 |---|---|---|---|
 | Policy | sections numbered | `3.2` | S3 |
-| ADR | sections numbered; each decision a `D` unit | `3.2`, `D1` | S3 |
+| ADR | sections numbered; each decision a `D` item | `3.2`, `D1` | S3 |
 | Concept or reference | sections numbered where the document navigates by number | `3.2` | S3 |
 | Development document | sections numbered where the document navigates by number | `3.2` | S3 |
-| Handover | identity `YYYYMMDD-NN`; `F`, `Q`, `D` units | `20261018-NN/F3` | S1, S5 |
-| Discussion | identity date, type, slug; `F`, `Q` units | its slug, then `/F2` | S1 |
+| Handover | identity `YYYYMMDD-NN`; `F`, `Q`, `D` items | `20261018-NN/F3` | S1, S5 |
+| Discussion | identity date, type, slug; `F`, `Q` items | its slug, then `/F2` | S1 |
 | Roadmap | identity `M` path for a milestone, identity `T` code for a track | `M3.3.4` | S5 |
-| Changelog | append-only, version order; no unit numbers | `n/a` | S4 |
-| Audit report | `F`, `Q`, `R` units, restarting in the report | `surface-area/F5` | S1, S2 |
+| Changelog | append-only, version order; no item numbers | `n/a` | S4 |
+| Audit report | `F`, `Q`, `R` items, restarting in the report | `surface-area/F5` | S1, S2 |
 | Chat reply | grouped letters, item `A1` | `A1` | S6 |
 
 ## Chat: one token per item
@@ -56,15 +56,15 @@ D2. Bind the naming check to the commit, not the draft.
 
 ## Insertion
 
-In an open document, insert where it belongs and renumber what follows. That is one pass and it costs nothing else. In a closed record, numbers are allocation order: place the unit where it belongs and give it the next free number, so `F7` may sit above `F2`. A closed record's numbers are frozen because another document may already quote them, and a durable artifact takes a descriptive name rather than a number carried out of a list, which is `communication-principle-one-addressing-axis`. The roadmap never renumbers: the `T3` slot was retired without a section, and the series runs `T1`, `T2`, `T4` onward.
+In an open document, insert where it belongs and renumber what follows. That is one pass and it costs nothing else. In a closed record, numbers are allocation order: place the item where it belongs and give it the next free number, so `F7` may sit above `F2`. A closed record's numbers are frozen because another document may already quote them, and a durable artifact takes a descriptive name rather than a number carried out of a list, which is `communication-principle-one-addressing-axis`. The roadmap never renumbers: the `T3` slot was retired without a section, and the series runs `T1`, `T2`, `T4` onward.
 
 ## Direction of flow
 
-A derived record cites its source. A handover cites a milestone, a discussion cites a decision, a roadmap row records the finding that raised it. A handover's `YYYYMMDD-NN` is an identity code, not an ordered unit; order is read from git. A durable record does not cite a transient unit, because the reference would outlive its target's scope.
+A derived record cites its source. A handover cites a milestone, a discussion cites a decision, a roadmap row records the finding that raised it. A handover's `YYYYMMDD-NN` is an identity code, not an ordered item; order is read from git. A durable record does not cite a transient item, because the reference would outlive its target's scope.
 
 ## Do not number
 
-Prose, a bullet list read once, a unit nobody cites, and a chat item inside a paragraph. An unnumbered unit is not a defect; a numbered unit with a gap is.
+Prose, a bullet list read once, an item nobody cites, and a chat item inside a paragraph. An unnumbered item is not a defect; a numbered item with a gap is.
 
 ## The stories
 
@@ -72,17 +72,17 @@ Each row is a use case the rule exists for. The test `test_numbering.sh` fails w
 
 | Story | The use case | Served by |
 |---|---|---|
-| S1 | the operator quotes one entry of a long audit and means only that entry | the class table; the unit letters |
-| S2 | an item derived from a finding, a task or a question, is quoted without confusion with its source | the unit letters; direction of flow |
-| S3 | an agent inserts a unit mid-document while drafting, and nothing it already wrote changes meaning | insertion; the numbered classes |
+| S1 | the operator quotes one entry of a long audit and means only that entry | the class table; the item letters |
+| S2 | an item derived from a finding, a task or a question, is quoted without confusion with its source | the item letters; direction of flow |
+| S3 | an agent inserts an item mid-document while drafting, and nothing it already wrote changes meaning | insertion; the numbered classes |
 | S4 | a closed record keeps an earlier quote true after the fact | insertion; the changelog row |
 | S5 | a record cites a roadmap milestone or a task without naming a position | the class table; direction of flow |
 | S6 | the operator answers a set of choices with one short token, and the answer is unambiguous | chat: one token per item; write-back |
 
 ## The check
 
-`scripts/check_numbering.sh` reads one document at a time and holds no baseline and no counter. It fails when a numbered unit skips or repeats a number, when a numbered section does not follow the one before it, and when a qualified reference names a document or a unit that does not exist. Chat labels are not in the tree, so the chat form is unenforced by the gate; the assistant applies it while writing.
+`scripts/check_numbering.sh` reads one document at a time and holds no baseline and no counter. It fails when a numbered item skips or repeats a number, when a numbered section does not follow the one before it, and when a qualified reference names a document or an item that does not exist. Chat labels are not in the tree, so the chat form is unenforced by the gate; the assistant applies it while writing.
 
 ## The cost
 
-One keystroke per unit while writing, one pass over the document after an insertion, one check at commit. Nothing runs while writing.
+One keystroke per item while writing, one pass over the document after an insertion, one check at commit. Nothing runs while writing.

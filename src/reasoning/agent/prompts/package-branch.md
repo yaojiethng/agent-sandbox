@@ -18,7 +18,7 @@ The operator reviews work as a commit series and applies it on the host, not as 
 
 Run this prompt when the iteration has committed work to export, or when the operator asks for an export.
 
-- **Not uncommitted work.** `uncommitted.diff` ships inside the bundle for completeness; the reviewable unit is the commit series.
+- **Not uncommitted work.** `uncommitted.diff` ships inside the bundle for completeness; the reviewable change is the commit series.
 - **Not a single file or a partial range.** The export covers every commit since the branch point. `--baseline` narrows it only when the host has moved past the recorded `init_sha`.
 
 ## Step 1 -- Choose the summary and draft the reply

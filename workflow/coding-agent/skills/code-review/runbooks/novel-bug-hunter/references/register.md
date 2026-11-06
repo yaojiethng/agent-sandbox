@@ -8,7 +8,7 @@ The run writes a pair: a JSON Lines file for labels, a prose report for reasonin
 |---|---|
 | `id` | stable, never renumbered |
 | `title` | one line, the claim |
-| `component` | the unit under hunt |
+| `component` | the component under hunt |
 | `contract` | the record the invariant comes from |
 | `kind` | `state`, `transition`, `guard`, `policy` |
 | `invariant` | the id the contract uses |

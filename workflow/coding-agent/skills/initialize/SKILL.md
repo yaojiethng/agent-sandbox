@@ -34,4 +34,4 @@ This skill installs and updates that set: a **default convention-skill corpus** 
 
 ## A convention may cover more than one structure
 
-A convention can hold more than one structure. `work-log` carries two, `assets/handover.md` and `assets/discussion.md` beside its `SKILL.md`, because the work-unit record and the exploration record are two structures over one subset. A corpus directory may hold any number of files.
+A convention can hold more than one structure. `work-log` carries two, `assets/handover.md` and `assets/discussion.md` beside its `SKILL.md`, because the handover record and the exploration record are two structures over one subset. A corpus directory may hold any number of files.

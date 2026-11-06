@@ -21,7 +21,7 @@ A run that finds nothing is done only when it states why the contract is fully c
 
 ## The contract is the target
 
-The unit is the component, not the diff. A change may trigger the run; the sweep covers the whole contract, because a novel defect lives where the change meets the part no test drives.
+The subject is the component, not the diff. A change may trigger the run; the sweep covers the whole contract, because a novel defect lives where the change meets the part no test drives.
 
 Read the component's contract record for its states, transitions and invariants. If the component has no model, the contract is produced first: the hunt has no target without one.
 

@@ -29,7 +29,7 @@ Each workflow enforces one group of state transitions in the loop.
 | `/iter` | runs one iteration: scope, design, implementation, documentation, handover |
 | `/sidequest` | pauses an open iteration for operator-directed work, then returns to the handover it interrupted |
 | `/wrapup` | closes the handover, writes back the roadmap task and seeds the next iteration; the shared close runbook |
-| `/commit` | lands the unit's delivery commit; the shared commit runbook |
+| `/commit` | lands the iteration's delivery commit; the shared commit runbook |
 | `/sequential-work`, `/parallel-work` | run an iteration autonomously (single or fan-out); the `-work` dispatch family, which is a pair of drafts and not a shipped prompt, owned and refined by M3.2.3 |
 | `/milestone-close` | records a milestone or sub-milestone close: compaction, the changelog, the close boundary |
 

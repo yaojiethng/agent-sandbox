@@ -8,9 +8,9 @@ This is the app's workflow surface as one statechart: every state an agent rests
 
 A node is a state the loop rests in. A gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. An arrow is a command, or the operator releasing a gate.
 
-**A story is a path.** A behaviour this app supports is a route through these states, and writing that route down is how the behaviour is declared. `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> it_closed -> it_committed` is the story of one delivered unit. A declared path resolves when every id in it is a state here and every consecutive pair is an edge, which is the cheapest test this map offers of its own completeness.
+**A story is a path.** A behaviour this app supports is a route through these states, and writing that route down is how the behaviour is declared. `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> it_closed -> it_committed` is the story of one delivered iteration. A declared path resolves when every id in it is a state here and every consecutive pair is an edge, which is the cheapest test this map offers of its own completeness.
 
-The chart models one handover track. `it_open` means no `Active` handover on this track; another track may hold one while this unit waits for a directive.
+The chart models one handover track. `it_open` means no `Active` handover on this track; another track may hold one while this iteration waits for a directive.
 
 **An id is the name.** A state's id is what a story cites, and it does not change when the label beside it is rewritten. Ids carry no colon, so that a path is readable in a Mermaid diagram and in a shell command alike. The labels in the diagram carry the reading; the id carries the identity.
 
@@ -56,14 +56,14 @@ stateDiagram-v2
         ms_closed --> ms_none : the next milestone is shaped first
     }
 
-    state "Unit grain" as unit {
+    state "Iteration grain" as iteration {
         state "it_open -- no Active handover on this track, awaiting a directive" as it_open
         state "it_scope_gate -- scope table and acceptance criteria presented" as it_scope_gate
         state "it_implementing -- work is landing in the tree, findings appended" as it_implementing
         state "it_acceptance_gate -- the six-section summary presented, awaiting release" as it_acceptance_gate
         state "it_closed -- the handover reads Closed, the write-back applied" as it_closed
-        state "it_committed -- the unit's delivery commit landed" as it_committed
-        it_open --> it_scope_gate : /iter or /sidequest opens the unit
+        state "it_committed -- the iteration's delivery commit landed" as it_committed
+        it_open --> it_scope_gate : /iter or /sidequest opens the iteration
         it_scope_gate --> it_implementing : operator releases the scope
         it_implementing --> it_scope_gate : a design question reopens the scope
         it_implementing --> it_acceptance_gate : /iter reaches its pre-close summary
@@ -71,20 +71,20 @@ stateDiagram-v2
         it_acceptance_gate --> chk_close : operator releases, /wrapup writes its rows
         chk_close --> it_closed : both reports clean, the close hands off to /commit
         it_closed --> it_committed : /commit
-        it_committed --> it_open : the operator picks the next unit
+        it_committed --> it_open : the operator picks the next iteration
     }
 
     state "Sidequest" as sidequest {
-        state "sq_running -- the open unit is paused for operator-directed work" as sq_running
+        state "sq_running -- the open iteration is paused for operator-directed work" as sq_running
         state "sq_committed -- the sidequest's own delivery commit landed" as sq_committed
         it_implementing --> sq_running : /sidequest, when the work cannot wait
         sq_running --> sq_committed : /commit
-        sq_committed --> it_implementing : the paused unit resumes
+        sq_committed --> it_implementing : the paused iteration resumes
         sq_running --> it_implementing : the sidequest is ruled in scope, no run
     }
 
     state "Planning and publishing" as planning {
-        state "plan_scoping -- the milestone is being cut into units" as plan_scoping
+        state "plan_scoping -- the milestone is being cut into iterations" as plan_scoping
         state "plan_interview -- the grill-me skill probes the design" as plan_interview
         state "plan_released -- rows, stories and ADRs are written back" as plan_released
         ms_active --> plan_scoping : /plan or /scope
@@ -96,7 +96,7 @@ stateDiagram-v2
     }
 
     state "Recovery" as recovery {
-        state "rep_partial -- the record's intent and the disk disagree; the unit is rebuilt" as rep_partial
+        state "rep_partial -- the record's intent and the disk disagree; the iteration is rebuilt" as rep_partial
         state "rep_absent -- the record claims a commit the repository lacks; it is rebuilt" as rep_absent
         it_implementing --> rep_partial : /recovery, the description is partial
         rep_partial --> it_committed : rebuilt from the record
@@ -114,8 +114,8 @@ stateDiagram-v2
     }
 
     state "Records at rest" as records {
-        state "rec_handover_active -- the unit's record is open" as rec_handover_active
-        state "rec_handover_closed -- the unit's record is closed" as rec_handover_closed
+        state "rec_handover_active -- the iteration's record is open" as rec_handover_active
+        state "rec_handover_closed -- the iteration's record is closed" as rec_handover_closed
         state "rec_roadmap_open -- a row is open" as rec_roadmap_open
         state "rec_roadmap_closed -- a row is closed with its outcome" as rec_roadmap_closed
         state "rec_discussion_open -- an enquiry is in flight" as rec_discussion_open
@@ -177,23 +177,23 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `ms_active` | milestone | one milestone is active; iterations run against it |
 | `ms_close_gate` | milestone | compaction and changelog presented, awaiting release |
 | `ms_closed` | milestone | the close is recorded and its bookkeeping commit landed |
-| `it_open` | unit | no `Active` handover on this track; awaiting a directive |
-| `it_scope_gate` | unit | scope table and acceptance criteria presented |
-| `it_implementing` | unit | work is landing in the tree and findings are appended |
-| `it_acceptance_gate` | unit | the six-section summary is presented, awaiting release |
-| `it_closed` | unit | the handover reads `Closed` and the write-back is applied |
-| `it_committed` | unit | the unit's delivery commit landed |
-| `sq_running` | sidequest | the open unit is paused for operator-directed work |
+| `it_open` | iteration | no `Active` handover on this track; awaiting a directive |
+| `it_scope_gate` | iteration | scope table and acceptance criteria presented |
+| `it_implementing` | iteration | work is landing in the tree and findings are appended |
+| `it_acceptance_gate` | iteration | the six-section summary is presented, awaiting release |
+| `it_closed` | iteration | the handover reads `Closed` and the write-back is applied |
+| `it_committed` | iteration | the iteration's delivery commit landed |
+| `sq_running` | sidequest | the open iteration is paused for operator-directed work |
 | `sq_committed` | sidequest | the sidequest's own delivery commit landed |
-| `plan_scoping` | planning | the milestone is being cut into units |
+| `plan_scoping` | planning | the milestone is being cut into iterations |
 | `plan_interview` | planning | the `grill-me` skill is probing the design |
 | `plan_released` | planning | rows, stories and ADRs are written back |
-| `rep_partial` | recovery | the record's intent and the disk disagree; the unit is rebuilt |
+| `rep_partial` | recovery | the record's intent and the disk disagree; the iteration is rebuilt |
 | `rep_absent` | recovery | the record claims a commit the repository lacks; it is rebuilt |
 | `cor_bad` | correction | the commit is wrong; it is amended or dropped |
 | `cor_messy` | correction | the series is noisy; history-cleanup rewrites it |
-| `rec_handover_active` | records | the unit's record is open |
-| `rec_handover_closed` | records | the unit's record is closed |
+| `rec_handover_active` | records | the iteration's record is open |
+| `rec_handover_closed` | records | the iteration's record is closed |
 | `rec_roadmap_open` | records | a row is open |
 | `rec_roadmap_closed` | records | a row is closed with its outcome |
 | `rec_discussion_open` | records | an enquiry is in flight |
@@ -248,7 +248,7 @@ The four types differ in what makes `rec_disc_concluded` true -- a story's appro
 
 ## Commands
 
-Every prompt in the unit loop is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand. The change flow's three commands are in the next table, so the query reads both.
+Every prompt in the iteration loop is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand. The change flow's three commands are in the next table, so the query reads both.
 
 | Command | Fires from | Leaves the agent in | Dispatches |
 |---|---|---|---|
@@ -265,14 +265,14 @@ Every prompt in the unit loop is an event here, and the command table's row set 
 | `/record-correction` | `cor_bad` | `it_closed` | `/prepare-rebase` when the fold needs a port |
 | `/read-back` | `rep_partial` | `rep_partial` | none |
 | `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
-| `/commit` | a closed unit | `it_committed` | none |
+| `/commit` | a closed iteration | `it_committed` | none |
 | `/package-eval-snapshot` | any settled state | the same state | `eval` |
 
 `/auto` and `/goal` are reserved by the ADR for M4 and drive no transition here. A draft is not a command: a prompt that exists only under `.agents/drafts/` appears in no row of this table and in no node of the chart.
 
 ## Change-flow commands
 
-The change flow is a separate machine: the mergeability of a branch against the trunk, not the unit's progress. Its three commands are listed here so the prompt set has one coverage check.
+The change flow is a separate machine: the mergeability of a branch against the trunk, not the iteration's progress. Its three commands are listed here so the prompt set has one coverage check.
 
 | Command | Reads | Emits | Hands off |
 |---|---|---|---|
@@ -286,11 +286,11 @@ Each row is a behaviour, written as a path. A path resolves when every id is a s
 
 | Story | Path |
 |---|---|
-| One delivered unit | `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> chk_close -> it_closed -> it_committed` |
-| The next unit after a commit | `it_committed -> it_open -> it_scope_gate` |
+| One delivered iteration | `sess_oriented -> it_open -> it_scope_gate -> it_implementing -> it_acceptance_gate -> chk_close -> it_closed -> it_committed` |
+| The next iteration after a commit | `it_committed -> it_open -> it_scope_gate` |
 | A milestone closes and the next promotes | `ms_active -> ms_close_gate -> ms_closed -> ms_active` |
 | A milestone closes and the next is shaped | `ms_active -> ms_close_gate -> ms_closed -> ms_none -> ms_active` |
-| A sidequest interrupts an open unit | `it_implementing -> sq_running -> sq_committed -> it_implementing` |
+| A sidequest interrupts an open iteration | `it_implementing -> sq_running -> sq_committed -> it_implementing` |
 | Planning a milestone | `ms_active -> plan_scoping -> plan_interview -> plan_released -> chk_close -> ms_active` |
 | The close checks the rows it wrote | `it_acceptance_gate -> chk_close -> it_closed` |
 | Recovering partial work | `it_implementing -> rep_partial -> it_committed -> it_open` |
@@ -320,6 +320,6 @@ Each check is a query a reader makes on the chart and the defect the query finds
 
 - **Story coverage.** The stories cover the main paths, not every edge: the recovery and records edges are drawn and no story routes them. The query is the edge set minus the pairs the stories use.
 - **`/auto` and `/goal`.** Reserved for M4 by `docs/adr/coding_agent_loop_workflow.md`, which is repository-only and cannot be linked from here; no transition, and no node.
-- **`history-cleanup`.** The operator dispatches it by hand, naming the units to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the correction case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
+- **`history-cleanup`.** The operator dispatches it by hand, naming the iterations to target, when a draft series holds an inversion or before the branch is packaged. The drawn edge is the correction case; the packaging invocation is the same operator event and is not drawn separately. No prompt dispatches it, so `## Commands` does not name it.
 - **Drafting a document.** No command and no state of its own: a document is written inside `it_implementing` under the project documentation convention's drafting reference, and the publishing path this map once drew was `/document`'s, removed with that prompt. `chk_docs` is the check that reads the result.
 - **The render capability.** Not built. The chart targets Mermaid 12.1.0, and the intended render target, Pele's compatibility page, could not be read from this container.

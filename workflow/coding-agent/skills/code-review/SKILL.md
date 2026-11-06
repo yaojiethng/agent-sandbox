@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Run a code review in this sandbox's environment, dispatched to one runbook. Use when a unit's code needs an independent review before it closes, when a branch's diff must be judged before it merges, or when the operator asks for a code review.
+description: Run a code review in this sandbox's environment, dispatched to one runbook. Use when an iteration's code needs an independent review before it closes, when a branch's diff must be judged before it merges, or when the operator asks for a code review.
 disable-model-invocation: true
 ---
 
@@ -68,7 +68,7 @@ The mechanism that launches a seat is the `dispatch` skill, in the agent's own s
 
 ## When this runs
 
-A change to code needs a judgement its author did not make: a unit before it closes, a branch before it merges, a dispatch whose work is packaged for a rebase. Not for prose or documentation, which `prose-review` answers, and not for a check over the agent's own records, which `doc-maintenance`, `roadmap-maintenance` and `handover-maintenance` answer.
+A change to code needs a judgement its author did not make: an iteration before it closes, a branch before it merges, a dispatch whose work is packaged for a rebase. Not for prose or documentation, which `prose-review` answers, and not for a check over the agent's own records, which `doc-maintenance`, `roadmap-maintenance` and `handover-maintenance` answer.
 
 A run to convergence is the loop below. A maintenance run that ranks where the tree moves reads [`references/churn.md`](references/churn.md): it dispatches no seat, because the working agent runs it over its own records.
 

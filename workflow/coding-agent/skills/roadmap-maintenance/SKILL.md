@@ -123,7 +123,7 @@ Write the report as JSONL at the path the dispatcher set, in the schema [`check-
 
 **A finding names only facts this run re-read.** Every path, id, count and version in a report is read from the tree in the same run that reports it. Where the tree and the record disagree, the finding says which one is wrong.
 
-**The recommendation follows the check, not the size of the edit.** A violation whose correct form the convention or the `/milestone-close` procedures determine is fixable now, however many rows it touches. A violation under a broader roadmap unit already in flight names that unit and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is an escalation: no record in this set settles it. The schema passed with this dispatch carries the values and their conditions.
+**The recommendation follows the check, not the size of the edit.** A violation whose correct form the convention or the `/milestone-close` procedures determine is fixable now, however many rows it touches. A violation under a broader roadmap row already in flight names that row and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is an escalation: no record in this set settles it. The schema passed with this dispatch carries the values and their conditions.
 
 Report each check with no finding as a skip, and a check that did not run as a skip with that reason: silence reads as a clean record.
 

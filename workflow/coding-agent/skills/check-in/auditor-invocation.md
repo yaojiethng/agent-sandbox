@@ -26,7 +26,7 @@ Write one JSON object per line, with exactly these fields:
 - deferTo: required when recommendation is "defer"; the existing roadmap unit of work that owns the broader task
 - evidence: the read, grep or count that produced the finding
 
-"fix-now" means the correct form is determined by the tree or the policy and the edit is bounded to a record. "defer" means it is determined but an existing roadmap unit already names the broader task. "escalate" means two sources disagree or a value cannot be re-derived.
+"fix-now" means the correct form is determined by the tree or the policy and the edit is bounded to a record. "defer" means it is determined but an existing roadmap row already names the broader task. "escalate" means two sources disagree or a value cannot be re-derived.
 
 For a check that produced no finding, write one line with exactly these fields instead:
 

@@ -29,7 +29,7 @@ A document under `docs/` opens with its title, then a frontmatter block declarin
 
 **A pointer the reader can open.** What a document links, where a handoff link belongs and how to form one is the `linking` convention's; the judgement behind it is `communication-principle-link-what-the-reader-can-open`. A shipped document's link target must exist in the image, so a pointer into the repository rather than the image is named in a code span instead of linked.
 
-**Numbers where an order matters.** Which unit takes a number, which takes an identity code and how a chat pick reaches a record is the `numbering` convention's; the judgement behind a numbered list is `communication-principle-one-addressing-axis`.
+**Numbers where an order matters.** Which item takes a number, which takes an identity code and how a chat pick reaches a record is the `numbering` convention's; the judgement behind a numbered list is `communication-principle-one-addressing-axis`.
 
 **Reserved terms linked, never redefined.** The reserved technical terms are [`terminology.md`](../../../docs/reference/terminology.md). A policy, concept or architecture document links a reserved term to its section on first mention and states no local definition.
 

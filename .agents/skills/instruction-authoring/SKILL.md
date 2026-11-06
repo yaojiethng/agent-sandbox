@@ -19,7 +19,7 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 
 5. **Review it.** [`review.md`](runbooks/review.md), on the operator's word, and fix what it names before the work is called done.
 
-6. **Release it.** An artifact not yet released lives in `.agents/drafts/`, a root no gate scans and no dispatch reads. Landing there costs nothing: an unreleased artifact is parked, not reviewed, and its residence in that folder is the whole of its state, so the file itself carries no status line. Release is one commit that moves the file into its live root, confirms the frontmatter parses, runs the documentation pass and passes the gates. It takes the operator's word, and no agent releases its own draft. It also takes a review when the artifact was written by an agent - a worker unit, a dispatched seat, or the session's own new text - and is offered one, not required, when the operator wrote it; an author the session cannot attribute takes the review.
+6. **Release it.** An artifact not yet released lives in `.agents/drafts/`, a root no gate scans and no dispatch reads. Landing there costs nothing: an unreleased artifact is parked, not reviewed, and its residence in that folder is the whole of its state, so the file itself carries no status line. Release is one commit that moves the file into its live root, confirms the frontmatter parses, runs the documentation pass and passes the gates. It takes the operator's word, and no agent releases its own draft. It also takes a review when the artifact was written by an agent - a worker, a dispatched seat, or the session's own new text - and is offered one, not required, when the operator wrote it; an author the session cannot attribute takes the review.
 
 ## What this skill carries
 
@@ -28,7 +28,7 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 | [`references/prompt-conventions.md`](references/prompt-conventions.md) | the rules a prompt follows | the artifact is a prompt |
 | [`references/skill-conventions.md`](references/skill-conventions.md) | the rules a skill follows, and the shape a judgement one takes | the artifact is a skill |
 | [`references/body.md`](references/body.md) | the body shape a prompt and a skill share, and the three forms: runbook, advisor, reference | step 3 |
-| [`patterns/handoff.md`](patterns/handoff.md) | the four moves a unit's last step makes to the next | the body ends by handing on |
+| [`patterns/handoff.md`](patterns/handoff.md) | the four moves an iteration's last step makes to the next | the body ends by handing on |
 | [`patterns/signposting.md`](patterns/signposting.md) | how to choose a name, a title and a description | step 4 |
 | [`patterns/nested-patterns.md`](patterns/nested-patterns.md) | what stays inline and what earns a file | the body outgrows one |
 | [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | a skill that wraps a script stops at the command line, and the script owns the call | the artifact wraps a mechanism |

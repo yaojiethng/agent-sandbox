@@ -1,6 +1,6 @@
 # Absent - the record claims work the repository does not have
 
-The record says the unit landed; no commit, branch or tree holds it. The class is `absent`.
+The record says the iteration landed; no commit, branch or tree holds it. The class is `absent`.
 
 ## When
 
@@ -34,7 +34,7 @@ The last row is the only one a reader can skip, and it is the one that finds a r
 
 ## Handoff
 
-A rebuilt unit hands to `/commit` if it is not committed, or the normal close.
+A rebuilt iteration hands to `/commit` if it is not committed, or the normal close.
 
 ## Known gaps
 

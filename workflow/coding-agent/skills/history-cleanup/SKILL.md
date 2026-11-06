@@ -1,6 +1,6 @@
 ---
 name: history-cleanup
-description: Rewrite a branch's history so each commit is one reviewable, bisectable unit whose record is true at that commit, and no content inside the range is written then replaced. Use when a draft branch carries an inversion, a change a later commit undoes, when a reviewer would read the same rule twice, or before packaging a branch for review.
+description: Rewrite a branch's history so each commit is one reviewable, bisectable commit whose record is true at that commit, and no content inside the range is written then replaced. Use when a draft branch carries an inversion, a change a later commit undoes, when a reviewer would read the same rule twice, or before packaging a branch for review.
 disable-model-invocation: true
 ---
 
@@ -14,7 +14,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Mandate
 
-Four invariants decide the result: every commit is a reviewable unit; every commit is bisectable; every record is true at the commit that carries it; no content appears twice in the series with one occurrence cancelling the other. A rewrite that satisfies the shape and breaks bisectability is worse than the history it replaced.
+Four invariants decide the result: every commit is reviewable; every commit is bisectable; every record is true at the commit that carries it; no content appears twice in the series with one occurrence cancelling the other. A rewrite that satisfies the shape and breaks bisectability is worse than the history it replaced.
 
 The content is the invariant. The records are not. Only the records are rewritten, because they describe a shape that no longer exists. That asymmetry is why the proofs exclude record paths: hold the content fixed, and let the records move.
 
@@ -72,7 +72,7 @@ Completion criterion: the positive control fires, every inversion is listed with
 
 ## Propose the target series
 
-One commit per coherent deliverable. Collapse an inversion into the later commit, because the later content is the one a reviewer should read. Keep the record-to-commit pairing at one to one, because the record is the only place a reviewer learns why the unit exists.
+One commit per coherent deliverable. Collapse an inversion into the later commit, because the later content is the one a reviewer should read. Keep the record-to-commit pairing at one to one, because the record is the only place a reviewer learns why the commit exists.
 
 An inversion collapses backwards when the earlier commit's record needs the content to be true at that commit, and the later commits only rewrote it. State which direction was chosen and why, per inversion.
 
@@ -110,7 +110,7 @@ Completion criterion: every path the range writes more than once has been diffed
 
 Commit in order, each with the type its patch earns.
 
-Run the gate as you produce each commit, with `--exec` on a rebase or as a worktree run after each commit. A commit that has never been built is not a unit. Where the gate cannot run at an intermediate commit, stop: a series whose middle commit cannot be built cannot be bisected. The suite's grain is `## Prove each commit stands`.
+Run the gate as you produce each commit, with `--exec` on a rebase or as a worktree run after each commit. A commit that has never been built is not reviewable. Where the gate cannot run at an intermediate commit, stop: a series whose middle commit cannot be built cannot be bisected. The suite's grain is `## Prove each commit stands`.
 
 Rewrite the records in the same pass: delete the superseded ones, write one per target commit, and make each record's quoted counts true at its own commit. A record that disagrees with its commit is worse than none, so fix it in the same rebuild rather than after it.
 

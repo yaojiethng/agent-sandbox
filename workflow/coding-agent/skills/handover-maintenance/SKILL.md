@@ -11,7 +11,7 @@ description: "Checks handover content and the closed handover chain against the 
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `work-log` - the work-unit record and the exploration record.
+- `work-log` - the handover record and the exploration record.
 
 ## Purpose
 

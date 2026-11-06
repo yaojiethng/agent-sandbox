@@ -129,11 +129,11 @@ A record that states what is true is corrected in place. The changelog, which tr
 | Discussion record | states reasoning and evidence | rewrite, tag |
 | ADR, concept, architecture, policy | states what the system does | rewrite, tag |
 
-**Propagation.** A correction inherits the record set of the unit it corrects: a unit that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its type's form. A correction that leaves a closed record contradicting its successor is incomplete.
+**Propagation.** A correction inherits the record set of the iteration it corrects: an iteration that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its type's form. A correction that leaves a closed record contradicting its successor is incomplete.
 
 **Archival is not amendment.** Moving a closed milestone's entries from the roadmap to the changelog is a length boundary, not a correction, and carries no marker.
 
-**Two stops bound the work.** A correction that changes the unit's scope, or that carries new work, is a new iteration. A correction whose edit would carry no marker is a rewrite, and it stops too.
+**Two stops bound the work.** A correction that changes the iteration's scope, or that carries new work, is a new iteration. A correction whose edit would carry no marker is a rewrite, and it stops too.
 
 ### Procedure
 

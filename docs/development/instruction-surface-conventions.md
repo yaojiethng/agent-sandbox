@@ -100,7 +100,7 @@ A module may declare the project conventions it needs. A **convention** is a str
 
 The workflow ships a **default convention-skill corpus**; the `initialize` skill states what it holds, what a stub is and how it is installed. A shipped skill is a stub and not a default convention, so it is a failure mode for the agent to reason over. A stated convention is the project's own, so the corpus does not carry one: this repository's `instruction-authoring` bar is stated here and is not seeded, and a project that wants one writes it.
 
-A workflow step hands off to a convention-skill. When the skill is absent the handoff fails and the agent recovers; the workflow imposes nothing and runs no gate over a project, whose hooks it does not control. The corpus lives under a skill's `assets/` directory, so it ships with the `skills/` payload folder and no new surface is declared. A convention may cover more than one structure; `work-log` carries the work-unit record and the exploration record.
+A workflow step hands off to a convention-skill. When the skill is absent the handoff fails and the agent recovers; the workflow imposes nothing and runs no gate over a project, whose hooks it does not control. The corpus lives under a skill's `assets/` directory, so it ships with the `skills/` payload folder and no new surface is declared. A convention may cover more than one structure; `work-log` carries the handover record and the exploration record.
 
 ## The layers
 

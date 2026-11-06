@@ -82,7 +82,7 @@ Run this only when the thoroughness argument is present.
 
 1. Dispatch `roadmap-maintenance` and `handover-maintenance` as subagents, using the template in [`auditor-invocation.md`](auditor-invocation.md). Each returns one JSONL report at the path the template sets, outside the repository tree.
 2. Aggregate the two files. Read every line and validate it against [`report-schema.md`](report-schema.md): the required fields, the value sets, and the `deferTo` requirement on a `defer`.
-3. Inspect each finding before acting on it, as `no-comments` step 2 inspects a `comment-sicko` report. Reject a finding that misstates the record, a `defer` that names no existing roadmap unit, and a flag that names nothing. Do not restore a finding the auditor got right to reject.
+3. Inspect each finding before acting on it, as `no-comments` step 2 inspects a `comment-sicko` report. Reject a finding that misstates the record, a `defer` that names no existing roadmap row, and a flag that names nothing. Do not restore a finding the auditor got right to reject.
 4. Apply the `fix-now` findings.
 
 A rejected finding is reported, not silently dropped.
@@ -94,7 +94,7 @@ The auditor recommends; this skill disposes. The report names no commit, no mess
 | `recommendation` | Meaning | Action |
 |---|---|---|
 | `fix-now` | determinable from the tree or the policy, and bounded to a record edit | apply it; it rides the single `chore:` commit |
-| `defer` | determinable, and an existing roadmap unit already names the broader task this belongs to | nothing. The named unit owns it; clearing it ahead of that pass is premature. A `defer` entry with no named unit is rejected. |
+| `defer` | determinable, and an existing roadmap row already names the broader task this belongs to | nothing. The named row owns it; clearing it ahead of that pass is premature. A `defer` entry with no named row is rejected. |
 | `escalate` | two sources disagree, or a value cannot be re-derived | present it as a point below the table, never as a row |
 
 A compaction carries the survival table the `roadmap-maintenance` skill's compaction procedure names. A closed record's fix carries the `[CORRECTION]` block its policy requires. Folding a fix does not license dropping the form that fix must take.
@@ -139,7 +139,7 @@ Then ask which direction to take. Stop there; no work begins before the operator
 ## Failure modes
 
 - **A missing report reads as a clean record.** An auditor that returned no file, an empty file, or a non-conforming line has failed its dispatch. Report the failure with the auditor named; never treat a missing report as a clean run.
-- **A `defer` with no named unit becomes a row.** The recommendation exists so the dispatcher writes nothing back. Reject a `defer` that names no existing roadmap unit rather than turning it into a task.
+- **A `defer` with no named row becomes a row.** The recommendation exists so the dispatcher writes nothing back. Reject a `defer` that names no existing roadmap row rather than turning it into a task.
 - **A folded fix drops the form its policy requires.** A compaction without its survival table, or a closed record's fix without its `[CORRECTION]` block, leaves the record worse than the finding did. The policy, not the fold, decides the form.
 - **An auditor's finding is applied unchecked.** A reporter can be confidently wrong, and a folded fix asserts a fact into a record. Inspect each entry first.
 - **The intents are graded from memory.** Every field is filled from a record read this run. A field that needs new investigation becomes an inventory row, not a guess.
