@@ -36,7 +36,7 @@ function holderAlive(pid: number): boolean {
   }
 }
 
-export function emptyState(session: string): State {
+function emptyState(session: string): State {
   return { version: 1, session, routes: {}, usage: {} };
 }
 
@@ -88,7 +88,7 @@ function decodeRecord(raw: unknown): RouteRecord | undefined {
 // for is an empty memory: a storage error must not become a route verdict, so a
 // record missing the fields its variant requires refuses the whole file rather
 // than being reinterpreted as `dead`.
-export function decodeState(raw: unknown, session: string): State {
+function decodeState(raw: unknown, session: string): State {
   if (typeof raw !== 'object' || raw === null) return emptyState(session);
   const parsed = raw as Record<string, unknown>;
   if (parsed.version !== 1) return emptyState(session);
@@ -119,7 +119,7 @@ export function load(path: string, session: string): State {
   return decodeState(readJson(path), session);
 }
 
-export function save(path: string, state: State): void {
+function save(path: string, state: State): void {
   writeJson(path, state, true);
 }
 

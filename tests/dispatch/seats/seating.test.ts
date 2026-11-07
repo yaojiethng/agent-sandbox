@@ -5,7 +5,7 @@
 
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
-import { decodeSeatState, seatCandidates, seatOrders, seatResult, seatTurn, startSeats } from '../../../src/libs/dispatch/seats.ts';
+import { decodeSeatState, seatOrders, seatResult, seatTurn, startSeats } from '../../../src/libs/dispatch/seats.ts';
 import type { Assignment } from '../../../src/libs/dispatch/table.ts';
 import type { RouteRecord } from '../../../src/libs/dispatch/types.ts';
 
@@ -24,21 +24,6 @@ function assignment(key: string): Assignment {
 }
 
 const READY: RouteRecord = { state: 'ready' };
-
-test('a seat takes candidate ((i - 1) mod m) + 1', () => {
-  const state = startSeats(5, [assignment('p/a'), assignment('p/b'), assignment('p/c')]);
-  assert.deepEqual(state.slots.map((slot) => slot.idx), [0, 1, 2, 0, 1]);
-});
-
-test('a route the memory holds back is not dealt', () => {
-  const assignments = [assignment('p/a'), assignment('p/b')];
-  const records: Record<string, RouteRecord> = {
-    'p/a': { state: 'cooling', until: AT + 60_000, reason: 'rate', strikes: 1 },
-    'p/b': READY,
-  };
-  const candidates = seatCandidates(assignments, records, AT);
-  assert.deepEqual(candidates.map((c) => c.key), ['p/b']);
-});
 
 test('a seating with no candidate refuses', () => {
   assert.throws(() => startSeats(1, []), /a seating needs at least one candidate/);

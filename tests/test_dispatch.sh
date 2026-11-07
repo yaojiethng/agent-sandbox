@@ -2,25 +2,11 @@
 # TEST_DEADLINE: 40
 # Tests for the dispatch seam
 #
-# Each case asks the library's command line, so every question about the table
-# costs one node process. The deadline covers that process count, not slow work.
+# The table grammar, the runtime decision, the argv shapes and `table check`
+# are unit-tested in tests/dispatch/machine/table.test.ts; this file holds the
+# script seam those units cannot reach.
 #
 # Covers:
-#   the role table CLI   --  `table list` prints a role's ordered assignments, a
-#                            repeat is dropped and a malformed entry refuses;
-#                            `table resolve` prints the assignment in force as
-#                            key, level and runtime, and refuses a role with no
-#                            line, no model, or a non-role tag; `table roles`
-#                            lists the table as role, entry and runtime
-#   the runtime decision --  a free model on an OpenCode provider runs through
-#                            that app's CLI, every other assignment runs through
-#                            pi, and a level suffix changes neither
-#   command              --  the two runtimes' flag mappings: pi takes
-#                            --provider/--model/--thinking, opencode takes
-#                            -m provider/model and --variant, plus --auto
-#                            and --dir, with the brief read at run time
-#   table check          --  a role passes when any of its assignments reaches a
-#                            runnable runtime, and refuses when none does
 #   scripts/dispatch.sh  --  --list-roles prints the table, a normal dispatch
 #                            refuses an empty brief, and --run executes the
 #                            built command and propagates its exit code
@@ -36,13 +22,6 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$TEST_DIR/libs/git_fixtures.sh"
 
-# The library's command line, called the way scripts/dispatch.sh calls it: one
-# process per question, with the table named by --file when a case needs its own.
-CLI="$REPO_ROOT/src/libs/dispatch/cli.ts"
-cli() {
-  node "$CLI" "$@"
-}
-
 # A role table fixture, so the case never reads the operator's real file.
 # DISPATCH_REC_FILE is the one override, read by the library; `--file` stays the
 # CLI's explicit alternative for a case that needs another table.
@@ -56,8 +35,7 @@ _ADVISOR: opencode/stub-model-free at high
 EOF
 
 # A `pi` stub first on PATH, so a route this file did not stub fails at once,
-# with its argv printed, instead of reaching a model. A case that asserts what a
-# pi route builds reads the command from the CLI, which never runs it.
+# with its argv printed, instead of reaching a model.
 mkdir -p "$FIXTURE_ROOT/bin"
 cat >"$FIXTURE_ROOT/bin/pi" <<'STUB'
 #!/usr/bin/env bash
@@ -66,184 +44,6 @@ exit 97
 STUB
 chmod +x "$FIXTURE_ROOT/bin/pi"
 export PATH="$FIXTURE_ROOT/bin:$PATH"
-
-export DISPATCH_OPENCODE_BIN="/opt/opencode"
-
-# A second fixture for the preference list: a non-role line, a role with three
-# entries of which two repeat, a malformed entry and an empty line, each in its
-# own role so one case cannot disturb another.
-CHAIN_FILE="$FIXTURE_ROOT/chain-recommendations.md"
-cat >"$CHAIN_FILE" <<'EOF'
-Format: `_ROLE: <provider>/<model> at <level>`
-_CHAIN: opencode/stub-model-free at high; deepseek/stub-model at high; opencode/stub-model-free at high
-_BAD: nonsense
-_EMPTY:
-EOF
-
-# One role per runtime combination, so each decision is a case of the table
-# rather than a call carrying a provider and a model the table never names.
-RUNTIME_FILE="$FIXTURE_ROOT/runtime-recommendations.md"
-cat >"$RUNTIME_FILE" <<'EOF'
-_RT_CLI: opencode/stub-model-free at high
-_RT_CLI_PAID: opencode/glm-5.3-flash
-_RT_GATEWAY: opencode-go/stub-model
-_RT_GATEWAY_FREE: opencode-go/stub-model-free
-_RT_OTHER: openrouter/z-ai/glm-5.3-flash
-_RT_NO_MODEL: opencode/ at high
-EOF
-
-# resolved_runtime ROLE FILE  --  the runtime field of `table resolve`, which is
-# how the entrypoint learns what reaches an assignment.
-resolved_runtime() {
-  local RESOLVED
-  RESOLVED="$(cli table resolve --role "$1" --file "$2")"
-  printf '%s' "${RESOLVED##* }"
-}
-
-test_resolve_role_with_level() {
-  local RESULT
-  RESULT="$(cli table resolve --role _IMPLEMENTER --file "$REC_FILE")"
-  assert_eq "$RESULT" "opencode-go/stub-model high pi" "a role resolves to its assignment, its level and the runtime that reaches it"
-}
-
-test_resolve_role_without_level() {
-  local RESULT
-  RESULT="$(cli table resolve --role _REVIEWER --file "$REC_FILE")"
-  assert_eq "$RESULT" "opencode-go/stub-alt - pi" "a role line without a level prints - in the level field"
-}
-
-test_resolve_role_missing_role() {
-  local RESULT RC
-  RESULT="$(cli table list --role _NOPE --file "$REC_FILE" 2>/dev/null)"
-  RC=$?
-  assert_rc "$RC" 1 "a missing role refuses"
-  assert_empty "$RESULT" "a missing role prints no model"
-}
-
-test_resolve_role_missing_file() {
-  local RC
-  cli table resolve --role _IMPLEMENTER --file /nonexistent/rec.md >/dev/null 2>&1
-  RC=$?
-  assert_rc "$RC" 1 "a missing role table refuses"
-}
-
-test_runtime_opencode_provider() {
-  local RESULT
-  RESULT="$(resolved_runtime _RT_CLI "$RUNTIME_FILE")"
-  assert_eq "$RESULT" "opencode" "a free model on the opencode provider selects the CLI runtime"
-}
-
-test_runtime_paid_opencode_provider_goes_to_pi() {
-  local RESULT
-  RESULT="$(resolved_runtime _RT_CLI_PAID "$RUNTIME_FILE")"
-  assert_eq "$RESULT" "pi" "a paid model on the opencode provider is reached by pi, not by the CLI"
-}
-
-test_runtime_level_suffix_is_ignored() {
-  local RESULT
-  RESULT="$(resolved_runtime _RT_CLI "$RUNTIME_FILE")"
-  assert_eq "$RESULT" "opencode" "an entry written with its level routes the same way"
-}
-
-test_runtime_refuses_a_free_provider_without_its_model() {
-  local rc=0
-  cli table resolve --role _RT_NO_MODEL --file "$RUNTIME_FILE" >/dev/null 2>&1 || rc=$?
-  assert_rc 1 "$rc" "the runtime for a free-served provider needs the model, because a default is a guess"
-}
-
-test_runtime_pi_provider() {
-  local RESULT
-  RESULT="$(resolved_runtime _RT_GATEWAY "$RUNTIME_FILE")"
-  assert_eq "$RESULT" "pi" "the OpenCode Go gateway is a pi provider, not a CLI one"
-}
-
-test_runtime_pi_provider_free_model() {
-  local RESULT
-  RESULT="$(resolved_runtime _RT_GATEWAY_FREE "$RUNTIME_FILE")"
-  assert_eq "$RESULT" "pi" "a free model on the gateway is served by pi, unlike the same model on opencode"
-}
-
-test_runtime_unknown_provider() {
-  local RESULT
-  RESULT="$(resolved_runtime _RT_OTHER "$RUNTIME_FILE")"
-  assert_eq "$RESULT" "pi" "a provider outside the opencode set selects the pi runtime"
-}
-
-test_plan_pi_backend() {
-  local RESULT
-  RESULT="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --file "$REC_FILE")"
-  assert_contains "$RESULT" "pi --provider opencode-go --model stub-model --thinking high" "the pi backend maps provider, model and thinking"
-  assert_contains "$RESULT" "-p \"\$(cat /tmp/brief.md)\"" "the brief is read at run time"
-}
-
-test_plan_opencode_backend_by_role() {
-  local RESULT
-  RESULT="$(cli plan --role _ADVISOR --brief /tmp/brief.md --dir /work --file "$REC_FILE")"
-  assert_contains "$RESULT" "/opt/opencode run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/stub-model-free --variant high" "the opencode backend maps the pair and the level"
-  assert_contains "$RESULT" "\"\$(cat /tmp/brief.md)\"" "the opencode backend passes the brief as the message"
-}
-
-test_plan_model_override_selects_backend() {
-  local RESULT
-  RESULT="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode/stub-model-free --file "$REC_FILE")"
-  assert_contains "$RESULT" "/opt/opencode run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/stub-model-free" "an override onto an opencode-only provider switches the backend"
-}
-
-test_plan_thinking_override() {
-  local RESULT
-  RESULT="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode-go/stub-model --thinking low --file "$REC_FILE")"
-  assert_contains "$RESULT" "pi --provider opencode-go --model stub-model --thinking low" "the thinking override replaces the role's level"
-}
-
-test_plan_session_on_both_backends() {
-  local PI_CMD OC_CMD
-  PI_CMD="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode-go/stub-model --thinking high --session sess-1 --file "$REC_FILE")"
-  OC_CMD="$(cli plan --role _IMPLEMENTER --brief /tmp/brief.md --dir /work --model opencode/stub-model-free --thinking high --session sess-2 --file "$REC_FILE")"
-  assert_contains "$PI_CMD" "--session sess-1" "the pi backend resumes a session"
-  assert_contains "$OC_CMD" "--session sess-2" "the opencode backend resumes a session"
-}
-
-test_plan_missing_role_refuses() {
-  local RESULT RC
-  RESULT="$(cli plan --role _NOPE --brief /tmp/brief.md --dir /work --file "$REC_FILE" 2>/dev/null)"
-  RC=$?
-  assert_rc "$RC" 1 "a command for a missing role refuses"
-  assert_empty "$RESULT" "a missing role prints no command"
-}
-
-test_plan_missing_args_refuses() {
-  local RC
-  cli plan --role _IMPLEMENTER --brief "" --dir "" --file "$REC_FILE" >/dev/null 2>&1
-  RC=$?
-  assert_rc "$RC" 2 "a command without a brief or dir is a usage error"
-}
-
-test_roles_lists_table() {
-  local RESULT EXPECTED
-  EXPECTED="$(printf '%s\n' \
-    '_IMPLEMENTER opencode-go/stub-model at high pi' \
-    '_REVIEWER opencode-go/stub-alt pi' \
-    '_ADVISOR opencode/stub-model-free at high opencode')"
-  RESULT="$(cli table roles --file "$REC_FILE")"
-  assert_eq "$RESULT" "$EXPECTED" "table roles prints every role in file order"
-}
-
-test_check_opencode_success() {
-  local BIN RC
-  BIN="$FIXTURE_DIR/opencode-stub"
-  printf '#!/bin/sh\n' > "$BIN"
-  chmod +x "$BIN"
-  DISPATCH_OPENCODE_BIN="$BIN" cli table check --role _ADVISOR --file "$REC_FILE" 2>/dev/null
-  RC=$?
-  assert_rc "$RC" 0 "table check passes when the opencode binary is runnable"
-}
-
-test_check_opencode_failure() {
-  local RC
-  DISPATCH_OPENCODE_BIN="$FIXTURE_DIR/no-such-opencode" cli table check --role _ADVISOR --file "$REC_FILE" 2>/dev/null
-  RC=$?
-  assert_rc "$RC" 1 "table check fails when the opencode binary is missing"
-}
 
 test_cli_list_roles() {
   local RESULT EXPECTED
@@ -290,54 +90,6 @@ EOF
   assert_rc 7 "$RC" "the stub's exit code propagates through --run"
 }
 
-test_role_assignments_in_order() {
-  local RESULT EXPECTED
-  EXPECTED="$(printf '%s\n' 'opencode/stub-model-free at high' 'deepseek/stub-model at high')"
-  RESULT="$(cli table list --role _CHAIN --file "$CHAIN_FILE")"
-  assert_eq "$RESULT" "$EXPECTED" "a role line resolves to its assignments in written order, with the repeat dropped"
-}
-
-test_role_model_takes_the_head() {
-  local RESULT
-  RESULT="$(cli table resolve --role _CHAIN --file "$CHAIN_FILE")"
-  assert_eq "$RESULT" "opencode/stub-model-free high opencode" "the role resolves to the first assignment"
-}
-
-test_role_assignments_malformed_refuses() {
-  local RC
-  cli table list --role _BAD --file "$CHAIN_FILE" >/dev/null 2>&1
-  RC=$?
-  assert_rc "$RC" 1 "a malformed entry refuses the whole role"
-}
-
-test_role_assignments_empty_refuses() {
-  local RC
-  cli table list --role _EMPTY --file "$CHAIN_FILE" >/dev/null 2>&1
-  RC=$?
-  assert_rc "$RC" 1 "a role line naming no model refuses"
-}
-
-test_role_model_non_role_tag_refuses() {
-  local RC
-  cli table resolve --role Format --file "$CHAIN_FILE" >/dev/null 2>&1
-  RC=$?
-  assert_rc "$RC" 1 "a non-role tag is refused rather than resolved"
-}
-
-test_roles_skips_non_role_lines() {
-  local RESULT
-  RESULT="$(cli table roles --file "$CHAIN_FILE" 2>/dev/null)"
-  assert_not_contains "$RESULT" "Format" "a Format line is not a role"
-  assert_contains "$RESULT" "_CHAIN opencode/stub-model-free at high opencode" "the chain lists its preferred assignment first"
-  assert_contains "$RESULT" "_CHAIN deepseek/stub-model at high pi" "the chain lists its fallback second"
-}
-
-test_check_passes_on_a_runnable_fallback() {
-  local RC
-  DISPATCH_OPENCODE_BIN="$FIXTURE_DIR/no-such-opencode" cli table check --role _CHAIN --file "$CHAIN_FILE" 2>/dev/null
-  RC=$?
-  assert_rc "$RC" 0 "a chain passes when any assignment's runtime is runnable"
-}
 
 
 # The walk: a retryable failure advances to the next entry, and a failure whose
@@ -1003,38 +755,10 @@ test_worker_the_callers_own_edits_do_not_block_the_fallback() {
 }
 
 
-run_test test_resolve_role_with_level
-run_test test_resolve_role_without_level
-run_test test_resolve_role_missing_role
-run_test test_resolve_role_missing_file
-run_test test_runtime_opencode_provider
-run_test test_runtime_paid_opencode_provider_goes_to_pi
-run_test test_runtime_level_suffix_is_ignored
-run_test test_runtime_refuses_a_free_provider_without_its_model
-run_test test_runtime_pi_provider
-run_test test_runtime_pi_provider_free_model
-run_test test_runtime_unknown_provider
-run_test test_plan_pi_backend
-run_test test_plan_opencode_backend_by_role
-run_test test_plan_model_override_selects_backend
-run_test test_plan_thinking_override
-run_test test_plan_session_on_both_backends
-run_test test_plan_missing_role_refuses
-run_test test_plan_missing_args_refuses
 run_test test_cli_run_skips_a_cooling_head_without_losing_the_attempt_code
-run_test test_roles_lists_table
-run_test test_check_opencode_success
-run_test test_check_opencode_failure
 run_test test_cli_list_roles
 run_test test_cli_empty_brief_refuses
 run_test test_cli_run_executes_built_command
-run_test test_role_assignments_in_order
-run_test test_role_model_takes_the_head
-run_test test_role_assignments_malformed_refuses
-run_test test_role_assignments_empty_refuses
-run_test test_role_model_non_role_tag_refuses
-run_test test_roles_skips_non_role_lines
-run_test test_check_passes_on_a_runnable_fallback
 run_test test_cli_run_walks_to_the_fallback
 run_test test_cli_run_stops_on_a_malformed_request
 run_test test_cli_a_role_with_no_line_names_the_role

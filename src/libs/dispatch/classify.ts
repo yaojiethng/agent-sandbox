@@ -16,7 +16,7 @@ type Pattern = {
   refresh?: 'utc-midnight';
 };
 
-export const PATTERNS: Pattern[] = [
+const PATTERNS: Pattern[] = [
   {
     id: 'rate-limit',
     re: /Rate limit exceeded|rate_limit_exceeded|\b429\b/i,
@@ -99,7 +99,7 @@ export type Classification = {
 
 // The next UTC midnight at or after `at`. The free tier replenishes on that
 // clock, so the declared reset is computed rather than guessed.
-export function nextUtcMidnight(at: number): number {
+function nextUtcMidnight(at: number): number {
   const day = 24 * 60 * 60 * 1000;
   return Math.floor(at / day) * day + day;
 }

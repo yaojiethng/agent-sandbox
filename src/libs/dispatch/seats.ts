@@ -53,7 +53,7 @@ export type SeatTurn =
   | { kind: 'refusal'; refusal: Refusal; writes: OutcomeWrite[]; notes: SeatNote[] };
 
 /** The candidates a role may deal now, in the order the table wrote them. */
-export function seatCandidates(
+function seatCandidates(
   assignments: Assignment[],
   records: RouteTable,
   at: number,
