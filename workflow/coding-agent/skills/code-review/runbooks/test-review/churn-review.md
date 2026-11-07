@@ -1,2 +1,3 @@
-do a sweep of my git history, analyzing our unit tests for churn. 
-tests that require changes whenever the underlying source changes might be a smell, they might be asserting against implementation, not behavior. tests must justify their presence by asserting the behavior of the system, expressed as invariants. tests that do nothing except re-assert the source, or are low value, duplicative, etc. might be pinning seams that are obsolete. look for code simplification opportunities that arise once these low-value tests are removed.
+# Churn review
+
+do a sweep of my git history, analyzing our unit tests for churn. tests that require changes whenever the underlying source changes might be a smell, they might be asserting against implementation, not behavior. tests must justify their presence by asserting the behavior of the system, expressed as invariants. tests that do nothing except re-assert the source, or are low value, duplicative, etc. might be pinning seams that are obsolete. look for code simplification opportunities that arise once these low-value tests are removed.
