@@ -10,7 +10,7 @@
 #   {{PROJECT_NAME}}       -> project name
 #   {{SANDBOX_IMAGE_NAME}} -> capability layer image name
 #   {{AGENT_IMAGE_NAME}}   -> reasoning layer image name
-#   {{PROVIDER_NAME}}      -> provider name (e.g. hermes, opencode)
+#   {{PROVIDER_NAME}}      -> provider name (e.g. opencode, pi)
 #
 # ${VAR} placeholders are preserved for Docker Compose to resolve at runtime
 # from the exported environment (set by start_agent.sh before compose).

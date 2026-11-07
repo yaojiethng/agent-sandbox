@@ -166,7 +166,7 @@ test_refresh_migrates_project_name_into_env() {
 # Then:  every provider with a non-empty config dir has its .<provider>/ directory,
 #        and a provider with no config directory has none
 # Asserts: provider config seeding reaches every provider, and invents nothing
-#          for a provider that ships no config (hermes and opencode)
+#          for a provider that ships no config (opencode)
 test_fresh_onboard_creates_provider_configs() {
   local PROJECT_DIR="$FIXTURE_DIR/provider_project"
   local SANDBOX_DIR="$FIXTURE_DIR/provider_sandbox"
@@ -193,10 +193,10 @@ test_fresh_onboard_creates_provider_configs() {
     fail "no provider config dirs under src/reasoning/agent-runtime/  --  onboard had nothing to provision"
   fi
 
-  if [[ ! -d "$SANDBOX_DIR/.hermes" ]]; then
+  if [[ ! -d "$SANDBOX_DIR/.opencode" ]]; then
     pass "a provider that ships no config directory seeds nothing"
   else
-    fail "onboard created .hermes for a provider whose config directory is absent"
+    fail "onboard created .opencode for a provider whose config directory is absent"
   fi
 }
 

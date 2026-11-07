@@ -8,7 +8,7 @@
 #   Not here -- the language runtime set, which comes from agent-base
 #            (reasoning/base.dockerfile); any provider's config, environment,
 #            entrypoint or project content; and a source-built agent-runtime,
-#            which keeps a provider base of its own (providers/hermes/base.dockerfile).
+#            which keeps a provider base of its own.
 
 ARG BASE_IMAGE=agent-base
 FROM ${BASE_IMAGE}

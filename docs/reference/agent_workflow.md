@@ -67,10 +67,10 @@ Skills and prompt templates share four layers, highest precedence first. Where e
 <!-- BEGIN GENERATED: surface-table -->
 | Source | Destination | Provider |
 |---|---|---|
-| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | hermes, opencode, pi |
+| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | opencode, pi |
 | `src/reasoning/agent-runtime/pi/preflight.sh` | `/opt/sandbox/bin/provider-preflight.sh` | pi |
-| `docs/reference/` | `/opt/sandbox/docs/reference/` | hermes, opencode, pi |
-| `src/libs/` | `/opt/sandbox/lib/` | hermes, opencode, pi |
+| `docs/reference/` | `/opt/sandbox/docs/reference/` | opencode, pi |
+| `src/libs/` | `/opt/sandbox/lib/` | opencode, pi |
 | `src/reasoning/agent-runtime/pi/config/` | `/opt/workflow/agent/config/` | pi |
 | `workflow/coding-agent/prompts/` | `/opt/workflow/agent/modules/coding-agent/prompts/` | pi |
 | `workflow/coding-agent/skills/` | `/opt/workflow/agent/modules/coding-agent/skills/` | pi |

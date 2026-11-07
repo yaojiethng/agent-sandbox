@@ -8,7 +8,6 @@ Read a shipped provider before writing one. Each file below is a working example
 |---|---|
 | [`pi`](../../src/reasoning/agent-runtime/pi/) | every optional file: `setup.sh`, a provider compose overlay, `config/` |
 | [`opencode`](../../src/reasoning/agent-runtime/opencode/) | the minimum: one Dockerfile and the serve overlay |
-| [`hermes`](../../src/reasoning/agent-runtime/hermes/) | a multi-stage build, and a provider with no agent compose overlay |
 
 ## Step 1 -- Create the directory
 
@@ -79,7 +78,7 @@ src/reasoning/agent-runtime/<n>/config/
 └── env.stub     ← seeded as AGENT_HOME/.env
 ```
 
-Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/agent-runtime/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/agent-runtime/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
+Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/agent-runtime/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/agent-runtime/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the opencode image is shaped that way.
 
 ## Step 7 (optional) -- `setup.sh`
 

@@ -1,5 +1,5 @@
 # reasoning/base.dockerfile
-# Shared runtime base for every reasoning layer provider (hermes, opencode, pi).
+# Shared runtime base for every reasoning layer provider (opencode, pi).
 # Tagged as agent-base. Built by scripts/build.sh --type=agent as tier 1, and
 # cached across all providers on this machine.
 #

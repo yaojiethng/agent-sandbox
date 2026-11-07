@@ -236,6 +236,8 @@ mitigation: when a full-suite run reports only tests/test_runner_contract.sh as 
 
 **Recurrence, 2026-10-14.** One full-suite run reported two deadline expiries at once, `tests/test_dry_run_probe.sh` and `tests/test_lint_umbrella.sh`; both passed standalone and the next full run was green at 1126 of 1126. `test_lint_umbrella.sh` runs the real gate in-test and measured 6 to 10 seconds across the session, so its declared 10s budget sits on the expiry. Two expiries in one run is the load signal, and it repeats the 2026-09-25 entry's finding: the per-file deadline is a shared budget sized near the honest runtime, so the container's parallel load decides which files cross it.
 
+**Recurrence, 2026-11-07.** Four expiries in one run: `test_dispatch.sh` at 40s, `test_doc_wrap_legacy_gate.sh` at 45s, `test_dry_run_probe.sh` and `test_skill_map.sh` at 10s each, reported as 1385 of 1389 passed. All four passed alone (22s, 4s, 4s and 30s), and the next full run was green at 1480 of 1480 in 124s, so the count of expiries and not their names is the load signal here: `test_doc_wrap_legacy_gate.sh` now scans the tree in 22s against a 45s budget, and `test_dispatch.sh` takes 30s against 40s, so both sit near their expiry and a loaded host pushes them over.
+
 ---
 
 ## [A] 2026-10-02  --  A capacity claim was stated as a fact with no signal behind it

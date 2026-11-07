@@ -168,10 +168,10 @@ test_shared_base_installs_the_full_runtime_set() {
   assert_eq "$missing" "" "shared base installs every runtime and lint gate"
 }
 
-# Every tier-2 image inherits the shared base by its canonical default: the one
-# surviving provider base (hermes) and the shared agent-runtime tier. A tier-2 image
-# that pins a different default builds a different image than the one the build
-# orchestrator passes in, and the two drift silently.
+# Every tier-2 image inherits the shared base by its canonical default: the shared
+# agent-runtime tier, and any provider base that a source-built runtime adds. A
+# tier-2 image that pins a different default builds a different image than the one
+# the build orchestrator passes in, and the two drift silently.
 # Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
 # When:  the file's BASE_IMAGE default is read
 # Then:  it equals agent-base

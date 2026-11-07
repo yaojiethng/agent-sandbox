@@ -73,9 +73,9 @@ record_exists() { [[ -f "$SANDBOX_DIR/.compose/$1.yml" ]]; }
 # Tests
 # ---------------------------------------------------------------------------
 
-# Given: two stale records, one `pi` and one `hermes`, both older than the cutoff
+# Given: two stale records, one `pi` and one `opencode`, both older than the cutoff
 # When:  prune runs with --provider=pi
-# Then:  only the pi record is removed and the hermes record survives
+# Then:  only the pi record is removed and the opencode record survives
 # Asserts: --provider narrows Rule 1 selection
 test_rule1_provider_filter() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_provider"
@@ -83,12 +83,12 @@ test_rule1_provider_filter() {
   setup_prune_fixture "$FIXTURE_DIR"
   local sha; sha="$(current_sha)"
   write_record "s_pi_a" "pi" "aaaa1111aaaa"   "20260801-000000"
-  write_record "s_hermes_a" "hermes" "bbbb2222bbbb" "20260801-000000"
+  write_record "s_opencode_a" "opencode" "bbbb2222bbbb" "20260801-000000"
 
   invoke_prune --provider=pi > /dev/null 2>&1
 
-  if ! record_exists "s_pi_a" && record_exists "s_hermes_a"; then
-    pass "Rule 1 provider filter: only pi's stale record removed, hermes kept"
+  if ! record_exists "s_pi_a" && record_exists "s_opencode_a"; then
+    pass "Rule 1 provider filter: only pi's stale record removed, opencode kept"
   else
     fail "Rule 1 provider filter: expected only pi's stale record removed"
   fi
@@ -313,7 +313,7 @@ test_complete_pass_end_to_end() {
   local sha; sha="$(current_sha)"
   # Two stale records (copy + mount deliveries) and a fresh keeper.
   write_record "s_a" "pi" "aaaa1111aaaa" "20260801-000000" copy
-  write_record "s_b" "hermes" "bbbb2222bbbb" "20260801-000000" mount
+  write_record "s_b" "opencode" "bbbb2222bbbb" "20260801-000000" mount
   write_record "s_fresh" "pi" "$sha" "20260801-000000"
   # A container owned by stale session s_a. Rule 1 removes s_a's record; the
   # fresh Rule-2 scan then orphans s_a's container (complete-pass property).

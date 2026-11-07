@@ -15,17 +15,17 @@
 #
 # PROVIDER
 #   Required for all run targets. Pass as a Make variable.
-#   Example: make start PROVIDER=hermes
+#   Example: make start PROVIDER=opencode
 #
 # REFRESH
 #   Optional. Rebuilds sandbox and provider images + starts a new session.
-#   Example: make start PROVIDER=hermes REFRESH=1
+#   Example: make start PROVIDER=opencode REFRESH=1
 #
 # REBUILD
 #   Optional. Forces a full rebuild of sandbox, provider, and base images from scratch.
 #   Supersedes REFRESH if both are set.
 #   Use when system packages or the agent runtime version has changed.
-#   Example: make start PROVIDER=hermes REBUILD=1
+#   Example: make start PROVIDER=opencode REBUILD=1
 #   Example: make build REBUILD=1
 #
 # INTERACTIVE
@@ -37,7 +37,7 @@
 #   prune (plan + confirm), draft (channel + bundle), and apply (preview +
 #   confirm).
 #   Example: make start INTERACTIVE=1
-#            make start PROVIDER=hermes INTERACTIVE=1
+#            make start PROVIDER=opencode INTERACTIVE=1
 #
 # NOTE ON RESUME
 #   start always begins a NEW session; do not pass RESUME to make start. To
@@ -65,8 +65,8 @@
 # BUILD TARGETS
 #   make build                         --  builds sandbox + all providers
 #   make build TARGETS=all             --  explicit alias for build-all
-#   make build TARGETS=hermes          --  builds hermes provider only
-#   make build TARGETS=hermes,sandbox  --  builds hermes and sandbox
+#   make build TARGETS=opencode        --  builds opencode provider only
+#   make build TARGETS=opencode,sandbox -- builds opencode and sandbox
 #   make build REBUILD=1               --  forces full rebuild including base images
 #
 # STOP

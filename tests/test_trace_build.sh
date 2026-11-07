@@ -202,22 +202,28 @@ test_build_order_pi_unified_agent_runtime_tier() {
     "pi builds agent-base, then agent-runtimes, then pi-agent-test-project"
 }
 
-# Given: the fixture and the docker stub
-# When:  build.sh runs for the hermes provider
-# Then:  the build order is agent-base, hermes-base, hermes-agent-test-project
+# Given: a fixture repo root holding a provider with its own base dockerfile
+# When:  build_agent runs for it
+# Then:  the build order is agent-base, <provider>-base, <provider>-agent-<project>
 # Asserts: a source-built provider keeps its own base between the shared base
-#          and its own image
-test_build_order_hermes_keeps_its_base() {
-  local FIXTURE_DIR="$FIXTURE_DIR/order_hermes"
-  mkdir -p "$FIXTURE_DIR"
-  setup_build_fixture "$FIXTURE_DIR"
-  export PROVIDER_NAME="hermes"
+#          and its own image, so the branch survives with no such provider shipped
+test_build_order_a_provider_base_sits_between_the_tiers() {
+  local dir="$FIXTURE_DIR/order_provider_base"
+  local root="$dir/root"
+  mkdir -p "$root/src/reasoning/agent-runtime/fixture-src"
+  : > "$root/src/reasoning/base.dockerfile"
+  : > "$root/src/reasoning/agent-runtime/fixture-src/base.dockerfile"
+  : > "$root/src/reasoning/agent-runtime/fixture-src/provider.dockerfile"
+  export DOCKER_TRACE_LOG="$dir/trace.log"
+  : > "$DOCKER_TRACE_LOG"
+
   local BUILD_RC=0
-  invoke_build || BUILD_RC=$?
+  ( export PATH="$STUB_DIR:$PATH"
+    build_agent "fixture-src" "test-project" "$root" ) > /dev/null 2>&1 || BUILD_RC=$?
   assert_rc 0 "$BUILD_RC" "build invocation succeeds"
   assert_eq "$(trace_image_tags | paste -sd, -)" \
-    "agent-base,hermes-base,hermes-agent-test-project" \
-    "hermes builds agent-base, then hermes-base, then hermes-agent-test-project"
+    "agent-base,fixture-src-base,fixture-src-agent-test-project" \
+    "a provider base sits between the shared base and the provider image"
 }
 
 # Given: a build through build_image with no progress mode stated
@@ -353,7 +359,7 @@ services:
   sandbox:
     image: sandbox-test-project
   agent:
-    image: hermes-agent-test-project
+    image: opencode-agent-test-project
   extra:
     image: some-other-image
 EOF
@@ -362,10 +368,10 @@ EOF
   sandbox="$(record_image "$dir/r.yml" sandbox)"
   extra="$(record_image "$dir/r.yml" extra)"
   provider="$(record_provider "$dir/r.yml")"
-  if [[ "$agent" == "hermes-agent-test-project" \
+  if [[ "$agent" == "opencode-agent-test-project" \
      && "$sandbox" == "sandbox-test-project" \
      && "$extra" == "some-other-image" \
-     && "$provider" == "hermes" ]]; then
+     && "$provider" == "opencode" ]]; then
     pass "record_image/record_provider: service-scoped, anchored, provider from agent image"
   else
     fail "record_image/record_provider: got agent=[$agent] sandbox=[$sandbox] extra=[$extra] provider=[$provider]"
@@ -493,7 +499,7 @@ run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 run_test test_build_default_targets_all
 run_test test_build_order_pi_unified_agent_runtime_tier
-run_test test_build_order_hermes_keeps_its_base
+run_test test_build_order_a_provider_base_sits_between_the_tiers
 run_test test_build_does_not_require_sandbox
 run_test test_build_image_defaults_to_quiet_progress
 run_test test_build_image_plain_progress_replaces_quiet

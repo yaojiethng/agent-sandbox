@@ -71,7 +71,7 @@ Flags (all required except --sandbox/--env):
   --project=<path> absolute WSL/Linux path to the project directory on the host (required)
   --sandbox=<path> absolute WSL/Linux path to the sandbox directory
   --env=<rel>      .env file: an absolute path or a name relative to SANDBOX_DIR (default: .env)
-  --provider=<n>   provider name (required  --  no default; e.g. pi, hermes, opencode)
+  --provider=<n>   provider name (required  --  no default; e.g. pi, opencode)
 
 Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session (standard start only)

@@ -2,7 +2,7 @@
 # Pi has no native web UI or remote control equivalent.
 # serve mode is not supported for this provider.
 #
-# Operators wanting a browser interface should use the hermes or opencode provider instead.
+# Operators wanting a browser interface should use the opencode provider instead.
 #
 # If serve mode is invoked (make serve PROVIDER=pi), the agent container will start
 # but Pi will run in its default interactive mode rather than a serve mode.

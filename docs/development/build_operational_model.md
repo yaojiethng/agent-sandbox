@@ -40,7 +40,7 @@ The frequency bands are the audit's, from the 2026-11-07 log boundary; they orde
 |---|---|---|---|---|
 | first build | a cold host, an empty cache | rare | the image builds from a clean tree | the baseline record; the exit status |
 | rebuild | no input changed | frequent | every tier is served from the layer cache | `cache_state=cached`; the wall seconds |
-| rebuild | a pin bump | occasional | the shared tier and both registry providers change; hermes does not | the image ID delta across two records |
+| rebuild | a pin bump | occasional | the shared tier and both provider images change | the image ID delta across two records |
 | rebuild | a provider payload change | frequent | only the provider image changes | the image ID delta; the cache state |
 | rebuild | a tier-1 change | occasional | tiers 2 and 3 rebuild | the cache state |
 | rebuild | `--rebuild` | occasional | every tier runs from scratch | the static propagation test; the wall seconds |

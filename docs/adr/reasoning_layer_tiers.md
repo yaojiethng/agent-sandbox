@@ -10,8 +10,22 @@
 | R2 | An agent-runtime installs exactly once | each agent-runtime has one Dockerfile home, and a second home is a finding (2026-10-17) |
 | R3 | The common payload is declared exactly once | the manifest declares every COPY pair, and the layout gate holds the Dockerfiles equal to it in both directions (2026-10-17) |
 | R4 | Docker's layer cache is the only reuse rule | nothing decides reuse before the daemon is called |
-| R5 | A provider base installs only its own differential | the one surviving provider base, hermes-base, carries only the hermes install (2026-10-17) |
-| R6 | The tier list is the same for every provider that shares an install mechanism | pi and opencode share one list of tiers because both install from a registry; hermes adds one base because its install is a source build (2026-10-17) |
+| R5 | A provider base installs only its own differential | a provider base carries only its own install, and no provider base ships (2026-10-17, revised 2026-11-07) |
+| R6 | The tier list is the same for every provider that shares an install mechanism | pi and opencode share one list of tiers because both install from a registry; a provider whose install is a source build adds one base (2026-10-17, revised 2026-11-07) |
+
+## 2026-11-07 -- The hermes provider is removed, and the reasoning layer is three tiers
+
+**Decision:** The `hermes` provider is gone, with its directory, its two Dockerfiles, its two compose overlays and its quickstart. Every remaining provider builds the same three tiers: `agent-base`, `agent-runtimes` and `<provider>-agent-<project>`. `hermes-base` is not a tier, and `<provider>-base` stays in `build_agent` as the extension point a source-built provider would occupy.
+
+**Rationale:** The provider was unused, and its build path had drifted: a clone at an upstream default branch, an apt set of its own, a Python venv and `ffmpeg`, kept for a workflow no session ran. A build path nobody runs is maintenance paid on every input sweep and every gate over the Dockerfiles, and it was the only thing making the tier list depend on which provider was being built. Removing it leaves the shape pi and opencode already shared, so the tier list is a property of the layer rather than of the provider.
+
+**Rejected alternatives:**
+
+- *Keep hermes as a dormant provider* -- execution: it is the tree's only source-build example, and an example nothing runs is maintained against an upstream that moves; the knowledge-store work is where a source-built runtime gains a consumer.
+- *Fold hermes into the shared tier* -- intent: it removes the fourth tier without deleting the provider. Execution: the 2026-10-17 objection stands, and it now buys nothing, because the provider is going.
+- *Delete the `<provider>-base` branch with the provider* -- intent: no shipped provider reaches it, so it reads as dead code. Execution: the W re-integration row needs it, so deleting it would have to be undone; the branch keeps its test on a fixture provider instead of a shipped one.
+
+**Edge cases / drivers:** The provider directory is deleted whole. The three image rows that listed `hermes` among their `providers` now list two, and the three `hermes` env rows are gone. Re-integration is filed as a W task rather than carried as a dormant provider. Historical records keep the old shape: the entries below, the handovers, the discussions and the 2026-10-16 studies state what was true when written.
 
 ## 2026-11-07 -- The provider directory is `agent-runtime`
 

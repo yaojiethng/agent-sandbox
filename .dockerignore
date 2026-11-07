@@ -18,7 +18,6 @@ workflow/knowledge-vault/
 src/build/
 src/capability/seed_volume.sh
 src/reasoning/agent/drafts/
-src/reasoning/agent-runtime/hermes/
 src/reasoning/agent-runtime/opencode/
 src/reasoning/agent-runtime/AGENTS.template.md
 src/reasoning/agent-runtime/pi/onboard.sh

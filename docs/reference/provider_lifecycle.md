@@ -36,7 +36,7 @@ The provider overlay mounts the persistent subdirectories, and Docker places tho
 
 `agent-sandbox onboard` seeds the host side -- the directories the overlays mount, plus a provider's `.env` -- so the overlay has a source on the first run. It writes no config file: the image owns those, and the entrypoint copies them in at every start. The declaration is `src/build/container-interface.json`'s `provision` row, and `scripts/check_container_layout.sh` holds the entrypoint to it. See [Onboarding](#onboarding).
 
-When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The hermes and opencode images are in that state.
+When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The opencode image is in that state.
 
 ## Phase 2 -- Work
 
@@ -95,7 +95,7 @@ The provider config reaches a session from two sources:
 | Issue | Mechanism | Impact |
 |---|---|---|
 | **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
-| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; hermes and opencode are shaped this way by decision, and pi carries a template |
+| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; opencode is shaped this way by decision, and pi carries a template |
 | **Onboard template is a snapshot** | `src/reasoning/agent-runtime/<n>/config/agent/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 | **Recommendations file absent** | a tree without `.agents/model-recommendations.md` has no table, and there is no second copy to read | a dispatch reports the path it looked for, and `setup-model-recommendations` writes the file |
 
