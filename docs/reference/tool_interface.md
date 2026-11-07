@@ -13,12 +13,12 @@ Internal implementation is in [`execution_model.md`](execution_model.md).
 | Image | Name pattern | Purpose |
 |---|---|---|
 | Capability layer | `sandbox-<project>` | Sandbox, seed pipeline, diff pipeline |
-| Reasoning layer runtime | `agent-base` | The shared runtime set every reasoning image inherits |
-| Reasoning layer harness tier | `agent-harnesses` | The registry-package harnesses, installed once and inherited by every provider |
-| Reasoning layer base | `<provider>-base` | A source-built harness's install layer; not project-specific |
-| Reasoning layer | `<provider>-agent-<project>` | Agent runtime (provider-specific) |
+| Reasoning layer language runtime | `agent-base` | The shared language runtime set every reasoning image inherits |
+| Reasoning layer agent-runtime tier | `agent-runtimes` | The registry-package agent-runtimes, installed once and inherited by every provider |
+| Reasoning layer base | `<provider>-base` | A source-built agent-runtime's install layer; not project-specific |
+| Reasoning layer | `<provider>-agent-<project>` | Provider-specific agent-runtime |
 
-`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `hermes`). Base images contain no project-specific content and are built once per provider; the reasoning layer image inherits from the base or from the harness tier and is built per project.
+`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `hermes`). Base images contain no project-specific content. A source-built agent-runtime's base is built once per provider, and the shared `agent-runtimes` tier is built once for all providers; the reasoning layer image inherits from the base or the tier and is built per project.
 
 ## Container Naming
 
@@ -231,8 +231,8 @@ A conforming provider supplies the following under `src/reasoning/providers/<n>/
 
 | File | Required | Purpose |
 |---|---|---|
-| `base.dockerfile` | Only for a source-built harness | The agent install only, inheriting `agent-base` (Node, Python, uv, CLI tools, lint gates); tagged `<provider>-base`. A provider whose harness installs from a registry package omits it and inherits the shared harness tier instead |
-| `provider.dockerfile` | Yes | Provider layer inheriting from `agent-harnesses`, or from `<provider>-base` for a source-built harness; tagged `<provider>-agent-<project>` |
+| `base.dockerfile` | Only for a source-built agent-runtime | The agent-runtime install only, inheriting `agent-base` (Node, Python, uv, CLI tools, lint gates); tagged `<provider>-base`. A provider whose agent-runtime installs from a registry package omits it and inherits the shared `agent-runtimes` tier instead |
+| `provider.dockerfile` | Yes | Provider layer inheriting from `agent-runtimes`, or from `<provider>-base` for a source-built agent-runtime; tagged `<provider>-agent-<project>` |
 | `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `config/` | Optional | Onboarding and image template. `agent-sandbox onboard` seeds it into `$SANDBOX_DIR/.<provider>/` and renames `env.stub` to `.env` there; the provider's `provider.dockerfile` also copies it to `/opt/workflow/agent/config/`, from which the entrypoint seeds `AGENT_HOME` at every start. The operator fills in secrets on the host, and no secret reaches an image. |
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
@@ -244,7 +244,7 @@ Providers do not supply `build.sh` or `run.sh` -- the harness manages all build 
 
 See `docs/development/provider_onboarding_guide.md` for the full provider contract and step-by-step implementation guide.
 
-The reasoning layer builds in tiers, and the harness install's mechanism decides which one a provider joins. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. `src/reasoning/harnesses.dockerfile` builds `agent-harnesses` on top of it, holding both registry-package harnesses. A provider whose harness installs from a registry package inherits `agent-harnesses` and needs no base of its own; a provider whose harness is a source build, as hermes is, adds a `<provider>-base` between the two. Its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
+The reasoning layer builds in tiers, and the agent-runtime install's mechanism decides which one a provider joins. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. `src/reasoning/runtimes.dockerfile` builds `agent-runtimes` on top of it, holding both registry-package agent-runtimes. A provider whose agent-runtime installs from a registry package inherits `agent-runtimes` and needs no base of its own; a provider whose agent-runtime is a source build, as hermes is, adds a `<provider>-base` between the two. Its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the language runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
 
 A `provider.dockerfile` sends a repository directory to an image directory with `COPY`, and sets the image's environment with `ENV`. That layout is declared once in `src/build/container-interface.json`, and `scripts/check_container_layout.sh` holds the declaration equal to the dockerfiles in both directions. So a new `COPY` or `ENV` line needs a manifest row in the same change, and the checks that need the layout read the manifest through `src/build/container-interface.mjs` instead of parsing the dockerfiles themselves.
 

@@ -424,8 +424,8 @@ main() {
     AGENT_BASE="$(agent_base_image_name "$PROBE_PROVIDER")"
     AGENT_BASE_DOCKERFILE="$provider_base_dockerfile"
   else
-    AGENT_BASE="$(harnesses_base_image_name)"
-    AGENT_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/harnesses.dockerfile"
+    AGENT_BASE="$(runtimes_base_image_name)"
+    AGENT_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/runtimes.dockerfile"
   fi
   [[ -f "$AGENT_BASE_DOCKERFILE" ]] || die "no tier-2 Dockerfile for provider: $PROBE_PROVIDER"
 

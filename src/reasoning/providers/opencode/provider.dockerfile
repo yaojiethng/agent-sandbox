@@ -1,10 +1,10 @@
 # providers/opencode/provider.dockerfile
 # Reasoning layer image for the OpenCode provider.
-# Inherits the shared harness tier from agent-harnesses (see harnesses.dockerfile).
-# Tagged as opencode-agent-<project>. Built by scripts/build_container.sh --type=agent --provider=opencode.
+# Inherits the shared agent-runtime tier from agent-runtimes (see runtimes.dockerfile).
+# Tagged as opencode-agent-<project>. Built by scripts/build.sh for the opencode provider.
 #
 # Rebuilt when provider interface, shared libs, or project-specific content changes.
-# The slow install layers live in agent-harnesses, inherited above.
+# The slow install layers live in agent-runtimes, inherited above.
 #
 # Provider contract (harness interface):
 #   AGENT_HOME     --  where OpenCode writes config and state
@@ -12,7 +12,7 @@
 #   ENTRYPOINT     --  provider-entrypoint.sh wraps the agent command, and seeds
 #                   AGENT_HOME only when the image carries a config template. This
 #                   image carries none: the agent starts on its own defaults.
-ARG BASE_IMAGE=agent-harnesses
+ARG BASE_IMAGE=agent-runtimes
 FROM ${BASE_IMAGE}
 
 ARG HOST_UID=1000

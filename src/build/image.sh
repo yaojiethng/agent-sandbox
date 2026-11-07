@@ -38,9 +38,9 @@ shared_base_image_name() {
   echo "agent-base"
 }
 
-# harnesses_base_image_name -- the shared harness tier image, one canonical constant.
-harnesses_base_image_name() {
-  echo "agent-harnesses"
+# runtimes_base_image_name -- the shared agent-runtime tier image, one canonical constant.
+runtimes_base_image_name() {
+  echo "agent-runtimes"
 }
 
 # sandbox_image_name <project_name>

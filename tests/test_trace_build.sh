@@ -187,10 +187,10 @@ trace_image_tags() {
 
 # Given: the fixture and the docker stub
 # When:  build.sh runs for the pi provider
-# Then:  the build order is agent-base, agent-harnesses, pi-agent-test-project
+# Then:  the build order is agent-base, agent-runtimes, pi-agent-test-project
 # Asserts: a registry-package provider builds the shared base, then the shared
-#          harness tier, then its own image
-test_build_order_pi_unified_harness_tier() {
+#          agent-runtime tier, then its own image
+test_build_order_pi_unified_agent_runtime_tier() {
   local FIXTURE_DIR="$FIXTURE_DIR/order_pi"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
@@ -198,8 +198,8 @@ test_build_order_pi_unified_harness_tier() {
   invoke_build || BUILD_RC=$?
   assert_rc 0 "$BUILD_RC" "build invocation succeeds"
   assert_eq "$(trace_image_tags | paste -sd, -)" \
-    "agent-base,agent-harnesses,pi-agent-test-project" \
-    "pi builds agent-base, then agent-harnesses, then pi-agent-test-project"
+    "agent-base,agent-runtimes,pi-agent-test-project" \
+    "pi builds agent-base, then agent-runtimes, then pi-agent-test-project"
 }
 
 # Given: the fixture and the docker stub
@@ -492,7 +492,7 @@ run_test test_build_no_compose
 run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 run_test test_build_default_targets_all
-run_test test_build_order_pi_unified_harness_tier
+run_test test_build_order_pi_unified_agent_runtime_tier
 run_test test_build_order_hermes_keeps_its_base
 run_test test_build_does_not_require_sandbox
 run_test test_build_image_defaults_to_quiet_progress

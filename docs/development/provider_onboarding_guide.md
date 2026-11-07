@@ -16,14 +16,14 @@ Read a shipped provider before writing one. Each file below is a working example
 mkdir -p src/reasoning/providers/<n>
 ```
 
-Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-agent-<project>`, and `<n>-base` for a source-built harness) via [`src/build/image.sh`](../../src/build/image.sh).
+Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-agent-<project>`, and `<n>-base` for a source-built agent-runtime) via [`src/build/image.sh`](../../src/build/image.sh).
 
-## Step 2 -- Decide where the harness installs
+## Step 2 -- Decide where the agent-runtime installs
 
-The install's mechanism decides the tier, and the tier decides whether you write a base Dockerfile.
+The agent-runtime install's mechanism decides the tier, and the tier decides whether you write a base Dockerfile.
 
-- **A registry package.** Write no base. The harness belongs in the shared tier [`src/reasoning/harnesses.dockerfile`](../../src/reasoning/harnesses.dockerfile) (image `agent-harnesses`), beside the others, so it installs once and every provider inherits it. Your `provider.dockerfile` sets `ARG BASE_IMAGE=agent-harnesses`.
-- **A source build.** Write `base.dockerfile`: the agent install and nothing else, with `ARG BASE_IMAGE=agent-base`. The runtimes come from the shared base [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) (image `agent-base`), which owns Node, Python, uv, the shared CLI tools, and the repo lint gates. [`tests/test_shared_base_contract.sh`](../../tests/test_shared_base_contract.sh) fails the build if a base installs a runtime or a linter. Your `provider.dockerfile` sets `ARG BASE_IMAGE=<n>-base`.
+- **A registry package.** Write no base. The agent-runtime belongs in the shared tier [`src/reasoning/runtimes.dockerfile`](../../src/reasoning/runtimes.dockerfile) (image `agent-runtimes`), beside the other agent-runtimes, so it installs once and every provider inherits it. Your `provider.dockerfile` sets `ARG BASE_IMAGE=agent-runtimes`.
+- **A source build.** Write `base.dockerfile`: the agent-runtime install and nothing else, with `ARG BASE_IMAGE=agent-base`. The language runtimes come from the shared base [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) (image `agent-base`), which owns Node, Python, uv, the shared CLI tools, and the repo lint gates. [`tests/test_shared_base_contract.sh`](../../tests/test_shared_base_contract.sh) fails the build if a base installs a language runtime or a linter. Your `provider.dockerfile` sets `ARG BASE_IMAGE=<n>-base`.
 
 ```dockerfile
 ARG BASE_IMAGE=agent-base
@@ -31,11 +31,11 @@ FROM ${BASE_IMAGE}
 RUN ...
 ```
 
-A base ends as root. User creation and runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the runtime keeps the full set while the build tools stay in the builder.
+A base ends as root. User creation and agent-runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the agent-runtime keeps the full language set while the build tools stay in the builder.
 
 ## Step 3 -- Write `provider.dockerfile`
 
-Shared libs, user creation, runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
+Shared libs, user creation, agent-runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
 
 Two things are not yours to write:
 

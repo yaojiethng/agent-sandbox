@@ -169,10 +169,10 @@ test_shared_base_installs_the_full_runtime_set() {
 }
 
 # Every tier-2 image inherits the shared base by its canonical default: the one
-# surviving provider base (hermes) and the shared harness tier. A tier-2 image
+# surviving provider base (hermes) and the shared agent-runtime tier. A tier-2 image
 # that pins a different default builds a different image than the one the build
 # orchestrator passes in, and the two drift silently.
-# Given: each providers/<n>/base.dockerfile and harnesses.dockerfile
+# Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
 # When:  the file's BASE_IMAGE default is read
 # Then:  it equals agent-base
 # Asserts: the tier-2 images inherit the shared base
@@ -184,18 +184,18 @@ test_tier2_images_inherit_the_shared_base() {
     grep -q "^ARG BASE_IMAGE=agent-base$" "$df" \
       || out="$out $(basename "$(dirname "$df")")"
   done
-  grep -q "^ARG BASE_IMAGE=agent-base$" "$REPO_ROOT/src/reasoning/harnesses.dockerfile" \
-    || out="$out harnesses"
+  grep -q "^ARG BASE_IMAGE=agent-base$" "$REPO_ROOT/src/reasoning/runtimes.dockerfile" \
+    || out="$out agent-runtimes"
   assert_eq "$out" "" "every tier-2 image defaults BASE_IMAGE to agent-base"
 }
 
 # The single rule the consolidation exists to hold: a tier-2 image adds its
-# harness install and nothing else. A runtime or linter install reappearing
-# here is the regression this file exists to catch.
-# Given: each providers/<n>/base.dockerfile and harnesses.dockerfile
-# When:  the file is grepped for runtime and linter installs
+# agent-runtime install and nothing else. A language runtime or linter install
+# reappearing here is the regression this file exists to catch.
+# Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
+# When:  the file is grepped for language runtime and linter installs
 # Then:  no match
-# Asserts: the shared base is the only owner of the runtime set
+# Asserts: the shared base is the only owner of the language runtime set
 test_tier2_images_install_no_runtime_or_linter() {
   local out=""
   local df
@@ -205,10 +205,10 @@ test_tier2_images_install_no_runtime_or_linter() {
     hits="$(grep -nE 'nodesource|astral\.sh/uv|install python3|hadolint|markdownlint-cli2' "$df" || true)"
     [[ -z "$hits" ]] || out="$out $(basename "$(dirname "$df")")"
   done
-  local harness_hits
-  harness_hits="$(grep -nE 'nodesource|astral\.sh/uv|install python3|hadolint|markdownlint-cli2' "$REPO_ROOT/src/reasoning/harnesses.dockerfile" || true)"
-  [[ -z "$harness_hits" ]] || out="$out harnesses"
-  assert_eq "$out" "" "no tier-2 image installs a runtime or a linter"
+  local runtime_hits
+  runtime_hits="$(grep -nE 'nodesource|astral\.sh/uv|install python3|hadolint|markdownlint-cli2' "$REPO_ROOT/src/reasoning/runtimes.dockerfile" || true)"
+  [[ -z "$runtime_hits" ]] || out="$out agent-runtimes"
+  assert_eq "$out" "" "no tier-2 image installs a language runtime or a linter"
 }
 
 # The dispatch CLI has one pin, wherever it is installed. A Dockerfile that
@@ -287,14 +287,14 @@ test_opencode_ai_pins_agree() {
   fi
 }
 
-# The shape's core rule: every harness package installs in exactly one
-# Dockerfile, and that home is the shared harness tier. A second home is a
+# The shape's core rule: every agent-runtime package installs in exactly one
+# Dockerfile, and that home is the shared agent-runtime tier. A second home is a
 # finding, whatever tier it sits in.
 # Given: every Dockerfile under src/reasoning
 # When:  each install of pi-coding-agent and opencode-ai is read
-# Then:  each package has one home, and that home is harnesses.dockerfile
-# Asserts: each harness package installs exactly once
-test_each_harness_package_installs_exactly_once() {
+# Then:  each package has one home, and that home is runtimes.dockerfile
+# Asserts: each agent-runtime package installs exactly once
+test_each_agent_runtime_package_installs_exactly_once() {
   local df o p
   local -a opencode_homes=() pi_homes=()
   while IFS= read -r df; do
@@ -308,15 +308,15 @@ test_each_harness_package_installs_exactly_once() {
   local offenders=""
   if (( ${#opencode_homes[@]} != 1 )); then
     offenders="$offenders opencode-ai homes: ${opencode_homes[*]}"
-  elif [[ "${opencode_homes[0]}" != "src/reasoning/harnesses.dockerfile" ]]; then
+  elif [[ "${opencode_homes[0]}" != "src/reasoning/runtimes.dockerfile" ]]; then
     offenders="$offenders opencode-ai home: ${opencode_homes[0]}"
   fi
   if (( ${#pi_homes[@]} != 1 )); then
     offenders="$offenders pi-coding-agent homes: ${pi_homes[*]}"
-  elif [[ "${pi_homes[0]}" != "src/reasoning/harnesses.dockerfile" ]]; then
+  elif [[ "${pi_homes[0]}" != "src/reasoning/runtimes.dockerfile" ]]; then
     offenders="$offenders pi-coding-agent home: ${pi_homes[0]}"
   fi
-  assert_empty "$offenders" "each harness package installs in exactly one Dockerfile"
+  assert_empty "$offenders" "each agent-runtime package installs in exactly one Dockerfile"
 }
 
 run_test test_shared_base_exists_and_node_dockerfile_is_gone
@@ -326,6 +326,6 @@ run_test test_tier2_images_install_no_runtime_or_linter
 run_test test_opencode_ai_installs_are_pinned
 run_test test_opencode_ai_pins_agree
 run_test test_opencode_ai_installs_produce_a_working_binary
-run_test test_each_harness_package_installs_exactly_once
+run_test test_each_agent_runtime_package_installs_exactly_once
 
 test_done

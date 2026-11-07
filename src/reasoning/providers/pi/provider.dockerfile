@@ -1,8 +1,8 @@
 # providers/pi/provider.dockerfile
-# Provider layer for Pi. Inherits the shared harness tier from agent-harnesses.
+# Provider layer for Pi. Inherits the shared agent-runtime tier from agent-runtimes.
 # Tagged: pi-agent-<project>
 
-ARG BASE_IMAGE=agent-harnesses
+ARG BASE_IMAGE=agent-runtimes
 FROM ${BASE_IMAGE}
 
 ARG HOST_UID=1000

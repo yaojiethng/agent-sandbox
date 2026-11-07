@@ -1,17 +1,31 @@
 # Reasoning Layer Tiers
 
-**Current:** 2026-10-17
+**Current:** 2026-11-07
 
 ## Requirements
 
 | # | Requirement | Meaning |
 |---|---|---|
-| R1 | A tier's contents are decided by kind, not by provider | the runtime set, a registry-package harness and a source-built harness are different kinds, and each has its own tier (2026-10-17) |
-| R2 | A harness installs exactly once | each harness has one Dockerfile home, and a second home is a finding (2026-10-17) |
+| R1 | A tier's contents are decided by kind, not by provider | the language runtime set, a registry-package agent-runtime and a source-built agent-runtime are different kinds, and each has its own tier (2026-10-17) |
+| R2 | An agent-runtime installs exactly once | each agent-runtime has one Dockerfile home, and a second home is a finding (2026-10-17) |
 | R3 | The common payload is declared exactly once | the manifest declares every COPY pair, and the layout gate holds the Dockerfiles equal to it in both directions (2026-10-17) |
 | R4 | Docker's layer cache is the only reuse rule | nothing decides reuse before the daemon is called |
 | R5 | A provider base installs only its own differential | the one surviving provider base, hermes-base, carries only the hermes install (2026-10-17) |
 | R6 | The tier list is the same for every provider that shares an install mechanism | pi and opencode share one list of tiers because both install from a registry; hermes adds one base because its install is a source build (2026-10-17) |
+
+## 2026-11-07 -- The shared tier is `agent-runtimes`
+
+**Decision:** The shared tier is named `agent-runtimes`, its Dockerfile is `src/reasoning/runtimes.dockerfile`, and the image-name function is `runtimes_base_image_name`. The tier holds the two registry-package agent-runtimes, `@earendil-works/pi-coding-agent` and `opencode-ai`, each installed once. `harness` is reserved for the whole setup: the skills and prompts, the agent-runtime, the images and the execution environment.
+
+**Rationale:** The tier's name used `harness` for the parts while the word now names the whole, and the tier installs two runtimes, so the plural names what it holds. The prior entry's decision is unchanged: four tiers, hermes keeps its base, no payload image. The image is internal, so no compatibility surface moves. The directory `src/reasoning/providers/` to `src/reasoning/agent-runtime/` is a separate row.
+
+**Rejected alternatives:**
+
+- *Keep `agent-harnesses`* -- intent: it names the parts with the word the operator now reserves for the whole, so a reader cannot tell which subject a sentence holds.
+- *`agent-runtime` singular* -- execution: the tier holds two runtimes, and the singular names one.
+- *`provider-base`* -- intent: it collides with the surviving per-provider base, `<provider>-base`, and names the wrong axis.
+
+**Edge cases / drivers:** Historical records keep the old name: the 2026-10-17 entry below, the archived handovers and the changelog state what was true when written. The directory rename `src/reasoning/providers/` to `src/reasoning/agent-runtime/` is filed as its own M3.6.4 row because it is a 121-reference move and a separate outcome.
 
 ## 2026-10-17 -- One shared harness tier, hermes keeps its base, no payload image
 

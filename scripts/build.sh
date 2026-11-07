@@ -83,9 +83,9 @@ build_image() {
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
 #   1. agent-base (shared runtime set  --  base.dockerfile)
-#   2. the harness tier: agent-harnesses for a registry-package provider
-#      (harnesses.dockerfile), or <provider>-base for a source-built provider
-#      (providers/<provider>/base.dockerfile)
+#   2. the agent-runtime tier: agent-runtimes for a provider whose agent-runtime
+#      is a registry package (runtimes.dockerfile), or <provider>-base for a
+#      source-built agent-runtime (providers/<provider>/base.dockerfile)
 #   3. <provider>-agent-<project> (final  --  providers/<provider>/provider.dockerfile)
 #
 # Every tier is built on every call. Docker's layer cache is the only reuse
@@ -120,18 +120,19 @@ build_agent() {
   local shared_base; shared_base="$(shared_base_image_name)"
   local shared_dockerfile="$repo_root/src/reasoning/base.dockerfile"
 
-  # Tier 2: the harness tier. A provider whose install is a source build keeps
-  # its own base (providers/<provider>/base.dockerfile); a registry-package
-  # provider inherits the shared harness tier (harnesses.dockerfile). The
-  # provider base's presence is what distinguishes the two.
+  # Tier 2: the agent-runtime tier. A provider whose agent-runtime install is a
+  # source build keeps its own base (providers/<provider>/base.dockerfile); a
+  # provider whose agent-runtime is a registry package inherits the shared
+  # agent-runtime tier (runtimes.dockerfile). The provider base's presence is
+  # what distinguishes the two.
   local tier2_image tier2_dockerfile
   local provider_base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
   if [[ -f "$provider_base_dockerfile" ]]; then
     tier2_image="$(agent_base_image_name "$provider")"
     tier2_dockerfile="$provider_base_dockerfile"
   else
-    tier2_image="$(harnesses_base_image_name)"
-    tier2_dockerfile="$repo_root/src/reasoning/harnesses.dockerfile"
+    tier2_image="$(runtimes_base_image_name)"
+    tier2_dockerfile="$repo_root/src/reasoning/runtimes.dockerfile"
   fi
 
   # Tier 3: final provider image
@@ -144,7 +145,7 @@ build_agent() {
     exit 1
   fi
   if [[ ! -f "$tier2_dockerfile" ]]; then
-    echo "build_agent: ERROR: harness tier Dockerfile not found: $tier2_dockerfile" >&2
+    echo "build_agent: ERROR: agent-runtime tier Dockerfile not found: $tier2_dockerfile" >&2
     exit 1
   fi
   if [[ ! -f "$provider_dockerfile" ]]; then
@@ -156,7 +157,7 @@ build_agent() {
   build_image "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" "" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: the harness tier  --  no contract label (no sandbox/workflow content).
+  # Tier 2: the agent-runtime tier  --  no contract label (no sandbox/workflow content).
   # Its base image is the tier-1 image, so a rebuilt shared base re-runs the
   # steps that inherit from it.
   build_image "$tier2_image" "$tier2_dockerfile" "$repo_root" "" "$cache_flag" "" \

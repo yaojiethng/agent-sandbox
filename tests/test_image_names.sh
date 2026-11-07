@@ -78,6 +78,19 @@ test_shared_base_image_name_is_constant() {
   assert_eq "$out" "agent-base" "shared_base_image_name returns canonical constant"
 }
 
+# runtimes_base_image_name is the shared agent-runtime tier constant; the
+# registry-package providers inherit it, so it must not drift from the image
+# the build actually tags.
+# Given: no arguments
+# When:  runtimes_base_image_name runs
+# Then:  it prints agent-runtimes
+# Asserts: the shared agent-runtime tier is one canonical constant
+test_runtimes_base_image_name_is_constant() {
+  local out
+  out=$(runtimes_base_image_name)
+  assert_eq "$out" "agent-runtimes" "runtimes_base_image_name returns canonical constant"
+}
+
 # Missing arguments are hard errors (:? expansions), never empty-tag builds.
 # Given: a required argument omitted from the call
 # When:  each naming function and image_digest runs in a subshell with a docker double that succeeds
@@ -138,6 +151,7 @@ run_test test_agent_base_image_name_lowercases_provider
 run_test test_agent_image_name_lowercases_project_only
 run_test test_sandbox_image_name_lowercases_project
 run_test test_shared_base_image_name_is_constant
+run_test test_runtimes_base_image_name_is_constant
 run_test test_missing_args_are_hard_errors
 run_test test_image_digest_suppresses_stderr
 run_test test_image_digest_uses_documented_format
