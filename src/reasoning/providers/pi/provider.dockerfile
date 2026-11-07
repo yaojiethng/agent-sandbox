@@ -1,8 +1,8 @@
 # providers/pi/provider.dockerfile
-# Provider layer for Pi. Inherits from pi-base.
+# Provider layer for Pi. Inherits the shared harness tier from agent-harnesses.
 # Tagged: pi-agent-<project>
 
-ARG BASE_IMAGE=pi-base
+ARG BASE_IMAGE=agent-harnesses
 FROM ${BASE_IMAGE}
 
 ARG HOST_UID=1000

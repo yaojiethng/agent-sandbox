@@ -1,3 +1,15 @@
+# reasoning/harnesses.dockerfile
+# Shared harness tier for the reasoning layer. Tagged as agent-harnesses, and
+# built as tier 2 by scripts/build.sh.
+#
+# What lives here and what does not:
+#   Here  -- the registry-package harnesses: @earendil-works/pi-coding-agent
+#            and opencode-ai, each installed exactly once.
+#   Not here -- the runtime set, which comes from agent-base
+#            (reasoning/base.dockerfile); any provider's config, environment,
+#            entrypoint or project content; and a source-built harness, which
+#            keeps a provider base of its own (providers/hermes/base.dockerfile).
+
 ARG BASE_IMAGE=agent-base
 FROM ${BASE_IMAGE}
 

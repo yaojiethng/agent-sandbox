@@ -364,11 +364,17 @@ main() {
   trap on_exit EXIT
 
   SHARED_BASE="$(shared_base_image_name)"
-  AGENT_BASE="$(agent_base_image_name "$PROBE_PROVIDER")"
   AGENT_IMAGE="$(agent_image_name "$PROBE_PROVIDER" "$PROBE_PROJECT")"
   SHARED_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/base.dockerfile"
-  AGENT_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/providers/$PROBE_PROVIDER/base.dockerfile"
-  [[ -f "$AGENT_BASE_DOCKERFILE" ]] || die "no base Dockerfile for provider: $PROBE_PROVIDER"
+  local provider_base_dockerfile="$REPO_ROOT/src/reasoning/providers/$PROBE_PROVIDER/base.dockerfile"
+  if [[ -f "$provider_base_dockerfile" ]]; then
+    AGENT_BASE="$(agent_base_image_name "$PROBE_PROVIDER")"
+    AGENT_BASE_DOCKERFILE="$provider_base_dockerfile"
+  else
+    AGENT_BASE="$(harnesses_base_image_name)"
+    AGENT_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/harnesses.dockerfile"
+  fi
+  [[ -f "$AGENT_BASE_DOCKERFILE" ]] || die "no tier-2 Dockerfile for provider: $PROBE_PROVIDER"
 
   say "provider $PROBE_PROVIDER, images $SHARED_BASE, $AGENT_BASE, $AGENT_IMAGE"
   say "report $report"

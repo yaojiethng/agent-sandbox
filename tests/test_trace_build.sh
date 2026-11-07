@@ -162,12 +162,20 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
 # build-count assertion measures the target routing rather than the base tiers.
 # image_digest runs through the stub, so the keys match what the build computes.
 compute_base_build_keys() {
-  local keys p prov
+  local keys
   keys="agent-base:$(
     PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
       _build_key "$REPO_ROOT/src/reasoning/base.dockerfile"
   )"
+  # The shared harness tier, built once and shared by every registry-package provider.
+  keys="$keys $(harnesses_base_image_name):$(
+    PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
+      _build_key "$REPO_ROOT/src/reasoning/harnesses.dockerfile" "agent-base"
+  )"
+  # A source-built provider keeps its own base.
+  local p prov
   for p in "$REPO_ROOT"/src/reasoning/providers/*/base.dockerfile; do
+    [[ -f "$p" ]] || continue
     prov="$(basename "$(dirname "$p")")"
     keys="$keys $(agent_base_image_name "$prov"):$(
       PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
@@ -186,12 +194,12 @@ compute_base_build_keys() {
 # itself: exact ordered membership. A hash test below only checks the plumbing
 # runs end-to-end, not the hash's value.
 # build's default --targets (omitted) resolves to "all": sandbox + every
-# provider with a base.dockerfile. Deterministic count in this repo (3
+# provider with a provider.dockerfile. Deterministic count in this repo (3
 # providers) locks the default-target routing (the behavior a dangling
 # test_dispatch run_test previously claimed to cover but never did).
 # Given: the same fixture, invoked with no --targets flag
 # When:  build.sh runs
-# Then:  the build count equals one sandbox build plus one per provider base.dockerfile
+# Then:  the build count equals one sandbox build plus one per provider
 # Asserts: the default-target resolution builds every discovered provider
 test_build_default_targets_all() {
   local FIXTURE_DIR="$FIXTURE_DIR/bld_default"
@@ -206,7 +214,7 @@ test_build_default_targets_all() {
       --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR"
   ) > /dev/null 2>&1 || true
   local expected actual
-  expected="$(( 1 + $(ls "$REPO_ROOT"/src/reasoning/providers/*/base.dockerfile | wc -l) ))"
+  expected="$(( 1 + $(ls "$REPO_ROOT"/src/reasoning/providers/*/provider.dockerfile | wc -l) ))"
   actual="$(grep -c " build " "$DOCKER_TRACE_LOG" || true)"
   if [[ "$actual" -eq "$expected" ]]; then
     pass "build (default no --targets): sandbox + all providers ($expected docker builds)"
@@ -214,6 +222,47 @@ test_build_default_targets_all() {
     fail "build (default no --targets): expected $expected 'docker build', got $actual"
   fi
   unset DOCKER_STUB_IMAGE_BUILD_KEYS DOCKER_STUB_IMAGE_DIGEST
+}
+
+# trace_image_tags  --  the `-t <image>` tags the docker stub logged, in build
+# order. The build order is the tier chain: tier 1, tier 2, tier 3.
+trace_image_tags() {
+  grep -o -- "-t [^ ]*" "$DOCKER_TRACE_LOG" | awk '{print $2}'
+}
+
+# Given: a build with no base keys exported, so every tier builds
+# When:  build.sh runs for the pi provider
+# Then:  the build order is agent-base, agent-harnesses, pi-agent-test-project
+# Asserts: a registry-package provider builds the shared base, then the shared
+#          harness tier, then its own image
+test_build_order_pi_unified_harness_tier() {
+  local FIXTURE_DIR="$FIXTURE_DIR/order_pi"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  local BUILD_RC=0
+  invoke_build || BUILD_RC=$?
+  assert_rc 0 "$BUILD_RC" "build invocation succeeds"
+  assert_eq "$(trace_image_tags | paste -sd, -)" \
+    "agent-base,agent-harnesses,pi-agent-test-project" \
+    "pi builds agent-base, then agent-harnesses, then pi-agent-test-project"
+}
+
+# Given: a build with no base keys exported, so every tier builds
+# When:  build.sh runs for the hermes provider
+# Then:  the build order is agent-base, hermes-base, hermes-agent-test-project
+# Asserts: a source-built provider keeps its own base between the shared base
+#          and its own image
+test_build_order_hermes_keeps_its_base() {
+  local FIXTURE_DIR="$FIXTURE_DIR/order_hermes"
+  mkdir -p "$FIXTURE_DIR"
+  setup_build_fixture "$FIXTURE_DIR"
+  export PROVIDER_NAME="hermes"
+  local BUILD_RC=0
+  invoke_build || BUILD_RC=$?
+  assert_rc 0 "$BUILD_RC" "build invocation succeeds"
+  assert_eq "$(trace_image_tags | paste -sd, -)" \
+    "agent-base,hermes-base,hermes-agent-test-project" \
+    "hermes builds agent-base, then hermes-base, then hermes-agent-test-project"
 }
 
 # Given: a Dockerfile, unchanged then changed
@@ -567,6 +616,8 @@ run_test test_build_no_compose
 run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
 run_test test_build_default_targets_all
+run_test test_build_order_pi_unified_harness_tier
+run_test test_build_order_hermes_keeps_its_base
 run_test test_build_does_not_require_sandbox
 run_test test_build_key_tracks_dockerfile_content
 run_test test_build_key_tracks_the_base_image

@@ -20,7 +20,7 @@ Bump the pin instead: source the latest version from the version-check API (step
 
 | File | Change |
 |---|---|
-| `src/reasoning/providers/pi/base.dockerfile` | `RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@<NEW>` |
+| `src/reasoning/harnesses.dockerfile` | `RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@<NEW>` |
 | `src/reasoning/providers/pi/config/agent/settings.json` | `"lastChangelogVersion": "<NEW>"` |
 
 ## Steps
@@ -95,7 +95,7 @@ The report states: the current pin, `<NEW>`, the probe verdict, which assumption
 
 ### 5. Edit the two repo files
 
-- Bump the pin in `src/reasoning/providers/pi/base.dockerfile`.
+- Bump the pin in `src/reasoning/harnesses.dockerfile`.
 - Bump `lastChangelogVersion` in `src/reasoning/providers/pi/config/agent/settings.json`.
 
 Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for immediate record consistency. The next container start reseeds it from the baked template regardless.
@@ -113,7 +113,7 @@ Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for 
 **The version assertion.** It reads whatever version each file holds rather than matching a literal, so a bump that moved one side and not the other fails here instead of surviving a grep for the new number.
 
 ```bash
-pin=$(sed -n 's/.*pi-coding-agent@\([0-9][^ "]*\).*/\1/p' src/reasoning/providers/pi/base.dockerfile)
+pin=$(sed -n 's/.*pi-coding-agent@\([0-9][^ "]*\).*/\1/p' src/reasoning/harnesses.dockerfile)
 rec=$(node -p 'JSON.parse(require("fs").readFileSync("src/reasoning/providers/pi/config/agent/settings.json","utf8")).lastChangelogVersion')
 [ "$pin" = "$rec" ] && echo "match: $pin" || { echo "mismatch: pin=$pin settings=$rec"; exit 1; }
 ```
@@ -134,7 +134,7 @@ A pin bump changes no governance, so it needs no handover. An extension change o
 
 ## Notes
 
-- The container updates pi only at the next image rebuild, when the `base.dockerfile` `npm install -g` runs as root and installs the pinned `<NEW>`.
+- The container updates pi only at the next image rebuild, when the harness tier's `npm install -g` runs as root and installs the pinned `<NEW>`.
 - `lastChangelogVersion` only gates the post-update changelog display. With `PI_SKIP_VERSION_CHECK=1` it is effectively the installed-version record. Keeping it in step prevents drift and avoids a huge changelog on first start.
 - No changelog entry in `devlog/changelog.md`  --  version bumps are not milestone completions.
 - No lockfile is produced for the global install. The open dependency-locking row under M3.4.2 covers this.

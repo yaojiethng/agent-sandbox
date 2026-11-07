@@ -126,11 +126,14 @@ build_if_missing() {
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
 #   1. agent-base (shared runtime set  --  base.dockerfile)
-#   2. <provider>-base (provider-specific  --  providers/<n>/base.dockerfile)
-#   3. <provider>-agent-<project> (final  --  providers/<n>/provider.dockerfile)
+#   2. the harness tier: agent-harnesses for a registry-package provider
+#      (harnesses.dockerfile), or <provider>-base for a source-built provider
+#      (providers/<provider>/base.dockerfile)
+#   3. <provider>-agent-<project> (final  --  providers/<provider>/provider.dockerfile)
 #
 # Tier 1 cached across all providers on this machine.
-# Tier 2 cached per-provider.
+# Tier 2 cached across the providers that share it; a provider base is cached
+# per-provider.
 # Tier 3 rebuilt on every build_agent call (picks up project-specific content).
 #
 # --no-cache: rebuild tiers 1 and 2 from scratch.
@@ -161,9 +164,19 @@ build_agent() {
   local shared_base; shared_base="$(shared_base_image_name)"
   local shared_dockerfile="$repo_root/src/reasoning/base.dockerfile"
 
-  # Tier 2: provider-specific base
-  local agent_base_image; agent_base_image="$(agent_base_image_name "$provider")"
-  local agent_base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
+  # Tier 2: the harness tier. A provider whose install is a source build keeps
+  # its own base (providers/<provider>/base.dockerfile); a registry-package
+  # provider inherits the shared harness tier (harnesses.dockerfile). The
+  # provider base's presence is what distinguishes the two.
+  local tier2_image tier2_dockerfile
+  local provider_base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
+  if [[ -f "$provider_base_dockerfile" ]]; then
+    tier2_image="$(agent_base_image_name "$provider")"
+    tier2_dockerfile="$provider_base_dockerfile"
+  else
+    tier2_image="$(harnesses_base_image_name)"
+    tier2_dockerfile="$repo_root/src/reasoning/harnesses.dockerfile"
+  fi
 
   # Tier 3: final provider image
   local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
@@ -174,8 +187,8 @@ build_agent() {
     echo "build_agent: ERROR: shared base Dockerfile not found: $shared_dockerfile" >&2
     exit 1
   fi
-  if [[ ! -f "$agent_base_dockerfile" ]]; then
-    echo "build_agent: ERROR: provider base Dockerfile not found: $agent_base_dockerfile" >&2
+  if [[ ! -f "$tier2_dockerfile" ]]; then
+    echo "build_agent: ERROR: harness tier Dockerfile not found: $tier2_dockerfile" >&2
     exit 1
   fi
   if [[ ! -f "$provider_dockerfile" ]]; then
@@ -187,16 +200,16 @@ build_agent() {
   build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" "" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: provider-specific base  --  no contract label (no sandbox/workflow content).
+  # Tier 2: the harness tier  --  no contract label (no sandbox/workflow content).
   # The base image is passed so the key carries the tier-1 content id, and a
   # rebuilt shared base forces this tier to rebuild too.
-  build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$repo_root" "" "$cache_flag" "$shared_base" \
+  build_if_missing "$tier2_image" "$tier2_dockerfile" "$repo_root" "" "$cache_flag" "$shared_base" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
   # Tier 3: always build provider image  --  carries the contract label
   build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$(interface_contract_version)" "" "" \
-    --build-arg "BASE_IMAGE=$agent_base_image" \
+    --build-arg "BASE_IMAGE=$tier2_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
 
@@ -360,10 +373,10 @@ main() {
 
   if [[ -z "$BUILD_TARGETS" || "$BUILD_TARGETS" == "all" ]]; then
     build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
-    for BASE_DOCKERFILE in "$REPO_ROOT/src/reasoning/providers/"*/base.dockerfile; do
-      [[ -f "$BASE_DOCKERFILE" ]] || continue
+    for PROVIDER_DOCKERFILE in "$REPO_ROOT/src/reasoning/providers/"*/provider.dockerfile; do
+      [[ -f "$PROVIDER_DOCKERFILE" ]] || continue
       local DISCOVERED_PROVIDER
-      DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
+      DISCOVERED_PROVIDER="$(basename "$(dirname "$PROVIDER_DOCKERFILE")")"
       build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$REPO_ROOT" $REBUILD_FLAG
     done
   else

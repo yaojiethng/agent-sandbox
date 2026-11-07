@@ -1,0 +1,11 @@
+# The build context is the repository root. This file excludes only what no
+# provider Dockerfile's COPY line reads: every COPY source must survive it.
+.git/
+.devcontainer/
+.scratchpad/
+.agents/
+devlog/
+docs/adr/
+node_modules/
+scripts/
+tests/

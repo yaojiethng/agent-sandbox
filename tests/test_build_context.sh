@@ -65,6 +65,34 @@ test_all_copy_sources_exist() {
   assert_eq_num "$failures" "0" "All COPY sources exist at their repo-relative paths"
 }
 
+# test_dockerignore_curates_the_build_context
+# The build context is the repository root, so .dockerignore is the curation
+# layer. It must exist, exclude the directories no COPY line reads (the rule
+# its header names, pinned here at .git/ and devlog/), and shadow no COPY
+# source: a COPY source under an ignored directory fails the build.
+test_dockerignore_curates_the_build_context() {
+  local ignore="$REPO_ROOT/.dockerignore"
+  [[ -f "$ignore" ]] || { fail ".dockerignore is missing"; return; }
+  grep -qx ".git/" "$ignore" || { fail ".dockerignore does not exclude .git/"; return; }
+  grep -qx "devlog/" "$ignore" || { fail ".dockerignore does not exclude devlog/"; return; }
+
+  local failures=0 dockerfile source entry
+  for dockerfile in $(_dockerfiles); do
+    while IFS= read -r source; do
+      [[ -z "$source" ]] && continue
+      while IFS= read -r entry; do
+        [[ -z "$entry" ]] && continue
+        [[ "$entry" == "#"* ]] && continue
+        if [[ "$source" == "${entry%/}"/* ]]; then
+          echo "  FAIL: .dockerignore entry '$entry' shadows COPY source $source"
+          failures=$((failures + 1))
+        fi
+      done < <(grep -vE '^[[:space:]]*(#|$)' "$ignore" | sed 's/[[:space:]]*$//')
+    done < <(_copy_sources "$dockerfile")
+  done
+  assert_eq_num "$failures" "0" "no .dockerignore entry shadows a COPY source"
+}
+
 # test_no_flat_temp_dir_paths was deleted (test-quality campaign): its filter
 # chain was dead logic -- it pre-filtered COPY lines to those without a slash
 # and then excluded agent//docs/ prefixes, which a slash-free path can never
@@ -76,6 +104,7 @@ test_all_copy_sources_exist() {
 # ---------------------------------------------------------------------------
 
 run_test test_all_copy_sources_exist
+run_test test_dockerignore_curates_the_build_context
 
 test_done
 
