@@ -76,7 +76,7 @@ _dockerfile_shell_commands() {
 # npm install, npm i, pnpm add, yarn add and bun add. The command separators are
 # resolved first (see _dockerfile_shell_commands), so a flag on one command
 # never binds to a package installed by another.
-_opencode_ai_install_commands() {
+_package_install_commands() {
   _dockerfile_shell_commands "$1" | awk -F'\t' '
     {
       n = split($2, t, /[[:space:]]+/)
@@ -90,45 +90,10 @@ _opencode_ai_install_commands() {
   '
 }
 
-# Print one token per opencode-ai install: "opencode-ai@<spec>" when a version
-# is given, bare "opencode-ai" when it is not. Only an install command is read,
-# so a prose mention (such as opencode/provider.dockerfile's own header) is not
-# a match.
-_opencode_ai_installs() {
-  _opencode_ai_install_commands "$1" | awk -F'\t' '
-    {
-      n = split($2, t, /[[:space:]]+/)
-      for (i = 1; i <= n; i++) {
-        if (t[i] == "opencode-ai") print "opencode-ai"
-        else if (t[i] ~ /^opencode-ai@/) print t[i]
-      }
-    }
-  '
-}
-
-# Print the line number of every install command that names opencode-ai and
-# also carries --ignore-scripts. Such an install skips the postinstall that
-# writes the platform binary the bin entry points at, so the CLI lands on PATH
-# with nothing to run.
-_opencode_ai_installs_skipping_postinstall() {
-  _opencode_ai_install_commands "$1" | awk -F'\t' '
-    {
-      n = split($2, t, /[[:space:]]+/)
-      has_pkg = 0; has_flag = 0
-      for (i = 1; i <= n; i++) {
-        if (t[i] == "opencode-ai" || t[i] ~ /^opencode-ai@/) has_pkg = 1
-        if (t[i] == "--ignore-scripts") has_flag = 1
-      }
-      if (has_pkg && has_flag) print $1
-    }
-  '
-}
-
-# Print one token per pi-coding-agent install, matching the way
-# _opencode_ai_installs reads opencode-ai: only an install command is read, so
-# a prose mention (such as a provider's own header) is not a match.
+# Print one token per pi-coding-agent install: only an install command is read,
+# so a prose mention (such as a provider's own header) is not a match.
 _pi_coding_agent_installs() {
-  _opencode_ai_install_commands "$1" | awk -F'\t' '
+  _package_install_commands "$1" | awk -F'\t' '
     {
       n = split($2, t, /[[:space:]]+/)
       for (i = 1; i <= n; i++) {
@@ -238,27 +203,28 @@ test_registry_dependencies_are_exact() {
   assert_empty "$offenders" "every registry dependency names an exact version"
 }
 
-# opencode-ai's bin is inert until its postinstall writes the platform binary.
-# An install that carries --ignore-scripts skips that step, so the CLI lands on
-# PATH with nothing to run. The flag is inert for the pi install, whose package
-# declares no postinstall, so the two installs must not share a flag.
+# opencode ships one binary per platform and per C library, and its package
+# names all of them as optional dependencies. An npm install of that package
+# therefore lands four linux-x64 variants -- 730MB for one executable -- so the
+# tier pins the single tarball instead and no npm install may name it again.
 # Given: the shared agent-runtime tier
-# When:  its install lines are read for the scripts flag
-# Then:  the opencode install runs its postinstall and the pi install does not
-# Asserts: the opencode install can produce a working binary
-test_opencode_install_produces_a_working_binary() {
-  local offenders="" line dir
-  while IFS= read -r line; do
-    [[ "$line" == *"npm ci"* ]] || continue
-    dir="${line#*cd }"
-    dir="${dir%% *}"
-    case "$dir" in
-      *"/pi") [[ "$line" == *"--ignore-scripts"* ]] || offenders="$offenders [$line]" ;;
-      *"/opencode") [[ "$line" != *"--ignore-scripts"* ]] || offenders="$offenders [$line]" ;;
-      *) offenders="$offenders [$line]" ;;
-    esac
-  done < <(grep -h 'npm ci' "$REPO_ROOT/src/reasoning/runtimes.dockerfile" || true)
-  assert_empty "$offenders" "each runtime install carries the scripts flag its package needs"
+# When:  its install steps are read
+# Then:  no package-manager install names opencode-ai, and the opencode step
+#        fetches a versioned tarball, verifies its checksum and links one binary
+# Asserts: the tier installs one verified executable rather than a platform matrix
+test_opencode_is_one_verified_binary() {
+  local offenders installs
+  installs="$(_package_install_commands "$REPO_ROOT/src/reasoning/runtimes.dockerfile")"
+  offenders="$(printf '%s\n' "$installs" | grep -c 'opencode-ai' || true)"
+  assert_eq "$offenders" "0" "no npm install names opencode-ai"
+
+  local run
+  run="$(grep -A8 '^RUN curl -fsSL -o /tmp/opencode.tgz' "$REPO_ROOT/src/reasoning/runtimes.dockerfile" || true)"
+  assert_contains "$run" 'opencode-linux-x64-$' "the fetch names the platform package"
+  assert_contains "$run" 'sha256sum -c -' "the tarball is verified before it is unpacked"
+  assert_contains "$run" 'install -D -m 0755' "one binary is installed"
+  assert_contains "$run" 'ln -s /opt/opencode/opencode /usr/local/bin/opencode' "the binary is on PATH"
+  assert_contains "$run" 'rm -rf /tmp/package /tmp/opencode.tgz' "the download leaves the layer"
 }
 
 # The shape's core rule: every agent-runtime package installs in exactly one
@@ -275,9 +241,9 @@ test_each_agent_runtime_package_has_one_home() {
   for dir in "$REPO_ROOT"/src/reasoning/registry/*/; do
     [[ -d "$dir" ]] || continue
     pkg="$(basename "$dir")"
-    mapfile -t hits < <(grep -rl --include=package.json -e '"opencode-ai"' -e '"@earendil-works/pi-coding-agent"' "$REPO_ROOT/src/reasoning/registry/" 2>/dev/null | grep "/$pkg/")
+    mapfile -t hits < <(grep -rl --include=package.json -e '"@earendil-works/pi-coding-agent"' "$REPO_ROOT/src/reasoning/registry/" 2>/dev/null | grep "/$pkg/")
     case "$pkg" in
-      pi|opencode)
+      pi)
         (( ${#hits[@]} == 1 )) || homes="$homes $pkg:${#hits[@]}" ;;
       *)
         (( ${#hits[@]} == 0 )) || homes="$homes $pkg:${#hits[@]}" ;;
@@ -291,7 +257,7 @@ run_test test_shared_base_installs_the_full_runtime_set
 run_test test_tier2_images_inherit_the_shared_base
 run_test test_tier2_images_install_no_runtime_or_linter
 run_test test_registry_dependencies_are_exact
-run_test test_opencode_install_produces_a_working_binary
+run_test test_opencode_is_one_verified_binary
 run_test test_each_agent_runtime_package_has_one_home
 
 test_done

@@ -44,6 +44,8 @@ Every input the build reads is pinned to the artifact it resolved to, and [`src/
 | a registry package | nothing: the committed lockfile is the request | the resolved integrity hash and the lockfile |
 | the Python build | the exact 3.11 patch | the standalone build uv resolves it to |
 
+OpenCode is the URL-artifact row rather than the registry-package one, and the reason is the class's limit rather than a preference. Its package publishes one binary per platform and per C library, and npm filters those on `os` and `cpu` alone, so a frozen install of it lands four linux-x64 variants -- two that cannot load against this base's glibc -- for one executable. The tier pins the tarball and verifies it, which ships the same binary and no tree around it.
+
 An apt pin has to be resolved across `bookworm`, `bookworm-updates` and `bookworm-security`, not from `bookworm` alone: a security update lands in the last of those first, and a package pinned behind its own library makes the set unsatisfiable. The scan therefore compares Debian versions rather than preferring a suite, and it fails loudly when it cannot read one rather than resolving from the others.
 
 Two classes cannot reach the digest form on this base, and neither is an omission. Debian's archive publishes a SHA256 per `.deb` and apt has no syntax to require it, so the version is what apt enforces and the recorded hash is what the gate compares. The Python build is chosen by uv from its own table, so the pin fixes the patch and uv verifies the download. The strict form for the first is the M7 row in [`roadmap_future.md`](../../devlog/roadmap_future.md) that moves the base to one whose package set is content-addressed.

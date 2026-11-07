@@ -10,6 +10,7 @@
 // information rather than a broken build.
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { spawnSync } from "node:child_process";
@@ -158,18 +159,12 @@ export const NPM_INPUTS = [
     dockerfile: RUNTIMES_DOCKERFILE,
     frozen_flag: "--ignore-scripts",
   },
-  {
-    input: "npm:opencode",
-    package: "opencode-ai",
-    dir: `${REGISTRY_DIR}/opencode`,
-    dockerfile: RUNTIMES_DOCKERFILE,
-    frozen_flag: null,
-  },
 ];
 
 const URL_INPUTS = [
   { input: "hadolint", dockerfile: BASE_DOCKERFILE },
   { input: "uv", dockerfile: BASE_DOCKERFILE },
+  { input: "opencode", dockerfile: RUNTIMES_DOCKERFILE },
 ];
 
 function read(root, rel) {
@@ -424,6 +419,18 @@ const CHECKSUM_URL = {
     `https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-gnu.tar.gz.sha256`,
 };
 
+// An artifact whose publisher ships no checksum file is hashed where it is
+// served, so the remote half reads the same bytes the build verifies.
+const ARTIFACT_URL = {
+  opencode: (version) =>
+    `https://registry.npmjs.org/opencode-linux-x64/-/opencode-linux-x64-${version}.tgz`,
+};
+
+async function resolve_artifact_sha256(url) {
+  const body = Buffer.from(await fetch(url, { redirect: "follow" }).then((r) => r.arrayBuffer()));
+  return createHash("sha256").update(body).digest("hex");
+}
+
 // bump -- re-resolve every remotely resolvable input and report what moved. The
 // pins file is written only with --write, so a bump is reviewed before it lands.
 export async function bump(root, { write }) {
@@ -454,7 +461,9 @@ export async function bump(root, { write }) {
 
   for (const spec of URL_INPUTS) {
     const pin = pin_of(pins, spec.input);
-    const now = await resolve_sha256(CHECKSUM_URL[spec.input](pin.requested));
+    const now = ARTIFACT_URL[spec.input]
+      ? await resolve_artifact_sha256(ARTIFACT_URL[spec.input](pin.requested))
+      : await resolve_sha256(CHECKSUM_URL[spec.input](pin.requested));
     if (now !== pin.resolved.sha256) {
       drift.push({ input: spec.input, was: pin.resolved.sha256, now });
       pin.resolved = { ...pin.resolved, sha256: now };

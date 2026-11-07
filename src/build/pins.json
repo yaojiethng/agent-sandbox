@@ -150,14 +150,13 @@
       "move": "edit the version in that directory's package.json, run npm install --package-lock-only there, then --bump --remote --write"
     },
     {
-      "input": "npm:opencode",
-      "class": "registry-package",
+      "input": "opencode",
+      "class": "url-artifact",
       "requested": "1.19.1",
       "resolved": {
-        "lockfile": "src/reasoning/registry/opencode/package-lock.json",
-        "integrity": "sha512-gmRDqlvJhlcqIeVFXW+ixh87vBRCpOPZQeIryLE2Mqmy2kzLUhiy7Knd8ToWmExM0UqIKeSvt1t0cxDgkCC9vQ=="
+        "sha256": "6ee2f2facfec08bd975f2c90eacec4c23078fe16744e0085f1f0a2ee3887a734"
       },
-      "move": "edit the version in that directory's package.json, run npm install --package-lock-only there, then --bump --remote --write"
+      "move": "bump OPENCODE_VERSION in runtimes.dockerfile to the new version of opencode-linux-x64, then --bump --remote --write records the tarball it hashes"
     }
   ]
 }

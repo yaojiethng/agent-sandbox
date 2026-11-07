@@ -56,10 +56,11 @@ test_the_report_covers_every_input() {
   GATE_OUT="$(PINS_SCAN_ROOT="$REPO_ROOT" bash "$GATE" --report 2>&1)" || GATE_RC=$?
   assert_rc 0 "$GATE_RC" 'the report runs'
   assert_contains "$GATE_OUT" "apt:shellcheck" 'an apt package is reported'
-  assert_contains "$GATE_OUT" "npm:opencode" 'a registry package is reported'
+  assert_contains "$GATE_OUT" "npm:pi" 'a registry package is reported'
+  assert_contains "$GATE_OUT" "opencode" 'the pinned binary is reported'
   assert_contains "$GATE_OUT" "base-image" 'the base image is reported'
   local rows
-  rows="$(printf '%s\n' "$GATE_OUT" | grep -c -E '^(base-image|apt:|hadolint|uv|python|npm:)')"
+  rows="$(printf '%s\n' "$GATE_OUT" | grep -c -E '^(base-image|apt:|hadolint|uv|opencode|python|npm:)')"
   assert_eq "$rows" "15" 'the report carries one row per input'
 }
 
@@ -136,7 +137,7 @@ test_a_lockfile_without_integrity_fails() {
     const key = Object.keys(lock.packages).find((name) => name.startsWith("node_modules/") && lock.packages[name].integrity);
     delete lock.packages[key].integrity;
     fs.writeFileSync(path, JSON.stringify(lock, null, 2));
-  ' "$root/src/reasoning/registry/opencode/package-lock.json"
+  ' "$root/src/reasoning/registry/pi/package-lock.json"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a lockfile package with no integrity hash fails'
   assert_contains "$GATE_OUT" "carry no integrity hash" 'the missing hash is named'

@@ -1,8 +1,0 @@
-{
-  "name": "agent-runtimes-opencode",
-  "private": true,
-  "description": "The opencode agent-runtime, resolved and frozen for the shared tier.",
-  "dependencies": {
-    "opencode-ai": "1.19.1"
-  }
-}

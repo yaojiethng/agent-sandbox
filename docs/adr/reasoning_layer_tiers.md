@@ -43,6 +43,8 @@
 
 **Decision:** The shared tier is named `agent-runtimes`, its Dockerfile is `src/reasoning/runtimes.dockerfile`, and the image-name function is `runtimes_base_image_name`. The tier holds the two registry-package agent-runtimes, `@earendil-works/pi-coding-agent` and `opencode-ai`, each installed once. `harness` is reserved for the whole setup: the skills and prompts, the agent-runtime, the images and the execution environment.
 
+**The OpenCode install is superseded by 2026-11-07** in [`build_input_pinning.md`](build_input_pinning.md): the tier holds one registry package and one pinned release binary.
+
 **Rationale:** The tier's name used `harness` for the parts while the word now names the whole, and the tier installs two runtimes, so the plural names what it holds. The prior entry's decision is unchanged: four tiers, hermes keeps its base, no payload image. The image is internal, so no compatibility surface moves. The directory `src/reasoning/providers/` to `src/reasoning/agent-runtime/` is a separate row.
 
 **Rejected alternatives:**
