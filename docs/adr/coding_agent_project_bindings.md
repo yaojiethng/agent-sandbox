@@ -66,7 +66,9 @@ The convention-skill corpus lands at handover `20261014-05`. It supersedes the i
 
 ## 2026-10-14 -- The maintenance surface is fixed; the mechanics behind it are bound
 
-**Decision:** The workflow's fixed unit is the **maintenance surface**: the maintenance skills the prompts invoke - `check-in`, `roadmap-maintenance`, `handover-maintenance` and `doc-maintenance` (the `document` surface retired on 2026-10-29, with no prompt invoking it). Each states an operation - orient, update the task list, log and read a work unit, record a decision, publish knowledge - **without naming a file**. The **mechanics** behind a surface - the storage and the format, such as the roadmap file, the handover directory and the changelog - are the bindable unit. The workflow ships the default mechanics, and a project binds its own. This corrects the earlier reading in which a binding point was a path or a format value.
+**Decision:** The workflow's fixed unit is the **maintenance surface**: the maintenance skills the prompts invoke - `roadmap-maintenance`, `handover-maintenance` and `doc-maintenance` (the `document` surface retired on 2026-10-29, with no prompt invoking it). Each states an operation - update the task list, log and read a work unit, record a decision, publish knowledge - **without naming a file**; `/gm` owns orientation in its own procedure. The **mechanics** behind a surface - the storage and the format, such as the roadmap file, the handover directory and the changelog - are the bindable unit. The workflow ships the default mechanics, and a project binds its own. This corrects the earlier reading in which a binding point was a path or a format value.
+
+**Amended 2026-11-07:** `check-in` retired as a skill; its survey and inventory folded into the `/gm` prompt.
 
 **Amends:** R2 becomes a declared value with no `default` resolution, and R3 is superseded: a project initializes its bindings, and a required binding that is absent fails fast. The workflow's own values still ship, as the values the initializer proposes rather than a run-time fallback.
 
@@ -138,7 +140,7 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 
 ## 2026-10-14 -- The split test is cross-cutting, and a record's shape is its template
 
-**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `commit`, `check-in` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
+**Decision:** A handover element is protocol when a fixed workflow procedure's behaviour depends on it, and convention otherwise. On that test the frontmatter is protocol - the four keys, the `type` vocabulary and its commit mapping, and the `status` vocabulary, because `iter`, `wrapup`, `commit`, `/gm` and `milestone-close` read, write or branch on them - and the body is convention, because only the procedures of the record's own subsystem read it. The `milestone` field carries a protocol role, since a fixed procedure depends on the assignment, and a convention format, since the task list owns the identifier.
 
 No artifact states the contract as a whole. Each procedure states the part it reads or writes, and nothing restates the whole:
 
@@ -146,7 +148,7 @@ No artifact states the contract as a whole. Each procedure states the part it re
 |---|---|
 | the four keys, the `type` vocabulary and its commit mapping | `iter`, the writer |
 | the `status` value it sets | `commit` and `milestone-close` |
-| the `status` values it reads | `check-in` |
+| the `status` values it reads | `/gm` |
 | the keys and roles it validates | `handover-maintenance`, as checks, restating no vocabulary |
 
 The record's shape is its template, `.agents/skills/work-log/assets/handover.md`, which carries the frontmatter block and the section set. The `work-log` convention-skill states the controlled vocabularies, because a vocabulary is a rule and not a shape. The shipped corpus ships the template as a stub; a project fills it, so the corpus asserts no record shape on a project.
@@ -158,7 +160,7 @@ The record's shape is its template, `.agents/skills/work-log/assets/handover.md`
 - **Rule versus structure.** Rejected: the handover `type` is a convention under that test, and a fixed procedure's behaviour depends on it, so the test misclassifies it.
 - **A workflow contract file beside the prompts**, or **the contract in `iteration_protocol.md`.** Rejected: both invent a second artifact to state what the template already states.
 - **The contract in the `handover-maintenance` skill.** Rejected: it puts the interface every writer reads inside the one skill that checks the writers.
-- **All of the format and lifecycle as convention.** Rejected: a project that renames `status` breaks `check-in` and `milestone-close`, which the workflow cannot adapt.
+- **All of the format and lifecycle as convention.** Rejected: a project that renames `status` breaks `/gm` and `milestone-close`, which the workflow cannot adapt.
 - **The gate reads the project's format.** Rejected: the gate is the project's own artifact, so it enforces the project's structure, and the workflow owns no format for it to read.
 
 **Edge cases / drivers:** The `handover-maintenance` skill held project structure - the storage path, the section set, a date window, a gate path and two policy references - which the `Retire handover_policy` slice extracted to the `work-log` convention-skill; the skill now names a section by role. The shipped procedures still use the project's word "handover" for the iteration record, 251 times across 20 files. The follow-up is recorded as its own roadmap row.

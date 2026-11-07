@@ -48,4 +48,4 @@ Run this when coverage must be verified rather than asserted.
 
 **Report the gaps.** For each row that is missed or partial, state exactly what is missing and whether it is fixed now or deferred. When every row is done, say "Propagation complete - no gaps found."
 
-**Fix or defer.** Apply the fix-now gaps and mark their rows. Send a deferred gap to wherever the project keeps its open work -- a roadmap row when it has one, a note to the operator when it does not -- before the session closes.
+**Fix or defer.** Apply the gaps that can be fixed now and mark their rows. Send a deferred gap to wherever the project keeps its open work -- a roadmap row when it has one, a note to the operator when it does not -- before the session closes.

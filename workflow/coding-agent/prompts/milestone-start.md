@@ -25,7 +25,7 @@ Determine the finish state. Confirm with the operator that a milestone should be
 
 The task pool is the remaining open tasks in the roadmap at and below the current lineage. Read the current milestone's open tasks and its child sub-milestones; do not cross into unrelated milestones.
 
-Group the tasks in the pool into task categories, and grade the categories on the decision axes the check-in skill defines ([`check-in`](/opt/workflow/agent/modules/coding-agent/skills/check-in/SKILL.md), from the repository root): Size, Progress and Impact. That skill owns the axes and their value sets.
+Group the tasks in the pool into task categories, and grade the categories on the decision axes the check-in defines in [`gm.md`](gm.md) (from the repository root): Size, Progress and Impact. That prompt owns the axes and their value sets.
 
 Present the task categories and their grades to the operator in a table.
 

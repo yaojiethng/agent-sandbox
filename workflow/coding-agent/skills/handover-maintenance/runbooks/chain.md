@@ -1,6 +1,6 @@
 # The chain runbook - the handovers already closed
 
-Checks the chain of handovers already closed, which is where deferred items, status values, and stale references live. An operator audit opens it, and `check-in`'s thoroughness run dispatches it.
+Checks the chain of handovers already closed, which is where deferred items, status values, and stale references live. An operator audit opens it.
 
 ## When to run
 
@@ -10,7 +10,7 @@ Checks the chain of handovers already closed, which is where deferred items, sta
 | Event-driven | The handover chain holding one named deferred item |
 | A workflow that reads the chain | The prior iteration's handover |
 
-This runbook is not an iteration type. The operator invokes it, or a workflow dispatches it.
+This runbook is not an iteration type. The operator invokes it, or a workflow runs it.
 
 ## Procedure
 
@@ -72,13 +72,11 @@ The report names the form; it does not write the block. A correction that more t
 
 ### Step 7 - Report
 
-Write the report as JSONL at the path the dispatcher set, in the schema [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md) owns.
-
-The report covers every handover in scope and every finding, and a check that produced no finding carries its skip line.
+Report every finding for every handover in scope in your reply. A check that produced no finding carries its skip and reason.
 
 ## Failure modes
 
 - **A dropped deferred item reads as resolved.** Step 3 exists because an item can vanish from the chain silently. Older handovers carried deferred items in sections now removed; read the roadmap rows the items were written back to before concluding an item was resolved.
-- **A reported correction loses its form.** A finding that names a fix without naming the `[CORRECTION]` or `[AMENDMENT]` form leaves the dispatcher to invent one, and the closed record's history is rewritten without a block that says what changed and why. Name the form.
+- **A reported correction loses its form.** A finding that names a fix without naming the `[CORRECTION]` or `[AMENDMENT]` form leaves the caller to invent one, and the closed record's history is rewritten without a block that says what changed and why. Name the form.
 - **A case-only header repair loses content.** Confirm a header differs only in casing before reporting it replaceable. A header with custom content is not replaceable one to one.
 - **A skipped check reported as silence.** A run that reports no skip for a check it did not run reads as a clean chain. Report the skip.

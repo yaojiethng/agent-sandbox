@@ -15,7 +15,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Purpose
 
-Checks handover documents and reports the violations of the project's `work-log` convention. The run finds each violation and reports it in the form the dispatcher consumes. It writes no record, applies no correction, and invents no fact.
+Checks handover documents and reports the violations of the project's `work-log` convention. The run finds each violation and reports it in the form the caller consumes. It writes no record, applies no correction, and invents no fact.
 
 This skill is the index. The checks live in two runbooks, one per subject, and each names the moment it opens.
 
@@ -24,7 +24,7 @@ This skill is the index. The checks live in two runbooks, one per subject, and e
 | Runbook | Subject | Open it when | Dispatched by |
 |---|---|---|---|
 | [`runbooks/content.md`](runbooks/content.md) | the handover the current iteration is writing | at the scope gate, before the criteria are released, and again at the pre-close | `/iter` steps 5 and 7, `wrapup` B9 |
-| [`runbooks/chain.md`](runbooks/chain.md) | the chain of handovers already closed | a periodic or event-driven audit, or a workflow that reads the chain | an operator audit, `check-in`'s thoroughness run |
+| [`runbooks/chain.md`](runbooks/chain.md) | the chain of handovers already closed | a periodic or event-driven audit, or a workflow that reads the chain | an operator audit |
 
 ## The shape every handover is checked against
 
@@ -44,17 +44,17 @@ Read `.agents/skills/work-log/SKILL.md` for the vocabulary, the section roles an
 
 ## Output shape
 
-The report is the JSONL file described in [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed.
+Report the findings in your reply. The caller applies them; this skill writes no record and commits nothing.
 
-Print a one-line summary to stdout when a run ends: the findings count, the skip count, and the path.
+Print a one-line summary when a run ends: the findings count and the skip count.
 
-A finding is reported through the same schema whatever runbook produced it, with the recommendation its check supports. A finding that does not block a gate is still reported; the dispatcher decides where it is routed.
+A finding that does not block a gate is still reported; the caller decides where it is routed.
 
 ## Non-goals
 
-- Does not write a record, apply a correction, or commit. The dispatcher applies the report.
+- Does not write a record, apply a correction, or commit. The caller applies the report.
 - Does not close an iteration. The chain runbook reports what is already closed and what needs escalation.
 - Does not check the roadmap. That is [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md).
 - Does not write policy. A finding that no policy text covers is a gap to report, not a rule to add here.
 - Does not audit handovers outside the scope set the chain runbook names. A wider sweep is a separate run with its own scope.
-- Does not choose a commit shape, a message, or a fold. The report carries no field for one.
+- Does not choose a commit shape, a message, or a fold.

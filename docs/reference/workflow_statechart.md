@@ -34,7 +34,7 @@ stateDiagram-v2
     }
 
     state "Maintenance checks" as checks {
-        state "chk_orientation -- the check-in skill runs" as chk_orientation
+        state "chk_orientation -- the /gm survey runs" as chk_orientation
         state "chk_roadmap -- the roadmap-maintenance skill runs" as chk_roadmap
         state "chk_record -- the handover-maintenance skill runs" as chk_record
         state "chk_docs -- the documentation pass runs" as chk_docs
@@ -141,7 +141,7 @@ stateDiagram-v2
     sess_triaged --> it_open : a runnable row is picked
     it_open --> ms_active : no milestone is active and the row needs one
 
-    sess_oriented --> chk_orientation : /gm runs the check-in skill
+    sess_oriented --> chk_orientation : /gm surveys the project
     ms_active --> chk_roadmap : /milestone-close runs the compaction pass
     it_implementing --> chk_roadmap : /iter runs the roadmap record check
     it_implementing --> chk_record : /iter runs the handover record check
@@ -149,7 +149,7 @@ stateDiagram-v2
     sess_initialized --> chk_corpus : /bootstrap installs the corpus
 
     chk_corpus --> sess_oriented : the corpus is installed
-    chk_orientation --> sess_oriented : the report is applied
+    chk_orientation --> sess_oriented : the inventory is presented
     chk_roadmap --> chk_record : the two reports meet at one gate
     chk_record --> it_acceptance_gate : the findings queue carries the report
     chk_docs --> it_implementing : the report is applied
@@ -166,7 +166,7 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `sess_initialized` | entry | the project's convention corpus is installed |
 | `sess_oriented` | entry | a check-in has run and the tree is inventoried |
 | `sess_triaged` | entry | the open rows are sorted into runnable and questioned |
-| `chk_orientation` | checks | the `check-in` skill runs |
+| `chk_orientation` | checks | the `/gm` survey runs |
 | `chk_roadmap` | checks | the `roadmap-maintenance` skill runs |
 | `chk_record` | checks | the `handover-maintenance` skill runs |
 | `chk_docs` | checks | the documentation pass runs |
@@ -253,7 +253,7 @@ Every prompt in the iteration loop is an event here, and the command table's row
 | Command | Fires from | Leaves the agent in | Dispatches |
 |---|---|---|---|
 | `/bootstrap` | `sess_start` | `sess_initialized` | `initialize` |
-| `/gm` | `sess_start`, `sess_initialized` | `sess_oriented` | `check-in`, `roadmap-maintenance`, `handover-maintenance` |
+| `/gm` | `sess_start`, `sess_initialized` | `sess_oriented` | none |
 | `/backlog-triage` | `sess_oriented` | `sess_triaged` | none |
 | `/milestone-start` | `ms_none` | `ms_active` | none |
 | `/plan` | `ms_active` | `plan_released` | `grill-me`, `/wrapup` |

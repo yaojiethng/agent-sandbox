@@ -17,7 +17,7 @@ Checks the task list -- `devlog/roadmap.md`, `devlog/roadmap_future.md` and `dev
 
 ## When to run
 
-The dispatcher sets the moment: `/iter`, `/wrapup`, `/milestone-close` and `/milestone-start` each run this advisor at the step that reads the record, and the operator may invoke it at any time. Run it before a compaction pass, to report whether the pass is safe (Step 4). Do not run it as a closed-history sweep; report that exclusion as a skip with the clause named, never as a finding.
+The caller sets the moment: `/iter`, `/wrapup`, `/milestone-close` and `/milestone-start` each run this advisor at the step that reads the record, and the operator may invoke it at any time. Run it before a compaction pass, to report whether the pass is safe (Step 4). Do not run it as a closed-history sweep; report that exclusion as a skip with the clause named, never as a finding.
 
 ## Who runs the procedures these checks protect
 
@@ -111,34 +111,34 @@ Parts 2 and 3 read only the section this run wrote or amended; an entry closed e
 2. No task was marked `- [x]` before the operator verified it. Read the handover's Step 7 acceptance-criteria status.
 3. The compaction proposal text is drafted and ready for operator review.
 
-A premature `- [x]` blocks the pass until the operator resolves it, and is reported as an escalation.
+A premature `- [x]` blocks the pass until the operator resolves it, and is reported as a finding the operator must resolve.
 
 ### Step 5 - Report the run
 
-Write the report as JSONL at the path the dispatcher set, in the schema [`check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md) owns. One line per finding; one line per check that produced no finding, with `result` and `reason`. Four rules bound what a run may report.
+Report the findings in your reply. The caller applies them; this skill writes no record. Four rules bound what a run may report.
 
-**A finding is the smallest statement that clears the check.** Name the locus, the rule, and what the record asserts against what the tree or the convention shows. Do not propose the whole rewrite: the dispatcher reads the rule for the form, and a compaction is reported against the survival table, not as replacement text.
+**A finding is the smallest statement that clears the check.** Name the locus, the rule, and what the record asserts against what the tree or the convention shows. Do not propose the whole rewrite: the caller reads the rule for the form, and a compaction is reported against the survival table, not as replacement text.
 
 **A finding carries its evidence.** Report the tree read that produced it -- the path, the grep, the count -- so the operator can check the claim without re-running the pass. A claim about the state of a record is a hypothesis until a command confirms it, and a reviewer's claim too. Disagreement resolves by command, not by another round.
 
 **A finding names only facts this run re-read.** Every path, id, count and version in a report is read from the tree in the same run that reports it. Where the tree and the record disagree, the finding says which one is wrong.
 
-**The recommendation follows the check, not the size of the edit.** A violation whose correct form the convention or the `/milestone-close` procedures determine is fixable now, however many rows it touches. A violation under a broader roadmap row already in flight names that row and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is an escalation: no record in this set settles it. The schema passed with this dispatch carries the values and their conditions.
+**A finding is fixable here or it is not.** A violation whose correct form the convention or the `/milestone-close` procedures determine is fixable now, however many rows it touches. A violation under a broader roadmap row already in flight names that row and waits for it. A violation where two sources disagree, or where a value cannot be re-derived, is reported as one the record cannot settle.
 
 Report each check with no finding as a skip, and a check that did not run as a skip with that reason: silence reads as a clean record.
 
 ## Output shape
 
-Print a one-line summary to stdout when the run ends: the findings count, the skip count, and the path. A finding count of zero is reported as zero, never as silence.
+Print a one-line summary when the run ends: the findings count and the skip count. A finding count of zero is reported as zero, never as silence.
 
 ## Non-goals
 
-- Does not write a record, apply a correction, or commit. The dispatcher applies the report.
+- Does not write a record, apply a correction, or commit. The caller applies the report.
 - Does not check handovers or the handover chain. That is [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md).
 - Does not write policy. A check that no policy text covers is a gap to report, not a rule to add here.
 - Does not open, re-scope, or close an iteration.
 - Does not change a milestone's task set. Adding or removing a task is a roadmap decision, not a maintenance finding.
-- Does not choose a commit shape, a message, or a fold. The report carries no field for one.
+- Does not choose a commit shape, a message, or a fold.
 
 ## Failure modes
 
