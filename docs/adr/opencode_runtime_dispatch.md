@@ -1,6 +1,18 @@
 # OpenCode as a Dispatch Runtime
 
-**Current:** 2026-10-15
+**Current:** 2026-10-17
+
+## 2026-10-17 -- The dispatch CLI moves to the shared harness tier
+
+**Decision:** The dispatch CLI's home moves from the pi image to the shared `agent-harnesses` tier, so both the pi and opencode images carry it and either image can reach either backend. The rest of the 2026-10-15 decision stands: OpenCode remains a base-level provider, the CLI is a dispatch dependency rather than a replacement runtime, and there is no attribution spoofing.
+
+**Rationale:** The 2026-10-15 entry installed the CLI in the pi image because the pi image was the only home that needed it. The shared `agent-harnesses` tier now holds both harnesses, so pinning the CLI to one image is a needless asymmetry: both images inherit the tier, both carry the CLI, and the seam's backend choice no longer depends on which image a session runs in.
+
+**Rejected alternatives:**
+
+- *Keep the CLI in the pi image only* -- intent: it leaves the opencode image without the pi backend's binary, so a pi-backend role stays unrunnable there and the two images stay asymmetric.
+
+**Edge cases / drivers:** The seam's three-step binary resolution is unchanged from the 2026-10-15 entry: an explicit `DISPATCH_OPENCODE_BIN`, then `opencode` on `PATH`, then the agent-home path. The shared tier install puts `opencode` on `PATH` in both images, so the second step resolves in either.
 
 ## 2026-10-15 -- OpenCode stays a base-level provider and ships its CLI in the pi image
 
@@ -17,3 +29,5 @@ The measurement that forces the install is a provider refusal. `pi --provider op
 - *Reach the free tier by presenting pi as the OpenCode app* -- attribution spoofing, refused by operator ruling.
 
 **Edge cases / drivers:** The seam resolves the binary in three steps: an explicit `DISPATCH_OPENCODE_BIN`, then `opencode` on `PATH`, then the agent-home path. The fallback keeps a session whose image predates the install working, and the override keeps the seam testable without an install. The free tier needs no credential, so a global install serves it; a paid model that needs the operator's OpenCode authentication stays a provider-image concern until the dispatch-rule surface names it.
+
+**Reason superseded by 2026-10-17:** the CLI's home moves from the pi image to the shared `agent-harnesses` tier, so both images carry it. The rest of the entry stands: OpenCode remains a base-level provider, the CLI is a dispatch dependency rather than a replacement runtime, and there is no attribution spoofing.
