@@ -1,13 +1,13 @@
 {
-  "note": "The container interface, declared once. src/build/container-interface.mjs is the only reader, and scripts/check_container_layout.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. The `session` rows are the environment of a session in a container: every instruction surface is read from that environment, so no cell restates them. A `cell` is one instruction surface: it declares its source folders, its runtime path and its loader, and what a file may reference is decided by the path space of the root it is read in, not by a per-cell grant (docs/adr/instruction_surface_declaration.md). The `mounts` rows declare the host-side bind mounts the provider's compose overlay carries, and scripts/check_container_layout.sh holds the two equal in both directions: a mount with no row, and a row with no mount, are both findings.",
+  "note": "The container interface, declared once. src/build/container-interface.mjs is the only reader, and scripts/check_container_layout.sh holds this file equal to the COPY and ENV lines in the provider dockerfiles, both directions. An `image` row names one provider with `provider` or a set of them with `providers`, and a row carries one or the other, never both. The `session` rows are the environment of a session in a container: every instruction surface is read from that environment, so no cell restates them. A `cell` is one instruction surface: it declares its source folders, its runtime path and its loader, and what a file may reference is decided by the path space of the root it is read in, not by a per-cell grant (docs/adr/instruction_surface_declaration.md). The `mounts` rows declare the host-side bind mounts the provider's compose overlay carries, and scripts/check_container_layout.sh holds the two equal in both directions: a mount with no row, and a row with no mount, are both findings.",
   "image": [
     {
-      "provider": "pi",
+      "providers": ["pi", "opencode", "hermes"],
       "source": "src/libs/",
       "destination": "/opt/sandbox/lib/"
     },
     {
-      "provider": "pi",
+      "providers": ["pi", "opencode", "hermes"],
       "source": "src/reasoning/entrypoint.sh",
       "destination": "/opt/sandbox/bin/provider-entrypoint.sh"
     },
@@ -42,37 +42,7 @@
       "destination": "/opt/workflow/agent/config/"
     },
     {
-      "provider": "pi",
-      "source": "docs/reference/",
-      "destination": "/opt/sandbox/docs/reference/"
-    },
-    {
-      "provider": "hermes",
-      "source": "src/libs/",
-      "destination": "/opt/sandbox/lib/"
-    },
-    {
-      "provider": "hermes",
-      "source": "src/reasoning/entrypoint.sh",
-      "destination": "/opt/sandbox/bin/provider-entrypoint.sh"
-    },
-    {
-      "provider": "hermes",
-      "source": "docs/reference/",
-      "destination": "/opt/sandbox/docs/reference/"
-    },
-    {
-      "provider": "opencode",
-      "source": "src/libs/",
-      "destination": "/opt/sandbox/lib/"
-    },
-    {
-      "provider": "opencode",
-      "source": "src/reasoning/entrypoint.sh",
-      "destination": "/opt/sandbox/bin/provider-entrypoint.sh"
-    },
-    {
-      "provider": "opencode",
+      "providers": ["pi", "opencode", "hermes"],
       "source": "docs/reference/",
       "destination": "/opt/sandbox/docs/reference/"
     }

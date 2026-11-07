@@ -147,10 +147,24 @@ export function load_manifest(root) {
   }
 }
 
-// manifest_rows MANIFEST NAME -- the rows of one layer, always an array.
+// manifest_rows MANIFEST NAME -- the rows of one layer, always an array, with
+// a `providers` row expanded into one row per provider. Every consumer
+// downstream reads `provider` as a string; none sees the array form.
 export function manifest_rows(manifest, name) {
   const rows = manifest && manifest[name];
-  return Array.isArray(rows) ? rows : [];
+  if (!Array.isArray(rows)) return [];
+  const out = [];
+  for (const row of rows) {
+    if (!Array.isArray(row.providers)) {
+      out.push(row);
+      continue;
+    }
+    const { providers, ...rest } = row;
+    for (const provider of providers) {
+      out.push({ ...rest, provider });
+    }
+  }
+  return out;
 }
 
 // source_roots ROOT KIND -- the repository directories whose payload seeds a
@@ -593,6 +607,32 @@ function check_names(root, manifest, keys, findings) {
   }
 }
 
+// check_row_forms MANIFEST PROVIDERS FINDINGS -- a provider row of the `image`,
+// `env` or `provision` layer names its providers with one `provider` key or one
+// `providers` list, never both and never neither, and every name is a provider
+// whose dockerfile the tree carries.
+function check_row_forms(manifest, providers, findings) {
+  for (const layer of ["image", "env", "provision"]) {
+    const rows = manifest && Array.isArray(manifest[layer]) ? manifest[layer] : [];
+    for (const [index, row] of rows.entries()) {
+      const where = `${layer}[${index}]`;
+      const has_provider = typeof row.provider === "string" && row.provider !== "";
+      const has_providers = Array.isArray(row.providers) && row.providers.length > 0;
+      if (has_provider && has_providers) {
+        findings.push(`${where}: carries both 'provider' and 'providers'; a row names one or the other`);
+      } else if (!has_provider && !has_providers) {
+        findings.push(`${where}: carries neither 'provider' nor 'providers'; a row names one or the other`);
+      }
+      const names = has_providers ? row.providers : has_provider ? [row.provider] : [];
+      for (const name of names) {
+        if (!providers.includes(name)) {
+          findings.push(`${where}: names provider '${name}', which carries no dockerfile`);
+        }
+      }
+    }
+  }
+}
+
 // check ROOT -- findings against the provider dockerfiles. The manifest and the
 // `COPY` and `ENV` lines must hold the same set in both directions: a row no
 // line carries is a finding, and a line no row carries is a finding.
@@ -607,6 +647,8 @@ export function check(root) {
   if (providers.length === 0) {
     return [`${PROVIDERS_REL}: no provider dockerfile to check the manifest against`];
   }
+
+  check_row_forms(manifest, providers, findings);
 
   const copies = [];
   const envs = [];

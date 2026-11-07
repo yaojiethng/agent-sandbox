@@ -1,13 +1,13 @@
 # Provider Onboarding Guide
 
-A provider is a directory under [`src/reasoning/providers/`](../../src/reasoning/providers/) holding the two Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
+A provider is a directory under [`src/reasoning/providers/`](../../src/reasoning/providers/) holding its Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
 
 Read a shipped provider before writing one. Each file below is a working example of the shape it names.
 
 | Provider | Use as the reference for |
 |---|---|
 | [`pi`](../../src/reasoning/providers/pi/) | every optional file: `setup.sh`, a provider compose overlay, `config/` |
-| [`opencode`](../../src/reasoning/providers/opencode/) | the minimum: two Dockerfiles and the serve overlay |
+| [`opencode`](../../src/reasoning/providers/opencode/) | the minimum: one Dockerfile and the serve overlay |
 | [`hermes`](../../src/reasoning/providers/hermes/) | a multi-stage build, and a provider with no agent compose overlay |
 
 ## Step 1 -- Create the directory
@@ -16,11 +16,14 @@ Read a shipped provider before writing one. Each file below is a working example
 mkdir -p src/reasoning/providers/<n>
 ```
 
-Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-base`, `<n>-agent-<project>`) via [`src/build/image.sh`](../../src/build/image.sh).
+Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-agent-<project>`, and `<n>-base` for a source-built harness) via [`src/build/image.sh`](../../src/build/image.sh).
 
-## Step 2 -- Write `base.dockerfile`
+## Step 2 -- Decide where the harness installs
 
-The agent install and nothing else. The runtimes come from the shared base [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) (image `agent-base`), which owns Node, Python, uv, the shared CLI tools, and the repo lint gates. [`tests/test_shared_base_contract.sh`](../../tests/test_shared_base_contract.sh) fails the build if a provider base installs a runtime or a linter.
+The install's mechanism decides the tier, and the tier decides whether you write a base Dockerfile.
+
+- **A registry package.** Write no base. The harness belongs in the shared tier [`src/reasoning/harnesses.dockerfile`](../../src/reasoning/harnesses.dockerfile) (image `agent-harnesses`), beside the others, so it installs once and every provider inherits it. Your `provider.dockerfile` sets `ARG BASE_IMAGE=agent-harnesses`.
+- **A source build.** Write `base.dockerfile`: the agent install and nothing else, with `ARG BASE_IMAGE=agent-base`. The runtimes come from the shared base [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) (image `agent-base`), which owns Node, Python, uv, the shared CLI tools, and the repo lint gates. [`tests/test_shared_base_contract.sh`](../../tests/test_shared_base_contract.sh) fails the build if a base installs a runtime or a linter. Your `provider.dockerfile` sets `ARG BASE_IMAGE=<n>-base`.
 
 ```dockerfile
 ARG BASE_IMAGE=agent-base
@@ -28,7 +31,7 @@ FROM ${BASE_IMAGE}
 RUN ...
 ```
 
-Ends as root. User creation and runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the runtime keeps the full set while the build tools stay in the builder.
+A base ends as root. User creation and runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the runtime keeps the full set while the build tools stay in the builder.
 
 ## Step 3 -- Write `provider.dockerfile`
 
@@ -99,4 +102,4 @@ Providers hold no registry. The agent chooses a provider by name at run time, an
 | [`../reference/tool_interface.md`](../reference/tool_interface.md) | the provider interface contract |
 | [`../reference/execution_model.md`](../reference/execution_model.md) | how the harness calls provider scripts |
 | [`../reference/agent_workflow.md`](../reference/agent_workflow.md) | two-layer agent context model |
-| [`scripts/build.sh`](../../scripts/build.sh) | the three-tier build a provider base sits in |
+| [`scripts/build.sh`](../../scripts/build.sh) | the tiered build a provider sits in |

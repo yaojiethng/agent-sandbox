@@ -585,6 +585,65 @@ test_session_cli_emits_the_paths() {
   assert_contains "$MODULE_OUT" '/opt/sandbox/lib/' 'the library root is emitted'
 }
 
+test_providers_row_expands_to_one_pair_per_provider() {
+  local root="$FIXTURE_DIR/providersrow"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.image = [
+      { providers: ["a", "b"], source: "src/libs/", destination: "/opt/sandbox/lib/" }
+    ];
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_module pairs --root "$root"
+  assert_rc 0 "$MODULE_RC" 'a providers row yields one pair per provider'
+  assert_contains "$MODULE_OUT" $'image\ta\tsrc/libs/\t/opt/sandbox/lib/' 'the first provider pair is emitted'
+  assert_contains "$MODULE_OUT" $'image\tb\tsrc/libs/\t/opt/sandbox/lib/' 'the second provider pair is emitted'
+}
+
+test_row_with_both_provider_keys_flagged() {
+  local root="$FIXTURE_DIR/bothkeys"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.image[0].providers = ["pi"];
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a row carrying both provider keys fails'
+  assert_contains "$GATE_OUT" 'image[0]: carries both' 'the row and the rule are named'
+}
+
+test_row_with_neither_provider_key_flagged() {
+  local root="$FIXTURE_DIR/neitherkey"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    delete manifest.image[0].provider;
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a row carrying neither provider key fails'
+  assert_contains "$GATE_OUT" 'image[0]: carries neither' 'the row and the rule are named'
+}
+
+test_row_naming_unknown_provider_flagged() {
+  local root="$FIXTURE_DIR/unknownprovider"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.image.push({ provider: "ghost", source: "docs/reference/", destination: "/opt/sandbox/docs/reference/" });
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a row naming an unknown provider fails'
+  assert_contains "$GATE_OUT" "names provider 'ghost', which carries no dockerfile" 'the unknown provider is named'
+}
+
 test_module_root_with_no_package_entry_flagged() {
   local root="$FIXTURE_DIR/nopackage"
   write_default_tree "$root"
@@ -729,5 +788,9 @@ run_test test_mount_row_absent_from_the_overlay_flagged
 run_test test_mount_in_the_overlay_not_declared_flagged
 run_test test_pairs_cli_emits_both_layers
 run_test test_session_cli_emits_the_paths
+run_test test_providers_row_expands_to_one_pair_per_provider
+run_test test_row_with_both_provider_keys_flagged
+run_test test_row_with_neither_provider_key_flagged
+run_test test_row_naming_unknown_provider_flagged
 
 test_done
