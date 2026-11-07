@@ -4,12 +4,19 @@
 #
 # The agent's container has no Docker by design, so the build's cache behaviour
 # and its cost cannot be measured from inside it. This script runs a small
-# perturbation matrix over scripts/build.sh from the host, records what rebuilt
-# and what it cost, checks each row against its expected rebuild set, and writes
-# one JSON report for the agent to read back on its next run.
+# perturbation matrix over scripts/build.sh from the host, records which tiers
+# had a step that was not served from the layer cache and what it cost, checks
+# each row against its expected set, and writes one JSON report for the agent to
+# read back on its next run.
 #
-# Why each row exists is in the ROWS table below. A row whose observed rebuild
-# set differs from its expected set is a failure, so a cache that is wrong is
+# Every tier is built on every call, so the tiers cannot be told apart by
+# whether the builder was asked to build them. What a row measures is which
+# tiers had to run a step: `docker build --progress=plain` prints CACHED for a
+# step it reused and DONE for a step it ran, so a tier whose steps are all CACHED
+# is observed as cached, and a tier that printed no step at all is not observed.
+#
+# Why each row exists is in the ROWS table below. A row whose observed set
+# differs from its expected set is a failure, so a cache that is wrong is
 # reported rather than silently measured.
 #
 # Usage, on the host, from anywhere:
@@ -26,9 +33,9 @@
 # reads the input channel read-only at /home/agentuser/workspace/input/, so the
 # report reaches it at input/build/<timestamp>.json.
 #
-# It edits two Dockerfiles to perturb the cache key and restores them from a
-# backup on exit, including on a failure or an interrupt. It refuses to start
-# on a dirty tree, so the restore is checkable.
+# It edits two Dockerfiles to perturb the layer cache and restores them from a
+# backup on exit, including on a failure or an interrupt. It refuses to start on
+# a dirty tree, so the restore is checkable.
 
 # Observe-and-report, per pattern p-11: every row runs and
 # is counted and the exit status carries the verdict. `set -e` would abort the
@@ -149,24 +156,63 @@ run_build() {
   bash "$REPO_ROOT/scripts/build.sh" "${args[@]}" >"$log" 2>&1
 }
 
-# The image names that rebuilt, from the builder's own progress lines.
-log_rebuilt() { sed -n 's/^Building image: //p' "$1"; }
-# The image names the builder skipped as up to date.
-log_skipped() { sed -n 's/^Image up to date, skipping: //p' "$1"; }
-# The per-step DONE lines from `docker build --progress=plain`.
+# The per-step DONE lines from `docker build --progress=plain`: the steps that
+# ran rather than being reused, so their durations are the build's step cost.
 log_steps() { grep -E '^#[0-9]+ DONE ' "$1" || true; }
 
-# The images the log rebuilt, restricted to the three tiers, as a sorted list.
-# The order is by image name, so the report reads the same way on every run.
-tiers_rebuilt() {
-  local log="$1" want
-  while read -r image; do
-    [[ -n "$image" ]] || continue
+# tier_step_states LOG
+# One `<image> <state>` line per tier whose docker build the log carries, in log
+# order: `ran` when the tier had a step that was not served from the layer
+# cache, `cached` when every step it printed was. The builder prints
+# `Building image: <name>` before each tier's docker build, so that line opens a
+# segment and each step is attributed to the segment it falls in.
+#
+# Only a step that carries a build-instruction label (`#7 [2/3] RUN ...`) can
+# decide a tier's state. The `[internal]` load steps and the closing export step
+# carry no `[n/m]` label and print DONE on every build, a fully cached one
+# included, so counting every DONE line would report every tier as rerun.
+tier_step_states() {
+  awk '
+    function flush(   i, state) {
+      if (image == "" || nsteps == 0) return
+      state = "cached"
+      for (i = 1; i <= nsteps; i++) if (done[stepid[i]]) state = "ran"
+      print image, state
+    }
+    /^Building image: / {
+      flush()
+      image = substr($0, 17)
+      nsteps = 0
+      split("", stepid)
+      split("", done)
+      next
+    }
+    $1 ~ /^#[0-9]+$/ {
+      id = substr($1, 2)
+      if ($0 ~ /^#[0-9]+ \[[0-9]+[/][0-9]+\]/) { stepid[++nsteps] = id; next }
+      if ($2 == "DONE") done[id] = 1
+      next
+    }
+    END { flush() }
+  ' "$1"
+}
+
+# tiers_by_state LOG STATE
+# The tier images whose build ended in STATE (`ran` or `cached`): the three
+# tiers only, sorted, so the report reads the same way on every run.
+tiers_by_state() {
+  local log="$1" want_state="$2" image state want
+  while read -r image state; do
+    [[ -n "$image" && "$state" == "$want_state" ]] || continue
     for want in "$SHARED_BASE" "$AGENT_BASE" "$AGENT_IMAGE"; do
       [[ "$image" == "$want" ]] && printf '%s\n' "$image"
     done
-  done < <(log_rebuilt "$log") | sort -u
+  done < <(tier_step_states "$log") | sort -u
 }
+
+# The tiers that ran a step, and the tiers that were served from the cache.
+tiers_not_cached() { tiers_by_state "$1" ran; }
+tiers_cached() { tiers_by_state "$1" cached; }
 
 # -------------------------
 # Perturbation
@@ -203,28 +249,30 @@ on_exit() {
 # -------------------------
 
 # One row per perturbation. Columns: name, no-cache, perturbation, trigger
-# description, and the rebuild set expected of tiers 1, 2 and 3.
+# description, and the tiers whose build must print a step that was not served
+# from the layer cache, as the letters of tiers 1, 2 and 3 or as `none` for the
+# empty set. An empty expectation means the row is recorded, not asserted.
 #
-#   baseline  brings tiers 1 and 2 to their current key, so every later row
-#             starts from a known cache state. Its rebuild set is recorded, not
-#             asserted, because a cold machine builds and a warm one skips.
-#   mtime     touches a tier-2 Dockerfile. The key excludes mtime, so tiers 1
-#             and 2 must still skip. This is the row that proves the key reads
-#             content rather than the file's identity.
-#   content   appends a comment to the tier-1 Dockerfile. Tier 1 must rebuild,
-#             and tier 2 must follow through the base image's content id.
-#   restore   removes the comment. Tier 1 must rebuild again, because the key
-#             it holds describes the perturbed file.
-#   no-cache  rebuilds from scratch. Every tier must rebuild.
-#
-# Expected sets are written for tiers 1, 2 and 3 as the letters of the tiers
-# that must rebuild; an empty expectation means the row is recorded only.
+#   baseline  brings the three tiers to a known cache state, so every later row
+#             starts from it. Its set is recorded, not asserted, because a cold
+#             machine runs every step and a warm one reuses them all.
+#   mtime     touches a tier-2 Dockerfile without changing a byte of it. The
+#             layer cache is keyed on content, so no tier may run a step. This
+#             is the row that proves the cache reads the Dockerfile, not the
+#             file's identity.
+#   content   appends a LABEL instruction to the tier-1 Dockerfile. Tier 1 runs
+#             that step, and tiers 2 and 3 follow through their base image: a
+#             rebuilt tier is a new image, so the steps that inherit from it run
+#             too. This is the row that proves a base change propagates upward.
+#   restore   removes the appended instruction. The chain the baseline built is
+#             cached again, so every tier is served from the layer cache.
+#   no-cache  rebuilds from scratch. Every tier runs every step.
 
 ROWS=(
   "baseline|false|none|the tree as it stands|"
-  "mtime|false|touch|touched the tier-2 Dockerfile|3"
-  "content|false|append|appended a comment to the tier-1 Dockerfile|1,2,3"
-  "restore|false|restore|removed the appended comment|1,2,3"
+  "mtime|false|touch|touched the tier-2 Dockerfile|none"
+  "content|false|append|appended a LABEL to the tier-1 Dockerfile|1,2,3"
+  "restore|false|restore|removed the appended LABEL|none"
   "no-cache|true|none|the tree as it stands, with --rebuild|1,2,3"
 )
 
@@ -239,12 +287,22 @@ tier_of() {
   esac
 }
 
-# The tier letters of the images a log rebuilt, comma joined and sorted, in the
-# form the expected sets are written in.
-tiers_of_log() {
-  tiers_rebuilt "$1" | while read -r image; do
+# The tier letters of the images that ran a step, comma joined and sorted, in
+# the form the expected sets are written in.
+tier_letters_not_cached() {
+  tiers_not_cached "$1" | while read -r image; do
     [[ -n "$image" ]] && tier_of "$image"
   done | sort -u | paste -sd, -
+}
+
+# expected_tier_set COLUMN
+# A ROWS expected-set column in the form the observed set is written in: the
+# marker `none` stands for the empty set, which asserts that every tier was
+# served from the layer cache. An empty column stays empty; that row records.
+expected_tier_set() {
+  local column="$1"
+  [[ "$column" == "none" ]] && column=""
+  printf '%s' "$column"
 }
 
 # apply_perturbation KIND
@@ -257,7 +315,8 @@ apply_perturbation() {
       ;;
     append)
       perturb_backup "$SHARED_BASE_DOCKERFILE"
-      printf '# build_probe perturbation %s\n' "$PROBE_STAMP" >>"$SHARED_BASE_DOCKERFILE"
+      printf 'LABEL agent-sandbox.build-probe-perturbation="%s"\n' "$PROBE_STAMP" \
+        >>"$SHARED_BASE_DOCKERFILE"
       ;;
     restore)
       [[ -n "$PERTURBED_FILE" ]] || die "the restore row ran with nothing to restore"
@@ -277,21 +336,21 @@ apply_perturbation() {
 row_json() {
   local name="$1" no_cache="$2" trigger="$3" expect="$4"
   local log="$5" seconds="$6" rc="$7"
-  local -a rebuilt=() skipped=()
+  local -a not_cached=() cached=()
   local image
 
   while read -r image; do
-    [[ -n "$image" ]] && rebuilt+=("$image")
-  done < <(tiers_rebuilt "$log")
+    [[ -n "$image" ]] && not_cached+=("$image")
+  done < <(tiers_not_cached "$log")
   while read -r image; do
-    [[ -n "$image" ]] && skipped+=("$image")
-  done < <(log_skipped "$log" | sort -u)
+    [[ -n "$image" ]] && cached+=("$image")
+  done < <(tiers_cached "$log")
 
   local observed_tiers expected_tiers result
-  observed_tiers="$(tiers_of_log "$log")"
-  expected_tiers="$expect"
+  observed_tiers="$(tier_letters_not_cached "$log")"
+  expected_tiers="$(expected_tier_set "$expect")"
 
-  if [[ -z "$expected_tiers" ]]; then
+  if [[ -z "$expect" ]]; then
     result="recorded"
   elif [[ "$observed_tiers" == "$expected_tiers" ]]; then
     result="pass"
@@ -299,16 +358,10 @@ row_json() {
     result="fail"
   fi
 
-  local -a image_fields=() step_lines=()
+  local -a image_fields=()
   for image in "$SHARED_BASE" "$AGENT_BASE" "$AGENT_IMAGE"; do
-    local id label
-    id="$(image_digest "$image")"
-    label="$(image_label "$image" "agent-sandbox.base-build-key")"
-    image_fields+=("\"$image\": {\"id\": $(json_string "$id"), \"build_key\": $(json_string "$label")}")
+    image_fields+=("\"$image\": {\"id\": $(json_string "$(image_digest "$image")")}")
   done
-  while IFS= read -r image; do
-    [[ -n "$image" ]] && step_lines+=("$image")
-  done < <(log_steps "$log")
 
   local step_seconds
   step_seconds="$(log_steps "$log" | awk '{s += $NF + 0} END {printf "%.1f", s}')"
@@ -319,10 +372,10 @@ row_json() {
   printf '      "no_cache": %s,\n' "$no_cache"
   printf '      "exit_status": %s,\n' "$rc"
   printf '      "wall_seconds": %s,\n' "$seconds"
-  printf '      "expect_rebuild_tiers": %s,\n' "$(json_string "$expected_tiers")"
-  printf '      "observed_rebuild_tiers": %s,\n' "$(json_string "$observed_tiers")"
-  printf '      "rebuilt": %s,\n' "$(json_array "${rebuilt[@]}")"
-  printf '      "skipped": %s,\n' "$(json_array "${skipped[@]}")"
+  printf '      "expect_not_cached_tiers": %s,\n' "$(json_string "$expected_tiers")"
+  printf '      "observed_not_cached_tiers": %s,\n' "$(json_string "$observed_tiers")"
+  printf '      "not_cached": %s,\n' "$(json_array "${not_cached[@]}")"
+  printf '      "cached": %s,\n' "$(json_array "${cached[@]}")"
   printf '      "step_seconds": %s,\n' "${step_seconds:-0}"
   printf '      "log": %s,\n' "$(json_string "$log")"
   printf '      "images": {%s},\n' "$(join_commas "${image_fields[@]}")"
@@ -399,12 +452,10 @@ main() {
       failures+=("$name: the build exited $status, see $log")
     fi
 
-    observed="$(tiers_of_log "$log")"
+    observed="$(tier_letters_not_cached "$log")"
 
-    if [[ $status -eq 0 ]]; then
-      if [[ -n "$expect" && "$observed" != "$expect" ]]; then
-        failures+=("$name: expected to rebuild tiers $expect, saw $observed (see $log)")
-      fi
+    if [[ $status -eq 0 && -n "$expect" && "$observed" != "$(expected_tier_set "$expect")" ]]; then
+      failures+=("$name: expected tiers $expect to run a step, saw ${observed:-none} (see $log)")
     fi
 
     # The restore perturbation clears itself inside the row; a backup left over
@@ -420,7 +471,7 @@ main() {
     done
 
     row_json_blocks+=("$(row_json "$name" "$no_cache" "$trigger" "$expect" "$log" "$seconds" "$status")")
-    say "  rebuilt: ${observed:-none} (expected ${expect:-recorded}), ${seconds}s"
+    say "  not cached: ${observed:-none} (expected ${expect:-recorded}), ${seconds}s"
   done
 
   perturb_restore

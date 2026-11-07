@@ -4,7 +4,7 @@
 # Sourced by host scripts (start_agent.sh, run_agent.sh, agent-sandbox.sh).
 #
 # Sources:
-#   src/build/image.sh   --  image naming + identity (image_digest)
+#   src/build/image.sh   --  image naming
 #   libs/interface_contract.sh   --  interface-contract version (authoritative)
 #   libs/cli.sh          --  flag parsing
 #
@@ -80,49 +80,6 @@ build_image() {
   fi
 }
 
-# _build_key <dockerfile> [base_image]
-# The content key for a tier-1 or tier-2 base image: a hash over the
-# Dockerfile's bytes plus, for a tier that sits on another image, that image's
-# content id. A base edit or a rebuilt base changes the key, so the skip below
-# can never serve a stale image. The Dockerfile's mtime is deliberately not
-# part of the key: it changes without content, and content can change with the
-# mtime untouched.
-_build_key() {
-  local dockerfile="${1:?_build_key requires a Dockerfile}"
-  local base_image="${2:-}"
-  local base_id=""
-  if [[ -n "$base_image" ]]; then
-    base_id="$(image_digest "$base_image")"
-  fi
-  printf '%s\n%s' "$(sha256sum "$dockerfile" | awk '{print $1}')" "$base_id" \
-    | sha256sum | awk '{print $1}'
-}
-
-# build_if_missing <image> <dockerfile> <context_dir> <contract_label> <cache_flag> <base_image> [docker build args...]
-# Builds a base tier only when its content key changed. A non-empty cache_flag
-# is --no-cache and always rebuilds. The key is stamped as a label and compared
-# on the next run, so an edit to the Dockerfile, or a rebuilt base underneath,
-# takes effect instead of being skipped.
-build_if_missing() {
-  local image="$1" dockerfile="$2" context_dir="$3"
-  local contract_label="${4:-}"
-  local cache="${5:-}"
-  local base_image="${6:-}"
-  shift 6
-
-  local key
-  key="$(_build_key "$dockerfile" "$base_image")"
-  if [[ -z "$cache" ]] \
-    && docker image inspect "$image" >/dev/null 2>&1 \
-    && [[ "$(image_label "$image" "agent-sandbox.base-build-key")" == "$key" ]]; then
-    echo "Image up to date, skipping: $image"
-    return 0
-  fi
-
-  build_image "$image" "$dockerfile" "$context_dir" "$contract_label" "$cache" \
-    "agent-sandbox.base-build-key=$key" "$@"
-}
-
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
 # Three-tier build:
 #   1. agent-base (shared runtime set  --  base.dockerfile)
@@ -131,10 +88,9 @@ build_if_missing() {
 #      (providers/<provider>/base.dockerfile)
 #   3. <provider>-agent-<project> (final  --  providers/<provider>/provider.dockerfile)
 #
-# Tier 1 cached across all providers on this machine.
-# Tier 2 cached across the providers that share it; a provider base is cached
-# per-provider.
-# Tier 3 rebuilt on every build_agent call (picks up project-specific content).
+# Every tier is built on every call. Docker's layer cache is the only reuse
+# rule: an unchanged tier is a run of cache hits and a changed one re-runs the
+# steps that follow the change, so no tier carries a skip decision of its own.
 #
 # --no-cache: rebuild tiers 1 and 2 from scratch.
 # --uid/--gid: thread host UID/GID into Dockerfiles for UID mapping.
@@ -197,17 +153,17 @@ build_agent() {
   fi
 
   # Tier 1: shared runtime base  --  no contract label (no sandbox/workflow content)
-  build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" "" \
+  build_image "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" "" \
     "${uid_args[@]+${uid_args[@]}}"
 
   # Tier 2: the harness tier  --  no contract label (no sandbox/workflow content).
-  # The base image is passed so the key carries the tier-1 content id, and a
-  # rebuilt shared base forces this tier to rebuild too.
-  build_if_missing "$tier2_image" "$tier2_dockerfile" "$repo_root" "" "$cache_flag" "$shared_base" \
+  # Its base image is the tier-1 image, so a rebuilt shared base re-runs the
+  # steps that inherit from it.
+  build_image "$tier2_image" "$tier2_dockerfile" "$repo_root" "" "$cache_flag" "" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 3: always build provider image  --  carries the contract label
+  # Tier 3: the provider image  --  carries the contract label
   build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$(interface_contract_version)" "" "" \
     --build-arg "BASE_IMAGE=$tier2_image" \
     "${uid_args[@]+${uid_args[@]}}"

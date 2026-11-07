@@ -30,23 +30,65 @@ write_log() {
   cat > "$FIXTURE_DIR/build.log"
 }
 
-# Given: a build log carrying both a build line and a skip line per image
-# When:  each reader reads it
-# Then:  each takes only its own line, so a rebuilt set cannot be read as a skip
-test_progress_lines_split_into_built_and_skipped() {
+# Given: one tier that ran a step and one whose every step was a cache hit
+# When:  the per-tier state is read
+# Then:  each tier is reported once, in log order, with its own state
+# Asserts: a cache hit on every step reads as cached, and the DONE lines of the
+#          internal load and the closing export step decide nothing
+test_tier_step_states_reads_each_tier_on_its_own_steps() {
   write_log <<'EOF'
 Building image: agent-base
-  Build complete: agent-base
+#1 [internal] load build definition from base.dockerfile
+#1 DONE 0.0s
+#3 [1/2] FROM docker.io/library/node:22
+#3 CACHED
+#4 [2/2] RUN apt-get update
+#4 DONE 3.2s
+#5 exporting to image
+#5 DONE 0.2s
 Building image: pi-base
-  Build complete: pi-base
-Building image: pi-agent-probe
-Image up to date, skipping: agent-base
-Image up to date, skipping: pi-base
+#1 [internal] load build definition from base.dockerfile
+#1 DONE 0.0s
+#3 [1/2] FROM agent-base
+#3 CACHED
+#4 [2/2] RUN npm install -g x
+#4 CACHED
+#5 exporting to image
+#5 DONE 0.0s
 EOF
-  assert_eq "$(log_rebuilt "$FIXTURE_DIR/build.log" | paste -sd, -)" \
-    "agent-base,pi-base,pi-agent-probe" "log_rebuilt takes the build lines"
-  assert_eq "$(log_skipped "$FIXTURE_DIR/build.log" | paste -sd, -)" \
-    "agent-base,pi-base" "log_skipped takes the skip lines"
+  assert_eq "$(tier_step_states "$FIXTURE_DIR/build.log" | paste -sd, -)" \
+    "agent-base ran,pi-base cached" \
+    "the tier with a step that ran reads ran, the fully cached tier reads cached"
+}
+
+# Given: a log whose every tier printed only CACHED step lines and no DONE line
+# When:  the per-tier state is read
+# Then:  every tier is reported cached, which is not the same as reporting none
+# Asserts: a fully cached build is observed rather than read as an absent tier
+test_a_fully_cached_build_reports_every_tier_cached() {
+  write_log <<'EOF'
+Building image: agent-base
+#1 [internal] load build definition from base.dockerfile
+#3 [1/2] FROM docker.io/library/node:22
+#3 CACHED
+#4 [2/2] RUN apt-get update
+#4 CACHED
+Building image: pi-base
+#1 [internal] load build definition from base.dockerfile
+#3 [1/2] FROM agent-base
+#3 CACHED
+#4 [2/2] RUN npm install -g x
+#4 CACHED
+Building image: pi-agent-probe
+#3 [1/1] COPY config /opt
+#3 CACHED
+EOF
+  assert_eq "$(tiers_cached "$FIXTURE_DIR/build.log" | paste -sd, -)" \
+    "agent-base,pi-agent-probe,pi-base" "every tier of a fully cached build reads cached"
+  assert_eq "$(tiers_not_cached "$FIXTURE_DIR/build.log")" "" \
+    "a fully cached build has no tier with a step that ran"
+  assert_eq "$(tier_letters_not_cached "$FIXTURE_DIR/build.log")" "" \
+    "a fully cached build observes the empty set"
 }
 
 # Given: plain-progress output with a step done line and unrelated lines
@@ -66,45 +108,70 @@ EOF
     "5.3" "the step durations sum"
 }
 
-# Given: a log that rebuilt a tier twice and an image outside the three tiers
-# When:  the rebuilt tiers are read
+# Given: a log whose three tiers all ran a step, plus an image outside them
+# When:  the tiers that ran a step are read
 # Then:  the three tiers come back sorted and unique, and nothing else does
-test_tiers_rebuilt_keeps_the_three_tiers_sorted_and_unique() {
+test_tiers_not_cached_keeps_the_three_tiers_sorted_and_unique() {
   write_log <<'EOF'
 Building image: pi-agent-probe
+#4 [1/1] COPY config /opt
+#4 DONE 0.1s
 Building image: agent-base
+#4 [1/1] RUN true
+#4 DONE 1.0s
 Building image: sandbox-myproject
+#2 [1/1] RUN true
+#2 DONE 0.2s
 Building image: pi-base
-Building image: agent-base
+#4 [1/1] RUN true
+#4 DONE 0.3s
 EOF
-  assert_eq "$(tiers_rebuilt "$FIXTURE_DIR/build.log" | paste -sd, -)" \
+  assert_eq "$(tiers_not_cached "$FIXTURE_DIR/build.log" | paste -sd, -)" \
     "agent-base,pi-agent-probe,pi-base" \
-    "tiers_rebuilt keeps the three tiers, sorted, and drops the image outside them"
+    "tiers_not_cached keeps the three tiers, sorted, and drops the image outside them"
 }
 
-# Given: a log whose images are the three tiers in a scrambled order
+# Given: a log whose tiers are the three in a scrambled order
 # When:  the observed set is built the way the probe builds it
 # Then:  the letters are comma separated, not spliced into one number
 # Asserts: the reported set is '1,2,3' rather than '132'
 test_the_observed_set_is_comma_separated_letters() {
   write_log <<'EOF'
 Building image: pi-agent-probe
+#4 [1/1] COPY config /opt
+#4 DONE 0.1s
 Building image: agent-base
+#4 [1/1] RUN true
+#4 DONE 1.0s
 Building image: pi-base
+#4 [1/1] RUN true
+#4 DONE 0.3s
 EOF
-  assert_eq "$(tiers_of_log "$FIXTURE_DIR/build.log")" "1,2,3" \
+  assert_eq "$(tier_letters_not_cached "$FIXTURE_DIR/build.log")" "1,2,3" \
     "the observed set is three comma-separated tier letters"
 }
 
-# Given: a log that rebuilt nothing in the three tiers
+# Given: a log that opened no tier build at all
 # When:  the observed set is built
 # Then:  it is empty, which is what an unasserted row records
-test_the_observed_set_is_empty_when_nothing_rebuilt() {
+test_the_observed_set_is_empty_when_no_tier_is_observed() {
   write_log <<'EOF'
 Building image: sandbox-myproject
+#2 [1/1] RUN true
+#2 DONE 0.2s
 EOF
-  assert_eq "$(tiers_of_log "$FIXTURE_DIR/build.log")" "" \
-    "a log with no tier rebuild gives an empty observed set"
+  assert_eq "$(tier_letters_not_cached "$FIXTURE_DIR/build.log")" "" \
+    "a log with no tier step gives an empty observed set"
+}
+
+# Given: an expected-set column holding the empty-set marker and one holding a set
+# When:  each is read
+# Then:  the marker stands for the empty set and a set passes through unchanged
+# Asserts: a row can assert that no tier ran a step, rather than record that fact
+test_expected_tier_set_reads_the_none_marker() {
+  assert_eq "$(expected_tier_set none)" "" "the marker stands for the empty set"
+  assert_eq "$(expected_tier_set 1,2,3)" "1,2,3" "a set passes through unchanged"
+  assert_eq "$(expected_tier_set '')" "" "an empty column stays empty"
 }
 
 # Given: the three tier image names, and one from another layer
@@ -165,8 +232,8 @@ test_perturb_restore_puts_the_file_back() {
 
 # Given: the perturbation matrix
 # When:  each row is read
-# Then:  every asserted row carries the rebuild set its verdict compares against,
-#        and the baseline row is the one that records rather than asserts
+# Then:  every asserted row carries the expected set its verdict compares
+#        against, and the baseline row is the one that records rather than asserts
 test_the_matrix_asserts_every_row_except_the_baseline() {
   assert_eq "${#ROWS[@]}" "5" "the matrix has five rows"
   local row name kind trigger expect
@@ -177,7 +244,9 @@ test_the_matrix_asserts_every_row_except_the_baseline() {
     assert_not_empty "$trigger" "row describes its trigger"
     case "$name" in
       baseline) assert_empty "$expect" "the baseline row records rather than asserts" ;;
-      *) assert_not_empty "$expect" "the $name row carries an expected rebuild set" ;;
+      mtime|restore) assert_eq "$expect" "none" \
+        "the $name row asserts that every tier is served from the layer cache" ;;
+      *) assert_not_empty "$expect" "the $name row carries an expected set" ;;
     esac
   done
 }
@@ -197,11 +266,13 @@ test_the_matrix_order_puts_restore_after_the_perturbation() {
     "the matrix normalizes, perturbs, restores and then rebuilds cold"
 }
 
-run_test test_progress_lines_split_into_built_and_skipped
+run_test test_tier_step_states_reads_each_tier_on_its_own_steps
+run_test test_a_fully_cached_build_reports_every_tier_cached
 run_test test_log_steps_reads_progress_plain_done_lines
-run_test test_tiers_rebuilt_keeps_the_three_tiers_sorted_and_unique
+run_test test_tiers_not_cached_keeps_the_three_tiers_sorted_and_unique
 run_test test_the_observed_set_is_comma_separated_letters
-run_test test_the_observed_set_is_empty_when_nothing_rebuilt
+run_test test_the_observed_set_is_empty_when_no_tier_is_observed
+run_test test_expected_tier_set_reads_the_none_marker
 run_test test_tier_of_maps_each_image_to_its_tier
 run_test test_json_string_escapes_the_metacharacters
 run_test test_json_array_is_empty_without_items

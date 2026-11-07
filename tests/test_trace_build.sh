@@ -74,24 +74,6 @@ invoke_build_err() {
 # ---------------------------------------------------------------------------
 
 # Given: a populated build fixture and the docker stub
-# When:  build.sh runs with an explicit provider target
-# Then:  it inspects images before deciding to build
-# Asserts: the preflight probe runs on the explicit build path
-test_build_inspects_images() {
-  local FIXTURE_DIR="$FIXTURE_DIR/build_inspect"
-  mkdir -p "$FIXTURE_DIR"
-  setup_build_fixture "$FIXTURE_DIR"
-  local BUILD_RC=0
-  invoke_build || BUILD_RC=$?
-  assert_rc 0 "$BUILD_RC" "build invocation succeeds"
-  if trace_has "image inspect"; then
-    pass "build: docker image inspect issued"
-  else
-    fail "build: docker image inspect not found in trace"
-  fi
-}
-
-# Given: the same fixture and stub
 # When:  build.sh runs
 # Then:  no docker compose command is issued
 # Asserts: the build subcommand stays independent of the compose path
@@ -156,35 +138,6 @@ test_build_image_failure_surfaces_descriptive_error_under_e() {
   assert_ne "$rc" "0" "build: a failed image build propagates a non-zero exit"
 }
 
-# compute_base_build_keys  --  the `image:key` map the docker stub reports for
-# the tier-1 and tier-2 base images, computed the way build.sh computes it.
-# With it exported the base tiers' content keys match and they skip, so a
-# build-count assertion measures the target routing rather than the base tiers.
-# image_digest runs through the stub, so the keys match what the build computes.
-compute_base_build_keys() {
-  local keys
-  keys="agent-base:$(
-    PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
-      _build_key "$REPO_ROOT/src/reasoning/base.dockerfile"
-  )"
-  # The shared harness tier, built once and shared by every registry-package provider.
-  keys="$keys $(harnesses_base_image_name):$(
-    PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
-      _build_key "$REPO_ROOT/src/reasoning/harnesses.dockerfile" "agent-base"
-  )"
-  # A source-built provider keeps its own base.
-  local p prov
-  for p in "$REPO_ROOT"/src/reasoning/providers/*/base.dockerfile; do
-    [[ -f "$p" ]] || continue
-    prov="$(basename "$(dirname "$p")")"
-    keys="$keys $(agent_base_image_name "$prov"):$(
-      PATH="$STUB_DIR:$PATH" DOCKER_STUB_IMAGE_DIGEST=sha256:stub \
-        _build_key "$p" "agent-base"
-    )"
-  done
-  printf '%s' "$keys"
-}
-
 # The (string-as-list -> array) refactor is behavior-preserving at the LIST
 # level: for path sets whose entries are all whitespace-free, the old unquoted
 # word-split call and the new array call produce the SAME argument list. So a
@@ -194,34 +147,36 @@ compute_base_build_keys() {
 # itself: exact ordered membership. A hash test below only checks the plumbing
 # runs end-to-end, not the hash's value.
 # build's default --targets (omitted) resolves to "all": sandbox + every
-# provider with a provider.dockerfile. Deterministic count in this repo (3
-# providers) locks the default-target routing (the behavior a dangling
-# test_dispatch run_test previously claimed to cover but never did).
+# provider with a provider.dockerfile. Every tier is built on every call, so the
+# count is one sandbox build plus three tiers per provider, which locks the
+# default-target routing: a dropped provider drops its three tiers.
 # Given: the same fixture, invoked with no --targets flag
 # When:  build.sh runs
-# Then:  the build count equals one sandbox build plus one per provider
+# Then:  the build count equals one sandbox build plus three per provider, and
+#        every discovered provider's own image is among them
 # Asserts: the default-target resolution builds every discovered provider
 test_build_default_targets_all() {
   local FIXTURE_DIR="$FIXTURE_DIR/bld_default"
   mkdir -p "$FIXTURE_DIR"
   setup_build_fixture "$FIXTURE_DIR"
-  export DOCKER_STUB_IMAGE_DIGEST="sha256:stub"
-  local base_keys
-  base_keys="$(compute_base_build_keys)"
-  export DOCKER_STUB_IMAGE_BUILD_KEYS="$base_keys"
   ( export PATH="$STUB_DIR:$PATH"
     bash "$REPO_ROOT/scripts/build.sh" \
       --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR"
   ) > /dev/null 2>&1 || true
-  local expected actual
-  expected="$(( 1 + $(ls "$REPO_ROOT"/src/reasoning/providers/*/provider.dockerfile | wc -l) ))"
+  local providers expected actual
+  providers="$(ls "$REPO_ROOT"/src/reasoning/providers/*/provider.dockerfile | wc -l)"
+  expected="$(( 1 + 3 * providers ))"
   actual="$(grep -c " build " "$DOCKER_TRACE_LOG" || true)"
-  if [[ "$actual" -eq "$expected" ]]; then
-    pass "build (default no --targets): sandbox + all providers ($expected docker builds)"
+  local p missing=""
+  for p in "$REPO_ROOT"/src/reasoning/providers/*/provider.dockerfile; do
+    p="$(basename "$(dirname "$p")")"
+    grep -q -- "-t ${p}-agent-test-project" "$DOCKER_TRACE_LOG" || missing+="$p "
+  done
+  if [[ "$actual" -eq "$expected" && -z "$missing" ]]; then
+    pass "build (default no --targets): sandbox + three tiers per provider ($expected docker builds)"
   else
-    fail "build (default no --targets): expected $expected 'docker build', got $actual"
+    fail "build (default no --targets): expected $expected 'docker build', got $actual; providers not built: ${missing:-none}"
   fi
-  unset DOCKER_STUB_IMAGE_BUILD_KEYS DOCKER_STUB_IMAGE_DIGEST
 }
 
 # trace_image_tags  --  the `-t <image>` tags the docker stub logged, in build
@@ -230,7 +185,7 @@ trace_image_tags() {
   grep -o -- "-t [^ ]*" "$DOCKER_TRACE_LOG" | awk '{print $2}'
 }
 
-# Given: a build with no base keys exported, so every tier builds
+# Given: the fixture and the docker stub
 # When:  build.sh runs for the pi provider
 # Then:  the build order is agent-base, agent-harnesses, pi-agent-test-project
 # Asserts: a registry-package provider builds the shared base, then the shared
@@ -247,7 +202,7 @@ test_build_order_pi_unified_harness_tier() {
     "pi builds agent-base, then agent-harnesses, then pi-agent-test-project"
 }
 
-# Given: a build with no base keys exported, so every tier builds
+# Given: the fixture and the docker stub
 # When:  build.sh runs for the hermes provider
 # Then:  the build order is agent-base, hermes-base, hermes-agent-test-project
 # Asserts: a source-built provider keeps its own base between the shared base
@@ -263,62 +218,6 @@ test_build_order_hermes_keeps_its_base() {
   assert_eq "$(trace_image_tags | paste -sd, -)" \
     "agent-base,hermes-base,hermes-agent-test-project" \
     "hermes builds agent-base, then hermes-base, then hermes-agent-test-project"
-}
-
-# Given: a Dockerfile, unchanged then changed
-# When:  the build key is computed
-# Then:  the key tracks the content, not the file's identity
-# Asserts: an edit to a base takes effect instead of being skipped
-test_build_key_tracks_dockerfile_content() {
-  local df="$FIXTURE_DIR/Dockerfile"
-  printf 'FROM scratch\n' > "$df"
-  local k1 k2 k3
-  k1="$(_build_key "$df")"
-  k2="$(_build_key "$df")"
-  assert_eq "$k1" "$k2" "build key: an unchanged Dockerfile yields the same key"
-  printf 'RUN true\n' >> "$df"
-  k3="$(_build_key "$df")"
-  assert_ne "$k1" "$k3" "build key: a changed Dockerfile yields a changed key"
-}
-
-# Given: one Dockerfile over a base image whose content id differs
-# When:  the build key is computed with the base image named
-# Then:  the key changes, so a rebuilt shared base forces the provider tier
-# Asserts: a base-tier change propagates to the tier that sits on it
-test_build_key_tracks_the_base_image() {
-  local df="$FIXTURE_DIR/Dockerfile"
-  printf 'FROM scratch\n' > "$df"
-  local old_path="$PATH"
-  PATH="$STUB_DIR:$PATH"
-  local k1 k2
-  k1="$(DOCKER_STUB_IMAGE_DIGEST=sha256:old _build_key "$df" "base-image")"
-  k2="$(DOCKER_STUB_IMAGE_DIGEST=sha256:new _build_key "$df" "base-image")"
-  PATH="$old_path"
-  assert_ne "$k1" "$k2" "build key: a rebuilt base yields a changed key for its tier"
-}
-
-# Given: an image whose stamped key equals the Dockerfile's current key
-# When:  build_if_missing runs
-# Then:  the tier is skipped, so no docker build reaches the trace
-# Asserts: a content match is what lets a base tier skip
-test_build_if_missing_skips_on_matching_key() {
-  local df="$FIXTURE_DIR/Dockerfile"
-  printf 'FROM scratch\n' > "$df"
-  local key
-  key="$(_build_key "$df")"
-  export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
-  : > "$DOCKER_TRACE_LOG"
-  export DOCKER_STUB_IMAGE_BUILD_KEY="$key"
-  local old_path="$PATH"
-  PATH="$STUB_DIR:$PATH"
-  build_if_missing "some-base" "$df" "$FIXTURE_DIR" "" "" "" >/dev/null 2>&1
-  PATH="$old_path"
-  unset DOCKER_STUB_IMAGE_BUILD_KEY
-  if grep -q " build " "$DOCKER_TRACE_LOG"; then
-    fail "build_if_missing: a matching content key should skip, but a build ran"
-  else
-    pass "build_if_missing: a tier whose stamped key matches is skipped"
-  fi
 }
 
 # Given: a build through build_image with no progress mode stated
@@ -386,28 +285,6 @@ test_cli_progress_flag_reaches_docker() {
     pass "--progress=plain is parsed at ingestion and reaches docker build"
   else
     fail "--progress=plain did not reach docker build; trace: $(cat "$DOCKER_TRACE_LOG"); output: $(cat "$FIXTURE_DIR/progress-cli.log")"
-  fi
-}
-
-# Given: an image whose stamped key differs from the Dockerfile's current key
-# When:  build_if_missing runs
-# Then:  the tier is built
-# Asserts: a changed base is not served from a stale image
-test_build_if_missing_builds_on_stale_key() {
-  local df="$FIXTURE_DIR/Dockerfile"
-  printf 'FROM scratch\n' > "$df"
-  export DOCKER_TRACE_LOG="$FIXTURE_DIR/docker-trace.log"
-  : > "$DOCKER_TRACE_LOG"
-  export DOCKER_STUB_IMAGE_BUILD_KEY="stale-key"
-  local old_path="$PATH"
-  PATH="$STUB_DIR:$PATH"
-  build_if_missing "some-base" "$df" "$FIXTURE_DIR" "" "" "" >/dev/null 2>&1
-  PATH="$old_path"
-  unset DOCKER_STUB_IMAGE_BUILD_KEY
-  if grep -q " build " "$DOCKER_TRACE_LOG"; then
-    pass "build_if_missing: a stale content key forces the tier to build"
-  else
-    fail "build_if_missing: a stale content key did not force a build"
   fi
 }
 
@@ -611,7 +488,6 @@ test_build_agent_missing_provider_dockerfile() {
 run_test test_check_interface_contract_refuses_and_passes_via_stub
 run_test test_check_interface_contract_refuses_missing_label
 run_test test_record_image_service_scoped
-run_test test_build_inspects_images
 run_test test_build_no_compose
 run_test test_build_has_build_command
 run_test test_build_image_failure_surfaces_descriptive_error_under_e
@@ -619,13 +495,9 @@ run_test test_build_default_targets_all
 run_test test_build_order_pi_unified_harness_tier
 run_test test_build_order_hermes_keeps_its_base
 run_test test_build_does_not_require_sandbox
-run_test test_build_key_tracks_dockerfile_content
-run_test test_build_key_tracks_the_base_image
 run_test test_build_image_defaults_to_quiet_progress
 run_test test_build_image_plain_progress_replaces_quiet
 run_test test_cli_progress_flag_reaches_docker
-run_test test_build_if_missing_skips_on_matching_key
-run_test test_build_if_missing_builds_on_stale_key
 run_test test_preflight_builds_when_images_missing
 run_test test_preflight_refuses_missing_images_when_resume
 run_test test_build_main_requires_project

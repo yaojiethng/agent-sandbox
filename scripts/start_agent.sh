@@ -472,7 +472,8 @@ main() {
   # which also provides the image-name functions. Source it now that identity paths
   # are settled and we are ready to (re)build/preflight for this session.
   source "$REPO_ROOT/scripts/build.sh"
-  # --refresh: rebuild sandbox and provider (base skipped if exists).
+  # --refresh: rebuild sandbox and provider with no --no-cache, so docker's
+  # layer cache decides what each tier reuses.
   # --rebuild: rebuild everything from scratch including base (supersedes --refresh).
   # Export host UID/GID for build pipeline
   HOST_UID="$(id -u)"
