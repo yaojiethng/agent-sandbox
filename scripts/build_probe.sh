@@ -1,47 +1,9 @@
 #!/usr/bin/env bash
 # scripts/build_probe.sh
-# Host-side build probe for the reasoning layer.
-#
-# The agent's container has no Docker by design, so the build's cache behaviour
-# and its cost cannot be measured from inside it. This script runs a small
-# perturbation matrix over scripts/build.sh from the host, records which tiers
-# had a step that was not served from the layer cache and what it cost, checks
-# each row against its expected set, and writes one JSON report for the agent to
-# read back on its next run.
-#
-# Every tier is built on every call, so the tiers cannot be told apart by
-# whether the builder was asked to build them. What a row measures is which
-# tiers had to run a step: `docker build --progress=plain` prints CACHED for a
-# step it reused and DONE for a step it ran, so a tier whose steps are all CACHED
-# is observed as cached, and a tier that printed no step at all is not observed.
-#
-# Why each row exists is in the ROWS table below. A row whose observed set
-# differs from its expected set is a failure, so a cache that is wrong is
-# reported rather than silently measured.
-#
-# Usage, on the host, from anywhere:
-#
-#   bash scripts/build_probe.sh
-#
-# Options:
-#   --input-dir=<path>  Where to write the report. Defaults to $INPUT_DIR.
-#   --provider=<name>   The provider chain to probe. Default: pi.
-#   --project=<name>    The name that tags the tier-3 image. Default: probe.
-#
-# The report lands at <input-dir>/build/<timestamp>.json, and its row logs and
-# docker history dumps beside it in <input-dir>/build/<timestamp>/. The agent
-# reads the input channel read-only at /home/agentuser/workspace/input/, so the
-# report reaches it at input/build/<timestamp>.json.
-#
-# It edits two Dockerfiles to perturb the layer cache and restores them from a
-# backup on exit, including on a failure or an interrupt. It refuses to start on
-# a dirty tree, so the restore is checkable.
-
-# Observe-and-report, per pattern p-11: every row runs and
-# is counted and the exit status carries the verdict. `set -e` would abort the
-# matrix at the first failing row and defeat the report. The flags sit inside
-# the execution guard at the foot of this file, so a test that sources the file
-# keeps its own shell regime.
+# Host-side recorder for the reasoning layer's production run. The agent's
+# container has no Docker by design, so the host runs one build and the report
+# crosses the read-only input channel. The report's fields, the model and the
+# deferred signals are in docs/development/build_operational_model.md.
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
@@ -50,23 +12,27 @@ source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 
 PROBE_INPUT_DIR=""
+REBUILD=false
 PROBE_PROVIDER="pi"
 PROBE_PROJECT="probe"
+PROBE_LABEL=""
 
 usage() {
   cat <<'USAGE'
 Usage: bash scripts/build_probe.sh [options]
 
-Runs the build perturbation matrix on the host and writes one JSON report to
+Runs one build on the host and records it as JSON at
 <input-dir>/build/<timestamp>.json.
 
 Options:
   --input-dir=<path>  Where to write the report. Defaults to $INPUT_DIR.
-  --provider=<name>   The provider chain to probe. Default: pi.
+  --provider=<name>   The provider chain to record. Default: pi.
   --project=<name>    The name that tags the tier-3 image. Default: probe.
+  --label=<text>      A label for the run, e.g. baseline or delta.
+  --rebuild           Pass --no-cache to every tier through build.sh.
   -h, --help          Print this help.
 
-The script refuses a dirty working tree and restores every Dockerfile it edits.
+The script mutates no file; the tree it reads is the tree it reports.
 USAGE
 }
 
@@ -76,16 +42,12 @@ USAGE
 
 say() { echo "build_probe: $*"; }
 
-# A missing tool or an unusable output directory is a finding, not a special
-# exit code: report it and exit 1 (pattern p-14).
 die() {
   echo "build_probe: ERROR: $*" >&2
   exit 1
 }
 
-# json_string TEXT
-# A JSON string literal. The host toolchain carries no jq
-# (docs/development/host_requirements.md), so the escaping lives here.
+# The host toolchain carries no jq (docs/development/host_requirements.md).
 json_string() {
   local s="$1"
   s="${s//\\/\\\\}"
@@ -96,19 +58,6 @@ json_string() {
   printf '"%s"' "$s"
 }
 
-# json_array ITEM...
-# A JSON array of string literals, one line, empty array when given no item.
-json_array() {
-  local out="" item
-  for item in "$@"; do
-    [[ -n "$out" ]] && out+=", "
-    out+="$(json_string "$item")"
-  done
-  printf '[%s]' "$out"
-}
-
-# join_commas ITEM...
-# The items as one comma-joined line, with no trailing separator.
 join_commas() {
   local out="" item
   for item in "$@"; do
@@ -131,19 +80,23 @@ sha256_of() {
   fi
 }
 
-# The reasoning-layer Dockerfiles, in a stable order, one path per line.
 reasoning_dockerfiles() {
   find "$REPO_ROOT/src/reasoning" -type f \
     \( -name '*.dockerfile' -o -name 'Dockerfile*' \) | sort
 }
 
+image_size() {
+  docker image inspect --format '{{.Size}}' "$1" 2>/dev/null || printf '0'
+}
+
+git_head() { git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null; }
+host_uname() { uname -srm; }
+docker_version() { docker --version 2>/dev/null; }
+
 # -------------------------
 # The build invocation
 # -------------------------
 
-# run_build LOG NO_CACHE
-# Builds the probed provider's chain through scripts/build.sh and captures
-# every line of its output in LOG. Returns the builder's status.
 run_build() {
   local log="$1" no_cache="$2"
   local -a args=(
@@ -156,128 +109,53 @@ run_build() {
   bash "$REPO_ROOT/scripts/build.sh" "${args[@]}" >"$log" 2>&1
 }
 
-# The per-step DONE lines from `docker build --progress=plain`: the steps that
-# ran rather than being reused, so their durations are the build's step cost.
-log_steps() { grep -E '^#[0-9]+ DONE ' "$1" || true; }
-
-# tier_step_states LOG
-# One `<image> <state>` line per tier whose docker build the log carries, in log
-# order: `ran` when the tier had a step that was not served from the layer
-# cache, `cached` when every step it printed was. The builder prints
-# `Building image: <name>` before each tier's docker build, so that line opens a
-# segment and each step is attributed to the segment it falls in.
-#
-# Only a step that carries a build-instruction label (`#7 [2/3] RUN ...`) can
-# decide a tier's state. The `[internal]` load steps and the closing export step
-# carry no `[n/m]` label and print DONE on every build, a fully cached one
-# included, so counting every DONE line would report every tier as rerun.
-tier_step_states() {
+# The builder prints `Building image: <name>` before each tier's build, so that
+# line opens a segment. Only a `[n/m]` step decides the state: the `[internal]`
+# and export DONE lines also appear on a cached build. Every DONE duration is
+# the tier's step seconds.
+tier_records() {
   awk '
-    function flush(   i, state) {
+    function flush(   i, state, secs) {
       if (image == "" || nsteps == 0) return
       state = "cached"
       for (i = 1; i <= nsteps; i++) if (done[stepid[i]]) state = "ran"
-      print image, state
+      secs = 0
+      for (i = 1; i <= ndone; i++) secs += dur[i]
+      printf "%s|%s|%.1f\n", image, state, secs
     }
     /^Building image: / {
       flush()
-      image = substr($0, 17)
+      image = $0
+      sub(/^Building image: /, "", image)
       nsteps = 0
+      ndone = 0
       split("", stepid)
       split("", done)
+      split("", dur)
       next
     }
     $1 ~ /^#[0-9]+$/ {
       id = substr($1, 2)
       if ($0 ~ /^#[0-9]+ \[[0-9]+[/][0-9]+\]/) { stepid[++nsteps] = id; next }
-      if ($2 == "DONE") done[id] = 1
+      if ($2 == "DONE") { done[id] = 1; dur[++ndone] = $NF + 0 }
       next
     }
     END { flush() }
   ' "$1"
 }
 
-# tiers_by_state LOG STATE
-# The tier images whose build ended in STATE (`ran` or `cached`): the three
-# tiers only, sorted, so the report reads the same way on every run.
-tiers_by_state() {
-  local log="$1" want_state="$2" image state want
-  while read -r image state; do
-    [[ -n "$image" && "$state" == "$want_state" ]] || continue
-    for want in "$SHARED_BASE" "$AGENT_BASE" "$AGENT_IMAGE"; do
-      [[ "$image" == "$want" ]] && printf '%s\n' "$image"
-    done
-  done < <(tier_step_states "$log") | sort -u
+tier_cache_state() {
+  local log="$1" image="$2" state
+  state="$(tier_records "$log" | awk -F'|' -v img="$image" '$1 == img {print $2; exit}')"
+  printf '%s\n' "${state:-unobserved}"
 }
 
-# The tiers that ran a step, and the tiers that were served from the cache.
-tiers_not_cached() { tiers_by_state "$1" ran; }
-tiers_cached() { tiers_by_state "$1" cached; }
-
-# -------------------------
-# Perturbation
-# -------------------------
-
-PERTURBED_FILE=""
-PERTURBED_BACKUP=""
-
-# perturb_backup FILE
-# A copy to restore from, kept outside the work tree so the tree stays clean.
-perturb_backup() {
-  local file="$1"
-  PERTURBED_FILE="$file"
-  PERTURBED_BACKUP="$PROBE_RUN_DIR/$(basename "$file").orig"
-  cp -p "$file" "$PERTURBED_BACKUP"
+tier_step_seconds() {
+  local log="$1" image="$2" secs
+  secs="$(tier_records "$log" | awk -F'|' -v img="$image" '$1 == img {print $3; exit}')"
+  printf '%s\n' "${secs:-0.0}"
 }
 
-perturb_restore() {
-  if [[ -n "$PERTURBED_FILE" && -f "$PERTURBED_BACKUP" ]]; then
-    cp -p "$PERTURBED_BACKUP" "$PERTURBED_FILE"
-    PERTURBED_FILE=""
-    PERTURBED_BACKUP=""
-  fi
-}
-
-on_exit() {
-  local rc=$?
-  perturb_restore
-  exit "$rc"
-}
-
-# -------------------------
-# The matrix
-# -------------------------
-
-# One row per perturbation. Columns: name, no-cache, perturbation, trigger
-# description, and the tiers whose build must print a step that was not served
-# from the layer cache, as the letters of tiers 1, 2 and 3 or as `none` for the
-# empty set. An empty expectation means the row is recorded, not asserted.
-#
-#   baseline  brings the three tiers to a known cache state, so every later row
-#             starts from it. Its set is recorded, not asserted, because a cold
-#             machine runs every step and a warm one reuses them all.
-#   mtime     touches a tier-2 Dockerfile without changing a byte of it. The
-#             layer cache is keyed on content, so no tier may run a step. This
-#             is the row that proves the cache reads the Dockerfile, not the
-#             file's identity.
-#   content   appends a LABEL instruction to the tier-1 Dockerfile. Tier 1 runs
-#             that step, and tiers 2 and 3 follow through their base image: a
-#             rebuilt tier is a new image, so the steps that inherit from it run
-#             too. This is the row that proves a base change propagates upward.
-#   restore   removes the appended instruction. The chain the baseline built is
-#             cached again, so every tier is served from the layer cache.
-#   no-cache  rebuilds from scratch. Every tier runs every step.
-
-ROWS=(
-  "baseline|false|none|the tree as it stands|"
-  "mtime|false|touch|touched the tier-2 Dockerfile|none"
-  "content|false|append|appended a LABEL to the tier-1 Dockerfile|1,2,3"
-  "restore|false|restore|removed the appended LABEL|none"
-  "no-cache|true|none|the tree as it stands, with --rebuild|1,2,3"
-)
-
-# The tier letter of an image name, newline terminated so the letters of two
-# images cannot splice together when they are read as lines.
 tier_of() {
   case "$1" in
     "$SHARED_BASE") printf '1\n' ;;
@@ -287,100 +165,60 @@ tier_of() {
   esac
 }
 
-# The tier letters of the images that ran a step, comma joined and sorted, in
-# the form the expected sets are written in.
-tier_letters_not_cached() {
-  tiers_not_cached "$1" | while read -r image; do
-    [[ -n "$image" ]] && tier_of "$image"
-  done | sort -u | paste -sd, -
-}
-
-# expected_tier_set COLUMN
-# A ROWS expected-set column in the form the observed set is written in: the
-# marker `none` stands for the empty set, which asserts that every tier was
-# served from the layer cache. An empty column stays empty; that row records.
-expected_tier_set() {
-  local column="$1"
-  [[ "$column" == "none" ]] && column=""
-  printf '%s' "$column"
-}
-
-# apply_perturbation KIND
-apply_perturbation() {
-  local kind="$1"
-  case "$kind" in
-    touch)
-      perturb_backup "$AGENT_BASE_DOCKERFILE"
-      touch "$AGENT_BASE_DOCKERFILE"
-      ;;
-    append)
-      perturb_backup "$SHARED_BASE_DOCKERFILE"
-      printf 'LABEL agent-sandbox.build-probe-perturbation="%s"\n' "$PROBE_STAMP" \
-        >>"$SHARED_BASE_DOCKERFILE"
-      ;;
-    restore)
-      [[ -n "$PERTURBED_FILE" ]] || die "the restore row ran with nothing to restore"
-      perturb_restore
-      ;;
-    none) ;;
-    *) die "unknown perturbation: $kind" ;;
-  esac
-}
-
 # -------------------------
 # Report
 # -------------------------
 
-# One row's JSON object. Every field the row recorded is emitted, so a reader
-# never has to infer a value the probe did not take.
-row_json() {
-  local name="$1" no_cache="$2" trigger="$3" expect="$4"
-  local log="$5" seconds="$6" rc="$7"
-  local -a not_cached=() cached=()
-  local image
+tier_json() {
+  local name="$1" tier="$2" id="$3" size="$4" state="$5" secs="$6"
+  printf '{"name": %s, "tier": %s, "id": %s, "size_bytes": %s, "cache_state": %s, "step_seconds": %s}' \
+    "$(json_string "$name")" "$tier" "$(json_string "$id")" "${size:-0}" \
+    "$(json_string "$state")" "${secs:-0.0}"
+}
 
-  while read -r image; do
-    [[ -n "$image" ]] && not_cached+=("$image")
-  done < <(tiers_not_cached "$log")
-  while read -r image; do
-    [[ -n "$image" ]] && cached+=("$image")
-  done < <(tiers_cached "$log")
+# main sets the globals; a test sets them to check the schema.
+emit_report() {
+  local report="$1"
+  shift
+  local -a tier_blocks=("$@")
 
-  local observed_tiers expected_tiers result
-  observed_tiers="$(tier_letters_not_cached "$log")"
-  expected_tiers="$(expected_tier_set "$expect")"
-
-  if [[ -z "$expect" ]]; then
-    result="recorded"
-  elif [[ "$observed_tiers" == "$expected_tiers" ]]; then
-    result="pass"
-  else
-    result="fail"
-  fi
-
-  local -a image_fields=()
-  for image in "$SHARED_BASE" "$AGENT_BASE" "$AGENT_IMAGE"; do
-    image_fields+=("\"$image\": {\"id\": $(json_string "$(image_digest "$image")")}")
-  done
-
-  local step_seconds
-  step_seconds="$(log_steps "$log" | awk '{s += $NF + 0} END {printf "%.1f", s}')"
-
-  printf '    {\n'
-  printf '      "name": %s,\n' "$(json_string "$name")"
-  printf '      "trigger": %s,\n' "$(json_string "$trigger")"
-  printf '      "no_cache": %s,\n' "$no_cache"
-  printf '      "exit_status": %s,\n' "$rc"
-  printf '      "wall_seconds": %s,\n' "$seconds"
-  printf '      "expect_not_cached_tiers": %s,\n' "$(json_string "$expected_tiers")"
-  printf '      "observed_not_cached_tiers": %s,\n' "$(json_string "$observed_tiers")"
-  printf '      "not_cached": %s,\n' "$(json_array "${not_cached[@]}")"
-  printf '      "cached": %s,\n' "$(json_array "${cached[@]}")"
-  printf '      "step_seconds": %s,\n' "${step_seconds:-0}"
-  printf '      "log": %s,\n' "$(json_string "$log")"
-  printf '      "images": {%s},\n' "$(join_commas "${image_fields[@]}")"
-  printf '      "result": %s\n' "$(json_string "$result")"
-  printf '    }'
+  {
+    printf '{\n'
+    printf '  "probe": "build_probe",\n'
+    printf '  "format": 2,\n'
+    printf '  "timestamp": %s,\n' "$(json_string "$PROBE_STAMP")"
+    printf '  "label": %s,\n' "$(json_string "$PROBE_LABEL")"
+    printf '  "repo": {"root": %s, "head": %s, "dirty": %s},\n' \
+      "$(json_string "$REPO_ROOT")" "$(json_string "$(git_head)")" "$PROBE_REPO_DIRTY"
+    printf '  "host": {"uname": %s, "docker": %s},\n' \
+      "$(json_string "$(host_uname)")" "$(json_string "$(docker_version)")"
+    printf '  "provider": %s,\n' "$(json_string "$PROBE_PROVIDER")"
+    printf '  "project": %s,\n' "$(json_string "$PROBE_PROJECT")"
+    printf '  "run": {"no_cache": %s, "exit_status": %s, "wall_seconds": %s, "error": %s, "log": %s},\n' \
+      "$REBUILD" "$PROBE_RUN_STATUS" "$PROBE_WALL_SECONDS" \
+      "$(json_string "$PROBE_ERROR")" "$(json_string "$PROBE_LOG")"
+    printf '  "images": {"tier1": %s, "tier2": %s, "tier3": %s},\n' \
+      "$(json_string "$SHARED_BASE")" "$(json_string "$AGENT_BASE")" "$(json_string "$AGENT_IMAGE")"
+    printf '  "dockerfiles": [\n'
+    local first=true path
+    while IFS= read -r path; do
+      [[ -n "$path" ]] || continue
+      $first || printf ',\n'
+      first=false
+      printf '    {"path": %s, "sha256": %s}' \
+        "$(json_string "${path#"$REPO_ROOT"/}")" "$(json_string "$(sha256_of "$path")")"
+    done < <(reasoning_dockerfiles)
+    printf '\n  ],\n'
+    printf '  "tiers": [\n'
+    local block idx=0
+    for block in "${tier_blocks[@]}"; do
+      (( idx > 0 )) && printf ',\n'
+      printf '    %s' "$block"
+      idx=$(( idx + 1 ))
+    done
+    printf '\n  ]\n'
+    printf '}\n'
+  } >"$report"
 }
 
 # -------------------------
@@ -392,6 +230,8 @@ main() {
     --input-dir=PROBE_INPUT_DIR \
     --provider=PROBE_PROVIDER \
     --project=PROBE_PROJECT \
+    --label=PROBE_LABEL \
+    --rebuild \
     -- "$@"
   local rc=$?
   if [[ $rc -eq 2 ]]; then exit 0; fi
@@ -405,132 +245,56 @@ main() {
   [[ -d "$PROBE_INPUT_DIR" ]] || die "output directory does not exist: $PROBE_INPUT_DIR"
   [[ -w "$PROBE_INPUT_DIR" ]] || die "output directory is not writable: $PROBE_INPUT_DIR"
 
-  local dirty
-  dirty="$(git -C "$REPO_ROOT" status --porcelain)"
-  [[ -z "$dirty" ]] || die "the working tree is dirty; commit or stash first, so the Dockerfile restore is checkable"
-
   PROBE_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-  PROBE_RUN_DIR="$PROBE_INPUT_DIR/build/$PROBE_STAMP"
+  local run_dir="$PROBE_INPUT_DIR/build/$PROBE_STAMP"
   local report="$PROBE_INPUT_DIR/build/$PROBE_STAMP.json"
-  mkdir -p "$PROBE_RUN_DIR" || die "could not create $PROBE_RUN_DIR"
-
-  trap on_exit EXIT
+  mkdir -p "$run_dir" || die "could not create $run_dir"
+  PROBE_LOG="$run_dir/build.log"
 
   SHARED_BASE="$(shared_base_image_name)"
   AGENT_IMAGE="$(agent_image_name "$PROBE_PROVIDER" "$PROBE_PROJECT")"
-  SHARED_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/base.dockerfile"
   local provider_base_dockerfile="$REPO_ROOT/src/reasoning/providers/$PROBE_PROVIDER/base.dockerfile"
   if [[ -f "$provider_base_dockerfile" ]]; then
     AGENT_BASE="$(agent_base_image_name "$PROBE_PROVIDER")"
-    AGENT_BASE_DOCKERFILE="$provider_base_dockerfile"
   else
     AGENT_BASE="$(runtimes_base_image_name)"
-    AGENT_BASE_DOCKERFILE="$REPO_ROOT/src/reasoning/runtimes.dockerfile"
   fi
-  [[ -f "$AGENT_BASE_DOCKERFILE" ]] || die "no tier-2 Dockerfile for provider: $PROBE_PROVIDER"
+
+  PROBE_REPO_DIRTY=false
+  [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]] && PROBE_REPO_DIRTY=true
 
   say "provider $PROBE_PROVIDER, images $SHARED_BASE, $AGENT_BASE, $AGENT_IMAGE"
   say "report $report"
 
-  local -a row_json_blocks=() failures=()
-  local row name no_cache kind trigger expect log start end seconds status observed
+  local start="$SECONDS"
+  run_build "$PROBE_LOG" "$REBUILD"
+  PROBE_RUN_STATUS=$?
+  PROBE_WALL_SECONDS=$(( SECONDS - start ))
+  PROBE_ERROR="$(grep -E 'ERROR|FAILED' "$PROBE_LOG" | tail -1 || true)"
 
-  for row in "${ROWS[@]}"; do
-    IFS='|' read -r name no_cache kind trigger expect <<<"$row"
-    log="$PROBE_RUN_DIR/$name.log"
-    say "row $name: $trigger"
-
-    apply_perturbation "$kind"
-
-    start="$SECONDS"
-    run_build "$log" "$no_cache"
-    status=$?
-    end="$SECONDS"
-    seconds=$(( end - start ))
-
-    if [[ $status -ne 0 ]]; then
-      failures+=("$name: the build exited $status, see $log")
-    fi
-
-    observed="$(tier_letters_not_cached "$log")"
-
-    if [[ $status -eq 0 && -n "$expect" && "$observed" != "$(expected_tier_set "$expect")" ]]; then
-      failures+=("$name: expected tiers $expect to run a step, saw ${observed:-none} (see $log)")
-    fi
-
-    # The restore perturbation clears itself inside the row; a backup left over
-    # means the restore row did not run and the trap must undo the edit.
-    if [[ "$kind" == "append" ]]; then
-      : # keep the edit until the restore row
-    elif [[ "$kind" == "touch" ]]; then
-      perturb_restore
-    fi
-
-    for image in "$SHARED_BASE" "$AGENT_BASE" "$AGENT_IMAGE"; do
-      docker history --no-trunc "$image" >"$PROBE_RUN_DIR/$name.history.$image.txt" 2>/dev/null || true
-    done
-
-    row_json_blocks+=("$(row_json "$name" "$no_cache" "$trigger" "$expect" "$log" "$seconds" "$status")")
-    say "  not cached: ${observed:-none} (expected ${expect:-recorded}), ${seconds}s"
+  local -a tier_blocks=()
+  local image tier state secs id size
+  for image in "$SHARED_BASE" "$AGENT_BASE" "$AGENT_IMAGE"; do
+    tier="$(tier_of "$image")"
+    state="$(tier_cache_state "$PROBE_LOG" "$image")"
+    secs="$(tier_step_seconds "$PROBE_LOG" "$image")"
+    id="$(image_digest "$image")"
+    size="$(image_size "$image")"
+    tier_blocks+=("$(tier_json "$image" "$tier" "$id" "$size" "$state" "$secs")")
+    docker history --no-trunc "$image" >"$run_dir/history.$image.txt" 2>/dev/null || true
   done
 
-  perturb_restore
-
-  local restored_dirty
-  restored_dirty="$(git -C "$REPO_ROOT" status --porcelain)"
-  [[ -z "$restored_dirty" ]] || failures+=("the working tree is dirty after the restore: $restored_dirty")
-
-  local verdict="pass"
-  (( ${#failures[@]} > 0 )) && verdict="fail"
-
-  {
-    printf '{\n'
-    printf '  "probe": "build_probe",\n'
-    printf '  "format": 1,\n'
-    printf '  "timestamp": %s,\n' "$(json_string "$PROBE_STAMP")"
-    printf '  "verdict": %s,\n' "$(json_string "$verdict")"
-    printf '  "repo": {"root": %s, "head": %s, "dirty_at_start": false},\n' \
-      "$(json_string "$REPO_ROOT")" "$(json_string "$(git -C "$REPO_ROOT" rev-parse HEAD)")"
-    printf '  "host": {"uname": %s, "docker": %s},\n' \
-      "$(json_string "$(uname -srm)")" "$(json_string "$(docker --version)")"
-    printf '  "provider": %s,\n' "$(json_string "$PROBE_PROVIDER")"
-    printf '  "project": %s,\n' "$(json_string "$PROBE_PROJECT")"
-    printf '  "images": {"tier1": %s, "tier2": %s, "tier3": %s},\n' \
-      "$(json_string "$SHARED_BASE")" "$(json_string "$AGENT_BASE")" "$(json_string "$AGENT_IMAGE")"
-    printf '  "dockerfiles": [\n'
-    local first=true path
-    while IFS= read -r path; do
-      [[ -n "$path" ]] || continue
-      $first || printf ',\n'
-      first=false
-      printf '    {"path": %s, "sha256": %s}' \
-        "$(json_string "${path#"$REPO_ROOT"/}")" "$(json_string "$(sha256_of "$path")")"
-    done < <(reasoning_dockerfiles)
-    printf '\n  ],\n'
-    printf '  "rows": [\n'
-    local block idx=0
-    for block in "${row_json_blocks[@]}"; do
-      (( idx > 0 )) && printf ',\n'
-      printf '%s' "$block"
-      idx=$(( idx + 1 ))
-    done
-    printf '\n  ],\n'
-    printf '  "failures": %s\n' "$(json_array "${failures[@]}")"
-    printf '}\n'
-  } >"$report"
+  emit_report "$report" "${tier_blocks[@]}"
 
   say "wrote $report"
-  if [[ "$verdict" == "fail" ]]; then
-    say "VERDICT: fail"
-    local f
-    for f in "${failures[@]}"; do say "  $f"; done
-    exit 1
+  if [[ $PROBE_RUN_STATUS -ne 0 ]]; then
+    say "VERDICT: build failed ($PROBE_RUN_STATUS); see $PROBE_LOG"
+    exit "$PROBE_RUN_STATUS"
   fi
-  say "VERDICT: pass"
+  say "VERDICT: recorded"
 }
 
-# Sourced by tests/test_build_probe.sh, and executed by the operator. The
-# guard separates the two modes, per pattern p-15.
+# Sourced by the test, executed by the operator (pattern p-15).
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -uo pipefail
   main "$@"
