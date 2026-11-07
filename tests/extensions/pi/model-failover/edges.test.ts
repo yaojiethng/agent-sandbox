@@ -20,8 +20,8 @@ import {
 	resolveAddresses,
 	unresolvedAddressSet,
 	usable,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/edges.ts";
-import type { EdgeHealth, Outcome, SelectionConfig } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/edges.ts";
+import type { EdgeHealth, Outcome, SelectionConfig } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts";
 
 const NOW = 1_700_000_000_000;
 const THRESHOLD = 3;

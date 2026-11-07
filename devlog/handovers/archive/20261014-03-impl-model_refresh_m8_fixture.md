@@ -41,8 +41,8 @@ Out of scope: a `test_prune.sh` flake observed once under the default 8-worker p
 |---|---|
 | [`tests/extensions/pi/model-refresh/invariants.test.ts`](../../../tests/extensions/pi/model-refresh/invariants.test.ts) | the M8 case; the live-catalog loop and its hand label map are removed and a default assertion added |
 | [`tests/extensions/pi/model-refresh/invariants.ts`](../../../tests/extensions/pi/model-refresh/invariants.ts) | the M8 name, statement and source, and its `CLASSIFICATION` entry follow the rule test |
-| [`model-refresh/README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the transport-tables paragraph now states the rule test and why the live reconciliation is not in the suite |
-| [`catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | `derivedTransport`, the rule under test; verified correct and not changed |
+| [`model-refresh/README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the transport-tables paragraph now states the rule test and why the live reconciliation is not in the suite |
+| [`catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | `derivedTransport`, the rule under test; verified correct and not changed |
 | [`tests/test_model_refresh.sh`](../../../tests/test_model_refresh.sh) | the harness wrapper that runs the node suite and its mutation gate; the failing unit |
 
 ## Decisions
@@ -69,6 +69,6 @@ None.
 |---|---|
 | [`tests/extensions/pi/model-refresh/invariants.test.ts`](../../../tests/extensions/pi/model-refresh/invariants.test.ts) | M8 restructured to a synthetic rule test: the live-catalog loop and the hand label map are removed, and the default-to-completions assertion is added |
 | [`tests/extensions/pi/model-refresh/invariants.ts`](../../../tests/extensions/pi/model-refresh/invariants.ts) | M8 name, statement and source narrowed to the rule, and the `CLASSIFICATION` entry renamed to match |
-| [`model-refresh/README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the transport-tables paragraph now describes the rule test and why the live reconciliation is not in the suite |
+| [`model-refresh/README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the transport-tables paragraph now describes the rule test and why the live reconciliation is not in the suite |
 | [`devlog/AGENT_FEEDBACK.md`](../../AGENT_FEEDBACK.md) | new entry: a parallel suite run flaked one unit and it did not reproduce, so the triage is the record and no cause is claimed |
 | `devlog/handovers/archive/20261014-03-impl-model_refresh_m8_fixture.md` | this handover |

@@ -29,15 +29,15 @@ import {
 	sourceEntry,
 	storeEntriesFor,
 	unionFirstWins,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
-import { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts";
-import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
-import { createReporter } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts";
-import { discardedDefault } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/default-model.ts";
-import { CACHE_VERSION, parseCache, readCache, writeCache } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/cache.ts";
-import { THINKING_LEVELS, levelMapFor, offSendsAnEffort, thinkingLevelMapFromEfforts } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
-import type { ThinkingLevelMap } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
-import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts";
+import { DECLARATIONS_PATH, loadDeclarations, parseDeclarations } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/config.ts";
+import { gatherAndBuild } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts";
+import { createReporter } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/report.ts";
+import { discardedDefault } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/default-model.ts";
+import { CACHE_VERSION, parseCache, readCache, writeCache } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/cache.ts";
+import { THINKING_LEVELS, levelMapFor, offSendsAnEffort, thinkingLevelMapFromEfforts } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/thinking.ts";
+import type { ThinkingLevelMap } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/thinking.ts";
+import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 import { UNION_SOURCES, buildCatalog, checkTotality, renderReport, type CaseResult } from "./invariants.ts";
 import { PROVIDER_ID, TEST_DECL, V1_BASE as V1, ANTHROPIC_BASE as ANTHROPIC, bakedModel, anthropicBakedModel, captureThinkingPayload, effortList, makeRng, modelsDevEntry, pick, someModels, storedCatalog, storedEntry } from "./fixtures.ts";
 
@@ -48,7 +48,7 @@ const COMPOSER_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/provider-composer.js`;
 const RESOLVER_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/model-resolver.js`;
 const REMOTE_CATALOG_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/remote-catalog-provider.js`;
 const BAKED_CATALOG = `${PI_AI}/dist/providers/all.js`;
-const EXTENSION_DIR = "src/reasoning/providers/pi/config/agent/extensions/model-refresh";
+const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh";
 const EXTENSION_ENTRY = path.resolve(`${EXTENSION_DIR}/index.ts`);
 
 const suite = fs.existsSync(PI_PACKAGE_ENTRY) ? {} : { skip: "pi installation not present" };

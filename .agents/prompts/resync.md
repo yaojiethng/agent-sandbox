@@ -17,8 +17,8 @@ Report the repository files under the staged tree that differ from their install
 
 ```bash
 cd <repo root>
-git ls-files src/reasoning/providers/pi/config/agent/ | while read -r f; do
-  rel="${f#src/reasoning/providers/pi/config/agent/}"
+git ls-files src/reasoning/agent-runtime/pi/config/agent/ | while read -r f; do
+  rel="${f#src/reasoning/agent-runtime/pi/config/agent/}"
   case "$rel" in auth.json|models-store.json) continue;; esac
   case "$rel" in *"${1:-}"*) ;; *) continue;; esac
   diff -q "$f" "$AGENT_HOME/agent/$rel" >/dev/null 2>&1 || echo "differs: $rel"

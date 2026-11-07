@@ -78,7 +78,7 @@ export interface Mutation {
 	control?: true;
 }
 
-export const EXTENSION_DIR = "src/reasoning/providers/pi/config/agent/extensions/model-refresh";
+export const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh";
 
 export const MUTATIONS: readonly Mutation[] = [
 	// --- the control: the mirror the suite must run green in ---------------

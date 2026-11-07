@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
 import {
 	listWorkerRequests,
 	nextRequestId,
@@ -16,7 +16,7 @@ import {
 	readWorkerState,
 	workerStatePath,
 	writeWorkerState,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/protocol.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/protocol.ts";
 import { NOW, withTmp, writeFile } from "./helpers.ts";
 
 function expects(code: string): (e: unknown) => boolean {

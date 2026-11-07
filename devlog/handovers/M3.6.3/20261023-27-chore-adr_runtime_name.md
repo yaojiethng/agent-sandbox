@@ -34,7 +34,7 @@ Out of scope: the extension's behaviour and its survival, which the failover A/B
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | The ADR becomes `opencode_runtime_dispatch.md`, titled "OpenCode as a Dispatch Runtime" | the principle is that dispatch reaches OpenCode through its runtime; the install is that principle's rationale, and the old name was the token the vocabulary retired | the ADR, and the roadmap row |
-| The extension's comments say the provider and the model rather than `assignment` | that object carries no runtime and no thinking level, so the reserved term would claim two fields it does not have; naming the two fields keeps one word for one thing | [`router.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/router.ts) and its siblings |
+| The extension's comments say the provider and the model rather than `assignment` | that object carries no runtime and no thinking level, so the reserved term would claim two fields it does not have; naming the two fields keeps one word for one thing | [`router.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/router.ts) and its siblings |
 | The deprecated-token lines keep both words | a line that retires a word has to name it; deleting those lines would leave a reader with no statement that the words are out | [`terminology.md`](../../docs/reference/terminology.md) |
 | The extension's behaviour is untouched | the A/B row decides whether the extension survives, and a comment rename must not pre-empt it | this record |
 
@@ -55,4 +55,4 @@ None.
 | [`docs/adr/opencode_runtime_dispatch.md`](../../docs/adr/opencode_runtime_dispatch.md) | renamed by `git mv` from `opencode_dispatch_backend.md`, title reads `# OpenCode as a Dispatch Runtime` |
 | [`docs/adr/reasoning_layer_tiers.md`](../../docs/adr/reasoning_layer_tiers.md) | its link follows the rename |
 | [`devlog/roadmap.md`](../roadmap.md) | two inbound links follow the rename, and the retitle closes as its own row |
-| [`router.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/router.ts), [`index.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/index.ts), [`types.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts) | six comments name the provider and the model |
+| [`router.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/router.ts), [`index.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/index.ts), [`types.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts) | six comments name the provider and the model |

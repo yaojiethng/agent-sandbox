@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
 import {
 	addWorktree,
 	assertPrunable,
@@ -23,7 +23,7 @@ import {
 	statusPorcelain,
 	strayPaths,
 	worktreeHead,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
 import { commitAll, gitInit, makeMainRepo, rmrf, tmpdir, writeFile } from "./helpers.ts";
 
 describe("fork", () => {

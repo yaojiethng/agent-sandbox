@@ -6,7 +6,7 @@
   "copyright": "Copyright (c) 2026 DietrichGebert",
   "artifacts": [
     {
-      "local_path": "src/reasoning/providers/pi/config/agent/AGENTS.md",
+      "local_path": "src/reasoning/agent-runtime/pi/config/agent/AGENTS.md",
       "kind": "instruction",
       "parent": null,
       "upstream_path": "AGENTS.md",

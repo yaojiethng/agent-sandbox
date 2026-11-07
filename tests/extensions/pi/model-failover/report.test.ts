@@ -6,7 +6,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildEdgeReport, buildReport, edgeLine, formatDuration, routeLine } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/report.ts";
+import { buildEdgeReport, buildReport, edgeLine, formatDuration, routeLine } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/report.ts";
 import { chain, COOLDOWNS, NOW, route } from "./helpers.ts";
 
 describe("the report", () => {

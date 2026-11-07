@@ -253,7 +253,7 @@ main() {
 
   SHARED_BASE="$(shared_base_image_name)"
   AGENT_IMAGE="$(agent_image_name "$PROBE_PROVIDER" "$PROBE_PROJECT")"
-  local provider_base_dockerfile="$REPO_ROOT/src/reasoning/providers/$PROBE_PROVIDER/base.dockerfile"
+  local provider_base_dockerfile="$REPO_ROOT/src/reasoning/agent-runtime/$PROBE_PROVIDER/base.dockerfile"
   if [[ -f "$provider_base_dockerfile" ]]; then
     AGENT_BASE="$(agent_base_image_name "$PROBE_PROVIDER")"
   else

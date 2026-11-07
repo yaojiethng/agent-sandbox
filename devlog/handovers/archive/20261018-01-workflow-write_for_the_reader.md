@@ -58,13 +58,13 @@ Continues the M3.3.4 row **Settle the split criterion and prove the template**, 
 
 | File | Change |
 |---|---|
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) | the new principle |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) | the new principle |
 | `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/` | the installed copy, identical to the repository |
 | [`documentation_policy.md`](../../../docs/policies/documentation_policy.md) | the judgement leaves; a pointer and the fold-back procedure replace the subsection |
 | [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md) | the Maintain row points at the skill |
 | [`document.md`](../../../workflow/coding-agent/prompts/document.md) | Step 6 gains the design-document fold-back check, the procedure's observer |
 | [`AGENTS.md`](../../../AGENTS.md) | the drafting list names the principle |
-| [`AGENTS.md` (provider)](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the duplicate clause becomes a pointer, repo and installed copy |
+| [`AGENTS.md` (provider)](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the duplicate clause becomes a pointer, repo and installed copy |
 | [`norm-ownership.tsv`](../../../scripts/lint/norm-ownership.tsv) | regenerated; 167 rows, 21 reviewed, 83 judgement, 40 model |
 | [`20261004-02-plan-model_refresh_startup.md`](../../handovers/archive/20261004-02-plan-model_refresh_startup.md) | `option B of the three` becomes the chosen behaviour, stated |
 | [`20261004-06-workflow-sidequest_runbook.md`](../../handovers/archive/20261004-06-workflow-sidequest_runbook.md) | `(option a)` removed; the row states the decision |

@@ -50,6 +50,6 @@ None.
 
 | File | Change |
 |---|---|
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/SKILL.md) | new: the worker contract, the form, the steps, the non-goals, the failure modes |
-| [`dispatch.sh`](../../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | new: the dispatch wrapper over the runner seam |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/SKILL.md) | new: the worker contract, the form, the steps, the non-goals, the failure modes |
+| [`dispatch.sh`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | new: the dispatch wrapper over the runner seam |
 | [`devlog/roadmap.md`](../../roadmap.md) | the dispatch-skill row |

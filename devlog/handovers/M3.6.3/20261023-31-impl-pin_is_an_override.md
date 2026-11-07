@@ -67,6 +67,6 @@ None.
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the pin rule in `## Requirements` and `## Seats`; a pinned run is a launch site that resolves nothing |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | `## launch site`: resolution is the default and a pin is its override |
 | [`docs/adr/pi_subagent_dispatch.md`](../../docs/adr/pi_subagent_dispatch.md) | the decision states resolution as the default; the rationale separates a pin from a hidden skill default |
-| [`src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md) | the seat form accepts `--model` and states what it does |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | `## Running Review Subagents` states the pin, and what a pinned review produces |
+| [`src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/dispatch/SKILL.md) | the seat form accepts `--model` and states what it does |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | `## Running Review Subagents` states the pin, and what a pinned review produces |
 | [`devlog/AGENT_FEEDBACK.md`](../AGENT_FEEDBACK.md) | an entry for the class: a default hardened into a requirement |

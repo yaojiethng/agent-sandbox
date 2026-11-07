@@ -45,7 +45,7 @@ None.
 | [`scripts/lint/`](scripts/lint/) | Custom `doc-ascii` rule and sweep tools |
 | [`Makefile`](Makefile) | `lint` runs `scripts/lint.sh` |
 | [`src/reasoning/node.dockerfile`](src/reasoning/node.dockerfile) | Linter install for the shared node layer |
-| [`src/reasoning/providers/hermes/base.dockerfile`](src/reasoning/providers/hermes/base.dockerfile) | Linter install for the python provider base |
+| [`src/reasoning/providers/hermes/base.dockerfile`](src/reasoning/agent-runtime/hermes/base.dockerfile) | Linter install for the python provider base |
 | [`src/capability/git-hooks/pre-commit.sh`](src/capability/git-hooks/pre-commit.sh) | Commit hook source |
 | [`src/capability/dockerfile`](src/capability/dockerfile) | Ships the hook in the capability image |
 | [`src/capability/entrypoint.sh`](src/capability/entrypoint.sh) | Installs the hook for copy delivery |
@@ -60,7 +60,7 @@ None.
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | The gate reference goes in the project-layer [`AGENTS.md`](AGENTS.md), not the provider-layer brief | The provider-layer template forbids project-workflow content in provider files | this handover |
-| [`hermes/base.dockerfile`](src/reasoning/providers/hermes/base.dockerfile) gains the linter install | Hermes does not inherit the shared node layer, so it was the one provider base without the tool | this handover |
+| [`hermes/base.dockerfile`](src/reasoning/agent-runtime/hermes/base.dockerfile) gains the linter install | Hermes does not inherit the shared node layer, so it was the one provider base without the tool | this handover |
 | The correction block in handover `20260919-09` takes a blank line before its closing fence | A tight closing fence parses the tag paragraph as a setext heading and trips `MD022` | this handover |
 | The harness installs one git hook, in copy delivery only | Copy's `.git` is volume-local and cannot reach the host; mount's `.git` is a host directory, so a hook there is host-resident and agent-rewritable | [`git_hooks.md`](docs/adr/git_hooks.md) |
 | The hook lints the staged Markdown list with `--no-globs` | Avoids re-linting the whole repository on every commit | [`git_hooks.md`](docs/adr/git_hooks.md) |
@@ -92,7 +92,7 @@ None.
 | [`tests/test_lint_umbrella.sh`](tests/test_lint_umbrella.sh) | New: umbrella exit-code aggregation and both-gates-always-run |
 | `scripts/check_lint.sh` -> [`scripts/check_shell.sh`](scripts/check_shell.sh) | Renamed: the script runs the ShellCheck gate only, so the name now pairs with `check_markdown.sh` |
 | [`src/reasoning/node.dockerfile`](src/reasoning/node.dockerfile) | Added the `markdownlint-cli2` install for the shared node layer |
-| [`src/reasoning/providers/hermes/base.dockerfile`](src/reasoning/providers/hermes/base.dockerfile) | Added the `markdownlint-cli2` install for the python provider base |
+| [`src/reasoning/providers/hermes/base.dockerfile`](src/reasoning/agent-runtime/hermes/base.dockerfile) | Added the `markdownlint-cli2` install for the python provider base |
 | [`src/capability/git-hooks/pre-commit.sh`](src/capability/git-hooks/pre-commit.sh) | New hook: lint staged Markdown with `--no-globs`, block on a finding, name the `--no-verify` bypass |
 | [`src/capability/dockerfile`](src/capability/dockerfile) | Copy the hook source into the image at `/opt/sandbox/git-hooks/` |
 | [`src/capability/entrypoint.sh`](src/capability/entrypoint.sh) | Install the hook into the volume `.git/hooks/` for copy delivery only; add the `GIT_HOOKS_DIR` test seam |

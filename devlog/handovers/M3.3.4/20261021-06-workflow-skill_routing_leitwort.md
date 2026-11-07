@@ -61,7 +61,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`principle-effective-skill-routing/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-effective-skill-routing/SKILL.md) | the title, the description, `**The name.**` with its two clauses, `**The signpost.**`, `**Linguistic fidelity.**`, `**The domain exception.**`, the widened does-not-cover line, and the test's leading-word step |
+| [`principle-effective-skill-routing/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-effective-skill-routing/SKILL.md) | the title, the description, `**The name.**` with its two clauses, `**The signpost.**`, `**Linguistic fidelity.**`, `**The domain exception.**`, the widened does-not-cover line, and the test's leading-word step |
 | `$AGENT_HOME/agent/skills/principle-effective-skill-routing/SKILL.md` | the installed copy, identical to the repository copy |
 | [`docs/development/prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | `**Suggested skill name.**` keeps this repository's member scheme and names the skill for the judgement |
 | [`scripts/lint/norm-ownership.tsv`](../../scripts/lint/norm-ownership.tsv), [`norm-judgements.tsv`](../../scripts/lint/norm-judgements.tsv) | regenerated; the naming paragraph is a judgement homed to the skill, so the ledger reports 13 homed rows where it reported 12, and the judgement regroups as `j-home-principle-effective-skill-routing` |

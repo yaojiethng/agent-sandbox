@@ -50,9 +50,9 @@ None.
 
 | File | Change |
 |---|---|
-| [`index.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/index.ts) | new: `failoverEnabled` predicate and a factory guard that returns before any work |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md) | the config surface names the flag; guard invariant `G3` |
-| [`CHANGELOG.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/CHANGELOG.md) | `0.3.0` records the inert default |
+| [`index.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/index.ts) | new: `failoverEnabled` predicate and a factory guard that returns before any work |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md) | the config surface names the flag; guard invariant `G3` |
+| [`CHANGELOG.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/CHANGELOG.md) | `0.3.0` records the inert default |
 | [`tests/test_model_failover.sh`](../../../tests/test_model_failover.sh) | the node suite runs with the flag set |
 | [`wire.test.ts`](../../../tests/extensions/pi/model-failover/wire.test.ts) | the predicate case and the inert-factory case |
 | [`devlog/roadmap.md`](../../roadmap.md) | the disable row is complete |

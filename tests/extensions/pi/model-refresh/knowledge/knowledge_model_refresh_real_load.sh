@@ -22,7 +22,7 @@
 # make test.
 #
 # Reference:
-#   src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md
+#   src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md
 #     -- the default-model guard this exercises.
 #
 # Not run by make test. Run manually:
@@ -38,7 +38,7 @@ source "$REPO_TOP/tests/libs/test_common.sh"
 
 test_setup
 
-EXTENSION_ENTRY="$REPO_TOP/src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts"
+EXTENSION_ENTRY="$REPO_TOP/src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts"
 
 # -------------------------
 # Tests

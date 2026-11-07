@@ -43,7 +43,7 @@ None.
 |---|---|---|
 | [docs/operations/handover_policy.md](../../docs/operations/handover_policy.md) | F5 + F6 -- unwrap `<...>` blocks; ->anchor links | completed |
 | [docs/operations/documentation_policy.md](../../docs/operations/documentation_policy.md) | F5 durable rule + F6 generalization -- STE + line-wrap conventions; generalized charset + audit checks | completed |
-| [src/reasoning/providers/pi/config/agent/AGENTS.md](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | F5 -- fix mid-thought wraps lines 15-16, 25-26 | completed |
+| [src/reasoning/providers/pi/config/agent/AGENTS.md](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | F5 -- fix mid-thought wraps lines 15-16, 25-26 | completed |
 | [docs/operations/iteration_policy.md](../../docs/operations/iteration_policy.md) | F6 -- Step N -> anchor links (11 refs) | completed |
 | [docs/operations/adr_policy.md](../../docs/operations/adr_policy.md) | F6b -- unwrap 2 prose wraps | completed |
 | [docs/development/cli-conventions.md](../../docs/development/cli-conventions.md) | F6b -- unwrap 15 prose wraps (heaviest offender) | completed |
@@ -71,7 +71,7 @@ None.
 |---|---|
 | [docs/operations/handover_policy.md](/home/agentuser/sandbox/docs/operations/handover_policy.md) | F5: unwrapped 5 `<...>` blocks to single-flowing paragraphs; F6: Step 1 / Steps 8-9 -> anchor links |
 | [docs/operations/documentation_policy.md](/home/agentuser/sandbox/docs/operations/documentation_policy.md) | F5 durable rule: added `### Simplified Technical English` + `### Line wrapping` under `## Conventions`; F6: generalized Character-set rule; added audit-check phrases |
-| [src/reasoning/providers/pi/config/agent/AGENTS.md](/home/agentuser/sandbox/src/reasoning/providers/pi/config/agent/AGENTS.md) | F5: fixed mid-thought wraps (lines 15-16, 25-26) |
+| [src/reasoning/providers/pi/config/agent/AGENTS.md](/home/agentuser/sandbox/src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | F5: fixed mid-thought wraps (lines 15-16, 25-26) |
 | [docs/operations/iteration_policy.md](/home/agentuser/sandbox/docs/operations/iteration_policy.md) | F6: converted 11 Step N cross-references to anchor links |
 | [docs/operations/adr_policy.md](/home/agentuser/sandbox/docs/operations/adr_policy.md) | F6b: unwrapped 2 prose wraps |
 | [docs/development/cli-conventions.md](/home/agentuser/sandbox/docs/development/cli-conventions.md) | F6b: unwrapped 15 prose wraps (heaviest offender in the frequently-read set) |

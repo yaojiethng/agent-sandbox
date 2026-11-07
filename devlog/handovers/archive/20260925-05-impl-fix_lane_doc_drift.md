@@ -32,7 +32,7 @@ Fix lane F4 of the read-through close, 21 assigned rows (92, 93, 112, 127, 134, 
 | File | Why in scope |
 |---|---|
 | [`docs/development/host_requirements.md`](../../docs/development/host_requirements.md) | a requirement declaration was missing |
-| [`src/reasoning/providers/pi/onboard-readme.md`](../../src/reasoning/providers/pi/onboard-readme.md) | a stale build-context reference |
+| [`src/reasoning/providers/pi/onboard-readme.md`](../../src/reasoning/agent-runtime/pi/onboard-readme.md) | a stale build-context reference |
 | `tests/test_run_agent.sh`, `test_resume.sh`, `test_confirm_workflow.sh` | the units whose subject the rows name |
 
 ## Decisions

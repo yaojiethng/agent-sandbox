@@ -21,9 +21,9 @@ import { join } from "node:path";
 import { classify as classifyLibrary } from "../../../../src/libs/dispatch/classify.ts";
 import { applyOutcome as applyLibrary } from "../../../../src/libs/dispatch/machine.ts";
 import type { RouteRecord } from "../../../../src/libs/dispatch/types.ts";
-import { classifyError, classifyVerdict, isAborted } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/classify.ts";
-import { applyOutcome as applyExtension, initialRouteState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/ledger.ts";
-import type { Outcome as ExtensionOutcome, RouteState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts";
+import { classifyError, classifyVerdict, isAborted } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/classify.ts";
+import { applyOutcome as applyExtension, initialRouteState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/ledger.ts";
+import type { Outcome as ExtensionOutcome, RouteState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts";
 
 const T0 = 1_700_000_000_000;
 const THRESHOLD = 3;

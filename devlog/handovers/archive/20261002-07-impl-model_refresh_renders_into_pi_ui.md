@@ -33,11 +33,11 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts) | held both `console.warn` calls |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts) | new, the rendering and the summary wording |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts) | the structured per-source counts |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts) | the `CatalogReport` type |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the assumption table, one row of which this work falsified |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts) | held both `console.warn` calls |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/report.ts) | new, the rendering and the summary wording |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts) | the structured per-source counts |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts) | the `CatalogReport` type |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the assumption table, one row of which this work falsified |
 | [`tests/extensions/pi/model-refresh/`](../../tests/extensions/pi/model-refresh/) | the extension's suite |
 
 ## Decisions

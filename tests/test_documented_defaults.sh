@@ -17,7 +17,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 REPO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AT="$REPO_ROOT_DIR/src/reasoning/providers/pi/config/agent/skills/active-tracker/active-tracker.mjs"
+AT="$REPO_ROOT_DIR/src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/active-tracker.mjs"
 
 test_fresh_session_opens_the_tracker() {
   local d out rc

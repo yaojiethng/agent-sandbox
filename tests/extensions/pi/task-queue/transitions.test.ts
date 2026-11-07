@@ -8,9 +8,9 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
-import { entryIdOf, transitionSchedule, transitionTrigger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/queue.ts";
-import { freshState, type RunState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
+import { entryIdOf, transitionSchedule, transitionTrigger } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/queue.ts";
+import { freshState, type RunState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/state.ts";
 import {
 	ENTRY_TRANSITIONS,
 	RUN_TRANSITIONS,
@@ -27,7 +27,7 @@ import {
 	type EntryAction,
 	type RunAction,
 	type TaskAction,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/transitions.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/transitions.ts";
 import {
 	canBringBack,
 	canClose,
@@ -35,8 +35,8 @@ import {
 	canRequeue,
 	canRecord,
 	canVerify,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/tasks.ts";
-import { bringBackOp, closeOp, forkOp, proposalOp, requeueOp, recordOp, scheduleOp, triggerOp, verifyOp } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/tasks.ts";
+import { bringBackOp, closeOp, forkOp, proposalOp, requeueOp, recordOp, scheduleOp, triggerOp, verifyOp } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
 
 const AT = "2026-01-01T00:00:00.000Z";
 const MAIN = "/repo/main";

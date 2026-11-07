@@ -19,7 +19,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 SHARED_BASE="$REPO_ROOT/src/reasoning/base.dockerfile"
-PROVIDER_DIR="$REPO_ROOT/src/reasoning/providers"
+PROVIDER_DIR="$REPO_ROOT/src/reasoning/agent-runtime"
 
 # Every Dockerfile under the reasoning layer. The scan is deliberately not the
 # provider bases alone: the dispatch CLI may be installed in any tier, and a

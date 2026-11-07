@@ -99,28 +99,22 @@ rm .workspace/input/*
 
 ## Troubleshooting
 
-**Container exits immediately**
-Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
+**Container exits immediately** Check entrypoint output: `docker logs opencode-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
-**`staged.diff` is empty after run**
-Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
+**`staged.diff` is empty after run** Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
 
-**`make start` errors: PROVIDER not set**
-`PROVIDER` is required: `make start PROVIDER=opencode`.
+**`make start` errors: PROVIDER not set** `PROVIDER` is required: `make start PROVIDER=opencode`.
 
-**Image not found**
-Run `make build` before the first start. Images are not built automatically unless `REBUILD=1` is passed.
+**Image not found** Run `make build` before the first start. Images are not built automatically unless `REBUILD=1` is passed.
 
-**`cp: cannot stat` during snapshot**
-Tracked files are missing from disk. Fix:
+**`cp: cannot stat` during snapshot** Tracked files are missing from disk. Fix:
 
 ```sh
 git -C <PROJECT_DIR> rm --cached <file>
 git -C <PROJECT_DIR> commit -m "remove missing file from index"
 ```
 
-**WSL path errors**
-All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
+**WSL path errors** All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
 ### Line ending issues in scripts or config files
 

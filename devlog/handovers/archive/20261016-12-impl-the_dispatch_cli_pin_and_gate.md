@@ -50,7 +50,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/opencode/base.dockerfile`](../../../src/reasoning/providers/opencode/base.dockerfile) | the header, the pin, and the comment |
-| [`src/reasoning/providers/pi/base.dockerfile`](../../../src/reasoning/providers/pi/base.dockerfile) | the `--ignore-scripts` flag dropped from the dispatch install, and the comment |
+| [`src/reasoning/providers/opencode/base.dockerfile`](../../../src/reasoning/agent-runtime/opencode/base.dockerfile) | the header, the pin, and the comment |
+| [`src/reasoning/providers/pi/base.dockerfile`](../../../src/reasoning/agent-runtime/pi/base.dockerfile) | the `--ignore-scripts` flag dropped from the dispatch install, and the comment |
 | [`tests/test_shared_base_contract.sh`](../../../tests/test_shared_base_contract.sh) | the install-scanning helpers and three cases |
 | [`devlog/roadmap.md`](../../roadmap.md) | the row completed, with its home clause left to the layer install design row |

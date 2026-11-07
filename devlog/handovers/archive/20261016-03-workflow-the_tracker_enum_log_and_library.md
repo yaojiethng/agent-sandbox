@@ -59,11 +59,11 @@ None.
 
 | File | Change |
 |---|---|
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/SKILL.md) | terminology, commands, states, the log, the codemode snippet |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/README.md) | the model, moved out of the skill |
-| [`active-tracker.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/active-tracker.mjs) | the enum, the log, the library surface, bulk pop |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/SKILL.md) | terminology, commands, states, the log, the codemode snippet |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/README.md) | the model, moved out of the skill |
+| [`active-tracker.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/active-tracker.mjs) | the enum, the log, the library surface, bulk pop |
 | [`test_active_tracker.sh`](../../../tests/test_active_tracker.sh) | fifteen cases, three derived from the frame transition table |
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | the bulk-change note |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | the bulk-change note |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.2.3 row |
 | `<scratch>/ACTIVE_TASK_TRACKER.json` | the enum states |
 | `<scratch>/ACTIVE_TASK_TRACKER.md` | re-rendered |

@@ -13,7 +13,7 @@
     },
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/preflight.sh",
+      "source": "src/reasoning/agent-runtime/pi/preflight.sh",
       "destination": "/opt/sandbox/bin/provider-preflight.sh"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "destination": "/opt/workflow/agent/config/"
     },
     {
@@ -50,7 +50,7 @@
   "provision": [
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "template": "/opt/workflow/agent/config/",
       "home": "$AGENT_HOME/"
     }
@@ -210,7 +210,7 @@
     },
     {
       "sources": [
-        "src/reasoning/providers/pi/config/"
+        "src/reasoning/agent-runtime/pi/config/"
       ],
       "runtime_path": "$AGENT_HOME/",
       "loader": "pi reads its config home at startup: the agent AGENTS.md, the settings record, the auth record and the model list",
@@ -218,7 +218,7 @@
     },
     {
       "sources": [
-        "src/reasoning/providers/pi/config/agent/prompts/"
+        "src/reasoning/agent-runtime/pi/config/agent/prompts/"
       ],
       "runtime_path": "$AGENT_HOME/agent/prompts/",
       "loader": "pi reads its prompt root from the agent home, which the host bind-mounts for prompts and the image seeds from its config template at every start",
@@ -226,7 +226,7 @@
     },
     {
       "sources": [
-        "src/reasoning/providers/pi/config/agent/skills/"
+        "src/reasoning/agent-runtime/pi/config/agent/skills/"
       ],
       "runtime_path": "$AGENT_HOME/agent/skills/",
       "loader": "pi scans its user skills directory at startup, and that directory is bind-mounted from the host and seeded from the image's config template",

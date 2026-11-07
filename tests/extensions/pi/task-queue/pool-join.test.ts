@@ -17,12 +17,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as path from "node:path";
-import { Run } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
-import { forkOp, joinAllOp, joinOp, verifyOp } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
-import { heldUnit, scanReady, waitForBreakPoint, type JoinResult, type JoinRun, type PoolJoinedResult } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/join.ts";
-import { readJournal } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/record.ts";
-import { addWorktree, canonicalWorkdir } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
+import { Run } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/run.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
+import { forkOp, joinAllOp, joinOp, verifyOp } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
+import { heldUnit, scanReady, waitForBreakPoint, type JoinResult, type JoinRun, type PoolJoinedResult } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/join.ts";
+import { readJournal } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/record.ts";
+import { addWorktree, canonicalWorkdir } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
 import { makeMainRepo, rmrf, tmpdir, workerRequest, workerSegment, writeFile } from "./helpers.ts";
 
 const AT = "2026-01-01T00:00:00.000Z";

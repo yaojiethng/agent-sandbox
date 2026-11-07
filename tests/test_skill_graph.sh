@@ -332,7 +332,7 @@ write_manifest() {
     },
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "destination": "$image/config/"
     }
   ],
@@ -346,7 +346,7 @@ write_manifest() {
   "provision": [
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "template": "$image/config/",
       "home": "\$AGENT_HOME/"
     }

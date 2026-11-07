@@ -50,7 +50,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`dispatch.sh`](../../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | sources `/opt/sandbox/lib/dispatch.sh` instead of the project tree |
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/SKILL.md) | the seam path in the form description |
+| [`dispatch.sh`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | sources `/opt/sandbox/lib/dispatch.sh` instead of the project tree |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/SKILL.md) | the seam path in the form description |
 | [`20261016-design-active-dispatch_ownership.md`](../../discussions/20261016-design-active-dispatch_ownership.md) | new: the ownership question, its options and a provisional lean |
 | [`roadmap.md`](../../roadmap.md) | the M3.6.3 row `Who owns dispatch logic` |

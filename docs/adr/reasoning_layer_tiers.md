@@ -13,6 +13,18 @@
 | R5 | A provider base installs only its own differential | the one surviving provider base, hermes-base, carries only the hermes install (2026-10-17) |
 | R6 | The tier list is the same for every provider that shares an install mechanism | pi and opencode share one list of tiers because both install from a registry; hermes adds one base because its install is a source build (2026-10-17) |
 
+## 2026-11-07 -- The provider directory is `agent-runtime`
+
+**Decision:** `src/reasoning/providers/` is `src/reasoning/agent-runtime/`. The directory holds the agent-runtimes (pi, opencode, hermes); `provider` is reserved for the model-id namespace, so the path no longer carries it. The provider ids, the image names and the tier shape are unchanged.
+
+**Rationale:** The directory holds agent-runtimes, not providers. A provider id names a model-id namespace, and the runtimes are the executables the harness serves. The move is structural, and every live reference moved with it.
+
+**Rejected alternatives:**
+
+- *Keep `src/reasoning/providers/`* -- intent: it is the path the build has always used, so a move costs a sweep for no behaviour. Execution: the name states a subject the directory does not hold, and the reserved term already exists.
+
+**Edge cases / drivers:** Historical records keep the old path: the entries below, the archived handovers, the discussions and the changelog state what was true when written, and their links point at the current directory. The directory is a live path, so the live documents and the open roadmap rows carry the new one.
+
 ## 2026-11-07 -- The shared tier is `agent-runtimes`
 
 **Decision:** The shared tier is named `agent-runtimes`, its Dockerfile is `src/reasoning/runtimes.dockerfile`, and the image-name function is `runtimes_base_image_name`. The tier holds the two registry-package agent-runtimes, `@earendil-works/pi-coding-agent` and `opencode-ai`, each installed once. `harness` is reserved for the whole setup: the skills and prompts, the agent-runtime, the images and the execution environment.

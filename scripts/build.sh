@@ -93,7 +93,7 @@ build_agent() {
   local shared_dockerfile="$repo_root/src/reasoning/base.dockerfile"
 
   local tier2_image tier2_dockerfile
-  local provider_base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
+  local provider_base_dockerfile="$repo_root/src/reasoning/agent-runtime/$provider/base.dockerfile"
   if [[ -f "$provider_base_dockerfile" ]]; then
     tier2_image="$(agent_base_image_name "$provider")"
     tier2_dockerfile="$provider_base_dockerfile"
@@ -103,7 +103,7 @@ build_agent() {
   fi
 
   local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
-  local provider_dockerfile="$repo_root/src/reasoning/providers/$provider/provider.dockerfile"
+  local provider_dockerfile="$repo_root/src/reasoning/agent-runtime/$provider/provider.dockerfile"
 
   if [[ ! -f "$shared_dockerfile" ]]; then
     echo "build_agent: ERROR: shared base Dockerfile not found: $shared_dockerfile" >&2
@@ -274,7 +274,7 @@ main() {
 
   if [[ -z "$BUILD_TARGETS" || "$BUILD_TARGETS" == "all" ]]; then
     build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
-    for PROVIDER_DOCKERFILE in "$REPO_ROOT/src/reasoning/providers/"*/provider.dockerfile; do
+    for PROVIDER_DOCKERFILE in "$REPO_ROOT/src/reasoning/agent-runtime/"*/provider.dockerfile; do
       [[ -f "$PROVIDER_DOCKERFILE" ]] || continue
       local DISCOVERED_PROVIDER
       DISCOVERED_PROVIDER="$(basename "$(dirname "$PROVIDER_DOCKERFILE")")"

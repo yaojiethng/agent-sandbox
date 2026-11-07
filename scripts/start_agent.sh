@@ -115,10 +115,10 @@ validate_wsl_path() {
 # filled interactively; an abort exits cleanly before any session state is
 # created.
 _start_providers() {
-  # Actionable providers = directories under src/reasoning/providers/ that
+  # Actionable providers = directories under src/reasoning/agent-runtime/ that
   # carry a provider.dockerfile (mirrors build_agent's dockerfile check).
   local p
-  for p in "$REPO_ROOT"/src/reasoning/providers/*/; do
+  for p in "$REPO_ROOT"/src/reasoning/agent-runtime/*/; do
     [[ -f "${p}provider.dockerfile" ]] || continue
     basename "$p"
   done
@@ -145,7 +145,7 @@ _start_wizard() {
     done
 
     if [[ "${#PROVIDER_ENTRIES[@]}" -eq 0 ]]; then
-      echo "Error: no providers found under $REPO_ROOT/src/reasoning/providers/" >&2
+      echo "Error: no providers found under $REPO_ROOT/src/reasoning/agent-runtime/" >&2
       exit 1
     fi
 

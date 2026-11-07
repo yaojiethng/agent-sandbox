@@ -33,7 +33,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 export const MANIFEST_REL = "src/build/container-interface.json";
-const PROVIDERS_REL = "src/reasoning/providers";
+const PROVIDERS_REL = "src/reasoning/agent-runtime";
 const ENTRYPOINT_REL = "src/reasoning/entrypoint.sh";
 const DOCKERFILE_NAME = "provider.dockerfile";
 // The agent tree the images place prompts, skills and the config template in.
@@ -41,7 +41,7 @@ const DOCKERFILE_NAME = "provider.dockerfile";
 // either a declared cell or the provision template, and anything else is a
 // surface the image carries with nobody declaring what loads it.
 const INSTRUCTION_TREE = "/opt/workflow/agent/";
-const SETTINGS_REL = "src/reasoning/providers/pi/config/agent/settings.json";
+const SETTINGS_REL = "src/reasoning/agent-runtime/pi/config/agent/settings.json";
 const SETTINGS_ROOTS = ["prompts", "skills"];
 
 // provider_names ROOT -- the provider directories that carry a dockerfile,

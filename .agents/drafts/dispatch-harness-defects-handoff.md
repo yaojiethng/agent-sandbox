@@ -64,7 +64,7 @@ opencode run -m opencode/deepseek-v4.1-flash-free "Reply with exactly: PONG"   #
 
 **Expected.** The id's prefix decides the runtime, and the seam refuses a mismatched pair by name. [`src/libs/dispatch/launch.ts`](../../src/libs/dispatch/launch.ts) selects the runtime; `.agents/drafts/seat-contract-run.md` states the three axes (provider namespace, serving runtime, entitlement) and the operating rule that an `opencode/` pair runs through `opencode run`.
 
-**Already recorded.** `src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md` assumption A8: the gateway re-tightened its client check, so a free-tier model cannot be probed from `pi`.
+**Already recorded.** `src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md` assumption A8: the gateway re-tightened its client check, so a free-tier model cannot be probed from `pi`.
 
 **Impact.** The refusal is indistinguishable from a spent quota, and it was read that way: a record was written stating the free model was unavailable, then corrected the same day. **Severity: high.**
 

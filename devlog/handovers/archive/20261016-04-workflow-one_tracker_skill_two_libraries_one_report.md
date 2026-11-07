@@ -57,14 +57,14 @@ The skill's files, the tests, the two prompts, the roadmap, repository and insta
 
 | File | Change |
 |---|---|
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/SKILL.md) | the combined contract |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/README.md) | the combined model |
-| [`tree.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/tree.mjs) | the edge list, the log, the diff, the mark |
-| [`memory.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/memory.mjs) | the memory library |
-| [`active-tracker.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/active-tracker.mjs) | the facade: push, pop, view, report, memory, log |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/SKILL.md) | the combined contract |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/README.md) | the combined model |
+| [`tree.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/tree.mjs) | the edge list, the log, the diff, the mark |
+| [`memory.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/memory.mjs) | the memory library |
+| [`active-tracker.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/active-tracker.mjs) | the facade: push, pop, view, report, memory, log |
 | [`test_active_tracker.sh`](../../../tests/test_active_tracker.sh) | nineteen cases |
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | run `report` and relay it |
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | run `report` and relay it |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | run `report` and relay it |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | run `report` and relay it |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.2.3 rows |
 | `skills/session-memory/` | removed |
 | `$AGENT_HOME/agent/skills/` | the skill installed, and `session-memory/` removed |

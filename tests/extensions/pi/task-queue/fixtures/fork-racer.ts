@@ -12,7 +12,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createRequire } from "node:module";
 
-const EXTENSION_ENTRY = path.resolve(import.meta.dirname, "../../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/index.ts");
+const EXTENSION_ENTRY = path.resolve(import.meta.dirname, "../../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/index.ts");
 const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
 const PI_PACKAGE_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/index.js`;
 

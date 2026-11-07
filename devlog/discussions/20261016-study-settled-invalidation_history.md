@@ -13,8 +13,8 @@ This study belongs to the M3.6.1 layer install design, the roadmap row `The laye
 - [`scripts/build.sh`](../../scripts/build.sh) -- the three-tier orchestrator and the `_build_key` cache gate
 - [`src/build/image.sh`](../../src/build/image.sh) -- image naming and the stamped `agent-sandbox.base-build-key` label
 - [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) -- tier 1, image `agent-base`
-- [`src/reasoning/providers/pi/base.dockerfile`](../../src/reasoning/providers/pi/base.dockerfile) -- tier 2, image `pi-base`
-- [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) -- tier 3, image `pi-agent-<project>`
+- [`src/reasoning/providers/pi/base.dockerfile`](../../src/reasoning/agent-runtime/pi/base.dockerfile) -- tier 2, image `pi-base`
+- [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) -- tier 3, image `pi-agent-<project>`
 
 ## Summary
 

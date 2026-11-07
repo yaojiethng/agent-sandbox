@@ -43,12 +43,12 @@ Continues the `model-refresh improvements` parent row from the plan handover [`2
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts) | the `CatalogReport` shape |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | the catalog-diff primitive |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts) | the delta computed at build time |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts) | the emitter: the delta line, the failure lines, the removed footer |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts) | the last-served tracking and the saved-default announcement |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the output sink, the announcement rule, the state-machine section |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts) | the `CatalogReport` shape |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | the catalog-diff primitive |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts) | the delta computed at build time |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/report.ts) | the emitter: the delta line, the failure lines, the removed footer |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts) | the last-served tracking and the saved-default announcement |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the output sink, the announcement rule, the state-machine section |
 | [`tests/extensions/pi/model-refresh/report.test.ts`](../../../tests/extensions/pi/model-refresh/report.test.ts) | rewritten for the delta emitter |
 | [`tests/extensions/pi/model-refresh/gather.test.ts`](../../../tests/extensions/pi/model-refresh/gather.test.ts) | the report the delta produces |
 | [`tests/extensions/pi/model-refresh/load.test.ts`](../../../tests/extensions/pi/model-refresh/load.test.ts) | the `session_start` routing and the saved-default announcement |
@@ -88,12 +88,12 @@ None.
 
 | File | Change |
 |---|---|
-| [`types.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts) | `CatalogReport` is the delta: `changed`, `added`, `removed`, `revised`, `failures` |
-| [`catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | new `diffCatalogs`, with `stableSerialize` so a field re-order is not a revision |
-| [`refresh.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts) | `previous` input and the offline-union baseline; the report is built from the diff |
-| [`report.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts) | new `deltaLine` and `notices`; `createReporter` renders only notices; the footer and working-message surfaces removed |
-| [`default-model.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/default-model.ts) | new: `discardedDefault`, guarded by the resolver's own step-3 test |
-| [`index.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts) | tracks the last served union; announces the discarded default at `session_start`; the console prints the delta |
+| [`types.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts) | `CatalogReport` is the delta: `changed`, `added`, `removed`, `revised`, `failures` |
+| [`catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | new `diffCatalogs`, with `stableSerialize` so a field re-order is not a revision |
+| [`refresh.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts) | `previous` input and the offline-union baseline; the report is built from the diff |
+| [`report.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/report.ts) | new `deltaLine` and `notices`; `createReporter` renders only notices; the footer and working-message surfaces removed |
+| [`default-model.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/default-model.ts) | new: `discardedDefault`, guarded by the resolver's own step-3 test |
+| [`index.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts) | tracks the last served union; announces the discarded default at `session_start`; the console prints the delta |
 | [`default-model.test.ts`](../../../tests/extensions/pi/model-refresh/default-model.test.ts) | new: the announcement guard truth table |
 | [`report.test.ts`](../../../tests/extensions/pi/model-refresh/report.test.ts) | rewritten for the delta emitter |
 | [`gather.test.ts`](../../../tests/extensions/pi/model-refresh/gather.test.ts) | the report is the catalog transition |
@@ -103,5 +103,5 @@ None.
 | [`load.test.ts`](../../../tests/extensions/pi/model-refresh/load.test.ts) | the `session_start` context and the saved-default cases |
 | [`mutation/catalog.ts`](../../../tests/extensions/pi/model-refresh/mutation/catalog.ts) | the `O1`-`O4` rows; the `C1` anchor re-pointed to `offlineUnion()` |
 | [`tests/test_model_refresh.sh`](../../../tests/test_model_refresh.sh) | registers `default-model.test.ts` |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | `## Where the output goes` rewritten; the before-state rule; the default-model guard; the tests table |
-| [`CHANGELOG.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/CHANGELOG.md) | the `0.5.0` entry, plus the `0.4.0` entry for the `models.json` override fix at the operator's direction |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | `## Where the output goes` rewritten; the before-state rule; the default-model guard; the tests table |
+| [`CHANGELOG.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/CHANGELOG.md) | the `0.5.0` entry, plus the `0.4.0` entry for the `models.json` override fix at the operator's direction |

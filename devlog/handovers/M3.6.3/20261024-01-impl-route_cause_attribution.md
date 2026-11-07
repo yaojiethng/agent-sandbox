@@ -73,10 +73,10 @@ None.
 |---|---|
 | [`scripts/cost_ledger.mjs`](../../scripts/cost_ledger.mjs) | one `entries()` walk shared by the session and failure projections; `--failures`, `--census`, `--attribution` as views computed on read |
 | [`tests/test_cost_ledger.sh`](../../tests/test_cost_ledger.sh) | the failure view, the census and the absent-pair case |
-| [`types.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts) | `FailureScope` moved here; the failure `Outcome` carries its scope; a cooling entry may carry the scope that set it |
-| [`classify.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/classify.ts) | the outcome carries the verdict's scope; the stale two-value comment replaced |
-| [`ledger.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/ledger.ts) | the attribution guard; the cooling entry keeps its scope; the parser reads an optional scope |
-| [`report.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/report.ts) | a cooling line names the scope beside the class |
+| [`types.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts) | `FailureScope` moved here; the failure `Outcome` carries its scope; a cooling entry may carry the scope that set it |
+| [`classify.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/classify.ts) | the outcome carries the verdict's scope; the stale two-value comment replaced |
+| [`ledger.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/ledger.ts) | the attribution guard; the cooling entry keeps its scope; the parser reads an optional scope |
+| [`report.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/report.ts) | a cooling line names the scope beside the class |
 | [`replay.test.ts`](../../tests/extensions/pi/model-failover/replay.test.ts) | the differential replay over a fixture, and the live corpus table under `CORPUS_ROOT` |
 | [`test_model_failover.sh`](../../tests/test_model_failover.sh) | the replay registered in the suite |
 | [`helpers.ts`](../../tests/extensions/pi/model-failover/helpers.ts) | outcomes carry a scope; `limited(scope)` |
@@ -85,5 +85,5 @@ None.
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the scope as attribution, and the two stores that apply it |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | `## attribution` and `## provenance` |
 | [`devlog/roadmap.md`](../roadmap.md) | the entry closed with its population and counterfactual stated, the prior unit's row, and the balance attribution closed on the operator's ruling |
-| [`classify.ts`](../../src/libs/dispatch/classify.ts), [`model-failover/classify.ts`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/classify.ts) | the funds pattern claims `Insufficient Balance` before the request pattern reads the body's code field |
+| [`classify.ts`](../../src/libs/dispatch/classify.ts), [`model-failover/classify.ts`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/classify.ts) | the funds pattern claims `Insufficient Balance` before the request pattern reads the body's code field |
 | [`classify.test.ts`](../../tests/dispatch/machine/classify.test.ts), [`classify.test.ts`](../../tests/extensions/pi/model-failover/classify.test.ts) | the 402 balance text asserted as the account's, and as no-retry |

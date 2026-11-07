@@ -30,8 +30,8 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/base.dockerfile`](src/reasoning/providers/pi/base.dockerfile) | Source-of-truth pi pin |
-| [`src/reasoning/providers/pi/config/agent/settings.json`](src/reasoning/providers/pi/config/agent/settings.json) | `lastChangelogVersion` record |
+| [`src/reasoning/providers/pi/base.dockerfile`](src/reasoning/agent-runtime/pi/base.dockerfile) | Source-of-truth pi pin |
+| [`src/reasoning/providers/pi/config/agent/settings.json`](src/reasoning/agent-runtime/pi/config/agent/settings.json) | `lastChangelogVersion` record |
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | M7 pinned-version note |
 
 ## Decisions
@@ -50,8 +50,8 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/base.dockerfile`](src/reasoning/providers/pi/base.dockerfile) | Pin `0.85.1` -> `0.86.0` |
-| [`src/reasoning/providers/pi/config/agent/settings.json`](src/reasoning/providers/pi/config/agent/settings.json) | `lastChangelogVersion` -> `0.86.0` |
+| [`src/reasoning/providers/pi/base.dockerfile`](src/reasoning/agent-runtime/pi/base.dockerfile) | Pin `0.85.1` -> `0.86.0` |
+| [`src/reasoning/providers/pi/config/agent/settings.json`](src/reasoning/agent-runtime/pi/config/agent/settings.json) | `lastChangelogVersion` -> `0.86.0` |
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | M7 note -> `0.86.0` |
 
 ## Deferred items

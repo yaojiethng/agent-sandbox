@@ -63,8 +63,8 @@ None.
 |---|---|
 | [`documentation_taxonomy.md`](../docs/reference/documentation_taxonomy.md) | a `## Reach` section: three values, reach inherited from the root, the manifest named as the surface holding the root list, enablement excluded, and the two-value pointer rule |
 | [`prompt-authoring-conventions.md`](../docs/development/prompt-authoring-conventions.md) | the section retitled to cover a workflow document, the legality test stated, and the root a skill runs from named beside the prompt's |
-| [`principle-check-placement/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-check-placement/SKILL.md) | the norm-kinds citation names `/opt/sandbox/docs/reference/agent_workflow.md`, the path its mounted reader opens; both copies |
-| [`principle-single-source-of-truth/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-single-source-of-truth/SKILL.md) | the same citation, both copies |
+| [`principle-check-placement/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-check-placement/SKILL.md) | the norm-kinds citation names `/opt/sandbox/docs/reference/agent_workflow.md`, the path its mounted reader opens; both copies |
+| [`principle-single-source-of-truth/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-single-source-of-truth/SKILL.md) | the same citation, both copies |
 | [`norm-ownership.tsv`](../../scripts/lint/norm-ownership.tsv) | regenerated, and the two new lines classified: the legality test as a rule with `lint:linking.mjs` as its observer, the run locations as a description |
 | [`.agents/skills/skill-scaffolder/SKILL.md`](../../.agents/skills/skill-scaffolder/SKILL.md) | its three targets are the three delivery routes, and it states that writing in the config home loses the file |
 | [`devlog/roadmap.md`](../roadmap.md) | both rows closed, and the rendered-view row filed with its end state |

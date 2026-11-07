@@ -6,7 +6,7 @@ A skill is a directory a reader opens by name. Where it lives decides who loads 
 
 | Root | Who gets it | Source |
 |---|---|---|
-| provider | every session, seeded from the image | `src/reasoning/providers/pi/config/agent/skills/<name>/` |
+| provider | every session, seeded from the image | `src/reasoning/agent-runtime/pi/config/agent/skills/<name>/` |
 | module | every session that enables the module | `workflow/<module>/skills/<name>/` |
 | project | this repository only | `.agents/skills/<name>/` |
 

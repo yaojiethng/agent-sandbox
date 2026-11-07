@@ -10,7 +10,6 @@
 17f5c80f4318b1cb  docs/reference/tool_interface.md
 18b8e1231f3fcc15  docs/development/context_resolution.md
 245f71c1b838eae3  docs/development/context_resolution.md
-2ab0a50620ac2563  docs/reference/provider_lifecycle.md
 2d312e7fc5a87f9c  docs/reference/execution_model.md
 358cda4e2398ae91  docs/development/context_resolution.md
 35a8f55a6d87d4ca  docs/adr/sandbox_delivery_model.md
@@ -19,7 +18,6 @@
 4114f5cea5541e7b  docs/reference/copy_delivery.md
 41617a6b7d658bee  docs/development/provider_onboarding_guide.md
 42dadd4dd63fb72d  docs/development/quickstart.md
-5aa7ff0e63b71d87  docs/development/provider_onboarding_guide.md
 60bc64f4bfb0cf8a  docs/development/context_resolution.md
 62dbf891bad11247  docs/development/context_resolution.md
 636303bfae8ef83a  docs/development/interface-conventions.md
@@ -31,6 +29,7 @@
 7b76bb18043e810b  docs/development/host_requirements.md
 833adb483ad5c522  docs/development/quickstart.md
 83613142a165eaeb  docs/development/host_requirements.md
+86765eada563ec37  docs/reference/provider_lifecycle.md
 946f9ff4374d355f  docs/development/host_requirements.md
 94b04a7a44da31c9  docs/reference/sandbox_host_interface.md
 94d91d2e6e725576  docs/adr/session_identifier.md
@@ -45,6 +44,7 @@ ad2692d344907ba0  docs/reference/project_onboarding_guide.md
 ad2caf021079abd3  docs/development/interface-conventions.md
 af0fcb9cef9e3c02  docs/reference/project_onboarding_guide.md
 b2b6ce06a8b2df67  docs/development/provider_onboarding_guide.md
+b98ca114946fd52b  docs/development/provider_onboarding_guide.md
 bc5af6d68f2b91c7  docs/development/quickstart.md
 bd45dcb104f1dd12  docs/reference/sandbox_identity.md
 c0f1c04b65325b76  docs/development/host_requirements.md
@@ -59,9 +59,9 @@ e0fce2c5a247c3a9  docs/development/host_requirements.md
 e16e7c35402a7324  docs/reference/project_onboarding_guide.md
 e3db492a0d6e6c7c  docs/development/context_resolution.md
 e57811d721ff9e3a  docs/development/interface-conventions.md
-e6803b86193e0f23  docs/development/provider_onboarding_guide.md
 e73016c7ac4e20fb  docs/reference/sandbox_host_interface.md
 ea764ca61e257fda  docs/adr/session_identifier.md
+edd387a1d1f0f1cf  docs/development/provider_onboarding_guide.md
 eebfde81de79feba  docs/development/provider_onboarding_guide.md
 eee31c9332b28785  docs/development/quickstart.md
 f5a8e9c399295bba  docs/development/provider_onboarding_guide.md

@@ -67,4 +67,4 @@ None.
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the transition table states what a held route does; the pin rule and the invariants say the memory records evidence |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | `## launch site` distinguishes evidence about the route from evidence about the choice |
 | [`devlog/AGENT_FEEDBACK.md`](../AGENT_FEEDBACK.md) | the entry\x27s closing line states the record rule |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md), [`skills/dispatch/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md) | a pinned attempt records its outcome |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md), [`skills/dispatch/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/dispatch/SKILL.md) | a pinned attempt records its outcome |

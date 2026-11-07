@@ -25,17 +25,17 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ENTRY_TRANSITIONS, TASK_PHASES, TASK_TRANSITIONS, type TaskPhase } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/transitions.ts";
-import { bringBackOp, closeOp, forkOp, proposalOp, recordOp, scheduleOp, triggerOp, verifyOp } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
-import { freshState, loadState, saveState, statePathOf, type RunState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
-import { entryIdOf, transitionTrigger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/queue.ts";
-import { acquireLock, lockPathOf, ownerOf, readLockOwner, releaseLock, type LockOwner } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/lock.ts";
-import { bringBackIntentPathOf, readBringBackIntent } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/record.ts";
-import { statusPorcelain, worktreeRootOf } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
+import { ENTRY_TRANSITIONS, TASK_PHASES, TASK_TRANSITIONS, type TaskPhase } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/transitions.ts";
+import { bringBackOp, closeOp, forkOp, proposalOp, recordOp, scheduleOp, triggerOp, verifyOp } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
+import { freshState, loadState, saveState, statePathOf, type RunState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/state.ts";
+import { entryIdOf, transitionTrigger } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/queue.ts";
+import { acquireLock, lockPathOf, ownerOf, readLockOwner, releaseLock, type LockOwner } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/lock.ts";
+import { bringBackIntentPathOf, readBringBackIntent } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/record.ts";
+import { statusPorcelain, worktreeRootOf } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
 import { TOOL_SURFACE, buildCatalog, renderReport, stepInto, tableActions, triggeredStates, type CaseResult } from "./invariants.ts";
 import { commitAll, makeMainRepo, rmrf, tmpdir, writeFile } from "./helpers.ts";
 
-const EXTENSION_ENTRY = path.resolve(import.meta.dirname, "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/index.ts");
+const EXTENSION_ENTRY = path.resolve(import.meta.dirname, "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/index.ts");
 const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
 const PI_PACKAGE_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/index.js`;
 

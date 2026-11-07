@@ -53,7 +53,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) | the scope sentence reads "Every text", `artifact` becomes `text` at three further points, and the description names a reply first |
+| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) | the scope sentence reads "Every text", `artifact` becomes `text` at three further points, and the description names a reply first |
 | `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md` | the same bytes |
 | [`AGENTS.md`](../../AGENTS.md) | the **Documents** line drops its pointer to the judgement, and `Drafting rules` becomes `Drafting rule` |
 | [`devlog/roadmap.md`](../roadmap.md) | the layer-ownership follow-on filed under M3.3.1 |

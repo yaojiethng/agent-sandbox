@@ -75,5 +75,5 @@ None.
 | [`docs/development/conventions.md`](../../docs/development/conventions.md) | the testing-policy row removed |
 | [`scripts/run_tests.sh`](../../scripts/run_tests.sh), [`scripts/mutations_run.sh`](../../scripts/mutations_run.sh) | comments retargeted |
 | [`tests/integration/README.md`](../../tests/integration/README.md), [`tests/test_rename_apply.sh`](../../tests/test_rename_apply.sh), [`tests/libs/draft_fixtures.sh`](../../tests/libs/draft_fixtures.sh), [`tests/knowledge/knowledge_pi_config_cycle.sh`](../../tests/knowledge/knowledge_pi_config_cycle.sh), [`tests/test_binary_roundtrip.sh`](../../tests/test_binary_roundtrip.sh) | comments retargeted |
-| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md) | the knowledge-test pointer retargeted |
+| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md) | the knowledge-test pointer retargeted |
 | [`devlog/roadmap.md`](../roadmap.md) | unit 2 marked |

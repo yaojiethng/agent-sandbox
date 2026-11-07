@@ -24,10 +24,10 @@
 #   base:             src/build/docker-compose.yml
 #   delivery overlay: src/build/docker-compose.copy.yml | src/build/docker-compose.mount.yml
 #                     (passed explicitly as --delivery by every caller)
-#   provider overlay: src/reasoning/providers/<n>/docker-compose.<n>.yml  (merged if exists)
+#   provider overlay: src/reasoning/agent-runtime/<n>/docker-compose.<n>.yml  (merged if exists)
 #   mode overlay:
 #     dry-run:        src/build/docker-compose.dry-run.yml
-#     serve:          src/reasoning/providers/<n>/docker-compose.serve.yml
+#     serve:          src/reasoning/agent-runtime/<n>/docker-compose.serve.yml
 #
 # Provider hooks:
 #   providers/<n>/setup.sh  (sourced if exists, before compose generation)
@@ -177,7 +177,7 @@ fi
 # setup.sh is responsible for exporting provider-specific vars needed before
 # compose generation.
 # If setup.sh exits non-zero, the session aborts with an attribution message.
-PROVIDER_SETUP="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/setup.sh"
+PROVIDER_SETUP="$REPO_ROOT/src/reasoning/agent-runtime/$PROVIDER_NAME/setup.sh"
 
 if [[ -f "$PROVIDER_SETUP" ]]; then
   # The setup path is provider-selected and validated by the -f check;
@@ -185,7 +185,7 @@ if [[ -f "$PROVIDER_SETUP" ]]; then
 # shellcheck disable=SC1090
 if ! source "$PROVIDER_SETUP"; then
     echo "Error: provider setup hook failed: $PROVIDER_SETUP"
-    echo "  Fix the error in src/reasoning/providers/$PROVIDER_NAME/setup.sh before retrying."
+    echo "  Fix the error in src/reasoning/agent-runtime/$PROVIDER_NAME/setup.sh before retrying."
     exit 1
   fi
 fi
@@ -217,8 +217,8 @@ COMPOSE_TEMPLATE="$REPO_ROOT/src/build/docker-compose.yml"
 COPY_OVERLAY="$REPO_ROOT/src/build/docker-compose.copy.yml"
 MOUNT_OVERLAY="$REPO_ROOT/src/build/docker-compose.mount.yml"
 DRY_RUN_OVERLAY="$REPO_ROOT/src/build/docker-compose.dry-run.yml"
-PROVIDER_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
-SERVE_OVERLAY="$REPO_ROOT/src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
+PROVIDER_OVERLAY="$REPO_ROOT/src/reasoning/agent-runtime/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
+SERVE_OVERLAY="$REPO_ROOT/src/reasoning/agent-runtime/$PROVIDER_NAME/docker-compose.serve.yml"
 
 if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   echo "Error: compose template not found: $COMPOSE_TEMPLATE"
@@ -267,7 +267,7 @@ case "$MODE" in
   serve)
     if [[ ! -f "$SERVE_OVERLAY" ]]; then
       echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Expected at src/reasoning/providers/$PROVIDER_NAME/docker-compose.serve.yml"
+      echo "  Expected at src/reasoning/agent-runtime/$PROVIDER_NAME/docker-compose.serve.yml"
       exit 1
     fi
     COMPOSE_FILES+=("$SERVE_OVERLAY")

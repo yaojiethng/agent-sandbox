@@ -53,7 +53,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`principle-one-home-per-rule/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-one-home-per-rule/SKILL.md) | the description carries the prohibition, the opening line says `authoritative`, and `**Why.**` gains the paragraph naming the prohibition, the target and the load-bearing half |
+| [`principle-one-home-per-rule/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-one-home-per-rule/SKILL.md) | the description carries the prohibition, the opening line says `authoritative`, and `**Why.**` gains the paragraph naming the prohibition, the target and the load-bearing half |
 | `$AGENT_HOME/agent/skills/principle-one-home-per-rule/SKILL.md` | the installed copy |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closes |
 | [`tests/test_linking.sh`](../../tests/test_linking.sh) | one line, `# TEST_DEADLINE: 30`, because the file's default budget no longer covers it under the suite |

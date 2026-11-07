@@ -44,7 +44,7 @@ None.
 | [`scripts/agent-sandbox.sh`](../../scripts/agent-sandbox.sh) | Remove dispatch case |
 | [`src/capability/entrypoint.sh`](../../src/capability/entrypoint.sh) | Remove preflight check |
 | [`src/reasoning/entrypoint.sh`](../../src/reasoning/entrypoint.sh) | Remove preflight check |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | Remove tool reference |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | Remove tool reference |
 | [`src/libs/routing.sh`](../../src/libs/routing.sh) | Remove `diffs` channel |
 | [`scripts/templates/Makefile.template`](../../scripts/templates/Makefile.template) | Remove `package-diff` target |
 | [`tests/test_dispatch.sh`](../../tests/test_dispatch.sh) | Remove dispatch test |
@@ -71,7 +71,7 @@ None.
 | [`scripts/agent-sandbox.sh`](../../scripts/agent-sandbox.sh) | Removed `package-diff` dispatch case, help text, validation |
 | [`src/capability/entrypoint.sh`](../../src/capability/entrypoint.sh) | Removed `package_diff.sh` from preflight |
 | [`src/reasoning/entrypoint.sh`](../../src/reasoning/entrypoint.sh) | Removed `package_diff.sh` from preflight |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | Removed `/package-diff` from tool list; updated `/package-branch` description |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | Removed `/package-diff` from tool list; updated `/package-branch` description |
 | [`src/libs/routing.sh`](../../src/libs/routing.sh) | Removed `diffs` channel from `resolve_channel_base_dir` and comments |
 | [`scripts/templates/Makefile.template`](../../scripts/templates/Makefile.template) | Removed `package-diff` target; updated channel docs; changed apply default to `session` |
 | [`tests/test_dispatch.sh`](../../tests/test_dispatch.sh) | Removed `package-diff` dispatch tests |

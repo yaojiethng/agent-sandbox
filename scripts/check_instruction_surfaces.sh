@@ -43,7 +43,7 @@ MODULE_REL="src/build/container-interface.mjs"
 # The two AGENTS.md layers, provider first. Each names the runtime paths it
 # covers in a `## Scope` table.
 LAYER_FILES=(
-  "provider:src/reasoning/providers/pi/config/agent/AGENTS.md"
+  "provider:src/reasoning/agent-runtime/pi/config/agent/AGENTS.md"
   "project:AGENTS.md"
 )
 

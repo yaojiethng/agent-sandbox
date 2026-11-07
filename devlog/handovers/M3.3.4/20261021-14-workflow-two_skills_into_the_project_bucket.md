@@ -55,5 +55,5 @@ None.
 |---|---|
 | [`.agents/skills/pi-bump/`](../../.agents/skills/pi-bump/SKILL.md) | moved from the provider skill root with `git mv`; seeded copy removed |
 | [`.agents/skills/skill-scaffolder/`](../../.agents/skills/skill-scaffolder/SKILL.md) | moved, body order returned to a pointer at the heading that exists, sibling link became a name, project skill root corrected; seeded copy removed |
-| [`doc-advisor-policy.md`](../../src/reasoning/providers/pi/config/agent/prompts/doc-advisor-policy.md) | its scaffolder bar names the skill without a project path, with the reason the gate needs |
+| [`doc-advisor-policy.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/doc-advisor-policy.md) | its scaffolder bar names the skill without a project path, with the reason the gate needs |
 | [`devlog/roadmap.md`](../roadmap.md) | the row filed and closed with its carrier list |

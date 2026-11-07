@@ -52,5 +52,5 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/skills/principle-guard-derived-state/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-guard-derived-state/SKILL.md) | the new principle: three ordered filters, a four-row classification table, and five short parts |
+| [`src/reasoning/providers/pi/config/agent/skills/principle-guard-derived-state/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-guard-derived-state/SKILL.md) | the new principle: three ordered filters, a four-row classification table, and five short parts |
 | [`docs/development/prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | the `source` sentence names three holders and the object each judges |

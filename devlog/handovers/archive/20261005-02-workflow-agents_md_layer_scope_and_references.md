@@ -18,7 +18,7 @@ Two roadmap rows under M3.3.1 are candidates, and the operator ruled on their sc
 - **The provider AGENTS.md deep-links one project's `docs/` from a file titled global** -- the subject. The row asks two questions per mention: is the mention in the right place, and is it necessary.
 - **The project AGENTS.md names one loop prompt out of eight** -- ruled out of this iteration at the scope gate. The operator deferred the prompt-set pointer to a later iteration, so the row stays open and the project layer's scope section carries no entry for the loop prompts.
 
-Two files carry the work: the provider layer at [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md), whose live copy is `~/.pi/agent/AGENTS.md`, and the project layer at [`AGENTS.md`](../../../AGENTS.md), whose live copy is `sandbox/AGENTS.md`.
+Two files carry the work: the provider layer at [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md), whose live copy is `~/.pi/agent/AGENTS.md`, and the project layer at [`AGENTS.md`](../../../AGENTS.md), whose live copy is `sandbox/AGENTS.md`.
 
 Operator steering, stated at the scope gate: each layer's scope differs, and each layer should state its own. The provider layer states its scope; the project layer states the additional scope it adds.
 
@@ -41,7 +41,7 @@ Ruled out of scope: the retirement of the interim `docs/operations/` bundle and 
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the provider layer: its scope statement, and five references that resolve to nothing where it runs |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the provider layer: its scope statement, and five references that resolve to nothing where it runs |
 | [`AGENTS.md`](../../../AGENTS.md) | the project layer: the additional scope, and the prompt-set pointer row 189 carries |
 | `~/.pi/agent/AGENTS.md` | the live copy of the provider layer, which repository discipline requires to change with the source |
 | [`scripts/lint/record-links.mjs`](../../../scripts/lint/record-links.mjs) | holds the image path map; the provider layer's config root is not yet an instruction root to it |

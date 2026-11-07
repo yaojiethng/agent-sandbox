@@ -86,5 +86,5 @@ None.
 | File | Change |
 |---|---|
 | [`devlog/roadmap.md`](../roadmap.md) | the A/B row closed as parked, `M3.6.3`'s scope sentence narrowed to the policy bakeoff, and the flaky-model row added under `T12` with its dependencies |
-| [`model-failover/README.md`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md) | one paragraph naming the parking, the missing trigger and where the comparison lives |
+| [`model-failover/README.md`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md) | one paragraph naming the parking, the missing trigger and where the comparison lives |
 | this record | the measurement that blocked the A/B, the two corrections, and the decisions that filed the capability |

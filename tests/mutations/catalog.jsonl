@@ -29,7 +29,7 @@
 {"name":"B5","id":28,"old":"    if ! docker image inspect \"$image\" >/dev/null 2>&1 || [[ -n \"$no_cache\" ]]; then","new":"    if ! docker image inspect \"$image\" >/dev/null 2>&1; then","source":"tests/mutations/bite_bs.sh","subject":"scripts/build.sh"}
 {"source":"tests/mutations/bite_bs.sh","subject":"scripts/build.sh","name":"B6","id":29,"old":"  set -euo pipefail","new":"  true"}
 {"source":"tests/mutations/bite_bs.sh","subject":"scripts/build.sh","name":"B7","id":30,"new":"    if true; then","old":"    if [[ \"$build_missing\" == \"true\" ]]; then"}
-{"source":"tests/mutations/bite_bs.sh","subject":"scripts/build.sh","name":"B9","id":31,"new":"\"$REPO_ROOT/src/reasoning/providers/\"*/no-such.dockerfile","old":"\"$REPO_ROOT/src/reasoning/providers/\"*/base.dockerfile"}
+{"source":"tests/mutations/bite_bs.sh","subject":"scripts/build.sh","name":"B9","id":31,"new":"\"$REPO_ROOT/src/reasoning/agent-runtime/\"*/no-such.dockerfile","old":"\"$REPO_ROOT/src/reasoning/agent-runtime/\"*/base.dockerfile"}
 {"subject":"scripts/build.sh","name":"B10","source":"tests/mutations/bite_bs.sh","old":"  if [[ \"$baked\" != \"$current\" ]]; then","new":"  if false; then","id":32}
 {"name":"B12","subject":"scripts/build.sh","source":"tests/mutations/bite_bs.sh","old":"  if [[ ! -f \"$provider_dockerfile\" ]]; then","new":"  if false; then","id":33}
 {"id":34,"new":": # project validation removed","old":"validate_project_dir \"$PROJECT_DIR\" || return 1","source":"tests/mutations/bite_confirm.sh","subject":"scripts/workflows/confirm.sh","name":"C1-project-validation"}

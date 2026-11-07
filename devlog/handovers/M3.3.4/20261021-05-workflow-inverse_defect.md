@@ -59,10 +59,10 @@ None. The question this table held is answered in the design record, and the sco
 
 | File | Change |
 |---|---|
-| [`communication-principle-keep-a-subject-near/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-keep-a-subject-near/SKILL.md) | renamed from `communication-principle-dont-scatter-what-belongs-together`, with the `proximity` law, the four costs in the reader's vocabulary, both test questions, a fifth pattern row for the lumped section, `leitwort: proximity` and the new description |
+| [`communication-principle-keep-a-subject-near/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-keep-a-subject-near/SKILL.md) | renamed from `communication-principle-dont-scatter-what-belongs-together`, with the `proximity` law, the four costs in the reader's vocabulary, both test questions, a fifth pattern row for the lumped section, `leitwort: proximity` and the new description |
 | `$AGENT_HOME/agent/skills/communication-principle-keep-a-subject-near/SKILL.md` | the installed copy, and removal of the directories under both earlier names |
-| [`principle-one-home-per-rule/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-one-home-per-rule/SKILL.md) | the boundary line names the widened sibling and its path |
-| [`AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md), [`prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | one citation each, and the installed `AGENTS.md` |
+| [`principle-one-home-per-rule/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-one-home-per-rule/SKILL.md) | the boundary line names the widened sibling and its path |
+| [`AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md), [`prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | one citation each, and the installed `AGENTS.md` |
 | [`scripts/lint/norm-ownership.tsv`](../../scripts/lint/norm-ownership.tsv), [`norm-judgements.tsv`](../../scripts/lint/norm-judgements.tsv) | regenerated; the co-location row is a judgement homed to the renamed skill, so the map regroups and 13 rows stay homed |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closes, and its stale line reference is corrected to `:45` with the section named |
 | [`20261021-design-settled-inverse_defect.md`](../discussions/20261021-design-settled-inverse_defect.md) | the design record, with the four options, the merge rejection, the decision and the carrier list |

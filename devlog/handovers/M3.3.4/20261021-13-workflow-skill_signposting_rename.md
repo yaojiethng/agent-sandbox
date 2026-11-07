@@ -50,10 +50,10 @@ None.
 
 | File | Change |
 |---|---|
-| [`principle-skill-signposting/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-skill-signposting/SKILL.md) | directory renamed with `git mv`, frontmatter `name` updated |
+| [`principle-skill-signposting/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-skill-signposting/SKILL.md) | directory renamed with `git mv`, frontmatter `name` updated |
 | the `$AGENT_HOME` copy | directory renamed, file copied, pair verified identical |
 | [`prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | both citations repointed, and the pointer line's verb changed from `route` to `signpost` |
-| [`communication-principle-maximize-conceptual-leverage/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md) | its pointer to where a leading word is placed names the new identifier, in both copies |
+| [`communication-principle-maximize-conceptual-leverage/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-maximize-conceptual-leverage/SKILL.md) | its pointer to where a leading word is placed names the new identifier, in both copies |
 | [`norm-ownership.tsv`](../../scripts/lint/norm-ownership.tsv) | regenerated, its two edited rows reclassified, and the observer repointed |
 | [`norm-judgements.tsv`](../../scripts/lint/norm-judgements.tsv) | the group prefix and observer repointed, then regrouped |
 | [`devlog/roadmap.md`](../roadmap.md) | the open row **Populate the leading words across the corpus** repointed, and this row closed as an outcome with its carrier split recorded |

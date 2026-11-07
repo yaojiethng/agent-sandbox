@@ -120,7 +120,7 @@ invoke_run_agent() {
 # Provider setup hook
 # ---------------------------------------------------------------------------
 
-# A provider without src/reasoning/providers/<n>/setup.sh: the hook is a
+# A provider without src/reasoning/agent-runtime/<n>/setup.sh: the hook is a
 # no-op and the session must reach compose generation (rc 0, compose called).
 # Given: a provider directory with no setup.sh (the ghost fixture)
 # When:  run_agent.sh runs a standard session
@@ -168,7 +168,7 @@ test_flatten_flag_accepted() {
 # ---------------------------------------------------------------------------
 # Provider overlay selection
 # ---------------------------------------------------------------------------
-# The provider overlay (src/reasoning/providers/pi/docker-compose.pi.yml) must
+# The provider overlay (src/reasoning/agent-runtime/pi/docker-compose.pi.yml) must
 # be part of the compose file set: the docker-stub trace logs every -f argument
 # of `docker compose config`, and compose_generate preserves input basenames in
 # its staging filenames (01-docker-compose.pi.yml).

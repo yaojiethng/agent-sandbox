@@ -30,7 +30,7 @@ import * as path from "node:path";
 import type { Mutation } from "./catalog.ts";
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, "../../../../..");
-const EXTENSION_DIR = "src/reasoning/providers/pi/config/agent/extensions/model-failover";
+const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover";
 const SUITE_DIR = "tests/extensions/pi/model-failover";
 /** The gate's own suite: excluded from every mirror. */
 const GATE_SUITE = "mutation.test.ts";

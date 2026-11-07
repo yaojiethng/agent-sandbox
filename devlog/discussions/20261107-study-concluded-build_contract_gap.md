@@ -23,10 +23,10 @@ locking, and copy-in?
 
 - [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) -- tier 1, `agent-base`
 - [`src/reasoning/runtimes.dockerfile`](../../src/reasoning/runtimes.dockerfile) -- tier 2, `agent-runtimes`
-- [`src/reasoning/providers/hermes/base.dockerfile`](../../src/reasoning/providers/hermes/base.dockerfile) -- the source-built tier 2, `hermes-base`
-- [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) -- the pi image
-- [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile) -- the opencode image
-- [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/providers/hermes/provider.dockerfile) -- the hermes image
+- [`src/reasoning/providers/hermes/base.dockerfile`](../../src/reasoning/agent-runtime/hermes/base.dockerfile) -- the source-built tier 2, `hermes-base`
+- [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) -- the pi image
+- [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile) -- the opencode image
+- [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/agent-runtime/hermes/provider.dockerfile) -- the hermes image
 - [`src/build/container-interface.json`](../../src/build/container-interface.json) -- the COPY and ENV declaration
 - [`scripts/build.sh`](../../scripts/build.sh) -- the build orchestrator
 - [`scripts/build_probe.sh`](../../scripts/build_probe.sh) -- the existing instrument

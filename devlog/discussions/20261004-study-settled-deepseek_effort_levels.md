@@ -8,8 +8,8 @@ Operator-directed diagnosis, 2026-10-04. No parent story: the operator asked whe
 
 ## Required reading
 
-- [`src/reasoning/providers/pi/config/agent/models.json`](../../src/reasoning/providers/pi/config/agent/models.json)
-- [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) `## Thinking levels`
+- [`src/reasoning/providers/pi/config/agent/models.json`](../../src/reasoning/agent-runtime/pi/config/agent/models.json)
+- [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) `## Thinking levels`
 - [`tests/extensions/pi/model-refresh/knowledge/knowledge_opencode_gateway_matrix.sh`](../../tests/extensions/pi/model-refresh/knowledge/knowledge_opencode_gateway_matrix.sh)
 
 ## Summary

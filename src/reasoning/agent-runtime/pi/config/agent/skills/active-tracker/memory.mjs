@@ -1,4 +1,4 @@
-// src/reasoning/providers/pi/config/agent/skills/active-tracker/memory.mjs
+// src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/memory.mjs
 //
 // The session's steering memory, in the OptMem shape: an append-only log as the
 // storage, a bounded view as the reading budget, and a summary that is a cache

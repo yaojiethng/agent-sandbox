@@ -68,7 +68,7 @@ One concern per row. Each ends in a check, lands as one commit with one handover
 
 | Unit | Commit type | Owned files | Handover |
 |---|---|---|---|
-| U1 the shared agent-runtime tier lands | `build` | `src/reasoning/runtimes.dockerfile` (replaces `tools.dockerfile`), `src/reasoning/payload.dockerfile` (deleted), `src/reasoning/providers/{pi,opencode}/base.dockerfile` (deleted), `src/reasoning/providers/{pi,opencode}/provider.dockerfile`, `src/build/image.sh`, `scripts/build.sh`, `tests/test_trace_build.sh`, `tests/test_shared_base_contract.sh`, `.dockerignore` | one impl handover |
+| U1 the shared agent-runtime tier lands | `build` | `src/reasoning/runtimes.dockerfile` (replaces `tools.dockerfile`), `src/reasoning/payload.dockerfile` (deleted), `src/reasoning/agent-runtime/{pi,opencode}/base.dockerfile` (deleted), `src/reasoning/agent-runtime/{pi,opencode}/provider.dockerfile`, `src/build/image.sh`, `scripts/build.sh`, `tests/test_trace_build.sh`, `tests/test_shared_base_contract.sh`, `.dockerignore` | one impl handover |
 | U2 the seam's backend availability follows | `build` | `src/libs/dispatch.sh`, `scripts/dispatch.sh`, `tests/test_dispatch.sh` | one impl handover |
 | U3 the manifest declares the shared rows | `build` | `src/build/container-interface.json`, `src/build/container-interface.mjs`, `scripts/check_container_layout.sh`, the layout test | one impl handover |
 | U4 the tier ADR is amended | `docs` | `docs/adr/reasoning_layer_tiers.md`, `docs/adr/opencode_dispatch_backend.md` | one docs handover |

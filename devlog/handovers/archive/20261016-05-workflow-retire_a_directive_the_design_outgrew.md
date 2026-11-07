@@ -51,10 +51,10 @@ None.
 
 | File | Change |
 |---|---|
-| [`memory.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/memory.mjs) | `retire`, and the `forget` guard |
-| [`active-tracker.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/active-tracker.mjs) | the `memory retire` subcommand |
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/SKILL.md) | the verb and its rule |
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | retire in the same recording |
+| [`memory.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/memory.mjs) | `retire`, and the `forget` guard |
+| [`active-tracker.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/active-tracker.mjs) | the `memory retire` subcommand |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/SKILL.md) | the verb and its rule |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | retire in the same recording |
 | [`test_active_tracker.sh`](../../../tests/test_active_tracker.sh) | twenty-one cases |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.2.3 row |
 | `<scratch>/SESSION_MEMORY_LOG.jsonl` | n=8, the retirement of `[3-4]` |

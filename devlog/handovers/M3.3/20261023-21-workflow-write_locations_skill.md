@@ -56,6 +56,6 @@ None.
 | File | Change |
 |---|---|
 | [`src/reasoning/agent/skills/write-locations/SKILL.md`](../../src/reasoning/agent/skills/write-locations/SKILL.md) | new: the roots table with its two axes, four judgements, non-goals and four failure modes |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the write-discipline paragraph keeps `.scratchpad/` and names the skill for the rest |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the write-discipline paragraph keeps `.scratchpad/` and names the skill for the rest |
 | `$AGENT_HOME/agent/AGENTS.md` | the installed copy carries the same paragraph |
 | [`devlog/roadmap.md`](../roadmap.md) | new T7 row for the scratch root's ignore rule |

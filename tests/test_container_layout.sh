@@ -69,7 +69,7 @@ MANIFEST_REL="src/build/container-interface.json"
 # the gate looks for. Its shape is pi's: a list per root kind.
 write_settings() {
   local root="$1"
-  local path="$root/src/reasoning/providers/pi/config/agent/settings.json"
+  local path="$root/src/reasoning/agent-runtime/pi/config/agent/settings.json"
   mkdir -p "$(dirname "$path")"
   cat > "$path" <<'EOF'
 {
@@ -85,7 +85,7 @@ EOF
 write_provider_dockerfile() {
   local root="$1" name="$2"
   shift 2
-  local path="$root/src/reasoning/providers/$name/provider.dockerfile"
+  local path="$root/src/reasoning/agent-runtime/$name/provider.dockerfile"
   mkdir -p "$(dirname "$path")"
   {
     printf 'FROM scratch\n'
@@ -108,12 +108,12 @@ write_manifest() {
     { "provider": "pi", "source": "src/reasoning/agent/prompts/", "destination": "/opt/workflow/agent/prompts/" },
     { "provider": "pi", "source": "workflow/coding-agent/prompts/", "destination": "/opt/workflow/agent/modules/coding-agent/prompts/" },
     { "provider": "pi", "source": "workflow/coding-agent/skills/", "destination": "/opt/workflow/agent/modules/coding-agent/skills/" },
-    { "provider": "pi", "source": "src/reasoning/providers/pi/config/", "destination": "/opt/workflow/agent/config/" }
+    { "provider": "pi", "source": "src/reasoning/agent-runtime/pi/config/", "destination": "/opt/workflow/agent/config/" }
   ],
   "provision": [
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "template": "/opt/workflow/agent/config/",
       "home": "$AGENT_HOME/"
     }
@@ -151,7 +151,7 @@ write_manifest() {
       "loader": "the running provider's config enables the module's package directory"
     },
     {
-      "sources": ["src/reasoning/providers/pi/config/"],
+      "sources": ["src/reasoning/agent-runtime/pi/config/"],
       "runtime_path": "$AGENT_HOME/",
       "loader": "pi reads its config home at startup",
       "provider": "pi"
@@ -172,7 +172,7 @@ EOF
 write_compose() {
   local root="$1" name="$2"
   shift 2
-  local path="$root/src/reasoning/providers/$name/docker-compose.$name.yml"
+  local path="$root/src/reasoning/agent-runtime/$name/docker-compose.$name.yml"
   mkdir -p "$(dirname "$path")"
   {
     printf 'services:\n'
@@ -203,7 +203,7 @@ write_default_tree() {
     'COPY src/reasoning/agent/prompts/                    /opt/workflow/agent/prompts/' \
     'COPY workflow/coding-agent/prompts/                  /opt/workflow/agent/modules/coding-agent/prompts/' \
     'COPY workflow/coding-agent/skills/                   /opt/workflow/agent/modules/coding-agent/skills/' \
-    'COPY src/reasoning/providers/pi/config/              /opt/workflow/agent/config/' \
+    'COPY src/reasoning/agent-runtime/pi/config/              /opt/workflow/agent/config/' \
     'ENV AGENT_HOME=/home/agentuser/.pi'
   mkdir -p "$root/src/reasoning"
   printf 'PROVISION_TEMPLATE="/opt/workflow/agent/config"\n' > "$root/src/reasoning/entrypoint.sh"
@@ -259,7 +259,7 @@ settings_edit() {
   local root="$1" script="$2"
   node -e "
     const fs = require('fs');
-    const file = '$root/src/reasoning/providers/pi/config/agent/settings.json';
+    const file = '$root/src/reasoning/agent-runtime/pi/config/agent/settings.json';
     const settings = JSON.parse(fs.readFileSync(file, 'utf8'));
     $script
     fs.writeFileSync(file, JSON.stringify(settings, null, 2));
@@ -292,7 +292,7 @@ test_copy_line_with_no_manifest_row_flagged() {
   local root="$FIXTURE_DIR/lineonly"
   write_default_tree "$root"
   printf 'COPY docs/policies/     /opt/sandbox/docs/policies/\n' \
-    >> "$root/src/reasoning/providers/pi/provider.dockerfile"
+    >> "$root/src/reasoning/agent-runtime/pi/provider.dockerfile"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a COPY line no manifest row carries fails'
   assert_contains "$GATE_OUT" 'which the manifest does not declare' 'the direction is named'
@@ -302,7 +302,7 @@ test_env_line_with_no_manifest_row_flagged() {
   local root="$FIXTURE_DIR/envonly"
   write_default_tree "$root"
   printf 'ENV WORKSPACE_DIR=/home/agentuser/workspace\n' \
-    >> "$root/src/reasoning/providers/pi/provider.dockerfile"
+    >> "$root/src/reasoning/agent-runtime/pi/provider.dockerfile"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'an ENV line no manifest row carries fails'
   assert_contains "$GATE_OUT" "env: " 'the layer is named'
@@ -330,7 +330,7 @@ test_missing_manifest_fails_closed() {
 test_no_provider_dockerfile_reported() {
   local root="$FIXTURE_DIR/nodockerfile"
   write_default_tree "$root"
-  rm "$root/src/reasoning/providers/pi/provider.dockerfile"
+  rm "$root/src/reasoning/agent-runtime/pi/provider.dockerfile"
   run_module check --root "$root"
   assert_rc 1 "$MODULE_RC" 'no provider dockerfile is a finding, not an empty map'
   assert_contains "$MODULE_OUT" 'no provider dockerfile' 'the missing input is named'
@@ -339,7 +339,7 @@ test_no_provider_dockerfile_reported() {
 test_missing_settings_reported() {
   local root="$FIXTURE_DIR/nosettings"
   write_default_tree "$root"
-  rm "$root/src/reasoning/providers/pi/config/agent/settings.json"
+  rm "$root/src/reasoning/agent-runtime/pi/config/agent/settings.json"
   run_module check --root "$root"
   assert_rc 1 "$MODULE_RC" 'a missing settings record is a finding, not agreement'
   assert_contains "$MODULE_OUT" 'settings.json: missing or does not parse' 'the missing record is named'
@@ -364,7 +364,7 @@ test_destination_no_cell_declares_flagged() {
   local root="$FIXTURE_DIR/nocell"
   write_default_tree "$root"
   printf 'COPY docs/reference/   /opt/workflow/agent/reference/\n' \
-    >> "$root/src/reasoning/providers/pi/provider.dockerfile"
+    >> "$root/src/reasoning/agent-runtime/pi/provider.dockerfile"
   manifest_edit "$root" '
     const fs = require("fs");
     const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
@@ -397,7 +397,7 @@ test_none_cell_for_a_copied_folder_flagged() {
 test_roots_from_the_package_entries_alone_pass() {
   local root="$FIXTURE_DIR/packages-only"
   write_default_tree "$root"
-  cat > "$root/src/reasoning/providers/pi/config/agent/settings.json" <<'EOF'
+  cat > "$root/src/reasoning/agent-runtime/pi/config/agent/settings.json" <<'EOF'
 {
   "packages": ["/opt/workflow/agent", "/opt/workflow/agent/modules/coding-agent"]
 }
@@ -420,7 +420,7 @@ test_opt_path_outside_settings_roots_flagged() {
     manifest.cells.find((cell) => cell.runtime_path === "/opt/workflow/agent/skills/").runtime_path = "/opt/elsewhere/skills/";
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
-  sed -i 's#/opt/workflow/agent/skills/#/opt/elsewhere/skills/#' "$root/src/reasoning/providers/pi/provider.dockerfile"
+  sed -i 's#/opt/workflow/agent/skills/#/opt/elsewhere/skills/#' "$root/src/reasoning/agent-runtime/pi/provider.dockerfile"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'an /opt path outside the settings roots fails'
   assert_contains "$GATE_OUT" 'is not a root in' 'the settings record is named'
@@ -573,7 +573,7 @@ test_pairs_cli_emits_both_layers() {
   assert_contains "$MODULE_OUT" 'image	pi	src/reasoning/agent/prompts/	/opt/workflow/agent/prompts/' 'the image pair is emitted'
   # The provision row resolves through the provider's AGENT_HOME, so a file
   # beneath the template has a second destination.
-  assert_contains "$MODULE_OUT" 'provision	pi	src/reasoning/providers/pi/config/	/home/agentuser/.pi/' 'the provision pair is resolved'
+  assert_contains "$MODULE_OUT" 'provision	pi	src/reasoning/agent-runtime/pi/config/	/home/agentuser/.pi/' 'the provision pair is resolved'
 }
 
 test_session_cli_emits_the_paths() {
@@ -653,7 +653,7 @@ test_module_root_with_no_package_entry_flagged() {
     const settings = JSON.parse(fs.readFileSync(p, "utf8"));
     settings.packages = ["/opt/workflow/agent"];
     fs.writeFileSync(p, JSON.stringify(settings, null, 2));
-  ' "$root/src/reasoning/providers/pi/config/agent/settings.json"
+  ' "$root/src/reasoning/agent-runtime/pi/config/agent/settings.json"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a module root no package entry enables fails'
   assert_contains "$GATE_OUT" "/opt/workflow/agent/modules/coding-agent/prompts/' is not a root in" 'the record is named'

@@ -1,19 +1,19 @@
 # Provider Onboarding Guide
 
-A provider is a directory under [`src/reasoning/providers/`](../../src/reasoning/providers/) holding its Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
+A provider is a directory under [`src/reasoning/agent-runtime/`](../../src/reasoning/agent-runtime/) holding its Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
 
 Read a shipped provider before writing one. Each file below is a working example of the shape it names.
 
 | Provider | Use as the reference for |
 |---|---|
-| [`pi`](../../src/reasoning/providers/pi/) | every optional file: `setup.sh`, a provider compose overlay, `config/` |
-| [`opencode`](../../src/reasoning/providers/opencode/) | the minimum: one Dockerfile and the serve overlay |
-| [`hermes`](../../src/reasoning/providers/hermes/) | a multi-stage build, and a provider with no agent compose overlay |
+| [`pi`](../../src/reasoning/agent-runtime/pi/) | every optional file: `setup.sh`, a provider compose overlay, `config/` |
+| [`opencode`](../../src/reasoning/agent-runtime/opencode/) | the minimum: one Dockerfile and the serve overlay |
+| [`hermes`](../../src/reasoning/agent-runtime/hermes/) | a multi-stage build, and a provider with no agent compose overlay |
 
 ## Step 1 -- Create the directory
 
 ```sh
-mkdir -p src/reasoning/providers/<n>
+mkdir -p src/reasoning/agent-runtime/<n>
 ```
 
 Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-agent-<project>`, and `<n>-base` for a source-built agent-runtime) via [`src/build/image.sh`](../../src/build/image.sh).
@@ -35,7 +35,7 @@ A base ends as root. User creation and agent-runtime configuration belong in `pr
 
 ## Step 3 -- Write `provider.dockerfile`
 
-Shared libs, user creation, agent-runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
+Shared libs, user creation, agent-runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile).
 
 Two things are not yours to write:
 
@@ -51,7 +51,7 @@ ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]
 CMD ["<agent-command>"]
 ```
 
-`command:` in a compose overlay replaces the invocation, which is how serve mode and the dry-run probe select what runs. See [`../reference/tool_interface.md`](../reference/tool_interface.md#provider-interface) and the comment in [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
+`command:` in a compose overlay replaces the invocation, which is how serve mode and the dry-run probe select what runs. See [`../reference/tool_interface.md`](../reference/tool_interface.md#provider-interface) and the comment in [`opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile).
 
 ## Step 4 -- Write `docker-compose.serve.yml`
 
@@ -63,23 +63,23 @@ services:
     command: ["<agent-command>", "<serve-args...>"]
 ```
 
-Reference: [`pi/docker-compose.serve.yml`](../../src/reasoning/providers/pi/docker-compose.serve.yml).
+Reference: [`pi/docker-compose.serve.yml`](../../src/reasoning/agent-runtime/pi/docker-compose.serve.yml).
 
 ## Step 5 (optional) -- Environment variables
 
-Compose passes only what a compose file declares, so a variable the agent needs must appear in a compose `environment:` block. For values that apply in every mode, write `docker-compose.<n>.yml`; [`scripts/run_agent.sh`](../../scripts/run_agent.sh) merges it before the mode overlay. Reference: [`pi/docker-compose.pi.yml`](../../src/reasoning/providers/pi/docker-compose.pi.yml).
+Compose passes only what a compose file declares, so a variable the agent needs must appear in a compose `environment:` block. For values that apply in every mode, write `docker-compose.<n>.yml`; [`scripts/run_agent.sh`](../../scripts/run_agent.sh) merges it before the mode overlay. Reference: [`pi/docker-compose.pi.yml`](../../src/reasoning/agent-runtime/pi/docker-compose.pi.yml).
 
 ## Step 6 (optional) -- `config/`
 
 Files seeded into `AGENT_HOME` at container start, never overwriting what is already there. Name the environment stub `env.stub`; [`scripts/onboard.sh`](../../scripts/onboard.sh) renames it to `.env` on the host, which keeps a real `.env` out of the repository.
 
 ```text
-src/reasoning/providers/<n>/config/
+src/reasoning/agent-runtime/<n>/config/
 ├── AGENTS.md    ← provider-layer agent context, seeded as AGENT_HOME/AGENTS.md
 └── env.stub     ← seeded as AGENT_HOME/.env
 ```
 
-Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/providers/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
+Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/agent-runtime/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/agent-runtime/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
 
 ## Step 7 (optional) -- `setup.sh`
 

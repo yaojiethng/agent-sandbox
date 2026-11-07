@@ -25,7 +25,7 @@ Three measurements settle it.
 
 **Shipping it needs a declaration surface that does not exist.** `source_bump.mjs` resolves its root to the repository it runs in, and the store sits at a fixed relative path in that tree. A shared tool has to be told where a project keeps its registry, which is the question [M3.4.2](../../devlog/roadmap.md) `Environment declaration seam` owns and which is `Not started`. Packaging ingestion is therefore not one iteration; it waits on that seam.
 
-**And no consumer waits for it.** The only second project in the roadmap, `The vault project as the second-project portability proof`, is `Not started`. Building the packaging for it now is the shape [`principle-delegation-over-machinery`](../../src/reasoning/providers/pi/config/agent/skills/principle-delegation-over-machinery/SKILL.md) was landed to refuse: a mechanism whose two answers are both empty.
+**And no consumer waits for it.** The only second project in the roadmap, `The vault project as the second-project portability proof`, is `Not started`. Building the packaging for it now is the shape [`principle-delegation-over-machinery`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-delegation-over-machinery/SKILL.md) was landed to refuse: a mechanism whose two answers are both empty.
 
 **The module keeps its real subject.** The sibling row `The four pstack skills are optional, not base` wants `teach`, `how`, `why` and `unslop` to arrive as an optional module, and that is what the form is for: a pack of skills someone else wrote, enabled or omitted by a package entry, carrying no tooling. The module loses the wrong tenant and keeps its purpose. That row is untouched here.
 

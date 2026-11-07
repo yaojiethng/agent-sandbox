@@ -11,12 +11,12 @@ ARG HOST_GID=1000
 # Build context is the repo root; COPY paths are repo-relative.
 COPY src/libs/                                          /opt/sandbox/lib/
 COPY src/reasoning/entrypoint.sh                        /opt/sandbox/bin/provider-entrypoint.sh
-COPY src/reasoning/providers/pi/preflight.sh            /opt/sandbox/bin/provider-preflight.sh
+COPY src/reasoning/agent-runtime/pi/preflight.sh            /opt/sandbox/bin/provider-preflight.sh
 COPY src/reasoning/agent/skills/                        /opt/workflow/agent/skills/
 COPY src/reasoning/agent/prompts/                       /opt/workflow/agent/prompts/
 COPY workflow/coding-agent/prompts/                     /opt/workflow/agent/modules/coding-agent/prompts/
 COPY workflow/coding-agent/skills/                      /opt/workflow/agent/modules/coding-agent/skills/
-COPY src/reasoning/providers/pi/config/                 /opt/workflow/agent/config/
+COPY src/reasoning/agent-runtime/pi/config/                 /opt/workflow/agent/config/
 COPY docs/reference/                                 /opt/sandbox/docs/reference/
 RUN chmod +x /opt/sandbox/bin/provider-entrypoint.sh
 

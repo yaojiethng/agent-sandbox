@@ -8,9 +8,9 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { once } from "node:events";
-import { NetworkAdaptor, modelOfRequest } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/adaptor.ts";
-import { EdgeLedger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/edge-ledger.ts";
-import type { SelectionConfig } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts";
+import { NetworkAdaptor, modelOfRequest } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/adaptor.ts";
+import { EdgeLedger } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/edge-ledger.ts";
+import type { SelectionConfig } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts";
 import { tempLedgerPath } from "./helpers.ts";
 
 const CONFIG: SelectionConfig = { policy: "rate", epsilon: 0 };

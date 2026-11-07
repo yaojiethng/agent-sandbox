@@ -5,7 +5,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
 import {
 	type QueueEntry,
 	entryIdOf,
@@ -14,7 +14,7 @@ import {
 	transitionSchedule,
 	transitionTrigger,
 	validateBirth,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/queue.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/queue.ts";
 
 function entry(taskId: string, seq: number, state: QueueEntry["state"] = "requested"): QueueEntry {
 	return {

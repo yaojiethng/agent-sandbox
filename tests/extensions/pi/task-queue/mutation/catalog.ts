@@ -58,7 +58,7 @@ export interface Mutation {
 	breaks: string;
 }
 
-export const EXTENSION_DIR = "src/reasoning/providers/pi/config/agent/extensions/task-queue";
+export const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue";
 
 export const MUTATIONS: readonly Mutation[] = [
 	// --- I7: the bring-back writes exactly the file set the primary names ---

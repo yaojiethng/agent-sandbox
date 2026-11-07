@@ -23,7 +23,7 @@
 # README records that as open rather than working.
 #
 # Reference:
-#   src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md
+#   src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md
 #     -- the dated table this test reproduces.
 #
 # Not run by make test. Run manually:

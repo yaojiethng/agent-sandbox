@@ -302,8 +302,8 @@ test_sibling_instruction_root_link_is_clean() {
 test_provider_config_root_resolves_in_the_image() {
   local dir cfg out
   dir="$(shipped_root provider_root)"
-  mkdir -p "$dir/src/reasoning/providers/pi/config/agent"
-  local file="$dir/src/reasoning/providers/pi/config/agent/AGENTS.md"
+  mkdir -p "$dir/src/reasoning/agent-runtime/pi/config/agent"
+  local file="$dir/src/reasoning/agent-runtime/pi/config/agent/AGENTS.md"
   printf '# Layer\n' > "$file"
 
   printf '[policy](../../../../../../docs/reference/iteration_protocol.md)\n' >> "$file"
@@ -323,8 +323,8 @@ test_provider_config_root_resolves_in_the_image() {
 provision_root() {
   local name="$1"
   local dir="$FIXTURE_DIR/$name"
-  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/src/reasoning/providers/pi/config/agent"
-  printf '# Template file\n' > "$dir/src/reasoning/providers/pi/config/agent/template.md"
+  mkdir -p "$dir/workflow/coding-agent/prompts" "$dir/src/reasoning/agent-runtime/pi/config/agent"
+  printf '# Template file\n' > "$dir/src/reasoning/agent-runtime/pi/config/agent/template.md"
   printf '%s' "$dir"
 }
 

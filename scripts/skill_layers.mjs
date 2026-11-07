@@ -45,7 +45,7 @@ export const LAYERS = [
   },
   {
     name: "provider",
-    source: "src/reasoning/providers/pi/config/agent/skills",
+    source: "src/reasoning/agent-runtime/pi/config/agent/skills",
     shipped: true,
   },
   {

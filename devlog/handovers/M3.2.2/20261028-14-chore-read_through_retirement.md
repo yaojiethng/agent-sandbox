@@ -80,5 +80,5 @@ None.
 | [`docs/adr/coding_agent_loop_workflow.md`](../../docs/adr/coding_agent_loop_workflow.md) | the `-run` bullet records the family's retirement and names no member |
 | [`workflow/coding-agent/skills/close-read/references/register.md`](../../workflow/coding-agent/skills/close-read/references/register.md) | the class rule states the failure without the deleted register's counts |
 | [`.agents/skills/testing/patterns/assertions.md`](../../.agents/skills/testing/patterns/assertions.md) | two sections: pin the contract not the accident, and a rename is not a rewrite |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | a `## Communication Standards` bullet for the intent principle |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | a `## Communication Standards` bullet for the intent principle |
 | [`workflow/coding-agent/prompts/iter.md`](../../workflow/coding-agent/prompts/iter.md) | the write-back bullet states that a row is written intent-first |

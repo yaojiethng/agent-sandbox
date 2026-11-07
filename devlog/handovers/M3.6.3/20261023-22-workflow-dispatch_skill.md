@@ -57,7 +57,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md) | renamed from `opencode-dispatch`; rewritten so it names a role, no model and no tier, points the mechanism at `dispatch.md`, and omits `--model` |
+| [`src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/dispatch/SKILL.md) | renamed from `opencode-dispatch`; rewritten so it names a role, no model and no tier, points the mechanism at `dispatch.md`, and omits `--model` |
 | [`tests/test_pi_model_recommendations.sh`](../../tests/test_pi_model_recommendations.sh) | one case: the dispatch skill pins no role and names no model the role table carries |
 | [`devlog/roadmap.md`](../roadmap.md) | a row for this unit, closed here; the model-catalog row's link and the instruction-transport row's cell list retargeted; the dispatch-rule row's shadow recorded as retired |
 | [`devlog/discussions/20261016-design-settled-dispatch_ownership.md`](../discussions/20261016-design-settled-dispatch_ownership.md) | its Consequences sentence records that the worker skill now names no model |

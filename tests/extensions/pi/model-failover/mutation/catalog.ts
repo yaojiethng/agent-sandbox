@@ -60,7 +60,7 @@ export interface Mutation {
 	control?: true;
 }
 
-export const EXTENSION_DIR = "src/reasoning/providers/pi/config/agent/extensions/model-failover";
+export const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover";
 
 export const MUTATIONS: readonly Mutation[] = [
 	// --- TI1: the threshold fires at N, not at N+1 ---

@@ -5,8 +5,8 @@
  * product rather than on a helper of its own.
  */
 
-import { parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts";
-import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { parseDeclarations } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/config.ts";
+import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 
 /** The provider the suite drives. */
 export const PROVIDER_ID = "opencode-go";

@@ -34,7 +34,7 @@ Out of scope: the live effort probe (item three of the diagnosis). The operator 
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/models.json`](../../../src/reasoning/providers/pi/config/agent/models.json) | the three stale override keys; the `deepseek` key's resolution |
+| [`src/reasoning/providers/pi/config/agent/models.json`](../../../src/reasoning/agent-runtime/pi/config/agent/models.json) | the three stale override keys; the `deepseek` key's resolution |
 | [`tests/extensions/pi/model-refresh/config.test.ts`](../../../tests/extensions/pi/model-refresh/config.test.ts) | new: the offline map and wire check, and its printed table |
 | [`tests/test_model_refresh.sh`](../../../tests/test_model_refresh.sh) | the registration guard gains the new file |
 | [`devlog/discussions/20261004-study-settled-deepseek_effort_levels.md`](../../../devlog/discussions/20261004-study-settled-deepseek_effort_levels.md) | new: the diagnosis record and the deferred live probe |
@@ -64,7 +64,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/models.json`](../../../src/reasoning/providers/pi/config/agent/models.json) | the two `openrouter` override keys take the `deepseek/` prefix; the dead `deepseek/deepseek-v4-flash` override is dropped |
+| [`src/reasoning/providers/pi/config/agent/models.json`](../../../src/reasoning/agent-runtime/pi/config/agent/models.json) | the two `openrouter` override keys take the `deepseek/` prefix; the dead `deepseek/deepseek-v4-flash` override is dropped |
 | [`tests/extensions/pi/model-refresh/config.test.ts`](../../../tests/extensions/pi/model-refresh/config.test.ts) | new: the offline config check, its dead-key gate, its wire assertion and its printed table |
 | [`tests/test_model_refresh.sh`](../../../tests/test_model_refresh.sh) | the registration guard gains `config.test.ts` |
 | [`devlog/discussions/20261004-study-settled-deepseek_effort_levels.md`](../../../devlog/discussions/20261004-study-settled-deepseek_effort_levels.md) | new: the API surface, the dead keys, the measurement, the probe prompts and the deferred live probe |

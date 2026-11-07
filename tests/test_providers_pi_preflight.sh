@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tests/test_providers_pi_preflight.sh
-# Unit tests for src/reasoning/providers/pi/preflight.sh
+# Unit tests for src/reasoning/agent-runtime/pi/preflight.sh
 # Pins cite: devlog/discussions/archive/20260512-design-settled-provider_config_ownership_and_loading.md (warning surface).
 
 #
@@ -19,7 +19,7 @@ set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
-PREFLIGHT="${TEST_DIR}/../src/reasoning/providers/pi/preflight.sh"
+PREFLIGHT="${TEST_DIR}/../src/reasoning/agent-runtime/pi/preflight.sh"
 
 # ---------------------------------------------------------------------------
 # Helpers

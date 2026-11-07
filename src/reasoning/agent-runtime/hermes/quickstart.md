@@ -48,8 +48,7 @@ Stops all session containers and removes the sandbox volume.
 
 ## Serve mode
 
-In serve mode, Open WebUI is available at `http://localhost:<SERVE_PORT>` (default `46553`).
-Hermes runs as a gateway API server; Open WebUI connects to it at `http://agent:8642/v1`.
+In serve mode, Open WebUI is available at `http://localhost:<SERVE_PORT>` (default `46553`). Hermes runs as a gateway API server; Open WebUI connects to it at `http://agent:8642/v1`.
 
 ```sh
 # Start serve mode
@@ -132,28 +131,22 @@ Changes take effect on the next `make start` or `make serve` -- no rebuild requi
 
 ## Troubleshooting
 
-**Container exits immediately**
-Check entrypoint output: `docker logs hermes-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
+**Container exits immediately** Check entrypoint output: `docker logs hermes-agent-<PROJECT_NAME>`. Snapshot validation failure is the most common cause  --  check that `PROJECT_DIR` has at least one commit and no tracked files are missing from disk.
 
-**`staged.diff` is empty after run**
-Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
+**`staged.diff` is empty after run** Agent made no changes, or the EXIT trap did not fire. If the container was killed rather than stopped cleanly, the trap may not have run. Use `make stop` rather than `docker kill`.
 
-**`make start` errors: PROVIDER not set**
-`PROVIDER` is required: `make start PROVIDER=hermes`.
+**`make start` errors: PROVIDER not set** `PROVIDER` is required: `make start PROVIDER=hermes`.
 
-**Image not found**
-Run `make build PROVIDER=hermes` before the first start. Images are not built automatically unless `REBUILD=1` is passed.
+**Image not found** Run `make build PROVIDER=hermes` before the first start. Images are not built automatically unless `REBUILD=1` is passed.
 
-**`cp: cannot stat` during snapshot**
-Tracked files are missing from disk. Fix:
+**`cp: cannot stat` during snapshot** Tracked files are missing from disk. Fix:
 
 ```sh
 git -C <PROJECT_DIR> rm --cached <file>
 git -C <PROJECT_DIR> commit -m "remove missing file from index"
 ```
 
-**WSL path errors**
-All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
+**WSL path errors** All paths must be Linux format. Convert with: `wslpath 'C:\your\path'`
 
 ### Line ending issues in scripts or config files
 
@@ -218,8 +211,7 @@ environment:
   - ENABLE_OLLAMA_API=false
 ```
 
-**Open WebUI shows no models**
-Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI <-> Hermes connection has not been established  --  work through the connectivity steps above.
+**Open WebUI shows no models** Hermes gateway exposes a single model: `hermes-agent`. If the models list is empty, the Open WebUI <-> Hermes connection has not been established  --  work through the connectivity steps above.
 
 ## Recovery
 

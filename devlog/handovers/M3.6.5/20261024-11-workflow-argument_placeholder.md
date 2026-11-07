@@ -64,9 +64,9 @@ None.
 | [`agent-sandbox.md`](../../src/reasoning/agent/prompts/agent-sandbox.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`defer.md`](../../src/reasoning/agent/prompts/defer.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`package-branch.md`](../../src/reasoning/agent/prompts/package-branch.md) | the argument placeholder becomes `$ARGUMENTS` |
-| [`pi-agent.md`](../../src/reasoning/providers/pi/config/agent/prompts/pi-agent.md) | the argument placeholder becomes `$ARGUMENTS` |
-| [`pop-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | the argument placeholder becomes `$ARGUMENTS` |
-| [`push-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | the argument placeholder becomes `$ARGUMENTS` |
+| [`pi-agent.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/pi-agent.md) | the argument placeholder becomes `$ARGUMENTS` |
+| [`pop-task.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | the argument placeholder becomes `$ARGUMENTS` |
+| [`push-task.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`backlog-triage.md`](../../workflow/coding-agent/prompts/backlog-triage.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`bootstrap.md`](../../workflow/coding-agent/prompts/bootstrap.md) | the argument placeholder becomes `$ARGUMENTS` |
 | [`commit.md`](../../workflow/coding-agent/prompts/commit.md) | the argument placeholder becomes `$ARGUMENTS` |

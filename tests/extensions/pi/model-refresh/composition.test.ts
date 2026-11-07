@@ -20,9 +20,9 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import { createRequire } from "node:module";
 
-import { gatherAndBuild } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts";
-import { buildUnion } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
-import type { ModelDefinition, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { gatherAndBuild } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts";
+import { buildUnion } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts";
+import type { ModelDefinition, StoredCatalog } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 import { PROVIDER_ID, TEST_DECL } from "./fixtures.ts";
 
 const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";

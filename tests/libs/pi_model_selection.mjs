@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const settingsPath = path.resolve(
   scriptDir,
-  "../../src/reasoning/providers/pi/config/agent/settings.json",
+  "../../src/reasoning/agent-runtime/pi/config/agent/settings.json",
 );
 
 const AUTH = {

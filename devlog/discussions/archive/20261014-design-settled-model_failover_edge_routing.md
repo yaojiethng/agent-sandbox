@@ -2,11 +2,11 @@
 
 **Status:** settled
 
-Settled and folded into the extension's design record, [`README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md); the README is the live design document, and this archived document keeps the exploration that produced it.
+Settled and folded into the extension's design record, [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md); the README is the live design document, and this archived document keeps the exploration that produced it.
 
 ## Context
 
-`model-failover` keeps a session on a working model. Its chains declare routes at provider/model granularity, and its ledger records health per route ([README](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md)). That layer is the operator's choice - "use `opencode-go/step-5-preview-free`" - and it is the right unit for choosing a provider and a model.
+`model-failover` keeps a session on a working model. Its chains declare routes at provider/model granularity, and its ledger records health per route ([README](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md)). That layer is the operator's choice - "use `opencode-go/step-5-preview-free`" - and it is the right unit for choosing a provider and a model.
 
 It is not the unit where the failures live. The `opencode-go` gateway fans a request out to a few edge addresses, and the 2026-10-12 measurement found that success varies sharply by edge at one moment, that the signal decays within a few minutes, and that the edge colo is not a stable property of an address. A chain of one route therefore cannot route around a bad edge: when the route cools, the walk's degraded tier re-dispatches the same route, so the cooldown is inert and the extension is telemetry on the single-route chain.
 

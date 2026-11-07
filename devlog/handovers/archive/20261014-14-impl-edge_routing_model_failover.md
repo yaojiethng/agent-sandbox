@@ -58,15 +58,15 @@ None.
 
 | File | Change |
 |---|---|
-| [`pinned-fetch.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/pinned-fetch.ts) | the pinned request and `canPinBody` |
-| [`adaptor.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/adaptor.ts) | the `NetworkAdaptor` and `modelOfRequest` |
-| [`edges.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/edges.ts) | the edge machine, `nextEdge`, the policies, resolution and the address set |
-| [`edge-ledger.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/edge-ledger.ts) | the version-1 `edges.json` |
-| [`config.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/config.ts) | `parseSelection`, `DEFAULT_SELECTION`, `EDGE_THRESHOLD`, `EDGE_WINDOW_MS` |
-| [`types.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts) | `EdgeHealth`, `EdgeOutcomeRecord`, `AddressSet`, `EdgeLedgerFile`, `SelectionConfig` |
-| [`report.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/report.ts) | `edgeLine` and `buildEdgeReport` |
-| [`index.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/index.ts) | `installAdaptor`, the host management, the edge charge on `message_end` |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md) | the edge design folded into the design record |
-| [`CHANGELOG.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/CHANGELOG.md) | the 0.2.0 entry |
+| [`pinned-fetch.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/pinned-fetch.ts) | the pinned request and `canPinBody` |
+| [`adaptor.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/adaptor.ts) | the `NetworkAdaptor` and `modelOfRequest` |
+| [`edges.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/edges.ts) | the edge machine, `nextEdge`, the policies, resolution and the address set |
+| [`edge-ledger.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/edge-ledger.ts) | the version-1 `edges.json` |
+| [`config.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/config.ts) | `parseSelection`, `DEFAULT_SELECTION`, `EDGE_THRESHOLD`, `EDGE_WINDOW_MS` |
+| [`types.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts) | `EdgeHealth`, `EdgeOutcomeRecord`, `AddressSet`, `EdgeLedgerFile`, `SelectionConfig` |
+| [`report.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/report.ts) | `edgeLine` and `buildEdgeReport` |
+| [`index.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/index.ts) | `installAdaptor`, the host management, the edge charge on `message_end` |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md) | the edge design folded into the design record |
+| [`CHANGELOG.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/CHANGELOG.md) | the 0.2.0 entry |
 | `tests/extensions/pi/model-failover/` | `pinned-fetch.test.ts`, `adaptor.test.ts`, `edges.test.ts`, `edge-ledger.test.ts`, `config`/`report` additions, and `knowledge/knowledge_edge_routing_e2e.sh` |
 | [`devlog/roadmap.md`](../../roadmap.md) | the row now records the edge layer and this handover |

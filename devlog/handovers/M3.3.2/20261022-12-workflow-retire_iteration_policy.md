@@ -94,10 +94,10 @@ None.
 | [`.agents/skills/docs/SKILL.md`](../../.agents/skills/docs/SKILL.md) | the folder table loses the policy row |
 | [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) | the loop-inventory path and its comments name the protocol |
 | [`src/build/container-interface.json`](../../src/build/container-interface.json) | three mount rows and the image path row for `docs/policies/` removed |
-| [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) | the `COPY docs/policies/` line |
-| [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/providers/hermes/provider.dockerfile) | the `COPY docs/policies/` line |
-| [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile) | the `COPY docs/policies/` line |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the scope table loses the policy row |
+| [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) | the `COPY docs/policies/` line |
+| [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/agent-runtime/hermes/provider.dockerfile) | the `COPY docs/policies/` line |
+| [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile) | the `COPY docs/policies/` line |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the scope table loses the policy row |
 | `/home/agentuser/.pi/agent/AGENTS.md` | the same row |
 | [`docs/reference/agent_workflow.md`](../../docs/reference/agent_workflow.md) | `### Policy documents` becomes `### Where the rules live`, and two citations retarget |
 | [`docs/reference/autonomous_agent_loop.md`](../../docs/reference/autonomous_agent_loop.md) | the invariants' owner is the protocol |

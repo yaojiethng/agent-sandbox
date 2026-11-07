@@ -11,8 +11,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
-import factory, { failoverEnabled } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/index.ts";
-import { parseLedger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/ledger.ts";
+import factory, { failoverEnabled } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/index.ts";
+import { parseLedger } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/ledger.ts";
 import { tempLedgerPath } from "./helpers.ts";
 
 /** The captured virtual model registration. */

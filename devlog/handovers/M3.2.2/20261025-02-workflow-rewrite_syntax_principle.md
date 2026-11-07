@@ -58,7 +58,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`communication-principle-rewrite-syntax-never-semantics/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md) | the judgement, the guard list, the why, the disagreement procedure and the test; installed copy synced |
-| [`AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the router line in the Communication Standards section, in the repo source and the installed copy alike |
+| [`communication-principle-rewrite-syntax-never-semantics/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md) | the judgement, the guard list, the why, the disagreement procedure and the test; installed copy synced |
+| [`AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the router line in the Communication Standards section, in the repo source and the installed copy alike |
 | [`skill-scaffolder/SKILL.md`](../../.agents/skills/skill-scaffolder/SKILL.md) | the drafting step names the judgement for the instruction text a skill carries |
 | [`devlog/roadmap.md`](../roadmap.md) | the outcome filed as a closed row under M3.2.2 |

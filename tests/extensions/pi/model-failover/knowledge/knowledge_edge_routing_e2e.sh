@@ -18,7 +18,7 @@
 #   bash tests/extensions/pi/model-failover/knowledge/knowledge_edge_routing_e2e.sh
 #
 # Reference:
-#   src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md
+#   src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md
 #     -- "The network adaptor" and "The edge layer".
 
 set -uo pipefail
@@ -29,7 +29,7 @@ REPO_TOP="$(cd "$SUITE_DIR/../../../.." && pwd)"
 # shellcheck source=../../../../libs/test_common.sh
 source "$REPO_TOP/tests/libs/test_common.sh"
 
-EXTENSION_SRC="$REPO_TOP/src/reasoning/providers/pi/config/agent/extensions/model-failover"
+EXTENSION_SRC="$REPO_TOP/src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover"
 
 test_setup
 

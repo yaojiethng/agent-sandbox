@@ -164,11 +164,11 @@ test_build_default_targets_all() {
       --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR"
   ) > /dev/null 2>&1 || true
   local providers expected actual
-  providers="$(ls "$REPO_ROOT"/src/reasoning/providers/*/provider.dockerfile | wc -l)"
+  providers="$(ls "$REPO_ROOT"/src/reasoning/agent-runtime/*/provider.dockerfile | wc -l)"
   expected="$(( 1 + 3 * providers ))"
   actual="$(grep -c " build " "$DOCKER_TRACE_LOG" || true)"
   local p missing=""
-  for p in "$REPO_ROOT"/src/reasoning/providers/*/provider.dockerfile; do
+  for p in "$REPO_ROOT"/src/reasoning/agent-runtime/*/provider.dockerfile; do
     p="$(basename "$(dirname "$p")")"
     grep -q -- "-t ${p}-agent-test-project" "$DOCKER_TRACE_LOG" || missing+="$p "
   done
@@ -467,9 +467,9 @@ test_build_main_requires_project() {
 # Asserts: build_agent's provider-Dockerfile validation
 test_build_agent_missing_provider_dockerfile() {
   local FI="$FIXTURE_DIR/fake_agent_repo"
-  mkdir -p "$FI/src/reasoning/providers/fake"
+  mkdir -p "$FI/src/reasoning/agent-runtime/fake"
   : > "$FI/src/reasoning/base.dockerfile"
-  : > "$FI/src/reasoning/providers/fake/base.dockerfile"
+  : > "$FI/src/reasoning/agent-runtime/fake/base.dockerfile"
 
   local OUT RC=0
   OUT="$( (export PATH="$STUB_DIR:$PATH"; build_agent fake test-project "$FI") 2>&1 )" || RC=$?

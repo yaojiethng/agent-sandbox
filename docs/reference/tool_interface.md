@@ -154,7 +154,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | `serve` | `make start PROVIDER=<n> SERVE=1` | Provider-specific serve mode (see below) |
 | `dry-run` | `make dry-run PROVIDER=<n>` | e2e check: rebuild current source, exercise the container pipeline, verify, tear down |
 
-**Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/providers/<n>/docker-compose.serve.yml` in the repo -- never copied to `SANDBOX_DIR`.
+**Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/agent-runtime/<n>/docker-compose.serve.yml` in the repo -- never copied to `SANDBOX_DIR`.
 
 | Provider | Serve behaviour |
 |---|---|
@@ -184,7 +184,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `Makefile` | Copied from template by onboard | Defines `PROJECT_NAME`; delegates to `agent-sandbox` subcommands |
 | `.env` | Written by onboard | Machine-specific runtime variables; never committed |
 | `AGENTS.md` | Stub written by onboard; operator-completed | Agent context brief |
-| `.<provider>/` | Copied from `src/reasoning/providers/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
+| `.<provider>/` | Copied from `src/reasoning/agent-runtime/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
 `docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned templates -- never written to `SANDBOX_DIR`. The merged result of `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and persists after the session (see [`execution_model.md` -- Compose Generation](execution_model.md#compose-generation)). The delivery overlays (`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the caller's `--delivery` (`copy|mount`) at generation time -- see the delivery-overlay note in [`execution_model.md`](execution_model.md#compose-generation).
 
@@ -197,7 +197,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `SERVE_PORT` | Operator-supplied | Operator -- host port for serve mode; default `46553` (matches the provider serve overlays' fallback) |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
-`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `src/reasoning/providers/<n>/.env.example` at onboard time.
+`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `src/reasoning/agent-runtime/<n>/.env.example` at onboard time.
 
 ### Runtime-derived paths (not stored in `.env`)
 
@@ -227,7 +227,7 @@ Guarantees the capability layer makes to the reasoning layer. Enforced by the ha
 
 ## Provider Interface
 
-A conforming provider supplies the following under `src/reasoning/providers/<n>/` in the repo:
+A conforming provider supplies the following under `src/reasoning/agent-runtime/<n>/` in the repo:
 
 | File | Required | Purpose |
 |---|---|---|

@@ -98,11 +98,11 @@ Every level-two section of both layers, one ruling each. The classes and the cri
 | File | Change |
 |---|---|
 | [`AGENTS.md`](../AGENTS.md) | twelve sections ruled; the three container rules left for the provider file; the scratch rule and the editing pointer in; `Role` deleted and its live clause moved; `Instruction Surface` moved below `Collaboration Protocol`; every line reread cold |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../src/reasoning/providers/pi/config/agent/AGENTS.md) | six sections ruled; three container rules, the tool set and the reading rule in; `Write Discipline` split; the two dispatch sections merged into `Subagents`; `Agent Harness` renamed `The Container`; `Scope` reframed as the resources the harness exposes |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | six sections ruled; three container rules, the tool set and the reading rule in; `Write Discipline` split; the two dispatch sections merged into `Subagents`; `Agent Harness` renamed `The Container`; `Scope` reframed as the resources the harness exposes |
 | `$AGENT_HOME/agent/AGENTS.md` and `$AGENT_HOME/agent/skills/dispatch/SKILL.md` | synced from the repository source; the check proves they match |
 | [`docs/development/instruction-surface-conventions.md`](../docs/development/instruction-surface-conventions.md) | `## Two surfaces`, the criterion and its test, the ruling classes, the editing conventions, the stand-in assumption, the 18-row subject table, the gate's claim |
 | [`docs/SKILL.md`](../.agents/skills/docs/SKILL.md) | `## Drafting` gained the voice rule |
-| [`SKILL.md` for `dispatch`](../src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md) | the resolve, pass-verbatim and confirm sequence the skill is the home for |
+| [`SKILL.md` for `dispatch`](../src/reasoning/agent-runtime/pi/config/agent/skills/dispatch/SKILL.md) | the resolve, pass-verbatim and confirm sequence the skill is the home for |
 | [`file-content.md`](../workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/file-content.md) | `p-58`, an edit by shell command checks that its anchor matched |
 | [`check_instruction_surfaces.sh`](../scripts/check_instruction_surfaces.sh) | reads the subject table; refuses a heading with no row, a row naming the wrong layer, and a row whose section no layer carries |
 | [`test_instruction_surfaces.sh`](../tests/test_instruction_surfaces.sh) | three new refusals asserted, 11 tests |

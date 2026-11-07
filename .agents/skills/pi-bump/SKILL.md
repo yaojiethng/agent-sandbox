@@ -11,7 +11,7 @@ Updates the pinned `@earendil-works/pi-coding-agent` version used by the pi reas
 
 `pi update --self` fails in this container for two reasons:
 
-1. The pi provider overlay (`src/reasoning/providers/pi/docker-compose.pi.yml`) sets `PI_SKIP_VERSION_CHECK=1`, so pi's version probe returns `undefined` and the update fails before it reaches the install step.
+1. The pi provider overlay (`src/reasoning/agent-runtime/pi/docker-compose.pi.yml`) sets `PI_SKIP_VERSION_CHECK=1`, so pi's version probe returns `undefined` and the update fails before it reaches the install step.
 2. The global install lives at `/usr/local`, which the container's `agentuser` does not own, and there is no `sudo`.
 
 Bump the pin instead: source the latest version from the version-check API (step 1) and edit the files below (step 5).
@@ -21,7 +21,7 @@ Bump the pin instead: source the latest version from the version-check API (step
 | File | Change |
 |---|---|
 | `src/reasoning/runtimes.dockerfile` | `RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent@<NEW>` |
-| `src/reasoning/providers/pi/config/agent/settings.json` | `"lastChangelogVersion": "<NEW>"` |
+| `src/reasoning/agent-runtime/pi/config/agent/settings.json` | `"lastChangelogVersion": "<NEW>"` |
 
 ## Steps
 
@@ -96,7 +96,7 @@ The report states: the current pin, `<NEW>`, the probe verdict, which assumption
 ### 5. Edit the two repo files
 
 - Bump the pin in `src/reasoning/runtimes.dockerfile`.
-- Bump `lastChangelogVersion` in `src/reasoning/providers/pi/config/agent/settings.json`.
+- Bump `lastChangelogVersion` in `src/reasoning/agent-runtime/pi/config/agent/settings.json`.
 
 Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for immediate record consistency. The next container start reseeds it from the baked template regardless.
 
@@ -114,7 +114,7 @@ Optionally bump the live `~/.pi/agent/settings.json` `lastChangelogVersion` for 
 
 ```bash
 pin=$(sed -n 's/.*pi-coding-agent@\([0-9][^ "]*\).*/\1/p' src/reasoning/runtimes.dockerfile)
-rec=$(node -p 'JSON.parse(require("fs").readFileSync("src/reasoning/providers/pi/config/agent/settings.json","utf8")).lastChangelogVersion')
+rec=$(node -p 'JSON.parse(require("fs").readFileSync("src/reasoning/agent-runtime/pi/config/agent/settings.json","utf8")).lastChangelogVersion')
 [ "$pin" = "$rec" ] && echo "match: $pin" || { echo "mismatch: pin=$pin settings=$rec"; exit 1; }
 ```
 

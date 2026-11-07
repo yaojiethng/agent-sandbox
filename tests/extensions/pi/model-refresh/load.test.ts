@@ -19,7 +19,7 @@ import { createRequire } from "node:module";
 
 const EXTENSION_ENTRY = path.resolve(
 	import.meta.dirname,
-	"../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts",
+	"../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts",
 );
 
 const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";

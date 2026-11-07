@@ -52,7 +52,7 @@ None.
 
 | File | Change |
 |---|---|
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | the lift rule |
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | the lift rule |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | the lift rule |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | the lift rule |
 | `$AGENT_HOME/agent/prompts/` | both prompts installed identical to the repository |
 | [`devlog/AGENT_FEEDBACK.md`](../../AGENT_FEEDBACK.md) | the third occurrence on `[O] 2026-09-25`, and the grant-lifetime sentence in its mitigation |

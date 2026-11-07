@@ -70,6 +70,6 @@ None.
 | the seven prose `**Leaves to.**` labels | relabelled `**What it does not cover.**`, the label `match-precision-to-stakes` already used for that part |
 | nine more principle skills | the trigger names the defect instead of the medium: a pointer, text carrying two lines, a word whose meaning the reader supplies, a separated subject, a list with two axes, a rule about to exist twice, a sentence that must be re-read |
 | every principle copy under `\$AGENT_HOME/agent/skills/` | re-synced for the whole `principle-*` set, not just the ten edited this unit |
-| [`AGENTS.md`](../src/reasoning/providers/pi/config/agent/AGENTS.md) | `## Communication Standards` quoted two triggers the sweep replaced; both now name the case the skill states, and the installed copy is re-synced |
+| [`AGENTS.md`](../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | `## Communication Standards` quoted two triggers the sweep replaced; both now name the case the skill states, and the installed copy is re-synced |
 | the ten skills' neighbour citations | every principle named in a `**What it does not cover.**` line resolves to a skill on disk |
 | the overlap report | a script run over both states; counts in findings 7, 10, 13 and 14, and in the acceptance table |

@@ -41,11 +41,11 @@ Two items stay out of scope. `src/reasoning/providers/pi/config/agent/settings.j
 | File | Why in scope |
 |---|---|
 | [`AGENTS.md`](../../../AGENTS.md) | carries the role table this iteration removes |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the provider-layer pointer to the recommendations file |
-| [`src/reasoning/providers/pi/setup.sh`](../../../src/reasoning/providers/pi/setup.sh) | creates the host skeleton before the mount |
-| [`src/reasoning/providers/pi/docker-compose.pi.yml`](../../../src/reasoning/providers/pi/docker-compose.pi.yml) | mounts the operator file into `$AGENT_HOME` |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the provider-layer pointer to the recommendations file |
+| [`src/reasoning/providers/pi/setup.sh`](../../../src/reasoning/agent-runtime/pi/setup.sh) | creates the host skeleton before the mount |
+| [`src/reasoning/providers/pi/docker-compose.pi.yml`](../../../src/reasoning/agent-runtime/pi/docker-compose.pi.yml) | mounts the operator file into `$AGENT_HOME` |
 | `.gitignore` | keeps `.pi/` out of the delivery commit |
-| [`src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md) | the initialization skill |
+| [`src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/setup-model-recommendations/SKILL.md) | the initialization skill |
 | [`docs/adr/single_source_model_recommendations.md`](../../../docs/adr/single_source_model_recommendations.md) | the standing principle this iteration amends |
 | [`workflow/coding-agent/skills/eval/scripts/run_case.sh`](../../../workflow/coding-agent/skills/eval/scripts/run_case.sh) | the bundled harness consumer with a hardcoded model slug |
 | [`devlog/discussions/20261014-design-settled-model_recommendations_home.md`](../../discussions/20261014-design-settled-model_recommendations_home.md) | the settled design record |
@@ -86,12 +86,12 @@ None.
 | File | Change |
 |---|---|
 | [`AGENTS.md`](../../../AGENTS.md) | the role table is removed; the section names `$AGENT_HOME/model-recommendations.md`, the four roles, the resolution order, and the initialize-before-dispatch clause |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the review-subagent read points at the recommendations file and names the initialization skill |
-| [`src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md) | new skill: detect models, confirm per role, write the file in place |
-| [`src/reasoning/providers/pi/model-recommendations.skeleton.md`](../../../src/reasoning/providers/pi/model-recommendations.skeleton.md) | new slug-free skeleton, the one home for the file shape |
-| [`src/reasoning/providers/pi/setup.sh`](../../../src/reasoning/providers/pi/setup.sh) | creates the skeleton when absent, inside a function so a failure aborts before compose |
-| [`src/reasoning/providers/pi/onboard.sh`](../../../src/reasoning/providers/pi/onboard.sh) | creates the skeleton when absent on onboard |
-| [`src/reasoning/providers/pi/docker-compose.pi.yml`](../../../src/reasoning/providers/pi/docker-compose.pi.yml) | bind-mounts the host file to `$AGENT_HOME/model-recommendations.md` |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the review-subagent read points at the recommendations file and names the initialization skill |
+| [`src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/setup-model-recommendations/SKILL.md) | new skill: detect models, confirm per role, write the file in place |
+| [`src/reasoning/providers/pi/model-recommendations.skeleton.md`](../../../src/reasoning/agent-runtime/pi/model-recommendations.skeleton.md) | new slug-free skeleton, the one home for the file shape |
+| [`src/reasoning/providers/pi/setup.sh`](../../../src/reasoning/agent-runtime/pi/setup.sh) | creates the skeleton when absent, inside a function so a failure aborts before compose |
+| [`src/reasoning/providers/pi/onboard.sh`](../../../src/reasoning/agent-runtime/pi/onboard.sh) | creates the skeleton when absent on onboard |
+| [`src/reasoning/providers/pi/docker-compose.pi.yml`](../../../src/reasoning/agent-runtime/pi/docker-compose.pi.yml) | bind-mounts the host file to `$AGENT_HOME/model-recommendations.md` |
 | [`.gitignore`](../../../.gitignore) | ignores `.pi/` |
 | [`.markdownlint-cli2.mjs`](../../../.markdownlint-cli2.mjs) | excludes `.pi/` from Markdown lint, as operator state |
 | [`workflow/coding-agent/skills/eval/scripts/run_case.sh`](../../../workflow/coding-agent/skills/eval/scripts/run_case.sh) | resolves model and thinking from `_ORCHESTRATOR`, falls back to `settings.json`, refuses when neither is set |

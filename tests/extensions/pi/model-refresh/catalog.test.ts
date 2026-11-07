@@ -21,8 +21,8 @@ import {
 	storeEntriesFor,
 	transportFor,
 	unionFirstWins,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
-import type { ModelDefinition, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts";
+import type { ModelDefinition, StoredCatalog } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 import { PROVIDER_ID, TEST_DECL } from "./fixtures.ts";
 
 const GENERATED_AT = 1_000_000;

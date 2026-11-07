@@ -38,7 +38,7 @@
  *   pi-ai dist/api/openai-completions.js -- the request builder under test.
  *   The catalog data the shapes come from is in dist/providers/data/
  *     opencode-go.json and opencode.json.
- *   src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md
+ *   src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md
  *     -- the dated findings, each naming the method that produced it.
  */
 
