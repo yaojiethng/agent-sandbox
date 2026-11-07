@@ -17,14 +17,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createRequire } from "node:module";
 
+import { JITI_ENTRY, PI_AI_ROOT, PI_PACKAGE_ROOT } from "./fixtures.ts";
+
 const EXTENSION_ENTRY = path.resolve(
 	import.meta.dirname,
 	"../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts",
 );
 
-const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
-const PI_PACKAGE_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/index.js`;
-const PI_AI_ROOT = `${PI_PACKAGE_GLOBAL}/node_modules/@earendil-works/pi-ai`;
+const PI_PACKAGE_ENTRY = `${PI_PACKAGE_ROOT}/dist/index.js`;
 
 /** pi-ai is a subpath-export package, so each specifier the extension uses is aliased to its dist file. */
 function piAiAliases() {
@@ -40,7 +40,7 @@ const skip = () => (piAvailable() ? false : "pi installation not present");
 /** Load the factory and capture what it registers. */
 async function loadAndRegister() {
 	const requireFromPi = createRequire(PI_PACKAGE_ENTRY);
-	const { createJiti } = await import(path.join(PI_PACKAGE_GLOBAL, "node_modules", "jiti", "lib", "jiti.cjs"));
+	const { createJiti } = await import(JITI_ENTRY);
 	const jiti = createJiti(EXTENSION_ENTRY, {
 		alias: {
 			"@earendil-works/pi-coding-agent": PI_PACKAGE_ENTRY,

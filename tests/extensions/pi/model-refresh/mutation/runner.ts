@@ -44,6 +44,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { EXTENSION_DIR, type Mutation } from "./catalog.ts";
+import { PI_AI_ROOT, PI_PACKAGE_ROOT } from "../fixtures.ts";
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, "../../../../..");
 const SUITE_DIR = "tests/extensions/pi/model-refresh";
@@ -57,9 +58,6 @@ const GATE_SUITE = "mutation.test.ts";
  */
 const INVARIANT_PREFIX = "INV ";
 
-const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
-const PI_AI_ROOT = `${PI_PACKAGE_GLOBAL}/node_modules/@earendil-works/pi-ai`;
-
 /** Per-row deadline. The replayed suite runs in seconds, so this bounds a hung mutant rather than a slow one. */
 const ROW_DEADLINE_MS = 120_000;
 /** The load probe's own deadline, on the same reasoning. */
@@ -67,7 +65,7 @@ const PROBE_DEADLINE_MS = 60_000;
 
 /** True when the pi package the extension loads against is installed. */
 export function piAvailable(): boolean {
-	return fs.existsSync(`${PI_PACKAGE_GLOBAL}/dist/index.js`) && fs.existsSync(`${PI_AI_ROOT}/dist/index.js`);
+	return fs.existsSync(`${PI_PACKAGE_ROOT}/dist/index.js`) && fs.existsSync(`${PI_AI_ROOT}/dist/index.js`);
 }
 
 export type Verdict = "proven" | "survived" | "no-op" | "unloadable" | "timed-out" | "not-run";
@@ -169,7 +167,7 @@ import { createRequire } from "node:module";
 const pi = process.env.PI_PACKAGE_GLOBAL;
 const piAi = process.env.PI_AI_ROOT;
 const requireFromPi = createRequire(path.join(pi, "dist/index.js"));
-const { createJiti } = await import(path.join(pi, "node_modules/jiti/lib/jiti.cjs"));
+const { createJiti } = await import(requireFromPi.resolve("jiti"));
 const jiti = createJiti(process.argv[2], {
   alias: {
     "@earendil-works/pi-coding-agent": path.join(pi, "dist/index.js"),
@@ -259,7 +257,7 @@ export function runMutation(m: Mutation): MutationOutcome {
 			const probe = spawnSync(process.execPath, [probeFile, subject], {
 				encoding: "utf8",
 				timeout: PROBE_DEADLINE_MS,
-				env: { ...childEnv(), PI_PACKAGE_GLOBAL, PI_AI_ROOT },
+				env: { ...childEnv(), PI_PACKAGE_GLOBAL: PI_PACKAGE_ROOT, PI_AI_ROOT },
 			});
 			if (probe.status === null) return finish("timed-out", "the load probe did not finish");
 			if (probe.status !== 0) {

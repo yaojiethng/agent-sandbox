@@ -39,14 +39,13 @@ import { THINKING_LEVELS, levelMapFor, offSendsAnEffort, thinkingLevelMapFromEff
 import type { ThinkingLevelMap } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/thinking.ts";
 import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 import { UNION_SOURCES, buildCatalog, checkTotality, renderReport, type CaseResult } from "./invariants.ts";
-import { PROVIDER_ID, TEST_DECL, V1_BASE as V1, ANTHROPIC_BASE as ANTHROPIC, bakedModel, anthropicBakedModel, captureThinkingPayload, effortList, makeRng, modelsDevEntry, pick, someModels, storedCatalog, storedEntry } from "./fixtures.ts";
+import { JITI_ENTRY, PI_AI_ROOT, PI_PACKAGE_ROOT, PROVIDER_ID, TEST_DECL, V1_BASE as V1, ANTHROPIC_BASE as ANTHROPIC, bakedModel, anthropicBakedModel, captureThinkingPayload, effortList, makeRng, modelsDevEntry, pick, someModels, storedCatalog, storedEntry } from "./fixtures.ts";
 
-const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
-const PI_PACKAGE_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/index.js`;
-const PI_AI = `${PI_PACKAGE_GLOBAL}/node_modules/@earendil-works/pi-ai`;
-const COMPOSER_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/provider-composer.js`;
-const RESOLVER_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/model-resolver.js`;
-const REMOTE_CATALOG_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/remote-catalog-provider.js`;
+const PI_PACKAGE_ENTRY = `${PI_PACKAGE_ROOT}/dist/index.js`;
+const PI_AI = PI_AI_ROOT;
+const COMPOSER_ENTRY = `${PI_PACKAGE_ROOT}/dist/core/provider-composer.js`;
+const RESOLVER_ENTRY = `${PI_PACKAGE_ROOT}/dist/core/model-resolver.js`;
+const REMOTE_CATALOG_ENTRY = `${PI_PACKAGE_ROOT}/dist/core/remote-catalog-provider.js`;
 const BAKED_CATALOG = `${PI_AI}/dist/providers/all.js`;
 const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh";
 const EXTENSION_ENTRY = path.resolve(`${EXTENSION_DIR}/index.ts`);
@@ -130,7 +129,7 @@ async function loadPiModule<T>(entry: string): Promise<T> {
 
 async function loadRegistration(): Promise<{ id: string; config: Record<string, unknown> }[]> {
 	const requireFromPi = createRequire(PI_PACKAGE_ENTRY);
-	const { createJiti } = (await import(path.join(PI_PACKAGE_GLOBAL, "node_modules", "jiti", "lib", "jiti.cjs"))) as {
+	const { createJiti } = (await import(JITI_ENTRY)) as {
 		createJiti: (entry: string, options: { alias: Record<string, string> }) => { import: (entry: string) => Promise<{ default: (pi: unknown) => void }> };
 	};
 	const jiti = createJiti(EXTENSION_ENTRY, {
@@ -159,7 +158,7 @@ interface ExtensionRegistration {
 
 async function loadExtension(): Promise<ExtensionRegistration> {
 	const requireFromPi = createRequire(PI_PACKAGE_ENTRY);
-	const { createJiti } = (await import(path.join(PI_PACKAGE_GLOBAL, "node_modules", "jiti", "lib", "jiti.cjs"))) as {
+	const { createJiti } = (await import(JITI_ENTRY)) as {
 		createJiti: (entry: string, options: { alias: Record<string, string> }) => { import: (entry: string) => Promise<{ default: (pi: unknown) => void }> };
 	};
 	const jiti = createJiti(EXTENSION_ENTRY, {
