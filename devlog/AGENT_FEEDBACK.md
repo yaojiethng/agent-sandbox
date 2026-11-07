@@ -470,9 +470,10 @@ has uncommitted changes in that file. To re-assert a lost executable bit regardl
 ### [A] 2026-08-18  --  Multi-question turns and implicit acceptance during a grill-me design walk
 
 ```text
-state: open
+state: probation
 scoped: M3 T7 -- functional-stack navigation for questioning (design proposal)
-legacy: none
+legacy: the four rules below landed in the `grill-me` skill at `0e33700c`,
+which now states them; this entry carries their history and no longer routes
 mitigation: during the M2.6.6 design walk the agent posed two questions in one
 turn (A+B, then D8+N1), skipped N2a to the next question without an explicit
 approval, and treated operator probes as implicit approval of a pending
@@ -491,8 +492,9 @@ operator had to choose between answering (growing the list) and not answering
 (risking implicit approval). The rule the skill needs: the next question waits
 until every open question so far is explicitly resolved -- answered, withdrawn,
 or explicitly parked by the operator; parked items are re-asked in full later,
-never silently approved. Both apply to the grill-me skill file; the skill
-lives outside the repo tree, so the routing is the record.
+never silently approved. Both apply to the grill-me skill file; that skill is
+now in the tree at `src/reasoning/agent/skills/grill-me/SKILL.md`, and carries
+the four rules in its `## Interview` section.
 ```
 
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently
