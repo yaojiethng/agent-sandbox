@@ -217,16 +217,28 @@ main() {
   # (stash objects, reflog-anchored history). The sandbox baseline is the
   # seeded HEAD -- no archaeology crosses. The prune runs only when the probe
   # finds something, so a clean host repo pays only the fsck probe.
+  #
+  # git's empty tree is a constant, not data: a repository can reference it (a
+  # root commit with an empty tree) without storing the object. git synthesizes
+  # it for status, log and diff, but fsck requires the stored object, so a
+  # sound copy can fail the probe. A failed probe is retried once with the
+  # constant written; a clean seed still pays only that one probe, and every
+  # other missing or broken object still fails the retry.
   local unreachable
-  if ! unreachable="$(_fsck_unreachable "$DEST")"; then
-    echo "Error: seed_volume: the volume copy at $DEST is not fsck-clean." >&2
-    echo "Probing the host repository at $SRC to tell a bad copy from a bad source:" >&2
-    if _fsck_unreachable "$SRC" >/dev/null; then
-      echo "  $SRC passes the same probe: the copy into the volume is the suspect." >&2
-    else
-      echo "  $SRC fails the same probe: the host repository is the source of the damage." >&2
+  if ! unreachable="$(_fsck_unreachable "$DEST" 2>/dev/null)"; then
+    # Ignore the exit code: if this write cannot help, the retry below reports
+    # the real cause with the diagnostics the first attempt suppressed.
+    git -C "$DEST" mktree </dev/null >/dev/null 2>&1 || true
+    if ! unreachable="$(_fsck_unreachable "$DEST")"; then
+      echo "Error: seed_volume: the volume copy at $DEST is not fsck-clean." >&2
+      echo "Probing the host repository at $SRC to tell a bad copy from a bad source:" >&2
+      if _fsck_unreachable "$SRC" >/dev/null; then
+        echo "  $SRC passes the same probe: the copy into the volume is the suspect." >&2
+      else
+        echo "  $SRC fails the same probe: the host repository is the source of the damage." >&2
+      fi
+      die "probing the volume object store failed"
     fi
-    die "probing the volume object store failed"
   fi
   if [[ -n "$unreachable" ]]; then
     git -C "$DEST" reflog expire --expire=now --all \
@@ -249,13 +261,17 @@ main() {
   # container exists.
   verify_parity "$SRC" "$DEST" || die "the volume was not seeded correctly; the host will discard it"
 
-  # Tripwire: the stash clear must hold. Read failures die (they must not
-  # read as an empty stack); a surviving entry fails the seed.
-  local stash_list
-  stash_list="$(git -C "$DEST" stash list 2>/dev/null)" \
-    || die "reading the volume stash stack failed"
-  if [[ -n "$stash_list" ]]; then
-    die "the volume still carries stash entries after the stash clear"
+  # Tripwire: the stash clear must hold. Read the ref, not `stash list`:
+  # stash list reads logs/refs/stash, which the prune above expires, so a
+  # surviving ref would pass a log-based check unseen. A read failure dies
+  # rather than reading as an empty stack.
+  local stash_ref stash_rc=0
+  stash_ref="$(git -C "$DEST" rev-parse --verify --quiet refs/stash)" || stash_rc=$?
+  if (( stash_rc != 0 && stash_rc != 1 )); then
+    die "reading the volume stash ref failed"
+  fi
+  if [[ -n "$stash_ref" ]]; then
+    die "the volume still carries a stash ref after the stash clear"
   fi
 
   echo "Seed complete: $(git -C "$DEST" ls-files | wc -l) tracked files in volume, git status parity verified."

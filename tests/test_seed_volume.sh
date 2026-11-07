@@ -492,8 +492,8 @@ test_seeder_post_clear_stash_tripwire() {
   else
     fail "post-clear stash tripwire: seeder succeeded with stash entries present"
   fi
-  assert_contains "$SEED_OUT" "the volume still carries stash entries after the stash clear" \
-    "post-clear stash tripwire: stash message"
+  assert_contains "$SEED_OUT" "the volume still carries a stash ref after the stash clear" \
+    "post-clear stash tripwire: stash-ref message"
 }
 
 # -------------------------
@@ -668,6 +668,47 @@ test_seeder_fsck_failure_dumps_diagnostics() {
     "fsck failure: the seed failure is still named"
 }
 
+# Given: a repo whose root commit references git's empty tree, with that object
+#        deleted from the store
+# When:  the seeder runs
+# Then:  it seeds successfully and the volume is fsck-clean
+# Asserts: the seeder materializes the empty tree -- git synthesizes it for
+#          status, fsck does not, and the start used to abort on it
+test_seeder_materializes_missing_empty_tree() {
+  local proj="$FIXTURE_DIR/empty_tree_project"
+  local dest="$FIXTURE_DIR/empty_tree_dest"
+  local empty="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+  rm -rf "$proj"
+  mkdir -p "$proj"
+  git -C "$proj" init -q --initial-branch=main
+  git -C "$proj" config user.email "test@fixture"
+  git -C "$proj" config user.name "Test Fixture"
+  git -C "$proj" commit -q --allow-empty -m baseline
+  rm -f "$proj/.git/objects/${empty:0:2}/${empty:2}"
+  mkdir -p "$dest"
+
+  if git -C "$proj" fsck --unreachable >/dev/null 2>&1; then
+    fail "empty tree: fixture should start fsck-dirty"
+    return 0
+  fi
+  if ! run_seeder "$proj" "$dest"; then
+    fail "empty tree: seeder should materialize the missing empty tree"
+    return 0
+  fi
+  pass "empty tree: seeder succeeds with the object absent from the source"
+
+  if git -C "$dest" fsck --unreachable >/dev/null 2>&1; then
+    pass "empty tree: seeded volume is fsck-clean"
+  else
+    fail "empty tree: seeded volume should be fsck-clean"
+  fi
+  if git -C "$dest" cat-file -e "$empty" 2>/dev/null; then
+    pass "empty tree: the constant object is present in the volume"
+  else
+    fail "empty tree: the constant object should be present in the volume"
+  fi
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -688,6 +729,7 @@ run_test test_seeder_empty_enumeration
 run_test test_seeder_clears_host_stash
 run_test test_seeder_prunes_unreachable_objects
 run_test test_seeder_fsck_failure_dumps_diagnostics
+run_test test_seeder_materializes_missing_empty_tree
 run_test test_seeder_flat_single_baseline
 run_test test_seeder_flat_verification_detects_dropped_file
 run_test test_seeder_flat_verification_detects_dirty_worktree
