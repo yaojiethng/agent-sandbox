@@ -160,12 +160,29 @@ build_sandbox() {
 # Preflight
 # -------------------------
 
+# check_pin_drift <repo_root> -- the fast local nudge. A pin the Dockerfile and
+# src/build/pins.json disagree on is a warning here and a failure in
+# scripts/check_pins.sh: the gate belongs in the lint umbrella, and a build that
+# stopped for it would be a second blocking check in a slower place.
+check_pin_drift() {
+  local repo_root="$1"
+  command -v node >/dev/null 2>&1 || return 0
+  local findings rc=0
+  findings="$(node "$repo_root/src/build/pins.mjs" check --root "$repo_root" 2>/dev/null)" || rc=$?
+  (( rc == 0 )) && return 0
+  echo "preflight: WARNING: a build input's pin disagrees with src/build/pins.json:" >&2
+  printf '%s\n' "$findings" >&2
+  echo "preflight: run 'bash scripts/check_pins.sh' for the gate; the build continues." >&2
+}
+
 # preflight <provider> <project_name> <repo_root>
 preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
   local build_missing="${4:-true}"  # resume passes false  --  a resume must not rebuild
+
+  check_pin_drift "$repo_root"
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")

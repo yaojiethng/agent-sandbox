@@ -214,6 +214,8 @@ The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. 
 
 Raised by the agent during handover `20261014-03`.
 
+**Recurrence, 2026-11-07.** The same file flaked again under the parallel run: `test_prune.sh: test_dry_run_preview_names_rule2_orphans_of_removed_records` failed, and the file then passed 22 of 22 alone and the next full run was green at 1496 of 1496. A different unit in the same file each time, which is the same shape as the 2026-10-14 entry: the fixture is shared across the file's units, so a unit that reads another's leftover state fails only under scheduling. No cause is claimed beyond that.
+
 **Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
 
 **Recurrence, 2026-10-24** (handover `20261024-12`, the dispatch refactor): the full run failed `test_interactive_session_select.sh: test_select_session_patch_count_shown`, which passed 37 of 37 in isolation. A third file, the same shape, and still no cause.

@@ -66,5 +66,5 @@ None.
 
 | File | Change |
 |---|---|
-| `devlog/discussions/20261107-study-concluded-build_contract_gap.md` | the gap map |
+| the audit study, since deleted | the gap map; the study was retired at `20261107-07` once its rows closed, and this table is its surviving index |
 | `devlog/roadmap.md` | targeted roadmap check; the audit row and the three next rows |

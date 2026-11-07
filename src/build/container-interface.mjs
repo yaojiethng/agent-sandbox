@@ -607,6 +607,21 @@ function check_names(root, manifest, keys, findings) {
   }
 }
 
+// check_build_rows MANIFEST ROOT FINDINGS -- a `build` row names a source the
+// tree carries. The layer declares what the build reads and no image copies, so
+// a row pointing at nothing would own a context path that does not exist.
+function check_build_rows(manifest, root, findings) {
+  const rows = Array.isArray(manifest?.build) ? manifest.build : [];
+  for (const [index, row] of rows.entries()) {
+    const source = String(row.source || "");
+    if (!source) {
+      findings.push(`build[${index}]: carries no source`);
+    } else if (!existsSync(join(root, source))) {
+      findings.push(`build[${index}]: source '${source}' is not in the tree`);
+    }
+  }
+}
+
 // check_row_forms MANIFEST PROVIDERS FINDINGS -- a provider row of the `image`,
 // `env` or `provision` layer names its providers with one `provider` key or one
 // `providers` list, never both and never neither, and every name is a provider
@@ -649,6 +664,7 @@ export function check(root) {
   }
 
   check_row_forms(manifest, providers, findings);
+  check_build_rows(manifest, root, findings);
 
   const copies = [];
   const envs = [];

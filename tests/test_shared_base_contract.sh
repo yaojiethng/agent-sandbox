@@ -161,10 +161,11 @@ test_shared_base_installs_the_full_runtime_set() {
   local content; content="$(cat "$SHARED_BASE")"
   local missing=""
   grep -q "^FROM node:" <<< "$content" || missing="$missing node"
-  grep -q "astral.sh/uv/install.sh" <<< "$content" || missing="$missing uv"
+  grep -q "^ARG UV_VERSION=" <<< "$content" || missing="$missing uv"
+  grep -q "^ARG UV_SHA256=" <<< "$content" || missing="$missing uv-checksum"
   grep -q "uv python install 3.11" <<< "$content" || missing="$missing python"
   grep -q "hadolint" <<< "$content" || missing="$missing hadolint"
-  grep -q "markdownlint-cli2" <<< "$content" || missing="$missing markdownlint-cli2"
+  grep -q "registry/markdownlint-cli2/" <<< "$content" || missing="$missing markdownlint-cli2"
   assert_eq "$missing" "" "shared base installs every runtime and lint gate"
 }
 
@@ -211,121 +212,86 @@ test_tier2_images_install_no_runtime_or_linter() {
   assert_eq "$out" "" "no tier-2 image installs a language runtime or a linter"
 }
 
-# The dispatch CLI has one pin, wherever it is installed. A Dockerfile that
-# installs opencode-ai without an exact version makes the image build
-# unreproducible: the package resolves to whatever latest is at build time.
-# Given: every Dockerfile under src/reasoning
-# When:  each install of opencode-ai is read
-# Then:  every install names an exact version
-# Asserts: no unpinned opencode-ai install
-test_opencode_ai_installs_are_pinned() {
-  local df token version offenders=""
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    while IFS= read -r token; do
-      [[ -n "$token" ]] || continue
-      version="${token#*@}"
-      if [[ "$token" == "opencode-ai" ]] || [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        offenders="$offenders ${df#$REPO_ROOT/}:$token"
-      fi
-    done < <(_opencode_ai_installs "$df")
-  done < <(_reasoning_dockerfiles)
-
-  assert_empty "$offenders" "every opencode-ai install pins an exact version"
+# The dispatch CLI has one pin, and its home is the committed lockfile. A
+# dependency range in the registry directory would resolve to whatever the
+# registry serves at build time, so every dependency there names an exact
+# version and the lockfile pins what that version resolved to.
+# Given: every registry directory's package.json
+# When:  each dependency spec is read
+# Then:  every spec is an exact version
+# Asserts: no unpinned registry dependency
+test_registry_dependencies_are_exact() {
+  local offenders=""
+  local manifest
+  for manifest in "$REPO_ROOT"/src/reasoning/registry/*/package.json; do
+    [[ -e "$manifest" ]] || continue
+    local out
+    out="$(node -e '
+      const pkg = require(process.argv[1]);
+      const bad = Object.entries(pkg.dependencies || {})
+        .filter(([, spec]) => !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(spec))
+        .map(([name, spec]) => name + "@" + spec);
+      if (bad.length) console.log(bad.join(" "));
+    ' "$manifest")"
+    [[ -z "$out" ]] || offenders="$offenders $manifest:$out"
+  done
+  assert_empty "$offenders" "every registry dependency names an exact version"
 }
 
 # opencode-ai's bin is inert until its postinstall writes the platform binary.
-# An opencode-ai install that carries --ignore-scripts skips that step, so the
-# CLI lands on PATH with nothing to run. The flag is inert for the
-# pi-coding-agent install, whose package declares no postinstall; an
-# opencode-ai install must not carry it.
-# Given: every Dockerfile under src/reasoning
-# When:  each install of opencode-ai is read for --ignore-scripts
-# Then:  no install that names opencode-ai carries the flag
-# Asserts: every opencode-ai install can produce a working binary
-test_opencode_ai_installs_produce_a_working_binary() {
-  local df lineno offenders=""
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    while IFS= read -r lineno; do
-      [[ -n "$lineno" ]] || continue
-      offenders="$offenders ${df#$REPO_ROOT/}:$lineno"
-    done < <(_opencode_ai_installs_skipping_postinstall "$df")
-  done < <(_reasoning_dockerfiles)
-
-  assert_empty "$offenders" "every opencode-ai install runs the postinstall that writes its binary"
-}
-
-# One dispatch CLI version across every image that installs it; two pins
-# disagree and the two images run different CLIs. The test compares the pin
-# values, not the count of installing Dockerfiles: the install's home among the
-# tiers is undecided, so one file or several is not a failure.
-# Given: every Dockerfile under src/reasoning
-# When:  each exact opencode-ai pin is collected
-# Then:  at most one distinct version appears
-# Asserts: all opencode-ai pins agree
-test_opencode_ai_pins_agree() {
-  local df token version
-  local -a pins=()
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    while IFS= read -r token; do
-      [[ "$token" == opencode-ai@* ]] || continue
-      version="${token#*@}"
-      [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
-      pins+=("$version")
-    done < <(_opencode_ai_installs "$df")
-  done < <(_reasoning_dockerfiles)
-
-  local -A distinct=()
-  local pin
-  for pin in "${pins[@]}"; do distinct[$pin]=1; done
-  if (( ${#distinct[@]} <= 1 )); then
-    pass "all opencode-ai pins agree (${#distinct[@]} distinct version(s))"
-  else
-    fail "opencode-ai pins disagree: ${!distinct[*]}"
-  fi
+# An install that carries --ignore-scripts skips that step, so the CLI lands on
+# PATH with nothing to run. The flag is inert for the pi install, whose package
+# declares no postinstall, so the two installs must not share a flag.
+# Given: the shared agent-runtime tier
+# When:  its install lines are read for the scripts flag
+# Then:  the opencode install runs its postinstall and the pi install does not
+# Asserts: the opencode install can produce a working binary
+test_opencode_install_produces_a_working_binary() {
+  local offenders="" line dir
+  while IFS= read -r line; do
+    [[ "$line" == *"npm ci"* ]] || continue
+    dir="${line#*cd }"
+    dir="${dir%% *}"
+    case "$dir" in
+      *"/pi") [[ "$line" == *"--ignore-scripts"* ]] || offenders="$offenders [$line]" ;;
+      *"/opencode") [[ "$line" != *"--ignore-scripts"* ]] || offenders="$offenders [$line]" ;;
+      *) offenders="$offenders [$line]" ;;
+    esac
+  done < <(grep -h 'npm ci' "$REPO_ROOT/src/reasoning/runtimes.dockerfile" || true)
+  assert_empty "$offenders" "each runtime install carries the scripts flag its package needs"
 }
 
 # The shape's core rule: every agent-runtime package installs in exactly one
-# Dockerfile, and that home is the shared agent-runtime tier. A second home is a
-# finding, whatever tier it sits in.
-# Given: every Dockerfile under src/reasoning
-# When:  each install of pi-coding-agent and opencode-ai is read
-# Then:  each package has one home, and that home is runtimes.dockerfile
+# place, and that place is its own registry directory. A second home is a
+# finding, whatever tier it sits in, because a second lockfile is a second
+# resolution of the same tree.
+# Given: every registry directory
+# When:  the agent-runtime package each one declares is read
+# Then:  each has one home, and that home is its own directory
 # Asserts: each agent-runtime package installs exactly once
-test_each_agent_runtime_package_installs_exactly_once() {
-  local df o p
-  local -a opencode_homes=() pi_homes=()
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    o="$(_opencode_ai_installs "$df")"
-    p="$(_pi_coding_agent_installs "$df")"
-    [[ -n "$o" ]] && opencode_homes+=("${df#$REPO_ROOT/}")
-    [[ -n "$p" ]] && pi_homes+=("${df#$REPO_ROOT/}")
-  done < <(_reasoning_dockerfiles)
-
-  local offenders=""
-  if (( ${#opencode_homes[@]} != 1 )); then
-    offenders="$offenders opencode-ai homes: ${opencode_homes[*]}"
-  elif [[ "${opencode_homes[0]}" != "src/reasoning/runtimes.dockerfile" ]]; then
-    offenders="$offenders opencode-ai home: ${opencode_homes[0]}"
-  fi
-  if (( ${#pi_homes[@]} != 1 )); then
-    offenders="$offenders pi-coding-agent homes: ${pi_homes[*]}"
-  elif [[ "${pi_homes[0]}" != "src/reasoning/runtimes.dockerfile" ]]; then
-    offenders="$offenders pi-coding-agent home: ${pi_homes[0]}"
-  fi
-  assert_empty "$offenders" "each agent-runtime package installs in exactly one Dockerfile"
+test_each_agent_runtime_package_has_one_home() {
+  local homes="" dir pkg
+  local -a hits
+  for dir in "$REPO_ROOT"/src/reasoning/registry/*/; do
+    [[ -d "$dir" ]] || continue
+    pkg="$(basename "$dir")"
+    mapfile -t hits < <(grep -rl --include=package.json -e '"opencode-ai"' -e '"@earendil-works/pi-coding-agent"' "$REPO_ROOT/src/reasoning/registry/" 2>/dev/null | grep "/$pkg/")
+    case "$pkg" in
+      pi|opencode)
+        (( ${#hits[@]} == 1 )) || homes="$homes $pkg:${#hits[@]}" ;;
+      *)
+        (( ${#hits[@]} == 0 )) || homes="$homes $pkg:${#hits[@]}" ;;
+    esac
+  done
+  assert_empty "$homes" "each agent-runtime package has one registry home"
 }
 
 run_test test_shared_base_exists_and_node_dockerfile_is_gone
 run_test test_shared_base_installs_the_full_runtime_set
 run_test test_tier2_images_inherit_the_shared_base
 run_test test_tier2_images_install_no_runtime_or_linter
-run_test test_opencode_ai_installs_are_pinned
-run_test test_opencode_ai_pins_agree
-run_test test_opencode_ai_installs_produce_a_working_binary
-run_test test_each_agent_runtime_package_installs_exactly_once
+run_test test_registry_dependencies_are_exact
+run_test test_opencode_install_produces_a_working_binary
+run_test test_each_agent_runtime_package_has_one_home
 
 test_done

@@ -56,6 +56,12 @@
       "destination": "/opt/sandbox/docs/reference/"
     }
   ],
+  "build": [
+    {
+      "source": "src/reasoning/registry/",
+      "note": "the frozen registry resolutions the Dockerfiles install from; build-only, so no image copies them"
+    }
+  ],
   "provision": [
     {
       "provider": "pi",

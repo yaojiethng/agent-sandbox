@@ -32,6 +32,19 @@ RUN ...
 
 A base ends as root. User creation and agent-runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the agent-runtime keeps the full language set while the build tools stay in the builder.
 
+## Step 2a -- Pin the inputs your install adds
+
+A new install is a new build input, and every input carries a pin at the strictest form its class supports. The Dockerfile carries the request; [`src/build/pins.json`](../../src/build/pins.json) carries what it resolved to; [`scripts/check_pins.sh`](../../scripts/check_pins.sh) fails when the two disagree, so a pin is not complete until both halves are written.
+
+| The install adds | The form |
+|---|---|
+| a registry package | a directory under [`src/reasoning/registry/`](../../src/reasoning/registry/) holding `package.json` and its `package-lock.json`, copied into the tier and installed with `npm ci` |
+| an archive or a binary fetched by URL | the release tag in an `ARG`, and the publisher's checksum verified in the same `RUN` |
+| an apt package | the exact version, with the resolved `.deb` SHA256 recorded in the pins file |
+| a source build of a tool | the commit SHA, never a branch |
+
+The manifest's `build` layer declares a build-only input's source, because the context gate owns every included path and an input no image copies belongs to no `image` row. Then `bash scripts/check_pins.sh --report` prints the input beside the artifact recorded for it, and `--remote --write` records a moved one.
+
 ## Step 3 -- Write `provider.dockerfile`
 
 Shared libs, user creation, agent-runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile).

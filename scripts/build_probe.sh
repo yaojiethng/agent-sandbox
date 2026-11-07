@@ -110,15 +110,16 @@ run_build() {
 }
 
 # The builder prints `Building image: <name>` before each tier's build, so that
-# line opens a segment. Only a `[n/m]` step decides the state: the `[internal]`
-# and export DONE lines also appear on a cached build. Every DONE duration is
-# the tier's step seconds.
+# line opens a segment. Only a step that changes the filesystem decides the
+# state: an internal load, the image export and the FROM resolve all print DONE
+# on a fully cached build, so their DONE says nothing about the cache. Every
+# DONE duration is the tier's step seconds.
 tier_records() {
   awk '
     function flush(   i, state, secs) {
       if (image == "" || nsteps == 0) return
       state = "cached"
-      for (i = 1; i <= nsteps; i++) if (done[stepid[i]]) state = "ran"
+      for (i = 1; i <= nsteps; i++) if (deciding[stepid[i]] && done[stepid[i]]) state = "ran"
       secs = 0
       for (i = 1; i <= ndone; i++) secs += dur[i]
       printf "%s|%s|%.1f\n", image, state, secs
@@ -130,14 +131,21 @@ tier_records() {
       nsteps = 0
       ndone = 0
       split("", stepid)
+      split("", deciding)
       split("", done)
       split("", dur)
       next
     }
     $1 ~ /^#[0-9]+$/ {
       id = substr($1, 2)
-      if ($0 ~ /^#[0-9]+ \[[0-9]+[/][0-9]+\]/) { stepid[++nsteps] = id; next }
-      if ($2 == "DONE") { done[id] = 1; dur[++ndone] = $NF + 0 }
+      if ($0 ~ /^#[0-9]+ \[[0-9]+[/][0-9]+\]/) {
+        cmd = $0
+        sub(/^#[0-9]+ \[[0-9]+[/][0-9]+\] /, "", cmd)
+        if (cmd ~ /^(RUN|COPY|ADD)( |$)/) deciding[id] = 1
+        stepid[++nsteps] = id
+        next
+      }
+      if ($2 == "DONE") { dur[++ndone] = $NF + 0; if (deciding[id]) done[id] = 1 }
       next
     }
     END { flush() }

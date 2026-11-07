@@ -184,7 +184,54 @@ test_emit_report_carries_the_run_signals() {
   assert_eq "$?" "0" "the report parses and carries the run's signals"
 }
 
+# Given: a real cached build's log, where the FROM resolve prints DONE because
+#        the base image is already local and only the RUN steps print CACHED
+# When:  the tier's state is read
+# Then:  it is cached, because no step that changes the filesystem ran
+# Asserts: the FROM step's DONE does not read as a rebuild
+test_a_cached_build_with_a_from_done_reads_as_cached() {
+  write_log <<'EOF'
+Building image: agent-base
+#1 [internal] load build definition from base.dockerfile
+#1 transferring dockerfile: 1.96kB done
+#1 DONE 0.0s
+#2 [internal] load metadata for docker.io/library/node:22
+#2 DONE 1.6s
+#4 [1/6] FROM docker.io/library/node:22@sha256:e21f
+#4 resolve docker.io/library/node:22@sha256:e21f 0.0s done
+#4 DONE 0.0s
+#5 [2/6] RUN apt-get update
+#5 CACHED
+#6 [3/6] RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+#6 CACHED
+#10 exporting to image
+#10 DONE 0.1s
+EOF
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" agent-base)" "cached" \
+    "a cached build whose FROM step prints DONE reads as cached"
+}
+
+# Given: the same shape with one filesystem step that ran
+# When:  the tier's state is read
+# Then:  it is ran, so the FROM step's DONE is not what decides it either way
+# Asserts: the positive check's pair, so the rule is not "always cached"
+test_one_ran_step_reads_as_ran() {
+  write_log <<'EOF'
+Building image: agent-base
+#4 [1/6] FROM docker.io/library/node:22@sha256:e21f
+#4 DONE 0.0s
+#5 [2/6] RUN apt-get update
+#5 CACHED
+#6 [3/6] RUN rm -rf /var/lib/apt/lists/*
+#6 DONE 2.4s
+EOF
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" agent-base)" "ran" \
+    "one filesystem step that ran reads as ran"
+}
+
 run_test test_tier_records_reads_each_tier_on_its_own_steps
+run_test test_a_cached_build_with_a_from_done_reads_as_cached
+run_test test_one_ran_step_reads_as_ran
 run_test test_a_fully_cached_build_reports_every_tier_cached
 run_test test_a_tier_with_no_segment_is_unobserved
 run_test test_tier_of_maps_each_image_to_its_tier

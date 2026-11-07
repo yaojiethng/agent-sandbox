@@ -2,7 +2,7 @@
 
 The reasoning image is the product of a build. The Dockerfile is the engineering source, `docker build` is the production run, and the image is what the run produces. This page states what the production run must answer, the signal that answers each question, the domain cases the model covers, and the signals deferred until a condition brings them in.
 
-The requirements the run is judged against are the ADRs: [`reasoning_layer_tiers.md`](../adr/reasoning_layer_tiers.md) for the tier shape, [`build_input_pinning.md`](../adr/build_input_pinning.md) for the pinned inputs, and [`harness_versioning.md`](../adr/harness_versioning.md) for the image identity. The evidence for this model is the audit study [`20261107-study-concluded-build_contract_gap.md`](../../devlog/discussions/20261107-study-concluded-build_contract_gap.md). The page explains how the build meets those requirements; it does not restate them.
+The requirements the run is judged against are the ADRs: [`reasoning_layer_tiers.md`](../adr/reasoning_layer_tiers.md) for the tier shape, [`build_input_pinning.md`](../adr/build_input_pinning.md) for the pinned inputs, and [`harness_versioning.md`](../adr/harness_versioning.md) for the image identity. The evidence for this model is the audit handover [`20261107-02-audit-build_contract_gap.md`](../../devlog/handovers/M3.6.4/20261107-02-audit-build_contract_gap.md), whose gap map and findings the record keeps. The page explains how the build meets those requirements; it does not restate them.
 
 The layout is an implementation outcome, judged by the production run. A layout question is settled by what the run measures, not by what the Dockerfile looks like.
 
@@ -24,13 +24,33 @@ The production run is measured by [`scripts/build_probe.sh`](../../scripts/build
 | the production run | the artifact, the cache, the cost and the failure | [`scripts/build.sh`](../../scripts/build.sh) and the recorder |
 | the static wiring | the tier selection, the flag, the pin, the context, the COPY declaration | the container's unit tests |
 | the e2e | the image starts and the agent runs | the dry-run, M3.4.5's surface |
-| the gates | the manifest and the Dockerfiles agree; the context is the declared inputs; the prose and links lint | [`check_container_layout.sh`](../../scripts/check_container_layout.sh); [`check_build_context.sh`](../../scripts/check_build_context.sh); [`lint.sh`](../../scripts/lint.sh) |
+| the gates | the manifest and the Dockerfiles agree; the context is the declared inputs; the pins and the Dockerfiles agree; the prose and links lint | [`check_container_layout.sh`](../../scripts/check_container_layout.sh); [`check_build_context.sh`](../../scripts/check_build_context.sh); [`check_pins.sh`](../../scripts/check_pins.sh); [`lint.sh`](../../scripts/lint.sh) |
 
 The recorder does not grep a Dockerfile, the static test does not measure a build, and the dry-run does not measure the build's cost. Each layer reads the evidence that exists at its own point.
 
 ## The build context
 
 The context's declared inputs are the manifest's `image[].source` and `build[].source` rows, plus every `COPY` source in every Dockerfile the repository builds. Both builds share the repository root as context, so the ignore file must serve both: a path the reasoning images never copy is still the capability image's input. `.dockerignore` is the complement of that union, so the context carries the sources, the dockerfiles and the ignore file, and nothing else. [`scripts/check_build_context.sh`](../../scripts/check_build_context.sh) holds the two equal in both directions: a source the ignore file would exclude, or an included path no source owns, is a finding. It prints the context's file count and bytes, so a widening shows as a number before a host run.
+
+## The build inputs
+
+Every input the build reads is pinned to the artifact it resolved to, and [`src/build/pins.json`](../../src/build/pins.json) records what that was. The Dockerfile carries the request; the pins file carries the artifact. [`scripts/check_pins.sh`](../../scripts/check_pins.sh) reads the request back out of the Dockerfiles and lockfiles and fails when the two disagree, so neither is a second copy of the other.
+
+| Input class | What the Dockerfile carries | What the pins file records |
+|---|---|---|
+| a base image | the tag and the index digest | the digest and its media type |
+| an apt package | the exact version, at the highest the three suites the image's apt reads resolve to | the resolved `.deb` SHA256 and the suite it came from |
+| an archive or a binary fetched by URL | the release tag, and the checksum verified in the same `RUN` | the publisher's checksum |
+| a registry package | nothing: the committed lockfile is the request | the resolved integrity hash and the lockfile |
+| the Python build | the exact 3.11 patch | the standalone build uv resolves it to |
+
+An apt pin has to be resolved across `bookworm`, `bookworm-updates` and `bookworm-security`, not from `bookworm` alone: a security update lands in the last of those first, and a package pinned behind its own library makes the set unsatisfiable. The scan therefore compares Debian versions rather than preferring a suite, and it fails loudly when it cannot read one rather than resolving from the others.
+
+Two classes cannot reach the digest form on this base, and neither is an omission. Debian's archive publishes a SHA256 per `.deb` and apt has no syntax to require it, so the version is what apt enforces and the recorded hash is what the gate compares. The Python build is chosen by uv from its own table, so the pin fixes the patch and uv verifies the download. The strict form for the first is the M7 row in [`roadmap_future.md`](../../devlog/roadmap_future.md) that moves the base to one whose package set is content-addressed.
+
+The pins file also carries how to move each pin. A pin with no way to move freezes its own vulnerabilities, so the gate fails a row with no movement path, and `--remote` re-resolves every input against its registry: a moved artifact is reported as drift rather than as a broken build, and `--write` records it.
+
+The build's own nudge is cheaper. [`scripts/build.sh`](../../scripts/build.sh)'s preflight compares the Dockerfiles against the pins file locally and warns, because a network round-trip on every build is a cost with no decision attached to it. The blocking half is the lint gate.
 
 ## The domain catalog
 
@@ -48,7 +68,8 @@ The frequency bands are the audit's, from the 2026-11-07 log boundary; they orde
 | failure | a failed step | occasional | the exit status and the failing step are recorded | the exit status; the log |
 | second provider | opencode beside pi | occasional | the provider selects its tier | the static test |
 | boundary | the agent reads the report | every run | the report crosses through the input channel | the report path |
-| security | pins, the non-root user, no secrets | every build | the pin policy holds; the image runs as the agent user | the pin row; the static tests |
+| security | pins, the non-root user, no secrets | every build | the pin policy holds; the image runs as the agent user | the pin gate; the static tests |
+| pin drift | a republished or moved artifact | rare | the drift is reported rather than silent | the scan's `--remote` output; the preflight warning |
 | layer locking | the cache key and copy-in | every build | the COPY declarations are the manifest's | the layout gate |
 | context | the context set | every build | only the declared inputs travel to the builder | the check's files and bytes |
 | concurrency | two builds on one host | rare | one build's cache is not corrupted by another's | deferred; the trigger is a second concurrent build |

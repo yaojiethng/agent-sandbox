@@ -769,7 +769,46 @@ run_test test_destination_no_cell_declares_flagged
 run_test test_none_cell_for_a_copied_folder_flagged
 run_test test_opt_path_outside_settings_roots_flagged
 run_test test_provisioned_cell_without_provision_row_flagged
+# Given: a manifest build row naming a source the tree does not carry
+# When:  the layout gate runs
+# Then:  it fails and names the row and the path
+# Asserts: the build layer cannot declare a context path that does not exist
+test_a_build_row_naming_a_missing_source_fails() {
+  local root="$FIXTURE_DIR/buildrow"
+  write_default_tree "$root"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.build = [{ source: "src/not-there/" }];
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'a build row pointing at nothing fails'
+  assert_contains "$GATE_OUT" "is not in the tree" 'the missing source is named'
+}
+
+# Given: a manifest build row whose source the tree carries
+# When:  the layout gate runs
+# Then:  the row passes and the gate stays clean
+# Asserts: the check's positive branch, so the negative above is not vacuous
+test_a_build_row_with_a_real_source_passes() {
+  local root="$FIXTURE_DIR/buildrow_ok"
+  write_default_tree "$root"
+  mkdir -p "$root/src/reg"
+  printf 'x' > "$root/src/reg/lock.json"
+  manifest_edit "$root" '
+    const fs = require("fs");
+    const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    manifest.build = [{ source: "src/reg/" }];
+    fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
+  '
+  run_gate "$root"
+  assert_rc 0 "$GATE_RC" 'a build row with a real source passes'
+}
+
 run_test test_one_source_two_destinations_flagged
+run_test test_a_build_row_naming_a_missing_source_fails
+run_test test_a_build_row_with_a_real_source_passes
 run_test test_two_cells_claiming_one_folder_flagged
 run_test test_none_cell_naming_an_image_path_flagged
 run_test test_project_tree_cell_named_by_the_settings_passes

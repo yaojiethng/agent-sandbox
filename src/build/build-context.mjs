@@ -42,9 +42,16 @@ export function is_ignored(rel, patterns) {
   return ignored;
 }
 
+// source_roots -- every path the context must carry. The `image` layer is what
+// lands in an image; the `build` layer is what the build reads and no image
+// copies. The context owns both, because the builder needs both.
 export function source_roots(manifest) {
-  const rows = Array.isArray(manifest?.image) ? manifest.image : [];
-  return [...new Set(rows.map((row) => strip(String(row.source || ""))).filter(Boolean))];
+  const roots = [];
+  for (const layer of ["image", "build"]) {
+    const rows = Array.isArray(manifest?.[layer]) ? manifest[layer] : [];
+    for (const row of rows) roots.push(strip(String(row.source || "")));
+  }
+  return [...new Set(roots.filter(Boolean))];
 }
 
 // dockerfile_sources -- the context paths the given Dockerfiles read. A
