@@ -4,7 +4,7 @@
 # Sourced by host scripts (start_agent.sh, run_agent.sh, agent-sandbox.sh).
 #
 # Sources:
-#   src/build/image.sh   --  image naming + identity (image_digest)
+#   src/build/image.sh   --  image naming
 #   libs/interface_contract.sh   --  interface-contract version (authoritative)
 #   libs/cli.sh          --  flag parsing
 #
@@ -17,10 +17,7 @@
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
-# The docker build progress mode. `quiet` is the default and keeps the harness
-# log to one line per image; the host build probe passes `plain` so its report
-# can carry the per-step timings. Any other docker --progress value passes
-# through. The option is parsed once at ingestion and read here.
+# quiet keeps the harness log to one line per image; the probe passes plain.
 BUILD_PROGRESS="quiet"
 
 source "$REPO_ROOT/src/build/image.sh"
@@ -33,12 +30,9 @@ source "$REPO_ROOT/src/libs/cli.sh"
 # -------------------------
 
 # build_image <image_name> <dockerfile> <repo_root> <contract_label> <no_cache> [extra_label] [docker build args...]
-# Builds using repo root as docker build context.
-# contract_label is the interface-contract version to bake as the
-# `agent-sandbox.interface-contract-version` label (ADR
-# interface_contract_compatibility.md). Pass the version to stamp it, or the
-# empty string to build an image with no label (tier-1/2 shared bases carry no
-# baked harness content, so they take no label).
+# contract_label is the interface-contract version (ADR
+# interface_contract_compatibility.md), or empty for a shared tier. The repo
+# root is the docker build context.
 build_image() {
   local image_name="${1:?build_image requires image_name}"
   local dockerfile="${2:?build_image requires dockerfile}"
@@ -60,18 +54,9 @@ build_image() {
   [[ -n "$extra_label" ]] && build_cmd+=(--label "$extra_label")
   build_cmd+=("$@" "$repo_root")
 
-  # Run docker build with --quiet by default: per-step progress output (the
-  # cached-step staircase) is suppressed so the harness log stays clean, and
-  # failures still surface their error text. --progress=<mode> replaces --quiet
-  # for a caller that needs the step lines, which is the host build probe. The
-  # exit status is captured so a failure surfaces
-  # a single, descriptive message instead of a bare `set -e` abort. `_build_rc`
-  # defaults to a non-zero sentinel (fail closed): the `&& ... || ...` capture
-  # clears it to 0 on success or the build's real status on failure, so a path
-  # that never runs a build still reports failure rather than silently passing.
-  local _build_rc=1
+  local _build_rc=0
   echo "Building image: $image_name"
-  "${build_cmd[@]}" && _build_rc=0 || _build_rc=$?
+  "${build_cmd[@]}" || _build_rc=$?
   [[ $_build_rc -eq 0 ]] && echo "  Build complete: $image_name"
 
   if [[ $_build_rc -ne 0 ]]; then
@@ -80,61 +65,9 @@ build_image() {
   fi
 }
 
-# _build_key <dockerfile> [base_image]
-# The content key for a tier-1 or tier-2 base image: a hash over the
-# Dockerfile's bytes plus, for a tier that sits on another image, that image's
-# content id. A base edit or a rebuilt base changes the key, so the skip below
-# can never serve a stale image. The Dockerfile's mtime is deliberately not
-# part of the key: it changes without content, and content can change with the
-# mtime untouched.
-_build_key() {
-  local dockerfile="${1:?_build_key requires a Dockerfile}"
-  local base_image="${2:-}"
-  local base_id=""
-  if [[ -n "$base_image" ]]; then
-    base_id="$(image_digest "$base_image")"
-  fi
-  printf '%s\n%s' "$(sha256sum "$dockerfile" | awk '{print $1}')" "$base_id" \
-    | sha256sum | awk '{print $1}'
-}
-
-# build_if_missing <image> <dockerfile> <context_dir> <contract_label> <cache_flag> <base_image> [docker build args...]
-# Builds a base tier only when its content key changed. A non-empty cache_flag
-# is --no-cache and always rebuilds. The key is stamped as a label and compared
-# on the next run, so an edit to the Dockerfile, or a rebuilt base underneath,
-# takes effect instead of being skipped.
-build_if_missing() {
-  local image="$1" dockerfile="$2" context_dir="$3"
-  local contract_label="${4:-}"
-  local cache="${5:-}"
-  local base_image="${6:-}"
-  shift 6
-
-  local key
-  key="$(_build_key "$dockerfile" "$base_image")"
-  if [[ -z "$cache" ]] \
-    && docker image inspect "$image" >/dev/null 2>&1 \
-    && [[ "$(image_label "$image" "agent-sandbox.base-build-key")" == "$key" ]]; then
-    echo "Image up to date, skipping: $image"
-    return 0
-  fi
-
-  build_image "$image" "$dockerfile" "$context_dir" "$contract_label" "$cache" \
-    "agent-sandbox.base-build-key=$key" "$@"
-}
-
 # build_agent <provider> <project_name> <repo_root> [--no-cache] [--uid UID] [--gid GID]
-# Three-tier build:
-#   1. agent-base (shared runtime set  --  base.dockerfile)
-#   2. <provider>-base (provider-specific  --  providers/<n>/base.dockerfile)
-#   3. <provider>-agent-<project> (final  --  providers/<n>/provider.dockerfile)
-#
-# Tier 1 cached across all providers on this machine.
-# Tier 2 cached per-provider.
-# Tier 3 rebuilt on every build_agent call (picks up project-specific content).
-#
-# --no-cache: rebuild tiers 1 and 2 from scratch.
-# --uid/--gid: thread host UID/GID into Dockerfiles for UID mapping.
+# Builds the provider's three tiers; --no-cache rebuilds every tier, and
+# --uid/--gid thread the host UID/GID.
 build_agent() {
   local provider="${1:?build_agent requires provider}"
   local project="${2:?build_agent requires project name}"
@@ -148,7 +81,6 @@ build_agent() {
     cache_flag="--no-cache"
   fi
 
-  # Build args for UID mapping
   local uid_args=()
   if [[ -n "$host_uid" ]]; then
     uid_args+=(--build-arg "HOST_UID=$host_uid")
@@ -157,25 +89,28 @@ build_agent() {
     uid_args+=(--build-arg "HOST_GID=$host_gid")
   fi
 
-  # Tier 1: shared runtime base
   local shared_base; shared_base="$(shared_base_image_name)"
   local shared_dockerfile="$repo_root/src/reasoning/base.dockerfile"
 
-  # Tier 2: provider-specific base
-  local agent_base_image; agent_base_image="$(agent_base_image_name "$provider")"
-  local agent_base_dockerfile="$repo_root/src/reasoning/providers/$provider/base.dockerfile"
+  local tier2_image tier2_dockerfile
+  local provider_base_dockerfile="$repo_root/src/reasoning/agent-runtime/$provider/base.dockerfile"
+  if [[ -f "$provider_base_dockerfile" ]]; then
+    tier2_image="$(agent_base_image_name "$provider")"
+    tier2_dockerfile="$provider_base_dockerfile"
+  else
+    tier2_image="$(runtimes_base_image_name)"
+    tier2_dockerfile="$repo_root/src/reasoning/runtimes.dockerfile"
+  fi
 
-  # Tier 3: final provider image
   local provider_image; provider_image="$(agent_image_name "$provider" "$project")"
-  local provider_dockerfile="$repo_root/src/reasoning/providers/$provider/provider.dockerfile"
+  local provider_dockerfile="$repo_root/src/reasoning/agent-runtime/$provider/provider.dockerfile"
 
-  # Validate files exist
   if [[ ! -f "$shared_dockerfile" ]]; then
     echo "build_agent: ERROR: shared base Dockerfile not found: $shared_dockerfile" >&2
     exit 1
   fi
-  if [[ ! -f "$agent_base_dockerfile" ]]; then
-    echo "build_agent: ERROR: provider base Dockerfile not found: $agent_base_dockerfile" >&2
+  if [[ ! -f "$tier2_dockerfile" ]]; then
+    echo "build_agent: ERROR: agent-runtime tier Dockerfile not found: $tier2_dockerfile" >&2
     exit 1
   fi
   if [[ ! -f "$provider_dockerfile" ]]; then
@@ -183,25 +118,19 @@ build_agent() {
     exit 1
   fi
 
-  # Tier 1: shared runtime base  --  no contract label (no sandbox/workflow content)
-  build_if_missing "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" "" \
+  build_image "$shared_base" "$shared_dockerfile" "$repo_root" "" "$cache_flag" "" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 2: provider-specific base  --  no contract label (no sandbox/workflow content).
-  # The base image is passed so the key carries the tier-1 content id, and a
-  # rebuilt shared base forces this tier to rebuild too.
-  build_if_missing "$agent_base_image" "$agent_base_dockerfile" "$repo_root" "" "$cache_flag" "$shared_base" \
+  build_image "$tier2_image" "$tier2_dockerfile" "$repo_root" "" "$cache_flag" "" \
     --build-arg "BASE_IMAGE=$shared_base" \
     "${uid_args[@]+${uid_args[@]}}"
 
-  # Tier 3: always build provider image  --  carries the contract label
-  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$(interface_contract_version)" "" "" \
-    --build-arg "BASE_IMAGE=$agent_base_image" \
+  build_image "$provider_image" "$provider_dockerfile" "$repo_root" "$(interface_contract_version)" "$cache_flag" "" \
+    --build-arg "BASE_IMAGE=$tier2_image" \
     "${uid_args[@]+${uid_args[@]}}"
 }
 
 # build_sandbox <project_name> <repo_root> [--uid UID] [--gid GID]
-# Builds the capability layer image (sandbox-<project>).
 build_sandbox() {
   local project="${1:?build_sandbox requires project name}"
   local repo_root="${2:?build_sandbox requires repo root}"
@@ -231,13 +160,29 @@ build_sandbox() {
 # Preflight
 # -------------------------
 
+# check_pin_drift <repo_root> -- the fast local nudge. A pin the Dockerfile and
+# src/build/pins.json disagree on is a warning here and a failure in
+# scripts/check_pins.sh: the gate belongs in the lint umbrella, and a build that
+# stopped for it would be a second blocking check in a slower place.
+check_pin_drift() {
+  local repo_root="$1"
+  command -v node >/dev/null 2>&1 || return 0
+  local findings rc=0
+  findings="$(node "$repo_root/src/build/pins.mjs" check --root "$repo_root" 2>/dev/null)" || rc=$?
+  (( rc == 0 )) && return 0
+  echo "preflight: WARNING: a build input's pin disagrees with src/build/pins.json:" >&2
+  printf '%s\n' "$findings" >&2
+  echo "preflight: run 'bash scripts/check_pins.sh' for the gate; the build continues." >&2
+}
+
 # preflight <provider> <project_name> <repo_root>
-# Checks that both images exist. Build before running rather than failing.
 preflight() {
   local provider="${1:?preflight requires provider}"
   local project="${2:?preflight requires project name}"
   local repo_root="${3:?preflight requires repo root}"
   local build_missing="${4:-true}"  # resume passes false  --  a resume must not rebuild
+
+  check_pin_drift "$repo_root"
 
   local sandbox_image; sandbox_image=$(sandbox_image_name "$project")
   local agent_image;   agent_image=$(agent_image_name "$provider" "$project")
@@ -266,21 +211,14 @@ preflight() {
     fi
   fi
 
-  # --- Interface-contract version check (authoritative) ---
-  # ADR interface_contract_compatibility.md. The contract is authoritative:
-  # a drift or missing label refuses preflight (non-zero) so start fails
-  # closed. No runtime escape hatch -- an override would be a backdoor.
+  # The contract is authoritative (ADR interface_contract_compatibility.md).
   _check_interface_contract "$sandbox_image" || return 1
   _check_interface_contract "$agent_image"   || return 1
 }
 
 # _check_interface_contract <image_name>
-# Interface-contract check (ADR interface_contract_compatibility.md): refuses
-# (returns 1) when the image's baked `agent-sandbox.interface-contract-version`
-# label differs from the current host-side constant -- the container was built
-# from a different contract revision than the working tree -- and names the
-# surface and the rebuild remedy. Missing label (built before the check)
-# refuses identically. Returns 0 only when aligned.
+# Refuses when the baked interface-contract label is missing or differs from the
+# host's constant (ADR interface_contract_compatibility.md).
 _check_interface_contract() {
   local image_name="${1:?}"
 
@@ -303,14 +241,7 @@ _check_interface_contract() {
 # main  --  entry point when exec'd by agent-sandbox build
 # =============================================================================
 
-# Parses operator-facing flags and calls build_sandbox/build_agent as needed.
-# Expected flags: --name=<n> --project=<p> [--targets=<t,...>] [--rebuild]
-#
-# --targets defaults to "all" if omitted. Use comma-separated values:
-#   all                --  sandbox + all providers
-#   sandbox            --  sandbox only
-#   pi,hermes          --  named providers only
-#   pi,sandbox         --  named provider + sandbox
+# Parses the operator flags and builds the selected targets; --help lists them.
 
 usage() {
   cat <<EOF
@@ -360,10 +291,10 @@ main() {
 
   if [[ -z "$BUILD_TARGETS" || "$BUILD_TARGETS" == "all" ]]; then
     build_sandbox "$PROJECT_NAME" "$REPO_ROOT"
-    for BASE_DOCKERFILE in "$REPO_ROOT/src/reasoning/providers/"*/base.dockerfile; do
-      [[ -f "$BASE_DOCKERFILE" ]] || continue
+    for PROVIDER_DOCKERFILE in "$REPO_ROOT/src/reasoning/agent-runtime/"*/provider.dockerfile; do
+      [[ -f "$PROVIDER_DOCKERFILE" ]] || continue
       local DISCOVERED_PROVIDER
-      DISCOVERED_PROVIDER="$(basename "$(dirname "$BASE_DOCKERFILE")")"
+      DISCOVERED_PROVIDER="$(basename "$(dirname "$PROVIDER_DOCKERFILE")")"
       build_agent "$DISCOVERED_PROVIDER" "$PROJECT_NAME" "$REPO_ROOT" $REBUILD_FLAG
     done
   else
@@ -386,13 +317,7 @@ main() {
   fi
 }
 
-# Guard: only run main() when executed directly, not when sourced.
-# Also enforce the production runtime on standalone invocation: production
-# callers set `set -euo pipefail` before sourcing this file, but a standalone
-# `bash build.sh` (e.g. the trace tests) inherits the caller's options. Enabling
-# `-e` here makes standalone runs exercise the same failure-abort semantics as
-# production, so a silent `set -e` abort after a backgrounded/piped build is
-# caught.
+# Standalone runs use the same fail-abort options as production.
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   set -euo pipefail
   main "$@"

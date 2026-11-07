@@ -81,7 +81,7 @@ Container paths are fixed and not configurable through `.env`. The mount shape i
 | Mode | Compose files |
 |---|---|
 | `standard` | Base template + delivery overlay (+ provider overlay if present) |
-| `serve` | Base template + delivery overlay + provider overlay (if present) + `src/reasoning/providers/<n>/docker-compose.serve.yml` |
+| `serve` | Base template + delivery overlay + provider overlay (if present) + `src/reasoning/agent-runtime/<n>/docker-compose.serve.yml` |
 | `dry-run` | Base template + delivery overlay + provider overlay (if present) + `src/build/docker-compose.dry-run.yml` |
 
 **Delivery overlays:** the delivery type reaches `run_agent.sh` as `--delivery` (`copy|mount`); `start_agent.sh` parses it at ingestion (default `copy`), `resume_agent.sh` recovers it from the session record, and `run_agent.sh` never defaults it. The per-delivery overlay carries the worktree wiring, so the base template stays shared. Dry-run on `--delivery=mount` stacks the mount overlay too: the probes run against the real worktree read-only, writing only to the workspace channels and the entrypoint-owned `.git/SESSION_STATE` marker, so tracked repo content is never modified.
@@ -89,7 +89,7 @@ Container paths are fixed and not configurable through `.env`. The mount shape i
 - `src/build/docker-compose.copy.yml` -- the per-run named sandbox volume, seeded by the one-shot seeder service (helper-container transport), with no snapshot mount. Copy mode only.
 - `src/build/docker-compose.mount.yml` -- the worktree bind mount at `/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
 
-The provider overlay (`src/reasoning/providers/<n>/docker-compose.<n>.yml`) is optional and merged if the file exists. It covers mounts and environment variables that apply in every mode. The serve, dry-run, and delivery overlays are static repo files; only the merged result is written to `SANDBOX_DIR`.
+The provider overlay (`src/reasoning/agent-runtime/<n>/docker-compose.<n>.yml`) is optional and merged if the file exists. It covers mounts and environment variables that apply in every mode. The serve, dry-run, and delivery overlays are static repo files; only the merged result is written to `SANDBOX_DIR`.
 
 **Delivery-aware container init:** the capability-layer entrypoint branches on `SANDBOX_TYPE`, which each delivery overlay passes as a container env literal.
 

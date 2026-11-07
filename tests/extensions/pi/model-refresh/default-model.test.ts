@@ -11,7 +11,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { discardedDefault } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/default-model.ts";
+import { discardedDefault } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/default-model.ts";
 
 const DEFAULT = { provider: "openrouter", id: "z-ai/glm-4.5" };
 const SELECTED = { provider: "opencode-go", id: "space-bunny-free" };

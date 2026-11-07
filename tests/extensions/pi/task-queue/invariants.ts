@@ -21,7 +21,7 @@
  * set against the table.
  */
 
-import { ENTRY_TRANSITIONS, TASK_PHASES, TASK_TRANSITIONS, type TaskAction, type TaskPhase } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/transitions.ts";
+import { ENTRY_TRANSITIONS, TASK_PHASES, TASK_TRANSITIONS, type TaskAction, type TaskPhase } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/transitions.ts";
 
 /** One named case of one invariant. */
 export interface InvariantCase {

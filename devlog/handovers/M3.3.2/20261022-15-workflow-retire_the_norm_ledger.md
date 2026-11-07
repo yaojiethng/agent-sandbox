@@ -69,5 +69,5 @@ None.
 | [`docs/adr/norm_kinds.md`](../../docs/adr/norm_kinds.md) | a 2026-10-22 entry: the test stands and its instrument does not; the 10-17 entry's ledger clause becomes past tense |
 | [`docs/development/instruction-surface-conventions.md`](../../docs/development/instruction-surface-conventions.md) | the paragraph describing the script is removed |
 | [`docs/development/prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | the clause naming the ledger as the observer of a judgement is removed |
-| [`src/reasoning/providers/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md) | the example row that named the ledger's regeneration rule is removed |
+| [`src/reasoning/providers/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md) | the example row that named the ledger's regeneration rule is removed |
 | [`devlog/roadmap.md`](../roadmap.md) | the `--regroup` row is deleted, the merged-surface row loses the ledger's source set, and this unit is recorded closed |

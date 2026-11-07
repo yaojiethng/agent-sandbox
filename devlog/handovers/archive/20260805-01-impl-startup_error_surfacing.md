@@ -37,9 +37,9 @@ None.
 |---|---|
 | [`scripts/run_agent.sh`](../../scripts/run_agent.sh) | `\|\| true` subshell fix |
 | [`src/capability/dockerfile`](../../src/capability/dockerfile) | USER/chown ordering + macOS comment |
-| [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) | chmod +x; macOS comment |
-| [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/providers/hermes/provider.dockerfile) | chmod +x; mkdir+chown before USER; macOS comment |
-| [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile) | chmod +x; mkdir+chown before USER; macOS comment |
+| [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) | chmod +x; macOS comment |
+| [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/agent-runtime/hermes/provider.dockerfile) | chmod +x; mkdir+chown before USER; macOS comment |
+| [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile) | chmod +x; mkdir+chown before USER; macOS comment |
 | [`src/reasoning/agent/drafts/bash-scripting-traps.skill.md`](../../src/reasoning/agent/drafts/bash-scripting-traps.skill.md) | Trap 16 |
 
 ## Decisions made this session

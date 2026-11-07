@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classify, nextUtcMidnight } from '../../../src/libs/dispatch/classify.ts';
+import { classify } from '../../../src/libs/dispatch/classify.ts';
 
 const AT = Date.UTC(2026, 9, 22, 14, 2, 0);
 
@@ -15,7 +15,7 @@ test('a plan limit is quota, not capability, and carries the reset it replenishe
   const v = classify('FreeUsageLimitError: daily free usage exhausted', AT);
   assert.equal(v.class, 'quota');
   assert.equal(v.scope, 'account');
-  assert.equal(v.refreshAt, nextUtcMidnight(AT));
+  assert.equal(v.refreshAt, Date.UTC(2026, 9, 23));
   assert.ok(v.refreshAt! > AT);
 });
 
@@ -68,10 +68,12 @@ test('an undeclared sentence is unclassified rather than guessed', () => {
 });
 
 test('the next UTC midnight is the declared replenishment, not a guess', () => {
-  const midnight = nextUtcMidnight(AT);
-  assert.equal(new Date(midnight).getUTCHours(), 0);
-  assert.equal(new Date(midnight).getUTCMinutes(), 0);
-  assert.ok(midnight - AT <= 24 * 60 * 60 * 1000);
+  for (const at of [AT, Date.UTC(2026, 9, 22, 23, 59, 59)]) {
+    const midnight = classify('FreeUsageLimitError: daily free usage exhausted', at).refreshAt!;
+    assert.equal(new Date(midnight).getUTCHours(), 0);
+    assert.equal(new Date(midnight).getUTCMinutes(), 0);
+    assert.ok(midnight - at <= 24 * 60 * 60 * 1000);
+  }
 });
 
 test('the supervisor ending an attempt at its limit is timeout, which stops the walk', () => {

@@ -10,18 +10,18 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as path from "node:path";
 import { performance } from "node:perf_hooks";
-import { Run } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts";
-import { freshState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
+import { Run } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/run.ts";
+import { freshState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/state.ts";
 import {
 	bringBackOp,
 	forkOp,
 	joinOp,
 	proposalOp,
 	verifyOp,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
-import { addWorktree } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
-import { proposalPaths } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/proposal.ts";
-import { applyBringBack } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/merge.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
+import { addWorktree } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
+import { proposalPaths } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/proposal.ts";
+import { applyBringBack } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/merge.ts";
 import { commitAll, makeMainRepo, rmrf, tmpdir, workerRequest, writeFile } from "./helpers.ts";
 
 const AT = "2026-01-01T00:00:00.000Z";

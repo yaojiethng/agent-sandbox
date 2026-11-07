@@ -54,11 +54,11 @@ The provider `AGENTS.md` row text, and the roadmap home for the future design ta
 
 | File | Change |
 |---|---|
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | new: the before-fork prompt |
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | new: the after-return prompt |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | new: the before-fork prompt |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | new: the after-return prompt |
 | [`active-task-tracker-design-prompt.md`](../../../.agents/drafts/active-task-tracker-design-prompt.md) | the future-task prompt, rewritten to reference the two landed prompts |
 | [`AGENTS.md`](../../../AGENTS.md) | the canonical session-local scratch row, `.scratchpad/`, in the project layer |
-| [`AGENTS.md`](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the `/tmp` Scope row removed, and the two `/tmp` prose references moved to `.scratchpad/`, in the repo source and the installed copy |
+| [`AGENTS.md`](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the `/tmp` Scope row removed, and the two `/tmp` prose references moved to `.scratchpad/`, in the repo source and the installed copy |
 | [`container-interface.json`](../../../src/build/container-interface.json) | the `/tmp/` session row replaced by `/home/agentuser/sandbox/.scratchpad/` |
 | [`devlog/roadmap.md`](../../roadmap.md) | the prompts row, and the future-task row it seeds |
 | `.agents/drafts/active-task-tracker-stopgap.md` | consumed: deleted, not committed |

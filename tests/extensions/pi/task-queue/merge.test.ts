@@ -9,11 +9,11 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
-import { assertFileSet } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/tasks.ts";
-import { addWorktree, statusPorcelain } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
-import { proposalPaths } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/proposal.ts";
-import { applyBringBack, archiveTrack } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/merge.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
+import { assertFileSet } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/tasks.ts";
+import { addWorktree, statusPorcelain } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
+import { proposalPaths } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/proposal.ts";
+import { applyBringBack, archiveTrack } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/merge.ts";
 import { commitAll, makeMainRepo, rmrf, tmpdir, writeFile } from "./helpers.ts";
 
 const AT = "2026-01-01T00:00:00.000Z";

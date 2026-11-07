@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { once } from "node:events";
-import { canPinBody, pinnedFetch } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/pinned-fetch.ts";
+import { canPinBody, pinnedFetch } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/pinned-fetch.ts";
 
 async function withServer(handler: http.RequestListener, run: (port: number) => Promise<void>): Promise<void> {
 	const server = http.createServer(handler);

@@ -49,7 +49,7 @@ None.
 | six judgement skills | `disable-model-invocation: true` removed |
 | `skill-scaffolder/patterns/signposting.md` | the signposting judgement, moved from the shipped corpus |
 | [`skill-scaffolder/SKILL.md`](../../.agents/skills/skill-scaffolder/SKILL.md) | the pattern named where the frontmatter is drafted |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the fourteen communication principles linked |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the fourteen communication principles linked |
 | [`prompt-authoring-conventions.md`](../../docs/development/prompt-authoring-conventions.md) | the two citations retargeted |
 | [`roadmap_future.md`](../roadmap_future.md) | the leading-word row retargeted |
 | [`devlog/roadmap.md`](../roadmap.md) | the row ticked |

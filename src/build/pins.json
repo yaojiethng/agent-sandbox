@@ -1,0 +1,162 @@
+{
+  "format": 1,
+  "resolved_at": "2026-11-07",
+  "note": "What each build input resolved to. The Dockerfile carries the request; this file carries the artifact, and scripts/check_pins.sh fails when the two disagree. The apt rows record the suite their version came from, because a package and its library move together inside one suite. Move a pin with scripts/check_pins.sh --bump --remote --write.",
+  "pins": [
+    {
+      "input": "base-image",
+      "class": "base-image",
+      "requested": "node:22.22.3-slim",
+      "resolved": {
+        "digest": "sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752",
+        "media_type": "application/vnd.oci.image.index.v1+json"
+      },
+      "move": "retag: bump the tag in base.dockerfile, then --bump --remote --write records the new index digest"
+    },
+    {
+      "input": "apt:ca-certificates",
+      "class": "apt",
+      "requested": "20230311+deb12u1",
+      "resolved": {
+        "suite": "bookworm-security",
+        "version": "20250419~deb12u2",
+        "deb_sha256": "b9f76b5271a7ac373fd5e7e1b5b826a71ddd702b42a0d104955ecb1acfffc94b"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:curl",
+      "class": "apt",
+      "requested": "7.88.1-10+deb12u15",
+      "resolved": {
+        "suite": "bookworm",
+        "version": "7.88.1-10+deb12u15",
+        "deb_sha256": "0dd9b6bf7a0bd11af2d68a52ec44c2a223fa7c11f9104c36ce1047e1137d4a8f"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:fd-find",
+      "class": "apt",
+      "requested": "8.6.0-3",
+      "resolved": {
+        "suite": "bookworm",
+        "version": "8.6.0-3",
+        "deb_sha256": "1c0af4b1c6727ee8a8cc3a674cce7919aeb070d7017620d8fdc528739cefb333"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:git",
+      "class": "apt",
+      "requested": "1:2.39.5-0+deb12u3",
+      "resolved": {
+        "suite": "bookworm",
+        "version": "1:2.39.5-0+deb12u3",
+        "deb_sha256": "637a85ddd6247fab13bdd0592f2f39aff04ce4dbf0655d3ab553ac359a38ce6f"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:jq",
+      "class": "apt",
+      "requested": "1.6-2.1+deb12u2",
+      "resolved": {
+        "suite": "bookworm-security",
+        "version": "1.6-2.1+deb12u3",
+        "deb_sha256": "c25f3fda201207ed98b1d63686f2d81b9dfeb99f1ab2d1d35fb3f7b6a1c107dc"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:ripgrep",
+      "class": "apt",
+      "requested": "13.0.0-4+b2",
+      "resolved": {
+        "suite": "bookworm",
+        "version": "13.0.0-4+b2",
+        "deb_sha256": "feba1aea6022d84c67293686fe82132f7283d3c485a2cbd5af5c0e210615ecc2"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:rsync",
+      "class": "apt",
+      "requested": "3.2.7-1+deb12u6",
+      "resolved": {
+        "suite": "bookworm",
+        "version": "3.2.7-1+deb12u6",
+        "deb_sha256": "ce99de6b36cbb62dc614a73463e467f2c1ef509545a9a2b33cab19b50530b672"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "apt:shellcheck",
+      "class": "apt",
+      "requested": "0.9.0-1",
+      "resolved": {
+        "suite": "bookworm",
+        "version": "0.9.0-1",
+        "deb_sha256": "8c40f8a4ecccf3d746b933853972f1cd1be6df84fc5977d0137269d4debefa4f"
+      },
+      "move": "apt resolves across bookworm, bookworm-updates and bookworm-security, and takes the highest version of each package: --bump --remote reports the newer one with its suite, and the Dockerfile line is edited to it"
+    },
+    {
+      "input": "hadolint",
+      "class": "url-artifact",
+      "requested": "v2.14.0",
+      "resolved": {
+        "sha256": "6bf226944684f56c84dd014e8b979d27425c0148f61b3bd99bcc6f39e9dc5a47"
+      },
+      "move": "bump HADOLINT_VERSION to the new release tag, then --bump --remote --write records the checksum it publishes"
+    },
+    {
+      "input": "uv",
+      "class": "url-artifact",
+      "requested": "0.13.7",
+      "resolved": {
+        "sha256": "c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83"
+      },
+      "move": "bump UV_VERSION to the new release tag, then --bump --remote --write records the checksum it publishes"
+    },
+    {
+      "input": "python",
+      "class": "uv-resolved",
+      "requested": "3.11.18",
+      "resolved": {
+        "version": "3.11.18",
+        "artifact": "cpython-3.11.18-linux-x86_64-gnu"
+      },
+      "move": "bump the patch in `uv python install`, then --bump --remote --write records the standalone build it resolves"
+    },
+    {
+      "input": "npm:markdownlint-cli2",
+      "class": "registry-package",
+      "requested": "0.23.2",
+      "resolved": {
+        "lockfile": "src/reasoning/registry/markdownlint-cli2/package-lock.json",
+        "integrity": "sha512-eUhcnkSpzURo/o4htSqc7LPDszgOOTknhU4eY/sPHvMCLxnTCYscv1gw1/js/idmaZPisv9ECVEIORcllqjTUw=="
+      },
+      "move": "edit the version in that directory's package.json, run npm install --package-lock-only there, then --bump --remote --write"
+    },
+    {
+      "input": "npm:pi",
+      "class": "registry-package",
+      "requested": "1.3.0",
+      "resolved": {
+        "lockfile": "src/reasoning/registry/pi/package-lock.json",
+        "integrity": "sha512-V/WoCjA2hQSe3QLWIUB24cTRdtEdeLiIzkDqU5RMXV6VWuD+KGZnzVBMhglwdnQTySkehZsjt8a3g6Jd2g4nnw=="
+      },
+      "move": "edit the version in that directory's package.json, run npm install --package-lock-only there, then --bump --remote --write"
+    },
+    {
+      "input": "opencode",
+      "class": "url-artifact",
+      "requested": "1.19.1",
+      "resolved": {
+        "sha256": "6ee2f2facfec08bd975f2c90eacec4c23078fe16744e0085f1f0a2ee3887a734"
+      },
+      "move": "bump OPENCODE_VERSION in runtimes.dockerfile to the new version of opencode-linux-x64, then --bump --remote --write records the tarball it hashes"
+    }
+  ]
+}

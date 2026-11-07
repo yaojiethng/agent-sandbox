@@ -57,7 +57,7 @@ None.
 | [`src/libs/dispatch.sh`](../../src/libs/dispatch.sh) | deleted; its grammar, resolution order and argv shapes moved to the library |
 | [`scripts/dispatch.sh`](../../scripts/dispatch.sh), [`dispatch_worker.sh`](../../src/libs/dispatch_worker.sh) | the entrypoint prints, runs, records and inspects, and the worker is a mode of it |
 | [`terminology.md`](../../docs/reference/terminology.md), [`dispatch.md`](../../docs/reference/dispatch.md) | the reserved vocabulary and the behaviour of record |
-| [`AGENTS.md`](../../AGENTS.md), [`AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the dispatch procedure and the role table's location |
+| [`AGENTS.md`](../../AGENTS.md), [`AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the dispatch procedure and the role table's location |
 | [`agent_workflow.md`](../../docs/reference/agent_workflow.md), [`execution_model.md`](../../docs/reference/execution_model.md), [`provider_lifecycle.md`](../../docs/reference/provider_lifecycle.md), [`system_overview.md`](../../docs/reference/system_overview.md) | the carriers point at the mechanism instead of restating it |
 | [`tests/test_dispatch.sh`](../../tests/test_dispatch.sh), [`table.test.ts`](../../tests/dispatch/machine/table.test.ts) | the walk's cases and the table's grammar |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closed, its link moved to `table.ts`, and the `backend` row filed |

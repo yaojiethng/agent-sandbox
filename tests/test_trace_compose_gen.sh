@@ -62,7 +62,7 @@ run_compose_generate() {
     else
       compose_files+=("$REPO_ROOT/src/build/docker-compose.mount.yml")
     fi
-    local provider_overlay="$REPO_ROOT/src/reasoning/providers/pi/docker-compose.pi.yml"
+    local provider_overlay="$REPO_ROOT/src/reasoning/agent-runtime/pi/docker-compose.pi.yml"
     [[ -f "$provider_overlay" ]] && compose_files+=("$provider_overlay")
 
     compose_generate "$output_file" "$PROJECT_NAME" "$PROVIDER_NAME" "${compose_files[@]}"

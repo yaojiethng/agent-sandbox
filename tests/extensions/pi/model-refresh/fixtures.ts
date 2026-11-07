@@ -5,8 +5,12 @@
  * product rather than on a helper of its own.
  */
 
-import { parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts";
-import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { createRequire } from "node:module";
+import { delimiter, dirname, join } from "node:path";
+
+import { parseDeclarations } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/config.ts";
+import type { ModelDefinition, ModelsDevModel, ProviderDecl, StoredCatalog } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 
 /** The provider the suite drives. */
 export const PROVIDER_ID = "opencode-go";
@@ -44,7 +48,67 @@ export const TEST_DECL = TEST_DECLARATIONS[PROVIDER_ID] as ProviderDecl;
 export const V1_BASE = TEST_DECL.baseUrls["openai-completions"] as string;
 export const ANTHROPIC_BASE = TEST_DECL.baseUrls["anthropic-messages"] as string;
 
-const PI_AI_ROOT = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai";
+const PI_PACKAGE = "@earendil-works/pi-coding-agent";
+
+/** A package is the directory whose package.json carries its name, however it was hoisted. */
+function packageRootOf(entry, name) {
+  let dir = dirname(realpathSync(entry));
+  for (;;) {
+    const manifest = join(dir, "package.json");
+    if (existsSync(manifest)) {
+      try {
+        if (JSON.parse(readFileSync(manifest, "utf8")).name === name) return dir;
+      } catch {
+        // an unreadable manifest is not the package we are looking for
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
+/**
+ * The installed pi package root, found the way the shell finds pi: from the
+ * The pi executable on PATH decides, as it does for the shell. npm root -g
+ * names /usr/local/lib/node_modules, where the agent image keeps no pi: it
+ */
+export const PI_PACKAGE_ROOT = (() => {
+  const candidates = [];
+  if (process.env.PI_PACKAGE_ROOT) candidates.push(process.env.PI_PACKAGE_ROOT);
+  for (const entry of (process.env.PATH || "").split(delimiter)) {
+    if (!entry) continue;
+    const bin = join(entry, "pi");
+    const root = existsSync(bin) ? packageRootOf(bin, PI_PACKAGE) : undefined;
+    if (root) candidates.push(root);
+  }
+  candidates.push(join("/usr/local/lib/node_modules", PI_PACKAGE));
+  return candidates.find((candidate) => existsSync(join(candidate, "package.json"))) || candidates[candidates.length - 1];
+})();
+
+const requireFromPi = createRequire(join(PI_PACKAGE_ROOT, "package.json"));
+
+/** A dependency sits in pi's own node_modules or, hoisted, in an ancestor's. */
+function installedPackageDir(name) {
+  for (let dir = PI_PACKAGE_ROOT; ; dir = dirname(dir)) {
+    const candidate = join(dir, "node_modules", ...name.split("/"));
+    if (existsSync(join(candidate, "package.json"))) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) return "";
+  }
+}
+
+/** pi-ai's exports map carries no require condition, so it is found by directory. */
+export const PI_AI_ROOT = installedPackageDir("@earendil-works/pi-ai");
+
+/** jiti compiles a TypeScript extension inside this suite, as pi does when it loads one. */
+export const JITI_ENTRY = (() => {
+  try {
+    return requireFromPi.resolve("jiti");
+  } catch {
+    return join(PI_PACKAGE_ROOT, "node_modules", "jiti", "lib", "jiti.cjs");
+  }
+})();
 
 /** pi's request builder per transport, each read through its own `onPayload`. */
 const STREAM_MODULES: Record<string, string> = {

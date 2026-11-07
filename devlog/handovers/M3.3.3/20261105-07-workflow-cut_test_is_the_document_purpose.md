@@ -60,9 +60,9 @@ None.
 
 | File | Action |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md) | renamed from `cut-what-carries-nothing`; the purpose is the test, the mismatch is one case of the SSOT unit, and the description and `Fires on` carry the new trigger |
+| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md) | renamed from `cut-what-carries-nothing`; the purpose is the test, the mismatch is one case of the SSOT unit, and the description and `Fires on` carry the new trigger |
 | `/home/agentuser/.pi/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md` | the installed copy, renamed and edited to the seed's text; it delivers nothing |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the index line states the purpose test instead of the sentence test |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the index line states the purpose test instead of the sentence test |
 | [`docs/adr/principle_skill_shape.md`](../../docs/adr/principle_skill_shape.md) | the dated entry for the rename, the Diataxis ground and the three rejected alternatives |
 | [`src/reasoning/agent/skills/writing-for-agents/SKILL.md`](../../src/reasoning/agent/skills/writing-for-agents/SKILL.md) | the fork's two inline references follow the rename |
 | [`.agents/registry/sources/mattpocock-skills.json`](../../.agents/registry/sources/mattpocock-skills.json) | the fork's record now names the rename among its divergences |

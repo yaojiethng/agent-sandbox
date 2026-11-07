@@ -43,13 +43,13 @@ Continues the `model-refresh improvements` parent row from the plan handover [`2
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/sources.json`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/sources.json) | the new declared source row |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts) | the `SourceKind` and the cache shape |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | the `cache` source case and the `UnionInput` field |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts) | the read in the offline phase and the write-back after a successful fetch |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/cache.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/cache.ts) | the file reader and writer |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts) | the cache path and the write-back wiring |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the source model, the diagram and the write-back rule |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/sources.json`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/sources.json) | the new declared source row |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts) | the `SourceKind` and the cache shape |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | the `cache` source case and the `UnionInput` field |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts) | the read in the offline phase and the write-back after a successful fetch |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/cache.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/cache.ts) | the file reader and writer |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts) | the cache path and the write-back wiring |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the source model, the diagram and the write-back rule |
 | [`tests/extensions/pi/model-refresh/invariants.ts`](../../../tests/extensions/pi/model-refresh/invariants.ts) | the cache source, the `E1`-`E14` cases, the `Z1`-`Z5` machine and the extended totality check |
 | [`tests/extensions/pi/model-refresh/invariants.test.ts`](../../../tests/extensions/pi/model-refresh/invariants.test.ts) | the cache cases and the `cache` source state |
 | [`tests/extensions/pi/model-refresh/mutation/catalog.ts`](../../../tests/extensions/pi/model-refresh/mutation/catalog.ts) | the cache mutation rows and the re-pointed `D1` row |
@@ -89,15 +89,15 @@ None.
 
 | File | Change |
 |---|---|
-| [`sources.json`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/sources.json) | the `cache` source row, declared after `baked` |
-| [`types.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts) | `SourceKind` gains `cache` |
-| [`config.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/config.ts) | the validator accepts the `cache` kind |
-| [`catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | `UnionInput.cache` and the `cache` case |
-| [`cache.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/cache.ts) | new: `parseCache`, `readCache`, `writeCache`, `cachePath` |
-| [`refresh.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/refresh.ts) | the cache input and the write-back after a successful fetch |
-| [`index.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/index.ts) | the cache read and write wiring |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the built cache device, the `E1`-`E14` family and the de-planning |
-| [`CHANGELOG.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/CHANGELOG.md) | the `0.6.0` entry |
+| [`sources.json`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/sources.json) | the `cache` source row, declared after `baked` |
+| [`types.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts) | `SourceKind` gains `cache` |
+| [`config.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/config.ts) | the validator accepts the `cache` kind |
+| [`catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | `UnionInput.cache` and the `cache` case |
+| [`cache.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/cache.ts) | new: `parseCache`, `readCache`, `writeCache`, `cachePath` |
+| [`refresh.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/refresh.ts) | the cache input and the write-back after a successful fetch |
+| [`index.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/index.ts) | the cache read and write wiring |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the built cache device, the `E1`-`E14` family and the de-planning |
+| [`CHANGELOG.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/CHANGELOG.md) | the `0.6.0` entry |
 | [`fixtures.ts`](../../../tests/extensions/pi/model-refresh/fixtures.ts) | the test declaration gains the `cache` source |
 | [`invariants.ts`](../../../tests/extensions/pi/model-refresh/invariants.ts) | the cache source, `E1`-`E14`, `K0`-`K2` / `Z1`-`Z5`, `X15`, the extended totality check |
 | [`invariants.test.ts`](../../../tests/extensions/pi/model-refresh/invariants.test.ts) | the `E1`-`E14` cases and `SourceState.cache` |

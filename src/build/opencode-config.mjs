@@ -31,7 +31,7 @@ skills.push(path.resolve(ROOT, ".agents/skills/") + "/");
 
 const instructions = [
   path.resolve(ROOT, "AGENTS.md"),
-  path.resolve(ROOT, "src/reasoning/providers/pi/config/agent/AGENTS.md"),
+  path.resolve(ROOT, "src/reasoning/agent-runtime/pi/config/agent/AGENTS.md"),
 ];
 
 const config = { instructions, skills };

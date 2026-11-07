@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseDeclarations, DeclarationsError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/config.ts";
+import { parseDeclarations, DeclarationsError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/config.ts";
 
 /** Parse a text, asserting the load refuses, and return the message. */
 function refusal(text: string): string {
@@ -21,7 +21,7 @@ function refusal(text: string): string {
 	assert.fail("the malformed declarations file was accepted");
 }
 
-const SHIPPED = fs.readFileSync(path.resolve(import.meta.dirname, "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/routes.json"), "utf8");
+const SHIPPED = fs.readFileSync(path.resolve(import.meta.dirname, "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/routes.json"), "utf8");
 
 describe("the declarations loader", () => {
 	it("the shipped file parses to one chain protecting step-5-preview-free", () => {

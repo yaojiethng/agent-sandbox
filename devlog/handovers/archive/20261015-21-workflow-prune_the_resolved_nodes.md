@@ -52,5 +52,5 @@ None.
 
 | File | Change |
 |---|---|
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | the prune step, the resolved-frame drop, the stack legend |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | the prune step, the resolved-frame drop, the stack legend |
 | `$AGENT_HOME/agent/prompts/push-task.md` | installed identical to the repository |

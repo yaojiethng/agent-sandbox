@@ -21,7 +21,7 @@
 # is outside this probe. The README records that as a follow-on.
 #
 # Reference:
-#   src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md
+#   src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md
 #     -- the measured-behaviour table this test reproduces.
 #
 # Not run by make test. Run manually:
@@ -35,8 +35,8 @@ REPO_TOP="$(cd "$SUITE_DIR/../../../.." && pwd)"
 # shellcheck source=../../../../libs/test_common.sh
 source "$REPO_TOP/tests/libs/test_common.sh"
 
-EXTENSION_SRC="$REPO_TOP/src/reasoning/providers/pi/config/agent/extensions/model-failover"
-SETTINGS_SRC="$REPO_TOP/src/reasoning/providers/pi/config/agent/settings.json"
+EXTENSION_SRC="$REPO_TOP/src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover"
+SETTINGS_SRC="$REPO_TOP/src/reasoning/agent-runtime/pi/config/agent/settings.json"
 
 test_setup
 

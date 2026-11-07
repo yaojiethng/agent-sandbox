@@ -52,10 +52,10 @@ None.
 
 | File | Change |
 |---|---|
-| [`sources.json`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/sources.json) | `endpoint` and the three `baseUrls` move to `opencode.ai/inference/go` |
-| [`README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the assumption table is re-walked against 1.3.0 (A7, A8, A10 moved; A2 and A11 corrected); the `minimax-m2.7` probe commands name the new path |
-| [`CHANGELOG.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/CHANGELOG.md) | the `0.7.0` entry records the endpoint move and the walk |
-| [`models.json`](../../../src/reasoning/providers/pi/config/agent/models.json) | the dead `opencode-go/deepseek-v4-flash` override is removed |
+| [`sources.json`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/sources.json) | `endpoint` and the three `baseUrls` move to `opencode.ai/inference/go` |
+| [`README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the assumption table is re-walked against 1.3.0 (A7, A8, A10 moved; A2 and A11 corrected); the `minimax-m2.7` probe commands name the new path |
+| [`CHANGELOG.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/CHANGELOG.md) | the `0.7.0` entry records the endpoint move and the walk |
+| [`models.json`](../../../src/reasoning/agent-runtime/pi/config/agent/models.json) | the dead `opencode-go/deepseek-v4-flash` override is removed |
 | [`composition.test.ts`](../../../tests/extensions/pi/model-refresh/composition.test.ts) | `V1_BASE` moves to `inference/go/v1` |
 | [`wire.test.ts`](../../../tests/extensions/pi/model-refresh/wire.test.ts) | the stubbed `baseUrl` moves to `inference/go/v1` |
 | [`knowledge_opencode_gateway_matrix.sh`](../../../tests/extensions/pi/model-refresh/knowledge/knowledge_opencode_gateway_matrix.sh) | the product comment names the new endpoints |

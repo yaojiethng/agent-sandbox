@@ -46,7 +46,6 @@ _running_as_bash_script() {
 _agent_binary_for_provider() {
   case "${1:-}" in
     pi)       echo "pi" ;;
-    hermes)   echo "hermes" ;;
     opencode) echo "opencode" ;;
     *)        echo "" ;;
   esac

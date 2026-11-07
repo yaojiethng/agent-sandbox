@@ -17,7 +17,7 @@
 //      table form, and a backticked repository file path that does not resolve
 //      is a claim about where a file lives that the tree contradicts. A
 //      `<placeholder>` segment resolves against each provider's directory,
-//      because `src/reasoning/providers/<n>/...` is how a reference names a
+//      because `src/reasoning/agent-runtime/<n>/...` is how a reference names a
 //      per-provider file.
 //
 // CLI:

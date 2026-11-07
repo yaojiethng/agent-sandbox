@@ -31,8 +31,8 @@
 #
 # --targets accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --targets=all
-#   agent-sandbox build --targets=hermes
-#   agent-sandbox build --targets=hermes,sandbox
+#   agent-sandbox build --targets=opencode
+#   agent-sandbox build --targets=opencode,sandbox
 #
 # --target (singular) is deprecated and will error.
 

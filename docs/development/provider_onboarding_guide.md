@@ -1,26 +1,28 @@
 # Provider Onboarding Guide
 
-A provider is a directory under [`src/reasoning/providers/`](../../src/reasoning/providers/) holding the two Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
+A provider is a directory under [`src/reasoning/agent-runtime/`](../../src/reasoning/agent-runtime/) holding its Dockerfiles and the serve overlay for one reasoning layer agent. This guide is a checklist of what to create. The contract it implements is [`../reference/tool_interface.md` -- Provider Interface](../reference/tool_interface.md#provider-interface).
 
 Read a shipped provider before writing one. Each file below is a working example of the shape it names.
 
 | Provider | Use as the reference for |
 |---|---|
-| [`pi`](../../src/reasoning/providers/pi/) | every optional file: `setup.sh`, a provider compose overlay, `config/` |
-| [`opencode`](../../src/reasoning/providers/opencode/) | the minimum: two Dockerfiles and the serve overlay |
-| [`hermes`](../../src/reasoning/providers/hermes/) | a multi-stage build, and a provider with no agent compose overlay |
+| [`pi`](../../src/reasoning/agent-runtime/pi/) | every optional file: `setup.sh`, a provider compose overlay, `config/` |
+| [`opencode`](../../src/reasoning/agent-runtime/opencode/) | the minimum: one Dockerfile and the serve overlay |
 
 ## Step 1 -- Create the directory
 
 ```sh
-mkdir -p src/reasoning/providers/<n>
+mkdir -p src/reasoning/agent-runtime/<n>
 ```
 
-Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-base`, `<n>-agent-<project>`) via [`src/build/image.sh`](../../src/build/image.sh).
+Short lowercase with hyphens. The name becomes the image and container prefix (`<n>-agent-<project>`, and `<n>-base` for a source-built agent-runtime) via [`src/build/image.sh`](../../src/build/image.sh).
 
-## Step 2 -- Write `base.dockerfile`
+## Step 2 -- Decide where the agent-runtime installs
 
-The agent install and nothing else. The runtimes come from the shared base [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) (image `agent-base`), which owns Node, Python, uv, the shared CLI tools, and the repo lint gates. [`tests/test_shared_base_contract.sh`](../../tests/test_shared_base_contract.sh) fails the build if a provider base installs a runtime or a linter.
+The agent-runtime install's mechanism decides the tier, and the tier decides whether you write a base Dockerfile.
+
+- **A registry package.** Write no base. The agent-runtime belongs in the shared tier [`src/reasoning/runtimes.dockerfile`](../../src/reasoning/runtimes.dockerfile) (image `agent-runtimes`), beside the other agent-runtimes, so it installs once and every provider inherits it. Your `provider.dockerfile` sets `ARG BASE_IMAGE=agent-runtimes`.
+- **A source build.** Write `base.dockerfile`: the agent-runtime install and nothing else, with `ARG BASE_IMAGE=agent-base`. The language runtimes come from the shared base [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) (image `agent-base`), which owns Node, Python, uv, the shared CLI tools, and the repo lint gates. [`tests/test_shared_base_contract.sh`](../../tests/test_shared_base_contract.sh) fails the build if a base installs a language runtime or a linter. Your `provider.dockerfile` sets `ARG BASE_IMAGE=<n>-base`.
 
 ```dockerfile
 ARG BASE_IMAGE=agent-base
@@ -28,11 +30,24 @@ FROM ${BASE_IMAGE}
 RUN ...
 ```
 
-Ends as root. User creation and runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the runtime keeps the full set while the build tools stay in the builder.
+A base ends as root. User creation and agent-runtime configuration belong in `provider.dockerfile`. A multi-stage build starts the final stage from `agent-base` too, so the agent-runtime keeps the full language set while the build tools stay in the builder.
+
+## Step 2a -- Pin the inputs your install adds
+
+A new install is a new build input, and every input carries a pin at the strictest form its class supports. The Dockerfile carries the request; [`src/build/pins.json`](../../src/build/pins.json) carries what it resolved to; [`scripts/check_pins.sh`](../../scripts/check_pins.sh) fails when the two disagree, so a pin is not complete until both halves are written.
+
+| The install adds | The form |
+|---|---|
+| a registry package | a directory under [`src/reasoning/registry/`](../../src/reasoning/registry/) holding `package.json` and its `package-lock.json`, copied into the tier and installed with `npm ci` |
+| an archive or a binary fetched by URL | the release tag in an `ARG`, and the publisher's checksum verified in the same `RUN` |
+| an apt package | the exact version, with the resolved `.deb` SHA256 recorded in the pins file |
+| a source build of a tool | the commit SHA, never a branch |
+
+The manifest's `build` layer declares a build-only input's source, because the context gate owns every included path and an input no image copies belongs to no `image` row. Then `bash scripts/check_pins.sh --report` prints the input beside the artifact recorded for it, and `--remote --write` records a moved one.
 
 ## Step 3 -- Write `provider.dockerfile`
 
-Shared libs, user creation, runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
+Shared libs, user creation, agent-runtime config, workspace directories, healthcheck, entrypoint. Copy the shape from [`pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) or [`opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile).
 
 Two things are not yours to write:
 
@@ -48,7 +63,7 @@ ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]
 CMD ["<agent-command>"]
 ```
 
-`command:` in a compose overlay replaces the invocation, which is how serve mode and the dry-run probe select what runs. See [`../reference/tool_interface.md`](../reference/tool_interface.md#provider-interface) and the comment in [`opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile).
+`command:` in a compose overlay replaces the invocation, which is how serve mode and the dry-run probe select what runs. See [`../reference/tool_interface.md`](../reference/tool_interface.md#provider-interface) and the comment in [`opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile).
 
 ## Step 4 -- Write `docker-compose.serve.yml`
 
@@ -60,23 +75,23 @@ services:
     command: ["<agent-command>", "<serve-args...>"]
 ```
 
-Reference: [`pi/docker-compose.serve.yml`](../../src/reasoning/providers/pi/docker-compose.serve.yml).
+Reference: [`pi/docker-compose.serve.yml`](../../src/reasoning/agent-runtime/pi/docker-compose.serve.yml).
 
 ## Step 5 (optional) -- Environment variables
 
-Compose passes only what a compose file declares, so a variable the agent needs must appear in a compose `environment:` block. For values that apply in every mode, write `docker-compose.<n>.yml`; [`scripts/run_agent.sh`](../../scripts/run_agent.sh) merges it before the mode overlay. Reference: [`pi/docker-compose.pi.yml`](../../src/reasoning/providers/pi/docker-compose.pi.yml).
+Compose passes only what a compose file declares, so a variable the agent needs must appear in a compose `environment:` block. For values that apply in every mode, write `docker-compose.<n>.yml`; [`scripts/run_agent.sh`](../../scripts/run_agent.sh) merges it before the mode overlay. Reference: [`pi/docker-compose.pi.yml`](../../src/reasoning/agent-runtime/pi/docker-compose.pi.yml).
 
 ## Step 6 (optional) -- `config/`
 
 Files seeded into `AGENT_HOME` at container start, never overwriting what is already there. Name the environment stub `env.stub`; [`scripts/onboard.sh`](../../scripts/onboard.sh) renames it to `.env` on the host, which keeps a real `.env` out of the repository.
 
 ```text
-src/reasoning/providers/<n>/config/
+src/reasoning/agent-runtime/<n>/config/
 ├── AGENTS.md    ← provider-layer agent context, seeded as AGENT_HOME/AGENTS.md
 └── env.stub     ← seeded as AGENT_HOME/.env
 ```
 
-Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/providers/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/providers/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the hermes and opencode images are shaped that way.
+Copy the directory into the image and let the entrypoint do the seeding. The provider-layer `AGENTS.md` starts from [`AGENTS.template.md`](../../src/reasoning/agent-runtime/AGENTS.template.md) and covers only the container-local environment; the two-layer model is in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model). Reference: [`pi/config/`](../../src/reasoning/agent-runtime/pi/config/). A provider that ships no config directory is supported too: it starts on its own defaults, and the opencode image is shaped that way.
 
 ## Step 7 (optional) -- `setup.sh`
 
@@ -99,4 +114,4 @@ Providers hold no registry. The agent chooses a provider by name at run time, an
 | [`../reference/tool_interface.md`](../reference/tool_interface.md) | the provider interface contract |
 | [`../reference/execution_model.md`](../reference/execution_model.md) | how the harness calls provider scripts |
 | [`../reference/agent_workflow.md`](../reference/agent_workflow.md) | two-layer agent context model |
-| [`scripts/build.sh`](../../scripts/build.sh) | the three-tier build a provider base sits in |
+| [`scripts/build.sh`](../../scripts/build.sh) | the tiered build a provider sits in |

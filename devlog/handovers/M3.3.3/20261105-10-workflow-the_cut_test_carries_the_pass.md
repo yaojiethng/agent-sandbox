@@ -56,5 +56,5 @@ None.
 
 | File | Action |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md) | two table rows, `**What stays.**`, `**After a removal pass.**`, and `**The test.**` carrying both prongs |
+| [`src/reasoning/providers/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md) | two table rows, `**What stays.**`, `**After a removal pass.**`, and `**The test.**` carrying both prongs |
 | `/home/agentuser/.pi/agent/skills/communication-principle-cut-what-serves-nothing/SKILL.md` | the installed copy, edited to the seed's text; it delivers nothing |

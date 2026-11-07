@@ -41,7 +41,7 @@
       "id": "repo:provider",
       "namespace": "repo",
       "layer": "provider",
-      "path": "src/reasoning/providers/pi/config/agent/skills",
+      "path": "src/reasoning/agent-runtime/pi/config/agent/skills",
       "sha256": "repo-provider-root",
       "skills": []
     },

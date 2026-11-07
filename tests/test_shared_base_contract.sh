@@ -19,7 +19,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 SHARED_BASE="$REPO_ROOT/src/reasoning/base.dockerfile"
-PROVIDER_DIR="$REPO_ROOT/src/reasoning/providers"
+PROVIDER_DIR="$REPO_ROOT/src/reasoning/agent-runtime"
 
 # Every Dockerfile under the reasoning layer. The scan is deliberately not the
 # provider bases alone: the dispatch CLI may be installed in any tier, and a
@@ -76,7 +76,7 @@ _dockerfile_shell_commands() {
 # npm install, npm i, pnpm add, yarn add and bun add. The command separators are
 # resolved first (see _dockerfile_shell_commands), so a flag on one command
 # never binds to a package installed by another.
-_opencode_ai_install_commands() {
+_package_install_commands() {
   _dockerfile_shell_commands "$1" | awk -F'\t' '
     {
       n = split($2, t, /[[:space:]]+/)
@@ -90,36 +90,15 @@ _opencode_ai_install_commands() {
   '
 }
 
-# Print one token per opencode-ai install: "opencode-ai@<spec>" when a version
-# is given, bare "opencode-ai" when it is not. Only an install command is read,
-# so a prose mention (such as opencode/provider.dockerfile's own header) is not
-# a match.
-_opencode_ai_installs() {
-  _opencode_ai_install_commands "$1" | awk -F'\t' '
+# Print one token per pi-coding-agent install: only an install command is read,
+# so a prose mention (such as a provider's own header) is not a match.
+_pi_coding_agent_installs() {
+  _package_install_commands "$1" | awk -F'\t' '
     {
       n = split($2, t, /[[:space:]]+/)
       for (i = 1; i <= n; i++) {
-        if (t[i] == "opencode-ai") print "opencode-ai"
-        else if (t[i] ~ /^opencode-ai@/) print t[i]
+        if (t[i] ~ /pi-coding-agent/) print t[i]
       }
-    }
-  '
-}
-
-# Print the line number of every install command that names opencode-ai and
-# also carries --ignore-scripts. Such an install skips the postinstall that
-# writes the platform binary the bin entry points at, so the CLI lands on PATH
-# with nothing to run.
-_opencode_ai_installs_skipping_postinstall() {
-  _opencode_ai_install_commands "$1" | awk -F'\t' '
-    {
-      n = split($2, t, /[[:space:]]+/)
-      has_pkg = 0; has_flag = 0
-      for (i = 1; i <= n; i++) {
-        if (t[i] == "opencode-ai" || t[i] ~ /^opencode-ai@/) has_pkg = 1
-        if (t[i] == "--ignore-scripts") has_flag = 1
-      }
-      if (has_pkg && has_flag) print $1
     }
   '
 }
@@ -147,21 +126,23 @@ test_shared_base_installs_the_full_runtime_set() {
   local content; content="$(cat "$SHARED_BASE")"
   local missing=""
   grep -q "^FROM node:" <<< "$content" || missing="$missing node"
-  grep -q "astral.sh/uv/install.sh" <<< "$content" || missing="$missing uv"
+  grep -q "^ARG UV_VERSION=" <<< "$content" || missing="$missing uv"
+  grep -q "^ARG UV_SHA256=" <<< "$content" || missing="$missing uv-checksum"
   grep -q "uv python install 3.11" <<< "$content" || missing="$missing python"
   grep -q "hadolint" <<< "$content" || missing="$missing hadolint"
-  grep -q "markdownlint-cli2" <<< "$content" || missing="$missing markdownlint-cli2"
+  grep -q "registry/markdownlint-cli2/" <<< "$content" || missing="$missing markdownlint-cli2"
   assert_eq "$missing" "" "shared base installs every runtime and lint gate"
 }
 
-# Every provider base inherits the shared base by its canonical default. A
-# provider that pins a different default builds a different image than the one
+# Every tier-2 image inherits the shared base by its canonical default: the shared
+# agent-runtime tier, and any provider base that a source-built runtime adds. A
+# tier-2 image that pins a different default builds a different image than the one
 # the build orchestrator passes in, and the two drift silently.
-# Given: each providers/<n>/base.dockerfile
+# Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
 # When:  the file's BASE_IMAGE default is read
 # Then:  it equals agent-base
-# Asserts: the provider bases inherit the shared base
-test_provider_bases_inherit_the_shared_base() {
+# Asserts: the tier-2 images inherit the shared base
+test_tier2_images_inherit_the_shared_base() {
   local out=""
   local df
   for df in "$PROVIDER_DIR"/*/base.dockerfile; do
@@ -169,110 +150,114 @@ test_provider_bases_inherit_the_shared_base() {
     grep -q "^ARG BASE_IMAGE=agent-base$" "$df" \
       || out="$out $(basename "$(dirname "$df")")"
   done
-  assert_eq "$out" "" "every provider base defaults BASE_IMAGE to agent-base"
+  grep -q "^ARG BASE_IMAGE=agent-base$" "$REPO_ROOT/src/reasoning/runtimes.dockerfile" \
+    || out="$out agent-runtimes"
+  assert_eq "$out" "" "every tier-2 image defaults BASE_IMAGE to agent-base"
 }
 
-# The single rule the consolidation exists to hold: a provider base adds the
-# agent and nothing else. A runtime or linter install reappearing here is the
-# regression this file exists to catch.
-# Given: each providers/<n>/base.dockerfile
-# When:  the file is grepped for runtime and linter installs
+# The single rule the consolidation exists to hold: a tier-2 image adds its
+# agent-runtime install and nothing else. A language runtime or linter install
+# reappearing here is the regression this file exists to catch.
+# Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
+# When:  the file is grepped for language runtime and linter installs
 # Then:  no match
-# Asserts: the shared base is the only owner of the runtime set
-test_provider_bases_install_no_runtime_or_linter() {
+# Asserts: the shared base is the only owner of the language runtime set
+test_tier2_images_install_no_runtime_or_linter() {
   local out=""
   local df
   for df in "$PROVIDER_DIR"/*/base.dockerfile; do
     [[ -e "$df" ]] || continue
     local hits
     hits="$(grep -nE 'nodesource|astral\.sh/uv|install python3|hadolint|markdownlint-cli2' "$df" || true)"
-    [[ -z "$hits" ]] || out="$out $(basename "$(dirname "$df")"):$(wc -l <<< "$hits")"
+    [[ -z "$hits" ]] || out="$out $(basename "$(dirname "$df")")"
   done
-  assert_eq "$out" "" "no provider base installs a runtime or a linter"
+  local runtime_hits
+  runtime_hits="$(grep -nE 'nodesource|astral\.sh/uv|install python3|hadolint|markdownlint-cli2' "$REPO_ROOT/src/reasoning/runtimes.dockerfile" || true)"
+  [[ -z "$runtime_hits" ]] || out="$out agent-runtimes"
+  assert_eq "$out" "" "no tier-2 image installs a language runtime or a linter"
 }
 
-# The dispatch CLI has one pin, wherever it is installed. A Dockerfile that
-# installs opencode-ai without an exact version makes the image build
-# unreproducible: the package resolves to whatever latest is at build time.
-# Given: every Dockerfile under src/reasoning
-# When:  each install of opencode-ai is read
-# Then:  every install names an exact version
-# Asserts: no unpinned opencode-ai install
-test_opencode_ai_installs_are_pinned() {
-  local df token version offenders=""
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    while IFS= read -r token; do
-      [[ -n "$token" ]] || continue
-      version="${token#*@}"
-      if [[ "$token" == "opencode-ai" ]] || [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        offenders="$offenders ${df#$REPO_ROOT/}:$token"
-      fi
-    done < <(_opencode_ai_installs "$df")
-  done < <(_reasoning_dockerfiles)
-
-  assert_empty "$offenders" "every opencode-ai install pins an exact version"
+# The dispatch CLI has one pin, and its home is the committed lockfile. A
+# dependency range in the registry directory would resolve to whatever the
+# registry serves at build time, so every dependency there names an exact
+# version and the lockfile pins what that version resolved to.
+# Given: every registry directory's package.json
+# When:  each dependency spec is read
+# Then:  every spec is an exact version
+# Asserts: no unpinned registry dependency
+test_registry_dependencies_are_exact() {
+  local offenders=""
+  local manifest
+  for manifest in "$REPO_ROOT"/src/reasoning/registry/*/package.json; do
+    [[ -e "$manifest" ]] || continue
+    local out
+    out="$(node -e '
+      const pkg = require(process.argv[1]);
+      const bad = Object.entries(pkg.dependencies || {})
+        .filter(([, spec]) => !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(spec))
+        .map(([name, spec]) => name + "@" + spec);
+      if (bad.length) console.log(bad.join(" "));
+    ' "$manifest")"
+    [[ -z "$out" ]] || offenders="$offenders $manifest:$out"
+  done
+  assert_empty "$offenders" "every registry dependency names an exact version"
 }
 
-# opencode-ai's bin is inert until its postinstall writes the platform binary.
-# An opencode-ai install that carries --ignore-scripts skips that step, so the
-# CLI lands on PATH with nothing to run. The flag is inert for the
-# pi-coding-agent install, whose package declares no postinstall; an
-# opencode-ai install must not carry it.
-# Given: every Dockerfile under src/reasoning
-# When:  each install of opencode-ai is read for --ignore-scripts
-# Then:  no install that names opencode-ai carries the flag
-# Asserts: every opencode-ai install can produce a working binary
-test_opencode_ai_installs_produce_a_working_binary() {
-  local df lineno offenders=""
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    while IFS= read -r lineno; do
-      [[ -n "$lineno" ]] || continue
-      offenders="$offenders ${df#$REPO_ROOT/}:$lineno"
-    done < <(_opencode_ai_installs_skipping_postinstall "$df")
-  done < <(_reasoning_dockerfiles)
+# opencode ships one binary per platform and per C library, and its package
+# names all of them as optional dependencies. An npm install of that package
+# therefore lands four linux-x64 variants -- 730MB for one executable -- so the
+# tier pins the single tarball instead and no npm install may name it again.
+# Given: the shared agent-runtime tier
+# When:  its install steps are read
+# Then:  no package-manager install names opencode-ai, and the opencode step
+#        fetches a versioned tarball, verifies its checksum and links one binary
+# Asserts: the tier installs one verified executable rather than a platform matrix
+test_opencode_is_one_verified_binary() {
+  local offenders installs
+  installs="$(_package_install_commands "$REPO_ROOT/src/reasoning/runtimes.dockerfile")"
+  offenders="$(printf '%s\n' "$installs" | grep -c 'opencode-ai' || true)"
+  assert_eq "$offenders" "0" "no npm install names opencode-ai"
 
-  assert_empty "$offenders" "every opencode-ai install runs the postinstall that writes its binary"
+  local run
+  run="$(grep -A8 '^RUN curl -fsSL -o /tmp/opencode.tgz' "$REPO_ROOT/src/reasoning/runtimes.dockerfile" || true)"
+  assert_contains "$run" 'opencode-linux-x64-$' "the fetch names the platform package"
+  assert_contains "$run" 'sha256sum -c -' "the tarball is verified before it is unpacked"
+  assert_contains "$run" 'install -D -m 0755' "one binary is installed"
+  assert_contains "$run" 'ln -s /opt/opencode/opencode /usr/local/bin/opencode' "the binary is on PATH"
+  assert_contains "$run" 'rm -rf /tmp/package /tmp/opencode.tgz' "the download leaves the layer"
 }
 
-# One dispatch CLI version across every image that installs it; two pins
-# disagree and the two images run different CLIs. The test compares the pin
-# values, not the count of installing Dockerfiles: the install's home among the
-# tiers is undecided, so one file or several is not a failure.
-# Given: every Dockerfile under src/reasoning
-# When:  each exact opencode-ai pin is collected
-# Then:  at most one distinct version appears
-# Asserts: all opencode-ai pins agree
-test_opencode_ai_pins_agree() {
-  local df token version
-  local -a pins=()
-  while IFS= read -r df; do
-    [[ -e "$df" ]] || continue
-    while IFS= read -r token; do
-      [[ "$token" == opencode-ai@* ]] || continue
-      version="${token#*@}"
-      [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
-      pins+=("$version")
-    done < <(_opencode_ai_installs "$df")
-  done < <(_reasoning_dockerfiles)
-
-  local -A distinct=()
-  local pin
-  for pin in "${pins[@]}"; do distinct[$pin]=1; done
-  if (( ${#distinct[@]} <= 1 )); then
-    pass "all opencode-ai pins agree (${#distinct[@]} distinct version(s))"
-  else
-    fail "opencode-ai pins disagree: ${!distinct[*]}"
-  fi
+# The shape's core rule: every agent-runtime package installs in exactly one
+# place, and that place is its own registry directory. A second home is a
+# finding, whatever tier it sits in, because a second lockfile is a second
+# resolution of the same tree.
+# Given: every registry directory
+# When:  the agent-runtime package each one declares is read
+# Then:  each has one home, and that home is its own directory
+# Asserts: each agent-runtime package installs exactly once
+test_each_agent_runtime_package_has_one_home() {
+  local homes="" dir pkg
+  local -a hits
+  for dir in "$REPO_ROOT"/src/reasoning/registry/*/; do
+    [[ -d "$dir" ]] || continue
+    pkg="$(basename "$dir")"
+    mapfile -t hits < <(grep -rl --include=package.json -e '"@earendil-works/pi-coding-agent"' "$REPO_ROOT/src/reasoning/registry/" 2>/dev/null | grep "/$pkg/")
+    case "$pkg" in
+      pi)
+        (( ${#hits[@]} == 1 )) || homes="$homes $pkg:${#hits[@]}" ;;
+      *)
+        (( ${#hits[@]} == 0 )) || homes="$homes $pkg:${#hits[@]}" ;;
+    esac
+  done
+  assert_empty "$homes" "each agent-runtime package has one registry home"
 }
 
 run_test test_shared_base_exists_and_node_dockerfile_is_gone
 run_test test_shared_base_installs_the_full_runtime_set
-run_test test_provider_bases_inherit_the_shared_base
-run_test test_provider_bases_install_no_runtime_or_linter
-run_test test_opencode_ai_installs_are_pinned
-run_test test_opencode_ai_pins_agree
-run_test test_opencode_ai_installs_produce_a_working_binary
+run_test test_tier2_images_inherit_the_shared_base
+run_test test_tier2_images_install_no_runtime_or_linter
+run_test test_registry_dependencies_are_exact
+run_test test_opencode_is_one_verified_binary
+run_test test_each_agent_runtime_package_has_one_home
 
 test_done

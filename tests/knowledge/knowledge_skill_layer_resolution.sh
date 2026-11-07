@@ -5,7 +5,7 @@
 #
 # The four layers, highest precedence first, are:
 #   project       .agents/skills
-#   provider      src/reasoning/providers/pi/config/agent/skills
+#   provider      src/reasoning/agent-runtime/pi/config/agent/skills
 #   agent-sandbox src/reasoning/agent/skills
 #   workflow      workflow/coding-agent/skills
 #

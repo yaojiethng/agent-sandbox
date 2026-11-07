@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# tests/test_build_probe.sh  --  the host build probe's verdict logic and its
-# restore guarantee.
+# tests/test_build_probe.sh  --  the host build recorder's parsing and schema.
 #
-# The probe runs on the host, where no test here can reach it. What is covered
-# is the part that decides the verdict and the part that edits the tree: the
-# builder's progress-line parsing, the tier mapping, the JSON emitter, and the
-# backup/restore pair that guarantees a perturbed Dockerfile is put back.
+# The recorder runs on the host, where no test here can reach it. What is
+# covered is the part that reads the builder's log and the part that emits the
+# report: the per-tier state and seconds, the tier mapping, the JSON escaping,
+# and the report object the operator reads back.
 #
-# The probe's own host run is the integration test, and it is the one thing the
-# agent's container cannot perform.
+# The recorder's own host run is the integration test, and it is the one thing
+# the agent's container cannot perform.
 #
 # Run:
 #   bash tests/test_build_probe.sh
 
+# shellcheck disable=SC2034  # the report globals are read by emit_report in scripts/build_probe.sh
 set -uo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
@@ -23,96 +23,94 @@ source "$REPO_ROOT/scripts/build_probe.sh"
 
 # The names the probe derives inside main; a sourcing test sets them here.
 SHARED_BASE="agent-base"
-AGENT_BASE="pi-base"
+AGENT_BASE="agent-runtimes"
 AGENT_IMAGE="pi-agent-probe"
 
 write_log() {
   cat > "$FIXTURE_DIR/build.log"
 }
 
-# Given: a build log carrying both a build line and a skip line per image
-# When:  each reader reads it
-# Then:  each takes only its own line, so a rebuilt set cannot be read as a skip
-test_progress_lines_split_into_built_and_skipped() {
+# Given: one tier that ran a step and one whose every step was a cache hit
+# When:  the per-tier records are read
+# Then:  each tier is reported once, in log order, with its own state and seconds
+# Asserts: a cache hit on every step reads as cached, and the DONE lines of the
+#          internal load and the closing export step decide no state but do
+#          count toward the tier's seconds
+test_tier_records_reads_each_tier_on_its_own_steps() {
   write_log <<'EOF'
 Building image: agent-base
-  Build complete: agent-base
-Building image: pi-base
-  Build complete: pi-base
+#1 [internal] load build definition from base.dockerfile
+#1 DONE 0.0s
+#3 [1/2] FROM docker.io/library/node:22
+#3 CACHED
+#4 [2/2] RUN apt-get update
+#4 DONE 3.2s
+#5 exporting to image
+#5 DONE 0.2s
+Building image: agent-runtimes
+#1 [internal] load build definition from runtimes.dockerfile
+#1 DONE 0.0s
+#3 [1/2] FROM agent-base
+#3 CACHED
+#4 [2/2] RUN npm install -g pi
+#4 CACHED
+#5 exporting to image
+#5 DONE 0.0s
+EOF
+  assert_eq "$(tier_records "$FIXTURE_DIR/build.log" | paste -sd, -)" \
+    "agent-base|ran|3.4,agent-runtimes|cached|0.0" \
+    "each tier carries its own state and its own summed step seconds"
+}
+
+# Given: a log whose every tier printed only CACHED step lines
+# When:  each tier's state is read
+# Then:  every tier is cached, which is not the same as reporting none
+# Asserts: a fully cached build is observed rather than read as an absent tier
+test_a_fully_cached_build_reports_every_tier_cached() {
+  write_log <<'EOF'
+Building image: agent-base
+#3 [1/2] FROM docker.io/library/node:22
+#3 CACHED
+#4 [2/2] RUN apt-get update
+#4 CACHED
+Building image: agent-runtimes
+#3 [1/2] FROM agent-base
+#3 CACHED
+#4 [2/2] RUN npm install -g pi
+#4 CACHED
 Building image: pi-agent-probe
-Image up to date, skipping: agent-base
-Image up to date, skipping: pi-base
+#3 [1/1] COPY config /opt
+#3 CACHED
 EOF
-  assert_eq "$(log_rebuilt "$FIXTURE_DIR/build.log" | paste -sd, -)" \
-    "agent-base,pi-base,pi-agent-probe" "log_rebuilt takes the build lines"
-  assert_eq "$(log_skipped "$FIXTURE_DIR/build.log" | paste -sd, -)" \
-    "agent-base,pi-base" "log_skipped takes the skip lines"
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" agent-base)" "cached" \
+    "the shared base of a fully cached build is cached"
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" agent-runtimes)" "cached" \
+    "the runtime tier of a fully cached build is cached"
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" pi-agent-probe)" "cached" \
+    "the provider image of a fully cached build is cached"
 }
 
-# Given: plain-progress output with a step done line and unrelated lines
-# When:  the steps are read
-# Then:  only the DONE lines come back, and their durations are summable
-test_log_steps_reads_progress_plain_done_lines() {
+# Given: a log that carries no segment for a tier
+# When:  that tier's state is read
+# Then:  it is unobserved, not cached and not ran
+test_a_tier_with_no_segment_is_unobserved() {
   write_log <<'EOF'
-#1 [internal] load build definition from Dockerfile
-#5 DONE 1.2s
-#7 DONE 0.0s
-Step 3/4 : RUN true
-#9 DONE 4.1s
-EOF
-  assert_eq "$(log_steps "$FIXTURE_DIR/build.log" | paste -sd, -)" \
-    "#5 DONE 1.2s,#7 DONE 0.0s,#9 DONE 4.1s" "log_steps takes the DONE lines and nothing else"
-  assert_eq "$(log_steps "$FIXTURE_DIR/build.log" | awk '{s += $NF + 0} END {printf "%.1f", s}')" \
-    "5.3" "the step durations sum"
-}
-
-# Given: a log that rebuilt a tier twice and an image outside the three tiers
-# When:  the rebuilt tiers are read
-# Then:  the three tiers come back sorted and unique, and nothing else does
-test_tiers_rebuilt_keeps_the_three_tiers_sorted_and_unique() {
-  write_log <<'EOF'
-Building image: pi-agent-probe
 Building image: agent-base
-Building image: sandbox-myproject
-Building image: pi-base
-Building image: agent-base
+#4 [1/1] RUN true
+#4 DONE 1.0s
 EOF
-  assert_eq "$(tiers_rebuilt "$FIXTURE_DIR/build.log" | paste -sd, -)" \
-    "agent-base,pi-agent-probe,pi-base" \
-    "tiers_rebuilt keeps the three tiers, sorted, and drops the image outside them"
-}
-
-# Given: a log whose images are the three tiers in a scrambled order
-# When:  the observed set is built the way the probe builds it
-# Then:  the letters are comma separated, not spliced into one number
-# Asserts: the reported set is '1,2,3' rather than '132'
-test_the_observed_set_is_comma_separated_letters() {
-  write_log <<'EOF'
-Building image: pi-agent-probe
-Building image: agent-base
-Building image: pi-base
-EOF
-  assert_eq "$(tiers_of_log "$FIXTURE_DIR/build.log")" "1,2,3" \
-    "the observed set is three comma-separated tier letters"
-}
-
-# Given: a log that rebuilt nothing in the three tiers
-# When:  the observed set is built
-# Then:  it is empty, which is what an unasserted row records
-test_the_observed_set_is_empty_when_nothing_rebuilt() {
-  write_log <<'EOF'
-Building image: sandbox-myproject
-EOF
-  assert_eq "$(tiers_of_log "$FIXTURE_DIR/build.log")" "" \
-    "a log with no tier rebuild gives an empty observed set"
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" pi-agent-probe)" "unobserved" \
+    "a tier with no segment is unobserved"
+  assert_eq "$(tier_step_seconds "$FIXTURE_DIR/build.log" pi-agent-probe)" "0.0" \
+    "an unobserved tier has no step seconds"
 }
 
 # Given: the three tier image names, and one from another layer
 # When:  each is mapped to its tier
-# Then:  the tier letters are the ones the expected sets are written in
+# Then:  the tier letters are the ones the report writes
 test_tier_of_maps_each_image_to_its_tier() {
   assert_eq "$(tier_of "$SHARED_BASE")" "1" "the shared base is tier 1"
-  assert_eq "$(tier_of "$AGENT_BASE")" "2" "the provider base is tier 2"
+  assert_eq "$(tier_of "$AGENT_BASE")" "2" "the runtime tier is tier 2"
   assert_eq "$(tier_of "$AGENT_IMAGE")" "3" "the provider image is tier 3"
   assert_eq "$(tier_of "sandbox-myproject")" "?" "an image outside the three tiers has no tier"
 }
@@ -128,15 +126,6 @@ test_json_string_escapes_the_metacharacters() {
   assert_eq "$(json_string $'a\tb')" '"a\tb"' "a tab becomes an escape"
 }
 
-# Given: no item, one item, and two
-# When:  the array is emitted
-# Then:  an empty set is an empty array, not an array holding an empty string
-test_json_array_is_empty_without_items() {
-  assert_eq "$(json_array)" "[]" "no items gives an empty array"
-  assert_eq "$(json_array one)" '["one"]' "one item gives one literal"
-  assert_eq "$(json_array one two)" '["one", "two"]' "two items give two literals"
-}
-
 # Given: one item and two
 # When:  they are joined
 # Then:  the separator sits between items only, so no object ends on a comma
@@ -145,69 +134,149 @@ test_join_commas_leaves_no_trailing_separator() {
   assert_eq "$(join_commas a b)" "a, b" "two items join once"
 }
 
-# Given: a file the probe has backed up and perturbed
-# When:  the restore runs
-# Then:  the original bytes are back and no restore is left pending
-test_perturb_restore_puts_the_file_back() {
-  local target="$FIXTURE_DIR/Dockerfile"
-  # Read by the sourced probe's perturb_backup.
-  # shellcheck disable=SC2034
-  PROBE_RUN_DIR="$FIXTURE_DIR"
-  printf 'FROM scratch\n' > "$target"
-  perturb_backup "$target"
-  printf '# build_probe perturbation\n' >> "$target"
-  assert_ne "$(cat "$target")" "FROM scratch" "the perturbation changed the file"
-  assert_not_empty "$PERTURBED_FILE" "the backup left a restore pending"
-  perturb_restore
-  assert_eq "$(cat "$target")" "FROM scratch" "the restore returned the original content"
-  assert_empty "$PERTURBED_FILE" "the restore cleared the pending file"
+# Given: a tier's values
+# When:  its JSON object is emitted
+# Then:  it carries the name, the tier, the image id, the size, the cache state
+#        and the step seconds
+test_tier_json_carries_the_six_fields() {
+  assert_eq "$(tier_json agent-base 1 'sha256:abc' 123 cached 0.0)" \
+    '{"name": "agent-base", "tier": 1, "id": "sha256:abc", "size_bytes": 123, "cache_state": "cached", "step_seconds": 0.0}' \
+    "the tier object carries every field the page names"
 }
 
-# Given: the perturbation matrix
-# When:  each row is read
-# Then:  every asserted row carries the rebuild set its verdict compares against,
-#        and the baseline row is the one that records rather than asserts
-test_the_matrix_asserts_every_row_except_the_baseline() {
-  assert_eq "${#ROWS[@]}" "5" "the matrix has five rows"
-  local row name kind trigger expect
-  for row in "${ROWS[@]}"; do
-    IFS='|' read -r name _ kind trigger expect <<<"$row"
-    assert_not_empty "$name" "row names itself"
-    assert_not_empty "$kind" "row names its perturbation"
-    assert_not_empty "$trigger" "row describes its trigger"
-    case "$name" in
-      baseline) assert_empty "$expect" "the baseline row records rather than asserts" ;;
-      *) assert_not_empty "$expect" "the $name row carries an expected rebuild set" ;;
-    esac
-  done
+# Given: the report globals and one tier object
+# When:  the report is emitted
+# Then:  it parses as JSON and carries the four questions' signals
+test_emit_report_carries_the_run_signals() {
+  REPO_ROOT="$FIXTURE_DIR"
+  PROBE_STAMP="20261107T000000Z"
+  PROBE_LABEL="baseline"
+  PROBE_PROVIDER="pi"
+  PROBE_PROJECT="probe"
+  REBUILD=false
+  PROBE_RUN_STATUS=0
+  PROBE_WALL_SECONDS=42
+  PROBE_ERROR=""
+  PROBE_LOG="$FIXTURE_DIR/build.log"
+  PROBE_REPO_DIRTY=false
+  git_head() { printf '%s\n' "test-head"; }
+  host_uname() { printf '%s\n' "Linux test"; }
+  docker_version() { printf '%s\n' "Docker test"; }
+  reasoning_dockerfiles() { printf '%s\n' "$FIXTURE_DIR/probe.sh"; }
+  printf '#!/usr/bin/env bash\n' > "$FIXTURE_DIR/probe.sh"
+
+  emit_report "$FIXTURE_DIR/report.json" "$(tier_json agent-base 1 'sha256:abc' 123 cached 0.0)"
+
+  node -e '
+    const fs = require("fs");
+    const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const fail = (m) => { throw new Error(m); };
+    if (r.probe !== "build_probe") fail("probe");
+    if (r.format !== 2) fail("format");
+    if (r.repo.head !== "test-head" || r.repo.dirty !== false) fail("repo");
+    if (r.run.exit_status !== 0 || r.run.wall_seconds !== 42) fail("run");
+    if (!Array.isArray(r.dockerfiles) || r.dockerfiles.length !== 1) fail("dockerfiles");
+    if (!Array.isArray(r.tiers) || r.tiers.length !== 1) fail("tiers");
+    const t = r.tiers[0];
+    if (t.name !== "agent-base" || t.tier !== 1 || t.size_bytes !== 123 ||
+        t.cache_state !== "cached" || t.step_seconds !== 0) fail("tier");
+  ' "$FIXTURE_DIR/report.json"
+  assert_eq "$?" "0" "the report parses and carries the run's signals"
 }
 
-# The matrix's order is load-bearing: the baseline normalizes the cache, and the
-# restore row depends on the content row having perturbed it.
-# Given: the matrix
-# When:  the row names are read in order
-# Then:  the perturbing rows come after the baseline and before the restore
-test_the_matrix_order_puts_restore_after_the_perturbation() {
-  local row name order=""
-  for row in "${ROWS[@]}"; do
-    IFS='|' read -r name _ <<<"$row"
-    order+="$name "
-  done
-  assert_eq "$order" "baseline mtime content restore no-cache " \
-    "the matrix normalizes, perturbs, restores and then rebuilds cold"
+# Given: a real cached build's log, where the FROM resolve prints DONE because
+#        the base image is already local and only the RUN steps print CACHED
+# When:  the tier's state is read
+# Then:  it is cached, because no step that changes the filesystem ran
+# Asserts: the FROM step's DONE does not read as a rebuild
+test_a_cached_build_with_a_from_done_reads_as_cached() {
+  write_log <<'EOF'
+Building image: agent-base
+#1 [internal] load build definition from base.dockerfile
+#1 transferring dockerfile: 1.96kB done
+#1 DONE 0.0s
+#2 [internal] load metadata for docker.io/library/node:22
+#2 DONE 1.6s
+#4 [1/6] FROM docker.io/library/node:22@sha256:e21f
+#4 resolve docker.io/library/node:22@sha256:e21f 0.0s done
+#4 DONE 0.0s
+#5 [2/6] RUN apt-get update
+#5 CACHED
+#6 [3/6] RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+#6 CACHED
+#10 exporting to image
+#10 DONE 0.1s
+EOF
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" agent-base)" "cached" \
+    "a cached build whose FROM step prints DONE reads as cached"
 }
 
-run_test test_progress_lines_split_into_built_and_skipped
-run_test test_log_steps_reads_progress_plain_done_lines
-run_test test_tiers_rebuilt_keeps_the_three_tiers_sorted_and_unique
-run_test test_the_observed_set_is_comma_separated_letters
-run_test test_the_observed_set_is_empty_when_nothing_rebuilt
+# Given: the same shape with one filesystem step that ran
+# When:  the tier's state is read
+# Then:  it is ran, so the FROM step's DONE is not what decides it either way
+# Asserts: the positive check's pair, so the rule is not "always cached"
+test_one_ran_step_reads_as_ran() {
+  write_log <<'EOF'
+Building image: agent-base
+#4 [1/6] FROM docker.io/library/node:22@sha256:e21f
+#4 DONE 0.0s
+#5 [2/6] RUN apt-get update
+#5 CACHED
+#6 [3/6] RUN rm -rf /var/lib/apt/lists/*
+#6 DONE 2.4s
+EOF
+  assert_eq "$(tier_cache_state "$FIXTURE_DIR/build.log" agent-base)" "ran" \
+    "one filesystem step that ran reads as ran"
+}
+
+run_test test_tier_records_reads_each_tier_on_its_own_steps
+run_test test_a_cached_build_with_a_from_done_reads_as_cached
+run_test test_one_ran_step_reads_as_ran
+run_test test_a_fully_cached_build_reports_every_tier_cached
+run_test test_a_tier_with_no_segment_is_unobserved
 run_test test_tier_of_maps_each_image_to_its_tier
 run_test test_json_string_escapes_the_metacharacters
-run_test test_json_array_is_empty_without_items
 run_test test_join_commas_leaves_no_trailing_separator
-run_test test_perturb_restore_puts_the_file_back
-run_test test_the_matrix_asserts_every_row_except_the_baseline
-run_test test_the_matrix_order_puts_restore_after_the_perturbation
+run_test test_tier_json_carries_the_six_fields
+# Given: the probe as a program, with docker stubbed
+# When:  it is invoked the way the operator invokes it
+# Then:  it reaches the build, writes one report and prints its verdict
+# Asserts: the program's wiring, which is where a name the functions never
+#          define shows up -- the unit tests call the functions directly
+test_probe_runs_end_to_end_and_writes_a_report() {
+  local dir="$FIXTURE_DIR/e2e"
+  mkdir -p "$dir"
+  local rc=0
+  (
+    export PATH="$REPO_ROOT/tests/stubs:$PATH"
+    export DOCKER_TRACE_LOG="$dir/trace.log"
+    bash "$REPO_ROOT/scripts/build_probe.sh" --label=e2e --input-dir="$dir"
+  ) > "$dir/out.txt" 2>&1 || rc=$?
+
+  assert_rc 0 "$rc" "the probe runs end to end"
+  assert_contains "$(cat "$dir/out.txt")" "VERDICT: recorded" "the probe prints its verdict"
+
+  local report
+  report="$(find "$dir/build" -name '*.json' -type f 2>/dev/null | head -1)"
+  if [[ -z "$report" ]]; then
+    fail "the probe wrote no report"
+    return
+  fi
+  pass "the probe wrote one report"
+
+  node -e '
+    const fs = require("fs");
+    const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const fail = (m) => { console.error(m); process.exit(1); };
+    if (r.format !== 2) fail("format");
+    if (r.label !== "e2e") fail("label");
+    if (r.run.exit_status !== 0) fail("exit_status");
+    if (r.run.no_cache !== false) fail("no_cache");
+    if (!Array.isArray(r.tiers) || r.tiers.length !== 3) fail("tiers");
+  ' "$report" && pass "the report carries the run's signals" || fail "the report is missing a signal"
+}
+
+run_test test_emit_report_carries_the_run_signals
+run_test test_probe_runs_end_to_end_and_writes_a_report
 
 test_done

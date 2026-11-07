@@ -36,7 +36,7 @@ Agents are oriented at iteration start through two sources of context, injected 
 
 ### Provider layer
 
-Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/agent/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
+Each provider supplies an `AGENTS.md` at `src/reasoning/agent-runtime/<n>/config/agent/AGENTS.md`. This file is seeded into `AGENT_HOME` at container start by `provider-entrypoint.sh`. It orients the agent to its immediate environment: that it is running inside a sandbox container, what input and output channels are available, and what provider-specific tools or commands apply.
 
 Provider-layer content is narrow and environment-specific. It does not carry project workflow, iteration conventions, or collaboration principles.
 
@@ -67,11 +67,11 @@ Skills and prompt templates share four layers, highest precedence first. Where e
 <!-- BEGIN GENERATED: surface-table -->
 | Source | Destination | Provider |
 |---|---|---|
-| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | hermes, opencode, pi |
-| `src/reasoning/providers/pi/preflight.sh` | `/opt/sandbox/bin/provider-preflight.sh` | pi |
-| `docs/reference/` | `/opt/sandbox/docs/reference/` | hermes, opencode, pi |
-| `src/libs/` | `/opt/sandbox/lib/` | hermes, opencode, pi |
-| `src/reasoning/providers/pi/config/` | `/opt/workflow/agent/config/` | pi |
+| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | opencode, pi |
+| `src/reasoning/agent-runtime/pi/preflight.sh` | `/opt/sandbox/bin/provider-preflight.sh` | pi |
+| `docs/reference/` | `/opt/sandbox/docs/reference/` | opencode, pi |
+| `src/libs/` | `/opt/sandbox/lib/` | opencode, pi |
+| `src/reasoning/agent-runtime/pi/config/` | `/opt/workflow/agent/config/` | pi |
 | `workflow/coding-agent/prompts/` | `/opt/workflow/agent/modules/coding-agent/prompts/` | pi |
 | `workflow/coding-agent/skills/` | `/opt/workflow/agent/modules/coding-agent/skills/` | pi |
 | `src/reasoning/agent/prompts/` | `/opt/workflow/agent/prompts/` | pi |
@@ -81,7 +81,7 @@ Skills and prompt templates share four layers, highest precedence first. Where e
 | Layer | Source | Loaded via | Update mechanism |
 |---|---|---|---|
 | **Project layer** | `.agents/skills/` and `.agents/prompts/` | Pi's project discovery: `.agents/skills` is auto-discovered, and `.agents/prompts` is named in the settings `prompts` key | Edit the project tree |
-| **Provider layer** | `src/reasoning/providers/<n>/config/agent/skills&#124;prompts/` | Seeded from the config template at every start, and bind-mounted for prompts and skills | `onboard.sh --refresh`, or edit `$SANDBOX_DIR/.<provider>/` |
+| **Provider layer** | `src/reasoning/agent-runtime/<n>/config/agent/skills&#124;prompts/` | Seeded from the config template at every start, and bind-mounted for prompts and skills | `onboard.sh --refresh`, or edit `$SANDBOX_DIR/.<provider>/` |
 | **Agent-sandbox layer** | `src/reasoning/agent/skills&#124;prompts/` | The first `settings.json` `packages` entry | Image rebuild (`make build`) |
 | **Workflow module layer** | `workflow/<module>/skills&#124;prompts/` | The module's `packages` entry | Image rebuild (`make build`) |
 

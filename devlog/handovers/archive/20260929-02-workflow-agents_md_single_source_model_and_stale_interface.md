@@ -35,7 +35,7 @@ None.
 | File | Why in scope |
 |---|---|
 | [`AGENTS.md`](../../AGENTS.md) | project-level file: remove the stale Claude-chat `/mnt/user-data` paragraph; host the relocated model recommendation |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | in-repo source of the provider-layer file: drop the hardcoded model pair and the example dispatch command; fix the warning rule |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | in-repo source of the provider-layer file: drop the hardcoded model pair and the example dispatch command; fix the warning rule |
 | `~/.pi/agent/AGENTS.md` | installed provider-layer file (outside the sandbox): same three corrections, if the operator approves editing it |
 
 ## Decisions

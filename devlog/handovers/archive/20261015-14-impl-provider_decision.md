@@ -50,6 +50,6 @@ None.
 | File | Change |
 |---|---|
 | [`docs/adr/opencode_dispatch_backend.md`](../../../docs/adr/opencode_dispatch_backend.md) | new: the provider decision |
-| [`src/reasoning/providers/pi/base.dockerfile`](../../../src/reasoning/providers/pi/base.dockerfile) | installs `opencode-ai@1.19.1` |
+| [`src/reasoning/providers/pi/base.dockerfile`](../../../src/reasoning/agent-runtime/pi/base.dockerfile) | installs `opencode-ai@1.19.1` |
 | [`src/libs/dispatch.sh`](../../../src/libs/dispatch.sh) | the binary resolves from `PATH` before the agent-home fallback |
 | [`devlog/roadmap.md`](../../roadmap.md) | the provider-decision row is complete |

@@ -214,6 +214,8 @@ The full-suite run reported `test_prune.sh: test_unknown_args_rejected` failed. 
 
 Raised by the agent during handover `20261014-03`.
 
+**Recurrence, 2026-11-07.** The same file flaked again under the parallel run: `test_prune.sh: test_dry_run_preview_names_rule2_orphans_of_removed_records` failed, and the file then passed 22 of 22 alone and the next full run was green at 1496 of 1496. A different unit in the same file each time, which is the same shape as the 2026-10-14 entry: the fixture is shared across the file's units, so a unit that reads another's leftover state fails only under scheduling. No cause is claimed beyond that.
+
 **Recurrence, 2026-10-19** (handover `20261019-12`, a documentation iteration whose change set touched no test): the full run failed `test_git_hook.sh: test_entrypoint_copy_keeps_matching_identity`. The file passed 16 of 16 in isolation, and the next full run passed 1232 of 1232. The same shape as the first entry, a second file, and still no cause.
 
 **Recurrence, 2026-10-24** (handover `20261024-12`, the dispatch refactor): the full run failed `test_interactive_session_select.sh: test_select_session_patch_count_shown`, which passed 37 of 37 in isolation. A third file, the same shape, and still no cause.
@@ -235,6 +237,8 @@ mitigation: when a full-suite run reports only tests/test_runner_contract.sh as 
 **Recurrence, 2026-10-05.** Two consecutive full-suite runs each reported exactly one failure, and each named a different file: `tests/test_start_agent.sh` (`test_wizard_picker_abort`) in the first, `tests/test_resume.sh` (`test_interactive_shows_current_branch_hint`) in the second. Both files pass alone, 32 of 32 in the first case, and a third full run was green. The moving name is the diagnostic: a defect does not migrate between files, and a load-dependent one does. Both files drive an interactive picker, so the shared exposure is a wait on a prompt under parallel scheduling rather than a deadline the file declares.
 
 **Recurrence, 2026-10-14.** One full-suite run reported two deadline expiries at once, `tests/test_dry_run_probe.sh` and `tests/test_lint_umbrella.sh`; both passed standalone and the next full run was green at 1126 of 1126. `test_lint_umbrella.sh` runs the real gate in-test and measured 6 to 10 seconds across the session, so its declared 10s budget sits on the expiry. Two expiries in one run is the load signal, and it repeats the 2026-09-25 entry's finding: the per-file deadline is a shared budget sized near the honest runtime, so the container's parallel load decides which files cross it.
+
+**Recurrence, 2026-11-07.** Four expiries in one run: `test_dispatch.sh` at 40s, `test_doc_wrap_legacy_gate.sh` at 45s, `test_dry_run_probe.sh` and `test_skill_map.sh` at 10s each, reported as 1385 of 1389 passed. All four passed alone (22s, 4s, 4s and 30s), and the next full run was green at 1480 of 1480 in 124s, so the count of expiries and not their names is the load signal here: `test_doc_wrap_legacy_gate.sh` now scans the tree in 22s against a 45s budget, and `test_dispatch.sh` takes 30s against 40s, so both sit near their expiry and a loaded host pushes them over.
 
 ---
 
@@ -470,9 +474,10 @@ has uncommitted changes in that file. To re-assert a lost executable bit regardl
 ### [A] 2026-08-18  --  Multi-question turns and implicit acceptance during a grill-me design walk
 
 ```text
-state: open
+state: probation
 scoped: M3 T7 -- functional-stack navigation for questioning (design proposal)
-legacy: none
+legacy: the four rules below landed in the `grill-me` skill at `0e33700c`,
+which now states them; this entry carries their history and no longer routes
 mitigation: during the M2.6.6 design walk the agent posed two questions in one
 turn (A+B, then D8+N1), skipped N2a to the next question without an explicit
 approval, and treated operator probes as implicit approval of a pending
@@ -491,8 +496,9 @@ operator had to choose between answering (growing the list) and not answering
 (risking implicit approval). The rule the skill needs: the next question waits
 until every open question so far is explicitly resolved -- answered, withdrawn,
 or explicitly parked by the operator; parked items are re-asked in full later,
-never silently approved. Both apply to the grill-me skill file; the skill
-lives outside the repo tree, so the routing is the record.
+never silently approved. Both apply to the grill-me skill file; that skill is
+now in the tree at `src/reasoning/agent/skills/grill-me/SKILL.md`, and carries
+the four rules in its `## Interview` section.
 ```
 
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently

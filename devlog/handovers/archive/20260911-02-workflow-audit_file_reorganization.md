@@ -43,7 +43,7 @@ None.
 |---|---|
 | [`src/reasoning/agent/prompts/gm.md`](src/reasoning/agent/prompts/gm.md) | Moved to `workflow/coding-agent/` |
 | [`src/reasoning/agent/drafts/*.skill.md`](src/reasoning/agent/drafts) | Seven audit-family skills moved to `workflow/coding-agent/audits/` |
-| [`src/reasoning/providers/*/provider.dockerfile`](src/reasoning/providers) | Deployment wiring: COPY gm.md from its new repo path |
+| [`src/reasoning/providers/*/provider.dockerfile`](src/reasoning/agent-runtime) | Deployment wiring: COPY gm.md from its new repo path |
 | [`src/libs/container_sig.sh`](src/libs/container_sig.sh) | Sig source list gains the new gm.md path |
 | [`tests/test_container_sig.sh`](tests/test_container_sig.sh) | Fixture gains the new sig-source file |
 | [`docs/development/bash-coding-conventions.md`](docs/development/bash-coding-conventions.md), [`docs/development/conventions.md`](docs/development/conventions.md), [`docs/operations/handover_policy.md`](docs/operations/handover_policy.md), [`docs/operations/iteration_policy.md`](docs/operations/iteration_policy.md), [`docs/development/project_index.md`](docs/development/project_index.md) | Path references updated to the new homes |

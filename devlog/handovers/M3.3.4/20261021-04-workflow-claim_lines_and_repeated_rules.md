@@ -62,7 +62,7 @@ None.
 | [`scripts/check_skill_shape.sh`](../../scripts/check_skill_shape.sh) | passes its arguments to the scanner, so `--map` reaches it, and the header documents it |
 | [`tests/test_skill_shape.sh`](../../tests/test_skill_shape.sh) | three branches: a declared claim with its map row, a missing claim, and a claim the table lacks |
 | Twenty-two principle skills | each declares its claim under `metadata`, so the corpus reads by family |
-| [`communication-principle-link-what-the-reader-can-open`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-link-what-the-reader-can-open/SKILL.md) | the pattern table states the class of pointer, and the convention holds this repository's members |
+| [`communication-principle-link-what-the-reader-can-open`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-link-what-the-reader-can-open/SKILL.md) | the pattern table states the class of pointer, and the convention holds this repository's members |
 | [`.agents/skills/linking/SKILL.md`](../../.agents/skills/linking/SKILL.md) | the transient-evidence bullet keeps the members and cites the principle's class instead of repeating its reason |
 | [`.agents/skills/numbering/SKILL.md`](../../.agents/skills/numbering/SKILL.md) | the chat section and the insertion section each name the principle for its reason |
 | [`scripts/lint/norm-ownership.tsv`](../../scripts/lint/norm-ownership.tsv) | regenerated for the new convention lines, classified as rules observed by the shape gate. The grouping map regroups to the same rows, so it carries no diff |

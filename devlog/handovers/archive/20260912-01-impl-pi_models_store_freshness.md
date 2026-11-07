@@ -52,10 +52,10 @@ Pi caches model catalogs in three layers: a compiled-in static catalogue (pi-ai 
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/preflight.sh`](src/reasoning/providers/pi/preflight.sh) | New `_reset_models_store_freshness()`: zeroes `checkedAt` on every entry of `$AGENT_HOME/agent/models-store.json` via node; keeps `etag`/`lastModified`/`models`; silent no-op when the file is absent; WARN (file untouched) on invalid JSON. Wired into the Run section. |
+| [`src/reasoning/providers/pi/preflight.sh`](src/reasoning/agent-runtime/pi/preflight.sh) | New `_reset_models_store_freshness()`: zeroes `checkedAt` on every entry of `$AGENT_HOME/agent/models-store.json` via node; keeps `etag`/`lastModified`/`models`; silent no-op when the file is absent; WARN (file untouched) on invalid JSON. Wired into the Run section. |
 | [`tests/test_providers_pi_preflight.sh`](tests/test_providers_pi_preflight.sh) | 4 new tests: zeroes `checkedAt` on all entries; preserves etag/lastModified/models; no-op when store absent; warns on invalid JSON. File total 18 passed. |
-| [`src/reasoning/providers/pi/base.dockerfile`](src/reasoning/providers/pi/base.dockerfile) | pi pin `0.84.1` -> `0.85.1` (pi-bump). |
-| [`src/reasoning/providers/pi/config/agent/settings.json`](src/reasoning/providers/pi/config/agent/settings.json) | `lastChangelogVersion` -> `0.85.1` (pi-bump). |
+| [`src/reasoning/providers/pi/base.dockerfile`](src/reasoning/agent-runtime/pi/base.dockerfile) | pi pin `0.84.1` -> `0.85.1` (pi-bump). |
+| [`src/reasoning/providers/pi/config/agent/settings.json`](src/reasoning/agent-runtime/pi/config/agent/settings.json) | `lastChangelogVersion` -> `0.85.1` (pi-bump). |
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | M7 Dependency Security pinned-version note -> `0.85.1` (pi-bump). |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | Freshness-reset item recorded and closed. |
 

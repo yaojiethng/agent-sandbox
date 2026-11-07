@@ -16,4 +16,30 @@ Take each part from the session when the session already holds it: the goal and 
 
 ## Interview
 
-Read the `grilling` skill's `SKILL.md` in full and follow it. Test every branch against the problem summary: a branch that does not serve the stated problem is resolved or dropped before the plan widens.
+Interview the user relentlessly until you reach a shared understanding. Map the design as a **design tree**: every decision branches into the decisions that hang off it.
+
+Ask the questions one at a time. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask now without guessing at answers you have not heard. Put one frontier question, then wait. A question whose answer depends on one still open belongs to a later turn, not this one.
+
+The next question waits until every question already put is explicitly resolved: answered, withdrawn, or parked by the user. A side-question is parked in the open list rather than asked now, and is put in full once the question it interrupted is settled. Put a parked question in full rather than naming its number, and write down a correction to an earlier answer before putting anything new.
+
+A question the user probes is not a question the user has approved. Answer the probe, then put the pending question again, naming what the probe settled and what stays open.
+
+Test every branch against the problem summary: a branch that does not serve the stated problem is resolved or dropped before the plan widens.
+
+Format the question like so:
+
+```text
+**Q1** - **<question title>**: <question body, might be multiple paragraphs>
+
+Options:
+- **<option>**: <benefit>; <tradeoff>
+- **<option>**: <benefit>; <tradeoff>
+
+-> **Recommendation:** <the option you recommend, and why>
+```
+
+Offer the options that differ in kind, each with its benefit and its tradeoff, then recommend one. Do not present a recommendation without the alternatives it beat.
+
+Finding _facts_ is your job, never the user's. When the question needs a fact from the environment (filesystem, tools, etc.), explore the codebase, or use the `dispatch` skill to send a read-only child after a search large enough to run beside the interview; do not ask the user for anything you could look up yourself. Do not block the whole interview on it: only a question downstream of that fact waits for the child to report.
+
+The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.

@@ -2,7 +2,7 @@
 # tests/test_model_refresh.sh
 # TEST_DEADLINE: 600
 # The Node/TypeScript suite of the model-refresh pi-extension
-# (src/reasoning/providers/pi/config/agent/extensions/model-refresh): the
+# (src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh): the
 # catalog union and its source model, the store gate, the fetch paths, the
 # thinking-level map and the built request payload, the invariant report, and
 # the mutation gate that replays a catalog of deliberate breaks. The extension

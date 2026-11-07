@@ -1,4 +1,4 @@
-import { THINKING_LEVELS } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
+import { THINKING_LEVELS } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/thinking.ts";
 
 /** One named case of one invariant. */
 export interface InvariantCase {
@@ -29,7 +29,7 @@ const SOURCE_CONTRIBUTION: Record<(typeof UNION_SOURCES)[number], string> = {
 };
 
 /** The record that states the invariants this report indexes. */
-const RECORD = "src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md";
+const RECORD = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md";
 
 /** The catalog: one case per invariant, plus the derived per-source and per-level cases. */
 export function buildCatalog(): InvariantCase[] {

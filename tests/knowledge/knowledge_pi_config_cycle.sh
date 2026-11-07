@@ -5,7 +5,7 @@ TEST_KNOWLEDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$TEST_KNOWLEDGE_DIR/../libs/test_common.sh"
 
 REPO_ROOT="$(cd "$TEST_KNOWLEDGE_DIR/../.." && pwd)"
-SETTINGS="$REPO_ROOT/src/reasoning/providers/pi/config/agent/settings.json"
+SETTINGS="$REPO_ROOT/src/reasoning/agent-runtime/pi/config/agent/settings.json"
 
 test_shipped_settings_names_harness_roots() {
   echo ""

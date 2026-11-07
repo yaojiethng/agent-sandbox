@@ -36,7 +36,7 @@ The provider overlay mounts the persistent subdirectories, and Docker places tho
 
 `agent-sandbox onboard` seeds the host side -- the directories the overlays mount, plus a provider's `.env` -- so the overlay has a source on the first run. It writes no config file: the image owns those, and the entrypoint copies them in at every start. The declaration is `src/build/container-interface.json`'s `provision` row, and `scripts/check_container_layout.sh` holds the entrypoint to it. See [Onboarding](#onboarding).
 
-When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The hermes and opencode images are in that state.
+When the image carries no config template, provisioning is a no-op and `AGENT_HOME` starts empty apart from what the mounts carry. The opencode image is in that state.
 
 ## Phase 2 -- Work
 
@@ -62,7 +62,7 @@ The consequence is visible in what a session can lose. A session that edits `set
 
 ## Onboarding
 
-`src/reasoning/providers/<n>/config/` is a template directory committed to the repo. It carries the provider's default config stubs -- not secrets, and not a complete configuration.
+`src/reasoning/agent-runtime/<n>/config/` is a template directory committed to the repo. It carries the provider's default config stubs -- not secrets, and not a complete configuration.
 
 Two consumers read it. The image bakes it -- a `COPY` line in the provider's `provider.dockerfile` sends it to `/opt/workflow/agent/config/`, and `src/build/container-interface.json` declares that pair with a `provision` row -- and `provider-entrypoint.sh` seeds `AGENT_HOME` from the baked copy at every start. `agent-sandbox onboard` seeds the same tree into `$SANDBOX_DIR/.<provider>/` on the host, renames `env.stub` to `.env` there, and pre-creates the subdirectories the provider overlay mounts.
 
@@ -74,7 +74,7 @@ The provider config reaches a session from two sources:
 
 ```text
    Image template      ──COPY──> /opt/workflow/agent/config/ ──seed──> AGENT_HOME
-   (src/reasoning/providers/<n>/config/)                                        │
+   (src/reasoning/agent-runtime/<n>/config/)                                        │
                                                                   ├──> the agent reads it
                                                                   │
    Host state          ──bind mount──> AGENT_HOME/agent/{prompts,sessions,skills}
@@ -95,8 +95,8 @@ The provider config reaches a session from two sources:
 | Issue | Mechanism | Impact |
 |---|---|---|
 | **Session-local config edits** | config files are seeded at every start and not mounted | a `settings.json` or `AGENTS.md` edit made in one session does not reach the next |
-| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; hermes and opencode are shaped this way by decision, and pi carries a template |
-| **Onboard template is a snapshot** | `src/reasoning/providers/<n>/config/agent/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
+| **Empty `AGENT_HOME` with no baked template** | the image carries no `config/` directory, so provisioning is a no-op | the provider starts on its own defaults; opencode is shaped this way by decision, and pi carries a template |
+| **Onboard template is a snapshot** | `src/reasoning/agent-runtime/<n>/config/agent/settings.json` is committed at a point in time; pi versions evolve independently | default values drift between the template and the runtime pi version |
 | **Recommendations file absent** | a tree without `.agents/model-recommendations.md` has no table, and there is no second copy to read | a dispatch reports the path it looked for, and `setup-model-recommendations` writes the file |
 
 ### How the four-layer skills/prompts model interacts with this split

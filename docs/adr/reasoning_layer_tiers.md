@@ -1,17 +1,80 @@
 # Reasoning Layer Tiers
 
-**Current:** 2026-10-16
+**Current:** 2026-11-07
 
 ## Requirements
 
 | # | Requirement | Meaning |
 |---|---|---|
-| R1 | A tier's contents are decided by kind, not by provider | the runtime, the shared dispatch tools, the provider's own agent, and the common payload are four different things |
-| R2 | A dispatch tool installs exactly once | a tool the harness invokes is not a provider's agent, so it does not belong in a provider's base |
-| R3 | The common payload is declared exactly once | one Dockerfile defines it, and each provider pulls it with one line |
+| R1 | A tier's contents are decided by kind, not by provider | the language runtime set, a registry-package agent-runtime and a source-built agent-runtime are different kinds, and each has its own tier (2026-10-17) |
+| R2 | An agent-runtime installs exactly once | each agent-runtime has one Dockerfile home, and a second home is a finding (2026-10-17) |
+| R3 | The common payload is declared exactly once | the manifest declares every COPY pair, and the layout gate holds the Dockerfiles equal to it in both directions (2026-10-17) |
 | R4 | Docker's layer cache is the only reuse rule | nothing decides reuse before the daemon is called |
-| R5 | A provider base installs only its own differential | another provider's tool in a provider base is a finding, not a choice |
-| R6 | The tier list is the same for every provider | a provider differs by payload and environment, not by shape |
+| R5 | A provider base installs only its own differential | a provider base carries only its own install, and no provider base ships (2026-10-17, revised 2026-11-07) |
+| R6 | The tier list is the same for every provider that shares an install mechanism | pi and opencode share one list of tiers because both install from a registry; a provider whose install is a source build adds one base (2026-10-17, revised 2026-11-07) |
+
+## 2026-11-07 -- The hermes provider is removed, and the reasoning layer is three tiers
+
+**Decision:** The `hermes` provider is gone, with its directory, its two Dockerfiles, its two compose overlays and its quickstart. Every remaining provider builds the same three tiers: `agent-base`, `agent-runtimes` and `<provider>-agent-<project>`. `hermes-base` is not a tier, and `<provider>-base` stays in `build_agent` as the extension point a source-built provider would occupy.
+
+**Rationale:** The provider was unused, and its build path had drifted: a clone at an upstream default branch, an apt set of its own, a Python venv and `ffmpeg`, kept for a workflow no session ran. A build path nobody runs is maintenance paid on every input sweep and every gate over the Dockerfiles, and it was the only thing making the tier list depend on which provider was being built. Removing it leaves the shape pi and opencode already shared, so the tier list is a property of the layer rather than of the provider.
+
+**Rejected alternatives:**
+
+- *Keep hermes as a dormant provider* -- execution: it is the tree's only source-build example, and an example nothing runs is maintained against an upstream that moves; the knowledge-store work is where a source-built runtime gains a consumer.
+- *Fold hermes into the shared tier* -- intent: it removes the fourth tier without deleting the provider. Execution: the 2026-10-17 objection stands, and it now buys nothing, because the provider is going.
+- *Delete the `<provider>-base` branch with the provider* -- intent: no shipped provider reaches it, so it reads as dead code. Execution: the W re-integration row needs it, so deleting it would have to be undone; the branch keeps its test on a fixture provider instead of a shipped one.
+
+**Edge cases / drivers:** The provider directory is deleted whole. The three image rows that listed `hermes` among their `providers` now list two, and the three `hermes` env rows are gone. Re-integration is filed as a W task rather than carried as a dormant provider. Historical records keep the old shape: the entries below, the handovers, the discussions and the 2026-10-16 studies state what was true when written.
+
+## 2026-11-07 -- The provider directory is `agent-runtime`
+
+**Decision:** `src/reasoning/providers/` is `src/reasoning/agent-runtime/`. The directory holds the agent-runtimes (pi, opencode, hermes); `provider` is reserved for the model-id namespace, so the path no longer carries it. The provider ids, the image names and the tier shape are unchanged.
+
+**Rationale:** The directory holds agent-runtimes, not providers. A provider id names a model-id namespace, and the runtimes are the executables the harness serves. The move is structural, and every live reference moved with it.
+
+**Rejected alternatives:**
+
+- *Keep `src/reasoning/providers/`* -- intent: it is the path the build has always used, so a move costs a sweep for no behaviour. Execution: the name states a subject the directory does not hold, and the reserved term already exists.
+
+**Edge cases / drivers:** Historical records keep the old path: the entries below, the archived handovers, the discussions and the changelog state what was true when written, and their links point at the current directory. The directory is a live path, so the live documents and the open roadmap rows carry the new one.
+
+## 2026-11-07 -- The shared tier is `agent-runtimes`
+
+**Decision:** The shared tier is named `agent-runtimes`, its Dockerfile is `src/reasoning/runtimes.dockerfile`, and the image-name function is `runtimes_base_image_name`. The tier holds the two registry-package agent-runtimes, `@earendil-works/pi-coding-agent` and `opencode-ai`, each installed once. `harness` is reserved for the whole setup: the skills and prompts, the agent-runtime, the images and the execution environment.
+
+**The OpenCode install is superseded by 2026-11-07** in [`build_input_pinning.md`](build_input_pinning.md): the tier holds one registry package and one pinned release binary.
+
+**Rationale:** The tier's name used `harness` for the parts while the word now names the whole, and the tier installs two runtimes, so the plural names what it holds. The prior entry's decision is unchanged: four tiers, hermes keeps its base, no payload image. The image is internal, so no compatibility surface moves. The directory `src/reasoning/providers/` to `src/reasoning/agent-runtime/` is a separate row.
+
+**Rejected alternatives:**
+
+- *Keep `agent-harnesses`* -- intent: it names the parts with the word the operator now reserves for the whole, so a reader cannot tell which subject a sentence holds.
+- *`agent-runtime` singular* -- execution: the tier holds two runtimes, and the singular names one.
+- *`provider-base`* -- intent: it collides with the surviving per-provider base, `<provider>-base`, and names the wrong axis.
+
+**Edge cases / drivers:** Historical records keep the old name: the 2026-10-17 entry below, the archived handovers and the changelog state what was true when written. The directory rename `src/reasoning/providers/` to `src/reasoning/agent-runtime/` is filed as its own M3.6.4 row because it is a 121-reference move and a separate outcome.
+
+## 2026-10-17 -- One shared harness tier, hermes keeps its base, no payload image
+
+**Decision:** The reasoning layer is four tiers, and the install's mechanism decides which tier a harness joins.
+
+| Tier | Image | Contents |
+|---|---|---|
+| 1 | `agent-base` | the runtime set: Node, Python from uv, the shared CLI tools, the lint gates |
+| 2 | `agent-harnesses` | the two registry-package harnesses, `@earendil-works/pi-coding-agent` and `opencode-ai`, each installed once |
+| 3 | `hermes-base` | the hermes install only: a source build with a compiler, a cloned tree and its own language environment, inheriting `agent-base` |
+| 4 | `<provider>-agent-<project>` | the provider's config, environment, entrypoint and its own COPY lines; pi and opencode inherit `agent-harnesses`, hermes inherits `hermes-base` |
+
+**Rationale:** The five-tier shape had two defects. `agent-tools` named the tools an agent wields, not the harnesses the tier installs, and `opencode-ai` had two homes: the shared dispatch row for pi and the opencode provider's own base. One shared tier holding both registry-package harnesses fixes the name and the double home together, because the pi and opencode bases carried nothing but their harness install, so deleting those two bases and inheriting `agent-harnesses` directly loses nothing. Hermes keeps its base because its install is a source build, not a registry package: a compiler, a cloned tree and its own language environment have no place in a shared registry tier, and folding them in would put the tree's only unpinned build on every provider's path. `agent-payload` is dropped because an image is a carrier, not a declaration: `src/build/container-interface.json` already declares every COPY pair, and `scripts/check_container_layout.sh` holds the Dockerfiles equal to it in both directions. This entry promotes R1, R2, R3, R5 and R6.
+
+**Rejected alternatives:**
+
+- *Keep five tiers* -- intent: it keeps the misnamed `agent-tools`, the `opencode-ai` double home across the shared row and the opencode base, and the `agent-payload` image that declares nothing.
+- *Fold hermes into the shared tier* -- intent: it puts the tree's only unpinned build on every provider's path, gates pi and opencode on a hermes failure, and adds a compiler, a Python venv and `ffmpeg` to images that do not run that workflow.
+- *Keep the `agent-payload` image* -- neither: it removes no declaration and leaves the layout gate necessary, at the cost of a tag and a build-order coupling.
+
+**Edge cases / drivers:** The payload's declaration moved from a Dockerfile to the manifest. Each provider image still carries its own COPY lines, and the layout gate holds them equal to the manifest in both directions. The dispatch CLI's home moves with this entry: `opencode-ai` is now an `agent-harnesses` install, so the [`opencode_runtime_dispatch.md`](opencode_runtime_dispatch.md) statement that the CLI ships in the pi image is superseded, and both the pi and opencode images carry the CLI. The decisions that OpenCode stays a base-level provider, that the CLI is a dispatch dependency rather than a replacement runtime, and that there is no attribution spoofing are unchanged.
 
 ## 2026-10-16 -- Five tiers, one dispatch-tool home and one payload declaration
 
@@ -41,6 +104,8 @@ The measured cost does not argue for a different shape. A base rebuild costs 2 t
 - *Give the payload its own tier in the provider chain* -- a Dockerfile has one `FROM`, so a chain link would mean inheriting the payload image and re-deriving the provider base, which is the same work in a worse order.
 
 **Edge cases / drivers:** The payload changes with every commit, so it must not sit in a cached base tier: a commit would then invalidate a base for every provider, which is the propagation the tiers exist to avoid. Docker's layer cache handles it correctly at tier 4 and 5, where a changed `COPY` rebuilds and an unchanged one is a hit. The ordering constraint is real: `agent-payload` builds before any provider image, and `build.sh` owns it. This ADR moves the dispatch-CLI home that [`opencode_runtime_dispatch.md`](opencode_runtime_dispatch.md) states: the pi image's `opencode-ai` install becomes an `agent-tools` install, and the decision that the CLI is a dispatch tool rather than a replacement runtime is unchanged.
+
+**Reason superseded by 2026-10-17:** The five-tier shape misnames `agent-tools` and keeps the `opencode-ai` double home across the shared row and the opencode base. The `agent-tools` and `agent-payload` rows are superseded, and the `<provider>-base` row is narrowed to hermes alone; `agent-base`, the layer-cache rule and the `<provider>-agent-<project>` specialization layer stand.
 
 ## 2026-10-16 -- Docker's layer cache is the only reuse rule
 

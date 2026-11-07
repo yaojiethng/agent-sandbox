@@ -18,8 +18,8 @@ import {
 	offSendsAnEffort,
 	thinkingLevelMapFromEfforts,
 	THINKING_LEVELS,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
-import { metadataEntry, sourceEntry } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/thinking.ts";
+import { metadataEntry, sourceEntry } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts";
 import { TEST_DECL, V1_BASE as V1 } from "./fixtures.ts";
 
 describe("thinkingLevelMapFromEfforts", () => {

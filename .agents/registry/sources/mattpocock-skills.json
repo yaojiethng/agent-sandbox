@@ -28,26 +28,11 @@
       "origin": "62f43a18177be6ec82da242e59ffbc490a4c22ea",
       "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
       "record": {
-        "name": "`grill-me` stays. The name is the operator's phrase for the act, and the skill is still the user-invoked entry.",
-        "kept": "The user-invoked entry, the `disable-model-invocation` flag, and the instruction to invoke `grilling` for the interview.",
-        "rewritten": "The invocation names the `grilling` skill's `SKILL.md` rather than the upstream provider's Skill tool. The body carries this repository's problem-summary contract before the invocation.",
-        "added": "The three-part problem summary and the rule that every branch is tested against it. The summary was first added at commit `405cd770` and moved here when the upstream split the interview into `grilling`.",
-        "dropped": "Nothing. The upstream body is the invocation, and this repository's summary sits before it."
-      }
-    },
-    {
-      "local_path": "src/reasoning/agent/skills/grilling",
-      "kind": "skill",
-      "parent": null,
-      "upstream_path": "skills/productivity/grilling",
-      "origin": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
-      "base": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa",
-      "record": {
-        "name": "`grilling` stays. It is the upstream name for the interview method.",
-        "kept": "The design tree, the rounds, the frontier, the recommended answer for each question, and the fact-finding rule.",
-        "rewritten": "The round glyphs are ASCII (`**Q1**` and `->`), and the sub-agent call goes through the `dispatch` skill instead of the upstream provider's sub-agent spawn.",
-        "added": "Nothing.",
-        "dropped": "The `agents/openai.yaml` provider metadata."
+        "name": "`grill-me` stays. The name is the operator's phrase for the act, and the skill is the user-invoked entry that carries the method.",
+        "kept": "The user-invoked entry, the `disable-model-invocation` flag, the three-part problem summary, the one-question-at-a-time rule, the recommended answer for each question, and the fact-finding rule. From upstream `grilling` at `a496f55`: the design tree, the frontier, and the dependency ordering that sends a dependent question to a later turn.",
+        "rewritten": "Upstream's round batches the whole frontier and formats each question with a single `->` recommendation, worded so that `yes` accepts it. The interview keeps the frontier and works it one question per turn, and each question states its options with their tradeoffs before the recommendation.",
+        "added": "The three-part problem summary and the rule that every branch is tested against it, first added at commit `405cd770`; the explicit options-and-tradeoffs form, because the pre-bump wording asked only for a recommended answer and left the alternatives to emerge.",
+        "dropped": "The `grilling` skill as a separate entry: its method is folded back into this skill, so the operator-facing contract sits in the file the operator invokes. Also dropped: the batched round, the `yes`-accepts-the-recommendation wording, and the `agents/openai.yaml` provider metadata."
       }
     },
     {

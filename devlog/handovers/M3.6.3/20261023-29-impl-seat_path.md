@@ -66,5 +66,5 @@ None.
 | [`tests/test_dispatch.sh`](../../tests/test_dispatch.sh) | four seat cases: the rotation, the drop, the retry and the refusals |
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | `## Seats`, and the two halves named in `## The Launch Sites` |
 | [`docs/adr/pi_subagent_dispatch.md`](../../docs/adr/pi_subagent_dispatch.md) | the door's two faces over one library |
-| [`src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md) | the seat form, and what it refuses |
+| [`src/reasoning/providers/pi/config/agent/skills/dispatch/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/dispatch/SKILL.md) | the seat form, and what it refuses |
 | [`devlog/roadmap.md`](../roadmap.md) | the M3.2.2 row records the seat path built; a row for the codemode face |

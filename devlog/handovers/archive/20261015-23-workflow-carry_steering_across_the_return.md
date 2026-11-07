@@ -58,8 +58,8 @@ None.
 |---|---|
 | [`scripts/steer.mjs`](../../scripts/steer.mjs) | new: note, merge, wake, zoom, forget, diff, mark; the OptMem shape without the tree |
 | [`tests/test_steer.sh`](../../tests/test_steer.sh) | new: 10 cases |
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | the tool's commands, the two grains, the write-back |
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | report the view, expand a range with `zoom` |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | the tool's commands, the two grains, the write-back |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | report the view, expand a range with `zoom` |
 | [`.agents/drafts/steering-memory-design-prompt.md`](../../../.agents/drafts/steering-memory-design-prompt.md) | the OptMem mechanisms named, the tool as the stopgap's implementation, the URL inside the prompt |
 | `<scratch>/STEERING_LOG.jsonl` and the tracker's `## Steering` | the live steering, six directives |
 | `$AGENT_HOME/agent/prompts/` | both prompts installed identical to the repository |

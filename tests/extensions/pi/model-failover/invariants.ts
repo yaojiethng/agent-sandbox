@@ -9,7 +9,7 @@
  * restating it, so a statement edited here cannot drift from a case.
  */
 
-import { TRANSITIONS, GUARDS } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/transitions.ts";
+import { TRANSITIONS, GUARDS } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/transitions.ts";
 
 /** One invariant family, with the id prefix that names it. */
 export interface InvariantFamily {

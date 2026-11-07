@@ -2,7 +2,7 @@
 # tests/test_model_failover.sh
 # TEST_DEADLINE: 300
 # The Node/TypeScript suite of the model-failover pi-extension
-# (src/reasoning/providers/pi/config/agent/extensions/model-failover): the
+# (src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover): the
 # route health machine and its transitions, the dispatch walk and its tiers,
 # the declarations loader, the error classification, the report, the pi
 # wiring, the invariant report, the diagram-to-suite mapping check, and the

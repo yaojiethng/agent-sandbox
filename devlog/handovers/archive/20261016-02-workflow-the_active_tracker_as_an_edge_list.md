@@ -57,11 +57,11 @@ The new skill and its tool, the two prompts, the tests, the live tracker, the ro
 
 | File | Change |
 |---|---|
-| [`active-tracker/SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/SKILL.md) | the contract, the edge list, the states, idempotence, the frame model |
-| [`active-tracker/active-tracker.mjs`](../../../src/reasoning/providers/pi/config/agent/skills/active-tracker/active-tracker.mjs) | push, pop, view |
+| [`active-tracker/SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/SKILL.md) | the contract, the edge list, the states, idempotence, the frame model |
+| [`active-tracker/active-tracker.mjs`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/active-tracker/active-tracker.mjs) | push, pop, view |
 | [`test_active_tracker.sh`](../../../tests/test_active_tracker.sh) | nine cases |
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | records the traversal; the mechanics live in the skill |
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | forces a re-orientation; the mechanics live in the skill |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | records the traversal; the mechanics live in the skill |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | forces a re-orientation; the mechanics live in the skill |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.2.3 row |
 | `<scratch>/ACTIVE_TASK_TRACKER.json` | the migrated edge list |
 | `<scratch>/ACTIVE_TASK_TRACKER.md` | rendered; the fork-stack section removed |

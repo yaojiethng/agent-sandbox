@@ -92,7 +92,7 @@ BLOCK_END='<!-- END GENERATED: surface-table -->'
 write_tree() {
   local root="$1"
   write_manifest "$root"
-  mkdir -p "$root/src/reasoning/providers/pi"
+  mkdir -p "$root/src/reasoning/agent-runtime/pi"
   write_reference "$root" model.md "Intro line." "" "$BLOCK_BEGIN" "$BLOCK_END"
   node "$MODULE" write --root "$root" >/dev/null
 }
@@ -176,22 +176,22 @@ test_unresolved_path_flagged() {
   local root="$FIXTURE_DIR/unresolved"
   write_tree "$root"
   write_reference "$root" model.md "$BLOCK_BEGIN" "$BLOCK_END" "" \
-    'The record sits at `src/reasoning/providers/<n>/config/settings.json`.'
+    'The record sits at `src/reasoning/agent-runtime/<n>/config/settings.json`.'
   node "$MODULE" write --root "$root" >/dev/null
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a path the tree does not hold fails'
   assert_contains "$GATE_OUT" 'does not resolve in the tree' 'the finding is named'
-  assert_contains "$GATE_OUT" 'src/reasoning/providers/<n>/config/settings.json' 'the path is named'
+  assert_contains "$GATE_OUT" 'src/reasoning/agent-runtime/<n>/config/settings.json' 'the path is named'
 }
 
 test_placeholder_path_resolves() {
   local root="$FIXTURE_DIR/placeholder"
   write_tree "$root"
-  mkdir -p "$root/src/reasoning/providers/pi/config/agent"
-  printf 'FROM scratch\n' > "$root/src/reasoning/providers/pi/provider.dockerfile"
-  printf 'the provider layer\n' > "$root/src/reasoning/providers/pi/config/agent/AGENTS.md"
+  mkdir -p "$root/src/reasoning/agent-runtime/pi/config/agent"
+  printf 'FROM scratch\n' > "$root/src/reasoning/agent-runtime/pi/provider.dockerfile"
+  printf 'the provider layer\n' > "$root/src/reasoning/agent-runtime/pi/config/agent/AGENTS.md"
   write_reference "$root" model.md "$BLOCK_BEGIN" "$BLOCK_END" "" \
-    'Each provider supplies an `AGENTS.md` at `src/reasoning/providers/<n>/config/agent/AGENTS.md`.'
+    'Each provider supplies an `AGENTS.md` at `src/reasoning/agent-runtime/<n>/config/agent/AGENTS.md`.'
   node "$MODULE" write --root "$root" >/dev/null
   run_gate "$root"
   assert_rc 0 "$GATE_RC" 'a `<placeholder>` segment resolves against the provider directory'

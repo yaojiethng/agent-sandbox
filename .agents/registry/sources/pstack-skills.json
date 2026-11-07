@@ -22,7 +22,7 @@
       }
     },
     {
-      "local_path": "src/reasoning/providers/pi/config/agent/skills/principle-guard-the-context-window",
+      "local_path": "src/reasoning/agent-runtime/pi/config/agent/skills/principle-guard-the-context-window",
       "kind": "skill",
       "parent": null,
       "upstream_path": "harness/pstack/claude-code/skills/principle-guard-the-context-window",

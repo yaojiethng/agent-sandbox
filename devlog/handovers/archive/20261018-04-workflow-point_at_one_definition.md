@@ -64,6 +64,6 @@ Checked and kept: `AGENTS.md` *Output Format* points at policy `## Communication
 |---|---|
 | [`documentation_policy.md`](../../../docs/policies/documentation_policy.md) | the section reduces to a pointer and the heading rule, and is renamed `### Numbering` |
 | [`AGENTS.md`](../../../AGENTS.md) | *Context-aware numbering* points at the convention |
-| [`AGENTS.md` (provider)](../../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the bullet defers to a project convention in one clause; the installed copy is identical |
+| [`AGENTS.md` (provider)](../../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the bullet defers to a project convention in one clause; the installed copy is identical |
 | [`norm-ownership.tsv`](../../../scripts/lint/norm-ownership.tsv) | regenerated and classified, 167 rows |
 | [`AGENT_FEEDBACK.md`](../../AGENT_FEEDBACK.md) | the mitigation points at the convention and keeps the incident; the stale scope reference is repaired; the state is `probation` |

@@ -163,7 +163,7 @@ None.
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the record holds no sentence; the worker's tree rule replaces the class rules |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | the report names the role and the attempt, not a sentence in the memory |
 | [`model-recommendations.md`](../../.agents/model-recommendations.md) | the deprecated candidate removed from `_REVIEWER` and `_ADVISOR_DOCS` |
-| [`AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the review guidance names the role and lets the caller set the seat count |
+| [`AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the review guidance names the role and lets the caller set the seat count |
 | [`SKILL.md`](../../src/reasoning/agent/skills/thermo-nuclear-code-quality-review/SKILL.md) | the skill prescribes no seat count |
 | [`tests/dispatch/`](../../tests/dispatch/) | the suites follow the candidate, availability and record shapes |
 | [`test_dispatch.sh`](../../tests/test_dispatch.sh) | the seat result protocol and the walk's one message |

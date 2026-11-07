@@ -127,17 +127,17 @@ Completion criterion: the report covers every document in scope, every finding, 
 
 ## Output shape
 
-The report is the JSONL file described in [`/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md`](/opt/workflow/agent/modules/coding-agent/skills/check-in/report-schema.md), written at the path the dispatcher sets, outside the repository tree. It is never committed. This skill writes to that schema and does not restate it.
+Report the findings in your reply. The caller applies them; this skill writes no document, applies no correction, and commits nothing.
 
-Print a one-line summary to stdout when the run ends: the findings count, the skip count, and the path. A finding count of zero is reported as zero, never as silence.
+Print a one-line summary when the run ends: the findings count and the skip count. A finding count of zero is reported as zero, never as silence.
 
 ## Non-goals
 
-- Does not write a document, apply a correction, or commit. The dispatcher applies the report.
+- Does not write a document, apply a correction, or commit. The caller applies the report.
 - Does not restate a rule. A finding whose correct form no policy sentence determines is a gap to report, not a rule to invent here.
 - Does not check the roadmap, the handover chain, or `AGENT_FEEDBACK.md`. [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own those.
 - Does not report what a gate already catches. Run `bash scripts/lint.sh` first, and report a gate finding only when the gate is not run in the caller's environment.
-- Does not decide a design question. A contradiction that needs a decision is an escalation, not a finding with a fix.
+- Does not decide a design question. A contradiction that needs a decision is reported for the caller to decide, not as a finding with a fix.
 - Whether a document still describes the system at one level, for one audience. A claim this pass verifies is true or false against a source; a document whose claims are all true and whose described shape is gone is the `reference-staleness` review's finding. This pass reads a claim, that review reads a document, and this pass's report is the evidence that review judges.
 
 ## Failure modes
@@ -145,6 +145,5 @@ Print a one-line summary to stdout when the run ends: the findings count, the sk
 - **The pass runs as a term sweep.** Grepping for terms already known to be stale finds only those. Extract the claims instead; that is the step the sweep cannot replace.
 - **A claim verified against a document.** Two documents that agree on a stale fact read as a clean pass. The deciding source is the implementation.
 - **A skip reported as silence.** A check that did not run reads as a check that found nothing. Report the skip and its reason.
-- **A cross-document contradiction split into two findings.** One fact stated two ways is one finding that names both sites, so the dispatcher does not fix one site and leave the other.
-- **The report carries a severity.** Severity belongs to a work item. The report carries the recommendation, and an escalation is the whole expression of severity it has.
+- **A cross-document contradiction split into two findings.** One fact stated two ways is one finding that names both sites, so the caller does not fix one site and leave the other.
 - **A gate finding reported again by hand.** A gate runs in the build. A hand copy of it goes stale and buries the findings that need a reading.

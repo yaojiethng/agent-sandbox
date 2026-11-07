@@ -48,6 +48,6 @@ None.
 
 | File | Change |
 |---|---|
-| [`SKILL.md`](../../../src/reasoning/providers/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md) | the new principle |
+| [`SKILL.md`](../../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md) | the new principle |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.3.4 first row marked `[x]` |
 | `$AGENT_HOME/agent/skills/communication-principle-show-dont-describe/` | the installed copy, identical to the repository |

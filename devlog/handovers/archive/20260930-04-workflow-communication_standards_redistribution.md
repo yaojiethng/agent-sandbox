@@ -30,7 +30,7 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | home of the general Communication Standards shadow |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | home of the general Communication Standards shadow |
 | [`AGENTS.md`](../../AGENTS.md) | project layer; Output Format enforces the standards |
 | [`docs/operations/documentation_policy.md`](../../docs/operations/documentation_policy.md) | canonical home; section rename |
 | [`devlog/roadmap.md`](../../devlog/roadmap.md) | task registration |

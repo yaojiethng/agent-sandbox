@@ -93,7 +93,7 @@ None.
 | [`workflow/coding-agent/skills/doc-maintenance/SKILL.md`](../../workflow/coding-agent/skills/doc-maintenance/SKILL.md) | the lint rule set section, and its two policy citations retarget to the `docs` convention |
 | [`workflow/coding-agent/prompts/record-correction.md`](../../workflow/coding-agent/prompts/record-correction.md) | the post-close correction form, its per-type table, propagation and archival, with both policy citations replaced |
 | `docs/policies/documentation_policy.md` | deleted, its content distributed across the rows below |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the literal-reader test beside the corpus it ranges over, and the wrapping and character-set pointers retargeted |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the literal-reader test beside the corpus it ranges over, and the wrapping and character-set pointers retargeted |
 | `/home/agentuser/.pi/agent/AGENTS.md` | the same three changes, so the installed copy matches the repository source |
 | [`docs/reference/documentation_taxonomy.md`](../../docs/reference/documentation_taxonomy.md) | the two table rows, the placement rule, five lifecycle stages, one promotion row, the boundary and six dispatch rows |
 | [`docs/reference/agent_workflow.md`](../../docs/reference/agent_workflow.md) | the policy-map row and the paragraph that owned the documentation rules |
@@ -110,7 +110,7 @@ None.
 | `scripts/lint/norm-judgements.tsv` | rebuilt from the curated map, with eight new groups for the skill's judgements |
 | [`tests/test_norm_ownership.sh`](../../tests/test_norm_ownership.sh) | the fixture's prose standard is the skill, and the variable is `PROSE` |
 | [`scripts/lint/doc-wrap.mjs`](../../scripts/lint/doc-wrap.mjs) | three citations retarget |
-| [`src/reasoning/providers/pi/config/agent/prompts/doc-advisor-policy.md`](../../src/reasoning/providers/pi/config/agent/prompts/doc-advisor-policy.md) | the bar is `AGENTS.md` and its corpus, naming the delete test and the literal-reader test |
+| [`src/reasoning/providers/pi/config/agent/prompts/doc-advisor-policy.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/doc-advisor-policy.md) | the bar is `AGENTS.md` and its corpus, naming the delete test and the literal-reader test |
 | [`.agents/skills/task-list/SKILL.md`](../../.agents/skills/task-list/SKILL.md) | the correction rule names the `record-correction` procedure |
 | [`workflow/coding-agent/prompts/bootstrap.md`](../../workflow/coding-agent/prompts/bootstrap.md) | the policy set is `iteration_policy.md` alone, in both places |
 | [`workflow/coding-agent/prompts/document.md`](../../workflow/coding-agent/prompts/document.md) | three retargets, the writing standards and the form rules |

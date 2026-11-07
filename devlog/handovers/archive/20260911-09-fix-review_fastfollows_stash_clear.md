@@ -30,7 +30,7 @@ Apply the must-fix findings from the thermo-nuclear review of `7e06c4b..HEAD` (f
 |---|---|
 | [`docs/adr/sandbox_delivery_model.md`](docs/adr/sandbox_delivery_model.md) | 2026-09-11 entry records the unreachable-objects residual and its acceptance rationale |
 | [`src/capability/seed_volume.sh`](src/capability/seed_volume.sh) | Tripwire checks `git stash list` exit status; a read failure dies instead of reading as an empty stack |
-| [`src/reasoning/providers/hermes/provider.dockerfile`](src/reasoning/providers/hermes/provider.dockerfile), [`src/reasoning/providers/opencode/provider.dockerfile`](src/reasoning/providers/opencode/provider.dockerfile) | prompts COPY column alignment restored |
+| [`src/reasoning/providers/hermes/provider.dockerfile`](src/reasoning/agent-runtime/hermes/provider.dockerfile), [`src/reasoning/providers/opencode/provider.dockerfile`](src/reasoning/agent-runtime/opencode/provider.dockerfile) | prompts COPY column alignment restored |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | (no change required) |
 
 ## Deferred items

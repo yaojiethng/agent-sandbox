@@ -30,7 +30,7 @@ None.
 | File | Why in scope |
 |---|---|
 | [`docs/operations/documentation_policy.md`](../../docs/operations/documentation_policy.md) | the `## Communication Standards` section under the pass |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | shadow; verified, not rewritten |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | shadow; verified, not rewritten |
 | [`AGENTS.md`](../../AGENTS.md) | repo-root Output Format; verified, not rewritten |
 
 ## Decisions

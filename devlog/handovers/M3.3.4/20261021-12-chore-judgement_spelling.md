@@ -46,6 +46,6 @@ None.
 
 | File | Change |
 |---|---|
-| [`communication-principle-write-for-the-reader/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) | the heading `**The same judgment on a prompt.**` spelled `judgement` |
+| [`communication-principle-write-for-the-reader/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-write-for-the-reader/SKILL.md) | the heading `**The same judgment on a prompt.**` spelled `judgement` |
 | the `$AGENT_HOME` copy of the same skill | the same correction, and the pair verified identical with `diff` |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closed as an outcome, with the residue outside the corpus named so a later reader does not read it as an unfinished sweep |

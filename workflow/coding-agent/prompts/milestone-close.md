@@ -39,7 +39,7 @@ Reconcile the feedback per the operator's decisions; no probation entry is yours
 
 ## Compact the task list
 
-This prompt owns the milestone-grain compaction. Run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md` first and apply its report: it writes nothing, so apply each `fix-now` finding and carry an escalated one into the close. The skill supplies the checks; the project's `task-list` convention supplies the record's form.
+This prompt owns the milestone-grain compaction. Run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md` first and apply its report: it writes nothing, so apply each finding whose correct form the convention or this prompt's procedures determine, and carry a finding the record cannot settle into the close. The skill supplies the checks; the project's `task-list` convention supplies the record's form.
 
 Then compact, for each node whose direct children are all complete:
 

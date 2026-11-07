@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { classify as classifyLibrary } from "../src/libs/dispatch/classify.ts";
-import { classifyVerdict, isAborted } from "../src/reasoning/providers/pi/config/agent/extensions/model-failover/classify.ts";
+import { classifyVerdict, isAborted } from "../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/classify.ts";
 
 // A reader that closes the pipe early, such as `head`, is not an error here.
 process.stdout.on("error", (error) => {

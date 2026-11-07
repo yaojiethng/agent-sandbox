@@ -15,18 +15,18 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { createRequire } from "node:module";
-import { Run } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts";
-import { bringBackOp } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
-import { applyBringBack } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/merge.ts";
-import { readJournal, bringBackIntentPathOf, readBringBackIntent, writeBringBackIntent } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/record.ts";
-import { loadState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
-import { canonicalWorkdir, git, listBranches, listWorktrees, pruneWorktree, statusPorcelain, worktreeHead, worktreeRootOf } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
-import { readWorkerState } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/protocol.ts";
+import { Run } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/run.ts";
+import { bringBackOp } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
+import { applyBringBack } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/merge.ts";
+import { readJournal, bringBackIntentPathOf, readBringBackIntent, writeBringBackIntent } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/record.ts";
+import { loadState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/state.ts";
+import { canonicalWorkdir, git, listBranches, listWorktrees, pruneWorktree, statusPorcelain, worktreeHead, worktreeRootOf } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
+import { readWorkerState } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/protocol.ts";
 import { commitAll, makeMainRepo, rmrf, tmpdir, writeFile } from "./helpers.ts";
 
 const EXTENSION_ENTRY = path.resolve(
 	import.meta.dirname,
-	"../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/index.ts",
+	"../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/index.ts",
 );
 
 const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";

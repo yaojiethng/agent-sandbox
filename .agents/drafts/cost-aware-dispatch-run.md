@@ -31,7 +31,7 @@ Every line below was measured on 2026-10-15. Treat each as a given and cite it r
 | pi already surfaces a session total | the footer and `/session`, per pi's own docs |
 | The metered family, not the provider, carries the quota | `opencode-go/deepseek-*` answers `429 GoUsageLimitError`, while `opencode-go/step-5-preview-free` and `opencode-go/cat-jam-free` answer normally |
 
-One sentence is a documentation defect. `src/reasoning/providers/opencode/provider.dockerfile` states that OpenCode "has no config transport that could load a prompt or a skill". That is a statement about the harness's missing work, not about OpenCode. Reword it to say so.
+One sentence is a documentation defect. `src/reasoning/agent-runtime/opencode/provider.dockerfile` states that OpenCode "has no config transport that could load a prompt or a skill". That is a statement about the harness's missing work, not about OpenCode. Reword it to say so.
 
 ## The line that must not be crossed
 
@@ -65,7 +65,7 @@ This is the T2 telemetry instrument and the T7 capacity signal, not a third thin
 
 ## Phase 4, the dispatch policy
 
-[`model-failover`](../../src/reasoning/providers/pi/config/agent/extensions/model-failover/README.md) already routes on health: `routes.json` chains, two route states, `eligible` and `cooling`, transitions T1 to T6, and a `limited` failure class with a one-hour cooldown. Extend that machine rather than building a parallel dispatcher. Add a cost or quota axis and whatever state it needs, with a case and a mutation row like the existing ones.
+[`model-failover`](../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/README.md) already routes on health: `routes.json` chains, two route states, `eligible` and `cooling`, transitions T1 to T6, and a `limited` failure class with a one-hour cooldown. Extend that machine rather than building a parallel dispatcher. Add a cost or quota axis and whatever state it needs, with a case and a mutation row like the existing ones.
 
 The failover README's discipline applies. State the measured behaviour the design rests on, then the configuration surface, the algorithm, the state model and the invariants.
 
@@ -75,7 +75,7 @@ Cost is not the only axis. A free model that retries, terminates early, or write
 
 ## Phase 5, unify or do not
 
-Decide in writing whether opencode stops being a base-level provider. If it does, `src/reasoning/providers/opencode/` goes, `opencode-ai` lands in the pi image, and the manifest and the layout gate follow. If it does not, state the reason.
+Decide in writing whether opencode stops being a base-level provider. If it does, `src/reasoning/agent-runtime/opencode/` goes, `opencode-ai` lands in the pi image, and the manifest and the layout gate follow. If it does not, state the reason.
 
 Either way the merged image serves the same skill, prompt and `AGENTS.md` surfaces pi serves, verified by running one real skill on the OpenCode runtime and keeping the transcript.
 

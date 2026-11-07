@@ -1,6 +1,6 @@
 # Active task tracker - full design prompt
 
-Future task. The stopgap landed first as two pi-provider prompts, [`push-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) and [`pop-task.md`](../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md), with a session-local tracker whose path the provider `AGENTS.md` Scope table declares. This prompt designs the mechanism that replaces the manual prompts with automatic reorientation, and it is aware of what the stopgap fixes and what it leaves open.
+Future task. The stopgap landed first as two pi-provider prompts, [`push-task.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) and [`pop-task.md`](../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md), with a session-local tracker whose path the provider `AGENTS.md` Scope table declares. This prompt designs the mechanism that replaces the manual prompts with automatic reorientation, and it is aware of what the stopgap fixes and what it leaves open.
 
 ## The model
 
@@ -21,8 +21,8 @@ Read the two landed prompts before starting. These are the loose ends this desig
 ```text
 Design the automatic mechanism that replaces the manual task-tracker stopgap.
 Read the two landed prompts first,
-src/reasoning/providers/pi/config/agent/prompts/push-task.md and
-src/reasoning/providers/pi/config/agent/prompts/pop-task.md, and the session-local
+src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md and
+src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md, and the session-local
 tracker they read and write, and treat their conventions and their model as the
 baseline this design either keeps or supersedes with a stated reason.
 

@@ -8,11 +8,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import * as fs from "node:fs";
-import { applyOutcome, eligibleAt, Ledger, parseLedger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/ledger.ts";
-import { classifyError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/classify.ts";
-import { chooseRoute } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/router.ts";
-import { parseDeclarations } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/config.ts";
-import { DECLARATIONS_PATH } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/config.ts";
+import { applyOutcome, eligibleAt, Ledger, parseLedger } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/ledger.ts";
+import { classifyError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/classify.ts";
+import { chooseRoute } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/router.ts";
+import { parseDeclarations } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/config.ts";
+import { DECLARATIONS_PATH } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/config.ts";
 import { INVARIANTS } from "./invariants.ts";
 import { chain, COOLDOWNS, limited, NOW, ok, route, tempLedgerPath, THRESHOLD, transient } from "./helpers.ts";
 

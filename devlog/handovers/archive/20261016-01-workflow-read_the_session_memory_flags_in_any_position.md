@@ -48,8 +48,8 @@ None.
 
 | File | Change |
 |---|---|
-| [`session-memory.mjs`](../../src/reasoning/providers/pi/config/agent/skills/session-memory/session-memory.mjs) | the three path flags parse from anywhere in the argument list |
-| [`SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/session-memory/SKILL.md) | the flag table names the freedom |
+| [`session-memory.mjs`](../../src/reasoning/agent-runtime/pi/config/agent/skills/session-memory/session-memory.mjs) | the three path flags parse from anywhere in the argument list |
+| [`SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/session-memory/SKILL.md) | the flag table names the freedom |
 | [`test_session_memory.sh`](../../tests/test_session_memory.sh) | `test_flags_follow_the_command` |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.2.3 session-memory row |
 | `$AGENT_HOME/agent/skills/session-memory/` | both files installed identical to the repository |

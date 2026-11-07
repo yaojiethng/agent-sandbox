@@ -38,11 +38,11 @@ Out of scope: unit B's announcement rewrite and unit C's cache, both their own r
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the enumeration and diagram; the invariant classification table; A7's row |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the enumeration and diagram; the invariant classification table; A7's row |
 | [`tests/extensions/pi/model-refresh/invariants.ts`](../../../tests/extensions/pi/model-refresh/invariants.ts) | the catalog gains the three lifecycle cases; `CLASSIFICATION`, `TRANSITIONS` and `STATES` carry the classification and the machine, and the totality check reads them |
 | [`tests/extensions/pi/model-refresh/invariants.test.ts`](../../../tests/extensions/pi/model-refresh/invariants.test.ts) | the three lifecycle cases and the totality check |
 | [`tests/extensions/pi/model-refresh/mutation/catalog.ts`](../../../tests/extensions/pi/model-refresh/mutation/catalog.ts) | fifteen new rows; the R1 exemption is recorded in the README, not as a row |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | the union's identity key |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | the union's identity key |
 | `tests/extensions/pi/model-refresh/catalog.test.ts` | the identity-key cases |
 | [`tests/test_model_refresh.sh`](../../../tests/test_model_refresh.sh) | new: wires the extension node suite and its registration guard into `make test` |
 | [`scripts/check_test_smoke.sh`](../../../scripts/check_test_smoke.sh) | reaches the extension knowledge scripts |
@@ -81,12 +81,12 @@ None.
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts) | `ModelDefinition` carries an optional `type`, so a stored entry's kind survives the union |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts) | new `modelKey`; `unionFirstWins`, `overlayPreservingOrder` and the metadata pass all key on `type + id` |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts) | `ModelDefinition` carries an optional `type`, so a stored entry's kind survives the union |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/catalog.ts`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/catalog.ts) | new `modelKey`; `unionFirstWins`, `overlayPreservingOrder` and the metadata pass all key on `type + id` |
 | [`tests/extensions/pi/model-refresh/invariants.ts`](../../../tests/extensions/pi/model-refresh/invariants.ts) | the G2 catalog gains the same-id two-type case; `STATES`, `TRANSITIONS`, `EXTERNAL_EDGES` and `CLASSIFICATION` carry the machine as data, and `checkTotality` runs the completeness and guard-overlap checks |
 | [`tests/extensions/pi/model-refresh/invariants.test.ts`](../../../tests/extensions/pi/model-refresh/invariants.test.ts) | the G2 differential case, driven through pi's `getAllModels`; the `L3`, `L4`, `L5` lifecycle cases; the rewritten extension-dependent `C3` case; the `totality` test |
 | [`tests/extensions/pi/model-refresh/mutation/catalog.ts`](../../../tests/extensions/pi/model-refresh/mutation/catalog.ts) | the U3 anchor re-pointed to the composite-key sort; fifteen rows added, for M2, M4, M6, G2, L1, L2, C2, C3, T1, T4, W1, D1, L3, L4 and L5 |
-| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md) | the enumeration takes the statechart vocabulary, transition ids `X1`-`X10` and `X11`-`X13`, and the invariant classification table; the classification and transition tables are stated as the data `invariants.ts` carries; the R1 exemption is recorded; A7 narrows; the `make test` paragraph updates |
+| [`src/reasoning/providers/pi/config/agent/extensions/model-refresh/README.md`](../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/README.md) | the enumeration takes the statechart vocabulary, transition ids `X1`-`X10` and `X11`-`X13`, and the invariant classification table; the classification and transition tables are stated as the data `invariants.ts` carries; the R1 exemption is recorded; A7 narrows; the `make test` paragraph updates |
 | [`tests/test_model_refresh.sh`](../../../tests/test_model_refresh.sh) | new: the node suite and its registration guard, under `make test` |
 | [`scripts/check_test_smoke.sh`](../../../scripts/check_test_smoke.sh) | reaches `tests/extensions/**/knowledge/*.sh` |
 | [`devlog/roadmap.md`](../../../devlog/roadmap.md) | the unit A row takes the vocabulary and the transition ids |

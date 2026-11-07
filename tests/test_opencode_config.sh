@@ -56,7 +56,7 @@ test_instructions_named() {
   local out
   out="$(node "$GEN")"
   assert_contains "$out" '"'"$REPO_ROOT/AGENTS.md"'"' "root AGENTS.md in instructions"
-  assert_contains "$out" '"'"$REPO_ROOT/src/reasoning/providers/pi/config/agent/AGENTS.md"'"' "pi AGENTS.md in instructions"
+  assert_contains "$out" '"'"$REPO_ROOT/src/reasoning/agent-runtime/pi/config/agent/AGENTS.md"'"' "pi AGENTS.md in instructions"
 }
 
 test_added_skills_cell_changes_output() {

@@ -35,7 +35,7 @@ None.
 | File | Why in scope |
 |---|---|
 | [`devlog/discussions/20261002-report-draft-default_model_resolution_bug.md`](../discussions/20261002-report-draft-default_model_resolution_bug.md) | the report |
-| [`src/reasoning/providers/pi/config/agent/settings.json`](../../src/reasoning/providers/pi/config/agent/settings.json) | set a default and a scope head that contradicted it |
+| [`src/reasoning/providers/pi/config/agent/settings.json`](../../src/reasoning/agent-runtime/pi/config/agent/settings.json) | set a default and a scope head that contradicted it |
 | [`tests/knowledge/knowledge_pi_config_cycle.sh`](../../tests/knowledge/knowledge_pi_config_cycle.sh) | the new case that holds the two settings together |
 
 ## Decisions

@@ -1,0 +1,34 @@
+# The build context is the repository root, and more than one build shares it:
+# the reasoning images and the capability image. This file excludes only what no
+# Dockerfile's COPY line reads -- every COPY source of every Dockerfile must
+# survive it, and scripts/check_build_context.sh holds the two equal in both
+# directions.
+.git/
+.devcontainer/
+.scratchpad/
+.agents/
+devlog/
+docs/adr/
+docs/development/
+node_modules/
+scripts/
+tests/
+workflow/vscode/
+workflow/knowledge-vault/
+src/build/
+src/capability/seed_volume.sh
+src/reasoning/agent/drafts/
+src/reasoning/agent-runtime/opencode/
+src/reasoning/agent-runtime/AGENTS.template.md
+src/reasoning/agent-runtime/pi/onboard.sh
+src/reasoning/agent-runtime/pi/onboard-readme.md
+src/reasoning/agent-runtime/pi/docker-compose.pi.yml
+src/reasoning/agent-runtime/pi/docker-compose.serve.yml
+.gitignore
+.hadolint.yaml
+.markdownlint-cli2.mjs
+AGENTS.md
+LICENSE
+Makefile
+readme.md
+src/reasoning/agent/prompt-templates.md

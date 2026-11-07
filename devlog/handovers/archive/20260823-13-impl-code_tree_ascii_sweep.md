@@ -51,7 +51,7 @@ Out of scope: historical corpus (operator decision, `-11`); devlog/docs prose al
 | [`tests/knowledge/knowledge_pi_config_cycle.sh`](../../tests/knowledge/knowledge_pi_config_cycle.sh) | Redundant `PRESENT [x]`/`MISSING [ ]` marks dropped (words carry meaning) |
 | [`src/reasoning/agent/prompts/new-iteration.md`](../../src/reasoning/agent/prompts/new-iteration.md), [`propagation-check.md`](../../src/reasoning/agent/prompts/propagation-check.md), [`tests/eval/eval_protocol.md`](../../tests/eval/eval_protocol.md) | Table-cell markers -> `[x]` / `[ ]`; warning emoji -> word "partial" |
 | [`roadmap-audit.skill.md`](../../src/reasoning/agent/drafts/roadmap-audit.skill.md), [`refactor-mv-rename-file.skill.md`](../../src/reasoning/agent/drafts/refactor-mv-rename-file.skill.md) | Emoji references/prefixes removed per operator rules |
-| [`hermes/base.dockerfile`](../../src/reasoning/providers/hermes/base.dockerfile), [`config.yaml`](../../src/reasoning/providers/hermes/config/config.yaml) | Comment banner rules `-` -> ASCII `-` |
+| [`hermes/base.dockerfile`](../../src/reasoning/agent-runtime/hermes/base.dockerfile), [`config.yaml`](../../src/reasoning/agent-runtime/hermes/config/config.yaml) | Comment banner rules `-` -> ASCII `-` |
 | [`docs/operations/documentation_policy.md`](../../docs/operations/documentation_policy.md) | Status-marker instruction + box-drawing-diagram exception added to Character set section |
 
 ## Deferred items

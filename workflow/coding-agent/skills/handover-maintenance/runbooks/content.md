@@ -9,7 +9,7 @@ Checks the content quality of the handover the current iteration is writing. `/i
 | Structured output format | The scope gate, before implementation | A required structured output has no format template in its own section |
 | Validation tool coverage | The iteration's pre-close step | An acceptance criterion names a tool that does not catch its failure mode |
 
-A finding does not block a gate, but the dispatcher must route it before the iteration closes.
+A finding does not block a gate, but the caller must route it before the iteration closes.
 
 ## Procedure
 

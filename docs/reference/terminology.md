@@ -199,10 +199,31 @@ Enough to launch one worker: the model id selects the model, the provider derive
 
 - One of the preference list on its [role line](#role-line).
 - Distinct within its role line: two entries naming one model are one assignment, and the repeat is ignored.
-- Its [runtime](#runtime) is derived from its [provider](#provider) and its model by one declared map, so the provider alone does not decide it.
+- Its [agent-runtime](#agent-runtime) is derived from its [provider](#provider) and its model by one declared map, so the provider alone does not decide it.
 - Its model id begins with a provider prefix. That prefix names a provider and never the runtime.
 
 **Last updated:** 2026-10-23
+
+## harness
+
+The whole setup a session runs in: the project tree's skills and prompts, the agent-runtime, the images, and the execution environment.
+
+### Identity
+
+- `agent-sandbox` is the harness.
+- The harness payload is the skills and prompts it ships, not the agent-runtime it installs.
+
+### Scope
+
+One harness serves any mounted project. It owns the container boundary, the build, the delivery and the instruction surfaces; the project owns its own content.
+
+### Relationships
+
+- Contains one or more [agent-runtimes](#agent-runtime).
+- A subsystem of the harness is not the harness: the shared image tier, the test runner and the dispatch seam each name their own subject.
+- The word is not a synonym for `agent-runtime`, for a provider, or for the image tier that installs the agent-runtimes.
+
+**Last updated:** 2026-11-07
 
 ## provider
 
@@ -211,21 +232,21 @@ The namespace a model id belongs to: the part before the first slash.
 ### Identity
 
 - `deepseek`, `opencode`, `opencode-go`, `openrouter`.
-- Deprecated as a name for the executable: **provider** in the sense of the `pi` or `opencode` program.
+- Deprecated as a name for the executable: use [agent-runtime](#agent-runtime).
 
 ### Scope
 
-A provider is served by one runtime, declared in one map. Nothing in the provider's name decides that map.
+A provider is served by one agent-runtime, declared in one map. Nothing in the provider's name decides that map.
 
 ### Relationships
 
 - `<provider>/<model>` composes a model id.
-- `opencode` and `opencode-go` are provider prefixes; `opencode run` invokes the runtime of the same name.
-- Served by one [runtime](#runtime), chosen from the map rather than inferred from the prefix.
+- `opencode` and `opencode-go` are provider prefixes; `opencode run` invokes the agent-runtime of the same name.
+- Served by one [agent-runtime](#agent-runtime), chosen from the map rather than inferred from the prefix.
 
-**Last updated:** 2026-10-22
+**Last updated:** 2026-11-07
 
-## runtime
+## agent-runtime
 
 The executable that runs a worker: `pi` or `opencode`.
 
@@ -233,19 +254,21 @@ The executable that runs a worker: `pi` or `opencode`.
 
 - `pi`, invoked with `-p`.
 - `opencode`, invoked with `run`.
+- Short form: `runtime`.
 - Deprecated tokens: **backend**, and **provider** in the launcher sense.
 
 ### Scope
 
-Chosen by the dispatch library from the assignment's provider and its model together: within the OpenCode provider set a model id ending `-free` runs on the CLI and every other model runs on pi, and an assignment with no model refuses rather than defaulting. No caller names a runtime, and no worker chooses one.
+Chosen by the dispatch library from the assignment's provider and its model together: within the OpenCode provider set a model id ending `-free` runs on the CLI and every other model runs on pi, and an assignment with no model refuses rather than defaulting. No caller names an agent-runtime, and no worker chooses one.
 
 ### Relationships
 
 - Serves one or more [providers](#provider), per the declared map.
-- Located at the [launch site](#launch-site) that resolves. A runtime that cannot be located is a failure to launch, not an assignment to another runtime.
-- A runtime is not a model provider: `opencode` names both a runtime and a set of provider prefixes, and the two senses never share a field.
+- Located at the [launch site](#launch-site) that resolves. An agent-runtime that cannot be located is a failure to launch, not an assignment to another agent-runtime.
+- An agent-runtime is not a model provider: `opencode` names both an agent-runtime and a set of provider prefixes, and the two senses never share a field.
+- The word is not a synonym for the [harness](#harness): the harness contains the agent-runtime.
 
-**Last updated:** 2026-10-23
+**Last updated:** 2026-11-07
 
 ## launch site
 

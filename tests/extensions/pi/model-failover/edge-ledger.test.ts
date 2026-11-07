@@ -8,8 +8,8 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { EdgeLedger, edgeKey, edgesPathFromEnv, parseEdgeLedger } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/edge-ledger.ts";
-import type { Outcome } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/types.ts";
+import { EdgeLedger, edgeKey, edgesPathFromEnv, parseEdgeLedger } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/edge-ledger.ts";
+import type { Outcome } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/types.ts";
 
 const NOW = 1_700_000_000_000;
 const THRESHOLD = 3;

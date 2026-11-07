@@ -16,7 +16,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2---reasoningcapability-layer-separation).
 
-**Hermes python base refactor (non-urgent):** The shared `python-harness` base was designed but never built. Hermes currently builds independently from `python:3.11-slim` rather than inheriting from the harness. If W1 can be implemented without Hermes, consider removing Hermes support entirely rather than maintaining a dormant provider.
+The hermes provider was removed on 2026-11-07 rather than kept dormant: it was unused, its build path had drifted, and it was the only thing making the tier list depend on the provider. The integration task below is where it comes back, and it comes back when this milestone has a use for it.
 
 **Tasks:**
 
@@ -26,6 +26,7 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 - [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
 - [ ] Validate binary file handling (vault attachments) under selected MCP server
 - [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
+- [ ] **Integrate hermes as a provider** -- the source-built runtime returns as a provider on the harness's terms, so a session can run a workflow that needs its media and browser surface. It left on 2026-11-07 because nothing ran it and its build path had drifted; `<provider>-base` stayed in `build_agent` as its extension point, and the order test that covers that branch runs on a fixture provider until a real one returns. Trigger: this milestone needing a runtime the registry-package providers do not give, which is the surface the vault and MCP work would reach for. Nature of change: a provider directory with its two Dockerfiles and overlays, the manifest's rows, the live documents that name the provider set, and the pin rows the new inputs owe.
 - [ ] Update `execution_model.md` -- document capability layer variants (general vs vault+MCP)
 
 ---
@@ -151,6 +152,7 @@ Part of M7 -- supply-chain hardening for provider runtime dependencies.
 - [x] Pi version pinned in the provider base Dockerfile; the pin moves with the `pi-bump` unit that owns it
 - [x] Node base image pinned to specific version (`node:22.22.3-slim`)
 - [x] Bump cadence policy -- the operator decides when to bump, on new functionality needed, a critical fix, or a security vulnerability, with no automation. The bump edits the pinned version in `src/reasoning/providers/pi/base.dockerfile` and rebuilds.
+- [ ] **The base image is digest-capable and the apt set takes the strict pin form** -- the pin policy's R1 fixes the resolved artifact, and two classes cannot reach it on the current base: Debian's archive serves a per-file SHA256 that apt has no syntax to pin, so the apt set carries exact versions plus a recorded hash and a drift warning, and the class is a temporary relaxation rather than a settled form. This row is that relaxation's end. A base whose package set is content-addressed, as a Nix-based image is, makes the strict form reachable for every input, and the row owns the migration and the removal of the relaxation from the pin ADR. It is a large change to the image's foundation, so it is not M3.6.4's. Raised 2026-11-07 while settling the pin sweep.
 
 ---
 
@@ -203,7 +205,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Objective:** One query that reports, for every artifact the repository stores, whether it is a copy of something the tree already holds and whether anything would notice if it went stale.
 
-**Scope:** Two halves, one instrument. The first re-derives the inventory of stored artifacts using equality instead of shape, so a table that claims to list a directory is checked against that directory rather than guessed at. The second builds a reader index, so each artifact's classification comes from who consumes it rather than from what the file looks like. The judgement is [`principle-justify-materialization-cost`](../src/reasoning/providers/pi/config/agent/skills/principle-justify-materialization-cost/SKILL.md): every artifact is either derived at read time or protected by a mechanical verification gate, decided by reproducibility first, then auditability, then cost. The census that motivates this milestone is [`20261023-design-settled-derived_artifacts.md`](discussions/20261023-design-settled-derived_artifacts.md).
+**Scope:** Two halves, one instrument. The first re-derives the inventory of stored artifacts using equality instead of shape, so a table that claims to list a directory is checked against that directory rather than guessed at. The second builds a reader index, so each artifact's classification comes from who consumes it rather than from what the file looks like. The judgement is [`principle-justify-materialization-cost`](../src/reasoning/agent-runtime/pi/config/agent/skills/principle-justify-materialization-cost/SKILL.md): every artifact is either derived at read time or protected by a mechanical verification gate, decided by reproducibility first, then auditability, then cost. The census that motivates this milestone is [`20261023-design-settled-derived_artifacts.md`](discussions/20261023-design-settled-derived_artifacts.md).
 
 **Depends on:** nothing hard. The command-table gate under M3.3.3 in [`roadmap.md`](roadmap.md) shares the equality half's first test case and may land before it.
 

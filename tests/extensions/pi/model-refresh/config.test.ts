@@ -23,15 +23,16 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { THINKING_LEVELS } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/thinking.ts";
-import type { ModelDefinition } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { THINKING_LEVELS } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/thinking.ts";
+import type { ModelDefinition } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 
-const PI_PACKAGE_GLOBAL = "/usr/local/lib/node_modules/@earendil-works/pi-coding-agent";
-const PI_AI = `${PI_PACKAGE_GLOBAL}/node_modules/@earendil-works/pi-ai`;
+import { PI_AI_ROOT, PI_PACKAGE_ROOT } from "./fixtures.ts";
+
+const PI_AI = PI_AI_ROOT;
 const BAKED_CATALOG = `${PI_AI}/dist/providers/all.js`;
-const COMPOSER_ENTRY = `${PI_PACKAGE_GLOBAL}/dist/core/provider-composer.js`;
+const COMPOSER_ENTRY = `${PI_PACKAGE_ROOT}/dist/core/provider-composer.js`;
 const COMPLETIONS_ENTRY = `${PI_AI}/dist/api/openai-completions.js`;
-const EXTENSION_DIR = "src/reasoning/providers/pi/config/agent/extensions/model-refresh";
+const EXTENSION_DIR = "src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh";
 const MODELS_JSON = path.resolve(`${EXTENSION_DIR}/../../models.json`);
 
 const available = fs.existsSync(BAKED_CATALOG) && fs.existsSync(COMPOSER_ENTRY) && fs.existsSync(MODELS_JSON);

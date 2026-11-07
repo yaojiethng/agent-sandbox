@@ -2,15 +2,15 @@
 
 **Status:** draft
 
-**Scope:** the run directive for collapsing the pi and opencode provider bases into one shared harness tier, leaving the hermes path alone and removing the `agent-payload` image. It carries the premise under test, the facts the run must not re-derive, the rulings it must not cross, the phases and their order, the work units, the model assignment, the checks, and the forks that keep it a draft.
+**Scope:** the run directive for collapsing the pi and opencode provider bases into one shared agent-runtime tier, leaving the hermes path alone and removing the `agent-payload` image. It carries the premise under test, the facts the run must not re-derive, the rulings it must not cross, the phases and their order, the work units, the model assignment, the checks, and the forks that keep it a draft.
 
-**Origin:** three operator rulings (2026-10-16). First, `agent-tools` is misnamed and the pi and opencode harnesses belong in one shared tier, with `<provider>-base` gone for those two and `<provider>-agent-<project>` becoming the specialization layer. Second, hermes keeps its own base path, because its install is a source build rather than a registry package; hermes is still swept by `Pin every build input`. Third, the `agent-payload` image is dropped, because `src/build/container-interface.json` and its layout gate already are the single declaration, and an image adds a carrier rather than a declaration. Supersedes the tier shape in `docs/adr/reasoning_layer_tiers.md` as it stands.
+**Origin:** three operator rulings (2026-10-16). First, `agent-tools` is misnamed and the pi and opencode agent-runtimes belong in one shared tier, with `<provider>-base` gone for those two and `<provider>-agent-<project>` becoming the specialization layer. Second, hermes keeps its own base path, because its install is a source build rather than a registry package; hermes is still swept by `Pin every build input`. Third, the `agent-payload` image is dropped, because `src/build/container-interface.json` and its layout gate already are the single declaration, and an image adds a carrier rather than a declaration. Supersedes the tier shape in `docs/adr/reasoning_layer_tiers.md` as it stands.
 
 **Prerequisite reading:** `docs/adr/reasoning_layer_tiers.md`, `docs/adr/build_input_pinning.md`, `devlog/discussions/20261016-study-settled-install_step_census.md`.
 
 ## The premise
 
-The tier list should not depend on which provider is reading it. Today `opencode-ai` is a shared-row install for the pi provider and a provider-own install for the opencode provider, because one binary is both the seam's second backend and the opencode provider's own agent. The premise under test is that one shared harness tier holding the pi and opencode installs, with `<provider>-base` gone for those two, is worth its cost.
+The tier list should not depend on which provider is reading it. Today `opencode-ai` is a shared-row install for the pi provider and a provider-own install for the opencode provider, because one binary is both the seam's second backend and the opencode provider's own agent. The premise under test is that one shared agent-runtime tier holding the pi and opencode installs, with `<provider>-base` gone for those two, is worth its cost.
 
 Falsification would mean the image-size delta of adding `pi-coding-agent` to the opencode image is large enough that the uniformity is not worth it. That is the single remaining falsifier, because the hermes install is outside the shared tier and so cannot make any image fat. A falsified result leaves the current tier shape standing rather than softening the change.
 
@@ -35,13 +35,13 @@ Gain being bought, stated as a property rather than a benefit. Both unified imag
 
 ## The rulings
 
-- **Hermes keeps its own base path.** Its install is a source build with a cloned tree, a Python venv, a compiler and its own apt packages, so it does not join the shared tier. The tier rule is the install's mechanism: a harness installed as a registry package sits in the shared tier, and a harness that needs a compiler, a cloned source tree or a language environment of its own keeps a provider base. Hermes is swept by `Pin every build input` regardless, and that sweep is an independent row rather than a dependency of this run.
-- **Every harness install appears in exactly one Dockerfile.** The check is a search over the Dockerfiles for each package name, and it fails on a second home.
+- **Hermes keeps its own base path.** Its install is a source build with a cloned tree, a Python venv, a compiler and its own apt packages, so it does not join the shared tier. The tier rule is the install's mechanism: an agent-runtime installed as a registry package sits in the shared tier, and an agent-runtime that needs a compiler, a cloned source tree or a language environment of its own keeps a provider base. Hermes is swept by `Pin every build input` regardless, and that sweep is an independent row rather than a dependency of this run.
+- **Every agent-runtime install appears in exactly one Dockerfile.** The check is a search over the Dockerfiles for each package name, and it fails on a second home.
 - **The provider interface does not change.** `AGENT_HOME`, `PROVIDER_NAME`, the entrypoint, the UID mapping, and the `agent-sandbox.interface-contract-version` label on the final image all stay exactly as they are.
 - **The capability layer is untouched.** `sandbox-<project>`, its Dockerfile and its contract are out of scope.
 - **The manifest is the single declaration.** `src/build/container-interface.json` declares every COPY pair, and `scripts/check_container_layout.sh` holds it equal to the Dockerfiles in both directions. No payload image exists, and each provider image copies the paths it needs directly. Deriving those COPY lines from the manifest instead of writing and gating them is the roadmap's T7 row `Evaluation of stage construction`, deliberately not this run.
 - **No attribution spoofing.** Unchanged from M3.6.
-- **pi stays installed.** The pi image keeps its own harness, and no image loses a backend it has today.
+- **pi stays installed.** The pi image keeps its own agent-runtime, and no image loses a backend it has today.
 - **The extension and skills question is out of scope.** A pi package installed from a `packages` declaration is a mount and settings question, not a tier question.
 
 ## The phases
@@ -52,7 +52,7 @@ Order is a dependency chain, not a preference.
 
 **Phase 2 is not a gate.** The pin sweep belongs to the existing M3.6.1 row `Pin every build input`, which covers the hermes rows as well as the shared tier's two installs. It does not gate this run, because nothing this run moves is unpinned today. Cited so it is not forgotten: a commit SHA for the hermes clone, and a lockfile with integrity hashes for its `uv pip` and `npm` resolutions, installed frozen.
 
-**Phase 3, the shape.** Question: do both build paths come out right, with each harness installed once? Deliverable: `src/reasoning/harnesses.dockerfile` replacing `tools.dockerfile`, the pi and opencode `base.dockerfile` deleted and the hermes one kept, `payload.dockerfile` deleted, and each `providers/*/provider.dockerfile` carrying its own COPY lines, which is what they do today. The pi and opencode paths inherit the harness tier; the hermes path keeps inheriting `hermes-base`, which itself inherits `agent-base`.
+**Phase 3, the shape.** Question: do both build paths come out right, with each agent-runtime installed once? Deliverable: `src/reasoning/runtimes.dockerfile` replacing `tools.dockerfile`, the pi and opencode `base.dockerfile` deleted and the hermes one kept, `payload.dockerfile` deleted, and each `providers/*/provider.dockerfile` carrying its own COPY lines, which is what they do today. The pi and opencode paths inherit the agent-runtime tier; the hermes path keeps inheriting `hermes-base`, which itself inherits `agent-base`.
 
 **Phase 4, the gates follow.** Question: does the declaration still describe the images? Deliverable: the manifest's shared-row concept, the layout gate, the seam's refusal behaviour and its case.
 
@@ -68,7 +68,7 @@ One concern per row. Each ends in a check, lands as one commit with one handover
 
 | Unit | Commit type | Owned files | Handover |
 |---|---|---|---|
-| U1 the shared harness tier lands | `build` | `src/reasoning/harnesses.dockerfile` (replaces `tools.dockerfile`), `src/reasoning/payload.dockerfile` (deleted), `src/reasoning/providers/{pi,opencode}/base.dockerfile` (deleted), `src/reasoning/providers/{pi,opencode}/provider.dockerfile`, `src/build/image.sh`, `scripts/build.sh`, `tests/test_trace_build.sh`, `tests/test_shared_base_contract.sh`, `.dockerignore` | one impl handover |
+| U1 the shared agent-runtime tier lands | `build` | `src/reasoning/runtimes.dockerfile` (replaces `tools.dockerfile`), `src/reasoning/payload.dockerfile` (deleted), `src/reasoning/agent-runtime/{pi,opencode}/base.dockerfile` (deleted), `src/reasoning/agent-runtime/{pi,opencode}/provider.dockerfile`, `src/build/image.sh`, `scripts/build.sh`, `tests/test_trace_build.sh`, `tests/test_shared_base_contract.sh`, `.dockerignore` | one impl handover |
 | U2 the seam's backend availability follows | `build` | `src/libs/dispatch.sh`, `scripts/dispatch.sh`, `tests/test_dispatch.sh` | one impl handover |
 | U3 the manifest declares the shared rows | `build` | `src/build/container-interface.json`, `src/build/container-interface.mjs`, `scripts/check_container_layout.sh`, the layout test | one impl handover |
 | U4 the tier ADR is amended | `docs` | `docs/adr/reasoning_layer_tiers.md`, `docs/adr/opencode_dispatch_backend.md` | one docs handover |
@@ -93,14 +93,14 @@ Filing is the caller's. `/wrapup` Part B's roadmap write-back is where these row
 
 | Check | The artifact that proves it |
 |---|---|
-| each harness installs exactly once | a search over `src/reasoning/**/*.dockerfile` for `opencode-ai`, `pi-coding-agent` and the hermes install, returning one hit each |
-| both build paths come out right | `tests/test_trace_build.sh` asserting the order for a unified provider, `agent-base` then `agent-harnesses` then `<provider>-agent-<project>`, and for hermes, `agent-base` then `hermes-base` then `hermes-agent-<project>` |
+| each agent-runtime installs exactly once | a search over `src/reasoning/**/*.dockerfile` for `opencode-ai`, `pi-coding-agent` and the hermes install, returning one hit each |
+| both build paths come out right | `tests/test_trace_build.sh` asserting the order for a unified provider, `agent-base` then `agent-runtimes` then `<provider>-agent-<project>`, and for hermes, `agent-base` then `hermes-base` then `hermes-agent-<project>` |
 | the payload image is gone | no `src/reasoning/payload.dockerfile` exists, and no provider Dockerfile carries `COPY --from` |
-| the shape survives a harness bump | a new `scripts/build_probe.sh` row: bump the pi pin, assert the opencode provider image rebuilds, and assert every hermes layer stays `CACHED`. Operator-run |
+| the shape survives an agent-runtime bump | a new `scripts/build_probe.sh` row: bump the pi pin, assert the opencode provider image rebuilds, and assert every hermes layer stays `CACHED`. Operator-run |
 | the size cost is bounded | `docker image inspect --format '{{.Size}}'` per image, before and after, in the probe report. Operator-run |
 | every provider image can dispatch to every backend | `scripts/dispatch.sh --check <role>` run inside each provider image, once per backend |
 | the manifest still describes the images | `bash scripts/check_container_layout.sh`, which compares in both directions |
-| the record agrees with the tree | read `docs/adr/reasoning_layer_tiers.md`: it names the shared harness tier, the hermes exception, and the install-mechanism rule that separates them |
+| the record agrees with the tree | read `docs/adr/reasoning_layer_tiers.md`: it names the shared agent-runtime tier, the hermes exception, and the install-mechanism rule that separates them |
 | the context is curated | `.dockerignore` exists and a case asserts it excludes `.git/` and `devlog/` |
 | nothing else regressed | `bash scripts/lint.sh` clean across its gates, and the full suite green |
 
@@ -121,7 +121,7 @@ What the run must not do.
 
 What must stay true across the run.
 
-- Every harness install has one home.
+- Every agent-runtime install has one home.
 - Every pin is paired with a bump path and is checkable, per `build_input_pinning.md`.
 - The library contract holds: library functions `return`, never `exit`; the flags rule in `p-18` is followed; the dual-use script guard is at the foot.
 - No comment cites a change, a unit, a plan or a handover.
@@ -132,4 +132,4 @@ Two inferences keep it a draft. Each carries the default taken and the word that
 
 **The image-size delta of `pi-coding-agent` in the opencode image.** Unmeasured, and now the only falsifier. Default taken: accept it, because the pi package is a registry install, the opencode image is rebuilt on every call anyway, and the hermes path is unaffected either way. Reverse word: `too-fat`.
 
-**The shared tier's name.** The operator proposed `provider-base` with a hedge. `agent-tools` is wrong because it names tools the agent wields. `provider-base` now collides with `hermes-base`, which survives as the one provider base, so the two names would point at different kinds of thing. Default taken: `agent-harnesses`. Reverse word: `provider-base`.
+**The shared tier's name.** The operator proposed `provider-base` with a hedge. `agent-tools` is wrong because it names tools the agent wields. `provider-base` now collides with `hermes-base`, which survives as the one provider base, so the two names would point at different kinds of thing. Default taken: `agent-runtimes`. Reverse word: `provider-base`.

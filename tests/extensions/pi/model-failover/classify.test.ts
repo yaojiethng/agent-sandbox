@@ -10,7 +10,7 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { classifyError, classifyOutcome, classifyVerdict, isAborted } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-failover/classify.ts";
+import { classifyError, classifyOutcome, classifyVerdict, isAborted } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-failover/classify.ts";
 
 describe("the error classification", () => {
 	const TRANSIENT = [

@@ -80,7 +80,7 @@ None.
 | [`tests/test_dispatch.sh`](../../tests/test_dispatch.sh) | `silent` stub mode, the dirty-tree case and the silent-seat case |
 | [`tests/test_check_launch_sites.sh`](../../tests/test_check_launch_sites.sh) | the fixture allowlists the entrypoint instead of the retired runner |
 | [`scripts/check_launch_sites.sh`](../../scripts/check_launch_sites.sh) | the runner leaves the allowlist; the refusal names the mechanism, not a fixed run |
-| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | `## Running Review Subagents` states the seat invocation, the rotation and the exit codes |
+| [`src/reasoning/providers/pi/config/agent/AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | `## Running Review Subagents` states the seat invocation, the rotation and the exit codes |
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the seat preconditions, the pin rule, and the allowlist stated without a fixed run |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | `## launch site` carries the pin distinction instead of a fixed run |
 | [`docs/adr/pi_subagent_dispatch.md`](../../docs/adr/pi_subagent_dispatch.md), [`docs/adr/single_source_model_recommendations.md`](../../docs/adr/single_source_model_recommendations.md) | a pinned run rather than a fixed run |

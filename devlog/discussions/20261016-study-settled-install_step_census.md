@@ -9,12 +9,12 @@ This study belongs to the M3.6.1 layer install design, the roadmap row `The laye
 ## Required reading
 
 - [`src/reasoning/base.dockerfile`](../../src/reasoning/base.dockerfile) -- tier 1, image `agent-base`
-- [`src/reasoning/providers/pi/base.dockerfile`](../../src/reasoning/providers/pi/base.dockerfile) -- tier 2, image `pi-base`
-- [`src/reasoning/providers/opencode/base.dockerfile`](../../src/reasoning/providers/opencode/base.dockerfile) -- tier 2, image `opencode-base`
-- [`src/reasoning/providers/hermes/base.dockerfile`](../../src/reasoning/providers/hermes/base.dockerfile) -- tier 2, image `hermes-base`
-- [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/providers/pi/provider.dockerfile) -- tier 3, image `pi-agent-<project>`
-- [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/providers/opencode/provider.dockerfile) -- tier 3, image `opencode-agent-<project>`
-- [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/providers/hermes/provider.dockerfile) -- tier 3, image `hermes-agent-<project>`
+- [`src/reasoning/providers/pi/base.dockerfile`](../../src/reasoning/agent-runtime/pi/base.dockerfile) -- tier 2, image `pi-base`
+- [`src/reasoning/providers/opencode/base.dockerfile`](../../src/reasoning/agent-runtime/opencode/base.dockerfile) -- tier 2, image `opencode-base`
+- [`src/reasoning/providers/hermes/base.dockerfile`](../../src/reasoning/agent-runtime/hermes/base.dockerfile) -- tier 2, image `hermes-base`
+- [`src/reasoning/providers/pi/provider.dockerfile`](../../src/reasoning/agent-runtime/pi/provider.dockerfile) -- tier 3, image `pi-agent-<project>`
+- [`src/reasoning/providers/opencode/provider.dockerfile`](../../src/reasoning/agent-runtime/opencode/provider.dockerfile) -- tier 3, image `opencode-agent-<project>`
+- [`src/reasoning/providers/hermes/provider.dockerfile`](../../src/reasoning/agent-runtime/hermes/provider.dockerfile) -- tier 3, image `hermes-agent-<project>`
 - [`scripts/build.sh`](../../scripts/build.sh) -- the three-tier orchestrator
 - [`src/build/image.sh`](../../src/build/image.sh) -- image naming and identity
 - [`src/build/container-interface.json`](../../src/build/container-interface.json) -- the container interface declared once

@@ -2,7 +2,7 @@
 # tests/test_taskq.sh
 # TEST_DEADLINE: 420
 # The Node/TypeScript conformance suite of the task-queue pi-extension
-# (src/reasoning/providers/pi/config/agent/extensions/task-queue): the queue
+# (src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue): the queue
 # invariants I1-I13, the transition table, the ownership lock, the
 # persistence and journal, the git-backed fork and bring-back, and the wired
 # tool surface, all held against real repositories. The extension has its

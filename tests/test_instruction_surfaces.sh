@@ -69,8 +69,8 @@ EOF
 # scope it must match.
 write_layers() {
   local root="$1"
-  mkdir -p "$root/src/reasoning/providers/pi/config/agent" "$root/docs/reference"
-  cat > "$root/src/reasoning/providers/pi/config/agent/AGENTS.md" <<'EOF'
+  mkdir -p "$root/src/reasoning/agent-runtime/pi/config/agent" "$root/docs/reference"
+  cat > "$root/src/reasoning/agent-runtime/pi/config/agent/AGENTS.md" <<'EOF'
 # Provider layer
 
 ## Scope
@@ -147,7 +147,7 @@ test_layer_path_outside_the_session_rows_flagged() {
   local root="$FIXTURE_DIR/layerextra"
   write_conforming_tree "$root"
   sed -i 's#| `/opt/workflow/agent/` | the agent tree |#| `/opt/workflow/agent/` | the agent tree |\n| `/opt/elsewhere/` | another tree |#' \
-    "$root/src/reasoning/providers/pi/config/agent/AGENTS.md"
+    "$root/src/reasoning/agent-runtime/pi/config/agent/AGENTS.md"
   run_gate "$root"
   assert_rc 1 "$GATE_RC" 'a layer path outside the session rows fails'
   assert_contains "$GATE_OUT" 'which is not a session row in the manifest' 'the path is named'

@@ -54,7 +54,7 @@ Out of scope: the archived handovers and discussions, and `devlog/changelog.md`,
 | [`scripts/run_agent.sh`](../../../scripts/run_agent.sh) | the header's lifecycle paragraph and the teardown comment |
 | [`src/build/docker-compose.yml`](../../../src/build/docker-compose.yml) | the path-table row |
 | [`src/reasoning/entrypoint.sh`](../../../src/reasoning/entrypoint.sh) | its own header names a path it no longer has |
-| [`src/reasoning/providers/hermes/docker-compose.hermes.yml`](../../../src/reasoning/providers/hermes/docker-compose.hermes.yml) | a claim that nothing performs |
+| [`src/reasoning/providers/hermes/docker-compose.hermes.yml`](../../../src/reasoning/agent-runtime/hermes/docker-compose.hermes.yml) | a claim that nothing performs |
 | [`tests/knowledge/knowledge_pi_config_cycle.sh`](../../../tests/knowledge/knowledge_pi_config_cycle.sh) | a bind-mount reference to the retired path |
 | [`devlog/roadmap.md`](../../../devlog/roadmap.md) | the row, and the write-back |
 
@@ -88,7 +88,7 @@ None.
 | [`src/build/docker-compose.yml`](../../../src/build/docker-compose.yml) | the `provider_config_host` row is gone, replaced by a note pointing at the provider overlay |
 | [`src/reasoning/entrypoint.sh`](../../../src/reasoning/entrypoint.sh) | its own header names `src/reasoning/entrypoint.sh`; the seeding and mount comments state the current model |
 | `src/reasoning/providers/{pi,hermes,opencode}/provider.dockerfile`, `pi/docker-compose.pi.yml`, `pi/onboard.sh`, `pi/setup.sh`, `pi/onboard-readme.md` | copy-in and copy-out wording replaced with seeding and mounting |
-| [`src/reasoning/providers/hermes/docker-compose.hermes.yml`](../../../src/reasoning/providers/hermes/docker-compose.hermes.yml) | the false seeding claim becomes the truth: the build ships no hermes config, and the question is filed |
+| [`src/reasoning/providers/hermes/docker-compose.hermes.yml`](../../../src/reasoning/agent-runtime/hermes/docker-compose.hermes.yml) | the false seeding claim becomes the truth: the build ships no hermes config, and the question is filed |
 | `src/reasoning/{agent,providers/pi/config/agent/prompts,providers/pi/config/agent/skills}/CONTEXT.md` | the three `/opt/provider-config/` bullets are removed |
 | [`tests/knowledge/knowledge_pi_config_cycle.sh`](../../../tests/knowledge/knowledge_pi_config_cycle.sh) | the four retired-cycle tests and their `cp -r` simulations are gone; the header states why; one test asserts the shipped harness roots |
 | [`tests/test_provider_entrypoint.sh`](../../../tests/test_provider_entrypoint.sh) | the header names the entrypoint's real path |

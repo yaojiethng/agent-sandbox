@@ -1,0 +1,8 @@
+{
+  "name": "agent-base-markdownlint-cli2",
+  "private": true,
+  "description": "markdownlint-cli2, resolved and frozen for the shared runtime base.",
+  "dependencies": {
+    "markdownlint-cli2": "0.23.2"
+  }
+}

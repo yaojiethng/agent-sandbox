@@ -1,39 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { decodeState, defaultPath, emptyState, load, recordAttempt, save } from '../../../src/libs/dispatch/state.ts';
+import { defaultPath, load, recordAttempt } from '../../../src/libs/dispatch/state.ts';
 
-test('a new session starts with an empty route memory', () => {
-  assert.deepEqual(emptyState('s1'), { version: 1, session: 's1', routes: {}, usage: {} });
-});
+function empty(session: string) {
+  return { version: 1, session, routes: {}, usage: {} };
+}
 
 test('a saved memory loads back unchanged', () => {
   const dir = mkdtempSync(join(tmpdir(), 'dispatch-state-'));
   const path = join(dir, 'state.json');
-  const state = emptyState('s1');
-  state.routes['p/a'] = { state: 'cooling', until: 10, reason: 'flaky', strikes: 1 };
-  state.usage['p/a'] = 3;
-  save(path, state);
-  assert.deepEqual(load(path, 's1'), state);
+  writeFileSync(path, JSON.stringify({
+    version: 1,
+    session: 's1',
+    routes: { 'p/a': { state: 'cooling', until: 10, reason: 'flaky', strikes: 1 } },
+    usage: { 'p/a': 3 },
+  }));
+  assert.deepEqual(load(path, 's1'), {
+    version: 1,
+    session: 's1',
+    routes: { 'p/a': { state: 'cooling', until: 10, reason: 'flaky', strikes: 1 } },
+    usage: { 'p/a': 3 },
+  });
 });
 
 test('a missing or corrupt file is an empty memory, never an error', () => {
   const dir = mkdtempSync(join(tmpdir(), 'dispatch-state-'));
   const missing = join(dir, 'absent.json');
-  assert.deepEqual(load(missing, 's1'), emptyState('s1'));
+  assert.deepEqual(load(missing, 's1'), empty('s1'));
   const corrupt = join(dir, 'corrupt.json');
   writeFileSync(corrupt, 'not json');
-  assert.deepEqual(load(corrupt, 's1'), emptyState('s1'));
-});
-
-test('the save leaves no temporary file behind', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'dispatch-state-'));
-  const path = join(dir, 'state.json');
-  save(path, emptyState('s1'));
-  const body = readFileSync(path, 'utf8');
-  assert.match(body, /"version": 1/);
+  assert.deepEqual(load(corrupt, 's1'), empty('s1'));
 });
 
 test('the default path is namespaced by session and honours the override', () => {
@@ -55,8 +54,12 @@ test('a readable file missing a field is merged onto an empty memory', () => {
   const path = join(dir, 'partial.json');
   writeFileSync(path, JSON.stringify({ version: 1, routes: { 'p/a': { state: 'ready' } } }));
   assert.deepEqual(load(path, 's1').usage, {});
-  assert.deepEqual(decodeState({ version: 2, routes: {} }, 's1'), emptyState('s1'));
-  assert.deepEqual(decodeState('not an object', 's1'), emptyState('s1'));
+  const wrongVersion = join(dir, 'wrong-version.json');
+  writeFileSync(wrongVersion, JSON.stringify({ version: 2, routes: {} }));
+  assert.deepEqual(load(wrongVersion, 's1'), empty('s1'));
+  const notObject = join(dir, 'not-object.json');
+  writeFileSync(notObject, JSON.stringify('not an object'));
+  assert.deepEqual(load(notObject, 's1'), empty('s1'));
 });
 
 test('recording an attempt is one transaction and leaves no lock behind', () => {

@@ -10,10 +10,10 @@
  */
 
 import * as fs from "node:fs";
-import { withOwnershipLock } from "../../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/lock.ts";
-import { Run } from "../../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts";
-import { forkOp, joinOp } from "../../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
-import type { RunState } from "../../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/state.ts";
+import { withOwnershipLock } from "../../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/lock.ts";
+import { Run } from "../../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/run.ts";
+import { forkOp, joinOp } from "../../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
+import type { RunState } from "../../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/state.ts";
 
 const AT = "2026-01-01T00:00:00.000Z";
 

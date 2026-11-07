@@ -33,7 +33,7 @@
       "role": "root",
       "namespace": "repo",
       "layer": "provider",
-      "path": "src/reasoning/providers/pi/config/agent/skills",
+      "path": "src/reasoning/agent-runtime/pi/config/agent/skills",
       "version": "repo:0123456789abcdef0123456789abcdef01234567",
       "sha256": "repo-provider-root"
     },

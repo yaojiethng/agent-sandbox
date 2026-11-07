@@ -22,7 +22,7 @@ The roadmap row **The launch-site sweep**. The gate and its test, the umbrella w
 | Every launcher call is behind the library, the entrypoint or the reviewer's fixed run | `bash scripts/check_launch_sites.sh` prints `launch sites: clean; every launcher call is behind the library` | Agent [x] |
 | The gate fails a call site that names a launcher's own flags | `bash tests/test_check_launch_sites.sh` prints `4 passed, 0 failed` | Agent [x] |
 | The eval harness takes its command from the entrypoint | `bash tests/test_eval_harness.sh` prints `12 passed, 0 failed` | Agent [x] |
-| The OpenCode worker calls the entrypoint and names no launcher flag | read [`SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/SKILL.md) | Agent [x] |
+| The OpenCode worker calls the entrypoint and names no launcher flag | read [`SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/SKILL.md) | Agent [x] |
 | The gates are clean | `bash scripts/lint.sh` prints `Lint: clean in 7s across 12 gates` | Agent [x] |
 
 ## Decisions
@@ -52,7 +52,7 @@ None.
 | [`test_check_launch_sites.sh`](../../tests/test_check_launch_sites.sh) | four cases over a fixture root: clean, a migrated site, an inline site, and the Markdown and test exemptions |
 | [`lint.sh`](../../scripts/lint.sh) | the twelfth gate joins the umbrella and its header names it |
 | [`run_case.sh`](../../workflow/coding-agent/skills/eval/scripts/run_case.sh), [`test_eval_harness.sh`](../../tests/test_eval_harness.sh) | the eval harness calls the entrypoint and composes no provider |
-| [`SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/SKILL.md) | the worker carries the instruction and names no launcher flag |
-| [`opencode-dispatch/dispatch.sh`](../../src/reasoning/providers/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | deleted; its launcher retired into the entrypoint |
+| [`SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/SKILL.md) | the worker carries the instruction and names no launcher flag |
+| [`opencode-dispatch/dispatch.sh`](../../src/reasoning/agent-runtime/pi/config/agent/skills/opencode-dispatch/dispatch.sh) | deleted; its launcher retired into the entrypoint |
 | `auto.md`, [`close-the-model-bypass-run.md`](../../.agents/drafts/close-the-model-bypass-run.md) | the carriers name the entrypoint |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closed |

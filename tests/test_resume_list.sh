@@ -88,8 +88,8 @@ test_truncate_branch_cuts_long_names_to_the_limit() {
 # Asserts: the filtered empty-inventory message.
 test_no_sessions_names_the_provider_filter() {
   local out rc=0
-  out="$(PROVIDER_FILTER="hermes" SANDBOX_DIR="$FIXTURE_DIR/nosbx" _no_sessions 2>&1)" || rc=$?
-  if [[ $rc -eq 1 && "$out" == *"no resumable sessions for provider 'hermes'"* ]]; then
+  out="$(PROVIDER_FILTER="opencode" SANDBOX_DIR="$FIXTURE_DIR/nosbx" _no_sessions 2>&1)" || rc=$?
+  if [[ $rc -eq 1 && "$out" == *"no resumable sessions for provider 'opencode'"* ]]; then
     pass "_no_sessions names the provider filter and returns 1"
   else
     fail "_no_sessions filtered message: rc=$rc out='$out'"

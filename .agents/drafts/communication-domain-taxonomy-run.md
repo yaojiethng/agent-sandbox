@@ -22,7 +22,7 @@ An agent produces higher-quality output when its context carries domain-specific
 
 2. A labelled failure corpus of at least 60 sentences from this repository and its history, each carrying exactly one mechanism label. Expand the 18-sentence corpus in [`20261019-report-settled-sentence_structure_evidence.md`](../../devlog/discussions/20261019-report-settled-sentence_structure_evidence.md).
 
-3. The existing partition. Read the `kind` column of `scripts/lint/norm-ownership.tsv` and the filed principles under `src/reasoning/providers/pi/config/agent/skills/`. That is the slice the new taxonomy is measured against.
+3. The existing partition. Read the `kind` column of `scripts/lint/norm-ownership.tsv` and the filed principles under `src/reasoning/agent-runtime/pi/config/agent/skills/`. That is the slice the new taxonomy is measured against.
 
 4. The terminology layer, `docs/reference/terminology.md`, and the reserved-term list.
 

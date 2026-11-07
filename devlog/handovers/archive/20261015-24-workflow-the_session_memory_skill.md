@@ -32,7 +32,7 @@ Out of scope: wiring the prompts to the skill, which is the next unit.
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| The name is `session-memory` | the memory is scoped to the session and dropped at its end; steering is its content, not its scope | [`SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/session-memory/SKILL.md) |
+| The name is `session-memory` | the memory is scoped to the session and dropped at its end; steering is its content, not its scope | [`SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/session-memory/SKILL.md) |
 | The caller names the log and the block | the tracker is one caller, not the tool's assumption, so a second caller can place the memory elsewhere | the tool; this record |
 | A reimplementation of OptMem's shape, not a derivation of `memo` | the shape is four mechanisms and the tree is for a million records; the code is written from the README, so crediting it as a fork would overstate the provenance | the tool header; this record |
 
@@ -51,8 +51,8 @@ None.
 
 | File | Change |
 |---|---|
-| [`SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/session-memory/SKILL.md) | new: the contract, the bounds, the model |
-| [`session-memory.mjs`](../../src/reasoning/providers/pi/config/agent/skills/session-memory/session-memory.mjs) | new: `note`, `merge`, `wake`, `render`, `zoom`, `forget`, `diff`, `mark` |
+| [`SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/session-memory/SKILL.md) | new: the contract, the bounds, the model |
+| [`session-memory.mjs`](../../src/reasoning/agent-runtime/pi/config/agent/skills/session-memory/session-memory.mjs) | new: `note`, `merge`, `wake`, `render`, `zoom`, `forget`, `diff`, `mark` |
 | [`tests/test_session_memory.sh`](../../tests/test_session_memory.sh) | new: 11 cases, including `render` |
 | `scripts/steer.mjs`, `tests/test_steer.sh` | removed: replaced by the skill's files |
 | `$AGENT_HOME/agent/skills/session-memory/` | the skill installed |

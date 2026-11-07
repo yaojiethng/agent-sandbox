@@ -217,7 +217,7 @@ mutate_manifest() {
 test_two_rows_reaching_one_layer_is_a_finding() {
   local root out rc
   root="$(collected_evidence)"
-  mutate_manifest "$root" '(() => { manifest.image.push({ provider: "hermes", source: "src/reasoning/agent/skills/", destination: "/opt/hermes/skills/" }); return manifest; })()'
+  mutate_manifest "$root" '(() => { manifest.image.push({ provider: "opencode", source: "src/reasoning/agent/skills/", destination: "/opt/opencode/skills/" }); return manifest; })()'
   out="$(node "$GRAPH" --root "$root" --check 2>&1)"; rc=$?
   assert_rc 1 "$rc" "two rows reaching one layer fail the check"
   assert_contains "$out" "2 image rows reach agent-sandbox" "the ambiguity is named"
@@ -332,7 +332,7 @@ write_manifest() {
     },
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "destination": "$image/config/"
     }
   ],
@@ -346,7 +346,7 @@ write_manifest() {
   "provision": [
     {
       "provider": "pi",
-      "source": "src/reasoning/providers/pi/config/",
+      "source": "src/reasoning/agent-runtime/pi/config/",
       "template": "$image/config/",
       "home": "\$AGENT_HOME/"
     }

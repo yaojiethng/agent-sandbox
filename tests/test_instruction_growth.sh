@@ -155,7 +155,7 @@ test_the_default_set_finds_both_layers() {
   else
     fail "the project layer is in the default set"
   fi
-  assert_contains "$out" "src/reasoning/providers/pi/config/agent/AGENTS.md" "and the provider layer"
+  assert_contains "$out" "src/reasoning/agent-runtime/pi/config/agent/AGENTS.md" "and the provider layer"
   assert_contains "$out" "report only" "the run states that nothing is refused"
 }
 

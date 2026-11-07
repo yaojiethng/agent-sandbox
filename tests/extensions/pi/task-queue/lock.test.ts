@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { TaskQueueError } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/errors.ts";
+import { TaskQueueError } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/errors.ts";
 import {
 	LOCK_FILE,
 	LOCK_SPIN_MS,
@@ -26,11 +26,11 @@ import {
 	releaseLock,
 	withOwnershipLock,
 	type LockOwner,
-} from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/lock.ts";
-import { Run } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/run.ts";
-import { forkOp, joinOp } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/ops.ts";
-import { entryIdOf } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/queue.ts";
-import { readJournal } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/record.ts";
+} from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/lock.ts";
+import { Run } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/run.ts";
+import { forkOp, joinOp } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/ops.ts";
+import { entryIdOf } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/queue.ts";
+import { readJournal } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/record.ts";
 import { tmpdir, rmrf } from "./helpers.ts";
 
 const AT = "2026-01-01T00:00:00.000Z";

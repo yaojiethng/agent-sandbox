@@ -50,6 +50,6 @@ None.
 |---|---|
 | [`src/build/opencode-config.mjs`](../../../src/build/opencode-config.mjs) | new generator deriving the OpenCode `skills` and `instructions` from the manifest |
 | [`tests/test_opencode_config.sh`](../../../tests/test_opencode_config.sh) | new test: valid JSON, one entry per skills cell, the named instructions, and an added cell changing the output |
-| [`src/reasoning/providers/opencode/provider.dockerfile`](../../../src/reasoning/providers/opencode/provider.dockerfile) | the transport sentence names the harness's work and the manifest |
+| [`src/reasoning/providers/opencode/provider.dockerfile`](../../../src/reasoning/agent-runtime/opencode/provider.dockerfile) | the transport sentence names the harness's work and the manifest |
 | [`devlog/roadmap.md`](../../../devlog/roadmap.md) | the M3.6 transport row closes `[x]` |
 | [`devlog/handovers/archive/20261015-09-impl-opencode_instruction_transport.md`](20261015-09-impl-opencode_instruction_transport.md) | this record |

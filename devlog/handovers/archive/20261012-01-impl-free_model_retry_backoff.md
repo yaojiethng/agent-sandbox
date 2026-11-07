@@ -28,7 +28,7 @@ One operator-raised change, mapped to no roadmap task. The retry block lands in 
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/settings.json`](../../../src/reasoning/providers/pi/config/agent/settings.json) | carries the shipped retry policy for the reasoning layer |
+| [`src/reasoning/providers/pi/config/agent/settings.json`](../../../src/reasoning/agent-runtime/pi/config/agent/settings.json) | carries the shipped retry policy for the reasoning layer |
 | `~/.pi/agent/settings.json` | the live copy the agent runs against; it sits outside the tree, so the source is its record |
 
 ## Decisions
@@ -56,5 +56,5 @@ One operator-raised change, mapped to no roadmap task. The retry block lands in 
 
 | File | Change |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/settings.json`](../../../src/reasoning/providers/pi/config/agent/settings.json) | add the retry block: enabled, maxRetries 13, baseDelayMs 1000, maxAgentDelayMs 3600000 |
+| [`src/reasoning/providers/pi/config/agent/settings.json`](../../../src/reasoning/agent-runtime/pi/config/agent/settings.json) | add the retry block: enabled, maxRetries 13, baseDelayMs 1000, maxAgentDelayMs 3600000 |
 | [`devlog/handovers/archive/20261012-01-impl-free_model_retry_backoff.md`](20261012-01-impl-free_model_retry_backoff.md) | this handover |

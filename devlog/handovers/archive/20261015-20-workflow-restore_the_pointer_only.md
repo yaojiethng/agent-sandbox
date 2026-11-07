@@ -52,6 +52,6 @@ None.
 
 | File | Change |
 |---|---|
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | restore the pointer only, bound the reads, resolve the node ambiguity, stop |
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | one resume marker, the stack top marked |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | restore the pointer only, bound the reads, resolve the node ambiguity, stop |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | one resume marker, the stack top marked |
 | `$AGENT_HOME/agent/prompts/` | both prompts installed identical to the repository |

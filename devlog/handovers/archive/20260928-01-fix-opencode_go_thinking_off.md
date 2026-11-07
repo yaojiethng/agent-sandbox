@@ -36,8 +36,8 @@ None.
 
 | File | Why in scope |
 |---|---|
-| [`src/reasoning/providers/pi/config/agent/models.json`](src/reasoning/providers/pi/config/agent/models.json) | carries the off-level wiring and the unsupported-level marks |
-| [`src/reasoning/providers/pi/config/agent/extensions/opencode-go.ts`](src/reasoning/providers/pi/config/agent/extensions/opencode-go.ts) | builds the live-only model maps; its header asserted a false off behavior |
+| [`src/reasoning/providers/pi/config/agent/models.json`](src/reasoning/agent-runtime/pi/config/agent/models.json) | carries the off-level wiring and the unsupported-level marks |
+| [`src/reasoning/providers/pi/config/agent/extensions/opencode-go.ts`](src/reasoning/agent-runtime/pi/config/agent/extensions/opencode-go.ts) | builds the live-only model maps; its header asserted a false off behavior |
 
 ## Decisions
 

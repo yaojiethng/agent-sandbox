@@ -15,8 +15,8 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { createReporter, deltaLine, notices } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/report.ts";
-import type { CatalogReport } from "../../../../src/reasoning/providers/pi/config/agent/extensions/model-refresh/types.ts";
+import { createReporter, deltaLine, notices } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/report.ts";
+import type { CatalogReport } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/model-refresh/types.ts";
 
 interface Call {
 	method: string;

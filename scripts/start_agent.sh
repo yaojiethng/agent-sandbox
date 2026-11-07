@@ -71,7 +71,7 @@ Flags (all required except --sandbox/--env):
   --project=<path> absolute WSL/Linux path to the project directory on the host (required)
   --sandbox=<path> absolute WSL/Linux path to the sandbox directory
   --env=<rel>      .env file: an absolute path or a name relative to SANDBOX_DIR (default: .env)
-  --provider=<n>   provider name (required  --  no default; e.g. pi, hermes, opencode)
+  --provider=<n>   provider name (required  --  no default; e.g. pi, opencode)
 
 Optional flags:
   --refresh   rebuild sandbox and provider images, then start a new session (standard start only)
@@ -115,10 +115,10 @@ validate_wsl_path() {
 # filled interactively; an abort exits cleanly before any session state is
 # created.
 _start_providers() {
-  # Actionable providers = directories under src/reasoning/providers/ that
+  # Actionable providers = directories under src/reasoning/agent-runtime/ that
   # carry a provider.dockerfile (mirrors build_agent's dockerfile check).
   local p
-  for p in "$REPO_ROOT"/src/reasoning/providers/*/; do
+  for p in "$REPO_ROOT"/src/reasoning/agent-runtime/*/; do
     [[ -f "${p}provider.dockerfile" ]] || continue
     basename "$p"
   done
@@ -145,7 +145,7 @@ _start_wizard() {
     done
 
     if [[ "${#PROVIDER_ENTRIES[@]}" -eq 0 ]]; then
-      echo "Error: no providers found under $REPO_ROOT/src/reasoning/providers/" >&2
+      echo "Error: no providers found under $REPO_ROOT/src/reasoning/agent-runtime/" >&2
       exit 1
     fi
 
@@ -472,7 +472,8 @@ main() {
   # which also provides the image-name functions. Source it now that identity paths
   # are settled and we are ready to (re)build/preflight for this session.
   source "$REPO_ROOT/scripts/build.sh"
-  # --refresh: rebuild sandbox and provider (base skipped if exists).
+  # --refresh: rebuild sandbox and provider with no --no-cache, so docker's
+  # layer cache decides what each tier reuses.
   # --rebuild: rebuild everything from scratch including base (supersedes --refresh).
   # Export host UID/GID for build pipeline
   HOST_UID="$(id -u)"

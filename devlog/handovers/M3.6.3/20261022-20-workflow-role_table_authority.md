@@ -29,10 +29,10 @@ The roadmap row **The role table moves into version control**. This is a late wr
 
 | Decision | Rationale | Where recorded |
 |---|---|---|
-| The committed `.agents/model-recommendations.md` is the authority, and `$AGENT_HOME` is the explicit override | a model choice the operator sets is then visible to every diff, handover and verification sweep | [`model-recommendations.md`](../../.agents/model-recommendations.md), [`setup-model-recommendations/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md) |
-| The setup path refreshes the container's copy from the project copy | the mounted home file is the fallback path, so it must not shadow the authority | [`setup.sh`](../../src/reasoning/providers/pi/setup.sh) |
+| The committed `.agents/model-recommendations.md` is the authority, and `$AGENT_HOME` is the explicit override | a model choice the operator sets is then visible to every diff, handover and verification sweep | [`model-recommendations.md`](../../.agents/model-recommendations.md), [`setup-model-recommendations/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/setup-model-recommendations/SKILL.md) |
+| The setup path refreshes the container's copy from the project copy | the mounted home file is the fallback path, so it must not shadow the authority | [`setup.sh`](../../src/reasoning/agent-runtime/pi/setup.sh) |
 | The table lists ordered assignments, and the free pool comes first | the walk spends the cheapest route that can answer, and an exhausted route cools rather than blocks | [`model-recommendations.md`](../../.agents/model-recommendations.md) |
-| The review runner takes the pair its caller resolved, and carries none of its own | reproducibility is the contract, and a pin inside the runner is the bypass the table exists to close | [`review-dispatch.sh`](../../src/reasoning/providers/pi/config/agent/bin/review-dispatch.sh) |
+| The review runner takes the pair its caller resolved, and carries none of its own | reproducibility is the contract, and a pin inside the runner is the bypass the table exists to close | [`review-dispatch.sh`](../../src/reasoning/agent-runtime/pi/config/agent/bin/review-dispatch.sh) |
 
 ## Decisions pending
 
@@ -53,9 +53,9 @@ None.
 | [`.agents/model-recommendations.md`](../../.agents/model-recommendations.md) | the committed table, with one ordered assignment list per role |
 | [`single_source_model_recommendations.md`](../../docs/adr/single_source_model_recommendations.md) | R8 is superseded, the table's committed home is current, and the header fields are separated |
 | [`.markdownlint-cli2.mjs`](../../.markdownlint-cli2.mjs) | the ADR leaves the doc-wrap legacy list, because its header no longer needs the exemption |
-| [`setup.sh`](../../src/reasoning/providers/pi/setup.sh), [`onboard.sh`](../../src/reasoning/providers/pi/onboard.sh) | the container's copy refreshes from the project copy |
-| [`model-recommendations.skeleton.md`](../../src/reasoning/providers/pi/model-recommendations.skeleton.md) | the skeleton names no model |
-| [`setup-model-recommendations/SKILL.md`](../../src/reasoning/providers/pi/config/agent/skills/setup-model-recommendations/SKILL.md) | the skill states the committed file as the authority |
-| [`AGENTS.md`](../../AGENTS.md), [`AGENTS.md`](../../src/reasoning/providers/pi/config/agent/AGENTS.md) | the role line states its ordered assignments, and the reviewer takes the pair its caller resolved |
+| [`setup.sh`](../../src/reasoning/agent-runtime/pi/setup.sh), [`onboard.sh`](../../src/reasoning/agent-runtime/pi/onboard.sh) | the container's copy refreshes from the project copy |
+| [`model-recommendations.skeleton.md`](../../src/reasoning/agent-runtime/pi/model-recommendations.skeleton.md) | the skeleton names no model |
+| [`setup-model-recommendations/SKILL.md`](../../src/reasoning/agent-runtime/pi/config/agent/skills/setup-model-recommendations/SKILL.md) | the skill states the committed file as the authority |
+| [`AGENTS.md`](../../AGENTS.md), [`AGENTS.md`](../../src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | the role line states its ordered assignments, and the reviewer takes the pair its caller resolved |
 | [`test_pi_model_recommendations.sh`](../../tests/test_pi_model_recommendations.sh) | the setup, the table's format and the no-pin rule |
 | [`devlog/roadmap.md`](../roadmap.md) | the row closed with the late write-back named |

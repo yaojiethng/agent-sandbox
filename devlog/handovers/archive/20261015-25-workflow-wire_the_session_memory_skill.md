@@ -49,8 +49,8 @@ None.
 
 | File | Change |
 |---|---|
-| [`push-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/push-task.md) | the skill reference, the `render` call |
-| [`pop-task.md`](../../../src/reasoning/providers/pi/config/agent/prompts/pop-task.md) | report the block, expand with `zoom` |
+| [`push-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/push-task.md) | the skill reference, the `render` call |
+| [`pop-task.md`](../../../src/reasoning/agent-runtime/pi/config/agent/prompts/pop-task.md) | report the block, expand with `zoom` |
 | [`.agents/drafts/steering-memory-design-prompt.md`](../../../.agents/drafts/steering-memory-design-prompt.md) | the skill as the stopgap's home |
 | [`devlog/roadmap.md`](../../roadmap.md) | the M3.2.3 rows |
 | `<scratch>/ACTIVE_TASK_TRACKER.md` | the block re-rendered under `## Session memory` |

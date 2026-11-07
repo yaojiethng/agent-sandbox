@@ -50,10 +50,10 @@ fi
 
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
   mapfile -t TARGETS < <(
-    printf '%s\n' AGENTS.md src/reasoning/providers/pi/config/agent/AGENTS.md
+    printf '%s\n' AGENTS.md src/reasoning/agent-runtime/pi/config/agent/AGENTS.md
     git -C "$ROOT" ls-files \
       'src/reasoning/agent/skills/*/SKILL.md' \
-      'src/reasoning/providers/pi/config/agent/skills/*/SKILL.md' \
+      'src/reasoning/agent-runtime/pi/config/agent/skills/*/SKILL.md' \
       'workflow/coding-agent/skills/*/SKILL.md' \
       'workflow/coding-agent/prompts/*.md' \
       '.agents/skills/*/SKILL.md'

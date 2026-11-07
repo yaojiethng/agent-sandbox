@@ -7,8 +7,8 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { git } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/worktree.ts";
-import { nextRequestId, writeWorkerRequest, type WorkerStatus } from "../../../../src/reasoning/providers/pi/config/agent/extensions/task-queue/protocol.ts";
+import { git } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/worktree.ts";
+import { nextRequestId, writeWorkerRequest, type WorkerStatus } from "../../../../src/reasoning/agent-runtime/pi/config/agent/extensions/task-queue/protocol.ts";
 
 export const NOW = "2026-01-01T00:00:00.000Z";
 

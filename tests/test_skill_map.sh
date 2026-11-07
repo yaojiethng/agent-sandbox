@@ -92,10 +92,11 @@ test_a_collision_fails_and_names_both_layers() {
 }
 
 test_a_shipped_link_outside_its_layer_fails() {
-  local root out rc
+  local root out rc agent provider
   root="$(make_fixture)"
-  printf '\nSee [the provider skill](../../../providers/pi/config/agent/skills/provider-skill/SKILL.md).\n' \
-    >>"$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill/SKILL.md"
+  agent="$(layer_dir "$root" agent-sandbox)/agent-sandbox-skill"
+  provider="$(layer_dir "$root" provider)/provider-skill/SKILL.md"
+  printf "\nSee [the provider skill](%s).\n" "$(relative_to "$agent" "$provider")" >>"$agent/SKILL.md"
   out="$(run_map "$root")"; rc=$?
   assert_rc 1 "$rc" "an agent-sandbox link into the provider layer fails"
   assert_contains "$out" "forbidden link: agent-sandbox" "the finding names the source layer"
