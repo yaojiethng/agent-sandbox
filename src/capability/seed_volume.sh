@@ -71,6 +71,28 @@ _nul_streams_equal() {
   return 1
 }
 
+# _fsck_unreachable REPO
+# Prints REPO's unreachable objects on stdout and returns 0. On failure, prints
+# git's own diagnostics to stderr and returns git's exit code. fsck reports
+# missing/broken objects on both streams, so the stderr text is the only thing
+# that says why the probe failed; swallowing it leaves the seed log naming a
+# symptom and no cause. stderr is kept out of the returned list so a warning
+# never reads as an unreachable object.
+_fsck_unreachable() {
+  local repo="$1" err out rc=0
+  err="$(mktemp /tmp/seed-fsck.XXXXXX)" \
+    || { echo "Error: cannot create a temp file for git fsck" >&2; return 1; }
+  out="$(git -C "$repo" fsck --unreachable 2>"$err")" || rc=$?
+  if (( rc != 0 )); then
+    echo "git fsck --unreachable exited $rc in $repo" >&2
+    if [[ -n "$out" ]]; then printf '%s\n' "$out" | sed 's/^/  /' >&2; fi
+    if [[ -s "$err" ]]; then sed 's/^/  /' "$err" >&2; fi
+  fi
+  rm -f "$err"
+  if (( rc == 0 )); then printf '%s' "$out"; fi
+  return "$rc"
+}
+
 # verify_parity <src> <dest>
 # Fail-closed seed verification: git status --porcelain must be identical.
 # Compares sorted NUL streams with cmp (bash variables cannot hold NUL bytes,
@@ -196,16 +218,25 @@ main() {
   # seeded HEAD -- no archaeology crosses. The prune runs only when the probe
   # finds something, so a clean host repo pays only the fsck probe.
   local unreachable
-  unreachable="$(git -C "$DEST" fsck --unreachable 2>/dev/null)" \
-    || die "probing the volume object store failed"
+  if ! unreachable="$(_fsck_unreachable "$DEST")"; then
+    echo "Error: seed_volume: the volume copy at $DEST is not fsck-clean." >&2
+    echo "Probing the host repository at $SRC to tell a bad copy from a bad source:" >&2
+    if _fsck_unreachable "$SRC" >/dev/null; then
+      echo "  $SRC passes the same probe: the copy into the volume is the suspect." >&2
+    else
+      echo "  $SRC fails the same probe: the host repository is the source of the damage." >&2
+    fi
+    die "probing the volume object store failed"
+  fi
   if [[ -n "$unreachable" ]]; then
     git -C "$DEST" reflog expire --expire=now --all \
       || die "expiring the volume reflogs failed"
     git -C "$DEST" gc --prune=now --quiet \
       || die "pruning the volume object store failed"
   fi
-  unreachable="$(git -C "$DEST" fsck --unreachable 2>/dev/null)" \
-    || die "verifying the volume object store failed"
+  if ! unreachable="$(_fsck_unreachable "$DEST")"; then
+    die "verifying the volume object store failed"
+  fi
   if [[ -n "$unreachable" ]]; then
     die "the volume still carries unreachable objects after the prune"
   fi

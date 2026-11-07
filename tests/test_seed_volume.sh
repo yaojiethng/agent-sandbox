@@ -57,6 +57,10 @@ fi
 if [[ -n "\${SHIM_NOOP_STASH_CLEAR:-}" && "\$*" == *"stash clear"* ]]; then
   exit 0
 fi
+if [[ -n "\${SHIM_FAIL_FSCK:-}" && "\$*" == *"fsck --unreachable"* ]]; then
+  echo "fatal: unable to read tree deadbeefdeadbeef" >&2
+  exit 2
+fi
 exec "\$real_git" "\$@"
 EOF
   chmod +x "$dir/git"
@@ -637,6 +641,33 @@ test_seeder_names_the_failing_command() {
   fi
 }
 
+# Given: a repo whose object-store probe fails in the shim on every repository
+# When:  the seeder runs
+# Then:  the abort carries git's own diagnostics and names the host repository
+# Asserts: the probe failure dump is actionable -- the cause used to be discarded
+#          and only the symptom reached the seed log
+test_seeder_fsck_failure_dumps_diagnostics() {
+  local proj="$FIXTURE_DIR/fsck_fail_project"
+  local dest="$FIXTURE_DIR/fsck_fail_dest"
+  make_committed_repo "$proj"
+  mkdir -p "$dest"
+  make_seeder_git_shim "$FIXTURE_DIR/fsck_fail_shim"
+  export SEEDER_PATH="$FIXTURE_DIR/fsck_fail_shim:$PATH"
+  export SHIM_FAIL_FSCK=1
+  local rc=0
+  run_seeder "$proj" "$dest" || rc=$?
+  unset SHIM_FAIL_FSCK SEEDER_PATH
+  assert_ne "$rc" "0" "fsck failure: seeder exits non-zero"
+  assert_contains "$SEED_OUT" "git fsck --unreachable exited 2" \
+    "fsck failure: dump names the command and exit code"
+  assert_contains "$SEED_OUT" "unable to read tree deadbeefdeadbeef" \
+    "fsck failure: dump carries git's own error text"
+  assert_contains "$SEED_OUT" "fails the same probe: the host repository" \
+    "fsck failure: host probe distinguishes a bad source from a bad copy"
+  assert_contains "$SEED_OUT" "probing the volume object store failed" \
+    "fsck failure: the seed failure is still named"
+}
+
 # -------------------------
 # Registration
 # -------------------------
@@ -656,6 +687,7 @@ run_test test_seeder_post_clear_stash_tripwire
 run_test test_seeder_empty_enumeration
 run_test test_seeder_clears_host_stash
 run_test test_seeder_prunes_unreachable_objects
+run_test test_seeder_fsck_failure_dumps_diagnostics
 run_test test_seeder_flat_single_baseline
 run_test test_seeder_flat_verification_detects_dropped_file
 run_test test_seeder_flat_verification_detects_dirty_worktree
