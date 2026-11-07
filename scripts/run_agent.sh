@@ -348,17 +348,20 @@ seed_sandbox_volume() {
   # never boot. The sandbox container is created by the normal start flow
   # afterward; the healthcheck then passes immediately (the seeder wrote .git).
   local seed_timeout="${SEED_TIMEOUT:-300}"
-  # The seeder's output is teed to a log beside the session's compose file: the
-  # volume is discarded below, so the log is the only record left when a start
-  # fails (and the seeder's own failures may arrive on no stream at all).
+  # The seeder's output is written to a log beside the session's compose file:
+  # the volume is discarded below, so the log is the only record left when a
+  # start fails. It is not echoed live -- a failed object-store probe can dump
+  # hundreds of lines, and the log is the place to read them. The start names
+  # the file on failure and replays it on success (short: the completion line
+  # and any non-blocking warnings).
   local seed_log="${COMPOSE_OUT%.yml}.seed.log"
   local rc=0
   # -T + closed stdin: compose run allocates a TTY and attaches stdin by
   # default; from the non-interactive start pipeline that attach never closes
   # and compose hangs after the container exits (observed live, handover
   # 20260904-05). Non-interactive run lets the exit code propagate.
-  timeout "$seed_timeout" docker compose "${COMPOSE_ARGS[@]}" run --rm -T seeder < /dev/null 2>&1 \
-    | tee "$seed_log" || rc=${PIPESTATUS[0]}
+  timeout "$seed_timeout" docker compose "${COMPOSE_ARGS[@]}" run --rm -T seeder \
+    >"$seed_log" 2>&1 < /dev/null || rc=$?
   if (( rc != 0 )); then
     if (( rc == 124 )); then
       echo "Error: seeder timed out after ${seed_timeout}s  --  aborting start" >&2
@@ -377,6 +380,7 @@ seed_sandbox_volume() {
     docker compose "${COMPOSE_ARGS[@]}" down --volumes --remove-orphans --timeout 10 >/dev/null 2>&1 || true
     return 1
   fi
+  if [[ -s "$seed_log" ]]; then cat "$seed_log"; fi
   echo "Sandbox volume seeded and verified."
 }
 
