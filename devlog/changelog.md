@@ -263,3 +263,11 @@ The source store became the record: each forked artifact carries an edge with it
 The change flow is three primitives over a derived mergeability value: `prepare-rebase` makes a branch fast-forwardable, `/merge-queue` orders the ready set, and `accept-fast-forward` advances the trunk by a compare-and-swap. The branch tree is fractal, with a track per milestone and the prepare obligation at every level; recovery and correction are separate families. The unit vocabulary now names the iteration, the delivery commit, the branch, the handover, the roadmap row and the item, and a gate holds the distinction.
 
 ---
+
+## M3.6.4 - The reasoning image refactor
+
+*The reasoning images are the three tiers the layer design settled, every build input is pinned to the artifact it resolved to, and a build's run is recorded rather than recalled.*
+
+The shared tier is `agent-runtimes`: pi installs frozen from a committed lockfile, and the OpenCode CLI arrives as one pinned binary, because its package publishes a binary per platform and per C library and the frozen install shipped four of them for one executable. The provider bases were deleted, the build-skip mechanism went with them, and docker's layer cache became the only reuse rule. Fifteen build inputs carry a pin at the strictest form their class supports, with the pins file recording what each resolved to and how to move it, and the one class that cannot reach the strict form names its own end. The build then became measurable: the context is the declared inputs, and `scripts/build_probe.sh` records each tier's digest, size, cache state and seconds, so three host runs show the removal costing nothing and the runtime tier falling from 703.7MiB to 264.7MiB once the platform matrix was replaced by one binary.
+
+---
