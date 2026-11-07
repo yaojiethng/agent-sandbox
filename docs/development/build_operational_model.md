@@ -22,11 +22,15 @@ The production run is measured by [`scripts/build_probe.sh`](../../scripts/build
 | Layer | What it proves | Where |
 |---|---|---|
 | the production run | the artifact, the cache, the cost and the failure | [`scripts/build.sh`](../../scripts/build.sh) and the recorder |
-| the static wiring | the tier selection, the flag, the pin, the COPY declaration | the container's unit tests |
+| the static wiring | the tier selection, the flag, the pin, the context, the COPY declaration | the container's unit tests |
 | the e2e | the image starts and the agent runs | the dry-run, M3.4.5's surface |
-| the gates | the manifest and the Dockerfiles agree; the prose and links lint | [`check_container_layout.sh`](../../scripts/check_container_layout.sh); [`lint.sh`](../../scripts/lint.sh) |
+| the gates | the manifest and the Dockerfiles agree; the context is the declared inputs; the prose and links lint | [`check_container_layout.sh`](../../scripts/check_container_layout.sh); [`check_build_context.sh`](../../scripts/check_build_context.sh); [`lint.sh`](../../scripts/lint.sh) |
 
 The recorder does not grep a Dockerfile, the static test does not measure a build, and the dry-run does not measure the build's cost. Each layer reads the evidence that exists at its own point.
+
+## The build context
+
+The context's declared inputs are the manifest's `image[].source` and `build[].source` rows, plus every `COPY` source in every Dockerfile the repository builds. Both builds share the repository root as context, so the ignore file must serve both: a path the reasoning images never copy is still the capability image's input. `.dockerignore` is the complement of that union, so the context carries the sources, the dockerfiles and the ignore file, and nothing else. [`scripts/check_build_context.sh`](../../scripts/check_build_context.sh) holds the two equal in both directions: a source the ignore file would exclude, or an included path no source owns, is a finding. It prints the context's file count and bytes, so a widening shows as a number before a host run.
 
 ## The domain catalog
 
@@ -46,6 +50,7 @@ The frequency bands are the audit's, from the 2026-11-07 log boundary; they orde
 | boundary | the agent reads the report | every run | the report crosses through the input channel | the report path |
 | security | pins, the non-root user, no secrets | every build | the pin policy holds; the image runs as the agent user | the pin row; the static tests |
 | layer locking | the cache key and copy-in | every build | the COPY declarations are the manifest's | the layout gate |
+| context | the context set | every build | only the declared inputs travel to the builder | the check's files and bytes |
 | concurrency | two builds on one host | rare | one build's cache is not corrupted by another's | deferred; the trigger is a second concurrent build |
 
 ## What the recorder writes
