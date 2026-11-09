@@ -121,7 +121,7 @@ test_targets_expand_their_flags() {
     'reject|--env=$(ENV_FILE)'
     'apply|--env=$(ENV_FILE) --diff=$(DIFF) --branch=$(BRANCH) --interactive --force'
     'package-branch|--env=$(ENV_FILE) --bundle-summary=$(BUNDLE_SUMMARY) --baseline=$(BASELINE) --no-renames'
-    'refresh|--refresh --name=$(PROJECT_NAME) --project=$(PROJECT_DIR) --sandbox=$(SANDBOX_DIR)'
+    'refresh|--refresh --env='
   )
   local entry target flags block f
   local -a toks

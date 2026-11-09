@@ -36,7 +36,6 @@ test_env_read_sites_match_the_census() {
       "scripts/onboard.sh 1" \
       "scripts/resume_agent.sh 1" \
       "scripts/start_agent.sh 1" \
-      "scripts/templates/Makefile.template 1" \
       "src/libs/env.sh 1" \
       "src/libs/env_resolve.sh 4" \
       "src/libs/session_env.sh 1"

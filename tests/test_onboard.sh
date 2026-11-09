@@ -106,7 +106,7 @@ test_fresh_onboard_env_has_required_keys() {
 # ---------------------------------------------------------------------------
 # Given: a completed fresh onboard
 # When:  the generated Makefile is read
-# Then:  it forwards --name=$(PROJECT_NAME) and bakes no literal name
+# Then:  it points every target at .env with --env=$(ENV_FILE) and bakes no identity
 # Asserts: identity lives in .env, not in the Makefile
 test_fresh_onboard_makefile_reads_name_from_env() {
   local PROJECT_DIR="$FIXTURE_DIR/name_env_project"
@@ -124,10 +124,14 @@ test_fresh_onboard_makefile_reads_name_from_env() {
     fail "Makefile bakes the concrete project name"
     return
   fi
-  if grep -q -- "--name=\$(PROJECT_NAME)" "$MKB"; then
-    pass "Makefile reads PROJECT_NAME from .env, does not bake a literal"
+  if grep -qE '^PROJECT_NAME' "$MKB"; then
+    fail "Makefile assigns PROJECT_NAME; the CLI resolves it from --env"
+    return
+  fi
+  if grep -q -- "--env=\$(ENV_FILE)" "$MKB"; then
+    pass "Makefile points the CLI at .env and bakes no identity"
   else
-    fail "Makefile does not forward --name=\$(PROJECT_NAME)"
+    fail "Makefile does not forward --env=\$(ENV_FILE)"
   fi
 }
 
