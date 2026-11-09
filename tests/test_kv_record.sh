@@ -162,6 +162,46 @@ test_verify_rejects_a_non_pass_layer_value() {
   assert_contains "$output" "layer.session_data = UNKNOWN" "the unknown value is named"
 }
 
+# Given: a record carrying A and B, and then a key the record does not carry
+# When:  kv_update runs on the existing key and then on the absent one
+# Then:  the existing line is replaced in place and the absent pair is appended
+# Asserts: the upsert is the writer for a record whose keys must not repeat.
+test_kv_update_replaces_in_place_and_appends() {
+  local F="$FIXTURE_DIR/upsert.record"
+  printf 'A=1\nB=2\n' > "$F"
+  kv_update "$F" B "changed"
+  assert_eq "1" "$(kv_read "$F" A)" "the untouched key keeps its value"
+  assert_eq "changed" "$(kv_read "$F" B)" "the existing key takes the new value"
+  assert_eq "1" "$(grep -c '^B=' "$F")" "the key keeps exactly one line"
+  kv_update "$F" C "3"
+  assert_eq "3" "$(kv_read "$F" C)" "an absent key is appended"
+  assert_eq "3" "$(wc -l < "$F" | tr -d ' ')" "the record grew by one line"
+}
+
+# Given: a record whose key appears on two lines
+# When:  kv_update runs
+# Then:  one line remains, holding the new value
+# Asserts: the upsert converges, rather than leaving the first line to win.
+test_kv_update_collapses_a_duplicate_key() {
+  local F="$FIXTURE_DIR/upsert-dup.record"
+  printf 'K=one\nK=two\n' > "$F"
+  kv_update "$F" K "three"
+  assert_eq "three" "$(kv_read "$F" K)" "the key reads the new value"
+  assert_eq "1" "$(grep -c '^K=' "$F")" "one line remains for the key"
+}
+
+# Given: a path whose parent directory does not exist
+# When:  kv_update runs
+# Then:  it fails and writes nothing
+# Asserts: the missing parent is a caller error, the contract kv_write shares.
+test_kv_update_missing_directory_fails() {
+  local F="$FIXTURE_DIR/no-such-dir/rec.record"
+  local rc=0
+  kv_update "$F" K V || rc=$?
+  assert_ne "$rc" "0" "kv_update fails when the parent directory is absent"
+  assert_eq "" "$(cat "$F" 2>/dev/null)" "no file is created"
+}
+
 run_test test_kv_line_rules_crlf_no_equals_and_key_prefix
 run_test test_verify_rejects_a_non_pass_layer_value
 run_test test_kv_read_returns_the_full_tail
@@ -171,6 +211,9 @@ run_test test_kv_write_creates_and_appends
 run_test test_kv_write_missing_directory_fails
 run_test test_kv_load_whole_record_in_order
 run_test test_kv_load_named_keys_in_argument_order
+run_test test_kv_update_replaces_in_place_and_appends
+run_test test_kv_update_collapses_a_duplicate_key
+run_test test_kv_update_missing_directory_fails
 run_test test_session_state_delegates_to_the_kv_pair
 run_test test_no_second_record_parser_in_the_tree
 
