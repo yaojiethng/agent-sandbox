@@ -88,7 +88,7 @@ The provider config reaches a session from two sources:
 
 ### What the mounted subdirectories carry
 
-`prompts/`, `sessions/` and `skills/` are the provider-layer content the operator and the agent add: prompt files the provider loads by discovery, session history, and skills. They are mounted read-write, so they persist, and nothing in the harness copies them.
+`prompts/`, `sessions/` and `skills/` are the provider content the operator and the agent add: prompt files the provider loads by discovery, session history, and skills. They are mounted read-write, so they persist, and nothing in the harness copies them.
 
 ### Fragility summary
 
@@ -105,7 +105,7 @@ The four layers, highest precedence first, are project, provider, agent-sandbox 
 
 - **Project layer** -- `.agents/skills` and `.agents/prompts/` in the project tree. Pi auto-discovers `.agents/skills`, and the settings `prompts` key names `.agents/prompts`; the operator edits the project tree, and no image row carries either folder.
 - **Provider layer** -- the provider's own content under `$AGENT_HOME/agent/skills|prompts/`, seeded from the image template and mounted from the host. Loaded by pi's discovery from those directories.
-- **Agent-sandbox layer** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the first `"packages"` entry in `settings.json`, which names `/opt/workflow/agent`; a key pi does not preserve costs that layer for the rest of the session.
+- **Agent-sandbox surface** -- image-baked at `/opt/workflow/agent/skills|prompts`. Loaded through the first `"packages"` entry in `settings.json`, which names `/opt/workflow/agent`; a key pi does not preserve costs that surface for the rest of the session.
 - **Workflow module layer** -- image-baked at `/opt/workflow/agent/modules/<module>/skills|prompts` and reached through the module's own `packages` entry, its own root. A merge into the harness root would lose the module's origin and let one module's file shadow another's.
 
 A name in more than one layer resolves first-wins in that order. The generated skill map is the gate: `scripts/check_skill_map.sh` reads pi's loader, reports collisions and holds the shipped-layer link boundary. The four-layer model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#skills-and-prompts-layer-model).

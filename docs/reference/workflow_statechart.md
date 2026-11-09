@@ -307,7 +307,7 @@ Each check is a query a reader makes on the chart and the defect the query finds
 | Unreachable state | every state has an inbound path from a `[*]` and from a region's entry | a command or check no path reaches |
 | No dispatcher | every `chk_*` state has at least one incoming edge labelled with a command | a maintenance skill nothing runs |
 | Unchecked record write | every edge whose effect writes a `rec_*` state is followed, on every path to a gate, by a `chk_*` state or a gate the chart marks as checked | maintenance work with no check on its path |
-| Dangling dispatch | every dispatch named in the command table resolves to a file under `prompts/`, `skills/` or the reference layer | a dispatch to something that does not exist |
+| Dangling dispatch | every dispatch named in the command table resolves to a file under `prompts/`, `skills/` or the reference tree | a dispatch to something that does not exist |
 | Dead end | every state outside the records region has an outbound edge; a record state in the records region is terminal by design | a command that strands the agent |
 | Unsatisfied entry | a command's input contract holds in the state it fires from: `/commit` requires an open handover, `/milestone-close` requires an active milestone | a runbook's precondition the chart violates |
 | Guard collision | no state has two outbound edges on one event whose guards can both hold | an ambiguous transition |
