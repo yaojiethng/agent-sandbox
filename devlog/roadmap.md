@@ -58,7 +58,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.5 - OpenCode as a first-class provider](#m365---opencode-as-a-first-class-provider) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.6 - The scheduler](#m366---the-scheduler) | Not started |
 | &nbsp;&nbsp;[M3.7 - Git boundary and repository state](#m37---git-boundary-and-repository-state) | In progress |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.7.1 - Gate boundary capability](#m371---gate-boundary-capability) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.7.1 - Gate boundary capability](changelog.md#m371---gate-boundary-capability) | [Complete - see changelog](changelog.md#m371---gate-boundary-capability) |
 | **T - Harness Development Tracks** | [In progress](#t---harness-development-tracks) |
 | &nbsp;&nbsp;[T7 - Harness Specialization / Sandbox Persistence](#t7---harness-specialization--sandbox-persistence) | In progress |
 | **Multi-Agent** | |
@@ -658,11 +658,11 @@ The seam is measured, not assumed. Dispatch owns role resolution, the runtime de
 - The required draft mutation subset reports no survivor or stale row.
 - M3.7.1 closes on the draft lifecycle chart; the change model is M3.7's, and no cross-chart row remains.
 
-- [x] **Merge the two package prompts, and enforce the bundle-summary slug** -- `/package-rebase` folded into `/package-branch`, since the branch point is computed the same way in both cases; the summary is validated at entry (`^[a-z0-9]+(_[a-z0-9]+)*$`, 3 to 48 chars) because it names the draft branch, and an unvalidated prose value broke `git branch`; the export reports a moved branch point, and `make draft` routes its confirm hint on `merge-base --is-ancestor`. The `How to apply` section was removed, the end-to-end flow recorded in [`diff_packaging.md`](../docs/adr/diff_packaging.md), and the ownership rule added to [`instruction-authoring`](../.agents/skills/instruction-authoring/SKILL.md). Handover `20261002-24`.
-- [x] **Harness export and draft invocation seam** -- `--baseline` reaches `package_branch.sh`, a make invocation names `BRANCH_FROM`, and a non-interactive draft requires an explicit bundle. Iteration `20260924-03`.
-- [x] **Draft consumes the package fork point; the hint is unconditional** -- `draft` reads `.branch-point`, `BRANCH_FROM` overrides it, and both hint routes state the branch point. Handover [`20261108-02`](handovers/M3.7.1/20261108-02-impl-draft_fork_point.md).
-- [x] **Replace `.draft-state` with the branch-local draft record** -- `draft` writes the source and fork point under `branch.<draft>.*`, confirm and reject read it, and confirm has no metadata-drop step. Handover [`20261108-03`](handovers/M3.7.1/20261108-03-impl-branch_local_draft_record.md).
-- [x] **The draft lifecycle transition model and its mutation gate** -- every package and confirm transition carries an id, event, guard, invariant, precondition, postcondition, test and mutation row; `scripts/check_draft_statechart.sh` checks the mapping and `scripts/lint.sh` runs it. Handover [`20261108-04`](handovers/M3.7.1/20261108-04-impl-draft_lifecycle_transition_model.md).
+- [x] **The package prompt and draft invocation are one path** -- `/package-rebase` folded into `/package-branch`, the bundle summary is validated at entry, and draft routes its confirm hint on ancestry. Handover `20261002-24`.
+- [x] **The draft invocation seam is explicit** -- `--baseline` reaches the package step, a make invocation names `BRANCH_FROM`, and a non-interactive draft requires a bundle. Iteration `20260924-03`.
+- [x] **Draft forks from the package branch point** -- draft reads `.branch-point`, an explicit `BRANCH_FROM` wins, and both hint routes print the branch point. Handover `20261108-02`.
+- [x] **The draft record is branch-local** -- draft writes the source and fork point under `branch.<draft>.*`, confirm and reject read it, and no `.draft-state` remains. Handover `20261108-03`.
+- [x] **The draft lifecycle is an evidenced transition model** -- every package and confirm transition carries an id, guard, invariant, test and mutation row, and `scripts/check_draft_statechart.sh` holds the table to the chart. Handover `20261108-04`.
 
 ### T - Harness Development Tracks
 
