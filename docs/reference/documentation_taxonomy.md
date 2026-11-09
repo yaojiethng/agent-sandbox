@@ -61,7 +61,7 @@ A pointer states reach in two values, `every session` and `this project`, becaus
 A record moves through stages. Each stage is a readable summary; the rule that governs it lives in the policy it names.
 
 - **Place.** Pick the folder category before drafting. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
-- **Author.** A record-layer document starts with a confirmed skeleton. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
+- **Author.** A record document starts with a confirmed skeleton. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
 - **Format.** Every `docs/` document opens with the same header block. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- How a document opens.
 - **Maintain.** A durable record is written for its reader, not for the session that produced it. Judgement: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. Procedure: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
 - **Check.** A record must satisfy the document lint gate to close. Rule: the `doc-maintenance` procedure, `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md` -- The lint rule set.

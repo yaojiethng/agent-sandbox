@@ -226,11 +226,11 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Objective:** move the skill-ingestion pipeline into `workflow/<module>/`, so a project can enable ingestion or leave it off. It is repository-local today because two of its three members are project and harness state, and a module carries `prompts/` and `skills` only.
 
-**Depends on:** M3.4.2 `Environment declaration seam`, and a way for a shipped module to register a lint gate.
+**Depends on:** M3.4.7 `Environment declaration seam`, and a way for a shipped module to register a lint gate.
 
 **The prefactors, in the order they bind:**
 
-- [ ] **The project declares where its registry lives** -- `source_bump.mjs` resolves its root to the repository it runs in and expects `.agents/registry/sources/`; M3.4.2 owns where a project declares a path like that. Ends when a project names its registry root in a declaration the CLI reads, and a fixture project's store sits somewhere other than that fixed path.
+- [ ] **The project declares where its registry lives** -- `source_bump.mjs` resolves its root to the repository it runs in and expects `.agents/registry/sources/`; M3.4.7 owns where a project declares a path like that. Ends when a project names its registry root in a declaration the CLI reads, and a fixture project's store sits somewhere other than that fixed path.
 - [ ] **A shipped module can register a lint gate** -- `scripts/lint.sh` holds the gate list and a module's payload is its two folders, so a module cannot add a commit-time check. Ends when a gate shipped with a module runs under the umbrella, with a test that a failing module gate fails the umbrella and names its module.
 - [ ] **The store's tooling has a transport** -- `scripts/skill_store.mjs` and `scripts/source_bump.mjs` are repository scripts, and their tests run against the tree. Ends when both resolve from one installed location in any project, and the suite runs against that copy.
 - [ ] **The workflow layer enumerates modules from the manifest** -- `scripts/skill_layers.mjs` names the coding-agent module's skills folder literally, so a second module is invisible to the layer map, the collision gate and the reference gate. Ends when a second module appears in all three with no name added by hand.

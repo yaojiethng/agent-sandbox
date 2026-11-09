@@ -379,3 +379,86 @@ Every attribution names its provenance. An attribution with none is a guess, and
 - The session store records no call site. The working directory and the session are the nearest provenance it keeps, and a question the store cannot answer is recorded as a gap.
 
 **Last updated:** 2026-10-24
+
+---
+
+## layer
+
+The container architecture of a session: the capability layer and the reasoning layer. Reserved to this sense, and not used for execution extent or environment ownership.
+
+### Identity
+
+- capability layer; reasoning layer
+
+### Scope
+
+- a session runs one capability layer and one reasoning layer; the separation is `docs/adr/agent_sandbox_two_container_separation.md`.
+
+### Relationships
+
+- Execution extent is a [sub-domain](#sub-domain); environment ownership is a [plane](#plane).
+
+**Last updated:** 2026-10-15
+
+---
+
+## domain
+
+The problem field the harness serves: agentic engineering.
+
+### Identity
+
+- agentic engineering
+
+### Scope
+
+- the whole system: its two-container runtime, its instruction surfaces and its operator workflow.
+
+### Relationships
+
+- Divides into [sub-domains](#sub-domain).
+- The model is `docs/adr/container_execution_model.md`.
+
+**Last updated:** 2026-10-15
+
+---
+
+## sub-domain
+
+A division of the [domain](#domain) by execution extent: infrastructure, single-agent execution, multi-agent orchestration.
+
+### Identity
+
+- infrastructure; single-agent execution; multi-agent orchestration
+
+### Scope
+
+- the execution extent a harness part serves, not the number of files or containers.
+
+### Relationships
+
+- Divides into [planes](#plane).
+- Multi-agent orchestration is not started.
+
+**Last updated:** 2026-10-15
+
+---
+
+## plane
+
+An ownership slice within a [sub-domain](#sub-domain): host substrate, session guarantee, environment declaration, project data and caches, verification surface. Each plane owns one concern and has exactly one owner.
+
+### Identity
+
+- host substrate; session guarantee; environment declaration; project data and caches; verification surface
+
+### Scope
+
+- the ownership of one environment concern: the operator, the harness, or the project.
+
+### Relationships
+
+- Planes resolve bottom-up within a sub-domain; the session guarantee is the invariant boundary of single-agent execution.
+- Not a [layer](#layer), which names the container architecture.
+
+**Last updated:** 2026-10-15

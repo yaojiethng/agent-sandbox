@@ -169,7 +169,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | `$CHANGES_DIR` (derived: `$SANDBOX_DIR/.workspace/session-diffs`) | `/home/agentuser/workspace/session-diffs/` | -- | RW | Harness -- diff pipeline output |
 | `$INPUT_DIR` | -- | `/home/agentuser/workspace/input/` | RO | Operator -- populated before a run |
 | `$OUTPUT_DIR` | -- | `/home/agentuser/workspace/output/` | RW | Agent -- written during a run |
-| `$SANDBOX_DIR/.<provider>/agent/{prompts,sessions,skills}` | -- | `/home/agentuser/.<provider>/agent/{prompts,sessions,skills}` | RW | Harness -- provider-layer state; mounted by the provider overlay, beside the config files the image seeds |
+| `$SANDBOX_DIR/.<provider>/agent/{prompts,sessions,skills}` | -- | `/home/agentuser/.<provider>/agent/{prompts,sessions,skills}` | RW | Harness -- provider state; mounted by the provider overlay, beside the config files the image seeds |
 | SESSION_ID-scoped named volume (`{{SESSION_ID}}-sandbox-data`) | `/home/agentuser/sandbox/` | `/home/agentuser/sandbox/` | RW | Docker -- owned by capability layer; shared via `--volumes-from`; persists across `compose down` |
 
 `PROJECT_DIR` is never mounted. `sandbox/` is a named volume filled by the seeder at session start; it survives `docker compose down` (named volumes are kept) so session state supports resume, and is removed by `down -v` or prune Rule 2. The reasoning layer can only access it while the capability layer is running.

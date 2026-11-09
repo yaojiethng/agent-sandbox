@@ -413,6 +413,7 @@ main() {
   # Flag parsing
   # ---------------------------------------------------------------------------
   source "$REPO_ROOT/src/libs/cli.sh"
+  source "$REPO_ROOT/src/libs/env_resolve.sh"
   parse_args usage \
     --name=PROJECT_NAME \
     --project=PROJECT_DIR \
@@ -457,10 +458,13 @@ main() {
     resolve_and_validate PROJECT_DIR "--project" "$PROJECT_DIR" true
   fi
 
-  # Derive PROJECT_DIR from .env if not provided (refresh mode)
+  # Derive PROJECT_DIR if not provided (refresh mode), through the one
+  # precedence primitive: the explicit flag, then AGENT_SANDBOX_PROJECT_DIR,
+  # then the sandbox .env. A miss leaves PROJECT_DIR empty, which refresh
+  # tolerates, so the primitive's error is not reachable here.
   if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
     if [[ -f "$SANDBOX_DIR/.env" ]]; then
-      PROJECT_DIR=$(grep -m1 '^PROJECT_DIR=' "$SANDBOX_DIR/.env" | cut -d= -f2-)
+      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$SANDBOX_DIR/.env" 2>/dev/null || true)"
     fi
   fi
 

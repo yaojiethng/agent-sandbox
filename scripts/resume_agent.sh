@@ -15,17 +15,18 @@
 # Host-side prelude (paths, image names, .env, branch, delivery, uid/gid) is
 # shared with start_agent.sh via src/libs/session_env.sh.
 
-# ENV_REL is parsed here and read by the sourced session_env_common_init to
-# set ENV_FILE (same consumer as start_agent.sh); shellcheck cannot follow the
-# sourced scope, so the variable appears unused in this file.
+# ENV_REL is parsed here and read by env_resolve_identity to set ENV_FILE
+# (same consumer as start_agent.sh); shellcheck cannot follow the sourced
+# scope, so the variable appears unused in this file.
 # shellcheck disable=SC2034
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/libs/common.sh"
-# env_resolve_one / default_env_file: the inventory render enriches PROJECT_DIR
-# from the sandbox .env (resume dispatches sandbox-only). Sourced here, not via
-# session_env.sh, because the render runs before session_env_common_init.
+# env_resolve_identity: the inventory render enriches PROJECT_DIR from the
+# sandbox .env (resume dispatches sandbox-only), and the dispatch resolves the
+# identity triple. Sourced here, not via session_env.sh, because the render
+# runs before the prelude.
 source "$REPO_ROOT/src/libs/env_resolve.sh"
 
 # Max inventory entries shown per page by --list and --interactive. Canonical
@@ -98,25 +99,17 @@ fi
 source "$REPO_ROOT/src/libs/resume_list.sh"
 
 # -------------------------
-# PROJECT_DIR enrichment for the inventory render
+# Identity resolution, once for the whole chain
 # -------------------------
 # The STATE column (commit distance) and the current-branch hint read
-# PROJECT_DIR. The dispatcher resolves resume sandbox-only (a listing is a
-# registry diagnostic; the ADR env_resolution.md). When --project was omitted,
-# read PROJECT_DIR from the sandbox .env by the canonical precedence
-# (AGENT_SANDBOX_PROJECT_DIR env var, then the .env key) so a session started
-# on the current branch shows its true commit distance. Resolution failure
-# degrades the columns ("not in tree", "(absent)") and never fails the
-# listing; the resume proper resolves again with a hard error via
-# session_env_common_init below.
-if [[ -z "$PROJECT_DIR" && -n "$SANDBOX_DIR" ]]; then
-  _env_path="$(default_env_file "$ENV_REL" "$SANDBOX_DIR")"
-  if [[ -f "$_env_path" ]]; then
-    _proj_from_env="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$_env_path" 2>/dev/null || true)"
-    [[ -n "$_proj_from_env" ]] && PROJECT_DIR="$_proj_from_env"
-    unset _proj_from_env
-  fi
-  unset _env_path
+# PROJECT_DIR, so the resolution runs before the inventory render. A listing is
+# a registry diagnostic: a resolution failure degrades its columns ("not in
+# tree", "(absent)") and never ends it, and the flag records that outcome for
+# the resume proper, which needs the triple and exits at the dispatch below.
+# This is the chain's one .env parse; no later site resolves again.
+_identity_resolved=false
+if env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "${ENV_REL:-}"; then
+  _identity_resolved=true
 fi
 
 # -------------------------
@@ -245,7 +238,11 @@ local_flatten="${local_flatten:-false}"
 # Shared host-side prelude (phase 1 + 2)
 # -------------------------
 source "$REPO_ROOT/src/libs/session_env.sh"
-session_env_common_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
+if [[ "$_identity_resolved" != true ]]; then
+  echo "Error: session identity did not resolve; see the resolver message above." >&2
+  exit 1
+fi
+resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
 
 mkdir -p "$CHANGES_DIR" "$INPUT_DIR" "$OUTPUT_DIR"
 

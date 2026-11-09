@@ -13,11 +13,12 @@
 2d312e7fc5a87f9c  docs/reference/execution_model.md
 358cda4e2398ae91  docs/development/context_resolution.md
 35a8f55a6d87d4ca  docs/adr/sandbox_delivery_model.md
-36ee123fe157bf0a  docs/adr/env_resolution.md
+36ee123fe157bf0a  docs/adr/resolution_model.md
 3985616bb51cca60  docs/development/instruction-surface-conventions.md
 4114f5cea5541e7b  docs/reference/copy_delivery.md
 41617a6b7d658bee  docs/development/provider_onboarding_guide.md
 42dadd4dd63fb72d  docs/development/quickstart.md
+5eae92d4aa3a2b97  docs/reference/execution_model.md
 60bc64f4bfb0cf8a  docs/development/context_resolution.md
 62dbf891bad11247  docs/development/context_resolution.md
 636303bfae8ef83a  docs/development/interface-conventions.md
@@ -37,7 +38,6 @@
 996fb0c663e551c4  docs/development/interface-conventions.md
 9a56c7051badc60c  docs/adr/docker_output_presentation.md
 9a5bc0f0de8a8ebf  docs/development/context_resolution.md
-9ce1bb0272584f67  docs/reference/execution_model.md
 a4afb3e1f8ddbe41  docs/reference/sandbox_lifecycle.md
 aa026049dac86e21  docs/development/interface-conventions.md
 ad2692d344907ba0  docs/reference/project_onboarding_guide.md

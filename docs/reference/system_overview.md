@@ -17,46 +17,62 @@ These guarantees hold across all agent runs. Defined authoritatively in `docs/de
 - All agent output is staged as a diff and requires human approval before being applied
 - Agent nesting depth is limited to two layers (parent + child) -- stated here as an architectural guarantee; no operational enforcement exists yet
 
-## Architecture Layer Model
+---
 
-The stack has three layers. Each builds on the one below it.
+## Architecture Domain Model
 
-| Layer | Name | Holds |
+The system is described by its domain model. The decision is recorded in the ADR `container_execution_model.md`. The domain is agentic engineering. It divides into sub-domains by execution extent, and each sub-domain divides into planes by environment ownership. A strict bottom-up stabilization rule applies: a plane stabilizes before the next plane above it evolves, and a sub-domain stabilizes before the next sub-domain evolves.
+
+**Sub-domains** divide the domain by how much executes under the harness.
+
+| Sub-domain | Execution extent |
+|---|---|
+| Infrastructure | the runtime substrate; no agent executes |
+| Single-agent execution | one agent runs and produces a diff |
+| Multi-agent orchestration | agents coordinate; not started |
+
+**Planes** are the ownership slices within a sub-domain. Each plane owns one concern and has exactly one owner.
+
+| Plane | Responsibility | Owner |
 |---|---|---|
-| 0 | Infrastructure | the Docker runtime, the filesystem, the container environment a session runs in |
-| 1 | Execution Mechanics | how a single agent runs a task and produces a diff |
-| 2 | Orchestration | how several agents coordinate |
+| Host substrate | Docker runtime, host filesystem, host tooling | operator |
+| Session guarantee | sandbox volume, snapshot, diff pipeline, session record | harness |
+| Environment declaration | image, toolchain, dependencies, mounts, volumes, services, lifecycle | contested; the project is the target owner |
+| Project data and caches | source, virtual environment, node modules, build cache, logs, database data | project |
+| Verification surface | launch, drive, observe, isolate, cleanup, evidence | project, enabled by the harness |
 
-**Security Model** -- states the threat model the implementation is hardened against.
+The planes resolve in the order listed. The session guarantee is the invariant boundary of the single-agent sub-domain: it must hold while the planes above and below it change. The environment declaration is the plane the current work moves to project ownership, under that guarantee.
 
-**Human Workflow** -- the constraint on how the operator works within agent-sandbox.
+Two elements frame the model without belonging to it:
 
-### The stabilization rule
+**Security Model** -- a design constraint applied to every sub-domain and plane. The security requirements are written before implementation and used to harden each part against the threat model. It is not a plane; it is a constraint the implementation must satisfy.
 
-Layer 0 is finished before layer 1 is built on it, and layer 1 before layer 2. That order is the rule. A change to a low layer breaks the work already built on it, so the change waits until that work is finished.
+**Human Workflow** -- the outer frame of the system. The operator initiates every run and has final authority over all outputs. No output reaches the repository without human review and approval. This is an invariant of the system design, not a sub-domain that gets built in sequence.
 
-An unfinished layer above is a reason to leave a low layer alone. Settled never means finished for good: it means you can build on the layer today.
+The freeze status is scoped to a plane, never to a file and never to a whole sub-domain once a plane inside it changes. `documentation_policy.md` applies it: architecture documents must not describe what a stable plane does not yet do.
+
+An unfinished plane above is a reason to leave a low plane alone. Settled never means finished for good: it means you can build on the plane today.
 
 ### What going around it costs
 
-A low-layer change looks locally correct: tests pass, the diff is small. Four things follow.
+A low-plane change looks locally correct: tests pass, the diff is small. Four things follow.
 
-1. Changing a layer out of order invalidates the interface that future work relies on, so that work has to be replanned or rescoped.
+1. Changing a plane out of order invalidates the interface that future work relies on, so that work has to be replanned or rescoped.
 2. The review cannot catch it: everyone who uses the interface today gets updated in the same change, and the future work is not in the tree to read.
 3. Nothing records the crossing, so the rework shows up two milestones on with no account of why.
 4. Every document, handover and fixture that describes the old interface goes stale at once, and each one has to be found by hand.
 
 ### Which situation you are in
 
-Editing a low layer to get on with the work above it is one of three situations. Each has a test, and a different fix.
+Editing a low plane to get on with the work above it is one of three situations. Each has a test, and a different fix.
 
-1. **The lower layer is not finished.** The work needs a contract the lower layer does not yet state. Finish the lower layer; the higher-layer task waits.
-2. **The task belongs to the lower layer.** The change makes sense without reference to the work above it. Rescope the task to the lower layer, and move its roadmap position with it.
-3. **The lower layer is being rewritten deliberately.** The rewrite changes an interface that everything above depends on. Make it a task of its own, name what it invalidates, and sequence it against the work above.
+1. **The lower plane is not finished.** The work needs a contract the lower plane does not yet state. Finish the lower plane; the higher-plane task waits.
+2. **The task belongs to the lower plane.** The change makes sense without reference to the work above it. Rescope the task to the lower plane, and move its roadmap position with it.
+3. **The lower plane is being rewritten deliberately.** The rewrite changes an interface that everything above depends on. Make it a task of its own, name what it invalidates, and sequence it against the work above.
 
-A task whose first edit lands below the layer it names is the signal, and it is cheaper to catch before the work starts.
+A task whose first edit lands below the plane it names is the signal, and it is cheaper to catch before the work starts.
 
-How a document states a layer's state is the `project-documentation` convention's. Which layer work is in flight is the task list's.
+How a document states a plane's state is the `project-documentation` convention's. Which plane work is in flight is the task list's.
 
 ## Major Components
 
@@ -70,7 +86,7 @@ How a document states a layer's state is the `project-documentation` convention'
 
 **Diff and apply** -- on capability layer exit, the diff pipeline produces per-commit `.diff` files, `uncommitted.diff`, `all-changes.diff`, and `changed-files/` into a session-scoped directory under `session-diffs/{session,autosave}/`. The operator runs `make draft` to apply patches to a working branch, or `make apply DIFF=<path>` to apply a diff file directly (unstaged). Host-side `make package-branch` provides equivalent export capability outside the container.
 
-**Per-project config** -- each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project-layer agent context -- session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `src/reasoning/agent-runtime/<n>/config/agent/AGENTS.md` and seeded into `AGENT_HOME` at container start. The two-layer agent context model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model).
+**Per-project config** -- each project has a `SANDBOX_DIR` alongside `PROJECT_DIR` containing a `Makefile`, `.env` (machine-specific, never committed), and a project-committed `AGENTS.md` at the repository root (project `AGENTS.md` agent context -- session workflow, navigation, collaboration principles). Provider-specific agent context is supplied by `src/reasoning/agent-runtime/<n>/config/agent/AGENTS.md` and seeded into `AGENT_HOME` at container start. The provider and project `AGENTS.md` context model is defined in [`../reference/agent_workflow.md`](../reference/agent_workflow.md#agent-context-model).
 
 ## Detailed References
 

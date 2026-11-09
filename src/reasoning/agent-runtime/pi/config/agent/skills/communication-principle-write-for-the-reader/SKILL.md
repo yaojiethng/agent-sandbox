@@ -24,7 +24,7 @@ Every text is written for the reader who holds it, not for the session that prod
 
 **Where the session is the subject.** A session log or a meeting record narrates one session, because that session is its subject. Even there, a reference into the chat carries its referent, because the chat is not shipped with the record.
 
-**Where the editor is the reader.** A skill, a prompt, or either `AGENTS.md` layer is read by an agent that has never seen an earlier version of the file. That agent holds the current text and nothing else, so a clause that rebuts a sentence the file no longer contains has nothing to point at. The clause is addressed to the person who made the edit. Route it to the record layer, which has the edit as its subject, and leave the instruction surface stating only what the reader is to do.
+**Where the editor is the reader.** A skill, a prompt, or either `AGENTS.md` file is read by an agent that has never seen an earlier version of the file. That agent holds the current text and nothing else, so a clause that rebuts a sentence the file no longer contains has nothing to point at. The clause is addressed to the person who made the edit. Route it to the record, which has the edit as its subject, and leave the instruction surface stating only what the reader is to do.
 
 | Instead of | Give |
 |---|---|
@@ -32,7 +32,7 @@ Every text is written for the reader who holds it, not for the session that prod
 | "Set a turn budget names nothing an agent can count" | "Name the unit and the count before starting" |
 | "the payload, not a summary, used to go in the main thread" | "The main thread keeps the summary" |
 | "this replaces the version that said X" | the rule as it now reads |
-| a note that a package bump will overwrite this edit | a record-layer entry naming the overwrite condition |
+| a note that a package bump will overwrite this edit | a record entry naming the overwrite condition |
 
 **Where the sentence names only the prohibition.** The reader holds only the form the sentence gives, so a prohibition alone leaves the reader to invent one. Name the action and write the permitted form. Write "a space-separated hyphen", not "do not use an em-dash"; write "apply the durable fix the entry's `scoped:` row names", not "avoid or re-check those patterns".
 

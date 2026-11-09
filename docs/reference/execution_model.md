@@ -43,9 +43,9 @@ Reasoning layer container (CWD: /home/agentuser/)
 ├── sandbox/                   ← RW Docker volume: shared from capability layer via --volumes-from
 └── .<provider>/               ← provider config dir, layout defined by provider
     ├── agent/                 ← Pi convention: nested config directory
-    │   ├── prompts/           ← RW bind mount: provider-layer prompts (persists)
+    │   ├── prompts/           ← RW bind mount: provider prompts (persists)
     │   ├── sessions/          ← RW bind mount: session history (persists)
-    │   ├── skills/            ← RW bind mount: provider-layer skills (persists)
+    │   ├── skills/            ← RW bind mount: provider skills (persists)
     │   ├── bin/               ← overlayfs: container-local, same fs as /tmp/ (mv safe)
     │   ├── settings.json     ← ephemeral: seeded from the image template at startup
     │   ├── auth.json          ← ephemeral: seeded from the image template at startup

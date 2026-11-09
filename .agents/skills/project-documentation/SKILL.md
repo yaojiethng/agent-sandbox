@@ -11,7 +11,7 @@ This convention covers the project documentation under `docs/`. The `devlog/` re
 
 Each document belongs to exactly one folder and serves one mode. The modes, the folder each serves, and what each folder holds are [`references/organization.md`](references/organization.md), which is this convention's organization rule. Which folder holds what, and each type's durability, is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy).
 
-An architecture document describes what the layers do today. Future work belongs in the task-list. The layer model and the stabilization rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-layer-model).
+An architecture document describes what the planes do today. Future work belongs in the task-list. The domain model and the stabilization rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-domain-model).
 
 ## How a document opens
 

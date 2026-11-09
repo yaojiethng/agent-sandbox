@@ -14,7 +14,7 @@ Read this document at the start of any iteration.
 
 The workflows run as invocable runbooks under `workflow/coding-agent/prompts/`. The procedure lives in the runbooks; this document holds the invariants they must not break. [`autonomous_agent_loop.md`](autonomous_agent_loop.md) holds the loop model, its sequence diagram and the workflow taxonomy. A runbook may evolve freely as the model improves; the invariants here are the durable half.
 
-The `scope` field above names the runbooks this document governs. That list is the single declaration of them: the project layer `AGENTS.md` carries the inventory an agent reads at session start, and `scripts/check_instruction_surfaces.sh` fails when the two disagree.
+The `scope` field above names the runbooks this document governs. That list is the single declaration of them: the project `AGENTS.md` carries the inventory an agent reads at session start, and `scripts/check_instruction_surfaces.sh` fails when the two disagree.
 
 ## Sidequests
 

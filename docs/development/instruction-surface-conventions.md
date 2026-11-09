@@ -167,7 +167,8 @@ Gates read the declaration through [`src/build/container-interface.mjs`](../../s
 | Script | What it reads |
 |---|---|
 | [`scripts/check_container_layout.sh`](../../scripts/check_container_layout.sh) | the manifest against the provider dockerfiles' lines, the entrypoint's template, the settings record and each cell's folder set |
-| [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) | the two layers' `## Scope` tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope` |
+| [`scripts/check_instruction_surfaces.sh`](../../scripts/check_instruction_surfaces.sh) | the two `AGENTS.md` `## Scope` tables against the `session` rows, the subject table against the layers' headings, and the loop inventory against the policy's `scope` |
+| [`scripts/check_vocabulary.sh`](../../scripts/check_vocabulary.sh) | the shipping instruction surfaces against the reserved vocabulary, derived from the manifest rather than a hand list |
 | [`scripts/check_surface_table.sh`](../../scripts/check_surface_table.sh) | the generated mapping inside the reference document's marked block, and a table row naming a declared source outside it |
 | [`scripts/check_references.sh`](../../scripts/check_references.sh) | a skill invocation naming a skill the tree provides, and an absolute mention inside a built zone naming a declared root |
 | [`scripts/check_reach.sh`](../../scripts/check_reach.sh) | the manifest's mount rows against `documentation_taxonomy.md` `## Reach` |
