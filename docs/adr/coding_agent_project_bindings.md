@@ -51,7 +51,7 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 | Sense of "layer" | Reserved replacement |
 |---|---|
 | container architecture | keep "layer" - the canonical sense |
-| implementation stack | "tier" |
+| implementation stack | "domain", "sub-domain" and "plane" - see [`container_execution_model.md`](container_execution_model.md) |
 | `AGENTS.md` scope | name the file - the provider or project `AGENTS.md` |
 | instruction roots | "surface" or "root" |
 | record dependency | "class" or "order" |
