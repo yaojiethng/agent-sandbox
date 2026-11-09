@@ -73,9 +73,9 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 |---|---|
 | **`init_sha`** (from SESSION_STATE) | SHA of the root (baseline) commit in the sandbox. Written once at container init to `.git/SESSION_STATE`, never updated. Sets the `package-branch` baseline, which resolves to `git merge-base init_sha HEAD`: equal to `init_sha` when no history was rewritten, and the branch point after a rebase. `--baseline=<sha>` overrides it. `session_ts` is written alongside it. |
 | **`package-branch` output** | Numbered per-commit `.diff` files (`patches/`), uncommitted working tree changes (`uncommitted.diff`), all-changes since baseline (`all-changes.diff`), changed-files/ with MANIFEST.txt, and `.export-status` (STATUS, TIMESTAMP, INIT_SHA). On exit, written to `CHANGES_DIR/session/<EXPORT_TIME>-<SESSION_ID>/` by the dispatcher. Overwrites on each run -- always reflects full branch history since the baseline. |
-| **Draft branch** | `draft/<branch-name>` -- temporary branch on the host. Populated by sequential diff application + optional `uncommitted.diff`, ready for `git rebase -i`. |
-| **`draft-state`** | File committed as the first commit on a `draft/` branch. Records source branch, from hash, session identity, and diff count. Dropped automatically by `make confirm` before merge -- never lands on the target branch. |
-| **`.export-status`** | Consolidated metadata file (key=value) written by both `diff_export` and `package_branch`. Both write STATUS, TIMESTAMP, and INIT_SHA; `diff_export` also writes HEAD on success and EXIT_CODE on failure. Consumed by `draft.sh` on the host to resolve baseline and timestamp, and by `_save_baseline` in `session_save_policy.sh` to resolve the save comparison point (it falls back to `init_sha` when HEAD is absent). Replaces prior `EXPORT-TIME.txt` and `.init_sha`. |
+| **Draft branch** | `draft/<session-identity>-<branch-slug>-<fork-sha6>` -- temporary branch on the host. The exact name is its identity. Populated by sequential diff application + optional `uncommitted.diff`, ready for `git rebase -i`. |
+| **Draft branch record** | Local git config under `branch.<draft>.agent-sandbox-source` and `branch.<draft>.agent-sandbox-fork`. Records the source branch and fork point. Written before the branch exists and removed with the branch; `make confirm` has no metadata-drop step. |
+| **`.export-status`** | Consolidated metadata file (key=value) written by both `diff_export` and `package_branch`. Both write STATUS, TIMESTAMP, and INIT_SHA; `diff_export` also writes HEAD on success and EXIT_CODE on failure. `draft.sh` checks for its presence on the no-override path; the fork point comes from `.branch-point`. `_save_baseline` in `session_save_policy.sh` uses it to resolve the save comparison point (it falls back to `init_sha` when HEAD is absent). Replaces prior `EXPORT-TIME.txt` and `.init_sha`. |
 | **`SESSION_ID`** | 6-char hex hash: `sha256(canon(SANDBOX_DIR):HOST_HEAD_SHA:SESSION_TS)[:6]`. Identifies a single session run. `SANDBOX_DIR` is canonicalized so every path spelling of one folder converges to one id. Replaces `SESSION_TS` in container names and artefact paths. The former separate `SANDBOX_ID` intermediate was removed (see `docs/adr/session_identifier.md`). |
 | **`HOST_HEAD_SHA`** | Full SHA of host HEAD at session start. Replaces `REPO_COMMIT`. |
 | **Session artefact directory** | `SANDBOX_DIR/.workspace/session-diffs/{session,autosave}/` -- `session/` holds per-export directories named `<EXPORT_TIME>-<SESSION_ID>` (exit artefacts), `autosave/` holds the single `<SESSION_ID>/` checkpoint directory, replaced on a successful autosave tick and left intact when a tick fails. |
@@ -86,7 +86,7 @@ Further reading: the rationale for this mechanism -- git-mediated correspondence
 - The host repo is never modified by the container directly. All changes flow via diff files through the bind-mounted workspace.
 - No `docker exec` is used for correspondence operations. All state transfer happens via bind-mounted files.
 - No unreviewed changes become commits. `make apply` lands changes uncommitted; `make draft` lands changes on an explicitly-named `draft/` branch requiring operator review before merge.
-- One draft is active per repo at a time. `draft-state` records which branch is staged; `make draft` guards against starting a second draft while one is in progress.
+- A draft branch is unique by its exact branch name: `draft/<session-identity>-<branch-slug>-<fork-sha6>`. `make draft` refuses a name collision; distinct names may coexist. The record is detected from the branch ref, not from a metadata file.
 - The harness does not track which diffs have been applied. The operator selects what to apply via explicit arguments. Defaults cover the common case.
 - Session artefact directories are non-colliding across concurrent sessions: `SESSION_ID` (canonical sandbox dir, host HEAD, session timestamp) is the folder differentiator, and per-export timestamps keep successive exports apart.
 
@@ -146,7 +146,7 @@ Changes can flow in either direction at any time while the sandbox is live. All 
 
 ### STOPPED -- applying persisted artefacts
 
-The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point (default: `HEAD`; pass `BRANCH_FROM=<sha>` when the host advanced or a rebase moved the branch point), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch, and its rewritten-history form is in [`tool_interface.md`](tool_interface.md).
+The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point recorded in the bundle's `.branch-point` (pass `BRANCH_FROM=<sha>` to override it), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch, and its rewritten-history form is in [`tool_interface.md`](tool_interface.md).
 
 On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator runs `make reject`, amends the failing diff in the source export folder, and re-runs `make draft`. The diff series is the source of truth; the draft branch is always derived from it.
 
@@ -188,7 +188,7 @@ Two sessions against different worktrees maintain independent correspondence wit
 | Session artefact directory | Branch name | No -- git enforces branch uniqueness across worktrees |
 | Container names | Session identity | No -- per-session name |
 | Container labels | `project-name` label scopes lookup | No -- label lookup is project-scoped |
-| `draft-state` | `SANDBOX_DIR` | No -- separate file per worktree |
+| Draft branch record | Branch name | No -- git enforces branch uniqueness |
 
 Each worktree session runs its correspondence cycle independently. Merging worktree output to the main repo branch is standard git -- the harness does not orchestrate cross-worktree merges.
 

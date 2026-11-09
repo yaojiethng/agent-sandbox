@@ -168,35 +168,6 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ---
 
-## Harness Packaging and Versioning (Standalone)
-
-**Objective:** Self-contain the agent-sandbox binary at install time and introduce semantic versioning to detect and communicate staleness. This is the prerequisite for harness-sig (runtime drift detection).
-
-**Problem:** `make install` writes an `agent-sandbox` CLI script that sources scripts/libs/templates from the repo checkout at runtime. After `git pull`, the installed binary silently executes changed code. No mechanism signals the operator to reinstall.
-
-**Solution path -- two complementary changes:**
-
-1. **Self-contained binary.** `make install` packages all scripts, libs, and templates into the binary itself (shar archive or similar). The installed binary has zero runtime dependency on the repo checkout. This eliminates the entire class of host-side drift problems.
-
-2. **Semantic versioning.** A `VERSION` file in the repo root, bumped on meaningful changes. The installed binary writes its version to `~/.config/agent-sandbox/.version` at install time. At `make start`, the harness compares installed version against repo version and warns on mismatch.
-
-   Bump policy:
-   - **Patch** (0.x.1): lib/script bugfixes, behaviour-preserving internal changes
-   - **Minor** (0.1.x): new features, new flags, new Makefile targets
-   - **Major** (1.0): breaking CLI changes, install contract changes, deployment model changes
-
-**Depends on:** M2.7 completion (container-sig, build pipeline cleanup). Not part of any current milestone.
-
-**Preconditions for design:**
-
-- Self-contained binary mechanism selected (shar archive vs compiled language vs proper package manager)
-- Version bump policy agreed and documented
-- Dogfood vs non-dogfood usage split understood (determines where the comparison target lives)
-
-**Design reference:** [`devlog/discussions/archive/20260522-study-superseded-harness_sig_requirements.md`](./discussions/archive/20260522-study-superseded-harness_sig_requirements.md)
-
----
-
 ## Deferred (Unplanned)
 
 ### Artifact Inventory and Reader Graph (indefinitely deferred)
@@ -243,25 +214,9 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ---
 
-### Doc Language Cleanup -- STE-Clean Sweep
-
-**Deferred (workflow session `20260809-03`).** Bring the remaining docs, policies, and agent files to the Simple Technical English (ASD-STE100) standard: objective and technical, disambiguated from conversational context, no dead prose, one concept per sentence. New and changed policy is already drafted to this standard (see the agent-feedback/gotchas finalized-workflow artifact); the sweep applies it to the existing body of docs/policies/agent files. Large scope; deferred here.
-
-### Copy-Model Seeding -- Host-Side Volume Seed (M2.6.5 follow-up, complete)
-
-The volume is seeded host-side before the sandbox container starts, so the entrypoint mounts no snapshot directory: the compose template carries no `SNAPSHOT_DIR` mount, the `baseline.tar` preflight gate is removed with the mount, and the `snapshot_dir` environment and session-state writes are retired repo-wide. Model: [`docs/reference/copy_delivery.md`](../docs/reference/copy_delivery.md); design record [`20260730-design-settled-mount_model.md`](./discussions/archive/20260730-design-settled-mount_model.md). Handovers `20260818-02` (the copy-in decision) and `20260901-14` (the implementation). The entrypoint branch inversion (`if ! -d .git` then init, else resume bookkeeping) belongs to the M2.6.6 delivery scope and is not filed here.
-
-### M2.6.7 -- Interface Contract Compatibility (complete)
-
-One version constant, one image label, one warn-only preflight check, and a hard stop on a container-to-container mismatch; a missing record key still warns, which is the upgrade path. Interface concept doc `docs/reference/sandbox_host_interface.md`, lifecycle architecture doc `docs/reference/sandbox_lifecycle.md`, ADR `docs/adr/interface_contract_compatibility.md`. Handovers `20260919-03` (design), `20260919-04` (implementation) and `20260919-05` (documentation); design record [`20260919-design-settled-interface_contract_compatibility.md`](./discussions/archive/20260919-design-settled-interface_contract_compatibility.md). The `container-sig` mechanism this sub-milestone superseded was retired at `20260919-08`.
-
 ### The Unit That Ships the Wiki (permanently deferred)
 
 **Permanently deferred (M3.3.4, 2026-10-21).** `agent-sandbox.md` is a prompt whose body sends the reader to `/opt/sandbox/docs/`, so the wiki is real and its corpus is `docs/reference/` and `docs/policies/`. A unit named `agent-sandbox` would group that entry point with its corpus, but the entry point sits in `src/reasoning/agent/prompts/` beside the harness commands, and the default unit is that folder, `src/reasoning/agent/skills/` and the two document bundles together, so the split produces two module-shaped units where one was wanted. A module also earns its existence by being enableable, and this one would be enabled by every provider image always. The row was raised by the `20261021-02` iteration and deferred rather than decided, so the unit model stays unstated and the wiki's membership stays undecided.
-
-### Environment-Change Persistence -- Install Layers Across Runs (Not in scope, current model)
-
-**Deferred / not-in-scope (design walk `20260818-02`, persistence-model decision).** The current model (copy and bind-mount) does not persist environment changes across runs: apt installs, `pi update --self`, `pi install` live in the per-run container writable layer, torn down at every run end (per-run writable-layer parity). Persisting them is explicitly NOT in scope for the current model -- containers are per-run; persistence is delivered exclusively by mounted sources. It would be nice to have. Candidate, parked, if per-run install cost proves punishing: a persisted install-cache volume fed per run (durable-by-designation), not a second writable layer.
 
 ### Skill Ingestion as a Workflow Module (indefinitely deferred)
 

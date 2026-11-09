@@ -11,7 +11,6 @@
 # non-gating until cleared. Suppression policy: targeted `# shellcheck
 # disable=SCxxxx` with a rationale comment -- never a blanket disable.
 # Known intentional suppressions:
-#   - SC2034 in draft_state.sh: printf -v dynamic assignment targets
 #   - SC2064 in snapshot.sh: trap expansion-now is required because the
 #     variable is function-local and must be baked into the trap body
 #   - SC1090 on runtime-resolved source paths that are -f validated first

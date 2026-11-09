@@ -15,6 +15,10 @@ TEST_DIR="${RUN_TESTS_DIR:-$TEST_DIR}"
 REAL_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../tests" && pwd)"
 # LIVENESS_GATE overrides the registration-gate path for the runner self-test.
 LIVENESS_GATE="${LIVENESS_GATE:-$REAL_TESTS_DIR/../scripts/check_test_liveness.sh}"
+# The draft lifecycle rows are the mutation tier's blocking subset; the rest
+# of the catalog remains report-only, so pre-existing findings outside this
+# lifecycle do not fail an unrelated iteration.
+DRAFT_MUTATION_SUBJECTS='^(scripts/workflows/(draft|confirm|reject)\.sh|src/libs/package_branch\.sh)$'
 
 VERBOSE="${VERBOSE:-0}"
 # TEST_PARALLEL controls the xargs job count (default 8; 1 for serial runs).
@@ -25,6 +29,11 @@ TEST_PARALLEL="${TEST_PARALLEL:-8}"
 # every invocation, so a file that spawns the runner more than once states
 # its own budget instead of raising the default for every file.
 TEST_TIMEOUT="${TEST_TIMEOUT:-10}"
+# Capture the mutation request before the suite runs, then clear it from the
+# environment. Test files that spawn the runner (the runner self-tests) must
+# not inherit MUTATION=1 and recursively start the mutation tier.
+MUTATION_TIER="${MUTATION:-0}"
+unset MUTATION
 
 TOTAL_PASS=0
 TOTAL_FAIL=0
@@ -429,17 +438,21 @@ main() {
 
   # MUTATION=1 layers the mutation tier on top of the standard run: the
   # catalog is replayed against the tree and survivors collect into a dated
-  # register. The tier is operator-triggered, never a hook. The runner
-  # self-test suppresses it via RUN_TESTS_SELFTEST, so the self-test keeps
-  # exercising the standard path only. The suppression names the self-test,
-  # not the selection: a selected production run still gets the tier.
-  if [[ "${MUTATION:-0}" == "1" ]]; then
+  # register. The draft lifecycle subjects are the blocking subset; every
+  # other subject is report-only. The tier is operator-triggered, never a hook.
+  # The runner self-test suppresses it via RUN_TESTS_SELFTEST, so the self-test
+  # keeps exercising the standard path only. The suppression names the
+  # self-test, not the selection: a selected production run still gets the tier.
+  if [[ "$MUTATION_TIER" == "1" ]]; then
     if [[ -n "${RUN_TESTS_SELFTEST:-}" ]]; then
       echo "MUTATION=1 ignored under RUN_TESTS_SELFTEST (runner self-test)" >&2
     else
       echo ""
       echo "== Mutation tier =="
-      bash "$(dirname "${BASH_SOURCE[0]}")/mutations_run.sh"
+      if ! MUTATIONS_REQUIRED_SUBJECTS="${MUTATIONS_REQUIRED_SUBJECTS:-$DRAFT_MUTATION_SUBJECTS}" \
+        bash "$(dirname "${BASH_SOURCE[0]}")/mutations_run.sh"; then
+        ANY_FAILED=1
+      fi
     fi
   fi
 

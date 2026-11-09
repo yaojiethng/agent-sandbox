@@ -28,4 +28,4 @@
 - *Stateful apply tracking* (harness records which diffs were applied) --
   rejected: the operator selects what to apply via explicit arguments; defaults cover the common case, and the harness stays stateless about application.
 
-**Edge cases / drivers:** The diff applies cleanly only when target files are in the expected state -- baselining via `init_sha` (SESSION_STATE) and `.export-status` metadata exists to make that expectation explicit and diagnosable. Parallel sessions must produce non-colliding artefact directories (branch name as folder differentiator). One draft active per repo at a time, guarded by `draft-state`.
+**Edge cases / drivers:** The diff applies cleanly only when target files are in the expected state -- baselining via `init_sha` (SESSION_STATE) and `.export-status` metadata exists to make that expectation explicit and diagnosable. Parallel sessions must produce non-colliding artefact directories (branch name as folder differentiator). A draft branch is unique by its exact branch name, and its record is branch-local git config; distinct names may coexist.

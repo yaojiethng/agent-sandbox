@@ -271,3 +271,11 @@ The change flow is three primitives over a derived mergeability value: `prepare-
 The shared tier is `agent-runtimes`: pi installs frozen from a committed lockfile, and the OpenCode CLI arrives as one pinned binary, because its package publishes a binary per platform and per C library and the frozen install shipped four of them for one executable. The provider bases were deleted, the build-skip mechanism went with them, and docker's layer cache became the only reuse rule. Fifteen build inputs carry a pin at the strictest form their class supports, with the pins file recording what each resolved to and how to move it, and the one class that cannot reach the strict form names its own end. The build then became measurable: the context is the declared inputs, and `scripts/build_probe.sh` records each tier's digest, size, cache state and seconds, so three host runs show the removal costing nothing and the runtime tier falling from 703.7MiB to 264.7MiB once the platform matrix was replaced by one binary.
 
 ---
+
+## M3.7.1 - Gate boundary capability
+
+*A draft now forks from the package's recorded branch point, carries its own branch-local record, and is confirmed or rejected without a committed metadata file.*
+
+The package and draft prompts are one path: the bundle records its branch point, an explicit `BRANCH_FROM` overrides it, and both confirm-hint routes state it. Draft, confirm and reject write and read the source and fork point under `branch.<draft>.*`; every package and confirm transition names its guard, invariant, test and mutation row, and a gate holds the transition table to the chart.
+
+---

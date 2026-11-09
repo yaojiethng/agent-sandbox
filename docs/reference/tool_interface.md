@@ -113,6 +113,8 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 
 Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
+The fork point is read from the bundle's `.branch-point`; `BRANCH_FROM=<sha>` overrides it. A bundle without a valid `.branch-point` is refused unless `BRANCH_FROM` is given; the refusal names that override.
+
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches. Resolves from the `session` channel (`session-diffs/session/`) by default. `BUNDLE=<name>` names the bundle to apply (name-only -- absolute paths rejected) and is required in non-interactive mode: with no bundle named, the command exits non-zero and points at `INTERACTIVE=1`. The router no longer auto-selects the newest bundle.
 
 **Channels:**
@@ -127,7 +129,7 @@ The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channe
 
 ### `make confirm [TARGET_BRANCH=<branch>] [NEW=1]`
 
-Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
+Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch in the draft branch record), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
 
 `NEW=1` (flag `--new`) creates `TARGET_BRANCH` at the draft tip instead. `TARGET_BRANCH` must name a branch that does not exist yet; the command exits non-zero otherwise. It deletes the draft, leaves the source branch untouched, and prints -- does not run -- the direction that moves the source branch onto the rebased series:
 
@@ -138,7 +140,7 @@ git reset --soft <TARGET_BRANCH>
 
 ### `make reject`
 
-Discards the current `draft/` branch, returns to the source branch. Artefacts unchanged.
+Discards the current `draft/` branch and returns to the source branch in its record. If that branch no longer exists, it prints the manual return commands and leaves the draft intact. Artefacts unchanged.
 
 ### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
 

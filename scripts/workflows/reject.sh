@@ -3,7 +3,7 @@
 # Reject workflow: checkout source branch, delete draft branch.
 # Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
 # sourced, so test suites may source this file for its functions.
-# Sources draft_state.sh for draft-state helpers, cli.sh for flag parsing, and guards.sh for git guard functions.
+# Sources draft_state.sh for draft-record helpers, cli.sh for flag parsing, and guards.sh for git guard functions.
 
 set -euo pipefail
 
@@ -26,15 +26,21 @@ reject_run() {
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
-  # Validate draft branch and read .draft-state into local scope
-  local DRAFT_VALIDATION
-  DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
-  eval "$DRAFT_VALIDATION"
+  # Validate the draft branch and read its source as the function's output.
+  local source_branch
+  source_branch=$(draft_validate_branch "$PROJECT_DIR") || return 1
+  local CURRENT_BRANCH
+  CURRENT_BRANCH=$(project_current_ref "$PROJECT_DIR") || return 1
 
-  # source_branch and CURRENT_BRANCH are printed by draft_validate_branch
-  # (the assignments eval'd above) and materialized in this scope; ShellCheck
-  # cannot trace assignments introduced by `eval`.
-  # shellcheck disable=SC2154
+  if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$source_branch"; then
+    echo "Error: recorded source branch '$source_branch' no longer exists." >&2
+    echo "  The draft branch '$CURRENT_BRANCH' and its record are intact." >&2
+    echo "  Switch to the branch you want to keep, then delete the draft:" >&2
+    echo "    git switch <branch>" >&2
+    echo "    git branch -D $CURRENT_BRANCH" >&2
+    return 1
+  fi
+
   echo "Rejecting draft. Returning to $source_branch..."
   if ! git -C "$PROJECT_DIR" checkout "$source_branch" 2>/dev/null; then
     # Draft residue (e.g. uncommitted.diff applied to the working tree) blocks
@@ -77,11 +83,11 @@ EOF
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls reject_run.
 # Expected flags: --project=<dir> --sandbox=<dir>
 main() {
+  local rc=0
   parse_args usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
-    -- "$@"
-  local rc=$?
+    -- "$@" || rc=$?
   if [[ $rc -eq 2 ]]; then exit 0; fi
   [[ $rc -eq 0 ]] || exit 1
 

@@ -86,6 +86,8 @@ Cross-references: `## The principle shape` in `docs/development/prompt-authoring
 
 Two probes say what the fix is and is not. A cold agent asked to "catch a stale record" found R3 in the ADR and rejected its own hash proposal, so the failure is not reproducible from a cold start: it was a narrow goal inside a long session, not a wording defect. A second cold agent given the narrow task now reads `vendor-bump.md`, `skill-fork/SKILL.md`, `skill_source_catalog.md` and `source_tracking.md` before writing. The fix is a routing row and a named decision, not a reminder; a reminder would have been unfalsifiable.
 
+**Maintained at M3.7.1 close, 2026-11-09:** no recurrence during the milestone; the description and routing fixes stand, and probation continues.
+
 ---
 
 ## [A] 2026-10-27  --  An instruction line carried its own argument, twice, an hour after the rule against it
@@ -324,9 +326,9 @@ mitigation: a second advisor run that only re-confirms a single mechanical corre
 
 ```text
 state: open
-scoped: M3 T4 -- atomic install + semantic versioning
+scoped: M3 T4 -- self-contained install, atomic replacement, semantic versioning
 legacy: none
-mitigation: installed CLI staleness is hard to detect and masquerades as a code regression. A new subcommand surfaces as `Unknown subcommand` with no hint that `make install` is needed; diff the installed CLI's valid subcommands against the source before assuming the implementation is wrong. A symlinked CLI resolves to whichever checkout the link points at -- check `readlink -f "$(which <cmd>)"` and that checkout's feature presence before touching project source. The durable fix is the T4 self-contained binary + semantic versioning.
+mitigation: installed CLI staleness is hard to detect and masquerades as a code regression. A new subcommand surfaces as `Unknown subcommand` with no hint that `make install` is needed; diff the installed CLI's valid subcommands against the source before assuming the implementation is wrong. A symlinked CLI resolves to whichever checkout the link points at -- check `readlink -f "$(which <cmd>)"` and that checkout's feature presence before touching project source. The durable fix is the T4 self-contained install + semantic versioning.
 ```
 
 ### [A] 2026-09-21  --  Library and test-harness migrations (T4)
@@ -470,36 +472,6 @@ has uncommitted changes in that file. To re-assert a lost executable bit regardl
 
 ---
 [Post-edit annotation -- 2026-09-01]: corrected misdiagnosis. The container mode churn was due to a host-side `core.fileMode` mismatch (host `false` vs container `true`), not a repo defect. Exec-bit issue resolved on the host by bringing `core.fileMode` to parity (`true`) and normalising host tree exec bits.
-
-### [A] 2026-08-18  --  Multi-question turns and implicit acceptance during a grill-me design walk
-
-```text
-state: probation
-scoped: M3 T7 -- functional-stack navigation for questioning (design proposal)
-legacy: the four rules below landed in the `grill-me` skill at `0e33700c`,
-which now states them; this entry carries their history and no longer routes
-mitigation: during the M2.6.6 design walk the agent posed two questions in one
-turn (A+B, then D8+N1), skipped N2a to the next question without an explicit
-approval, and treated operator probes as implicit approval of a pending
-question  --  the operator corrected the pattern twice. One question per turn;
-when a side-question arises, queue it explicitly in the live pile and return to
-it after the main question is settled. An operator"s probing question is not
-an approval of the pending question; re-pose the pending question for explicit
-approval, naming what the probes settled and what remains open.
-recurrence (2026-10-02, planning session over the rescope learnings): two new
-specifics from the same class. One: after several exchanges, referring to an
-open question by number ("Q3 remains") is not helpful -- the question the
-number names has fallen out of operator working memory; restate the question
-in full when asking. Two: when the operator clarifies an earlier answer, the
-agent asked the next question before the clarification was recorded, so the
-operator had to choose between answering (growing the list) and not answering
-(risking implicit approval). The rule the skill needs: the next question waits
-until every open question so far is explicitly resolved -- answered, withdrawn,
-or explicitly parked by the operator; parked items are re-asked in full later,
-never silently approved. Both apply to the grill-me skill file; that skill is
-now in the tree at `src/reasoning/agent/skills/grill-me/SKILL.md`, and carries
-the four rules in its `## Interview` section.
-```
 
 ### [A] 2026-08-21  --  Knowledge/diagnostic tests outside `make test` rot silently
 

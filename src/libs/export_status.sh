@@ -7,6 +7,7 @@
 #
 # Provides:
 #   _write_export_status  --  write .export-status atomically
+#   kv_read               --  read one field from a key=value file
 #   export_status_read    --  read one field from .export-status
 #   export_status_is_success --  test whether the last export succeeded
 
@@ -45,15 +46,16 @@ _write_export_status() {
   mv -f "$_tmp" "${_dir}/.export-status" 2>/dev/null || true
 }
 
-# export_status_read EXPORT_DIR KEY
-#   Reads one field from EXPORT_DIR/.export-status. Prints the value, or the
-#   empty string when the file or the key is absent. The value is everything
-#   after the first '=', so a value may contain '='.
-#   This is the single reader for the format _write_export_status writes.
-export_status_read() {
-  local _dir="$1"
+# kv_read FILE KEY
+#   Reads one field from a key=value file. Prints the value, or the empty
+#   string when the file or the key is absent. The value is everything after
+#   the first '=', so a value may contain '='.
+#   This is the single reader for the format _write_export_status writes. The
+#   package `.branch-point` borrows it; the roadmap row "Record shape: one KV
+#   read/write pair" owns the eventual split.
+kv_read() {
+  local _file="$1"
   local _key="$2"
-  local _file="$_dir/.export-status"
   [[ -f "$_file" ]] || return 0
   while IFS='=' read -r _k _v; do
     if [[ "$_k" == "$_key" ]]; then
@@ -61,6 +63,12 @@ export_status_read() {
       return 0
     fi
   done < "$_file"
+}
+
+# export_status_read EXPORT_DIR KEY
+#   Reads one field from EXPORT_DIR/.export-status through kv_read.
+export_status_read() {
+  kv_read "$1/.export-status" "$2"
 }
 
 # export_status_is_success EXPORT_DIR

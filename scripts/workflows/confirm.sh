@@ -3,7 +3,7 @@
 # Confirm workflow: rebase draft branch onto target, fast-forward merge, delete draft.
 # Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
 # sourced, so test suites may source this file for its functions.
-# Sources draft_state.sh for draft-state helpers and guards.sh for git guard functions.
+# Sources draft_state.sh for draft-record helpers and guards.sh for git guard functions.
 
 set -euo pipefail
 
@@ -20,8 +20,8 @@ source "$AGENT_SANDBOX_REPO/scripts/guards.sh"
 # =============================================================================
 
 # _confirm_into_new_branch PROJECT_DIR NEW_BRANCH DRAFT_BRANCH SOURCE_BRANCH SAVEPOINT
-#   Creates NEW_BRANCH at the draft tip (after .draft-state was dropped),
-#   deletes the draft, and prints the operator-run direction that moves
+#   Creates NEW_BRANCH at the draft tip, deletes the draft, and prints the
+#   operator-run direction that moves
 #   SOURCE_BRANCH onto the new series. The existing target is left untouched,
 #   so no merge or rebase runs. Returns 1 on failure with a savepoint rollback.
 _confirm_into_new_branch() {
@@ -58,10 +58,16 @@ confirm_run() {
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
-  # Validate draft branch and read .draft-state into local scope
-  local DRAFT_VALIDATION
-  DRAFT_VALIDATION=$(draft_validate_branch "$PROJECT_DIR") || return 1
-  eval "$DRAFT_VALIDATION"
+  # A dirty tree is refused before validation or rebase. A rebase would refuse
+  # it anyway, and the conflict arm's reset --hard would then discard tracked
+  # edits while reporting the draft as unchanged.
+  refuse_dirty_tree "$PROJECT_DIR" "make confirm" || return 1
+
+  # Validate the draft branch and read its source as the function's output.
+  local source_branch
+  source_branch=$(draft_validate_branch "$PROJECT_DIR") || return 1
+  local CURRENT_BRANCH
+  CURRENT_BRANCH=$(project_current_ref "$PROJECT_DIR") || return 1
 
   local MERGE_TARGET=""
   if [[ "$NEW_MODE" == true ]]; then
@@ -85,25 +91,10 @@ confirm_run() {
   fi
 
   # 1. Rollback savepoint, held in a local variable (not a git tag) so the
-  #    restore target is scoped to this run. A fixed-name git tag could either
-  #    be missing (no .draft-state commit -> hard abort under set -e) or stale
-  #    (an interrupted prior run) and reset the branch to the wrong commit.
+  #    restore target is scoped to this run. A fixed-name git tag could be
+  #    missing or stale and reset the branch to the wrong commit.
   local SAVEPOINT_COMMIT
   SAVEPOINT_COMMIT=$(git -C "$PROJECT_DIR" rev-parse HEAD)
-
-  # 2. Drop .draft-state commit (if found)
-  if [[ -n "${DRAFT_STATE_COMMIT:-}" ]]; then
-    echo "Dropping .draft-state commit..."
-    if ! git -C "$PROJECT_DIR" rebase --onto "${DRAFT_STATE_COMMIT}^" "$DRAFT_STATE_COMMIT" "$CURRENT_BRANCH"; then
-      echo "Rolling back to savepoint..." >&2
-      git -C "$PROJECT_DIR" rebase --abort 2>/dev/null || true
-      git -C "$PROJECT_DIR" reset --hard "$SAVEPOINT_COMMIT"
-      echo "Error: failed to drop .draft-state commit" >&2
-      return 1
-    fi
-  else
-    echo ".draft-state commit not found  --  skipping drop step."
-  fi
 
   if [[ "$NEW_MODE" == true ]]; then
     _confirm_into_new_branch "$PROJECT_DIR" "$TARGET_BRANCH" "$CURRENT_BRANCH" \
@@ -111,7 +102,7 @@ confirm_run() {
     return $?
   fi
 
-  # 3. Rebase draft onto target
+  # 2. Rebase draft onto target
   echo "Rebasing $CURRENT_BRANCH onto $MERGE_TARGET..."
   if ! git -C "$PROJECT_DIR" rebase "$MERGE_TARGET" "$CURRENT_BRANCH"; then
     echo "" >&2
@@ -126,12 +117,12 @@ confirm_run() {
     return 1
   fi
 
-  # 4. Fast-forward merge
+  # 3. Fast-forward merge
   echo "Fast-forward merging $CURRENT_BRANCH into $MERGE_TARGET..."
   git -C "$PROJECT_DIR" switch "$MERGE_TARGET"
   git -C "$PROJECT_DIR" merge --ff-only "$CURRENT_BRANCH"
 
-  # 5. Delete draft branch
+  # 4. Delete draft branch
   echo "Deleting draft branch: $CURRENT_BRANCH"
   git -C "$PROJECT_DIR" branch -D "$CURRENT_BRANCH"
 
@@ -158,7 +149,7 @@ Required:
   --sandbox=<path>    Path to the sandbox directory
 
 Options:
-  --target=<branch>   Target branch to merge into (default: source branch from .draft-state)
+  --target=<branch>   Target branch to merge into (default: source branch from the draft record)
   --new               Create TARGET_BRANCH at the draft tip; TARGET_BRANCH must not exist
 EOF
 }
@@ -170,13 +161,13 @@ EOF
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--target=<branch>] [--new]
 main() {
+  local rc=0
   parse_args usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --target=TARGET_BRANCH \
     --new \
-    -- "$@"
-  local rc=$?
+    -- "$@" || rc=$?
   if [[ $rc -eq 2 ]]; then exit 0; fi
   [[ $rc -eq 0 ]] || exit 1
 

@@ -13,7 +13,8 @@
 # existing gloss, so a declared state is added to the table by re-running this
 # script rather than by hand.
 #
-# Test seam: --doc points the scan at a fixture.
+# Test seam: --doc=<path> points the scan at a fixture. Value flags use the
+# tree's equal-separated form.
 #
 # Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 # finding count is printed, never encoded in the exit code (see
@@ -38,11 +39,20 @@ fi
 
 set +e
 ARGS=("$@")
+has_doc=0
+for arg in "$@"; do
+  case "$arg" in
+    --doc)
+      echo "Statechart gate: --doc requires a value: use --doc=PATH" >&2
+      exit 1
+      ;;
+    --doc=*) has_doc=1 ;;
+  esac
+done
 # The default document is the tree's chart, and a caller may replace it for a
-# fixture. Appending the default before the caller's arguments would leave the
-# scanner reading the first `--doc` it finds, so the seam is added only when unset.
-if [[ " $* " != *" --doc "* ]]; then
-  ARGS=(--doc "$REPO_ROOT/docs/reference/workflow_statechart.md" "${ARGS[@]}")
+# fixture. The seam is added only when unset, so the scanner never receives two.
+if (( has_doc == 0 )); then
+  ARGS=(--doc="$REPO_ROOT/docs/reference/workflow_statechart.md" "${ARGS[@]}")
 fi
 node "$SCAN_SCRIPT" "${ARGS[@]}"
 rc=$?

@@ -9,7 +9,7 @@
 // columns and keeps every existing gloss, seeding a newly declared state's gloss
 // from its chart label.
 //
-// Usage: node scripts/lint/statechart.mjs [--doc PATH] [--write]
+// Usage: node scripts/lint/statechart.mjs [--doc=PATH] [--write]
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -17,17 +17,31 @@ import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const argOf = (flag, fallback) => {
-  const i = args.indexOf(flag);
-  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
-};
-const docPath = resolve(argOf("--doc", resolve(REPO_ROOT, "docs/reference/workflow_statechart.md")));
-const write = args.includes("--write");
+const usage = "usage: node scripts/lint/statechart.mjs [--doc=PATH] [--write]";
 
 const die = (message) => {
   console.error(`statechart gate: ${message}`);
   process.exit(1);
 };
+
+const valueArg = (flag) => {
+  const prefix = `${flag}=`;
+  const matches = args.filter((arg) => arg.startsWith(prefix));
+  if (matches.length > 1) die(`${flag} given more than once; ${usage}`);
+  if (matches.length === 0) return undefined;
+  const value = matches[0].slice(prefix.length);
+  if (!value) die(`${flag} has an empty value; ${usage}`);
+  return value;
+};
+
+for (const arg of args) {
+  if (arg === "--write" || arg.startsWith("--doc=")) continue;
+  if (arg === "--doc") die(`--doc requires a value with '='; ${usage}`);
+  die(`unknown argument ${arg}; ${usage}`);
+}
+
+const docPath = resolve(valueArg("--doc") ?? resolve(REPO_ROOT, "docs/reference/workflow_statechart.md"));
+const write = args.includes("--write");
 
 let doc;
 try {

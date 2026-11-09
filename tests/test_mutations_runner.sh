@@ -83,12 +83,14 @@ EOF
 }
 
 run_mutation_tier() {
-  local root="$1" out="$2"
+  local root="$1" out="$2" strict="${3:-0}" required="${4:-}" budget="${5:-120}"
   MUTATIONS_ROOT="$root" \
   MUTATIONS_CATALOG="$root/catalog.jsonl" \
   MUTATIONS_OUTPUT="$root/mutations/out.jsonl" \
-  MUTATIONS_BUDGET=120 \
+  MUTATIONS_BUDGET="$budget" \
   MUTATIONS_PER_TEST=10 \
+  MUTATIONS_STRICT="$strict" \
+  MUTATIONS_REQUIRED_SUBJECTS="$required" \
   MUTATIONS_SUBJECT_MAP="$root/subjects.map" \
     bash "$MUTATE_RUNNER" > "$out" 2>&1
   echo $?
@@ -140,7 +142,147 @@ test_help_and_arg_rejection() {
   assert_eq_num "$rc" 1 "an unknown option is rejected"
 }
 
+test_strict_mode_fails_on_findings() {
+  local root out rc
+  root="$(make_fixture)"
+  out="$root/run-strict.out"
+  rc="$(run_mutation_tier "$root" "$out" 1)"
+  assert_eq_num "$rc" 1 "strict mode fails on a survivor or no-op"
+  assert_contains "$(cat "$out")" "Mutation gate: findings present" "strict mode names the gate failure"
+}
+
+test_strict_mode_fails_on_skipped_rows() {
+  local root out rc
+  root="$(make_fixture)"
+  out="$root/run-strict-skip.out"
+  rc="$(run_mutation_tier "$root" "$out" 1 "" 0)"
+  assert_eq_num "$rc" 1 "strict mode fails when the budget skips rows"
+  assert_contains "$(cat "$out")" "Mutation gate: findings present" "strict mode names the skipped-row failure"
+}
+
+# Given: a required subject and a survivor in another subject
+# When:  the runner applies the required-subject filter
+# Then:  the survivor is reported but does not fail the run
+test_unrequired_survivor_stays_report_only() {
+  local root out rc
+  root="$(make_fixture)"
+  cat > "$root/clean-catalog.jsonl" <<'EOF'
+{"schema":1,"kind":"mutation-catalog"}
+{"id":1,"source":"fixture","name":"proven-row","subject":"scripts/fake.sh","old":"  if [[ \"${1:-}\" == \"blocked\" ]]; then","new":"  if false; then"}
+{"id":2,"source":"fixture","name":"survived-row","subject":"scripts/fake2.sh","old":"LABEL=\"start\"","new":"LABEL=\"mutated\""}
+EOF
+  out="$root/run-required-clean.out"
+  MUTATIONS_ROOT="$root" \
+  MUTATIONS_CATALOG="$root/clean-catalog.jsonl" \
+  MUTATIONS_OUTPUT="$root/mutations/required-clean.jsonl" \
+  MUTATIONS_BUDGET=120 \
+  MUTATIONS_PER_TEST=10 \
+  MUTATIONS_STRICT=0 \
+  MUTATIONS_REQUIRED_SUBJECTS='^scripts/fake\.sh$' \
+  MUTATIONS_SUBJECT_MAP="$root/subjects.map" \
+    bash "$MUTATE_RUNNER" > "$out" 2>&1
+  rc=$?
+  assert_eq_num "$rc" 0 "a clean required subject passes with no unrelated findings"
+  assert_contains "$(cat "$out")" "required findings: 0" "the required findings count is reported"
+}
+
+# Given: a survivor in the required subject set
+# When:  the runner applies the required-subject filter
+# Then:  the survivor fails the run
+test_required_subject_fails_on_finding() {
+  local root out rc
+  root="$(make_fixture)"
+  out="$root/run-required-fail.out"
+  rc="$(run_mutation_tier "$root" "$out" 0 '^scripts/fake2\.sh$')"
+  assert_eq_num "$rc" 1 "a survivor in the required subject fails the run"
+  assert_contains "$(cat "$out")" "required subjects have findings" "the required-subject failure is named"
+}
+
+# Given: a stale row in the required subject set
+# When:  the runner applies the required-subject filter
+# Then:  the no-op fails the run instead of only being reported
+test_required_subject_fails_on_stale_row() {
+  local root out rc
+  root="$(make_fixture)"
+  out="$root/run-required-stale.out"
+  rc="$(run_mutation_tier "$root" "$out" 0 '^scripts/fake\.sh$')"
+  assert_eq_num "$rc" 1 "a stale row in the required subject fails the run"
+  assert_contains "$(cat "$out")" "no-op" "the stale row is reported as a no-op"
+  assert_contains "$(cat "$out")" "required findings: 1" "the required no-op is counted"
+  assert_contains "$(cat "$out")" "required subjects have findings" "the required-subject failure is named"
+}
+
+# Given: a required row the budget skips
+# When:  the runner applies the required-subject filter
+# Then:  the skipped required row fails the run
+test_required_subject_skip_fails() {
+  local root out rc
+  root="$(make_fixture)"
+  cat > "$root/clean-catalog.jsonl" <<'EOF'
+{"schema":1,"kind":"mutation-catalog"}
+{"id":1,"source":"fixture","name":"proven-row","subject":"scripts/fake.sh","old":"  if [[ \"${1:-}\" == \"blocked\" ]]; then","new":"  if false; then"}
+EOF
+  out="$root/run-required-skip.out"
+  MUTATIONS_ROOT="$root" \
+  MUTATIONS_CATALOG="$root/clean-catalog.jsonl" \
+  MUTATIONS_OUTPUT="$root/mutations/required-skip.jsonl" \
+  MUTATIONS_BUDGET=0 \
+  MUTATIONS_PER_TEST=10 \
+  MUTATIONS_STRICT=0 \
+  MUTATIONS_REQUIRED_SUBJECTS='^scripts/fake\.sh$' \
+  MUTATIONS_SUBJECT_MAP="$root/subjects.map" \
+    bash "$MUTATE_RUNNER" > "$out" 2>&1
+  rc=$?
+  assert_eq_num "$rc" 1 "a skipped required row fails the run"
+  assert_contains "$(cat "$out")" "required skipped: 1" "the skipped required count is reported"
+}
+
+# Given: a required subject later in the catalog
+# When:  the runner starts
+# Then:  the required rows run before the report-only rows
+test_required_rows_run_before_report_only() {
+  local root out rc order
+  root="$(make_fixture)"
+  out="$root/run-required-order.out"
+  rc="$(run_mutation_tier "$root" "$out" 0 '^scripts/fake2\.sh$')"
+  assert_eq_num "$rc" 1 "the required-order fixture reports the required survivor"
+  order=$(awk '/^survived /{print NR; exit}' "$out")
+  assert_eq "$order" "1" "the required row is applied before the report-only rows"
+}
+
+test_control_row_replays_the_unedited_suite() {
+  local root out rc
+  root="$(make_fixture)"
+  out="$root/run-control.out"
+  cat > "$root/control-catalog.jsonl" <<'EOF'
+{"schema":1,"kind":"mutation-catalog"}
+{"id":90,"name":"control-row","subject":"scripts/fake.sh","control":true}
+EOF
+  MUTATIONS_ROOT="$root" \
+  MUTATIONS_CATALOG="$root/control-catalog.jsonl" \
+  MUTATIONS_OUTPUT="$root/mutations/control.jsonl" \
+  MUTATIONS_BUDGET=120 \
+  MUTATIONS_PER_TEST=10 \
+  MUTATIONS_STRICT=1 \
+  MUTATIONS_REQUIRED_SUBJECTS='^scripts/fake\.sh$' \
+  MUTATIONS_SUBJECT_MAP="$root/subjects.map" \
+    bash "$MUTATE_RUNNER" > "$out" 2>&1
+  rc=$?
+  assert_eq_num "$rc" 0 "a green control row passes strict mode"
+  assert_contains "$(cat "$out")" "control" "the control verdict is printed"
+  assert_contains "$(cat "$out")" "control:   1" "the control count is reported"
+  assert_contains "$(cat "$out")" "required findings: 0" "the green control row is in the required set"
+}
+
 test_setup
 run_test test_verdicts_and_register
 run_test test_help_and_arg_rejection
+run_test test_strict_mode_fails_on_findings
+run_test test_strict_mode_fails_on_skipped_rows
+run_test test_unrequired_survivor_stays_report_only
+run_test test_required_subject_fails_on_finding
+run_test test_required_subject_fails_on_stale_row
+run_test test_required_subject_skip_fails
+run_test test_required_rows_run_before_report_only
+run_test test_control_row_replays_the_unedited_suite
 test_done test_mutations_runner
