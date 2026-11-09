@@ -43,7 +43,7 @@ if [[ -z "$ROOT" ]]; then
   ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 fi
 
-if [[ -z "$ROOT" || ! -d "$ROOT/.git" ]]; then
+if [[ -z "$ROOT" ]] || ! git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   echo "report_instruction_growth: not a git repository: ${ROOT:-<none>}" >&2
   exit 2
 fi
