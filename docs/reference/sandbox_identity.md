@@ -125,7 +125,7 @@ Constructed by `export_path` (`src/libs/routing.sh`). `SESSION_ID` provides uniq
 
 ## Resolution Precedence
 
-The identity triple resolves per identifier in priority order: explicit CLI flag > `AGENT_SANDBOX_<KEY>` environment variable > the per-sandbox `.env` > a hard error pointing at `onboard` (no runtime default). `.env` is read from the provided sandbox dir when one is known, else from the invocation CWD. `make -C <sandbox>` runs recipes with CWD = the sandbox dir, so it resolves the sandbox's local `.env` with no identity flags. The `SANDBOX_DIR` default is applied once at onboard, not at runtime. Rationale and rejected alternatives: `docs/adr/env_resolution.md`.
+The identity triple resolves per identifier in priority order: explicit CLI flag > `AGENT_SANDBOX_<KEY>` environment variable > the per-sandbox `.env` > a hard error pointing at `onboard` (no runtime default). `.env` is read from the provided sandbox dir when one is known, else from the invocation CWD. `make -C <sandbox>` runs recipes with CWD = the sandbox dir, so it resolves the sandbox's local `.env` with no identity flags. The `SANDBOX_DIR` default is applied once at onboard, not at runtime. Rationale and rejected alternatives: `docs/adr/resolution_model.md`.
 
 ## Where Primitives Are Consumed
 

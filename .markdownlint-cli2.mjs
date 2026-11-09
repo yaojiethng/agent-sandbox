@@ -76,7 +76,6 @@ export default {
         "docs/adr/container_host_correspondence_mechanism.md",
         "docs/adr/diff_packaging.md",
         "docs/adr/drift_state_coherence.md",
-        "docs/adr/env_resolution.md",
         "docs/adr/harness_versioning.md",
         "docs/adr/interface_contract_compatibility.md",
         "docs/adr/session_identifier.md",

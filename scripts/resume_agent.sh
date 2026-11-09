@@ -102,7 +102,7 @@ source "$REPO_ROOT/src/libs/resume_list.sh"
 # -------------------------
 # The STATE column (commit distance) and the current-branch hint read
 # PROJECT_DIR. The dispatcher resolves resume sandbox-only (a listing is a
-# registry diagnostic; the ADR env_resolution.md). When --project was omitted,
+# registry diagnostic; the ADR resolution_model.md). When --project was omitted,
 # read PROJECT_DIR from the sandbox .env by the canonical precedence
 # (AGENT_SANDBOX_PROJECT_DIR env var, then the .env key) so a session started
 # on the current branch shows its true commit distance. Resolution failure
