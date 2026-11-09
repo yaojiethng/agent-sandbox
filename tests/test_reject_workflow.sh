@@ -246,6 +246,20 @@ test_reject_script_entry_requires_identity() {
   fi
 }
 
+# Given: a script invocation with --help
+# When:  reject.sh runs as a script
+# Then:  it prints the usage and exits 0
+# Asserts: main carries parse_args' help verdict
+test_reject_script_entry_help() {
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh" --help 2>&1) || RC=$?
+  if [[ "$RC" -eq 0 && "$OUT" == *"Usage: agent-sandbox reject"* ]]; then
+    pass "reject.sh --help exits 0 and prints the usage"
+  else
+    fail "reject.sh --help broken: rc=$RC out=$OUT"
+  fi
+}
+
 # Given: a valid draft and a script invocation with both identity flags
 # When:  reject.sh runs as a script
 # Then:  the draft is discarded and the project returns to the source branch
@@ -282,6 +296,7 @@ run_test test_reject_rejects_held_index_lock
 run_test test_reject_ignores_unknown_record_key
 run_test test_reject_reports_missing_recorded_source
 run_test test_reject_script_entry_requires_identity
+run_test test_reject_script_entry_help
 run_test test_reject_script_entry_discards_draft
 
 test_done

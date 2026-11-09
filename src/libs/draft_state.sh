@@ -11,7 +11,7 @@
 #   draft_record_write             --  write source_branch and fork_point to git config
 #   draft_record_clear             --  remove those two keys
 #   draft_record_read              --  read one key from the branch record
-#   draft_validate_branch          --  validate current branch is a draft; set record vars
+#   draft_validate_branch          --  validate current draft branch and print its source
 #   draft_resolve_commit_message   --  resolve commit message from diff or .msg file
 
 # The record lives under branch.<draft>.*. The keys are branch-local because
@@ -136,10 +136,10 @@ draft_record_read() {
 # =============================================================================
 
 # Validate the current branch is a draft branch with a source record. On
-# success, sets DRAFT_SOURCE_BRANCH and DRAFT_CURRENT_BRANCH in the caller's
-# scope and returns 0. The source branch is not required to still exist; the
-# caller decides whether that is fatal.
-# On failure: prints an error to stderr and returns 1.
+# success, prints the source branch to stdout and returns 0. The current branch
+# is the caller's own reading, so this function returns only what it validates.
+# The source branch is not required to still exist; the caller decides whether
+# that is fatal. On failure: prints an error to stderr and returns 1.
 draft_validate_branch() {
   local PROJECT_DIR="$1"
 
@@ -168,12 +168,7 @@ draft_validate_branch() {
     return 1
   fi
 
-  # Both values are consumed by the importing workflow; ShellCheck checks this
-  # file alone.
-  # shellcheck disable=SC2034
-  DRAFT_SOURCE_BRANCH="$source_branch"
-  # shellcheck disable=SC2034
-  DRAFT_CURRENT_BRANCH="$CURRENT_BRANCH"
+  printf '%s\n' "$source_branch"
 }
 
 # =============================================================================

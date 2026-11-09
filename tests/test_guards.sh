@@ -173,6 +173,34 @@ test_require_clean_working_tree_is_silent() {
   assert_empty "$OUT" "unreadable tree: prints nothing"
 }
 
+
+# Given: a clean tree, a dirty tree, and a directory git cannot read
+# When:  refuse_dirty_tree runs with an operation name
+# Then:  clean is silent; dirty and unreadable each return 1 with their own message
+# Asserts: the shared refusal keeps the verdict and the hint together.
+test_refuse_dirty_tree_messages() {
+  local DIR="$FIXTURE_DIR/refuse_dirty_tree"
+  make_committed_repo "$DIR"
+  local OUT RC=0
+
+  OUT=$(refuse_dirty_tree "$DIR" "make test" 2>&1) || RC=$?
+  assert_rc 0 "$RC" "clean tree: refuse_dirty_tree returns 0"
+  assert_empty "$OUT" "clean tree: refuse_dirty_tree prints nothing"
+
+  touch "$DIR/untracked.txt"
+  RC=0
+  OUT=$(refuse_dirty_tree "$DIR" "make test" 2>&1) || RC=$?
+  assert_rc 1 "$RC" "dirty tree: refuse_dirty_tree returns 1"
+  assert_contains "$OUT" "Error: make test requires a clean working tree." "dirty tree: names the operation"
+  assert_contains "$OUT" "Stash them" "dirty tree: prints the stash hint"
+
+  RC=0
+  OUT=$(refuse_dirty_tree "$FIXTURE_DIR/no_such_repo" "make test" 2>&1) || RC=$?
+  assert_rc 1 "$RC" "unreadable tree: refuse_dirty_tree returns 1"
+  assert_contains "$OUT" "Error: make test cannot read the working tree state." "unreadable tree: names the operation"
+  assert_contains "$OUT" "corrupt or locked index" "unreadable tree: prints the unreadable hint"
+}
+
 # =============================================================================
 # validate_project_dir
 # =============================================================================
@@ -245,6 +273,7 @@ run_test test_clear_stale_lock_removes_stale_lock
 run_test test_clear_stale_lock_no_lsof_skips_check
 run_test test_clear_stale_lock_held_lock_fails_and_keeps_file
 run_test test_require_clean_working_tree_is_silent
+run_test test_refuse_dirty_tree_messages
 run_test test_validate_project_dir_refusal_messages
 run_test test_validate_project_dir_accepts_a_ready_repo
 run_test test_clean_tree_hint_text

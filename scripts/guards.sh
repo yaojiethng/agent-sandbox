@@ -12,6 +12,7 @@
 #   require_clean_working_tree --  report whether the working tree is clean
 #   clean_tree_hint          --  print the shared dirty-tree remedy
 #   clean_tree_hint_unreadable --  print the remedy for an unreadable tree
+#   refuse_dirty_tree        --  refuse a dirty or unreadable tree with the matching hint
 
 _guards_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_guards_dir/../src/libs/session_inventory.sh"
@@ -68,6 +69,27 @@ clean_tree_hint() {
 clean_tree_hint_unreadable() {
   echo "  The repository state could not be read (corrupt or locked index)." >&2
   echo "  Check 'git status' in the project directory, then retry." >&2
+}
+
+# refuse_dirty_tree PROJECT_DIR OPERATION
+#   Returns 0 for a clean tree. Otherwise prints OPERATION's error line and the
+#   hint for the verdict, and returns 1. The shared refusal keeps the verdict
+#   and the operator-facing message in one place; callers that tolerate a dirty
+#   tree, such as apply --force, use require_clean_working_tree directly.
+refuse_dirty_tree() {
+  local dir="$1" operation="$2" rc=0
+  require_clean_working_tree "$dir" || rc=$?
+  if (( rc == 0 )); then
+    return 0
+  fi
+  if (( rc == 2 )); then
+    echo "Error: $operation cannot read the working tree state." >&2
+    clean_tree_hint_unreadable
+  else
+    echo "Error: $operation requires a clean working tree." >&2
+    clean_tree_hint
+  fi
+  return 1
 }
 
 # _lock_age LABEL_PATH

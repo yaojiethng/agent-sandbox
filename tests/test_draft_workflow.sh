@@ -549,7 +549,11 @@ _ingest_case() {
 # Then:  the call succeeds
 # Asserts: the documented escape hatch for sources without metadata
 test_branch_from_skips_missing_export_status() {
-  _ingest_case branch_from_skips_missing_export "HEAD" "" "" 0 "" "HEAD"
+  local P="$FIXTURE_DIR/branch_from_skips_missing_export_p"
+  make_committed_repo "$P"
+  local HEAD_SHA
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+  _ingest_case branch_from_skips_missing_export "HEAD" "" "" 0 "" "$HEAD_SHA"
 }
 
 # Given: --branch-from is a well-formed 40-hex id that is not a commit object
@@ -962,6 +966,35 @@ test_draft_forks_from_branch_point_not_head() {
   fi
 }
 
+# Given: a package whose branch point is HEAD
+# When:  the orchestration runs without --branch-from
+# Then:  the draft forks at HEAD and the record names HEAD
+# Asserts: the draft-at-HEAD transition, not only the ancestor default
+test_draft_forks_at_head() {
+  make_draft_fixture draft_head 1
+
+  local HEAD_SHA
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+  {
+    echo "BUNDLE=$(basename "$EXPORT")"
+    echo "BRANCH_POINT=${HEAD_SHA}"
+    echo "BASELINE_MOVED=false"
+    echo "RECORDED_INIT_SHA=${HEAD_SHA}"
+  } > "$EXPORT/.branch-point"
+
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1
+
+  local BRANCH FORK_RECORD
+  BRANCH=$(draft_branch "$P")
+  FORK_RECORD=$(git -C "$P" config --local --get "branch.${BRANCH}.agent-sandbox-fork" 2>/dev/null || true)
+  if [[ -n "$BRANCH" && "$FORK_RECORD" == "$HEAD_SHA" \
+     && "$BRANCH" == *-"${HEAD_SHA:0:6}" ]]; then
+    pass "draft forks at HEAD when the branch point is HEAD"
+  else
+    fail "HEAD fork wrong: branch='$BRANCH' record='$FORK_RECORD' head='$HEAD_SHA'"
+  fi
+}
+
 # Given: a patches directory and a range missing an endpoint
 # When:  draft_collect_patches runs
 # Then:  it refuses with the expected-format message
@@ -991,6 +1024,22 @@ test_collect_patches_empty_range_errors() {
     pass "draft_collect_patches refuses a range that matches no patch"
   else
     fail "empty-range refusal wrong: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a patches directory that does not exist
+# When:  draft_collect_patches runs
+# Then:  it refuses with rc 1 and no patch list
+# Asserts: the missing-patches-dir guard (bites D6)
+test_collect_patches_missing_dir_errors() {
+  local MISSING="$FIXTURE_DIR/no_such_patches"
+
+  local OUT RC=0
+  OUT=$(draft_collect_patches "$MISSING" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && -z "$OUT" ]]; then
+    pass "draft_collect_patches refuses a missing patches directory"
+  else
+    fail "missing-patches-dir guard wrong: rc=$RC out='$OUT'"
   fi
 }
 
@@ -1261,10 +1310,12 @@ run_test test_draft_allows_distinct_branch_identities
 run_test test_draft_branch_from
 run_test test_draft_forks_from_named_base
 run_test test_draft_forks_from_branch_point_not_head
+run_test test_draft_forks_at_head
 run_test test_draft_diffs_range
 run_test test_draft_unparseable_export_name_still_drafts
 run_test test_collect_patches_invalid_range_errors
 run_test test_collect_patches_empty_range_errors
+run_test test_collect_patches_missing_dir_errors
 run_test test_draft_no_diffs_error
 run_test test_draft_run_missing_source_errors
 run_test test_draft_run_missing_patches_errors
@@ -1290,6 +1341,23 @@ run_test test_resolve_filename_subject_cleaned
 run_test test_resolve_filename_subject_trim_underscores
 run_test test_resolve_fallback_no_subject
 run_test test_resolve_msg_file_preferred_over_filename
+
+# Given: a draft script invocation that names only the project
+# When:  draft.sh runs as a script
+# Then:  it refuses and prints the usage, without starting the workflow
+# Asserts: main's identity-argument guard (bites D37)
+test_draft_script_entry_requires_identity() {
+  local P="$FIXTURE_DIR/draft_entry_missing_p"
+  make_committed_repo "$P"
+
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" --project="$P" 2>&1) || RC=$?
+  if [[ "$RC" -ne 0 && "$OUT" == *"Usage: agent-sandbox draft"* ]]; then
+    pass "draft.sh entry point refuses to run without --sandbox"
+  else
+    fail "draft.sh entry point identity guard broken: rc=$RC out=$OUT"
+  fi
+}
 
 # Given: a project whose source branch is an ancestor of the draft tip
 # When:  the confirm hint prints
@@ -1353,7 +1421,46 @@ test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
     fail "hint did not route to soft-reset: $OUT"
   fi
 }
+# Given: a script invocation with --help
+# When:  draft.sh runs as a script
+# Then:  it prints the usage and exits 0
+# Asserts: main carries parse_args' help verdict
+test_draft_script_entry_help() {
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" --help 2>&1) || RC=$?
+  if [[ "$RC" -eq 0 && "$OUT" == *"Usage: agent-sandbox draft"* ]]; then
+    pass "draft.sh --help exits 0 and prints the usage"
+  else
+    fail "draft.sh --help broken: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: an explicit branch-from ref rather than a commit
+# When:  the orchestration runs
+# Then:  exactly one Branch point line prints, resolved to the commit
+# Asserts: _ingest resolves once and draft_run no longer prints a second format.
+test_draft_prints_one_resolved_branch_point() {
+  make_draft_fixture draft_branchpoint_ref 1
+  local SHA
+  SHA=$(git -C "$P" rev-parse HEAD)
+
+  local OUT
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "main" "" "" 2>&1)
+
+  local COUNT
+  COUNT=$(printf '%s\n' "$OUT" | grep -c '^Branch point: ')
+  if [[ "$COUNT" -eq 1 && "$OUT" == *"Branch point: ${SHA:0:7}"* \
+     && "$OUT" != *"Branch point: main"* ]]; then
+    pass "the draft prints one resolved branch point"
+  else
+    fail "branch point output wrong: count=$COUNT out=$OUT"
+  fi
+}
+
 run_test test_draft_hint_routes_to_fast_forward_when_ancestor
 run_test test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable
+run_test test_draft_script_entry_requires_identity
+run_test test_draft_script_entry_help
+run_test test_draft_prints_one_resolved_branch_point
 
 test_done

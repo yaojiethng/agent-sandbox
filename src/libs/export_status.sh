@@ -50,7 +50,9 @@ _write_export_status() {
 #   Reads one field from a key=value file. Prints the value, or the empty
 #   string when the file or the key is absent. The value is everything after
 #   the first '=', so a value may contain '='.
-#   This is the single reader for the format _write_export_status writes.
+#   This is the single reader for the format _write_export_status writes. The
+#   package `.branch-point` borrows it; the roadmap row "Record shape: one KV
+#   read/write pair" owns the eventual split.
 kv_read() {
   local _file="$1"
   local _key="$2"

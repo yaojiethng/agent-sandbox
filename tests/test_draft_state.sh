@@ -237,17 +237,17 @@ test_validate_success() {
   git -C "$DIR" checkout -b "draft/valid-branch" --quiet
   draft_record_write "$DIR" "draft/valid-branch" "main" "$BASE"
 
-  DRAFT_SOURCE_BRANCH=""
-  DRAFT_CURRENT_BRANCH=""
-  if draft_validate_branch "$DIR"; then
+  local OUTPUT
+  if OUTPUT=$(draft_validate_branch "$DIR"); then
     pass "draft_validate_branch succeeds on a valid draft branch"
   else
     fail "draft_validate_branch should succeed on a valid draft branch"
     return
   fi
 
-  assert_eq "$DRAFT_SOURCE_BRANCH" "main" "draft_validate_branch sets DRAFT_SOURCE_BRANCH"
-  assert_eq "$DRAFT_CURRENT_BRANCH" "draft/valid-branch" "draft_validate_branch sets DRAFT_CURRENT_BRANCH"
+  assert_eq "$OUTPUT" "main" "draft_validate_branch prints the source branch"
+  assert_eq "$(git -C "$DIR" rev-parse --abbrev-ref HEAD)" "draft/valid-branch" \
+    "the caller reads the current branch directly"
 }
 
 # Given: a branch record with no source_branch key
@@ -271,6 +271,21 @@ test_validate_missing_source_branch() {
   fi
 }
 
+# Given: a draft branch with no record
+# When:  draft_validate_branch fails
+# Then:  stdout is empty, so a caller that drops the verdict cannot continue with a stale source
+# Asserts: the function has one output channel and no globals for a failed validation.
+test_validate_failure_prints_no_source() {
+  local DIR="$FIXTURE_DIR/validate_no_record"
+  make_committed_repo "$DIR"
+  git -C "$DIR" checkout -qb draft/no-record
+
+  local OUTPUT RC=0
+  OUTPUT=$(draft_validate_branch "$DIR" 2>/dev/null) || RC=$?
+  assert_rc 1 "$RC" "a missing record fails validation"
+  assert_eq "$OUTPUT" "" "a failed validation prints no source branch"
+}
+
 # Given: a branch record whose fork_point is not a commit
 # When:  draft_record_read reads the fork key
 # Then:  it returns the literal value
@@ -291,7 +306,7 @@ test_record_read_returns_fork_point() {
 
 # Given: a branch record with a key outside the two-key contract
 # When:  draft_validate_branch runs
-# Then:  it sets only the source and current branch
+# Then:  it prints only the source branch
 # Asserts: the reader reads only its own keys.
 test_validate_ignores_unknown_keys() {
   local DIR="$FIXTURE_DIR/validate_unknown_key"
@@ -302,12 +317,11 @@ test_validate_ignores_unknown_keys() {
   draft_record_write "$DIR" "draft/unknown-key" "main" "$BASE"
   git -C "$DIR" config --local branch.draft/unknown-key.agent-sandbox-ghost "ghost"
 
-  DRAFT_SOURCE_BRANCH=""
-  DRAFT_CURRENT_BRANCH=""
-  if draft_validate_branch "$DIR" 2>/dev/null; then
-    assert_eq "$DRAFT_CURRENT_BRANCH" "draft/unknown-key" \
-      "draft_validate_branch reports the checked-out branch, not the crafted key"
-    assert_eq "$DRAFT_SOURCE_BRANCH" "main" \
+  local OUTPUT
+  if OUTPUT=$(draft_validate_branch "$DIR" 2>/dev/null); then
+    assert_eq "$(git -C "$DIR" rev-parse --abbrev-ref HEAD)" "draft/unknown-key" \
+      "the caller reads the checked-out branch, not the crafted key"
+    assert_eq "$OUTPUT" "main" \
       "draft_validate_branch reads only the source key"
   else
     fail "draft_validate_branch should succeed on a record with an extra key"
@@ -331,6 +345,7 @@ run_test test_validate_not_on_draft_branch
 run_test test_validate_missing_record
 run_test test_validate_success
 run_test test_validate_missing_source_branch
+run_test test_validate_failure_prints_no_source
 run_test test_record_read_returns_fork_point
 run_test test_validate_ignores_unknown_keys
 

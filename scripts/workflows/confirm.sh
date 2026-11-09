@@ -58,10 +58,16 @@ confirm_run() {
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
-  # Validate the draft branch and materialize its record in local scope
-  draft_validate_branch "$PROJECT_DIR" || return 1
-  local source_branch="$DRAFT_SOURCE_BRANCH"
-  local CURRENT_BRANCH="$DRAFT_CURRENT_BRANCH"
+  # A dirty tree is refused before validation or rebase. A rebase would refuse
+  # it anyway, and the conflict arm's reset --hard would then discard tracked
+  # edits while reporting the draft as unchanged.
+  refuse_dirty_tree "$PROJECT_DIR" "make confirm" || return 1
+
+  # Validate the draft branch and read its source as the function's output.
+  local source_branch
+  source_branch=$(draft_validate_branch "$PROJECT_DIR") || return 1
+  local CURRENT_BRANCH
+  CURRENT_BRANCH=$(project_current_ref "$PROJECT_DIR") || return 1
 
   local MERGE_TARGET=""
   if [[ "$NEW_MODE" == true ]]; then
@@ -155,13 +161,13 @@ EOF
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--target=<branch>] [--new]
 main() {
+  local rc=0
   parse_args usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --target=TARGET_BRANCH \
     --new \
-    -- "$@"
-  local rc=$?
+    -- "$@" || rc=$?
   if [[ $rc -eq 2 ]]; then exit 0; fi
   [[ $rc -eq 0 ]] || exit 1
 

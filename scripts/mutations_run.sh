@@ -18,12 +18,14 @@
 #   NO-OP    - the old text no longer matches the subject. Reported and
 #              excluded from the survivor count. Makes catalog staleness
 #              visible; refresh the catalog when a NO-OP surge appears.
+#   CONTROL  - a row with `"control":true` runs the unedited suite. A failed
+#              control row is a finding: the suite is not green at rest.
 #
 # The register: survivors and no-ops are written to a dated jsonl findings
 # register under `tests/mutations/runs/` (collect-then-process; this run never
 # terminates on a survivor). Proven rows live in the summary only. The
 # register uses the findings-register status vocabulary: a survivor is `open`,
-# a no-op is `stale`.
+# a no-op is `stale`, and a failed control row is `open`.
 #
 # Configuration (env):
 #   MUTATIONS_CATALOG   catalog path (default tests/mutations/catalog.jsonl)
@@ -36,6 +38,11 @@
 #                       (default the repo root; test seam)
 #   MUTATIONS_SUBJECT_MAP  file of `subject<TAB>test-file [test-file...]`
 #                       lines merged over the built-in subject map (test seam)
+#   MUTATIONS_REQUIRED_SUBJECTS  ERE of subjects whose findings fail the run;
+#                       all other rows remain report-only. Empty disables.
+#   MUTATIONS_STRICT   1 makes every survivor, no-op, skipped row, or failed
+#                       control row exit non-zero; 0 reports and exits 0
+#                       (default: 0)
 #
 # Run through the suite runner with `MUTATION=1 bash scripts/run_tests.sh`,
 # or directly with `bash scripts/mutations_run.sh`.
@@ -47,6 +54,8 @@ MUTATIONS_CATALOG="${MUTATIONS_CATALOG:-$MUTATIONS_ROOT/tests/mutations/catalog.
 MUTATIONS_RUN_DIR="$MUTATIONS_ROOT/tests/mutations/runs"
 MUTATIONS_BUDGET="${MUTATIONS_BUDGET:-900}"
 MUTATIONS_PER_TEST="${MUTATIONS_PER_TEST:-60}"
+MUTATIONS_STRICT="${MUTATIONS_STRICT:-0}"
+MUTATIONS_REQUIRED_SUBJECTS="${MUTATIONS_REQUIRED_SUBJECTS:-}"
 SECONDS=0
 
 # The subject-to-tests lookup. The test-file naming rule in the `testing`
@@ -62,6 +71,10 @@ declare -A SUBJECT_TESTS=(
   [scripts/workflows/apply.sh]="test_apply_workflow.sh test_rename_apply.sh"
   [scripts/workflows/confirm.sh]="test_confirm_workflow.sh"
   [scripts/workflows/draft.sh]="test_draft_workflow.sh test_draft_state.sh"
+  [scripts/workflows/reject.sh]="test_reject_workflow.sh"
+  [scripts/guards.sh]="test_guards.sh"
+  [src/libs/draft_state.sh]="test_draft_state.sh"
+  [src/libs/package_branch.sh]="test_package_branch.sh"
   [src/build/container-interface.mjs]="test_container_layout.sh"
   [scripts/lint/linking.mjs]="test_linking.sh"
   [scripts/lint/references.mjs]="test_references.sh"
@@ -99,7 +112,8 @@ fi
 decode_row() {
   printf '%s' "$1" | perl -MJSON::PP=decode_json -0777 -ne '
     $r = decode_json($_);
-    print "$r->{id}\0$r->{name}\0$r->{subject}\0$r->{old}\0$r->{new}\0";'
+    my $control = $r->{control} ? 1 : 0;
+    print "$r->{id}\0$r->{name}\0$r->{subject}\0$r->{old}\0$r->{new}\0$control\0";'
 }
 
 # first_index NEEDLE FILE
@@ -171,10 +185,25 @@ run_mutation() {
   local -a fields
   mapfile -d '' -t fields < <(decode_row "$row")
   id="${fields[0]}"; subject="${fields[2]}"
-  old="${fields[3]}"; new="${fields[4]}"
+  old="${fields[3]}"; new="${fields[4]}"; control="${fields[5]:-0}"
   local verdict=proven reason=""
   local subject_file="$MUTATIONS_ROOT/$subject"
   local backup="$subject_file.mutation-bak"
+  if [[ "$control" == "1" ]]; then
+    local test_failed rc
+    test_failed="$(run_targeted_tests "$subject")"
+    rc=$?
+    if [[ $rc -eq 0 ]]; then
+      verdict=control; reason="unedited suite is green"
+    elif [[ $rc -eq 99 ]]; then
+      verdict=control_failed; reason="cannot run the control suite: ${test_failed:-no mapped suite}"
+    else
+      verdict=control_failed; reason="$test_failed"
+    fi
+    printf '%-14s %-5s %-45s %s\n' "$verdict" "$id" "$subject" "$reason"
+    echo "$verdict"
+    return 0
+  fi
   if [[ ! -f "$subject_file" ]]; then
     verdict=no-op; reason="subject file missing"
   elif [[ -z "$(first_index "$old" "$subject_file")" ]]; then
@@ -205,41 +234,108 @@ run_mutation() {
   echo "$verdict"
 }
 
+# run_row ROW REQUIRED
+#   Applies one catalog row and updates the summary counters in the caller.
+run_row() {
+  local row="$1" required="$2"
+  local -a fields
+  mapfile -d '' -t fields < <(decode_row "$row")
+  local subject="${fields[2]}"
+  rows_count=$((rows_count + 1))
+  if (( SECONDS >= MUTATIONS_BUDGET )); then
+    skipped=$((skipped + 1))
+    if [[ "$required" == true ]]; then
+      required_skipped=$((required_skipped + 1))
+    fi
+    return 0
+  fi
+
+  local out verdict
+  out="$(run_mutation "$row")"
+  verdict="${out##*$'\n'}"
+  printf '%s\n' "${out%$'\n'*}"
+  case "$verdict" in
+    proven)   proven=$((proven + 1));;
+    control)  control=$((control + 1));;
+    control_failed)
+      control_failed=$((control_failed + 1))
+      if [[ "$required" == true ]]; then
+        required_findings=$((required_findings + 1))
+      fi
+      printf '{"id":%s,"status":"open","name":"%s","verdict":"control_failed","subject":"%s"}\n' "${fields[0]}" "${fields[1]}" "$subject" >> "$output";;
+    survived)
+      survived=$((survived + 1))
+      if [[ "$required" == true ]]; then
+        required_findings=$((required_findings + 1))
+      fi
+      printf '{"id":%s,"status":"open","name":"%s","verdict":"survived","subject":"%s"}\n' "${fields[0]}" "${fields[1]}" "$subject" >> "$output";;
+    *)
+      noop=$((noop + 1))
+      if [[ "$required" == true ]]; then
+        required_findings=$((required_findings + 1))
+      fi
+      printf '{"id":%s,"status":"stale","name":"%s","verdict":"no-op","subject":"%s"}\n' "${fields[0]}" "${fields[1]}" "$subject" >> "$output";;
+  esac
+}
+
 main() {
   mkdir -p "$MUTATIONS_RUN_DIR" || return 1
   local output="${MUTATIONS_OUTPUT:-$MUTATIONS_RUN_DIR/$(date +%Y%m%d-%H%M%S)-mutation_run.jsonl}"
-  local rows_count=0 proven=0 survived=0 noop=0 skipped=0
+  local rows_count=0 proven=0 survived=0 noop=0 control=0 control_failed=0 skipped=0
+  local required_total=0 required_findings=0 required_skipped=0
+  local -a required_rows=() other_rows=()
   local row
   while IFS= read -r row; do
     [[ -z "$row" ]] && continue
-    rows_count=$((rows_count + 1))
-    if (( SECONDS >= MUTATIONS_BUDGET )); then
-      skipped=$((skipped + 1))
-      continue
-    fi
     local -a fields
     mapfile -d '' -t fields < <(decode_row "$row")
-    local out verdict
-    out="$(run_mutation "$row")"
-    verdict="${out##*$'\n'}"
-    printf '%s\n' "${out%$'\n'*}"
-    case "$verdict" in
-      proven)   proven=$((proven + 1));;
-      survived) survived=$((survived + 1))
-        printf '{"id":%s,"status":"open","name":"%s","verdict":"survived","subject":"%s"}\n' "${fields[0]}" "${fields[1]}" "${fields[2]}" >> "$output";;
-      *)        noop=$((noop + 1))
-        printf '{"id":%s,"status":"stale","name":"%s","verdict":"no-op","subject":"%s"}\n' "${fields[0]}" "${fields[1]}" "${fields[2]}" >> "$output";;
-    esac
+    if [[ -n "$MUTATIONS_REQUIRED_SUBJECTS" && "${fields[2]}" =~ $MUTATIONS_REQUIRED_SUBJECTS ]]; then
+      required_rows+=("$row")
+    else
+      other_rows+=("$row")
+    fi
   done < <(grep -v '"schema"' "$MUTATIONS_CATALOG")
+
+  required_total=${#required_rows[@]}
+  if [[ -n "$MUTATIONS_REQUIRED_SUBJECTS" && "$required_total" -eq 0 ]]; then
+    echo "Mutation gate: required subject regex selected no rows." >&2
+    return 1
+  fi
+
+  local i
+  for ((i = 0; i < ${#required_rows[@]}; i++)); do
+    run_row "${required_rows[$i]}" true
+  done
+  for ((i = 0; i < ${#other_rows[@]}; i++)); do
+    run_row "${other_rows[$i]}" false
+  done
+
   echo
   echo "Mutation run complete in $((SECONDS))s:"
   echo "  rows:      $rows_count"
   echo "  proven:    $proven"
   echo "  survived:  $survived"
   echo "  no-op:     $noop"
+  echo "  control:   $control"
+  echo "  control failed: $control_failed"
   echo "  skipped:   $skipped"
+  if [[ -n "$MUTATIONS_REQUIRED_SUBJECTS" ]]; then
+    echo "  required:  $required_total"
+    echo "  required findings: $required_findings"
+    echo "  required skipped: $required_skipped"
+  fi
   echo "  register:  $output"
-  return 0
+
+  local failed=0
+  if [[ "$MUTATIONS_STRICT" == "1" ]] && (( survived > 0 || noop > 0 || control_failed > 0 || skipped > 0 )); then
+    echo "Mutation gate: findings present (MUTATIONS_STRICT=1)." >&2
+    failed=1
+  fi
+  if (( required_findings > 0 || required_skipped > 0 )); then
+    echo "Mutation gate: required subjects have findings or were skipped." >&2
+    failed=1
+  fi
+  return "$failed"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

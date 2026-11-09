@@ -26,10 +26,11 @@ reject_run() {
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
 
-  # Validate the draft branch and materialize its record in local scope
-  draft_validate_branch "$PROJECT_DIR" || return 1
-  local source_branch="$DRAFT_SOURCE_BRANCH"
-  local CURRENT_BRANCH="$DRAFT_CURRENT_BRANCH"
+  # Validate the draft branch and read its source as the function's output.
+  local source_branch
+  source_branch=$(draft_validate_branch "$PROJECT_DIR") || return 1
+  local CURRENT_BRANCH
+  CURRENT_BRANCH=$(project_current_ref "$PROJECT_DIR") || return 1
 
   if ! git -C "$PROJECT_DIR" show-ref --verify --quiet "refs/heads/$source_branch"; then
     echo "Error: recorded source branch '$source_branch' no longer exists." >&2
@@ -82,11 +83,11 @@ EOF
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls reject_run.
 # Expected flags: --project=<dir> --sandbox=<dir>
 main() {
+  local rc=0
   parse_args usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
-    -- "$@"
-  local rc=$?
+    -- "$@" || rc=$?
   if [[ $rc -eq 2 ]]; then exit 0; fi
   [[ $rc -eq 0 ]] || exit 1
 

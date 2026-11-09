@@ -33,6 +33,34 @@ mkdir -p "$FIXTURE_ROOT/stub_lsof_hold"
 printf '#!/bin/sh\nexit 0\n' > "$FIXTURE_ROOT/stub_lsof_hold/lsof"
 chmod +x "$FIXTURE_ROOT/stub_lsof_hold/lsof"
 
+# make_git_stub DIR
+#   Writes a git shim that delegates to the real git, except for the failure
+#   selected by an environment variable. The workflow script is run as a
+#   process so its own `set -e` is active; a sourced function cannot prove a
+#   line that relies on errexit.
+GIT_REAL="$(command -v git)"
+make_git_stub() {
+  local DIR="$1"
+  mkdir -p "$DIR"
+  cat > "$DIR/git" <<EOF
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "-C" && "\${3:-}" == "branch" && "\${4:-}" == "-D" && "\${5:-}" == "\${FAIL_DRAFT_BRANCH:-}" ]]; then
+  exit 1
+fi
+if [[ "\${1:-}" == "-C" && "\${3:-}" == "merge" && "\${4:-}" == "--ff-only" && "\${FAIL_FF:-}" == "1" ]]; then
+  exit 1
+fi
+if [[ "\${1:-}" == "-C" && "\${3:-}" == "switch" && "\${4:-}" == "\${FAIL_SWITCH:-}" ]]; then
+  exit 1
+fi
+if [[ "\${1:-}" == "-C" && "\${3:-}" == "rebase" && "\${4:-}" == "--abort" && "\${FAIL_ABORT:-}" == "1" ]]; then
+  exit 1
+fi
+exec "$GIT_REAL" "\$@"
+EOF
+  chmod +x "$DIR/git"
+}
+
 # Given: a draft branch with its work committed
 # When:  confirm_run runs
 # Then:  the draft branch is gone
@@ -330,10 +358,219 @@ test_confirm_conflict_restores_the_draft_to_the_savepoint() {
   fi
 }
 
+# Given: a draft that conflicts with its target and carries committed work
+# When:  confirm_run runs with a git wrapper that makes `rebase --abort` fail
+# Then:  the savepoint still restores the draft tip and the failure is reported
+# Asserts: the abort is best-effort and the savepoint is the restore authority (bites C17)
+test_confirm_abort_failure_still_restores_the_savepoint() {
+  local P="$FIXTURE_DIR/confirm_abort_p"
+  local S="$FIXTURE_DIR/confirm_abort_s"
+  _make_record_conflict_draft "$P"
+  local TIP_BEFORE
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+  local STUB="$FIXTURE_DIR/git_stub_abort"
+  make_git_stub "$STUB"
+
+  local OUT RC=0
+  OUT=$(PATH="$STUB:$PATH" FAIL_ABORT=1 \
+    bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --project="$P" --sandbox="$S" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]]; then
+    pass "confirm ignores a failed rebase --abort and restores the savepoint"
+  else
+    fail "abort-failure path wrong: rc=$RC tip=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo restored || echo moved) out=$OUT"
+  fi
+}
+
+# Given: a draft that conflicts with its target
+# When:  confirm_run runs with a git wrapper that logs the savepoint reset
+# Then:  the reset target is the pre-rebase tip, not an empty value
+# Asserts: the savepoint is captured before the rebase (bites C9)
+test_confirm_savepoint_is_the_pre_rebase_tip() {
+  local P="$FIXTURE_DIR/confirm_savepoint_p"
+  local S="$FIXTURE_DIR/confirm_savepoint_s"
+  _make_record_conflict_draft "$P"
+  local TIP_BEFORE
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+  local LOG="$FIXTURE_DIR/confirm_savepoint.log"
+  : > "$LOG"
+
+  (
+    git() {
+      if [[ "${1:-}" == "-C" && "${3:-}" == "reset" && "${4:-}" == "--hard" ]]; then
+        printf '%s\n' "${5:-}" >> "$LOG"
+      fi
+      command git "$@"
+    }
+    confirm_run "$P" "$S" ""
+  ) >/dev/null 2>&1 || true
+
+  assert_eq "$(tail -1 "$LOG")" "$TIP_BEFORE" "the savepoint reset uses the pre-rebase tip"
+}
+
+# Given: NEW mode and a branch creation that moves HEAD before failing
+# When:  confirm_run runs with a git wrapper that injects that partial failure
+# Then:  the savepoint restore puts HEAD back on the draft tip
+# Asserts: the NEW-mode branch-creation rollback runs (bites C14)
+test_confirm_new_branch_partial_failure_restores_the_tip() {
+  make_draft_fixture confirm_newpartial 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local TIP_BEFORE
+  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
+
+  (
+    git() {
+      if [[ "${1:-}" == "-C" && "${3:-}" == "switch" && "${4:-}" == "-c" ]]; then
+        command git "$@"
+        command git -C "$2" checkout --detach HEAD~1 >/dev/null 2>&1
+        return 1
+      fi
+      command git "$@"
+    }
+    confirm_run "$P" "$S" "partial-new" "true"
+  ) >/dev/null 2>&1 || true
+
+  assert_eq "$(git -C "$P" rev-parse HEAD)" "$TIP_BEFORE" "the partial branch-creation failure restores the savepoint"
+}
+
+# Given: NEW mode and a draft delete that fails
+# When:  confirm_run runs with a git wrapper that fails the draft deletion
+# Then:  the new branch is still created and the closing message is printed
+# Asserts: the NEW-mode draft delete is best-effort (bites C15)
+test_confirm_new_branch_delete_failure_is_masked() {
+  make_draft_fixture confirm_newdelete 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH STUB
+  DRAFT_BRANCH=$(draft_branch "$P")
+  STUB="$FIXTURE_DIR/git_stub_newdelete"
+  make_git_stub "$STUB"
+
+  local OUT RC=0
+  OUT=$(PATH="$STUB:$PATH" FAIL_DRAFT_BRANCH="$DRAFT_BRANCH" \
+    bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --project="$P" --sandbox="$S" --new --target=kept-new 2>&1) || RC=$?
+
+  if [[ "$RC" -eq 0 && "$OUT" == *"Done. New branch created: kept-new"* ]] \
+     && _branch_exists "$P" "kept-new"; then
+    pass "confirm NEW creates the branch even when the draft delete fails"
+  else
+    fail "NEW delete-failure arm wrong: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a draft and a final draft delete that fails
+# When:  confirm_run runs with a git wrapper that fails the final delete
+# Then:  confirm reports failure instead of masking it
+# Asserts: the final draft delete is not best-effort (bites C21)
+test_confirm_final_delete_failure_is_not_masked() {
+  make_draft_fixture confirm_finaldelete 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH STUB
+  DRAFT_BRANCH=$(draft_branch "$P")
+  STUB="$FIXTURE_DIR/git_stub_finaldelete"
+  make_git_stub "$STUB"
+
+  local OUT RC=0
+  OUT=$(PATH="$STUB:$PATH" FAIL_DRAFT_BRANCH="$DRAFT_BRANCH" \
+    bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --project="$P" --sandbox="$S" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$OUT" != *"Done. Changes merged into main."* ]]; then
+    pass "confirm fails when the final draft delete fails"
+  else
+    fail "final delete failure masked: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a draft and a fast-forward that fails
+# When:  confirm_run runs with a git wrapper that fails `merge --ff-only`
+# Then:  the draft and its record still exist
+# Asserts: the fast-forward failure arm and the ff-only command (bites C20)
+test_confirm_ff_failure_keeps_draft_and_record() {
+  make_draft_fixture confirm_fffail 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH STUB
+  DRAFT_BRANCH=$(draft_branch "$P")
+  STUB="$FIXTURE_DIR/git_stub_fffail"
+  make_git_stub "$STUB"
+
+  local OUT RC=0
+  OUT=$(PATH="$STUB:$PATH" FAIL_FF=1 \
+    bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --project="$P" --sandbox="$S" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$(_branch_exists "$P" "$DRAFT_BRANCH" && echo yes || echo no)" == yes ]] \
+     && git -C "$P" config --local --get "branch.${DRAFT_BRANCH}.agent-sandbox-source" >/dev/null 2>&1; then
+    pass "a failed fast-forward leaves the draft and record in place"
+  else
+    fail "ff-failure arm wrong: rc=$RC draft=$DRAFT_BRANCH out=$OUT"
+  fi
+}
+
+# Given: a draft with an unstaged working-tree change
+# When:  confirm_run runs
+# Then:  it refuses before the rebase, leaves the edit and the record intact
+# Asserts: the dirty-tree precheck and the record invariant (bites C4)
+test_confirm_dirty_tree_refuses_with_record() {
+  make_draft_fixture confirm_dirtytree 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH
+  DRAFT_BRANCH=$(draft_branch "$P")
+  echo "dirty" >> "$P/file-1.txt"
+
+  local OUT RC=0 DIRTY_LEFT=no
+  OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
+  grep -qx "dirty" "$P/file-1.txt" && DIRTY_LEFT=yes
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"requires a clean working tree"* ]] \
+     && [[ "$DIRTY_LEFT" == yes ]] \
+     && _branch_exists "$P" "$DRAFT_BRANCH" \
+     && git -C "$P" config --local --get "branch.${DRAFT_BRANCH}.agent-sandbox-source" >/dev/null 2>&1; then
+    pass "confirm refuses a dirty tree, keeps the edit, and leaves the record"
+  else
+    fail "dirty-tree arm wrong: rc=$RC dirty=$DIRTY_LEFT out=$OUT"
+  fi
+}
+
+# Given: a draft whose target switch fails after the rebase
+# When:  confirm_run runs with a git wrapper that fails `switch main`
+# Then:  the draft and its record remain
+# Asserts: the switch-failure arm (bites C8)
+test_confirm_switch_failure_keeps_draft_and_record() {
+  make_draft_fixture confirm_switchfail 2
+  _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
+  local DRAFT_BRANCH STUB
+  DRAFT_BRANCH=$(draft_branch "$P")
+  STUB="$FIXTURE_DIR/git_stub_switchfail"
+  make_git_stub "$STUB"
+
+  local OUT RC=0
+  OUT=$(PATH="$STUB:$PATH" FAIL_SWITCH=main \
+    bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --project="$P" --sandbox="$S" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$(_branch_exists "$P" "$DRAFT_BRANCH" && echo yes || echo no)" == yes ]] \
+     && git -C "$P" config --local --get "branch.${DRAFT_BRANCH}.agent-sandbox-source" >/dev/null 2>&1; then
+    pass "a failed target switch leaves the draft and record in place"
+  else
+    fail "switch-failure arm wrong: rc=$RC out=$OUT"
+  fi
+}
+
+# Given: a valid draft and a script invocation with --help
+# When:  confirm.sh runs as a script
+# Then:  it prints the usage and exits 0
+# Asserts: main carries parse_args' help verdict (bites C24)
+test_confirm_script_entry_help() {
+  local OUT RC=0
+  OUT=$(bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" --help 2>&1) || RC=$?
+  if [[ "$RC" -eq 0 && "$OUT" == *"Usage: agent-sandbox confirm"* ]]; then
+    pass "confirm.sh --help exits 0 and prints the usage"
+  else
+    fail "confirm.sh --help broken: rc=$RC out=$OUT"
+  fi
+}
+
 # Given: a draft branch with no record
 # When:  confirm_run runs
-# Then:  it refuses before the rebase
-# Asserts: the record-presence guard
+# Then:  it refuses before target resolution
+# Asserts: the record-presence guard is the first refusal, not one error among later ones.
 test_confirm_rejects_missing_record() {
   local P="$FIXTURE_DIR/confirm_norecord_p"
   local S="$FIXTURE_DIR/confirm_norecord_s"
@@ -345,10 +582,10 @@ test_confirm_rejects_missing_record() {
 
   local OUT RC=0
   OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
-  if [[ "$RC" -ne 0 && "$OUT" == *"draft record not found"* ]]; then
-    pass "confirm refuses a draft branch without the record"
+  if [[ "$RC" -ne 0 && "$OUT" == *"draft record not found"* && "$OUT" != *"target branch does not exist"* ]]; then
+    pass "confirm refuses a draft branch without the record before target resolution"
   else
-    fail "confirm should refuse a missing record: rc=$RC out=$OUT"
+    fail "confirm should refuse a missing record before target resolution: rc=$RC out=$OUT"
   fi
 }
 
@@ -497,6 +734,15 @@ run_test test_confirm_rejects_non_draft_branch
 run_test test_confirm_after_draft_branch_advances
 run_test test_confirm_conflict_recovery
 run_test test_confirm_conflict_restores_the_draft_to_the_savepoint
+run_test test_confirm_abort_failure_still_restores_the_savepoint
+run_test test_confirm_savepoint_is_the_pre_rebase_tip
+run_test test_confirm_new_branch_partial_failure_restores_the_tip
+run_test test_confirm_new_branch_delete_failure_is_masked
+run_test test_confirm_final_delete_failure_is_not_masked
+run_test test_confirm_ff_failure_keeps_draft_and_record
+run_test test_confirm_dirty_tree_refuses_with_record
+run_test test_confirm_switch_failure_keeps_draft_and_record
+run_test test_confirm_script_entry_help
 run_test test_confirm_rejects_missing_record
 run_test test_confirm_new_branch_creates_and_prints_hint
 run_test test_confirm_new_branch_rejects_existing

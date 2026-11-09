@@ -219,6 +219,8 @@ _ingest_export_metadata() {
     return 1
   fi
 
+  # The package record borrows the export-status key=value reader; the
+  # roadmap row "Record shape: one KV read/write pair" owns the split.
   local _package_point
   _package_point=$(kv_read "$_source_dir/.branch-point" BRANCH_POINT)
 
@@ -246,18 +248,21 @@ _ingest_export_metadata() {
     return 1
   fi
 
+  # Resolve once so the branch name, the record and the hint all carry the
+  # same commit rather than the ref the operator typed.
+  _base=$(git -C "$_project_dir" rev-parse --verify "${_base}^{commit}") || return 1
+
   # Keep the package point visible when the operator overrides it. A
   # malformed package point is ignored, not fatal, because the explicit
   # value already decides the fork.
   if [[ -n "$_explicit_from" && -n "$_package_point" ]]; then
-    local _resolved _package_resolved
-    _resolved=$(git -C "$_project_dir" rev-parse "$_base")
+    local _package_resolved
     if ! git_commit_exists "$_project_dir" "$_package_point"; then
-      echo "Warning: .branch-point BRANCH_POINT '$_package_point' does not resolve; using BRANCH_FROM ${_resolved:0:7}" >&2
+      echo "Warning: .branch-point BRANCH_POINT '$_package_point' does not resolve; using BRANCH_FROM ${_base:0:7}" >&2
     else
-      _package_resolved=$(git -C "$_project_dir" rev-parse "$_package_point")
-      if [[ "$_resolved" != "$_package_resolved" ]]; then
-        echo "Warning: BRANCH_FROM ${_resolved:0:7} overrides the package branch point ${_package_resolved:0:7}" >&2
+      _package_resolved=$(git -C "$_project_dir" rev-parse --verify "${_package_point}^{commit}")
+      if [[ "$_base" != "$_package_resolved" ]]; then
+        echo "Warning: BRANCH_FROM ${_base:0:7} overrides the package branch point ${_package_resolved:0:7}" >&2
       fi
     fi
   fi
@@ -288,19 +293,8 @@ draft_run() {
   # Clean-tree guard: drafting from a dirty tree folds WIP into the review
   # branch (checkout -b carries it; git add -A sweeps it into draft commits).
   # Never bypassed by --force -- force only tolerates apply conflicts, never an
-  # unclean fork base. The hint tells the operator how to proceed.
-  local _tree_rc=0
-  require_clean_working_tree "$PROJECT_DIR" || _tree_rc=$?
-  if [[ "$_tree_rc" -eq 2 ]]; then
-    echo "Error: make draft cannot read the working tree state." >&2
-    clean_tree_hint_unreadable
-    return 1
-  fi
-  if [[ "$_tree_rc" -eq 1 ]]; then
-    echo "Error: make draft requires a clean working tree." >&2
-    clean_tree_hint
-    return 1
-  fi
+  # unclean fork base.
+  refuse_dirty_tree "$PROJECT_DIR" "make draft" || return 1
 
   [[ -d "$SOURCE_DIR" ]] || { echo "Error: source not found: $SOURCE_DIR" >&2; return 1; }
   local PATCHES_DIR="$SOURCE_DIR/patches"
@@ -313,7 +307,7 @@ draft_run() {
   : "${DIFF_COUNT:?}"
 
   local SOURCE_BRANCH; SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
-  local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
+  local FROM_HASH="$BASE_COMMIT"
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
   local IDENTITY="${SESSION_ID:-$SESSION_TS}"
   local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
@@ -323,7 +317,6 @@ draft_run() {
     "$SOURCE_BRANCH" || return 1
 
   echo "Draft branch created: $WORKING_BRANCH"
-  echo "Branch point: ${FROM_HASH:0:7}"
   echo "Source: $SOURCE_DIR"
   echo "Diffs to apply: $DIFF_COUNT"
 }
@@ -564,6 +557,7 @@ _resolve_draft_source() {
 #   [--channel=<c>] [--branch-from=<n>] [--diffs=<r>]
 #   [--branch-summary=<s>] [--force] [--permissive] [--interactive]
 main() {
+  local rc=0
   parse_args usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
@@ -575,8 +569,7 @@ main() {
     --force \
     --permissive \
     --interactive \
-    -- "$@"
-  local rc=$?
+    -- "$@" || rc=$?
   if [[ $rc -eq 2 ]]; then exit 0; fi
   [[ $rc -eq 0 ]] || exit 1
 
