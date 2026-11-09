@@ -126,12 +126,12 @@ The rules that break name the cases the model is meant to expose:
 
 ## The draft and confirm
 
-Without `.draft-state`, the record is branch-local config. It is present for the whole life of the branch, and it is removed only by branch deletion. There is no `Dropped .draft-state` transition.
+The record replaces `.draft-state` as branch-local config. It is present for the whole life of the branch, and it is removed only by branch deletion. There is no `Dropped .draft-state` transition.
 
 <!-- snippet: illustrative -->
 ```mermaid
 ---
-title: "Confirm without .draft-state: the record is invariant"
+title: "Confirm with the branch-local record: the record is invariant"
 ---
 stateDiagram-v2
   state "Legend" as legend {

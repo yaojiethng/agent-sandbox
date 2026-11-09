@@ -68,7 +68,7 @@ test_reject_discards_uncommitted_draft_residue() {
 # Given: a draft branch with its work committed
 # When:  reject_run runs
 # Then:  the source branch is current
-# Asserts: the branch switch, and the record it reads through `eval` (bite R4)
+# Asserts: the branch switch and the record it reads from the branch config
 test_reject_returns_to_source() {
   make_draft_fixture reject_src 1
 
@@ -98,13 +98,18 @@ test_reject_deletes_draft_branch() {
   else
     pass "reject deletes draft branch"
   fi
+
+  if git -C "$P" config --local --get "branch.${DRAFT_BRANCH}.agent-sandbox-source" >/dev/null 2>&1; then
+    fail "reject left the draft record behind"
+  else
+    pass "reject removes the record with the branch"
+  fi
 }
 
 # Given: a repository on a non-draft branch
 # When:  reject_run runs
-# Then:  it refuses at the branch validation and never evaluates the unset state
-# Asserts: the caller honours draft_validate_branch's verdict - a caller that
-#          continues reaches the unbound source_branch (bite R3)
+# Then:  it refuses at the branch validation and does not continue
+# Asserts: the caller honours draft_validate_branch's verdict
 test_reject_rejects_non_draft() {
   local P="$FIXTURE_DIR/reject_nondraft_p"
   make_committed_repo "$P"
@@ -163,14 +168,13 @@ test_reject_rejects_held_index_lock() {
   fi
 }
 
-# Given: a draft whose .draft-state carries a CURRENT_BRANCH key naming another
-#        branch (a key outside the field contract)
+# Given: a draft record carrying an unknown key naming another branch
 # When:  reject_run runs
 # Then:  the key is ignored: the checked-out draft branch is deleted, the named
 #        branch survives, and the caller returns to the source branch
-# Asserts: the field allowlist - before it, a crafted key replaced the validated
-#          branch and reject deleted a ref named by the record instead.
-test_reject_ignores_unknown_state_key() {
+# Asserts: the reader reads only its two keys, so a crafted key cannot redirect
+#          the branch deletion.
+test_reject_ignores_unknown_record_key() {
   local P="$FIXTURE_DIR/reject_poisoned_p"
   local S="$FIXTURE_DIR/reject_poisoned_s"
   make_committed_repo "$P"
@@ -181,14 +185,8 @@ test_reject_ignores_unknown_state_key() {
   git -C "$P" branch bystander
 
   git -C "$P" checkout -qb draft/foo
-  {
-    printf 'source_branch: main\n'
-    printf 'from_hash: %s\n' "$BASE"
-    printf 'CURRENT_BRANCH: bystander\n'
-    printf 'author: test@fixture\n'
-  } > "$P/.draft-state"
-  git -C "$P" add .draft-state
-  git -C "$P" commit -m ".draft-state" --quiet
+  draft_record_write "$P" "draft/foo" "main" "$BASE"
+  git -C "$P" config --local branch.draft/foo.agent-sandbox-ghost "bystander"
 
   local OUT RC=0
   OUT=$(reject_run "$P" "$S" 2>&1) || RC=$?
@@ -198,9 +196,35 @@ test_reject_ignores_unknown_state_key() {
      && [[ "$OUT" != *"bystander"* ]] \
      && _branch_exists "$P" "bystander" \
      && ! _branch_exists "$P" "draft/foo"; then
-    pass "a crafted CURRENT_BRANCH key cannot redirect the deletion"
+    pass "a crafted record key cannot redirect the deletion"
   else
     fail "poisoned key redirected reject: rc=$RC curr=$(_current_branch "$P") out=$OUT"
+  fi
+}
+
+# Given: a draft whose recorded source branch no longer exists
+# When:  reject_run runs
+# Then:  it prints the manual return commands and leaves the draft intact
+# Asserts: the missing-source arm does not guess or detach
+test_reject_reports_missing_recorded_source() {
+  local P="$FIXTURE_DIR/reject_missing_source_p"
+  local S="$FIXTURE_DIR/reject_missing_source_s"
+  make_committed_repo "$P"
+  local BASE
+  BASE=$(get_init_sha "$P")
+  git -C "$P" checkout -qb draft/foo
+  draft_record_write "$P" "draft/foo" "gone-branch" "$BASE"
+
+  local OUT RC=0
+  OUT=$(reject_run "$P" "$S" 2>&1) || RC=$?
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"recorded source branch 'gone-branch' no longer exists"* \
+     && "$OUT" == *"git branch -D draft/foo"* \
+     && "$(_current_branch "$P")" == "draft/foo" ]] \
+     && _branch_exists "$P" "draft/foo"; then
+    pass "reject reports a missing recorded source and leaves the draft intact"
+  else
+    fail "missing-source arm wrong: rc=$RC curr=$(_current_branch "$P") out=$OUT"
   fi
 }
 
@@ -255,7 +279,8 @@ run_test test_reject_discards_uncommitted_draft_residue
 run_test test_reject_rejects_non_draft
 run_test test_reject_rejects_missing_project_dir
 run_test test_reject_rejects_held_index_lock
-run_test test_reject_ignores_unknown_state_key
+run_test test_reject_ignores_unknown_record_key
+run_test test_reject_reports_missing_recorded_source
 run_test test_reject_script_entry_requires_identity
 run_test test_reject_script_entry_discards_draft
 

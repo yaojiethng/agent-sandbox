@@ -81,27 +81,19 @@ draft_collect_patches() {
 }
 
 # =============================================================================
-# draft_create_and_init_branch  --  guards, branch creation, .draft-state
+# draft_create_and_init_branch  --  guards, record, branch creation
 # =============================================================================
 
-# draft_create_and_init_branch PROJECT_DIR WORKING_BRANCH BASE_COMMIT \
-#   SOURCE_BRANCH FROM_HASH AUTHOR SESSION_TS SANITIZED_HOST_BRANCH \
-#   DIFF_COUNT EXPORT_TIME [SESSION_ID]
+# draft_create_and_init_branch PROJECT_DIR WORKING_BRANCH COMMIT SOURCE_BRANCH
 #
-# Runs guard checks, creates the draft branch, writes .draft-state, and
-# commits it. Prints the branch creation message. Returns 1 on guard failure.
+# Runs guard checks, writes the branch-local draft record, and creates the
+# branch. Clears the record if branch creation fails. Adds no metadata commit.
+# Returns 1 on guard or creation failure.
 draft_create_and_init_branch() {
   local PROJECT_DIR="$1"
   local WORKING_BRANCH="$2"
-  local BASE_COMMIT="$3"
+  local COMMIT="$3"
   local SOURCE_BRANCH="$4"
-  local FROM_HASH="$5"
-  local AUTHOR="$6"
-  local SESSION_TS="$7"
-  local SANITIZED_HOST_BRANCH="$8"
-  local DIFF_COUNT="$9"
-  local EXPORT_TIME="${10:-unknown}"
-  local SESSION_ID="${11:-}"
 
   # Guard: don't draft from a draft branch
   local CURRENT_BRANCH
@@ -112,30 +104,19 @@ draft_create_and_init_branch() {
     return 1
   fi
 
-  # Guard: collision
+  # Guard: exact branch-ref collision
   draft_guard_no_collision "$PROJECT_DIR" "$WORKING_BRANCH" || return 1
 
-  # Create draft branch
-  echo "Creating draft branch '$WORKING_BRANCH' from ${FROM_HASH:0:7}..."
-  git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$BASE_COMMIT"
+  # The record is written before the branch exists. If the branch cannot be
+  # created, remove it so no inert section is left behind.
+  draft_record_write "$PROJECT_DIR" "$WORKING_BRANCH" "$SOURCE_BRANCH" "$COMMIT" || return 1
 
-  # Write .draft-state and commit it
-  local DRAFTED_AT DRAFT_STATE_CONTENT
-  DRAFTED_AT=$(date -u +%Y%m%d-%H%M%S)
-  DRAFT_STATE_CONTENT=$(draft_write_state \
-    "$SOURCE_BRANCH" \
-    "$FROM_HASH" \
-    "$AUTHOR" \
-    "$SESSION_TS" \
-    "$SANITIZED_HOST_BRANCH" \
-    "$DIFF_COUNT" \
-    "$EXPORT_TIME" \
-    "$DRAFTED_AT" \
-    "$SESSION_ID")
-
-  echo "$DRAFT_STATE_CONTENT" > "$PROJECT_DIR/.draft-state"
-  git -C "$PROJECT_DIR" add .draft-state
-  git -C "$PROJECT_DIR" commit -m ".draft-state" --author="$AUTHOR"
+  echo "Creating draft branch '$WORKING_BRANCH' from ${COMMIT:0:7}..."
+  if ! git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$COMMIT"; then
+    draft_record_clear "$PROJECT_DIR" "$WORKING_BRANCH"
+    echo "Error: failed to create draft branch: $WORKING_BRANCH" >&2
+    return 1
+  fi
 }
 
 # =============================================================================
@@ -202,36 +183,14 @@ draft_apply_uncommitted() {
 }
 
 # =============================================================================
-# _draft_branch_point_read  --  read the package fork point
-# =============================================================================
-
-# _draft_branch_point_read SOURCE_DIR
-#   Prints BRANCH_POINT from SOURCE_DIR/.branch-point, or the empty string
-#   when the file or the key is absent. This is the only default source for
-#   the draft fork point; .export-status INIT_SHA is not a fallback.
-_draft_branch_point_read() {
-  local _dir="$1"
-  local _file="$_dir/.branch-point"
-  [[ -r "$_file" ]] || return 0
-  while IFS='=' read -r _k _v; do
-    if [[ "$_k" == "BRANCH_POINT" ]]; then
-      printf '%s\n' "$_v"
-      return 0
-    fi
-  done < "$_file"
-  return 0
-}
-
-# =============================================================================
 # _ingest_export_metadata  --  read the bundle metadata and resolve the fork point
 # =============================================================================
 
-# _ingest_export_metadata SOURCE_DIR BRANCH_FROM_ARG PROJECT_DIR \
-#     OUT_BASE_COMMIT OUT_EXPORT_TIME OUT_BRANCH_POINT
+# _ingest_export_metadata SOURCE_DIR BRANCH_FROM_ARG PROJECT_DIR
 #
-# Reads .export-status for TIMESTAMP and .branch-point for BRANCH_POINT.
-# BASE_COMMIT is BRANCH_FROM_ARG when given, else the package branch point.
-# Returns the three values via nameref output params.
+# Prints the resolved base commit to stdout; diagnostics go to stderr.
+# BASE_COMMIT is BRANCH_FROM_ARG when given, else the package branch point
+# from .branch-point.
 #
 # An explicit BRANCH_FROM_ARG is validated on its own and wins even when
 # .branch-point is malformed; such a package point is reported as ignored.
@@ -244,38 +203,24 @@ _ingest_export_metadata() {
   local _source_dir="$1"
   local _branch_from="$2"
   local _project_dir="$3"
-  local -n _out_base="$4"
-  local -n _out_time="$5"
-  local -n _out_branch_point="$6"
 
   # An explicit --branch-from is the operator's authority. The package
   # metadata is read best-effort so an override can still be reported.
   local _explicit_from=""
   [[ -n "$_branch_from" ]] && _explicit_from=1
 
-  # Read .export-status (optional metadata). When absent, only proceed
-  # if --branch-from was explicitly given; otherwise error clearly.
+  # .export-status is the marker of a bundle produced by this pipeline.
+  # An explicit --branch-from may skip it for a legacy source directory.
   local _es="$_source_dir/.export-status"
-  local _time=""
-  if [[ -f "$_es" ]]; then
-    _time=$(export_status_read "$_source_dir" TIMESTAMP)
-  elif [[ -z "$_explicit_from" ]]; then
+  if [[ ! -f "$_es" && -z "$_explicit_from" ]]; then
     echo "Error: .export-status not found in $_source_dir" >&2
     echo "  This directory was not produced by a recent diff_export or package_branch run." >&2
     echo "  Re-export the session or use an explicit --branch-from to skip metadata validation." >&2
     return 1
   fi
 
-  # TIMESTAMP is always written by the exporter; its absence here means
-  # the .export-status is incomplete. Accept when --branch-from was given
-  # (EXPORT_TIME then defaults to "unknown"); otherwise error.
-  if [[ -z "$_time" && -z "$_explicit_from" ]]; then
-    echo "Error: TIMESTAMP field missing or empty in .export-status" >&2
-    return 1
-  fi
-
   local _package_point
-  _package_point=$(_draft_branch_point_read "$_source_dir")
+  _package_point=$(kv_read "$_source_dir/.branch-point" BRANCH_POINT)
 
   # Resolve BASE_COMMIT. The package branch point is the default; an
   # explicit value overrides it and is validated without the package.
@@ -317,28 +262,25 @@ _ingest_export_metadata() {
     fi
   fi
 
-  _out_base="$_base"
-  _out_time="$_time"
-  _out_branch_point="$_package_point"
+  printf '%s\n' "$_base"
 }
 
 # =============================================================================
 # draft_run  --  create draft branch (no apply)
 # =============================================================================
 
-# draft_run PROJECT_DIR SOURCE_DIR BUNDLE_NAME BRANCH_FROM_ARG
-#           BRANCH_SUMMARY DIFF_COUNT AUTHOR
+# draft_run PROJECT_DIR SOURCE_DIR BUNDLE_NAME BASE_COMMIT
+#           BRANCH_SUMMARY DIFF_COUNT
 #
-# Creates a draft branch, writes .draft-state, and prints branch info.
-# Accepts DIFF_COUNT (pre-collected by main()) for the .draft-state record.
-# Does NOT apply patches  --  the caller (main()) handles the apply loop.
-# Prints branch info to stdout for the caller's summary. Sets DRAFT_WORKING_BRANCH
-# in the caller's scope (no local  --  intentional) so the caller can roll back
-# the exact branch this call created.
+# Creates a draft branch, writes its branch-local record, and prints branch info.
+# Accepts the already-resolved BASE_COMMIT and DIFF_COUNT (pre-collected by
+# main()) for the summary. Does NOT apply patches  --  the caller (main())
+# handles the apply loop. Prints branch info to stdout for the caller's summary.
+# Sets DRAFT_WORKING_BRANCH in the caller's scope (no local  --  intentional)
+# so the caller can roll back the exact branch this call created.
 draft_run() {
   local PROJECT_DIR="$1" SOURCE_DIR="$2" BUNDLE_NAME="$3"
-  local BRANCH_FROM_ARG="$4" BRANCH_SUMMARY="$5" DIFF_COUNT="$6"
-  local AUTHOR="$7"
+  local BASE_COMMIT="$4" BRANCH_SUMMARY="$5" DIFF_COUNT="$6"
 
   validate_project_dir "$PROJECT_DIR" || return 1
   draft_clear_stale_lock "$PROJECT_DIR" || return 1
@@ -370,11 +312,6 @@ draft_run() {
   # Allow DIFF_COUNT=0 when only uncommitted.diff is present
   : "${DIFF_COUNT:?}"
 
-  # Ingest and validate export metadata
-  local BASE_COMMIT EXPORT_TIME _dummy_point
-  _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM_ARG" "$PROJECT_DIR" \
-    BASE_COMMIT EXPORT_TIME _dummy_point || return 1
-
   local SOURCE_BRANCH; SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
   local BRANCH_SLUG="${BRANCH_SUMMARY:-$SANITIZED_HOST_BRANCH}"
@@ -382,9 +319,8 @@ draft_run() {
   local WORKING_BRANCH="draft/${IDENTITY}-${BRANCH_SLUG}-${FROM_HASH:0:6}"
   DRAFT_WORKING_BRANCH="$WORKING_BRANCH"
 
-  draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$BASE_COMMIT" \
-    "$SOURCE_BRANCH" "$FROM_HASH" "$AUTHOR" "$SESSION_TS" \
-    "$SANITIZED_HOST_BRANCH" "$DIFF_COUNT" "$EXPORT_TIME" "$SESSION_ID" || return 1
+  draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$FROM_HASH" \
+    "$SOURCE_BRANCH" || return 1
 
   echo "Draft branch created: $WORKING_BRANCH"
   echo "Branch point: ${FROM_HASH:0:7}"
@@ -425,39 +361,50 @@ EOF
 # _draft_rollback  --  failure rollback for _run_draft_workflow
 # =============================================================================
 
-# _draft_rollback PROJECT_DIR SOURCE_BRANCH
+# _draft_rollback PROJECT_DIR SOURCE_BRANCH DRAFT_BRANCH
 #
-# Resets to the draft-savepoint (the fork point before .draft-state was
-# committed), returns the operator to the branch that was current before
-# draft_run checked out the draft branch, and deletes the savepoint tag and
-# the exact draft branch draft_run created ($3). Guards against restoring to
-# a branch that no longer exists (fall back to the savepoint commit) so the
-# operator is never left on the empty draft/* branch. The branch-creation
+# Resets to the fork point recorded on DRAFT_BRANCH, returns the operator to
+# the branch that was current before draft_run checked out the draft branch,
+# and deletes the exact draft branch draft_run created. Guards against restoring
+# to a branch that no longer exists (fall back to the recorded fork commit) so
+# the operator is never left on the empty draft/* branch. The branch-creation
 # guard in draft_create_and_init_branch already refuses to draft from a
-# draft/* branch, so a clean rollback must not leave the operator there
-# either.
+# draft/* branch, so a clean rollback must not leave the operator there either.
 _draft_rollback() {
   local PROJECT_DIR="$1" SOURCE_BRANCH="$2" DRAFT_BRANCH="${3:-}"
 
-  echo "Rolling back to savepoint..."
-  git -C "$PROJECT_DIR" reset --hard draft-savepoint
+  if [[ -z "$DRAFT_BRANCH" ]]; then
+    echo "Error: cannot roll back without the draft branch name." >&2
+    return 1
+  fi
+
+  local FORK_POINT
+  FORK_POINT=$(draft_record_read "$PROJECT_DIR" "$DRAFT_BRANCH" fork) || {
+    echo "Error: cannot roll back: no fork point recorded for $DRAFT_BRANCH." >&2
+    return 1
+  }
+  if [[ -z "$FORK_POINT" ]]; then
+    echo "Error: cannot roll back: no fork point recorded for $DRAFT_BRANCH." >&2
+    return 1
+  fi
+
+  echo "Rolling back to the draft fork point..."
+  git -C "$PROJECT_DIR" reset --hard "$FORK_POINT"
 
   if git -C "$PROJECT_DIR" rev-parse --verify --quiet "refs/heads/$SOURCE_BRANCH" >/dev/null; then
     git -C "$PROJECT_DIR" checkout -q "$SOURCE_BRANCH"
   else
-    echo "Warning: source branch '$SOURCE_BRANCH' no longer exists; leaving at savepoint commit (detached)." >&2
-    git -C "$PROJECT_DIR" checkout -q --detach draft-savepoint
+    echo "Warning: source branch '$SOURCE_BRANCH' no longer exists; leaving at the fork commit (detached)." >&2
+    git -C "$PROJECT_DIR" checkout -q --detach "$FORK_POINT"
   fi
 
   # Delete the exact draft branch this run created, so a later draft does not
   # collide on branch creation. Guarded: only an existing draft/* branch.
-  if [[ -n "$DRAFT_BRANCH" && "$DRAFT_BRANCH" == draft/* ]] \
+  if [[ "$DRAFT_BRANCH" == draft/* ]] \
     && git -C "$PROJECT_DIR" rev-parse --verify --quiet "refs/heads/$DRAFT_BRANCH" >/dev/null; then
     git -C "$PROJECT_DIR" branch -q -D "$DRAFT_BRANCH"
     echo "Deleted partial draft branch '$DRAFT_BRANCH'."
   fi
-
-  git -C "$PROJECT_DIR" tag -d draft-savepoint
 }
 
 # =============================================================================
@@ -494,20 +441,10 @@ _run_draft_workflow() {
     fi
   fi
 
-  # Validate BRANCH_FROM via shared metadata ingestion.
-  # An empty value resolves to the bundle's .branch-point; the commit must exist.
-  # Also reads .export-status for TIMESTAMP so draft_run can use it.
-  local _validated_base _dummy_time _dummy_point
-  _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM" "$PROJECT_DIR" \
-    _validated_base _dummy_time _dummy_point || return 1
-
-  # Create savepoint at the branch point BEFORE .draft-state is committed.
-  # On failure, reset to this to avoid leaving the draft branch partially applied.
-  # Local tag  --  never pushed by default git push.
-  # Tag the RESOLVED base (_validated_base defaults to HEAD when --branch-from
-  # is omitted)  --  the raw BRANCH_FROM may be empty, which git would reject.
-  git -C "$PROJECT_DIR" tag -d draft-savepoint 2>/dev/null || true
-  git -C "$PROJECT_DIR" tag draft-savepoint "$_validated_base"
+  # Resolve BRANCH_FROM once. An empty value resolves to the bundle's
+  # .branch-point; the commit must exist.
+  local BASE_COMMIT
+  BASE_COMMIT=$(_ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM" "$PROJECT_DIR") || return 1
 
   # Capture the branch current before draft_run checks out the draft branch, so
   # a failed apply can return the operator to it (and never leave them on draft/*).
@@ -523,7 +460,7 @@ _run_draft_workflow() {
   # rolled back to the source branch with the partial draft branch removed.
   DRAFT_WORKING_BRANCH=""
   draft_run "$PROJECT_DIR" "$SOURCE_DIR" "$BUNDLE_NAME" \
-    "$BRANCH_FROM" "$BRANCH_SUMMARY" "$DIFF_COUNT" "$AUTHOR" || return 1
+    "$BASE_COMMIT" "$BRANCH_SUMMARY" "$DIFF_COUNT" || return 1
 
   # Apply patches
   printf '%s\n' "$PATCH_LIST" | draft_apply_patches "$PROJECT_DIR" "$AUTHOR" "$FORCE" || {
@@ -537,9 +474,6 @@ _run_draft_workflow() {
     return 1
   }
 
-  # Success  --  clean up savepoint
-  git -C "$PROJECT_DIR" tag -d draft-savepoint
-
   # Summary
   local UC=""
   [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]] && UC="yes"
@@ -547,7 +481,7 @@ _run_draft_workflow() {
   echo "Diffs applied: $DIFF_COUNT"
   [[ -n "$UC" ]] && echo "Uncommitted diff applied: $UC"
   echo ""
-  draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH" "$_validated_base"
+  draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH" "$BASE_COMMIT"
 }
 
 # =============================================================================

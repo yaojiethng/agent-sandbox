@@ -9,7 +9,7 @@
 #   confirm_run   --  rebases, merges, deletes draft branch; refuses a non-commit target
 #   confirm_run guards  --  missing project, held index lock, non-draft verdict,
 #                       unresolvable target, NEW-mode branch-creation failure
-#   savepoint rollback  --  no-savepoint-tag, stale-tag, drop-step failures
+#   savepoint rollback  --  rebase failure and NEW-mode branch-creation failure
 #   confirm.sh entry point  --  identity-argument guard and confirm_run forwarding
 #
 # Uses make_draft_fixture for synthetic session exports and the conflict
@@ -50,6 +50,12 @@ test_confirm_deletes_draft_branch() {
     fail "confirm did not delete draft branch"
   else
     pass "confirm deletes draft branch"
+  fi
+
+  if git -C "$P" config --local --get "branch.${DRAFT_BRANCH}.agent-sandbox-source" >/dev/null 2>&1; then
+    fail "confirm left the draft record behind"
+  else
+    pass "confirm removes the record with the branch"
   fi
 }
 
@@ -125,9 +131,8 @@ test_confirm_rejects_non_commit_target() {
 
 # Given: HEAD is not on a draft/* branch
 # When:  confirm_run runs
-# Then:  it refuses at the branch validation and never evaluates the unset state
-# Asserts: draft_validate_branch's verdict is honoured - a caller that continues
-#          reaches the unbound source_branch and reports it (bite C3)
+# Then:  it refuses at the branch validation and does not continue
+# Asserts: draft_validate_branch's verdict is honoured (bite C3)
 test_confirm_rejects_non_draft_branch() {
   local P="$FIXTURE_DIR/confirm_nondraft_p"
   make_committed_repo "$P"
@@ -164,7 +169,7 @@ test_confirm_rejects_missing_project_dir() {
 
 # Given: a valid draft and a .git/index.lock the holder probe reports as held
 # When:  confirm_run runs
-# Then:  it refuses at the stale-lock guard and does not start the drop step
+# Then:  it refuses at the stale-lock guard and does not start the rebase
 # Asserts: draft_clear_stale_lock's verdict is honoured (bite C2)
 test_confirm_rejects_held_index_lock() {
   make_draft_fixture confirm_heldlock 2
@@ -179,8 +184,8 @@ test_confirm_rejects_held_index_lock() {
   rm -f "$P/.git/index.lock"
 
   if [[ "$RC" -ne 0 && "$OUT" == *"index.lock is held"* \
-     && "$OUT" != *"Dropping .draft-state commit"* && -n "$DRAFT_BRANCH" ]]; then
-    pass "confirm refuses a held index lock before the drop step"
+     && "$OUT" != *"Rebasing "* && -n "$DRAFT_BRANCH" ]]; then
+    pass "confirm refuses a held index lock before the rebase"
   else
     fail "confirm should stop at the held-lock guard: rc=$RC out=$OUT"
   fi
@@ -208,10 +213,10 @@ test_confirm_rejects_nonexistent_target() {
   fi
 }
 
-# Given: commits added after the .draft-state commit, so the tip has moved past it
+# Given: commits added after the draft was created, so the tip has moved ahead
 # When:  confirm_run runs
 # Then:  the draft is deleted and the later commits merge with it
-# Asserts: the drop step tolerates a .draft-state commit that is no longer first (two assertions)
+# Asserts: the rebase and merge preserve post-draft work (two assertions)
 test_confirm_after_draft_branch_advances() {
   make_draft_fixture confirm_advance 2
 
@@ -219,9 +224,8 @@ test_confirm_after_draft_branch_advances() {
   local DRAFT_BRANCH
   DRAFT_BRANCH=$(draft_branch "$P")
 
-  # Advance the draft branch past the .draft-state commit (as a rebase or
-  # continued work would)  --  the state commit is no longer the branch tip.
-  # confirm_run runs FROM the draft branch (its own contract), so stay there.
+  # Advance the draft branch as continued work would. confirm_run runs FROM
+  # the draft branch (its own contract), so stay there.
   git -C "$P" checkout "$DRAFT_BRANCH" --quiet
   echo "post-draft work" > "$P/post-draft.txt"
   git -C "$P" add post-draft.txt
@@ -232,11 +236,11 @@ test_confirm_after_draft_branch_advances() {
   if _branch_exists "$P" "$DRAFT_BRANCH"; then
     fail "confirm did not delete advanced draft branch"
   else
-    pass "confirm deletes draft branch whose tip moved past .draft-state"
+    pass "confirm deletes an advanced draft branch"
   fi
 
   if [[ -f "$P/post-draft.txt" && $(git -C "$P" rev-list --count main) -ge 4 ]]; then
-    pass "confirm merges post-draft commits along with relocated .draft-state"
+    pass "confirm merges post-draft commits"
   else
     fail "post-draft work lost or incomplete merge on main"
   fi
@@ -271,7 +275,7 @@ test_confirm_conflict_recovery() {
   assert_contains "$OUT" "make reject" "confirm names the discard path"
 }
 
-_make_no_state_commit_conflict_draft() {
+_make_record_conflict_draft() {
   local P="$1"
   make_committed_repo "$P"
 
@@ -279,19 +283,10 @@ _make_no_state_commit_conflict_draft() {
   BASE_SHA=$(get_init_sha "$P")
 
   git -C "$P" checkout -qb draft/foo
-  {
-    printf 'source_branch: main\n'
-    printf 'from_hash: %s\n' "$BASE_SHA"
-    printf 'author: test@fixture\n'
-    printf 'session_ts: 20260420-120000\n'
-    printf 'host_branch: main\n'
-    printf 'diff_count: 1\n'
-    printf 'exported-at: 20260420-120001\n'
-    printf 'drafted-at: 20260420-120001\n'
-  } > "$P/.draft-state"
+  draft_record_write "$P" "draft/foo" "main" "$BASE_SHA"
   echo "draft edit" > "$P/file.txt"
   echo "draft content" > "$P/work.txt"
-  git -C "$P" add .draft-state file.txt work.txt
+  git -C "$P" add file.txt work.txt
   git -C "$P" commit -m "work 1" --quiet
 
   git -C "$P" checkout main --quiet
@@ -308,7 +303,7 @@ _make_no_state_commit_conflict_draft() {
 test_confirm_conflict_restores_the_draft_to_the_savepoint() {
   local P="$FIXTURE_DIR/confirm_restore_p"
   local S="$FIXTURE_DIR/confirm_restore_s"
-  _make_no_state_commit_conflict_draft "$P"
+  _make_record_conflict_draft "$P"
   local TIP_BEFORE
   TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
 
@@ -335,64 +330,26 @@ test_confirm_conflict_restores_the_draft_to_the_savepoint() {
   fi
 }
 
-_make_state_commit_draft_with_dirty_tree() {
-  local P="$1"
+# Given: a draft branch with no record
+# When:  confirm_run runs
+# Then:  it refuses before the rebase
+# Asserts: the record-presence guard
+test_confirm_rejects_missing_record() {
+  local P="$FIXTURE_DIR/confirm_norecord_p"
+  local S="$FIXTURE_DIR/confirm_norecord_s"
   make_committed_repo "$P"
-
-  local BASE_SHA
-  BASE_SHA=$(get_init_sha "$P")
-
-  git -C "$P" checkout -qb draft/foo
-  {
-    printf 'source_branch: main\n'
-    printf 'from_hash: %s\n' "$BASE_SHA"
-    printf 'author: test@fixture\n'
-    printf 'session_ts: 20260420-120000\n'
-    printf 'host_branch: main\n'
-    printf 'diff_count: 1\n'
-    printf 'exported-at: 20260420-120001\n'
-    printf 'drafted-at: 20260420-120001\n'
-  } > "$P/.draft-state"
-  git -C "$P" add .draft-state
-  git -C "$P" commit -m ".draft-state" --quiet
-  echo "draft content" > "$P/file.txt"
-  git -C "$P" add file.txt
+  git -C "$P" checkout -qb draft/no-record
+  echo "work" > "$P/work.txt"
+  git -C "$P" add work.txt
   git -C "$P" commit -m "work" --quiet
 
-  # Uncommitted change forces `rebase --onto` to refuse, deterministically
-  # triggering the drop-step failure rollback.
-  echo "uncommitted edit" > "$P/file.txt"
-}
-
-# Given: a .draft-state commit whose drop step fails
-# When:  confirm_run runs
-# Then:  it fails and the draft tip is restored from the savepoint
-# Asserts: the drop-failure rollback
-test_confirm_drop_step_failure_restores_savepoint() {
-  local P="$FIXTURE_DIR/confirm_dropstepp_p"
-  local S="$FIXTURE_DIR/confirm_dropstepp_s"
-  _make_state_commit_draft_with_dirty_tree "$P"
-  local TIP_BEFORE
-  TIP_BEFORE=$(git -C "$P" rev-parse HEAD)
-
-  local OUT RC
+  local OUT RC=0
   OUT=$(confirm_run "$P" "$S" "" 2>&1) || RC=$?
-  RC="${RC:-0}"
-
-  local REPO_CLEAN
-  REPO_CLEAN="$(git -C "$P" status --porcelain | wc -l | tr -d ' ')"
-
-  if [[ "$RC" -ne 0 \
-        && "$OUT" != *"fatal:"* \
-        && "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" \
-        && "$OUT" == *"failed to drop .draft-state commit"* \
-        && "$REPO_CLEAN" == 0 ]]; then
-    pass "confirm drop-step failure restores savepoint and fails cleanly"
+  if [[ "$RC" -ne 0 && "$OUT" == *"draft record not found"* ]]; then
+    pass "confirm refuses a draft branch without the record"
   else
-    fail "rc=$RC out=$OUT tip-restored=$([[ "$(git -C "$P" rev-parse HEAD)" == "$TIP_BEFORE" ]] && echo yes || echo no) tree-clean=$REPO_CLEAN"
+    fail "confirm should refuse a missing record: rc=$RC out=$OUT"
   fi
-
-  git -C "$P" rebase --abort 2>/dev/null || true
 }
 
 # Given: NEW mode and a target name git cannot create as a branch
@@ -540,7 +497,7 @@ run_test test_confirm_rejects_non_draft_branch
 run_test test_confirm_after_draft_branch_advances
 run_test test_confirm_conflict_recovery
 run_test test_confirm_conflict_restores_the_draft_to_the_savepoint
-run_test test_confirm_drop_step_failure_restores_savepoint
+run_test test_confirm_rejects_missing_record
 run_test test_confirm_new_branch_creates_and_prints_hint
 run_test test_confirm_new_branch_rejects_existing
 run_test test_confirm_new_branch_requires_target

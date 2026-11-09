@@ -129,7 +129,7 @@ The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channe
 
 ### `make confirm [TARGET_BRANCH=<branch>] [NEW=1]`
 
-Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch recorded in `.draft-state`), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
+Rebases the current `draft/` branch onto `TARGET_BRANCH` (default: the source branch in the draft branch record), fast-forward merges, and deletes the draft branch. This path is fast-forward / conflict-free-rebase only.
 
 `NEW=1` (flag `--new`) creates `TARGET_BRANCH` at the draft tip instead. `TARGET_BRANCH` must name a branch that does not exist yet; the command exits non-zero otherwise. It deletes the draft, leaves the source branch untouched, and prints -- does not run -- the direction that moves the source branch onto the rebased series:
 
@@ -140,7 +140,7 @@ git reset --soft <TARGET_BRANCH>
 
 ### `make reject`
 
-Discards the current `draft/` branch, returns to the source branch. Artefacts unchanged.
+Discards the current `draft/` branch and returns to the source branch in its record. If that branch no longer exists, it prints the manual return commands and leaves the draft intact. Artefacts unchanged.
 
 ### `make package-branch [BUNDLE_SUMMARY=<text>] [BASELINE=<sha>]`
 

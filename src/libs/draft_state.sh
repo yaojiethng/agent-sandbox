@@ -1,28 +1,23 @@
 #!/usr/bin/env bash
 # src/libs/draft_state.sh
 #
-# Draft-state helpers: read, write, validate, and guard draft branch state.
-# Sourced by draft.sh, confirm.sh, and reject.sh  --  not executed standalone.
+# Draft branch record helpers: write, clear, read, and validate the
+# branch-local record. Sourced by draft.sh, confirm.sh, and reject.sh  --  not
+# executed standalone.
 #
 # Provides:
 #   draft_parse_folder_name        --  parse SESSION_TS and branch from folder name
-#   draft_guard_no_collision       --  abort if draft branch already exists
-#   draft_write_state              --  produce .draft-state content string
-#   draft_validate_branch          --  validate current branch is a draft; print state vars
+#   draft_guard_no_collision       --  abort if the exact draft branch ref exists
+#   draft_record_write             --  write source_branch and fork_point to git config
+#   draft_record_clear             --  remove those two keys
+#   draft_record_read              --  read one key from the branch record
+#   draft_validate_branch          --  validate current branch is a draft; set record vars
 #   draft_resolve_commit_message   --  resolve commit message from diff or .msg file
 
-# =============================================================================
-# .draft-state field contract  --  the keys both readers accept
-# =============================================================================
-
-# Field names as written by draft_write_state. Both readers accept these keys
-# and skip every other, so a crafted .draft-state cannot assign to a variable
-# of the caller's choosing (CURRENT_BRANCH, PROJECT_DIR, PATH).
-_DRAFT_STATE_FIELDS="source_branch from_hash author session_ts host_branch diff_count exported_at drafted_at session_id"
-
-_draft_state_field_allowed() {
-  [[ " $_DRAFT_STATE_FIELDS " == *" $1 "* ]]
-}
+# The record lives under branch.<draft>.*. The keys are branch-local because
+# git removes the section when the branch is deleted.
+_DRAFT_RECORD_SOURCE_KEY="agent-sandbox-source"
+_DRAFT_RECORD_FORK_KEY="agent-sandbox-fork"
 
 # =============================================================================
 # draft_parse_folder_name  --  parse session identity from folder name
@@ -34,6 +29,8 @@ _draft_state_field_allowed() {
 # after the final dash match [a-f0-9]{6}, they are parsed as SESSION_ID.
 draft_parse_folder_name() {
   local BASENAME="$1"
+  # SESSION_TS is consumed by the caller; ShellCheck checks this file alone.
+  # shellcheck disable=SC2034
   SESSION_TS="${BASENAME:0:15}"
   SANITIZED_HOST_BRANCH="${BASENAME:16}"
   SESSION_ID=""
@@ -46,10 +43,11 @@ draft_parse_folder_name() {
 }
 
 # =============================================================================
-# draft_guard_no_collision  --  abort if draft branch already exists
+# draft_guard_no_collision  --  abort if the exact draft branch ref exists
 # =============================================================================
 
-# Abort if a draft branch with the exact name already exists.
+# Abort if a draft branch with the exact name already exists. The branch name
+# is the draft identity; a different name may coexist.
 draft_guard_no_collision() {
   local PROJECT_DIR="$1"
   local BRANCH_NAME="$2"
@@ -61,43 +59,87 @@ draft_guard_no_collision() {
 }
 
 # =============================================================================
-# draft_write_state  --  produce .draft-state content string
+# draft_record_write  --  write the branch-local draft record
 # =============================================================================
 
-# Produce .draft-state content string; caller writes to file or commits.
-draft_write_state() {
-  local SOURCE_BRANCH="$1"
-  local FROM_HASH="$2"
-  local AUTHOR="$3"
-  local SESSION_TS="$4"
-  local HOST_BRANCH="$5"
-  local DIFF_COUNT="$6"
-  local EXPORTED_AT="$7"
-  local DRAFTED_AT="$8"
-  local SESSION_ID="${9:-}"
+# draft_record_write PROJECT_DIR BRANCH_NAME SOURCE_BRANCH FORK_POINT
+#
+# Writes the two record keys before the branch exists. If the second write
+# fails, the first is removed so no partial record remains.
+draft_record_write() {
+  local PROJECT_DIR="$1"
+  local BRANCH_NAME="$2"
+  local SOURCE_BRANCH="$3"
+  local FORK_POINT="$4"
 
-  cat <<EOF
-source_branch: ${SOURCE_BRANCH}
-from_hash: ${FROM_HASH}
-author: ${AUTHOR}
-session_ts: ${SESSION_TS}
-host_branch: ${HOST_BRANCH}
-diff_count: ${DIFF_COUNT}
-exported-at: ${EXPORTED_AT}
-drafted-at: ${DRAFTED_AT}
-EOF
-  [[ -n "$SESSION_ID" ]] && echo "session_id: ${SESSION_ID}"
+  local SOURCE_KEY="branch.${BRANCH_NAME}.${_DRAFT_RECORD_SOURCE_KEY}"
+  local FORK_KEY="branch.${BRANCH_NAME}.${_DRAFT_RECORD_FORK_KEY}"
+
+  if ! git -C "$PROJECT_DIR" config --local "$SOURCE_KEY" "$SOURCE_BRANCH"; then
+    echo "Error: failed to write draft record for $BRANCH_NAME" >&2
+    return 1
+  fi
+  if ! git -C "$PROJECT_DIR" config --local "$FORK_KEY" "$FORK_POINT"; then
+    git -C "$PROJECT_DIR" config --local --unset-all "$SOURCE_KEY" 2>/dev/null || true
+    echo "Error: failed to write draft record for $BRANCH_NAME" >&2
+    return 1
+  fi
+}
+
+# =============================================================================
+# draft_record_clear  --  remove the branch-local draft record
+# =============================================================================
+
+# draft_record_clear PROJECT_DIR BRANCH_NAME
+#
+# Removes both keys. The success path relies on `git branch -D`; this helper
+# covers a branch that was never created or a rollback that needs to unwind it.
+draft_record_clear() {
+  local PROJECT_DIR="$1"
+  local BRANCH_NAME="$2"
+
+  git -C "$PROJECT_DIR" config --local --unset-all \
+    "branch.${BRANCH_NAME}.${_DRAFT_RECORD_SOURCE_KEY}" 2>/dev/null || true
+  git -C "$PROJECT_DIR" config --local --unset-all \
+    "branch.${BRANCH_NAME}.${_DRAFT_RECORD_FORK_KEY}" 2>/dev/null || true
+  return 0
+}
+
+# =============================================================================
+# draft_record_read  --  read one key from the branch record
+# =============================================================================
+
+# draft_record_read PROJECT_DIR BRANCH KEY
+#
+# KEY is `source` or `fork`. Prints the recorded value and returns 0; prints
+# nothing and returns 1 when the key is absent.
+draft_record_read() {
+  local PROJECT_DIR="$1"
+  local BRANCH="$2"
+  local KEY="$3"
+
+  local _key
+  case "$KEY" in
+    source) _key="$_DRAFT_RECORD_SOURCE_KEY" ;;
+    fork) _key="$_DRAFT_RECORD_FORK_KEY" ;;
+    *)
+      echo "Error: unknown draft record key: $KEY" >&2
+      return 1
+      ;;
+  esac
+
+  git -C "$PROJECT_DIR" config --local --get "branch.${BRANCH}.${_key}" 2>/dev/null
 }
 
 # =============================================================================
 # draft_validate_branch  --  validate current branch is a proper draft branch
 # =============================================================================
 
-# Validate current branch is a proper draft branch.
-# On success: prints variable assignments (including CURRENT_BRANCH) and returns 0.
-# Only the keys in _DRAFT_STATE_FIELDS are parsed: a crafted key such as
-# CURRENT_BRANCH is skipped, so it cannot override the validated branch.
-# On failure: prints error to stderr and returns 1.
+# Validate the current branch is a draft branch with a source record. On
+# success, sets DRAFT_SOURCE_BRANCH and DRAFT_CURRENT_BRANCH in the caller's
+# scope and returns 0. The source branch is not required to still exist; the
+# caller decides whether that is fatal.
+# On failure: prints an error to stderr and returns 1.
 draft_validate_branch() {
   local PROJECT_DIR="$1"
 
@@ -112,49 +154,26 @@ draft_validate_branch() {
     return 1
   fi
 
-  local STATE_CONTENT
-  STATE_CONTENT=$(git -C "$PROJECT_DIR" show "${CURRENT_BRANCH}:.draft-state" 2>/dev/null) || {
-    echo "Error: .draft-state not found on branch: $CURRENT_BRANCH" >&2
+  local source_branch=""
+  if ! source_branch=$(draft_record_read "$PROJECT_DIR" "$CURRENT_BRANCH" source); then
+    if draft_record_read "$PROJECT_DIR" "$CURRENT_BRANCH" fork >/dev/null 2>&1; then
+      echo "Error: draft record on $CURRENT_BRANCH is missing 'source_branch'" >&2
+    else
+      echo "Error: draft record not found on branch: $CURRENT_BRANCH" >&2
+    fi
     return 1
-  }
-
-  # Clear state variables before parsing to avoid leaking from a previous call
-  # (printf -v inside a while loop does not localize the target variable).
-  # The names are assignment targets of printf -v below, hence "unused" to
-  # ShellCheck's dataflow.
-  # shellcheck disable=SC2034
-  local from_hash="" source_branch="" author="" session_ts=""
-  # shellcheck disable=SC2034
-  local host_branch="" diff_count="" exported_at="" drafted_at="" session_id=""
-
-  while IFS=':' read -r KEY VALUE; do
-    KEY=$(echo "$KEY" | tr -d ' ' | tr '-' '_')
-    _draft_state_field_allowed "$KEY" || continue
-    VALUE=$(echo "$VALUE" | sed 's/^ *//')
-    printf -v "$KEY" '%s' "$VALUE"
-    printf '%s=%q\n' "$KEY" "$VALUE"
-  done <<< "$STATE_CONTENT"
-
-  if [[ -z "$from_hash" ]]; then
-    echo "Error: .draft-state on $CURRENT_BRANCH is missing 'from_hash' field" >&2
+  fi
+  if [[ -z "$source_branch" ]]; then
+    echo "Error: draft record on $CURRENT_BRANCH is missing 'source_branch'" >&2
     return 1
   fi
 
-  # Find .draft-state commit by message  --  it may not be the first commit after
-  # from_hash if the user ran git rebase -i (which is the recommended workflow
-  # for shaping commits before confirm).
-  local DRAFT_STATE_COMMIT
-  DRAFT_STATE_COMMIT=$(git -C "$PROJECT_DIR" log "${from_hash}..${CURRENT_BRANCH}" --reverse --format="%H" --grep="^\.draft-state$" 2>/dev/null | head -1)
-
-  if [[ -z "$DRAFT_STATE_COMMIT" ]]; then
-    echo "Warning: .draft-state commit not found between ${from_hash:0:7}..${CURRENT_BRANCH}" >&2
-    echo "  The commit may have been dropped during rebase. Skipping drop step." >&2
-    printf 'DRAFT_STATE_COMMIT=\n'
-  else
-    printf 'DRAFT_STATE_COMMIT=%q\n' "$DRAFT_STATE_COMMIT"
-  fi
-
-  printf 'CURRENT_BRANCH=%q\n' "$CURRENT_BRANCH"
+  # Both values are consumed by the importing workflow; ShellCheck checks this
+  # file alone.
+  # shellcheck disable=SC2034
+  DRAFT_SOURCE_BRANCH="$source_branch"
+  # shellcheck disable=SC2034
+  DRAFT_CURRENT_BRANCH="$CURRENT_BRANCH"
 }
 
 # =============================================================================
