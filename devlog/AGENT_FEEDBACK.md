@@ -186,6 +186,23 @@ The class is a timeout that reads as "nothing happened". The mitigation for an e
 
 Raised by the agent during handover `20261017-01`.
 
+## [A] 2026-10-16  --  A deviation from a ported source is not a regression
+
+```text
+state: open
+scoped: M3.4.2 - Environment declaration seam
+legacy: none
+mitigation: when a delegated worker's artifact differs from the source it was ported from, measure the property the difference drops before naming it. A difference is evidence of a deviation, not of a lost check; the two claims need separate measurements, and "the source line still passes" answers only the first.
+```
+
+A delegated worker ported a green commit from a parked branch. It returned one line changed for no stated reason, `assert_file_exists "$(kv "$state" record)"` to a hard-coded path. I confirmed the source line still passed on this tree, 22 of 22, and reported the change as a weakened assertion.
+
+It was not. The hard-coded string is the value the state's `record` key holds: the test's own `_run_probe` writes `record=$rec` with `rec="${OUTPUT_DIR}/dryrun.<probe>.record"`, and the probe base name resolves to `capability`. Both forms assert the same path, so the worker's line dropped no check. What it did do was hard-code a value the source derived, which breaks the file's idiom and loses generality if the test is reused for another probe.
+
+Two testable claims sat in one sentence. "The worker deviated" is answered by a byte diff. "The deviation weakens the check" is a second claim about what each form evaluates, and a byte diff cannot answer it. Reverting was right, but for the port's attribution rule  --  every line differing from the source needs a checkable reason  --  not for safety.
+
+Raised by the agent during handover `20261016-03`.
+
 ## [A] 2026-10-15  --  The decomposition of a task into work units has no owner for a manual run
 
 ```text

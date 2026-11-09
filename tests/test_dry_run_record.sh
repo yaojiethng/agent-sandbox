@@ -218,4 +218,22 @@ run_test test_digest_gate_fails_when_digest_diverges
 run_test test_digest_gate_fails_on_missing_record_label
 run_test test_digest_gate_fails_on_dangling_image
 
+
+
+# Given: a record with a PASS status and no layer lines at all
+# When:  dry_run_record_verify runs
+# Then:  the gate fails and names a missing layer
+# Asserts: an absent layer line is a failure, not a silent pass (the vacuous
+#          path the hand-rolled loop carried: a missing layer read as not-FAIL).
+test_verify_fails_on_missing_layer_line() {
+  local record="$FIXTURE_DIR/gap.record"
+  printf 'container=img:tag\nstatus=PASS\n' > "$record"
+  local rc output
+  output=$(dry_run_record_verify "sandbox(capability)" "img:tag" "$record" 2>&1)
+  rc=$?
+  assert_ne "$rc" "0" "a record with no layer lines fails the gate"
+  assert_contains "$output" "layer.docker_image = <missing>" "the missing layer is named"
+}
+run_test test_verify_fails_on_missing_layer_line
+
 test_done "test_dry_run_record"

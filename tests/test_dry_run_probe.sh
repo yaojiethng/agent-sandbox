@@ -31,7 +31,11 @@ PROBE_CAP="$REPO_ROOT/scripts/dry_run_capability.sh"
 PROBE_REAS="$REPO_ROOT/scripts/dry_run_reasoning.sh"
 LAYERS=(docker_image workspace_mounts session_state session_data container_network agent_runtime)
 
-kv() { awk -F= -v k="$2" '$1==k{print $2}' "$1"; }  # <file> <key>  (record/state: key=value per line)
+# The record reader under test is the shipped contract: the assertions read
+# records through kv_read, never through a second parser in the test tree.
+# shellcheck source=/dev/null
+source "$REPO_ROOT/src/libs/kv_record.sh"
+kv() { kv_read "$1" "$2"; }  # <file> <key>  (record/state: key=value per line)
 layer_status() { kv "$1" "layer.$2"; }
 
 make_repo() {  # $1 = dir; empty git repo with one root commit
@@ -405,7 +409,7 @@ test_cap_failed_tempdir_precondition() {
     "the session-export precondition names the cause"
   assert_not_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "mkdir: cannot create directory" \
     "no raw mkdir error escapes from an empty fixture path"
-  assert_file_exists "${OUTPUT_DIR:-$fix/workspace/output}/dryrun.capability.record" \
+  assert_file_exists "$(kv "$state" record)" \
     "the diagnostics record is still written"
 }
 run_test test_cap_failed_tempdir_precondition

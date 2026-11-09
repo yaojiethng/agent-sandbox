@@ -13,44 +13,24 @@
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/interface_contract.sh"
 source "$_self_dir/session_inventory.sh"
+source "$_self_dir/kv_record.sh"
 
 # session_state_read SANDBOX_DIR KEY
 #   Reads a key from the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
-#   The file format is one key=value pair per line.
+#   The value is everything after the first '=', so a value may contain '='.
 #   Prints the value to stdout, or empty string if the file or key is missing.
+#   The parse lives in kv_read (kv_record.sh); this is the SESSION_STATE-named
+#   entry to it.
 session_state_read() {
-  local SANDBOX_DIR="$1"
-  local KEY="$2"
-  local STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
-
-  if [[ ! -f "$STATE_FILE" ]]; then
-    return 0
-  fi
-
-  while IFS='=' read -r k v; do
-    if [[ "$k" == "$KEY" ]]; then
-      echo "$v"
-      return 0
-    fi
-  done < "$STATE_FILE"
+  kv_read "$1/.git/SESSION_STATE" "$2"
 }
 
 # session_state_write SANDBOX_DIR KEY VALUE
 #   Writes a key=value pair to the SESSION_STATE file at SANDBOX_DIR/.git/SESSION_STATE.
 #   Creates the file if it does not exist. Appends the pair on a new line.
+#   The parse and the write shape live in kv_write (kv_record.sh).
 session_state_write() {
-  local SANDBOX_DIR="$1"
-  local KEY="$2"
-  local VALUE="$3"
-  local STATE_FILE="$SANDBOX_DIR/.git/SESSION_STATE"
-
-  local DIR
-  DIR="$(dirname "$STATE_FILE")"
-  if [[ ! -d "$DIR" ]]; then
-    return 1
-  fi
-
-  echo "${KEY}=${VALUE}" >> "$STATE_FILE"
+  kv_write "$1/.git/SESSION_STATE" "$2" "$3"
 }
 
 # session_state_write_set SANDBOX_DIR INIT_SHA

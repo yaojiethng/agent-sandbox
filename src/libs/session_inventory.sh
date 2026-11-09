@@ -12,6 +12,11 @@
 # containers, network, volume, registry record). The prefix is diagnostic
 # labeling, not routing: unique per-run ids prevent collisions; the prefix
 # attributes residue after abnormal exits and keeps the workspace tidy.
+#
+# kv_read, the one key=value record parser, comes from kv_record.sh, sourced
+# here so the session-log reader is defined however this lib is loaded.
+# shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/kv_record.sh"
 # Producers: start_agent.sh (_new_session_identity). Consumers: run_agent.sh
 # (activity-log guard + trap teardown) and resume_agent.sh (listing filter --
 # dry-run records are not resumable). Prune consumes them UNFILTERED: Rule 1
@@ -212,11 +217,10 @@ session_log_path() {
 
 # session_log_read SESSION_ID KEY  --  print the value of KEY (the first
 # matching line wins); empty if the log is absent or the key is not present.
+# The parse lives in kv_read (kv_record.sh): a literal key match, so a key
+# carrying a regex metacharacter cannot match a neighbouring line.
 session_log_read() {
-  local sid="$1" key="$2" f
-  f="$(session_log_path "$1")"
-  [[ -f "$f" ]] || { echo ""; return 0; }
-  grep -m1 -E "^${key}=" "$f" | sed -E "s/^${key}=//" || true
+  kv_read "$(session_log_path "$1")" "$2"
 }
 
 # session_log_set SESSION_ID KEY VALUE  --  upsert a KEY=VALUE line (idempotent).
