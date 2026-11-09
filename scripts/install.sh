@@ -14,12 +14,16 @@
 # macOS ships bash 3.2 and BSD tools; Homebrew provides both.
 #
 # Usage:
-#   bash scripts/install.sh            -- check host, install symlink
+#   bash scripts/install.sh                        -- check host, install symlink
 #   bash scripts/install.sh --uninstall
+#   bash scripts/install.sh --env=<sandbox>/.env
 #   INSTALL_DIR=<path> bash scripts/install.sh
 #
-# INSTALL_DIR resolution order: env INSTALL_DIR, <repo>/.env INSTALL_DIR,
-# ~/.local/bin. Tests override the host detection with INSTALL_OS.
+# INSTALL_DIR resolves in priority order: the INSTALL_DIR environment variable,
+# then AGENT_SANDBOX_INSTALL_DIR, then INSTALL_DIR in the sandbox .env named by
+# --env (else <CWD>/.env), then the ~/.local/bin default. The .env level goes
+# through env_resolve_one, the one precedence primitive. Tests override the host
+# detection with INSTALL_OS.
 
 set -uo pipefail
 
@@ -126,11 +130,18 @@ check_rsync() {
 
 # --- Install / uninstall ----------------------------------------------------
 
-# install_dir  -- INSTALL_DIR resolution order: env, <repo>/.env, ~/.local/bin.
+# install_dir  -- INSTALL_DIR resolves through the one precedence primitive:
+# the explicit INSTALL_DIR environment variable, then AGENT_SANDBOX_INSTALL_DIR,
+# then the sandbox .env named by --env (else <CWD>/.env), then ~/.local/bin.
+# The bare INSTALL_DIR stays the explicit level: the documented form is
+# `INSTALL_DIR=<path> bash scripts/install.sh`, and the test suite drives the
+# install path through it. The .env path comes from --env, which install_main
+# normalizes into ENV_FILE; the <repo>/.env read this replaced named a file
+# onboard never writes, because onboard writes the sandbox .env.
 install_dir() {
   local dir="${INSTALL_DIR:-}"
-  if [[ -z "$dir" && -f "$REPO_ROOT/.env" ]]; then
-    dir="$(env_file_value "$REPO_ROOT/.env" INSTALL_DIR)"
+  if [[ -z "$dir" ]]; then
+    dir="$(env_resolve_one AGENT_SANDBOX_INSTALL_DIR INSTALL_DIR "${ENV_FILE:-}" 2>/dev/null || true)"
   fi
   dir="${dir:-~/.local/bin}"
   dir="${dir/#\~/$HOME}"
@@ -167,7 +178,23 @@ do_uninstall() {
 # --- Entry ------------------------------------------------------------------
 
 install_main() {
-  if [[ "${1:-}" == "--uninstall" ]]; then
+  local uninstall=false env_rel="" arg
+  for arg in "$@"; do
+    case "$arg" in
+      --uninstall) uninstall=true ;;
+      --env=*)     env_rel="${arg#--env=}" ;;
+      *)
+        echo "Error: unknown argument: $arg" >&2
+        echo "Usage: install.sh [--uninstall] [--env=<path>]" >&2
+        return 1
+        ;;
+    esac
+  done
+  # Normalized once, so install_dir and do_uninstall resolve the same file.
+  # The invocation CWD is the sandbox when no --env is given.
+  ENV_FILE="$(default_env_file "$env_rel" "")"
+
+  if $uninstall; then
     do_uninstall
     return $?
   fi

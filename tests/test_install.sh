@@ -301,31 +301,47 @@ test_install_detects_missing_rsync_on_darwin() {
   fi
 }
 
-# Given: a fixture repo whose .env records INSTALL_DIR
+# Given: a sandbox .env recording INSTALL_DIR, named by ENV_FILE
 # When:  install_dir resolves with no INSTALL_DIR in the environment
-# Then:  the value comes from <repo>/.env
-# Asserts: the .env fallback of the INSTALL_DIR resolution tail
-test_install_dir_reads_repo_env() {
-  local FAKE="$FIXTURE_DIR/fake_repo_env"
+# Then:  the value comes from that .env
+# Asserts: the .env level of INSTALL_DIR. ENV_FILE is what install_main
+#          normalizes from --env, so this is the file onboard wrote.
+test_install_dir_reads_env_file() {
+  local FAKE="$FIXTURE_DIR/env_file_bin"
   mkdir -p "$FAKE"
   printf 'INSTALL_DIR=%s\n' "$FIXTURE_DIR/from_env_bin" > "$FAKE/.env"
 
   local OUT
-  OUT="$( unset INSTALL_DIR; REPO_ROOT="$FAKE"; install_dir )"
+  OUT="$( unset INSTALL_DIR; export ENV_FILE="$FAKE/.env"; install_dir )"
 
-  assert_eq "$OUT" "$FIXTURE_DIR/from_env_bin" "install_dir reads <repo>/.env INSTALL_DIR"
+  assert_eq "$OUT" "$FIXTURE_DIR/from_env_bin" "install_dir reads INSTALL_DIR from ENV_FILE"
 }
 
-# Given: no INSTALL_DIR in the environment and no <repo>/.env
+# Given: both AGENT_SANDBOX_INSTALL_DIR and a .env carrying INSTALL_DIR
+# When:  install_dir resolves
+# Then:  the env level wins
+# Asserts: the ladder's order: the AGENT_SANDBOX_* level sits above the .env,
+#          so a host export beats a stale sandbox file.
+test_install_dir_env_level_beats_the_env_file() {
+  local FAKE="$FIXTURE_DIR/env_level_bin"
+  mkdir -p "$FAKE"
+  printf 'INSTALL_DIR=%s\n' "$FIXTURE_DIR/from_env_bin" > "$FAKE/.env"
+
+  local OUT
+  OUT="$( unset INSTALL_DIR; export ENV_FILE="$FAKE/.env"; \
+    export AGENT_SANDBOX_INSTALL_DIR="$FIXTURE_DIR/from_env_level_bin"; install_dir )"
+
+  assert_eq "$OUT" "$FIXTURE_DIR/from_env_level_bin" \
+    "AGENT_SANDBOX_INSTALL_DIR beats the .env"
+}
+
+# Given: no INSTALL_DIR at any level, and no .env at all
 # When:  install_dir resolves
 # Then:  the default ~/.local/bin is expanded to $HOME/.local/bin
 # Asserts: the default and the leading-~ expansion of the resolution tail
 test_install_dir_default_expands_tilde() {
-  local NODOTENV="$FIXTURE_DIR/no_env_repo"
-  mkdir -p "$NODOTENV"
-
   local OUT
-  OUT="$( unset INSTALL_DIR; REPO_ROOT="$NODOTENV"; install_dir )"
+  OUT="$( unset INSTALL_DIR; export ENV_FILE="$FIXTURE_DIR/no_such_dir/.env"; install_dir )"
 
   assert_eq "$OUT" "$HOME/.local/bin" "install_dir expands the default ~/.local/bin to HOME"
 }
@@ -397,7 +413,8 @@ run_test test_install_detects_missing_gnu_find_on_darwin
 run_test test_install_detects_missing_rsync_on_darwin
 run_test test_install_passes_on_darwin_with_gnu_shim
 run_test test_install_detects_missing_git_on_linux
-run_test test_install_dir_reads_repo_env
+run_test test_install_dir_reads_env_file
+run_test test_install_dir_env_level_beats_the_env_file
 run_test test_install_dir_default_expands_tilde
 run_test test_install_replaces_existing_entry
 run_test test_install_standalone_entry_point_installs

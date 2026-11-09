@@ -25,6 +25,8 @@ REPO="$REPO_ROOT"
 # The resolution idioms, matched at a command position: start of line, after
 # whitespace, after an opening parenthesis or after a semicolon. The trailing
 # space keeps a function definition, which ends in '()', out of the census.
+# env_file_value is in the list as a tripwire: the library no longer defines
+# it, so a future call to that name is a read that bypasses the ladder.
 READ_IDIOS='(^|[[:space:](;])(env_load|env_file_value|env_resolve_one|env_resolve_identity) |grep .*\.env|-include \.env|cut -d.='
 
 sites() {

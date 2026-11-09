@@ -458,11 +458,13 @@ main() {
     resolve_and_validate PROJECT_DIR "--project" "$PROJECT_DIR" true
   fi
 
-  # Derive PROJECT_DIR from .env if not provided (refresh mode), through the
-  # one .env read path: env_resolve.sh owns the parse, this asks it for a key.
+  # Derive PROJECT_DIR if not provided (refresh mode), through the one
+  # precedence primitive: the explicit flag, then AGENT_SANDBOX_PROJECT_DIR,
+  # then the sandbox .env. A miss leaves PROJECT_DIR empty, which refresh
+  # tolerates, so the primitive's error is not reachable here.
   if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
     if [[ -f "$SANDBOX_DIR/.env" ]]; then
-      PROJECT_DIR="$(env_file_value "$SANDBOX_DIR/.env" PROJECT_DIR)"
+      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$SANDBOX_DIR/.env" 2>/dev/null || true)"
     fi
   fi
 
