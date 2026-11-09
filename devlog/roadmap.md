@@ -38,13 +38,14 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.4 - The prose standards as principles](changelog.md#m334---the-prose-standards-as-principles) | [Complete - see changelog](changelog.md#m334---the-prose-standards-as-principles) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.5 - The eval pipeline](#m335---the-eval-pipeline) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.6 - The instruction corpus and its map](#m336---the-instruction-corpus-and-its-map) | [In progress](#m336---the-instruction-corpus-and-its-map) |
-| &nbsp;&nbsp;[M3.4 - Container Execution Model and Environment Ownership](#m34---container-execution-model-and-environment-ownership) | Not started |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.1 - The container execution model and the controlled vocabulary](#m341---the-container-execution-model-and-the-controlled-vocabulary) | Not started |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.2 - Environment declaration seam](#m342---environment-declaration-seam) | Not started |
+| &nbsp;&nbsp;[M3.4 - Container Execution Model and Environment Ownership](#m34---container-execution-model-and-environment-ownership) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.1 - The container execution model and the controlled vocabulary](#m341---the-container-execution-model-and-the-controlled-vocabulary) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.2 - The resolution model and record primitives](#m342---the-resolution-model-and-record-primitives) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.3 - Persistence contract](#m343---persistence-contract) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.4 - Service topology and trust boundary](#m344---service-topology-and-trust-boundary) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.5 - Verification surface](#m345---verification-surface) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.6 - Project-owned checks and skills](#m346---project-owned-checks-and-skills) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.7 - Environment declaration seam](#m347---environment-declaration-seam) | Not started |
 | &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.1 - The work-log record layer](#m351---the-work-log-record-layer) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.2 - The task-list mechanism](#m352---the-task-list-mechanism) | Not started |
@@ -340,9 +341,9 @@ M3.3.4 closed with the principle corpus filed; this sub-milestone holds what tha
 
 **Depends on:** M3.1.1 and M3.3.1. The live test is the `spread` project, on the shipped harness, under copy delivery.
 
-**Sequencing:** none claimed. It opens when an iteration is scoped against it, and it gates no other milestone.
+**Sequencing:** M3.4.2 gates M3.4.7. The declaration seam reads the resolution ladder and the record primitives M3.4.2 lands.
 
-**Branch state.** `feat/M3_4-container_execution-model` carries this milestone's work on a tree far behind `HEAD`, unmerged: the vocabulary sweep and its gate, the KV pair, the resolution ladder, the census row and the persistence records. Its run directive `.agents/drafts/m3_4-container_execution_model-run.md` and its resolver ADR `docs/adr/resolution_model.md` exist only on that branch. The rows below are this tree's task list; the branch is a candidate implementation for the rows it covers, and the two files land with it.
+**Branch state.** `feat/M3_4-container_execution-model` carried the initial work on a tree far behind `HEAD`. Its forward-portable half -- the vocabulary sweep and its gate, the resolution model and ladder, the KV pair and the census -- lands under M3.4.1 and M3.4.2. The declaration seam, which needs the `spread` run, is M3.4.7. Its run directive `.agents/drafts/m3_4-container_execution_model-run.md` and its resolver ADR `docs/adr/resolution_model.md` land with the forward half.
 
 **Vocabulary.** The system is described by a domain model. The enclosing field is the **domain** of agentic engineering. Its divisions are **sub-domains**: infrastructure, single-agent execution, multi-agent orchestration. The ownership slices within a sub-domain are **planes**: host substrate, session guarantee, environment declaration, project data, verification surface. `layer` stays reserved for the container architecture.
 
@@ -354,40 +355,43 @@ M3.3.4 closed with the principle corpus filed; this sub-milestone holds what tha
 
 The sub-milestone that settles the container execution model and reserves its vocabulary, so `layer` names the container architecture only.
 
-- [ ] **The vocabulary propagation sweep** -- the reserved terms carried into the live instruction surfaces, so `layer` names the container architecture only. The branch carries a candidate.
+- [x] **The vocabulary propagation sweep** -- the reserved terms carried into the live instruction surfaces, so `layer` names the container architecture only. Handover `20261015-10`.
 
-- [ ] **The vocabulary gate** -- `layer` names the container architecture only in the shipping instruction surfaces; the gate derives its subjects from the manifest and fails on a replaced sense. The branch carries `scripts/check_vocabulary.sh` and its test.
+- [x] **The vocabulary gate** -- `layer` names the container architecture only in the shipping instruction surfaces; `scripts/check_vocabulary.sh` derives its subjects from the manifest and fails on a replaced sense. Handover `20261015-11`.
 
 - [ ] **The execution lifecycle is one evidenced state machine** -- decide the subject first: [`execution_model.md`](../docs/reference/execution_model.md) is a control-flow diagram across containers, while [`sandbox_lifecycle.md`](../docs/reference/sandbox_lifecycle.md) and [`provider_lifecycle.md`](../docs/reference/provider_lifecycle.md) describe the states each layer rests in. Then give the chosen machine the `state-machine-specification` treatment: states, events, guards, transition ids, invariants, falsifiable cases, mutation rows and a mapping gate. Ends when the chosen machine has a table and a gate, and the control-flow diagram either points at it or is explicitly out of scope. Nature of change: a reference chart, its table, a gate, and the mutation catalog.
 
-##### M3.4.2 - Environment declaration seam
+##### M3.4.2 - The resolution model and record primitives
 
-**Objective:** every input the harness reads resolves through one model, and the project declares its image, mounts, volumes and lifecycle for the harness to read. Subsumes the resolution, record-format, image build, onboarding and container-interface rows from T4, T6, T9, T10 and T11.
+**Objective:** every setting the harness reads resolves through one precedence ladder, and every key-value record it persists reads and writes through one pair, so a reader and a writer have one definition each.
 
-- [ ] **The declaration surface** -- where a project declares its image, toolchain, dependencies, mounts, volumes, services and lifecycle, and the reader that consumes it. Nature of change: new lib, its test, and the reference document.
-- [ ] **The image build path** -- `snapshot.sh` is a CRITICAL dependency the entrypoint never uses, the preflight build drops the host UID/GID arguments, and `REBUILD`'s `--no-cache` does not reach tier 3. Rows 111, 120, 121, 193.
-- [ ] **Per-image lib inventory manifest and drift test** -- the `/opt/sandbox/lib/` deployments are repeated per-image COPY statements in four Dockerfiles (`src/capability/dockerfile`, plus the three provider tier-3 Dockerfiles under `src/reasoning/agent-runtime/`) with no single manifest. The capability image additionally hand-installs `src/capability/snapshot.sh` into the lib namespace; the reasoning images do not carry it. That intentional one-file divergence is unguarded: no build-time or test-time assertion pins the per-image inventory. `lib_preflight` checks only the libs an entrypoint names, and `check_lib_liveness.sh` scans the repo tree, not the images, so an image that silently gains or loses an unreferenced lib passes both gates. Deliverable: one inventory declaration per image and a test asserting the baked set. Evidence: the harness architecture assessment (`devlog/discussions/archive/20260922-design-active-harness_architecture_assessment.md`), raised from handover `20260922-15`.
-- [ ] **Onboarding and refresh: one generated-artifact contract** -- the wizard and the installer write the same artifacts (`.env`, the per-sandbox Makefile, the provider config directory), and refresh regenerates them: refresh overwrites the sandbox Makefile unconditionally, the provider setup hook and the config directory are unpinned, and the wizard's provider filter is a no-op today. Rows 155, 158, 170, 177.
-- [ ] **Image identity and version semantics** -- one definition of what the image identity is, with [`docs/adr/harness_versioning.md`](../docs/adr/harness_versioning.md) and `src/build/image.sh` agreed: the per-image digest, the label pair that records it, and the daemon-local limitation. Row 90.
-- [ ] **Image naming and stamping** -- the naming contract that `docs/reference/tool_interface.md` and `scripts/build.sh` have drifted from. Row 91.
-- [ ] **The container-harness contract** -- the compose file the harness generates for its own container, and the ownership of `.compose/<sid>.yml`, whose every value the generator already knows. Row 19 and the compose family, 94 to 102.
+**Depends on:** M3.4.1, which settles the vocabulary these documents use.
+
+This is the forward-portable half of the original environment-declaration scope: it needs no project-supplied image, mount or service, so it lands ahead of [M3.4.7](#m347---environment-declaration-seam). The declaration seam continues on top.
+
+- [x] **Record shape: one KV read/write pair** -- a `kv_read` with a `kv_write`, plus a multi-key load, behind every key-value record: the session log's read contradicts its own docstring, and the state readers overlap. Evidence rows 17, 22, 24, 25, 39, 40, 50, 105, 303. Handover `20261016-03`, extended by `20261016-04`, `20261016-05` and `20261016-09`.
 - [ ] **Resolution rule: one ladder for every setting** -- nine readers over four record shapes re-implement one ladder, `env_resolve_one`'s explicit branch is unreachable, and its failure text names the identity setting inside a generic function. Evidence rows 22, 38, 72, 78. Source: [`20260924-design-draft-resolver_contract.md`](../devlog/discussions/archive/20260924-design-draft-resolver_contract.md), the resolution half of Note A.
 - [ ] **Environment: one load path, no repaired damage** -- `.env` is a config source and a runtime environment at once, `env_load` mis-parses two common shapes silently, and the prelude re-asserts the identity triple as tax on the bulk load. Evidence rows 47, 48, 180.
-- [ ] **Record shape: one KV read/write pair** -- a `kv_read` with a `kv_write`, plus a multi-key load, behind every key-value record: the session log's read contradicts its own docstring, and the state readers overlap. Evidence rows 17, 22, 24, 25, 39, 40, 50, 105, 303.
+- [ ] **`INSTALL_DIR` has a writer and no reader on its path** -- `scripts/onboard.sh` writes `INSTALL_DIR` into the sandbox `.env` as operator configuration, and `scripts/install.sh` resolves it from the process env, then `$REPO_ROOT/.env`, then `~/.local/bin`; the sandbox `.env` is never read. Nature of change: `scripts/install.sh` and its test.
 - [ ] **Structured where it helps: JSON and the parser dependency** -- which records become structured, and the dependency that costs: JSON is the easiest reach, given a willingness to take a parser rather than roll one. Row 20.
 - [ ] **One timestamp format** -- `YYYYMMDD-HHMMSS` has no definition: ten producers, three runtime readers, and three test files pinning the literal. Row 31.
 - [ ] **One relative-time ladder** -- two densities, the plural rule copied four times, and two epoch round-trips. Row 32.
 - [ ] **CLI-to-leaf contract: the router and its handoff** -- the subcommand set appears in four lists that already disagree, identity is resolved four different ways and forwarded in four different sets, and the `exec` handoff carries a help status no caller maps. Evidence rows 48, 130, 136, 173. Source: [`20260924-design-draft-cli_workflow_interface.md`](../devlog/discussions/archive/20260924-design-draft-cli_workflow_interface.md). **Also in scope: the `_CLI_TOLERANT` cleanup (read-through row 137).** `cli.sh` keeps a tolerant parse mode (`_CLI_TOLERANT=1` drops unknown flags) that only `scripts/prune.sh` still uses, a migration holdover from the shared-parser adoption. A destructive command should not drop unknown flags: remove the knob from `cli.sh`, make prune's parse strict (a one-line unset), and retire the leniency requirement from ADR `command_flag_parsing.md`. **Clause landed (2026-09-27):** the `_CLI_TOLERANT` knob is removed, prune parses strictly and rejects an unknown flag before pruning anything, the ADR records the removal, and strict-mode coverage replaces the two tolerant-mode tests. Ported from the parallel-track trial, unit U1. The rest of the row -- the four disagreeing subcommand lists, the four identity resolutions and the `exec` handoff's unmapped help status -- is untouched.
 - [ ] **Makefile-to-CLI contract: one invocation idiom** -- sixteen `$(if)` translators for one boolean convention, `PROVIDER=pi` beside `--provider=pi`, and a second help and error surface that must match the CLI. Evidence rows 44, 45, 46. T4 owns the separate question of whether make stays.
-- [ ] **Dependency locking for the provider images** -- transitive dependency locking for the `npm install -g` payload. Nature of change: the provider dockerfiles.
-- [ ] **Pre-snapshot validation gate** -- configurable per-project check run by `start_agent.sh` before building `.agent-input/`; fail fast before the container starts
-- [ ] **Session identity in the agent container environment** -- the `agent` service in `src/build/docker-compose.yml` passes only the four workspace variables, so a caller inside the agent container has no shell-level way to read which session it is running in. The `sandbox` service already receives `SESSION_ID`, `SESSION_TS`, `HOST_HEAD_SHA`, `SANITIZED_HOST_BRANCH`, and `RESET_VOLUME` from the same exported environment; the agent service does not, and the gap is one environment block. Export the identity variables into the agent service environment so the identity is answerable with one command, with no prefix and no namespace wrapper: the agent container runs a single service, so a bare key is unambiguous and a prefix adds a word the reader must strip mentally. Pin the agent service key set with a test, because the compose block that carries it is per-service and a later edit to the sibling service does not touch it. Raised by the operator (2026-09-30).
-- [ ] **The runtime `SANDBOX_DIR` derivation contradicts the resolution ladder** -- `scripts/start_agent.sh` derives `SANDBOX_DIR` as `dirname PROJECT_DIR/basename PROJECT_DIR-sandbox` and passes it as the explicit argument, so it beats `AGENT_SANDBOX_SANDBOX_DIR` and the `.env`, while the resolver ADR records that the default is applied once at onboard and never at runtime. Decide which is right, then make the code and the ADR agree. Nature of change: `scripts/start_agent.sh` and the ADR. The ADR is on the branch.
-- [ ] **Remove the carrier census when its entries are resolved** -- the 2026-10-16 census is a working record listing what it found and left open; it is not a durable artifact. Delete it once its open set is empty. Nature of change: one discussion file. The census is on the branch.
+- [ ] **The runtime `SANDBOX_DIR` derivation contradicts the resolution ladder** -- `scripts/start_agent.sh` derives `SANDBOX_DIR` as `dirname PROJECT_DIR/basename PROJECT_DIR-sandbox` and passes it as the explicit argument, so it beats `AGENT_SANDBOX_SANDBOX_DIR` and the `.env`, while the resolver ADR records that the default is applied once at onboard and never at runtime. Decide which is right, then make the code and the ADR agree. Nature of change: `scripts/start_agent.sh` and the ADR.
+- [ ] **`env_load` overwrites the ambient environment unconditionally** -- `src/libs/env.sh` exports every `.env` key, so every non-identity key beats its ambient value while only the identity triple is re-asserted after the load. Decide whether a `.env` value beats an ambient one, and state it once. Nature of change: `src/libs/env.sh` and its test.
+- [x] **`INSTALL_DIR` has a writer and no reader on its path** -- `scripts/onboard.sh` writes `INSTALL_DIR` into the sandbox `.env` as operator configuration, and `scripts/install.sh` resolved it from the process env, then `$REPO_ROOT/.env`, then `~/.local/bin`; the sandbox `.env` was never read. The reader now resolves through `env_resolve_one`, `install.sh` takes `--env`, and the dead repo-root rung is gone. Handover `20261016-11`.
+- [ ] **Remove the carrier census when its entries are resolved** -- [`discussions/20261016-report-draft-carrier_census.md`](discussions/20261016-report-draft-carrier_census.md) is a working record listing what the 2026-10-16 census found and left open; it is not a durable artifact. Delete it once its open set is empty. Nature of change: one discussion file.
 
-- [ ] **The provider setup hook abort has no fixture** -- both tests that drove it forced the failure through pi's `setup.sh`, which this removal deleted, so `run_agent.sh`'s abort-and-attribute path is stated in code and covered by no test. Ends when a fixture provider carries a failing hook, or the contract is retired from `run_agent.sh`.
+**Acceptance criteria:**
 
-**Decisions taken on the branch, unmerged:** the resolution model is three carrier classes (argument, configuration, session state) with one precedence primitive and no record level; the KV pair is the one key-value record primitive, and JSON waits until a record demonstrably needs a parser; and the declaration seam is a harness-specific manifest rather than a Dockerfile, a compose overlay or a devcontainer, held as the default under test until the `spread` run settles it. Sources: [`20260924-design-draft-resolver_contract.md`](discussions/archive/20260924-design-draft-resolver_contract.md) and [`20260924-design-draft-cli_workflow_interface.md`](discussions/archive/20260924-design-draft-cli_workflow_interface.md).
+- `bash scripts/lint.sh` and `bash scripts/run_tests.sh` pass.
+- A setting read outside the resolution ladder, or a key-value record parsed outside `src/libs/kv_record.sh` or `src/libs/env.sh`, fails a gate.
+
+**Decisions:**
+
+- **The resolution model is three carrier classes and one precedence primitive.** An input is an argument, a configuration value or session state, and the class decides its persistence. The configuration ladder is one primitive used at every plane that reads a configuration setting. The ladder's record level is rejected, because the record holds per-session state, not configuration. [`resolution_model.md`](../docs/adr/resolution_model.md), entry `2026-10-16`; handover `20261016-01`.
+- **The KV pair is the one key-value record primitive, and no record becomes structured in this slice.** A `kv_read`, a `kv_write` and a multi-key load sit behind every key-value record. JSON waits until a record demonstrably needs it, because a parser is a dependency the harness then carries. Reversal word `json-now`. Decision of 2026-10-16.
 
 ##### M3.4.3 - Persistence contract
 
@@ -425,6 +429,30 @@ The sub-milestone that settles the container execution model and reserves its vo
 - [ ] **The project hook seam** -- the project's hooks run, and the harness hook does not leak into a project. Nature of change: `src/capability/entrypoint.sh` and `src/capability/git-hooks/`.
 - [ ] **Project-owned checks run inside the environment** -- the project's own checks and types, wired to the environment. Nature of change: `docs` and `.agents/skills/`.
 - [ ] **Skill specialization through the project cell** -- verify the project `.agents/skills` cell serves specialization. Nature of change: `docs`.
+
+##### M3.4.7 - Environment declaration seam
+
+**Objective:** the project declares its image, toolchain, dependencies, mounts, volumes, services and lifecycle, and the harness reads that declaration, while the session guarantee stays harness-owned.
+
+**Depends on:** M3.4.2, which settles the resolution ladder and the record primitives the seam reads; M3.4.1, which settles the vocabulary. The live test is the `spread` project, on the shipped harness, under copy delivery.
+
+This is the remainder of the original environment-declaration scope. It is the part that cannot land without the `spread` run, so it continues on top of the forward-portable [M3.4.2](#m342---the-resolution-model-and-record-primitives).
+
+- [ ] **The declaration surface** -- where a project declares its image, toolchain, dependencies, mounts, volumes, services and lifecycle, and the reader that consumes it. Nature of change: new lib, its test, and the reference document.
+- [ ] **The image build path** -- `snapshot.sh` is a CRITICAL dependency the entrypoint never uses, the preflight build drops the host UID/GID arguments, and `REBUILD`'s `--no-cache` does not reach tier 3. Rows 111, 120, 121, 193.
+- [ ] **Per-image lib inventory manifest and drift test** -- the `/opt/sandbox/lib/` deployments are repeated per-image COPY statements in four Dockerfiles (`src/capability/dockerfile`, plus the three provider tier-3 Dockerfiles under `src/reasoning/agent-runtime/`) with no single manifest. The capability image additionally hand-installs `src/capability/snapshot.sh` into the lib namespace; the reasoning images do not carry it. That intentional one-file divergence is unguarded: no build-time or test-time assertion pins the per-image inventory. `lib_preflight` checks only the libs an entrypoint names, and `check_lib_liveness.sh` scans the repo tree, not the images, so an image that silently gains or loses an unreferenced lib passes both gates. Deliverable: one inventory declaration per image and a test asserting the baked set. Evidence: the harness architecture assessment (`devlog/discussions/archive/20260922-design-active-harness_architecture_assessment.md`), raised from handover `20260922-15`.
+- [ ] **Onboarding and refresh: one generated-artifact contract** -- the wizard and the installer write the same artifacts (`.env`, the per-sandbox Makefile, the provider config directory), and refresh regenerates them: refresh overwrites the sandbox Makefile unconditionally, the provider setup hook and the config directory are unpinned, and the wizard's provider filter is a no-op today. Rows 155, 158, 170, 177.
+- [ ] **Image identity and version semantics** -- one definition of what the image identity is, with [`docs/adr/harness_versioning.md`](../docs/adr/harness_versioning.md) and `src/build/image.sh` agreed: the per-image digest, the label pair that records it, and the daemon-local limitation. Row 90.
+- [ ] **Image naming and stamping** -- the naming contract that `docs/reference/tool_interface.md` and `scripts/build.sh` have drifted from. Row 91.
+- [ ] **The container-harness contract** -- the compose file the harness generates for its own container, and the ownership of `.compose/<sid>.yml`, whose every value the generator already knows. Row 19 and the compose family, 94 to 102.
+- [ ] **Dependency locking for the provider images** -- transitive dependency locking for the `npm install -g` payload. Nature of change: the provider dockerfiles.
+- [ ] **Pre-snapshot validation gate** -- configurable per-project check run by `start_agent.sh` before building `.agent-input/`; fail fast before the container starts.
+- [ ] **Session identity in the agent container environment** -- the `agent` service in `src/build/docker-compose.yml` passes only the four workspace variables, so a caller inside the agent container has no shell-level way to read which session it is running in. The `sandbox` service already receives `SESSION_ID`, `SESSION_TS`, `HOST_HEAD_SHA`, `SANITIZED_HOST_BRANCH`, and `RESET_VOLUME` from the same exported environment; the agent service does not, and the gap is one environment block. Export the identity variables into the agent service environment so the identity is answerable with one command, with no prefix and no namespace wrapper: the agent container runs a single service, so a bare key is unambiguous and a prefix adds a word the reader must strip mentally. Pin the agent service key set with a test, because the compose block that carries it is per-service and a later edit to the sibling service does not touch it. Raised by the operator (2026-09-30).
+- [ ] **The provider setup hook abort has no fixture** -- both tests that drove it forced the failure through pi's `setup.sh`, which this removal deleted, so `run_agent.sh`'s abort-and-attribute path is stated in code and covered by no test. Ends when a fixture provider carries a failing hook, or the contract is retired from `run_agent.sh`.
+
+**Decision:**
+
+- **The declaration seam is a harness-specific manifest.** The project declares its image, mounts, volumes, services and lifecycle in a manifest the harness reads, rather than a Dockerfile, a compose overlay or a devcontainer. The manifest is the default under test, not a settled contract; the `spread` run is what settles it. Reversal word `devcontainer`. Decision of 2026-10-16.
 
 ##### Not in scope: M3.4
 
@@ -734,7 +762,7 @@ The parent finding (cost, throughput, and failure modes are invisible for subage
 
 #### T4 - Library Migrations
 
-The image-build, onboarding and per-image lib inventory rows moved to [M3.4.2](#m342---environment-declaration-seam).
+The image-build, onboarding and per-image lib inventory rows moved to [M3.4.7](#m347---environment-declaration-seam).
 
 - [ ] **Evaluate whether make still earns its place; if not, assess substitutes** (surfaced from handover `20260919-15`) -- make serves as a directory-based script wrapper, jerry-rigging arg parsing (`PROVIDER=pi` vs `--provider=pi`) and carrying a second invocation idiom whose help/error surfaces must match the CLI. The original reason (command too long) is weakened by `.env` identity resolution. The evaluation is the deliverable; a removal decision is a separate follow-up.
 - [ ] **Self-contained install with atomic replacement and semantic versioning** -- the installed CLI symlinks to the checkout, so it silently follows every `git pull` and has no version of its own. The outcome is an installed artifact that runs without the checkout, an install that cannot leave a partial CLI behind, and a version identity the harness compares with the checkout and reports before a session starts. Semantic versioning is the identity the ADR defers to this milestone, with a bump policy that distinguishes patch, minor and major changes; how the artifact is packaged, verified and compared is the implementer's. This is the full-packaging milestone named by [`harness_versioning.md`](../docs/adr/harness_versioning.md), independent of whether make survives the T4 wrapper evaluation. Ends when the installed CLI runs with the checkout absent, a failed install leaves the previous CLI working or none, and a version mismatch is reported before a session starts.
@@ -748,7 +776,7 @@ T5 is absorbed into [M3.5](#m35---task-list-mechanism). Its record-storage rows 
 
 #### T6 - Performance Optimizations / UI Tweaks
 
-The pre-snapshot gate and the session identity export moved to [M3.4.2](#m342---environment-declaration-seam), and the structured task log to [M3.4.3](#m343---persistence-contract).
+The pre-snapshot gate and the session identity export moved to [M3.4.7](#m347---environment-declaration-seam), and the structured task log to [M3.4.3](#m343---persistence-contract).
 
 - [x] **Session save suppressed by the autosave baseline** -- session export read its no-op baseline from the autosave dir, so a current autosave suppressed the durable exit record. The baseline now points at the durable branch point and the coupling is pinned by a test. Handover `20260921-06`.
 - [ ] **Harness env keys enter the agent namespace unprefixed** -- the harness writes its own variables (`SESSION_ID`, `SESSION_TS`, `HOST_HEAD_SHA`, `SESSION_STATE`, and the `DIR` family) into an environment the provider also owns, under bare names that no prefix ties back to the harness. A reader in that container sees `SESSION_ID` and cannot tell from the name which layer set it. Two facts keep this recorded rather than acted on. No collision exists today: the provider sets no variable of the same name, so the two namespaces do not currently overlap. The agent container runs one service, so a bare key is never ambiguous within it. Operator ruling (2026-09-30): the agent environment is the agent's own namespace and stays pristine, so no harness prefix is introduced. The row records the convention and its stated limit -- the guarantee is single-service, so a second service or a future provider variable forces the decision again.
@@ -773,7 +801,7 @@ The skill-maintenance rows (backlog triage, fork-and-strip) moved to [M3.3.3](#m
 
 #### T9 - Session, harness and image identity
 
-The image identity, naming, container-harness and image-build rows moved to [M3.4.2](#m342---environment-declaration-seam), and the harness-identity split to [M3.4.3](#m343---persistence-contract).
+The image identity, naming, container-harness and image-build rows moved to [M3.4.7](#m347---environment-declaration-seam), and the harness-identity split to [M3.4.3](#m343---persistence-contract).
 
 The identity here is a label set, not an object: a value stamped on an artifact at creation, mutated by a transition, and read back at a boundary. T9 owns the invariant across the carriers - every label names its owner, every carrier agrees, every boundary validates what it reads - and the track holds one record per surface rather than one record for the track. Its rows group by stage: stamp, carry, read, validate.
 
@@ -782,9 +810,9 @@ The identity here is a label set, not an object: a value stamped on an artifact 
 
 #### T10 - Argument, configuration and operator surface
 
-The resolution ladder, the environment load path, and the CLI and Makefile contracts moved to [M3.4.2](#m342---environment-declaration-seam).
+The resolution ladder, the environment load path, and the CLI and Makefile contracts moved to [M3.4.2](#m342---the-resolution-model-and-record-primitives).
 
-The surface through which a setting or a command enters the harness, and the surface through which the harness answers the operator. Five design problems from the read-through share it, and [`docs/adr/env_resolution.md`](../docs/adr/env_resolution.md) already fixes the requirements the first row serves.
+The surface through which a setting or a command enters the harness, and the surface through which the harness answers the operator. Five design problems from the read-through share it, and [`docs/adr/env_resolution.md`](../docs/adr/resolution_model.md) already fixes the requirements the first row serves.
 
 - [ ] **Interactive front end: the helper hands back a command** -- the model is that the helper asks the unanswered questions and returns a fully specified command the leaf executes; today the tree returns one token or confirms a plan the leaf already built, so the printed command does not drive the run. Evidence rows 148, 166, 188, 264, 265. Source: [`20260925-design-draft-interactive_command_contract.md`](../devlog/discussions/archive/20260925-design-draft-interactive_command_contract.md).
 - [ ] **The operator-facing surface: hints, help, usage and the session display** -- the hints are defined per surface rather than once, `resume` always continues into standard mode with no document saying so, and the session display's staleness marker breaks its own row alignment. Design: [`20260925-design-draft-operator_surface.md`](../devlog/discussions/archive/20260925-design-draft-operator_surface.md), draft. Evidence rows 37, 81, 198; row 290's lint-gate ADR rides the M3.1 gate rows.
@@ -792,7 +820,7 @@ The surface through which a setting or a command enters the harness, and the sur
 
 #### T11 - Persisted record formats
 
-The KV pair, the JSON decision, the timestamp format and the relative-time ladder moved to [M3.4.2](#m342---environment-declaration-seam).
+The KV pair, the JSON decision, the timestamp format and the relative-time ladder moved to [M3.4.2](#m342---the-resolution-model-and-record-primitives).
 
 The shapes the harness writes and reads back: session state, the session log, the dry-run record and the runner's report. One record family, one reader and writer pair each, and structured where structured pays.
 

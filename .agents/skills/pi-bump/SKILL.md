@@ -137,4 +137,4 @@ A pin bump changes no governance, so it needs no handover. An extension change o
 - The container updates pi only at the next image rebuild, when the agent-runtime tier's `npm install -g` runs as root and installs the pinned `<NEW>`.
 - `lastChangelogVersion` only gates the post-update changelog display. With `PI_SKIP_VERSION_CHECK=1` it is effectively the installed-version record. Keeping it in step prevents drift and avoids a huge changelog on first start.
 - No changelog entry in `devlog/changelog.md`  --  version bumps are not milestone completions.
-- No lockfile is produced for the global install. The open dependency-locking row under M3.4.2 covers this.
+- No lockfile is produced for the global install. The open dependency-locking row under M3.4.7 covers this.
