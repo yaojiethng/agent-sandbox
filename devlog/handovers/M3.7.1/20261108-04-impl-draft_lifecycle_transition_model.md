@@ -1,6 +1,6 @@
 ---
 date: 2026-11-08
-milestone: T7 - Harness Specialization / Sandbox Persistence
+milestone: M3.7.1 - Gate boundary capability
 type: Implementation
 status: Closed
 ---
@@ -92,4 +92,4 @@ None.
 | `tests/test_guards.sh` | Pins the clean, dirty and unreadable refusals. |
 | `tests/test_draft_state.sh` | Pins the source output and the empty-stdout failure path. |
 | `devlog/roadmap.md` | Filed the cross-chart state-machine audit as an open T7 row. |
-| `devlog/handovers/T7/20261108-04-impl-draft_lifecycle_transition_model.md` | This handover. |
+| `devlog/handovers/M3.7.1/20261108-04-impl-draft_lifecycle_transition_model.md` | This handover. |

@@ -1,6 +1,6 @@
 ---
 date: 2026-11-08
-milestone: T7 - Harness Specialization / Sandbox Persistence
+milestone: M3.7.1 - Gate boundary capability
 type: Plan
 status: Closed
 ---
@@ -54,4 +54,4 @@ None.
 | `docs/adr/diff_packaging.md` | Added the 2026-11-08 draft-record decision, marked the old `.draft-state` and `BRANCH_FROM` clauses superseded, and applied the cut pass to the whole record. |
 | `docs/reference/draft_branch_statechart.md` | New reference with the package chart, the no-record confirm chart, the invariants and the model limits. |
 | `devlog/roadmap.md` | Narrowed the T7 Git boundary row, added the two implementation sub-rows, removed the `.draft-state` T11 examples, and corrected the seed-row handover. |
-| `devlog/handovers/T7/20261108-01-plan-draft_branch_record.md` | This handover. |
+| `devlog/handovers/M3.7.1/20261108-01-plan-draft_branch_record.md` | This handover. |

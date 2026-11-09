@@ -1,6 +1,6 @@
 ---
 date: 2026-11-08
-milestone: T7 - Harness Specialization / Sandbox Persistence
+milestone: M3.7.1 - Gate boundary capability
 type: Implementation
 status: Closed
 ---
@@ -62,4 +62,4 @@ None.
 | `docs/reference/sandbox_host_interface.md` | Replaces the `HEAD` default with the package branch point. |
 | `docs/reference/tool_interface.md` | Adds the draft fork-point and refusal behaviour. |
 | `devlog/roadmap.md` | Marks the fork-point sub-row landed with the handover link. |
-| `devlog/handovers/T7/20261108-02-impl-draft_fork_point.md` | This handover. |
+| `devlog/handovers/M3.7.1/20261108-02-impl-draft_fork_point.md` | This handover. |

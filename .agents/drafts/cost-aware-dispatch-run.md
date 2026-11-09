@@ -4,7 +4,7 @@
 
 **Scope:** the run directive for the cost-aware dispatch work: the instruction transport into an OpenCode runtime, the runner seam between two backends, the cost ledger, the dispatch-policy axis, and the provider decision. It carries the measured facts the run must not re-derive, the ruling it must not cross, the phase ledger, the parallel shape and the done predicate.
 
-**Origin:** the operator's scoping request (2026-10-15), the measured evidence in the T7 row `Expose a capacity signal to the agent`, and the T2 telemetry rows. This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
+**Origin:** the operator's scoping request (2026-10-15), the measured evidence in the M3.6.2 capacity-signal row, and the T2 telemetry rows. This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
 ## Purpose
 
@@ -61,7 +61,7 @@ One committed script producing one record per dispatch: backend, provider, model
 
 Its second output is one brief on two models side by side, cost beside wall clock. A free model that doubles the wall clock is not free, and only the paired number shows it.
 
-This is the T2 telemetry instrument and the T7 capacity signal, not a third thing. Read the T2 rows and the T7 row, and state which this satisfies and which it leaves open.
+This is the T2 telemetry instrument and the M3.6.2 capacity signal, not a third thing. Read the T2 rows and the M3.6.2 row, and state which this satisfies and which it leaves open.
 
 ## Phase 4, the dispatch policy
 

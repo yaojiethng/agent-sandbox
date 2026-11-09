@@ -11,7 +11,7 @@
 2. **Worktree surface = plain `$REPO_ROOT` git HEAD SHA**, carried
    conceptually into the deferred interface-contract thread; **no record field** -- image identity is fully carried by the digest.
 3. **Host surface = symlink install** (self-locating dispatcher); the
-   installed CLI *is* the worktree file, so no independent version exists by construction. Semantic versioning is deferred to the full-packaging milestone, where a genuine independent installed artifact first appears.
+   installed CLI *is* the worktree file, so no independent version exists by construction. Semantic versioning is deferred to the full-packaging milestone, the T4 row [`Self-contained install with atomic replacement and semantic versioning`](../../devlog/roadmap.md), where a genuine independent installed artifact first appears.
 4. **Freshness signal retired**: `[IMAGE_STALE]` / `record_image_stale` /
    `image_is_stale` list-time usage removed (kills the 2xN docker-inspect cost). A fresh digest is only knowable post-build, so "newer image available" is not a list-time property; the recorded digest is exact identity.
 5. **Dry-run** always builds/runs current source; its correct-container gate

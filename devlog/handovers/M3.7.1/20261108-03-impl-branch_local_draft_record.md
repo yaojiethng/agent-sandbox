@@ -1,6 +1,6 @@
 ---
 date: 2026-11-08
-milestone: T7 - Harness Specialization / Sandbox Persistence
+milestone: M3.7.1 - Gate boundary capability
 type: Implementation
 status: Closed
 ---
@@ -77,4 +77,4 @@ None.
 | `docs/adr/diff_packaging.md` | Clarifies that detection is by exact branch ref, not a repo-wide singleton. |
 | `docs/adr/container_host_correspondence_mechanism.md` | Removes the stale per-repo/`draft-state` clause. |
 | `devlog/roadmap.md` | Marks the sub-row landed. |
-| `devlog/handovers/T7/20261108-03-impl-branch_local_draft_record.md` | This handover. |
+| `devlog/handovers/M3.7.1/20261108-03-impl-branch_local_draft_record.md` | This handover. |

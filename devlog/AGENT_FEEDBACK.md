@@ -324,9 +324,9 @@ mitigation: a second advisor run that only re-confirms a single mechanical corre
 
 ```text
 state: open
-scoped: M3 T4 -- atomic install + semantic versioning
+scoped: M3 T4 -- self-contained install, atomic replacement, semantic versioning
 legacy: none
-mitigation: installed CLI staleness is hard to detect and masquerades as a code regression. A new subcommand surfaces as `Unknown subcommand` with no hint that `make install` is needed; diff the installed CLI's valid subcommands against the source before assuming the implementation is wrong. A symlinked CLI resolves to whichever checkout the link points at -- check `readlink -f "$(which <cmd>)"` and that checkout's feature presence before touching project source. The durable fix is the T4 self-contained binary + semantic versioning.
+mitigation: installed CLI staleness is hard to detect and masquerades as a code regression. A new subcommand surfaces as `Unknown subcommand` with no hint that `make install` is needed; diff the installed CLI's valid subcommands against the source before assuming the implementation is wrong. A symlinked CLI resolves to whichever checkout the link points at -- check `readlink -f "$(which <cmd>)"` and that checkout's feature presence before touching project source. The durable fix is the T4 self-contained install + semantic versioning.
 ```
 
 ### [A] 2026-09-21  --  Library and test-harness migrations (T4)
