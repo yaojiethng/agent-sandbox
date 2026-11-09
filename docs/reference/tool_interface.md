@@ -113,6 +113,8 @@ Applies an exact diff file to `PROJECT_DIR` using `git apply` with index lines s
 
 Creates a `draft/<SESSION_ID|SESSION_TS>-<slug>-<sha6>` branch (the session identity when set, session timestamp as fallback) on `PROJECT_DIR` and applies `patches/*.diff` sequentially, then `uncommitted.diff` if present. Empty bundle members land as message-bearing empty commits (with a warning); an empty `uncommitted.diff` is skipped with a warning.
 
+The fork point is read from the bundle's `.branch-point`; `BRANCH_FROM=<sha>` overrides it. A bundle without a valid `.branch-point` is refused unless `BRANCH_FROM` is given; the refusal names that override.
+
 The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channel>`) controls which directory the router searches. Resolves from the `session` channel (`session-diffs/session/`) by default. `BUNDLE=<name>` names the bundle to apply (name-only -- absolute paths rejected) and is required in non-interactive mode: with no bundle named, the command exits non-zero and points at `INTERACTIVE=1`. The router no longer auto-selects the newest bundle.
 
 **Channels:**

@@ -2,14 +2,15 @@
 # tests/libs/session_fixtures.sh
 # Session fixture helpers for workflow tests.
 
-# make_session_fixture DIR [PATCHES] [UNCOMMITTED]
+# make_session_fixture DIR [PATCHES] [UNCOMMITTED] [BRANCH_POINT]
 #   Creates a session fixture directory with standard session structure.
 #   Replaces make_export_with_diffs, make_export_with_diffs_and_uncommitted,
 #   make_diffs_session, make_changes_session, and create_fixture_session.
 #
 #   DIR         - Target directory (created if absent)
-#   PATCHES     - Number of numbered .diff files to create in patches/ (default: 0)
-#   UNCOMMITTED - "content" (non-empty), "empty" (empty file), or "none" (default: "none")
+#   PATCHES      - Number of numbered .diff files to create in patches/ (default: 0)
+#   UNCOMMITTED  - "content" (non-empty), "empty" (empty file), or "none" (default: "none")
+#   BRANCH_POINT - Commit the bundle was exported from; writes .branch-point
 #
 #   Patch files are valid git diffs adding file-N.txt.
 #   uncommitted.diff (when not "none") diffs uncommitted.txt.
@@ -18,6 +19,7 @@ make_session_fixture() {
   local DIR="$1"
   local PATCHES="${2:-0}"
   local UNCOMMITTED="${3:-none}"
+  local BRANCH_POINT="${4:-}"
 
   mkdir -p "$DIR"
 
@@ -57,6 +59,15 @@ EOF
     echo "TIMESTAMP=20260408-120000"
     echo "INIT_SHA=0000000000000000000000000000000000000000"
   } > "$DIR/.export-status"
+
+  if [[ -n "$BRANCH_POINT" ]]; then
+    {
+      echo "BUNDLE=$(basename "$DIR")"
+      echo "BRANCH_POINT=${BRANCH_POINT}"
+      echo "BASELINE_MOVED=false"
+      echo "RECORDED_INIT_SHA=${BRANCH_POINT}"
+    } > "$DIR/.branch-point"
+  fi
 }
 
 # make_draft_fixture NAME PATCHES [BUNDLE_NAME]
@@ -72,5 +83,5 @@ make_draft_fixture() {
   EXPORT="$S/.workspace/session-diffs/$BUNDLE"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" "$PATCHES"
+  make_session_fixture "$EXPORT" "$PATCHES" none "$(git -C "$P" rev-parse HEAD)"
 }

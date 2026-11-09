@@ -9,7 +9,7 @@
 #   main           --  script entry point, non-interactive and interactive paths
 #   draft_run      --  creates branch, applies patches, .draft-state, guards
 #   draft_collect_patches / draft_apply_patches / _run_draft_workflow
-#   _ingest_export_metadata  --  --branch-from, refusals (non-commit, unresolvable), INIT_SHA defaults
+#   _ingest_export_metadata  --  .branch-point default, explicit override, refusals (missing/malformed/non-commit)
 #   draft_resolve_commit_message  --  non-empty .msg file, empty .msg, filename subject, fallback
 #
 # Uses make_session_fixture for synthetic session exports; for
@@ -27,6 +27,7 @@ source "$TEST_DIR/libs/session_fixtures.sh"
 source "$TEST_DIR/libs/draft_fixtures.sh"
 
 make_real_session() {
+  local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
   local SESSION_TS="${3:-20260408-120000}"
   local BRANCH="${4:-main}"
@@ -69,6 +70,18 @@ make_real_session() {
     echo "INIT_SHA=${BASELINE_SHA}"
   } > "$SESSION_DIR/.export-status"
 
+  # Record the package fork point the draft now consumes. The project is
+  # the host repository, so its HEAD is the commit the host can fork from;
+  # the sandbox baseline is only the patch-generation point.
+  local PROJECT_HEAD
+  PROJECT_HEAD=$(git -C "$PROJECT_DIR" rev-parse HEAD)
+  {
+    echo "BUNDLE=${BUNDLE_NAME}"
+    echo "BRANCH_POINT=${PROJECT_HEAD}"
+    echo "BASELINE_MOVED=false"
+    echo "RECORDED_INIT_SHA=${BASELINE_SHA}"
+  } > "$SESSION_DIR/.branch-point"
+
   # Write numbered .diff files (index-stripped) from BASELINE_SHA..HEAD
   local COMMIT_NUM=1
   local PREV_SHA="$BASELINE_SHA"
@@ -104,7 +117,7 @@ make_draft_script_fixture() {
   EXPORT="$S/.workspace/session-diffs/session/$BUNDLE"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" "$PATCHES"
+  make_session_fixture "$EXPORT" "$PATCHES" none "$(git -C "$P" rev-parse HEAD)"
 }
 
 # Given: a session fixture and a clean project
@@ -272,8 +285,8 @@ test_draft_allows_parallel_drafts() {
   local EXPORT2="$S/.workspace/session-diffs/20260420-130000-branch-b"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT1" 1
-  make_session_fixture "$EXPORT2" 1
+  make_session_fixture "$EXPORT1" 1 none "$(git -C "$P" rev-parse HEAD)"
+  make_session_fixture "$EXPORT2" 1 none "$(git -C "$P" rev-parse HEAD)"
 
   _test_draft_run "$P" "$EXPORT1" "$(basename "$EXPORT1")" "" "" "" >/dev/null 2>&1
   git -C "$P" checkout main --quiet
@@ -331,7 +344,7 @@ test_draft_unparseable_export_name_still_drafts() {
   local EXPORT="$S/.workspace/session-diffs/session/weird"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 1
+  make_session_fixture "$EXPORT" 1 none "$(git -C "$P" rev-parse HEAD)"
 
   local RC=0
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1 || RC=$?
@@ -386,7 +399,9 @@ test_draft_failure_returns_to_source_branch() {
   git -C "$P" add file-1.txt
   git -C "$P" commit -m "conflict file" --quiet
 
-  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1 || true
+  local HEAD_SHA
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "$HEAD_SHA" "" "" false >/dev/null 2>&1 || true
 
   local CURR
   CURR=$(_current_branch "$P")
@@ -404,7 +419,9 @@ test_draft_failure_deletes_draft_branch() {
   git -C "$P" add file-1.txt
   git -C "$P" commit -m "conflict file" --quiet
 
-  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1 || true
+  local HEAD_SHA
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "$HEAD_SHA" "" "" false >/dev/null 2>&1 || true
 
   local LEFT
   LEFT=$(git -C "$P" branch --list 'draft/*')
@@ -427,6 +444,12 @@ test_draft_strips_index_lines() {
     echo "TIMESTAMP=20260420-120000"
     echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaa"
   } > "$EXPORT/.export-status"
+  {
+    echo "BUNDLE=$(basename "$EXPORT")"
+    echo "BRANCH_POINT=$(git -C "$P" rev-parse HEAD)"
+    echo "BASELINE_MOVED=false"
+    echo "RECORDED_INIT_SHA=$(git -C "$P" rev-parse HEAD)"
+  } > "$EXPORT/.branch-point"
   : > "$EXPORT/uncommitted.diff"
 
   cat > "$EXPORT/patches/0001-test.diff" <<'EOF'
@@ -560,16 +583,14 @@ test_no_branch_from_errors_without_export_status() {
   fi
 }
 
-# Given: .export-status without INIT_SHA
+# Given: .export-status but no .branch-point and no --branch-from
 # When:  metadata is ingested
-# Then:  the base is HEAD and init is empty, without error
-# Asserts: INIT_SHA's advisory role
-test_missing_init_sha_defaults_to_head() {
-  local P="$FIXTURE_DIR/ingest_nohash_p"
-  local S="$FIXTURE_DIR/ingest_nohash_s"
+# Then:  the call refuses and names BRANCH_FROM
+# Asserts: the package is the only default fork point
+test_missing_branch_point_refused() {
+  local P="$FIXTURE_DIR/ingest_nobp_p"
+  local S="$FIXTURE_DIR/ingest_nobp_s"
   make_committed_repo "$P"
-  mkdir -p "$S"
-
   local EXPORT="$S/export"
   mkdir -p "$EXPORT/patches"
   {
@@ -577,51 +598,192 @@ test_missing_init_sha_defaults_to_head() {
     echo "TIMESTAMP=20260420-120000"
   } > "$EXPORT/.export-status"
 
-  local BASE TIME INIT
-  if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME INIT 2>/dev/null; then
-    if [[ "$BASE" == "HEAD" ]] && [[ -z "$INIT" ]]; then
-      pass "missing INIT_SHA defaults to HEAD without error"
-    else
-      fail "expected BASE=HEAD, empty INIT; got BASE=$BASE INIT=$INIT"
-    fi
+  local BASE TIME POINT
+  local OUT RC=0
+  OUT=$(_ingest_export_metadata "$EXPORT" "" "$P" BASE TIME POINT 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *".branch-point has no BRANCH_POINT"* \
+     && "$OUT" == *"BRANCH_FROM"* ]]; then
+    pass "a missing .branch-point is refused and names BRANCH_FROM"
   else
-    fail "missing INIT_SHA should default to HEAD, not error"
+    fail "missing .branch-point refusal wrong: rc=$RC out='$OUT'"
   fi
 }
 
-# Given: an INIT_SHA that differs from the resolved fork point
-# When:  metadata is ingested
-# Then:  the call succeeds with the base at HEAD
-# Asserts: the divergence warning text and that the run continues
-test_init_sha_warns_on_divergence_but_proceeds() {
-  local P="$FIXTURE_DIR/ingest_hash_p"
-  local S="$FIXTURE_DIR/ingest_hash_s"
+# Given: .branch-point without a BRANCH_POINT key
+# When:  metadata is ingested without --branch-from
+# Then:  the call refuses
+# Asserts: a malformed package record is not treated as absent-and-defaulted
+test_branch_point_missing_key_refused() {
+  local P="$FIXTURE_DIR/ingest_bpkey_p"
+  local S="$FIXTURE_DIR/ingest_bpkey_s"
   make_committed_repo "$P"
-  mkdir -p "$S"
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+  } > "$EXPORT/.export-status"
+  echo "BUNDLE=test" > "$EXPORT/.branch-point"
+
+  local BASE TIME POINT
+  local OUT RC=0
+  OUT=$(_ingest_export_metadata "$EXPORT" "" "$P" BASE TIME POINT 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *".branch-point has no BRANCH_POINT"* ]]; then
+    pass "a .branch-point without BRANCH_POINT is refused"
+  else
+    fail "missing BRANCH_POINT key refusal wrong: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: .branch-point with a BRANCH_POINT that is not a commit
+# When:  metadata is ingested without --branch-from
+# Then:  the call refuses
+# Asserts: the package fork point is validated like any other base
+test_branch_point_non_commit_refused() {
+  local P="$FIXTURE_DIR/ingest_bpbad_p"
+  local S="$FIXTURE_DIR/ingest_bpbad_s"
+  make_committed_repo "$P"
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+  } > "$EXPORT/.export-status"
+  {
+    echo "BUNDLE=test"
+    echo "BRANCH_POINT=not-a-commit"
+  } > "$EXPORT/.branch-point"
+
+  local BASE TIME POINT
+  local OUT RC=0
+  OUT=$(_ingest_export_metadata "$EXPORT" "" "$P" BASE TIME POINT 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"BRANCH_POINT 'not-a-commit'"* \
+     && "$OUT" == *"does not resolve to a valid commit"* ]]; then
+    pass "a non-commit BRANCH_POINT is refused"
+  else
+    fail "non-commit BRANCH_POINT refusal wrong: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: .branch-point at an ancestor and .export-status INIT_SHA at HEAD
+# When:  metadata is ingested without --branch-from
+# Then:  the package branch point wins and no divergence warning prints
+# Asserts: INIT_SHA is not the fork point
+test_branch_point_wins_over_init_sha() {
+  local P="$FIXTURE_DIR/ingest_bpwins_p"
+  local S="$FIXTURE_DIR/ingest_bpwins_s"
+  make_committed_repo "$P"
+  echo "extra" > "$P/extra.txt"
+  git -C "$P" add extra.txt
+  git -C "$P" commit -m "extra commit" --quiet
+  local HEAD_SHA POINT
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+  POINT=$(git -C "$P" rev-parse HEAD~1)
 
   local EXPORT="$S/export"
   mkdir -p "$EXPORT/patches"
   {
     echo "STATUS=SUCCESS"
     echo "TIMESTAMP=20260420-120000"
-    echo "INIT_SHA=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    echo "INIT_SHA=${HEAD_SHA}"
   } > "$EXPORT/.export-status"
+  {
+    echo "BUNDLE=test"
+    echo "BRANCH_POINT=${POINT}"
+    echo "BASELINE_MOVED=false"
+    echo "RECORDED_INIT_SHA=${POINT}"
+  } > "$EXPORT/.branch-point"
 
-  local BASE TIME INIT
-  local ERR_FILE="$FIXTURE_DIR/divergence.err"
-  if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME INIT 2>"$ERR_FILE"; then
+  local BASE TIME POINT_OUT
+  local ERR_FILE="$FIXTURE_DIR/bpwins.err"
+  if _ingest_export_metadata "$EXPORT" "" "$P" BASE TIME POINT_OUT 2>"$ERR_FILE"; then
     local WARN
     WARN=$(cat "$ERR_FILE")
-    [[ -n "$TIME" ]] || fail "export metadata: TIME should be populated"
-    if [[ "$BASE" == "HEAD" && -n "$INIT" ]] \
-       && [[ "$WARN" == *"Warning: patches were generated from"* ]] \
-       && [[ "$WARN" == *"forking from"* ]]; then
-      pass "INIT_SHA divergence warns with both hashes and continues"
+    if [[ "$BASE" == "$POINT" && "$POINT_OUT" == "$POINT" && -z "$WARN" ]]; then
+      pass ".branch-point wins over INIT_SHA without a divergence warning"
     else
-      fail "divergence warning wrong: BASE=$BASE INIT=$INIT warn='$WARN'"
+      fail "branch point did not win: BASE=$BASE POINT=$POINT_OUT warn='$WARN'"
     fi
   else
-    fail "INIT_SHA present should not error"
+    fail "a valid .branch-point should not error"
+  fi
+}
+
+# Given: a valid .branch-point and an explicit --branch-from at a different commit
+# When:  metadata is ingested
+# Then:  the explicit base wins and the override is named
+# Asserts: the operator override remains authoritative
+test_explicit_branch_from_overrides_branch_point() {
+  local P="$FIXTURE_DIR/ingest_bpoverride_p"
+  local S="$FIXTURE_DIR/ingest_bpoverride_s"
+  make_committed_repo "$P"
+  echo "extra" > "$P/extra.txt"
+  git -C "$P" add extra.txt
+  git -C "$P" commit -m "extra commit" --quiet
+  local HEAD_SHA POINT
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+  POINT=$(git -C "$P" rev-parse HEAD~1)
+
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+  } > "$EXPORT/.export-status"
+  {
+    echo "BUNDLE=test"
+    echo "BRANCH_POINT=${POINT}"
+  } > "$EXPORT/.branch-point"
+
+  local BASE TIME POINT_OUT
+  local ERR_FILE="$FIXTURE_DIR/bpoverride.err"
+  if _ingest_export_metadata "$EXPORT" "$HEAD_SHA" "$P" BASE TIME POINT_OUT 2>"$ERR_FILE"; then
+    local WARN
+    WARN=$(cat "$ERR_FILE")
+    if [[ "$BASE" == "$HEAD_SHA" && "$WARN" == *"overrides the package branch point"* ]]; then
+      pass "an explicit --branch-from overrides .branch-point and warns"
+    else
+      fail "override wrong: BASE=$BASE warn='$WARN'"
+    fi
+  else
+    fail "a valid explicit --branch-from should not error"
+  fi
+}
+
+# Given: a malformed .branch-point and a valid explicit --branch-from
+# When:  metadata is ingested
+# Then:  the explicit value is attempted and the package point is reported ignored
+# Asserts: malformed package metadata does not outrank the operator
+test_explicit_branch_from_survives_malformed_branch_point() {
+  local P="$FIXTURE_DIR/ingest_bpbadfrom_p"
+  local S="$FIXTURE_DIR/ingest_bpbadfrom_s"
+  make_committed_repo "$P"
+  local HEAD_SHA
+  HEAD_SHA=$(git -C "$P" rev-parse HEAD)
+
+  local EXPORT="$S/export"
+  mkdir -p "$EXPORT/patches"
+  {
+    echo "STATUS=SUCCESS"
+    echo "TIMESTAMP=20260420-120000"
+  } > "$EXPORT/.export-status"
+  {
+    echo "BUNDLE=test"
+    echo "BRANCH_POINT=not-a-commit"
+  } > "$EXPORT/.branch-point"
+
+  local BASE TIME POINT
+  local ERR_FILE="$FIXTURE_DIR/bpbadfrom.err"
+  if _ingest_export_metadata "$EXPORT" "$HEAD_SHA" "$P" BASE TIME POINT 2>"$ERR_FILE"; then
+    local WARN
+    WARN=$(cat "$ERR_FILE")
+    if [[ "$BASE" == "$HEAD_SHA" && "$WARN" == *"does not resolve; using BRANCH_FROM"* ]]; then
+      pass "an explicit --branch-from survives a malformed .branch-point"
+    else
+      fail "malformed package did not yield to explicit base: BASE=$BASE warn='$WARN'"
+    fi
+  else
+    fail "a valid explicit --branch-from should survive malformed package metadata"
   fi
 }
 
@@ -728,7 +890,7 @@ test_draft_applies_uncommitted_diff() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-uncommitted-test"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2 content
+  make_session_fixture "$EXPORT" 2 content "$(git -C "$P" rev-parse HEAD)"
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
 
@@ -893,7 +1055,7 @@ test_unresolvable_branch_from_errors() {
      && "$OUT" == *"--branch-from"* ]]; then
     pass "an unresolvable --branch-from is refused with the flag named"
   else
-    fail "expected base-resolve refusal, got rc=$RC out='$OUT'"
+    fail "expected base-resolve refusal, got rc=$RC out='$OUT' base='$BASE' time='$TIME' point='$INIT'"
   fi
 }
 
@@ -923,6 +1085,41 @@ test_draft_forks_from_named_base() {
     pass "draft forks from the named base and names a six-character hash suffix"
   else
     fail "fork point wrong: branch='$BRANCH' extra_ancestor=$EXTRA_ANCESTOR content='$CONTENT'"
+  fi
+}
+
+# Given: a session export whose .branch-point names an ancestor and HEAD is ahead
+# When:  the orchestration runs without --branch-from
+# Then:  the draft forks at .branch-point, not at HEAD
+# Asserts: the package branch point is the default and drives from_hash
+test_draft_forks_from_branch_point_not_head() {
+  make_draft_fixture draft_branchpoint 1
+
+  echo "extra" > "$P/extra.txt"
+  git -C "$P" add extra.txt
+  git -C "$P" commit -m "extra commit" --quiet
+  local EXTRA POINT
+  EXTRA=$(git -C "$P" rev-parse HEAD)
+  POINT=$(git -C "$P" rev-parse HEAD~1)
+  {
+    echo "BUNDLE=$(basename "$EXPORT")"
+    echo "BRANCH_POINT=${POINT}"
+    echo "BASELINE_MOVED=false"
+    echo "RECORDED_INIT_SHA=${POINT}"
+  } > "$EXPORT/.branch-point"
+
+  _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1
+
+  local BRANCH CONTENT EXTRA_ANCESTOR=false
+  BRANCH=$(draft_branch "$P")
+  CONTENT=$(git -C "$P" show "${BRANCH}:.draft-state" 2>/dev/null || true)
+  git -C "$P" merge-base --is-ancestor "$EXTRA" "$BRANCH" 2>/dev/null && EXTRA_ANCESTOR=true
+
+  if [[ -n "$BRANCH" && "$CONTENT" == *"from_hash: $POINT"* && "$EXTRA_ANCESTOR" == false \
+     && "$BRANCH" == *-"${POINT:0:6}" ]]; then
+    pass "draft forks at .branch-point, not at HEAD"
+  else
+    fail "branch-point default wrong: branch='$BRANCH' extra_ancestor=$EXTRA_ANCESTOR content='$CONTENT'"
   fi
 }
 
@@ -1074,7 +1271,7 @@ test_draft_uncommitted_only_source() {
   local EXPORT="$S/.workspace/session-diffs/20260420-120000-uc-only"
   make_committed_repo "$P"
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 0 content
+  make_session_fixture "$EXPORT" 0 content "$(git -C "$P" rev-parse HEAD)"
 
   local RC=0
   _run_draft_workflow "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" false >/dev/null 2>&1 || RC=$?
@@ -1151,8 +1348,12 @@ run_test test_branch_from_rejects_non_commit_hex
 run_test test_no_branch_from_errors_without_export_status
 run_test test_incomplete_export_status_errors_on_missing_timestamp
 run_test test_unresolvable_branch_from_errors
-run_test test_missing_init_sha_defaults_to_head
-run_test test_init_sha_warns_on_divergence_but_proceeds
+run_test test_missing_branch_point_refused
+run_test test_branch_point_missing_key_refused
+run_test test_branch_point_non_commit_refused
+run_test test_branch_point_wins_over_init_sha
+run_test test_explicit_branch_from_overrides_branch_point
+run_test test_explicit_branch_from_survives_malformed_branch_point
 
 run_test test_draft_branch_name_format
 run_test test_draft_branch_name_with_summary
@@ -1163,6 +1364,7 @@ run_test test_draft_rejects_when_on_draft_branch
 run_test test_draft_allows_parallel_drafts
 run_test test_draft_branch_from
 run_test test_draft_forks_from_named_base
+run_test test_draft_forks_from_branch_point_not_head
 run_test test_draft_diffs_range
 run_test test_draft_unparseable_export_name_still_drafts
 run_test test_collect_patches_invalid_range_errors
@@ -1197,13 +1399,15 @@ run_test test_resolve_msg_file_preferred_over_filename
 # Asserts: the hint matches what `make confirm` can actually do
 test_draft_hint_routes_to_fast_forward_when_ancestor() {
   make_draft_fixture draft_ffroute 1
-  local SRC
+  local SRC POINT
   SRC=$(git -C "$P" rev-parse --abbrev-ref HEAD)
+  POINT=$(git -C "$P" rev-parse HEAD)
 
   local OUT
-  OUT=$(draft_print_confirm_hint "$P" "$SRC" 2>&1)
+  OUT=$(draft_print_confirm_hint "$P" "$SRC" "$POINT" 2>&1)
 
   local OK=true
+  [[ "$OUT" == *"Branch point: ${POINT:0:7}"* ]] || OK=false
   [[ "$OUT" == *"git rebase -i"* ]] || OK=false
   [[ "$OUT" == *"make confirm TARGET_BRANCH=$SRC"* ]] || OK=false
   [[ "$OUT" != *"NEW=1"* ]] || OK=false
@@ -1231,10 +1435,14 @@ test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
   local SRC="rewritten-source"
   git -C "$P" branch -f "$SRC" "$FORKED"
 
+  local POINT
+  POINT=$(git -C "$P" rev-parse HEAD)
+
   local OUT
-  OUT=$(draft_print_confirm_hint "$P" "$SRC" 2>&1)
+  OUT=$(draft_print_confirm_hint "$P" "$SRC" "$POINT" 2>&1)
 
   local OK=true
+  [[ "$OUT" == *"Branch point: ${POINT:0:7}"* ]] || OK=false
   [[ "$OUT" == *"cannot fast-forward"* ]] || OK=false
   [[ "$OUT" == *"NEW=1"* ]] || OK=false
   [[ "$OUT" != *"git rebase -i"* ]] || OK=false

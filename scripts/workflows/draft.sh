@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/workflows/draft.sh
 #
-# Draft branch workflow: create draft branch, apply patches.
+# Draft branch workflow: create a draft branch at the bundle's branch point, apply patches.
 # Exec'd directly by agent-sandbox.sh (dispatch); main() runs only when not
 # sourced, so test suites may source this file for its functions.
 #
@@ -202,45 +202,63 @@ draft_apply_uncommitted() {
 }
 
 # =============================================================================
-# _ingest_export_metadata  --  parse and validate .export-status
+# _draft_branch_point_read  --  read the package fork point
+# =============================================================================
+
+# _draft_branch_point_read SOURCE_DIR
+#   Prints BRANCH_POINT from SOURCE_DIR/.branch-point, or the empty string
+#   when the file or the key is absent. This is the only default source for
+#   the draft fork point; .export-status INIT_SHA is not a fallback.
+_draft_branch_point_read() {
+  local _dir="$1"
+  local _file="$_dir/.branch-point"
+  [[ -r "$_file" ]] || return 0
+  while IFS='=' read -r _k _v; do
+    if [[ "$_k" == "BRANCH_POINT" ]]; then
+      printf '%s\n' "$_v"
+      return 0
+    fi
+  done < "$_file"
+  return 0
+}
+
+# =============================================================================
+# _ingest_export_metadata  --  read the bundle metadata and resolve the fork point
 # =============================================================================
 
 # _ingest_export_metadata SOURCE_DIR BRANCH_FROM_ARG PROJECT_DIR \
-#     OUT_BASE_COMMIT OUT_EXPORT_TIME OUT_INIT_SHA
+#     OUT_BASE_COMMIT OUT_EXPORT_TIME OUT_BRANCH_POINT
 #
-# Parses .export-status from SOURCE_DIR (when present) and resolves
-# BASE_COMMIT from BRANCH_FROM_ARG (defaulting to HEAD). Returns the
-# three values via nameref output params.
+# Reads .export-status for TIMESTAMP and .branch-point for BRANCH_POINT.
+# BASE_COMMIT is BRANCH_FROM_ARG when given, else the package branch point.
+# Returns the three values via nameref output params.
 #
-# An explicit BRANCH_FROM_ARG takes control of the fork point, so it
-# skips metadata validation entirely (documented escape hatch for
-# sources without a .export-status, e.g. legacy bundles). Without one,
-# a missing or incomplete .export-status is an error.
+# An explicit BRANCH_FROM_ARG is validated on its own and wins even when
+# .branch-point is malformed; such a package point is reported as ignored.
+# Without one, a missing or malformed .branch-point is an error, and there
+# is no fallback to .export-status INIT_SHA or HEAD. The explicit path also
+# tolerates a missing .export-status for legacy bundles.
 #
-# INIT_SHA records only the patch-generation point. Per design it is
-# "information, not the fork point"  --  it feeds the divergence warning
-# below and its absence is never fatal. Returns 1 with an error message
-# on failure.
+# Returns 1 with an error message on failure.
 _ingest_export_metadata() {
   local _source_dir="$1"
   local _branch_from="$2"
   local _project_dir="$3"
   local -n _out_base="$4"
   local -n _out_time="$5"
-  local -n _out_init="$6"
+  local -n _out_branch_point="$6"
 
-  # An explicit --branch-from opts out of .export-status validation: the
-  # operator has chosen the fork point, so metadata is advisory only.
+  # An explicit --branch-from is the operator's authority. The package
+  # metadata is read best-effort so an override can still be reported.
   local _explicit_from=""
   [[ -n "$_branch_from" ]] && _explicit_from=1
 
   # Read .export-status (optional metadata). When absent, only proceed
   # if --branch-from was explicitly given; otherwise error clearly.
   local _es="$_source_dir/.export-status"
-  local _time="" _init=""
+  local _time=""
   if [[ -f "$_es" ]]; then
     _time=$(export_status_read "$_source_dir" TIMESTAMP)
-    _init=$(export_status_read "$_source_dir" INIT_SHA)
   elif [[ -z "$_explicit_from" ]]; then
     echo "Error: .export-status not found in $_source_dir" >&2
     echo "  This directory was not produced by a recent diff_export or package_branch run." >&2
@@ -256,29 +274,52 @@ _ingest_export_metadata() {
     return 1
   fi
 
-  # Resolve BASE_COMMIT
-  local _base="$_branch_from"
-  [[ -n "$_base" ]] || _base="HEAD"
+  local _package_point
+  _package_point=$(_draft_branch_point_read "$_source_dir")
+
+  # Resolve BASE_COMMIT. The package branch point is the default; an
+  # explicit value overrides it and is validated without the package.
+  local _base=""
+  if [[ -n "$_explicit_from" ]]; then
+    _base="$_branch_from"
+  elif [[ -z "$_package_point" ]]; then
+    echo "Error: .branch-point has no BRANCH_POINT in $_source_dir" >&2
+    echo "  Re-export the bundle, or pass BRANCH_FROM=<commit> (--branch-from) to set the fork point." >&2
+    return 1
+  else
+    _base="$_package_point"
+  fi
 
   if ! git_commit_exists "$_project_dir" "$_base"; then
-    echo "Error: BASE_COMMIT '$_base' does not resolve to a valid commit" >&2
-    echo "  Set --branch-from to a valid ref" >&2
+    if [[ -n "$_explicit_from" ]]; then
+      echo "Error: BASE_COMMIT '$_base' does not resolve to a valid commit" >&2
+      echo "  Set --branch-from to a valid ref" >&2
+    else
+      echo "Error: BRANCH_POINT '$_base' in .branch-point does not resolve to a valid commit" >&2
+      echo "  Re-export the bundle, or pass BRANCH_FROM=<commit> (--branch-from) to set the fork point." >&2
+    fi
     return 1
   fi
 
-  # Warn if baseline differs from patch generation point
-  if [[ -n "$_init" ]]; then
-    local _resolved
+  # Keep the package point visible when the operator overrides it. A
+  # malformed package point is ignored, not fatal, because the explicit
+  # value already decides the fork.
+  if [[ -n "$_explicit_from" && -n "$_package_point" ]]; then
+    local _resolved _package_resolved
     _resolved=$(git -C "$_project_dir" rev-parse "$_base")
-    if [[ "$_resolved" != "$_init" ]]; then
-      echo "Warning: patches were generated from ${_init:0:7} but branch is forking from ${_resolved:0:7}" >&2
-      echo "  If patches fail to apply, set --branch-from explicitly" >&2
+    if ! git_commit_exists "$_project_dir" "$_package_point"; then
+      echo "Warning: .branch-point BRANCH_POINT '$_package_point' does not resolve; using BRANCH_FROM ${_resolved:0:7}" >&2
+    else
+      _package_resolved=$(git -C "$_project_dir" rev-parse "$_package_point")
+      if [[ "$_resolved" != "$_package_resolved" ]]; then
+        echo "Warning: BRANCH_FROM ${_resolved:0:7} overrides the package branch point ${_package_resolved:0:7}" >&2
+      fi
     fi
   fi
 
   _out_base="$_base"
   _out_time="$_time"
-  _out_init="$_init"
+  _out_branch_point="$_package_point"
 }
 
 # =============================================================================
@@ -330,9 +371,9 @@ draft_run() {
   : "${DIFF_COUNT:?}"
 
   # Ingest and validate export metadata
-  local BASE_COMMIT EXPORT_TIME _dummy_init
+  local BASE_COMMIT EXPORT_TIME _dummy_point
   _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM_ARG" "$PROJECT_DIR" \
-    BASE_COMMIT EXPORT_TIME _dummy_init || return 1
+    BASE_COMMIT EXPORT_TIME _dummy_point || return 1
 
   local SOURCE_BRANCH; SOURCE_BRANCH="$(project_current_ref "$PROJECT_DIR")"
   local FROM_HASH; FROM_HASH=$(git -C "$PROJECT_DIR" rev-parse "$BASE_COMMIT")
@@ -371,7 +412,7 @@ Required:
 Options:
   --bundle=<name>         Named bundle to apply (required; --interactive picks from a list)
   --channel=<name>        Resolution channel: session, autosave, bundles (default: session)
-  --branch-from=<commit>  Base commit for the draft branch; always name it, especially after a rebase (default: HEAD)
+  --branch-from=<commit>  Override the fork point from the bundle's .branch-point
   --diffs=<start>..<end>  Range of patches to apply
   --branch-summary=<slug> Override branch name suffix
   --force                 Apply with --reject; .rej files for conflicts
@@ -454,11 +495,11 @@ _run_draft_workflow() {
   fi
 
   # Validate BRANCH_FROM via shared metadata ingestion.
-  # Defaults empty to HEAD; validates the commit exists.
+  # An empty value resolves to the bundle's .branch-point; the commit must exist.
   # Also reads .export-status for TIMESTAMP so draft_run can use it.
-  local _validated_base _dummy_time _dummy_init
+  local _validated_base _dummy_time _dummy_point
   _ingest_export_metadata "$SOURCE_DIR" "$BRANCH_FROM" "$PROJECT_DIR" \
-    _validated_base _dummy_time _dummy_init || return 1
+    _validated_base _dummy_time _dummy_point || return 1
 
   # Create savepoint at the branch point BEFORE .draft-state is committed.
   # On failure, reset to this to avoid leaving the draft branch partially applied.
@@ -506,22 +547,26 @@ _run_draft_workflow() {
   echo "Diffs applied: $DIFF_COUNT"
   [[ -n "$UC" ]] && echo "Uncommitted diff applied: $UC"
   echo ""
-  draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH"
+  draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH" "$_validated_base"
 }
 
 # =============================================================================
 # draft_print_confirm_hint  --  print the confirm direction that applies
 #
-#   draft_print_confirm_hint <project-dir> <source-branch>
+#   draft_print_confirm_hint <project-dir> <source-branch> <branch-point>
 #
 # Which route applies is decided here, not by the agent: `make confirm`
 # fast-forwards the target, so it only works when the target is an ancestor of
 # the draft tip. After a rebase inside the container it is not, and telling the
-# operator to fast-forward would send them into a failed merge.
+# operator to fast-forward would send them into a failed merge. Both routes
+# state the fork point, so the operator never has to recover it from chat.
 # =============================================================================
 draft_print_confirm_hint() {
   local PROJECT_DIR="$1"
   local SOURCE_BRANCH="$2"
+  local BRANCH_POINT="$3"
+
+  echo "Branch point: ${BRANCH_POINT:0:7}"
 
   if git -C "$PROJECT_DIR" merge-base --is-ancestor "$SOURCE_BRANCH" HEAD >/dev/null 2>&1; then
     echo "Shape your commits, then confirm:"

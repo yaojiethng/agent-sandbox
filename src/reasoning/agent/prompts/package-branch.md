@@ -50,7 +50,7 @@ The script resolves the branch point itself as `git merge-base <init_sha> HEAD` 
 bash /opt/sandbox/lib/package_branch.sh --to=$HOME/workspace/output --baseline=<sha> --bundle-summary=<summary>
 ```
 
-On the host, invoke via `agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<slug>] [--baseline=<sha>]`, or `make package-branch [BUNDLE_SUMMARY=<slug>] [BASELINE=<sha>]`. In a `make draft` invocation the branch point is `BRANCH_FROM=<sha>`, never `--branch-from=<sha>`.
+On the host, invoke via `agent-sandbox package-branch --sandbox=<path> [--bundle-summary=<slug>] [--baseline=<sha>]`, or `make package-branch [BUNDLE_SUMMARY=<slug>] [BASELINE=<sha>]`. In a `make draft` invocation `draft` reads the branch point from the bundle's `.branch-point`; `BRANCH_FROM=<sha>` overrides it, never `--branch-from=<sha>`.
 
 The script produces one numbered `.diff` per commit since the branch point, with the subject embedded in the filename, a sibling `.msg` carrying the full commit message, and the three supporting artefacts:
 

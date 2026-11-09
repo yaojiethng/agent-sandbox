@@ -90,7 +90,7 @@ test_confirm_target_branch() {
   git -C "$P" checkout -b feature-branch --quiet
   git -C "$P" checkout main --quiet
   mkdir -p "$S/.workspace"
-  make_session_fixture "$EXPORT" 2
+  make_session_fixture "$EXPORT" 2 none "$(git -C "$P" rev-parse HEAD)"
 
   _test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" >/dev/null 2>&1
   confirm_run "$P" "$S" "feature-branch" >/dev/null 2>&1

@@ -146,7 +146,7 @@ Changes can flow in either direction at any time while the sandbox is live. All 
 
 ### STOPPED -- applying persisted artefacts
 
-The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point (default: `HEAD`; pass `BRANCH_FROM=<sha>` when the host advanced or a rebase moved the branch point), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch, and its rewritten-history form is in [`tool_interface.md`](tool_interface.md).
+The operator works entirely from the persisted session artefacts. No container interaction is possible or required. `make draft` requires an explicit `BUNDLE=<name>` (`INTERACTIVE=1` opens the picker) and creates a `draft/<branch>` branch from the fork point recorded in the bundle's `.branch-point` (pass `BRANCH_FROM=<sha>` to override it), then applies the numbered diffs in order. `DIFFS=start..end` selects a sub-range -- the operator's mechanism for skipping already-confirmed diffs without harness tracking. After `git rebase -i` and merge, `make confirm` cleans up the draft branch, and its rewritten-history form is in [`tool_interface.md`](tool_interface.md).
 
 On failure: `make draft` stops at the failing diff and reports the file and hunk. Operator runs `make reject`, amends the failing diff in the source export folder, and re-runs `make draft`. The diff series is the source of truth; the draft branch is always derived from it.
 
