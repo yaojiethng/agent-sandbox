@@ -78,7 +78,7 @@ env_resolve_one() {
 #   in the .env). Exports PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR for the
 #   requested fields and the normalized ENV_FILE into the caller's scope.
 env_resolve_identity() {
-  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref="${4:-}"
+  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref="${4:-${ENV_REL:-}}"
   local fields=()
   if [[ $# -gt 4 ]]; then
     shift 4
@@ -107,6 +107,16 @@ env_resolve_identity() {
   fi
   ep="$(default_env_file "$env_ref" "$SANDBOX_DIR")"
   export ENV_FILE="$ep"
+
+  # A specified .env path that does not exist fails here, naming the path,
+  # instead of surfacing later as a generic missing-key error that names the
+  # wrong level. An empty ENV_REF is the fallback, which the caller resolves:
+  # <sandbox>/.env, else the invocation CWD's .env.
+  if [[ -n "$env_ref" && ! -f "$ep" ]]; then
+    echo "Error: .env not found: $ep" >&2
+    echo "  A specified --env path must exist. Omit --env to use <sandbox>/.env, else the CWD's .env." >&2
+    return 1
+  fi
 
   if $need_name; then
     if [[ -n "$expl_name" ]]; then

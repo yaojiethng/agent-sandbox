@@ -227,7 +227,7 @@ if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
 fi
 
 # Mount delivery worktree  --  single shared host worktree per sandbox.
-# session_env_common_init (the caller) already set and exported WORKTREE_DIR
+# resolve_and_init (the caller) already set and exported WORKTREE_DIR
 # before exec'ing this script; only the mount overlay reads it.
 
 COMPOSE_FILES=("$COMPOSE_TEMPLATE")

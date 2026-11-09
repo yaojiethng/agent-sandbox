@@ -370,9 +370,11 @@ main() {
   # Shared host-side prelude  --  phase 1 (env, git validation, derived paths, uid/gid)
   # -------------------------
   source "$REPO_ROOT/src/libs/session_env.sh"
+  source "$REPO_ROOT/src/libs/env_resolve.sh"
   # DRYRUN_SID_PREFIX + session_is_dry_run (canonical dry-run id labeling).
   source "$REPO_ROOT/src/libs/session_inventory.sh"
-  session_env_common_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
+  env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "${ENV_REL:-}" || exit 1
+  resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
   
   if [[ "${REFRESH:-false}" == "true" ]]; then
     echo "Refresh requested  --  starting new session"
