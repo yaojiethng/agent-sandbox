@@ -34,6 +34,14 @@ test_setup
 
 LINT="$REPO_ROOT/scripts/lint.sh"
 
+# read_gate_names -- print the umbrella's GATES members as one space-separated
+# line, read from the wrapped array with sed so the umbrella is not executed.
+read_gate_names() {
+  sed -n '/^GATES=(/,/^)/p' "$LINT" \
+    | sed -e 's/^GATES=(//' -e 's/)$//' \
+    | tr '\n' ' '
+}
+
 # make_frontmatter_fixture LINE...  -- builds a scan root holding a single
 # prompt whose file content is exactly the given lines, and echoes the root
 # path. The caller supplies the whole file, frontmatter fences included, so a
@@ -415,7 +423,7 @@ run_test test_markdown_singular_lint_count_passes
 # Asserts: a new check script cannot be silently absent from the umbrella.
 test_lint_gate_set_is_complete() {
   local gates g base f
-  gates=$(sed -n 's/^GATES=(\(.*\))$/\1/p' "$LINT")
+  gates=$(read_gate_names)
   for g in check_shell.sh check_lib_contract.sh check_markdown.sh; do
     assert_contains "$gates" "$g" "GATES includes $g"
   done
@@ -445,7 +453,7 @@ test_lint_forwards_gate_output() {
   # The count is read from the GATES array rather than hardcoded, so adding a
   # gate does not fail this test and tempt an author into deleting the check.
   local declared
-  declared=$(sed -n 's/^GATES=(\(.*\))$/\1/p' "$LINT" | wc -w)
+  declared=$(read_gate_names | wc -w)
   assert_contains "$LINT_OUT" "across $declared gates" "clean summary names the gate count"
 }
 
