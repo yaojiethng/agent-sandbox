@@ -50,7 +50,7 @@ Take option 3. The restart measures the skill's own job rather than a boundary b
 
 ## Consequences
 
-The harness needs one change before this case runs. `workflow/coding-agent/skills/eval/scripts/run_case.sh` is specialized to the commit-body subject: it copies two named files and measures a commit. Generalizing it to take a candidate tree, a package root override and a pluggable measure is the lever, and it is what makes the case reproducible from the repository rather than from a throwaway script. The spent round's driver lived in a temp directory and is gone.
+The harness needs one change before this case runs. `.agents/skills/evals/scripts/run_case.sh` is specialized to the commit-body subject: it copies two named files and measures a commit. Generalizing it to take a candidate tree, a package root override and a pluggable measure is the lever, and it is what makes the case reproducible from the repository rather than from a throwaway script. The spent round's driver lived in a temp directory and is gone.
 
 The boundary paragraph stays unwritten, on the evidence that it moved no measured behaviour, and the spent round's archive stays as a spent round rather than as a baseline.
 

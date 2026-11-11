@@ -26,7 +26,7 @@ An agent produces higher-quality output when its context carries domain-specific
 
 4. The terminology layer, `docs/reference/terminology.md`, and the reserved-term list.
 
-5. The `eval` skill under `workflow/coding-agent/skills/eval/`, which is the only place the signalling experiment can run.
+5. The `evals` skill under `.agents/skills/evals/`, which is the only place the signalling experiment can run.
 
 ## Steps
 
