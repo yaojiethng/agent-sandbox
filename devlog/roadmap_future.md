@@ -170,6 +170,14 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ## Deferred (Unplanned)
 
+### The eval's measurement infrastructure (deferred)
+
+**Status:** Deferred (not planned), raised 2026-11-09 by the `/gm` A/B write-back `20261109-10`. It waits until the A/B pipeline is running; the current eval milestone files it as the dependency, not the work.
+
+**Objective:** give the eval a measurement layer that can estimate the alignment grade's reliability and an effect's size, not only observe an outcome on four binary rules and one blind reading.
+
+**Scope:** a richer automated score over the report and the transcript; a second independent grader with kappa for the alignment reading; and the analysis the score supports, including the run-to-run variance the A/A calibration establishes. A decision rule the automated reader evaluates gains a shape with this work; until then the rule stays the operator's prose, agreed per eval. It does not replace the calibration or A/B rows, which are current-infra work under M3.3.5. It also needs a read-cost measure in tokens: the tokens a read adds to the context against the read's effectiveness (a usable report, a located fact), not the read procedure. File opens, bytes and per-path counts are diagnostics only: a batched read that opens more files but spends fewer tokens and turns is the better read, and a census would rank it worse. The eval already records per-turn input and output tokens; what is missing is the normalisation to the outcome.
+
 ### Artifact Inventory and Reader Graph (indefinitely deferred)
 
 **Status:** Indefinitely deferred, raised 2026-10-23 by handover `20261023-07`. Every requirement needed to start it is in this section; a session that picks it up should not have to re-derive the census it builds on.

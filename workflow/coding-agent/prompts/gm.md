@@ -28,7 +28,7 @@ Run this when the operator wants to know what is open and where to start. Four c
 
 ## Scope
 
-The only record change a check-in may make is a fix whose correct form the tree or the policy determines. It applies those, aggregates them into a single `chore:` commit, and opens no handover. Every other change waits for the operator to pick the next task.
+The check-in's only write is an inert fix: a stale path, a broken link, an index entry, a formatting artefact. It applies those in one commit, typed off the diff per `git-discipline`, and opens no handover. Every other change waits for the operator to pick the next task.
 
 ## Arguments
 
@@ -36,7 +36,7 @@ The invocation argument is the intent: any argument filters the inventory.
 
 ## Survey
 
-The survey reads state; it does not repair it. Apply the repository's read discipline: grep to locate, then read the needed sections. Do not open files wholesale beyond what the survey needs.
+Apply the repository's read discipline: grep to locate, then read the needed sections. Do not open files wholesale beyond what the survey needs.
 
 - Handover chain: read the latest ten handovers. When the operator names a different window - a count ("the last three handovers") or a period ("the last seven days") - read that window instead. Read each record's `status`, findings and deferred items.
 - Roadmap: `devlog/roadmap.md`. Read the Milestone Summary table's `In progress` rows, their sections and their open items. Check done items for forward-looking text left behind.
@@ -45,9 +45,7 @@ The survey reads state; it does not repair it. Apply the repository's read disci
 - Stale-state sweep: `git status`, `git stash list`, `git branch` -- uncommitted changes, stashes, leftover branches.
 - Discussion records in `devlog/discussions/` whose roadmap row has closed -- each is a deletion candidate.
 
-Surface discrepancies, do not fix them: an open roadmap item whose work already landed on disk; a done item still carrying forward-looking text; a finding marked open whose fix landed; a feedback entry describing files that no longer exist; a test suite whose last recorded run is red or stale. Each becomes an inventory row or a finding, never a silent correction.
-
-A fix whose correct form the tree or the policy determines is applied; everything else is surfaced and waits.
+Surface every discrepancy as a finding below the inventory table: an open roadmap item whose work already landed on disk; a done item still carrying forward-looking text; a finding marked open whose fix landed; a feedback entry describing files that no longer exist; a test suite whose last recorded run is red or stale.
 
 ## Inventory
 
@@ -68,7 +66,7 @@ The axes below are this prompt's to define. `/milestone-start` grades its audite
 
 Fill every field from the records already read during the survey. If a field cannot be filled without new investigation, write `unclear` and add the investigation itself as an inventory row. Do not run investigations during a check-in.
 
-A record defect is not work: report it below the table rather than as a row.
+A discrepancy is not work: report it below the table rather than as a row.
 
 ## Output rules
 
@@ -90,7 +88,7 @@ If no intent was provided, do not assume one. Suggest work along the intents act
 - highest leverage -- Progress `gates other planned tasks`: the least complex task that unblocks the most downstream work. When a large task needs prefactors, suggest the prefactor, not the large task.
 - most urgent -- Impact `blocking`, or `degrading` where the cost grows with delay.
 
-A record defect is never one of the three. Present a record contradiction apart from the table, naming what the record asserts, what the tree shows, and what has to be chosen.
+A discrepancy is never one of the three. Present it apart from the table, naming what the record asserts, what the tree shows, and what has to be chosen.
 
 Recommendations respect landing order in every case: a prefactor is suggested before the task that needs it.
 
@@ -100,7 +98,6 @@ Then ask which direction to take. Stop there; no work begins before the operator
 
 - Does not open, re-scope or close an iteration.
 - Does not open a handover.
-- Does not apply a fix whose correct form neither the tree nor the policy determines.
 
 ## Failure modes
 
