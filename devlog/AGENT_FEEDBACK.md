@@ -190,7 +190,7 @@ Raised by the agent during handover `20261017-01`.
 
 ```text
 state: open
-scoped: M3.4.2 - Environment declaration seam
+scoped: M3.4.2 - The resolution model and record primitives
 legacy: none
 mitigation: when a delegated worker's artifact differs from the source it was ported from, measure the property the difference drops before naming it. A difference is evidence of a deviation, not of a lost check; the two claims need separate measurements, and "the source line still passes" answers only the first.
 ```
@@ -402,7 +402,7 @@ A third instance came from the pass 2 seat that re-read the swept pattern set. `
 
 The shape recurs because a rule is written from a plausible story about the failure rather than from the failure re-run. One command per claim is the whole check.
 
-Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/`, and `devlog/discussions/20261026-report-draft-pattern_provenance.md`, which records the scan that found both.
+Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/`.
 
 ## Node
 

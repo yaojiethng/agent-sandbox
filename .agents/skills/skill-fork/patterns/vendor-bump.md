@@ -65,8 +65,7 @@ The command names are the CLI's; the invocation adds the repository's script pat
 | File | Why |
 |---|---|
 | The source file at `.agents/registry/sources/<source-id>.json` | The source facts, the edge, `origin` and `base`. |
-| [`source_tracking.md`](../../../../docs/development/source_tracking.md) | The schema and the CLI contract. |
-| [`20261029` design record](../../../../devlog/discussions/20261029-design-draft-skill_source_update.md) | The merge model and the intent that the diff cannot carry. |
+| [`source_tracking.md`](../../../../docs/development/source_tracking.md) | The schema, the CLI contract and the merge model. |
 | The edge's `record` | What the fork kept, rewrote, added and dropped, and why. |
 | [`fork-and-strip.md`](fork-and-strip.md) | The creation counterpart; a bump re-adapts an existing fork. |
 

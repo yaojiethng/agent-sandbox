@@ -72,7 +72,7 @@ An artifact edge names one local artifact, the upstream path it came from, and t
 
 A skill and a runbook are directories with a `SKILL.md`; a prompt and an instruction are files. A runbook names its parent; nothing else names one. The gate checks the local path against the kind, so a prompt cannot claim a directory and a skill cannot claim a loose file, and it checks an `anchor` occurs exactly once in the file it names, so a passage edge that has drifted is a finding.
 
-`origin` and `base` are full 40-character commits. The two are equal at the first fork. A merge moves `base` to the reviewed upstream revision and leaves `origin` alone. The adaptation note is what the merge review reads before it starts: the fields name what the fork kept, changed, added and left out, and why. The design doc still holds the intent the note does not carry.
+`origin` and `base` are full 40-character commits. The two are equal at the first fork. A merge moves `base` to the reviewed upstream revision and leaves `origin` alone, because a base left at the fork point would report the upstream changes as local edits at the next merge and replay or conflict them a second time. The adaptation note is what the merge review reads before it starts: the fields name what the fork kept, changed, added and left out, and why. The design doc still holds the intent the note does not carry.
 
 One artifact may carry several edges, one per source: a skill built from three upstream skills has three contributions to describe, and each edge carries its own note. The address of an edge is the source, the `local_path` and the `anchor` together, and two edges in one source may not share it.
 

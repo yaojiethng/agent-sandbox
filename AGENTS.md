@@ -61,7 +61,7 @@ What is read before any work starts is the two `AGENTS.md` files and one line pe
 - **Rules live where the work happens.** A rule is stated once, in the file a reader is already in when they need it, and cited from everywhere else. A rule reachable only by search is a routing defect.
 - **The check, not the story.** An instruction says what to do and how that is verified. Rationale stays only where a reader would otherwise take the wrong action; history belongs in `devlog/`.
 - **Add by replacing.** A rule, skill, prompt or reference document lands with the removal of something of comparable size in the same commit, or one sentence naming why nothing can be removed.
-- **A budget is a number.** The gate behind this section holds the caps for the two files and for descriptions and fails the tree past them.
+- **A budget is a number.**
 
 ## Operator commands
 
