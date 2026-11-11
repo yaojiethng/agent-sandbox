@@ -79,6 +79,7 @@ done < <(find "$ROOT" -mindepth 2 -maxdepth 2 -name SHA256SUMS | sort)
 # A fixture directory with no manifest at all.
 while IFS= read -r dir; do
   [[ -f "$dir/SHA256SUMS" ]] && continue
+  [[ -f "$dir/case.json" ]] && continue
   echo "NOMANIFEST  ${dir#"$ROOT"/}  a frozen fixture holds no SHA256SUMS, so nothing can report it changing"
   findings=$((findings + 1))
 done < <(find "$ROOT" -mindepth 1 -maxdepth 1 -type d | sort)

@@ -1,0 +1,24 @@
+{
+  "subject": "the check-in prompt, workflow/coding-agent/prompts/gm.md",
+  "subject_kind": "prompt",
+  "source": "the pilot run of 2026-11-08 at $HOME/workspace/output/evals/gm-ablation/pilot-20261108/REPORT.md, and the `cut-what-serves-nothing` pass of 2026-11-08 that flagged the duplicate sections and rationale tails the sentence ablations remove",
+  "configuration_variable": "the gm.md prompt: full in baseline, one `##` section deleted in each `no-<section>` ablation, and one flagged sentence, duplicate, relocation or reconciliation applied in each sentence ablation",
+  "cases": [
+    {
+      "id": "gm-section-ablation",
+      "prompt": "Read the check-in prompt at `workflow/coding-agent/prompts/gm.md` and apply it to this repository with the argument `milestone triage`. Write the final check-in report to `inventory.md` at the repository root, and do not write any other file. Do not read or write anything outside this repository. When the report is written, reply DONE.",
+      "expected_output": "A check-in report with a state summary, a milestone-filtered inventory of the open work, record defects apart from the table, one recommended starting task from the open rows, and a closing question for the operator.",
+      "fixture": "a single-commit copy of agent-sandbox at feat/M_3-orchestration (1daa407b), holding the project records and the full gm.md; each configuration overlays one variant of gm.md, a section deletion, a sentence deletion, a relocation or a reconciliation.",
+      "assertions": [
+        "The report has a state summary before the inventory table.",
+        "The inventory table carries the six columns and at least five rows.",
+        "The report recommends one starting task from the open rows, and does not present three equal directions.",
+        "The report asks which direction to take.",
+        "The recommended task is a work item from the inventory, and the inventory is filtered by the milestone triage intent.",
+        "Record defects are reported apart from the inventory, never as rows."
+      ],
+      "measurement": "the measure's four structural fields and a blind grade of the recommendation against the inventory and the intent filter"
+    }
+  ],
+  "notes": "The sentence configurations are the `cut-what-serves-nothing` candidates: `no-survey-read-discipline`, `survey-repair-reconciled`, `no-non-goals-duplicates`, `no-when-to-use-rationale`, `no-close-prefactor-tail`, and `output-rules-moved`. `output-rules-moved` and `survey-repair-reconciled` are a relocation and a reconciliation, not deletions: they keep the rule while removing its second home. The section configurations remain coarse controls. Each configuration carries a `granularity` field: `control`, `section`, `sentence`, `relocation` or `reconciliation`. Run with a pinned free model, for example EVAL_MODEL=opencode-go/crouton-alpha-free EVAL_THINKING=medium. The case does not pin a model: that is the caller's assignment. The fixture and its overlays live under $HOME/workspace/output/evals/gm-ablation/fixture and are not committed; --check needs them present."
+}

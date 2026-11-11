@@ -1,0 +1,27 @@
+{
+  "subject": "the check-in prompt, workflow/coding-agent/prompts/gm.md",
+  "subject_kind": "prompt",
+  "source": "the operator's clarification of 2026-11-09 that, in a run focused on the current milestone, a recommendation from another milestone is a misalignment unless the report names a basis (it blocks a task under the current milestone, or it is a recent, urgent problem); the pilot run of 2026-11-08 whose baseline recommended M3.1.2; and the operator's choice of a neutral intent with the current milestone inferred from the branch name and the latest handover",
+  "configuration_variable": "the gm.md prompt: full in baseline, one `##` section deleted in each `no-<section>` ablation, one flagged sentence, duplicate, relocation or reconciliation applied in each sentence ablation, and one rule inserted in `current-milestone-rule`",
+  "cases": [
+    {
+      "id": "gm-focus-milestone",
+      "prompt": "Read the check-in prompt at `workflow/coding-agent/prompts/gm.md` and apply it to this repository with the argument `back after a break`. Write the final check-in report to `inventory.md` at the repository root, and do not write any other file. Do not read or write anything outside this repository. When the report is written, reply DONE.",
+      "expected_output": "A check-in report with a state summary, an inventory table of the open work, record defects apart from the table, one recommended starting task, and a closing question. The report establishes the current milestone as M3.3.5 from the branch name `feat/M3_3_5-evals` and the latest handover, and its recommendation is under M3.3.5, or a cross-milestone item whose report names a basis: it blocks a task under M3.3.5, or it is a recent, urgent problem.",
+      "fixture": "a single-commit copy of agent-sandbox at the M3.3.5 head (53b67505), on branch feat/M3_3_5-evals, holding the project records and the pre-candidate gm.md; each configuration overlays one variant of gm.md, a section deletion, a sentence deletion, a relocation or a reconciliation.",
+      "assertions": [
+        "The report has a state summary before the inventory table.",
+        "The inventory table carries the six columns and at least five rows.",
+        "The report identifies M3.3.5 as the current milestone, and its stated signal is the branch `feat/M3_3_5-evals` or the latest handover's `milestone` field.",
+        "The report recommends one starting task from the open rows, and does not present three equal directions.",
+        "The recommended task is under M3.3.5, or the report names a basis: it blocks a task under M3.3.5, or it is a recent, urgent problem.",
+        "No recommendation from another milestone is presented without such a basis.",
+        "The report asks which direction to take.",
+        "The recommended task is a work item from the inventory.",
+        "Record defects are reported apart from the inventory, never as rows."
+      ],
+      "measurement": "the measure's structural fields and a blind grade of the recommendation against the inventory, the inferred current milestone, and the alignment rule"
+    }
+  ],
+  "notes": "The 19 configurations are the ablation list the operator declared: the control, 12 section deletions, and 6 sentence, relocation or reconciliation variants. The A/B adds `current-milestone-rule`, one rule inserted in `## Close`. The prompt is neutral; the current milestone must be inferred from the branch name `feat/M3_3_5-evals` and the latest handover, and the recommendation must align to it. The section configurations are coarse controls; `output-rules-moved` and `survey-repair-reconciled` keep the rule while removing its second home. Each configuration carries a `granularity` field: `control`, `section`, `sentence`, `relocation`, `reconciliation` or `rule`. Run with a pinned free model, for example EVAL_MODEL=opencode-go/crouton-alpha-free EVAL_THINKING=medium. The case does not pin a model: that is the caller's assignment. The fixture and its overlays live under $HOME/workspace/output/evals/gm-focus-milestone/fixture and are not committed; --check needs them present. The `baseline` overlay carries the prompt before the check-in write-rule repair (the S2 rule in Close, the prefactor tail removed); `targeted-roadmap-read` adds the Survey roadmap bullet that reads only the current milestone section. The 19 earlier ablation overlays remain built against d76319d and are unused here. `checkin-write-rule` carries the repaired text landed at 20261110-03."
+}
