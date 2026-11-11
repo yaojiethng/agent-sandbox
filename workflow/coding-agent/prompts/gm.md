@@ -82,6 +82,8 @@ Two or three lines before the inventory: the active milestone, the time gap sinc
 
 If an intent was provided, filter the inventory by it, recommend one starting task from the open rows, and say why it fits. Do not also present the three intents. If the argument already fixes a specific task, say the direction is set and the next step is opening the iteration.
 
+Recommend within the current milestone. A cross-milestone task needs a stated basis: it blocks a task under the current milestone, or it is a recent, urgent problem.
+
 If no intent was provided, do not assume one. Suggest work along the intents actually present in the inventory:
 
 - easiest start -- smallest Size, offline Verification; re-entry after a break.
