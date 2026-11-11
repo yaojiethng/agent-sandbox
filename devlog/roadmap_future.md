@@ -69,10 +69,10 @@ Umbrella for the multi-agent milestones: coordinated dispatch of multiple task b
 **Objective:** Each agent gets its own branch from a shared baseline. Branches serve as both the agent's working surface and the snapshot of its work for review and merge.
 
 - [ ] Each agent gets its own branch from the same baseline
-- [ ] `apply_workspace.sh --branch=<n>` supports named branches per agent
+- [ ] The harness supports a named branch per agent; the mechanism is chosen when this milestone is planned, not named here
 - [ ] Validate branch contents before merge
 - [ ] Merge branch -> `main`
-- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling -- decision depends on M2.4 checkpoint branch pattern outcome
+- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling -- decided against the branch surface as it ships, not against a closed milestone's outcome
 
 ---
 
@@ -114,7 +114,7 @@ Multiple well-specified work tasks run once, in the background, with the operato
 
 **Source:** the retired T1 `parallel-auto` row, relocated here under the M4 umbrella and renamed with the `-work` family (M3.2.3).
 
-- [ ] Build the background-work surface on `.agents/drafts/parallel-work.md`
+- [ ] Build the background-work surface, reconstructed from the dispatch prompts as M3.2.3 ships them
 
 ### M4.7 -- The `/auto` Smart Dispatcher
 

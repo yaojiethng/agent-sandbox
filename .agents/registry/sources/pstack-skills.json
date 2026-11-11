@@ -6,6 +6,21 @@
   "copyright": "Copyright (c) 2026 Lauren Tan",
   "artifacts": [
     {
+      "local_path": ".agents/skills/evals/playbooks/hillclimb.md",
+      "kind": "instruction",
+      "parent": null,
+      "upstream_path": "pstack/skills/poteto-mode/playbooks/hillclimb.md",
+      "origin": "70b2dc8b4b85c8d5648624ca40d692c421fff32f",
+      "base": "70b2dc8b4b85c8d5648624ca40d692c421fff32f",
+      "record": {
+        "source": "The sustained-improvement loop, rewritten for an instruction surface and a graded agent artifact rather than a codebase and a performance metric. The installed pstack package the file was read from carries no provenance of its own; its text is byte-identical to the file at this commit, checked by blob hash 582555e826675068ceaea08e6134a44ba0ea4511, so the pin is the revision read and not an approximation from a date.",
+        "kept": "The loop's discipline: one change, one measurement, keep or revert, never stacking untested changes and never taking a win from inspection. The decision log with its row of fields, the stop predicate as a target plus a floor on attempts, the demand that a hypothesis names a mechanism, the plateau rule, and the reply's shape. The metric is fixed with its direction, the harness is proven sensitive and then frozen, and a baseline plus a green regression gate is recorded before any change.",
+        "rewritten": "Three objects move to this repository's vocabulary. The metric becomes the score tuple read in order, because an instruction edit can gain a rule and lose the output shape. The harness becomes the eval harness, whose fixture, isolation root and bundle return are stated in `references/harness.md`. The regression gate is the case's own assertions plus the suite, which is what a broken behaviour fails. A hillclimb here is one climb over a series of paired batches rather than a baseline measured once, so drift is closed inside each batch.",
+        "added": "The batch boundary: the previous state is re-measured as a control at the same run count, in one pass, or the comparison is cross-batch and proves nothing. Blinding of the grader comes from the pstack eval playbook, recorded as a citation, the workload patch is stated so the candidate's files are excluded and the two variables cannot interact, and the measurement reads the artifact rather than the child's report.",
+        "dropped": "The code-specific workload dimensions (data size, history, state, concurrency), the architecture model taken from the `how` skill, the subagent's configured hillclimb model, the separate worktrees for parallel hypotheses as a worktree-management task, pushing past the first plateau as a stopping question, and the pull-request step, which this repository's delivery commit replaces."
+      }
+    },
+    {
       "local_path": ".agents/skills/project-documentation/references/organization.md",
       "kind": "instruction",
       "parent": null,

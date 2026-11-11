@@ -1,6 +1,20 @@
 # Principle Skill Shape
 
-**Current:** 2026-11-05
+**Current:** 2026-11-07
+
+## 2026-11-07 -- The communication corpus stays installed, and this entry states where it is read
+
+**Decision:** The communication principle corpus is the set of `communication-principle-*` skills installed at `$AGENT_HOME/agent/skills/`. It is not shipped in this tree, and [`skill_source_catalog.md`](skill_source_catalog.md) holds its source and why it stays installed rather than vendored. Three judgements the migration settled are stated here, because the corpus is read where it is installed and no document in this tree states them. The three sentence-level lines it retired, active voice, noun before command and no thin subject with a dash clause, are one stratum: the reader builds structure left to right, attaches each phrase to what is already built, and spends one budget of integration cost across all three. A section is read against proximity, so a caveat placed away from its rule costs working memory, a mental-model repair and attention. And a judgement two or more documents state becomes a principle, while a judgement stated in one document is reviewed on its own and filed by no chain. A principle's own derivation is not kept: the installed skill is the artifact.
+
+**Rationale:** The migration is finished and its design records are not. Each of them settled a decision whose subject is a skill that now exists outside this repository, so the record cannot serve as a carrier and the lifecycle rule calls it a deletion that has not run. Naming the corpus and the three judgements it does not make visible keeps the retrieval path where a reader of this ADR set meets it, and the derivation whose conclusion the installed skill carries is spent. `skill_source_catalog.md` already records why the corpus stays installed, so this entry does not restate it.
+
+**Rejected alternatives:**
+
+- *Keep the per-principle design records.* **Execution failure**: a settled record whose subject is installed text is a deletion that has not run, so the next reader cannot tell a live carrier from a spent one, and the corpus is read in the config home rather than by opening a design record from October.
+- *Vendor the corpus into the tree.* **Intent failure**: the source catalog's empty row already decided this for every project that installs the layer, and a vendored copy would be a second edition of the corpus with no bump path.
+- *State each principle's derivation in the shipped principle, which has the space.* **Boundary failure**: a principle states the judgement and the test a writer applies, and an account of how it was chosen is history that a reader under time pressure takes for a rule.
+
+**Edge cases / drivers:** Three principles left the corpus for `instruction-authoring` on 2026-11-05, in the entries above, so a deletion here never means a judgement vanished, only that its carrier moved. The installed tree is the fact for which principles exist and `skill_source_catalog.md` is the pointer, so no count is stated here: a number in this file would be a derived value the ADR does not own. A principle whose subject is this repository's own conventions rather than a text is not in the corpus, which is the boundary decision that kept `numbering` and `linking` project-scoped.
 
 ## 2026-11-05 -- The cut test is the document's purpose, and the principle is renamed
 

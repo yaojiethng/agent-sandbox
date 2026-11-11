@@ -10,7 +10,7 @@ reader: [agent, operator]
 
 These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
-`unit` is not a reserved term. It is ordinary as a quantifier -- a unit of work, a unit of a pass, a unit of measure -- and inside a compound such as `unit test`, `unit suite` or `test unit`. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. The compounds `harness unit` and `operator unit` are the session and the iteration, not the work.
+`unit` is not a reserved term. It is ordinary as a quantifier -- a unit of work, a unit of a pass, a unit of measure, an experimental unit -- and inside a compound such as `unit test`, `unit suite` or `test unit`. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. The compounds `harness unit` and `operator unit` are the session and the iteration, not the work.
 
 ## modality
 
