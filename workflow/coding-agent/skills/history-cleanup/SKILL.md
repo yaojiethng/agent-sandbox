@@ -1,6 +1,6 @@
 ---
 name: history-cleanup
-description: Rewrite a branch's history so each commit is one reviewable, bisectable commit whose record is true at that commit, and no content inside the range is written then replaced. Use when a draft branch carries an inversion, a change a later commit undoes, when a reviewer would read the same rule twice, or before packaging a branch for review.
+description: Rewrite a branch's history so each commit is one reviewable, bisectable commit whose record is true at that commit, and no content inside the range is written then replaced. Use when a draft branch carries an inversion, when a reviewer would read the same rule twice, or before packaging a branch for review.
 disable-model-invocation: true
 ---
 
@@ -18,6 +18,8 @@ Four invariants decide the result: every commit is reviewable; every commit is b
 
 The content is the invariant. The records are not. Only the records are rewritten, because they describe a shape that no longer exists. That asymmetry is why the proofs exclude record paths: hold the content fixed, and let the records move.
 
+**The method is yours.** The invariants, the checks and the two review gates are fixed; how the series is produced is not. Fold, drop, reorder, split, or rebase the whole range, at whatever scope a unit needs. Report the operation each unit took, per `## Report`, because a departure nobody can see is the failure this skill exists to prevent.
+
 ## Input contract
 
 | Input | Meaning |
@@ -25,8 +27,8 @@ The content is the invariant. The records are not. Only the records are rewritte
 | branch | The branch to rewrite, typically a draft export the operator is about to review. |
 | base | The commit the range starts at, usually the last reviewed tip. |
 | record path | Where the record a commit carries lives, or the convention that names it. |
-| gate | The command that decides a commit is sound, cited once and run per commit. |
-| test | The suite that proves a commit stands, cited once and run per commit. |
+| gate | The command that decides a commit is sound. It runs in each commit's own tree. |
+| test | The suite that proves the tip stands. |
 | additions | Optional. A path or artifact that did not exist in the old range and belongs in the new series, named by the operator with the commit it should ride. |
 
 The argument slot may carry extra context: known inversions, a review comment that names a superseded commit, or an operator ruling on what may be dropped. Ask for whatever the message does not name.
@@ -60,17 +62,22 @@ A file added in one commit and deleted in a later one. A line set written in one
 
 The detector at `scripts/inversions.mjs`, beside this file, reads added and removed lines per commit per file and reports every ordered pair where a later commit removes a line an earlier one added. It needs `node` and a git working tree, and takes the range as `<base> [tip]`.
 
-Validate the detector before believing it. Run it against a two-commit fixture whose inversion you introduced yourself, and confirm it names both commits and the line. A detector that reports a clean range and a detector that cannot match a line produce the same output, and the difference is only visible against a case whose answer is already known.
-
-Strip the diff marker before comparing. Keeping the leading `+` or `-` makes every added line differ from every removed one by that character, so the report is a confident and wrong "none".
-
-A length floor is the same trap in another form. The detector skips content lines shorter than eight characters, so a control built from short lines reports a clean range against a real inversion. Build the control from prose-length lines, and state the floor in the detector's own header beside the marker note.
+Validate the detector before believing it: run it against a two-commit fixture whose inversion you introduced yourself, built from prose-length lines, because a control made of short lines passes under the detector's eight-character floor and reads the same as a clean range.
 
 For each hit, name both commits and the exact content replaced. Some hit classes are not design inversions and the caller must classify them rather than count them: a record a later commit corrects, and a generated file regenerated whole at each commit, whose rows change at every commit while no reader sees a difference.
 
 Completion criterion: the positive control fires, every inversion is listed with both commits and the replaced content, or the range is reported clean with the control's output attached.
 
-## Propose the target series
+## Propose the target series, in two stages
+
+Stage one is the manifest. One row per unit:
+
+| unit | subject | source commits | files carried | record it rides | predicted change |
+|---|---|---|---|---|---|
+
+A row that carries no result of its own folds into the unit it serves; related small units combine. Present the manifest and wait. A boundary is cheap to change here and expensive after a build.
+
+Stage two is the candidate. Build the series on a scratch ref and never move the reviewed branch. Present the per-unit `git log --stat` and the `range-diff` against the old range. Approval is of what the operator can see, and that approval is what moves the branch.
 
 One commit per coherent deliverable. Collapse an inversion into the later commit, because the later content is the one a reviewer should read. Keep the record-to-commit pairing at one to one, because the record is the only place a reviewer learns why the commit exists.
 
@@ -80,11 +87,11 @@ When two records merge, the survivor keeps the earlier number, so a citation fro
 
 Do not split a change when the split would make the tree assert a rule twice and a later commit remove one copy. That trades one inversion for another, one level up.
 
-Completion criterion: the proposal lists each target commit with its files, its record, its type, the collapse direction per inversion, and the text dropped from the superseded records.
+Completion criterion: the manifest is approved, the candidate's per-unit statistics match it, and the proposal lists the collapse direction per inversion with the text dropped from the superseded records.
 
 ## Stop for release
 
-Unless an operator grant already covers this rewrite, present the proposal, the inversion list, the rollback ref, and the hashes that will stop resolving, then wait.
+Present the manifest, then the candidate. Neither is a rewrite until the operator releases, unless a grant already covers this rewrite; quote the grant rather than paraphrasing it.
 
 The release covers the proposal as presented. Content that enters the series afterwards, including an artifact the operator asks for mid-run, needs a second release naming the commit it rides, or stays out of the series and lands as its own commit.
 
@@ -104,55 +111,70 @@ For each hit, diff consecutive versions of that path and confirm nothing the ear
 
 Completion criterion: every path the range writes more than once has been diffed against its consecutive versions, and each pair differs by nothing the earlier version carried.
 
-## Rebuild with the gate on every commit
+## Reorganize the series
 
-`git reset --soft <base>`, then `git restore --staged .`, then `git checkout <base> -- .` and `git clean -fd` so the working tree holds the base and nothing left over from the old range. Stage by path. `git add -A` stages an untracked file from the old range silently, and it lands in the first commit. Verify each commit with `git show --stat` before moving on.
+A unit stages the paths it owns. A record enters at the commit the manifest names, and nowhere else.
 
-Commit in order, each with the type its patch earns.
+Run the gate as the commit's own tree holds it, because today's gate is not the gate of its day. A range whose tooling tightened mid-branch fails at commits that were clean when written, and a rule that says "stop" there leaves no route but to commit past it silently.
 
-Run the gate as you produce each commit, with `--exec` on a rebase or as a worktree run after each commit. A commit that has never been built is not reviewable. Where the gate cannot run at an intermediate commit, stop: a series whose middle commit cannot be built cannot be bisected. The suite's grain is `## Prove each commit stands`.
+A commit that fails its own gate is not bisectable: the run stops and reports it. An ungated commit is a decision the operator takes before it is committed.
 
-Rewrite the records in the same pass: delete the superseded ones, write one per target commit, and make each record's quoted counts true at its own commit. A record that disagrees with its commit is worse than none, so fix it in the same rebuild rather than after it.
+Rewrite the records in the same pass, one per unit and staged by path, because a record that disagrees with its commit is worse than none. Delete the superseded ones, and make each record's quoted counts true at its own commit.
 
-Completion criterion: `git log --oneline <base>..HEAD` matches the proposal exactly, and every commit was gated when it was produced.
+Two attempts at a unit, then stop and report the residue.
+
+Completion criterion: every commit passes the gate in its own tree, the records are one per unit, and the series matches the approved manifest.
+
+## Run the audit
+
+`scripts/audit.sh <base> [tip]`, beside this file, runs eight checks and exits non-zero on a finding:
+
+| Check | Asserts |
+|---|---|
+| record added once | every record path is added by exactly one commit, with its final content |
+| citation resolves | every roadmap row the range writes cites a record that exists at that commit |
+| nothing born and buried | every path added in the range still exists at the tip |
+| tip content identity | non-record blobs at the tip equal the reference tip's |
+| commit gate | each commit passes the gate in its own tree |
+| no silent empty unit | each commit changes a non-record path, or the manifest declares it record-only |
+| manifest conformance | the resulting subjects and file sets match the approved manifest |
+| inversions | delegates to `scripts/inversions.mjs`; no second implementation |
+
+Run it on the candidate, before asking for release. A manifest file holds one row per unit: `sha<TAB>subject<TAB>comma-separated paths`. A check that has never failed is not a check, so run it once against a range built to violate each one.
 
 ## Prove the series, not only the endpoint
 
-Three checks run in this order, and the first two exclude the record paths, because the records are what the rewrite is allowed to change.
-
-1. **Content identity.** Every non-record blob at the new tip equals the blob at the old tip: `git ls-tree -r <old-tip>` against `git ls-tree -r HEAD`, with the record paths filtered out, differing by nothing except a named addition. Report the record delta separately, as files added and removed.
-2. **Net content identity.** `git diff <base> <tip> | git patch-id --stable` is unstable here, because the range now carries the record edits and any addition. Use the blob comparison in check 1 as the content check and report the net patch-id only as context, never as a pass condition.
-3. **Series identity.** `git range-diff <base>..<old> <base>..<new>` maps each old commit to its new one and shows a content section only where content moved between commits. A regroup moves content by construction; what must not appear is a non-record file whose content changed rather than moved.
+The audit's check 4 proves content identity and its check 8 reports the inversions. The series comparison is its own: `git range-diff <base>..<old> <base>..<new>` maps each old commit to its new one and shows a content section only where content moved between commits. A regroup moves content by construction; what must not appear is a non-record file whose content changed rather than moved.
 
 Do not use the sorted patch-id multiset as the content proof. It is invariant under a reorder and false under a collapse, and this runbook requires collapses. A check that cannot hold on the required work is not a check.
 
-Completion criterion: the blob comparison is empty apart from named additions, and the range-diff shows no non-record content change. A difference in either fails the rewrite, including a difference that looks like an improvement.
+Completion criterion: the audit is clean apart from named additions, and the range-diff shows no non-record content change. A difference in either fails the rewrite, including a difference that looks like an improvement.
 
 ## Prove each commit stands
 
-Run the tests the commit's files can break, with `git bisect run` or the equivalent per-commit loop in a worktree. A commit that changes only Markdown cannot break a shell test, and running the whole suite per commit spends minutes re-proving behaviour the commit did not touch. The test command named in the input contract takes a file or directory selector, so the commit's own files choose the run. Measure the gate and the suite once at the start and state both costs, rather than discovering the second one mid-run.
+Run the gate on every commit, in its own tree, as `## Reorganize the series` states.
 
-The gate is the cheap one, seconds per commit, and it is not optional. Re-derive every count a record quotes and compare it against that commit, not against the tip.
+Run the suite at the tip, once. A commit that changes only Markdown cannot break a shell test, and running the whole suite per commit spends minutes re-proving behaviour the commit did not touch; the tip is the tree a reviewer reads, and it is where the suite belongs.
 
 Capture the suite's own exit status. `out=$(cmd | tail)` records the status of `tail`, so redirect to a file and read `$?`, or use `PIPESTATUS`. A loop that reports success for a suite that failed is worse than no loop.
 
 A commit that fails once and passes on re-run at the same commit is a load-dependent failure, not a defect in the commit: re-run the failing file rather than the suite, which is the same evidence at a fraction of the cost, and record it. A failure that repeats is the commit's, and the series is not done.
 
-Run the full suite at the tip, once, whether or not the per-commit runs were targeted. The tip is the tree a reviewer reads, and a targeted run per commit does not cover behaviour that more than one commit contributes to.
-
-Completion criterion: every commit is green on the tests its files can break, the tip is green on the full suite, every quoted number is true at its commit, and any single-run failure is recorded with its re-run.
+Completion criterion: every commit passes the gate in its own tree, the tip is green on the full suite, and every quoted number is true at its commit.
 
 ## Report and retain
 
 Report these, in this order:
 
 - the old-to-new hash map, one row per commit;
+- the operation each unit took: fold, drop, reorder, split, or whole-range rebase, and why that scope;
 - the range-diff summary;
 - the content comparison, with the record delta reported separately;
 - what changed in the records;
-- any addition named after the release.
+- any addition named after the release;
+- the audit's output.
 
-Completion criterion: the report covers every commit and the backup ref is retained.
+Completion criterion: the report covers every commit and names every operation, and the backup ref is retained.
 
 ## Non-goals
 
