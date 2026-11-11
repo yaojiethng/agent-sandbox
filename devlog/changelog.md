@@ -279,3 +279,11 @@ The shared tier is `agent-runtimes`: pi installs frozen from a committed lockfil
 The package and draft prompts are one path: the bundle records its branch point, an explicit `BRANCH_FROM` overrides it, and both confirm-hint routes state it. Draft, confirm and reject write and read the source and fork point under `branch.<draft>.*`; every package and confirm transition names its guard, invariant, test and mutation row, and a gate holds the transition table to the chart.
 
 ---
+
+## M3.3.5 - The eval pipeline
+
+*A maintainer can run a behaviour eval as a repository case, with a calibrated control, a declared design and a graded result reproducible from the case file.*
+
+The eval harness now takes a case declaration for the fixture, measure, prompt and configurations, validates it before a run, and records a capped `--cells` batch with its stop state, per-cell assertions and analysis. The `/gm` case calibrated its control eight times, then measured the current-milestone rule in both cell orders; the rule aligned 6/8 and 7/8 against the control's 3/8 and 5/8 and landed. The procedure was then tested against its own archived results: a stored verdict was reproduced by a clean-context agent, the arithmetic re-derived the stored figures, and a null pair came back inconclusive. The instruction-cleanup case was retired with its old fixture, because it measured a prompt and carriers that no longer exist.
+
+---
