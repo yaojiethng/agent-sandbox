@@ -83,6 +83,7 @@ Umbrella for the multi-agent milestones: coordinated dispatch of multiple task b
 - [ ] Design multi-task coordination model -- how multiple task briefs are dispatched, sequenced, and tracked across agents
 - [ ] Update `execution_model.md` to reflect dispatch model before implementation begins
 - [ ] Implement dispatch mechanism in harness
+- [ ] **Whether greenfield documentation ever becomes dispatchable** -- it runs in the open context, where the operator is already describing the job, so a seat would need a brief for work a prompt already carries. The question waits on M3.3.5's case set, which is what would measure a dispatch. Filed at the M3.2.2 close from handover `20261028-20`; re-filed here from M3.3.5 on 2026-11-11.
 
 **Deferred capability home:** the `pi-subagents` orchestration capabilities not needed by the task-queue primitive (background and detached execution, retained resume and steering, acceptance gates, watchdog, mission schedules, TUI fleet, external-CLI runners, recursion guard) are evaluated here against a future delegation use case, not grafted onto the operator-bottleneck task-queue. They are scope without a task row; the rows that split them out land before the implementation.
 
@@ -177,6 +178,18 @@ Progressive enforcement maturity for the documentation and architecture governan
 **Objective:** give the eval a measurement layer that can estimate the alignment grade's reliability and an effect's size, not only observe an outcome on four binary rules and one blind reading.
 
 **Scope:** a richer automated score over the report and the transcript; a second independent grader with kappa for the alignment reading; and the analysis the score supports, including the run-to-run variance the A/A calibration establishes. A decision rule the automated reader evaluates gains a shape with this work; until then the rule stays the operator's prose, agreed per eval. It does not replace the calibration or A/B rows, which are current-infra work under M3.3.5. It also needs a read-cost measure in tokens: the tokens a read adds to the context against the read's effectiveness (a usable report, a located fact), not the read procedure. File opens, bytes and per-path counts are diagnostics only: a batched read that opens more files but spends fewer tokens and turns is the better read, and a census would rank it worse. The eval already records per-turn input and output tokens; what is missing is the normalisation to the outcome.
+
+### The doc-maintenance eval restart (deferred)
+
+**Status:** Deferred (not planned), re-filed from M3.3.5 on 2026-11-11. It is a second eval case, not the case that milestone's acceptance needs.
+
+- [ ] **The doc-maintenance eval restart, on a subject the skill decides** -- the first round is spent: its third rule was satisfied by no configuration, the must-lose control included, so it measured the model, and the model then changed under it. The restart measures whether the review finds a claim a shipped document gets wrong, with the case, the rules and the contrast that must lose in [`20261014-design-draft-doc_maintenance_eval_restart.md`](../devlog/discussions/20261014-design-draft-doc_maintenance_eval_restart.md). Ends when a case separates its configurations; the harness generalisation it needed has landed. The first restart attempt did not separate its configurations, so the next attempt needs a defect the default review misses.
+
+### A separating case for the current instruction-cleanup runbook (deferred)
+
+**Status:** Deferred (not planned), re-filed from M3.3.5 on 2026-11-11. The old instruction-cleanup case measured a 168-line prompt and six carriers that no longer exist; its fixture and the census records it held were retired with them. The current runbook returns a cleaned surface and a ruling log, so a case must be built against that contract.
+
+- [ ] **A separating case for the current instruction-cleanup runbook** -- build a case with a frozen carrier set and a must-lose contrast, graded against a ruling log rather than a fault list. The runbook's own doctrine says a fault list is a sample, so the expected output is the cleaned surface and the rulings, not an exhaustive fault enumeration. **Mechanism:** `code` plus `record`. **Depends on:** M3.3.5's close.
 
 ### Artifact Inventory and Reader Graph (indefinitely deferred)
 

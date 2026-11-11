@@ -175,6 +175,7 @@ Read these in addition to the above when opening a milestone planning iteration.
 |---|---|
 | [`docs/reference/system_overview.md`](docs/reference/system_overview.md) | Architecture layer boundary or stabilization rule checks |
 | [`.agents/skills/project-documentation/SKILL.md`](.agents/skills/project-documentation/SKILL.md) | Any documentation task |
+| [`.agents/skills/instruction-authoring/SKILL.md`](.agents/skills/instruction-authoring/SKILL.md) | Writing or revising a prompt or a skill, or placing one in a root |
 | [`.agents/skills/task-list/SKILL.md`](.agents/skills/task-list/SKILL.md) | Any roadmap update |
 | [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) | Any iteration start or end, new task, story, investigation, or milestone transition |
 | [`.agents/skills/work-log/SKILL.md`](.agents/skills/work-log/SKILL.md) | Any iteration start or end, creating or updating a handover or a record in `devlog/discussions/` |
