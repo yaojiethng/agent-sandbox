@@ -39,7 +39,9 @@ function opencodeWords(a: Assignment, o: LaunchOptions): string[] {
     a.key,
   ];
   if (a.level !== undefined) words.push('--variant', a.level);
-  if (o.session) words.push('--session', o.session);
+  // The CLI resumes an id here, and reads a transcript path as a malformed id.
+  // The eval seam passes a path, so only an id is forwarded.
+  if (o.session && !o.session.includes('/')) words.push('--session', o.session);
   return words;
 }
 
