@@ -1,0 +1,15 @@
+{
+  "id": "agentskills-evaluating-skills",
+  "title": "Evaluating skills",
+  "author": "the agentskills project",
+  "publisher": "agentskills.io",
+  "url": "https://agentskills.io/skill-creation/evaluating-skills",
+  "version": "living document at agentskills.io, read 2026-11-11",
+  "record": {
+    "source": "The guide's case shape and assertion rules for evaluating a skill against a task. Read for how a case is written rather than for how a run is judged.",
+    "kept": "A case is a task with an instruction under test, an expected output or a rubric, and assertions that are graded against the artifact. An assertion is stated so a grader can decide it from the artifact alone, and a case is reproducible from the repository it names.",
+    "rewritten": "The case is split in two here. The frozen case file holds the intent and the payload, and the generated declaration holds the harness data, so a harness format change never edits a frozen case. An assertion gains a role and a known-bad input, which the guide does not require and `--check` does, so an assertion that cannot fail its input is rejected before the run.",
+    "added": "The role split between a gate and a discriminator, the decision rule with its threshold, and the claim the case is meant to support. The guide evaluates a skill; the protocol here also has to say what evidence would change the verdict.",
+    "dropped": "The guide's scoring and aggregation advice, and its model-comparison framing, which belong to a benchmark of models rather than to an experiment on one instruction surface."
+  }
+}

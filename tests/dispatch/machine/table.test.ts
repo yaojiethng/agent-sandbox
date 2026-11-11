@@ -280,6 +280,19 @@ test('a session resumes a run on both runtimes', () => {
   );
 });
 
+test('a transcript path is not forwarded to OpenCode as a session id', () => {
+  const opencode = parseAssignment('_ADVISOR', 'opencode/x-free at high');
+  assert.equal(
+    commandFor(opencode, { brief: BRIEF, dir: '/work', session: '/tmp/eval/session.jsonl' }),
+    `${BIN} run --auto --print-logs --log-level ERROR --title brief.md --dir /work -m opencode/x-free --variant high "$(cat ${BRIEF})"`,
+  );
+  const pi = parseAssignment('_IMPL', 'deepseek/x at high');
+  assert.equal(
+    commandFor(pi, { brief: BRIEF, dir: '/work', session: '/tmp/eval/session.jsonl' }),
+    `pi --provider deepseek --model x --thinking high --session /tmp/eval/session.jsonl -p "$(cat ${BRIEF})"`,
+  );
+});
+
 test('a value with a space is shell-quoted, so the command re-reads as one word', () => {
   const a = parseAssignment('_ADVISOR', 'opencode/x-free at high');
   assert.equal(

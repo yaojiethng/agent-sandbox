@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "id": "anthropic-skills",
+  "url": "https://github.com/anthropics/skills",
+  "license": "Apache-2.0",
+  "copyright": "Copyright 2026 Anthropic, PBC",
+  "reason": "Read as a reference and not forked. The repository's `skill-creator` carries a behaviour-eval pipeline - eval cases in `evals/evals.json`, a with-skill and a baseline subagent run per case, assertion grading, an aggregate benchmark and an HTML reviewer - and it is the closest published cross-reference for this project's harness, which answers the same loop with a declared case, a pinned fixture and a blinded grade. It stays unforked because that pipeline is a procedure for a human reading a viewer: its stop is the user's satisfaction and its baseline is a directory named `with_skill`, neither of which an unattended run can hold. The rest of the library is read for skill anatomy, which the specification at `agentskills.io` already states in this project's citation form. The comparison is stated in `.agents/skills/evals/SKILL.md`.",
+  "artifacts": []
+}

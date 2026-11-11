@@ -1,0 +1,21 @@
+{
+  "subject": "the doc-maintenance review on a claim the implementation contradicts",
+  "subject_kind": "a shipped document claim, and the source that decides it",
+  "source": "commit 0e7cf8ca, which corrected docs/development/host_requirements.md from Homebrew hints to per-host install hints, against scripts/install.sh",
+  "configuration_variable": "the doc-maintenance skill, absent in none, present as landed in skill, and inverted to compare claims against other documents in inverted",
+  "cases": [
+    {
+      "id": "doc-maintenance-review",
+      "prompt": "I think some of the shipped docs have drifted from what the code does. Check the documents under docs/ against the implementation and write what you find to report.jsonl in the repository root.",
+      "expected_output": "A JSONL report that names docs/development/host_requirements.md and ## Enforcement, names scripts/install.sh and what it prints, and reports the Homebrew-hints claim as contradicted.",
+      "fixture": "the repository at HEAD, trimmed to one commit, with the ## Enforcement sentence reverted to the pre-correction wording. scripts/install.sh carries the deciding source.",
+      "assertions": [
+        "The report names the document and the section",
+        "The report names the deciding source and what it shows",
+        "The report does not report the claim as correct, and does not report an unsupported contradiction"
+      ],
+      "measurement": "the JSONL report at the project root, graded blind against R1, R2 and R3"
+    }
+  ],
+  "notes": "The fixture, the three package roots and the evidence live under $HOME/workspace/output/evals/doc-maintenance-review/, which persists between sessions and is never committed. The fixture bundle is a single commit, so the correction is not in the history the run can read."
+}

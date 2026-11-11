@@ -43,7 +43,7 @@ The hermes provider was removed on 2026-11-07 rather than kept dormant: it was u
 
 - [ ] Run the communication-domain taxonomy. Run brief: [`.agents/drafts/communication-domain-taxonomy-run.md`](../.agents/drafts/communication-domain-taxonomy-run.md).
 - [ ] **Populate the leading words across the corpus.** `metadata: leitwort:` is declared on the principle skills and most words are blank; its definition half is closed, the population pass remains. M3.3.4 ran a pass that produced one word per skill, the operator rejected the set, and it was reverted, so `proximity` and `leverage` stand, each naming its own skill's subject, and `sediment` stands on `cut-what-carries-nothing`, adopted 2026-10-28 with the body anchored to it. What a leading word is, and which word leads, is `communication-principle-maximize-conceptual-leverage`; where it goes is `instruction-authoring`'s signposting pattern. The judging pass belongs with this sub-milestone's controlled vocabulary, where the territory is settled before a part of it is named. A gate over the field is unfiled, because presence is all a gate can read and no gate sees a thinking trace. Evidence: [`AGENT_FEEDBACK.md`](AGENT_FEEDBACK.md) **A vocabulary was chosen for flavour and reverted**.
-  - [x] **The field's definition is stated** -- what the word is, that it sits at `metadata: leitwort:`, and that it is set only where the body already teaches it. Closed 2026-10-28: the definition is in `communication-principle-maximize-conceptual-leverage`, the placement owner names the field, and the feedback entry is mitigated. Filed out of order; W2 stays `Not started` until its dependencies land. Handover `20261028-06`.
+  - [x] **The field's definition is stated** -- what the word is, that it sits at `metadata: leitwort:`, and that it is set only where the body already teaches it. Closed 2026-10-28: the definition is in `communication-principle-maximize-conceptual-leverage`, the placement owner names the field, and the feedback entry is mitigated. Filed out of order; W2 stays `Not started` until its dependencies land.
 
 ---
 
@@ -69,10 +69,10 @@ Umbrella for the multi-agent milestones: coordinated dispatch of multiple task b
 **Objective:** Each agent gets its own branch from a shared baseline. Branches serve as both the agent's working surface and the snapshot of its work for review and merge.
 
 - [ ] Each agent gets its own branch from the same baseline
-- [ ] `apply_workspace.sh --branch=<n>` supports named branches per agent
+- [ ] The harness supports a named branch per agent; the mechanism is chosen when this milestone is planned, not named here
 - [ ] Validate branch contents before merge
 - [ ] Merge branch -> `main`
-- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling -- decision depends on M2.4 checkpoint branch pattern outcome
+- [ ] Evaluate whether to adopt existing checkpoint branch logic (`workflow/knowledge-vault/scripts/`) as the harness-level branch management mechanism, or design purpose-built tooling -- decided against the branch surface as it ships, not against a closed milestone's outcome
 
 ---
 
@@ -83,6 +83,7 @@ Umbrella for the multi-agent milestones: coordinated dispatch of multiple task b
 - [ ] Design multi-task coordination model -- how multiple task briefs are dispatched, sequenced, and tracked across agents
 - [ ] Update `execution_model.md` to reflect dispatch model before implementation begins
 - [ ] Implement dispatch mechanism in harness
+- [ ] **Whether greenfield documentation ever becomes dispatchable** -- it runs in the open context, where the operator is already describing the job, so a seat would need a brief for work a prompt already carries. The question waits on M3.3.5's case set, which is what would measure a dispatch. Filed at the M3.2.2 close from handover `20261028-20`; re-filed here from M3.3.5 on 2026-11-11.
 
 **Deferred capability home:** the `pi-subagents` orchestration capabilities not needed by the task-queue primitive (background and detached execution, retained resume and steering, acceptance gates, watchdog, mission schedules, TUI fleet, external-CLI runners, recursion guard) are evaluated here against a future delegation use case, not grafted onto the operator-bottleneck task-queue. They are scope without a task row; the rows that split them out land before the implementation.
 
@@ -114,7 +115,7 @@ Multiple well-specified work tasks run once, in the background, with the operato
 
 **Source:** the retired T1 `parallel-auto` row, relocated here under the M4 umbrella and renamed with the `-work` family (M3.2.3).
 
-- [ ] Build the background-work surface on `.agents/drafts/parallel-work.md`
+- [ ] Build the background-work surface, reconstructed from the dispatch prompts as M3.2.3 ships them
 
 ### M4.7 -- The `/auto` Smart Dispatcher
 
@@ -169,6 +170,26 @@ Progressive enforcement maturity for the documentation and architecture governan
 ---
 
 ## Deferred (Unplanned)
+
+### The eval's measurement infrastructure (deferred)
+
+**Status:** Deferred (not planned), raised 2026-11-09 by the `/gm` A/B write-back `20261109-10`. It waits until the A/B pipeline is running; the current eval milestone files it as the dependency, not the work.
+
+**Objective:** give the eval a measurement layer that can estimate the alignment grade's reliability and an effect's size, not only observe an outcome on four binary rules and one blind reading.
+
+**Scope:** a richer automated score over the report and the transcript; a second independent grader with kappa for the alignment reading; and the analysis the score supports, including the run-to-run variance the A/A calibration establishes. A decision rule the automated reader evaluates gains a shape with this work; until then the rule stays the operator's prose, agreed per eval. It does not replace the calibration or A/B rows, which are current-infra work under M3.3.5. It also needs a read-cost measure in tokens: the tokens a read adds to the context against the read's effectiveness (a usable report, a located fact), not the read procedure. File opens, bytes and per-path counts are diagnostics only: a batched read that opens more files but spends fewer tokens and turns is the better read, and a census would rank it worse. The eval already records per-turn input and output tokens; what is missing is the normalisation to the outcome.
+
+### The doc-maintenance eval restart (deferred)
+
+**Status:** Deferred (not planned), re-filed from M3.3.5 on 2026-11-11. It is a second eval case, not the case that milestone's acceptance needs.
+
+- [ ] **The doc-maintenance eval restart, on a subject the skill decides** -- the first round is spent: its third rule was satisfied by no configuration, the must-lose control included, so it measured the model, and the model then changed under it. The restart measures whether the review finds a claim a shipped document gets wrong, with the case, the rules and the contrast that must lose in [`20261014-design-draft-doc_maintenance_eval_restart.md`](../devlog/discussions/20261014-design-draft-doc_maintenance_eval_restart.md). Ends when a case separates its configurations; the harness generalisation it needed has landed. The first restart attempt did not separate its configurations, so the next attempt needs a defect the default review misses.
+
+### A separating case for the current instruction-cleanup runbook (deferred)
+
+**Status:** Deferred (not planned), re-filed from M3.3.5 on 2026-11-11. The old instruction-cleanup case measured a 168-line prompt and six carriers that no longer exist; its fixture and the census records it held were retired with them. The current runbook returns a cleaned surface and a ruling log, so a case must be built against that contract.
+
+- [ ] **A separating case for the current instruction-cleanup runbook** -- build a case with a frozen carrier set and a must-lose contrast, graded against a ruling log rather than a fault list. The runbook's own doctrine says a fault list is a sample, so the expected output is the cleaned surface and the rulings, not an exhaustive fault enumeration. **Mechanism:** `code` plus `record`. **Depends on:** M3.3.5's close.
 
 ### Artifact Inventory and Reader Graph (indefinitely deferred)
 

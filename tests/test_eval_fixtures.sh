@@ -20,8 +20,8 @@
 #   a root that is not there                --  rc 2
 #   this repository's own fixtures          --  rc 0, so the shipped set is held
 #
-# Fixtures are built under $FIXTURE_DIR and the scan is pointed at them with
-# EVAL_FIXTURE_ROOT, so this repository's own fixtures are never rewritten.
+# Fixtures are built under $FIXTURE_DIR and the scan is pointed at them with the
+# gate's root argument, so this repository's own fixtures are never rewritten.
 #
 # Run:   bash tests/test_eval_fixtures.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -55,7 +55,7 @@ write_fixture() {
 }
 
 run_gate() {
-  RUN_OUT="$(EVAL_FIXTURE_ROOT="$1" bash "$GATE" 2>&1)"
+  RUN_OUT="$(bash "$GATE" "$1" 2>&1)"
   RUN_RC=$?
 }
 
@@ -115,9 +115,20 @@ test_a_fixture_without_a_manifest_is_named() {
   assert_contains "$RUN_OUT" "case2" "the directory is named"
 }
 
+test_a_named_case_set_is_reported() {
+  local root out rc; root="$(new_root)"
+  write_fixture "$root"
+  mkdir -p "$root/declarations"
+  jq -n '{cases: [{id: "stub"}]}' >"$root/declarations/stub.json"
+  out="$(bash "$GATE" "$root" --case-set="$root/declarations" 2>&1)"
+  rc=$?
+  assert_rc 0 "$rc" "a named case-set directory is not reported as a manifestless fixture"
+  assert_contains "$out" "1 case file(s)" "the named case set is counted"
+}
+
 test_a_missing_root_is_refused() {
   local out rc
-  out="$(EVAL_FIXTURE_ROOT="$FIXTURE_DIR/nope" bash "$GATE" 2>&1)"
+  out="$(bash "$GATE" "$FIXTURE_DIR/nope" 2>&1)"
   rc=$?
   assert_rc 2 "$rc" "a root that is not there is a usage error"
   assert_contains "$out" "no such fixture root" "the reason is named"
@@ -137,6 +148,7 @@ run_test test_a_removed_frozen_file_is_named
 run_test test_an_unlisted_file_in_a_subdirectory_is_named
 run_test test_a_root_file_is_not_a_frozen_subject
 run_test test_a_fixture_without_a_manifest_is_named
+run_test test_a_named_case_set_is_reported
 run_test test_a_missing_root_is_refused
 run_test test_the_repository_fixtures_are_clean
 

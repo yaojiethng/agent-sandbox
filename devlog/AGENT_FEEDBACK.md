@@ -65,7 +65,7 @@ What the loop did buy is real and worth keeping: a link resolved against the she
 
 ```text
 state: probation
-scoped: src/reasoning/providers/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; docs/development/prompt-authoring-conventions.md `## The principle shape` and `## Compliance`; .agents/skills/project-documentation/SKILL.md `## Drafting`; .agents/skills/skill-fork/SKILL.md `## Which half`; .agents/skills/skill-fork/patterns/vendor-bump.md `## Register an edge`
+scoped: src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; .agents/skills/instruction-authoring/SKILL.md and docs/adr/principle_skill_shape.md; .agents/skills/project-documentation/SKILL.md `## Drafting`; .agents/skills/skill-fork/SKILL.md `## Which half`; .agents/skills/skill-fork/patterns/vendor-bump.md `## Register an edge`
 legacy: none
 mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
 
@@ -80,7 +80,7 @@ The second half of the fix is the one that does not depend on selection. Both pa
 
 This is the same class as the 2026-10-27 entry below, a rule held and not applied while drafting, with a different mechanism: there the sentence carried an argument the reader was not in, here the trigger could not be evaluated until the sentence was finished. What would settle it is a recurrence in the same form, a draft whose subject is the document or the session rather than the thing the document is about.
 
-Cross-references: `## The principle shape` in `docs/development/prompt-authoring-conventions.md`; handover `20261029-01`.
+Cross-references: `docs/adr/principle_skill_shape.md` and `.agents/skills/instruction-authoring/SKILL.md`; handover `20261029-01`.
 
 **Recurrence, 2026-11-03.** Writing a store edge, the agent proposed a schema field (`absent`) whose job the bump's three-way merge already does, and the principle now `principle-single-source-of-truth` (then `principle-delegation-over-machinery`, whose description named "a schema, a second record of someone else's guarantee") was in the loaded layer and did not fire. The trace from this session's tool-call log: 231 calls, and of the nine rules bearing on the decision, three were read; the two that settle it (`vendor-bump.md` steps 2 and 7, and the ADR's R3) were opened only after the operator objected. `fork-and-strip.md`, which registers an edge at steps 1 and 5, was never opened, because the artifact was already in the tree and no routing row named that task.
 
@@ -457,7 +457,7 @@ A second form recurred one turn after the first fix. The agent applied the rule 
 
 ```text
 state: open
-scoped: M3 T1 -- prompt authoring; `docs/development/prompt-authoring-conventions.md`; review prompts `advisor.md` and `thermo-nuclear-code-quality-review`
+scoped: M3 T1 -- prompt authoring; `.agents/skills/instruction-authoring/SKILL.md`; review prompts `src/reasoning/agent/prompts/advisor.md` and `workflow/coding-agent/skills/code-review/runbooks/thermo-nuclear-code-quality-review/SKILL.md`
 legacy: the review-loop-entry guidance on re-runs ("re-run sparingly", AGENT_FEEDBACK `[A]` 2026-09-28 advisor re-run value) covers when a re-run earns its cost, not whether convergence is optional.
 mitigation: a review prompt must not hard-mandate "work to consensus". The convergence loop is one mode; a single-pass review is a legitimate invocation and must be allowed. Advisor-style prompts should be invokable as a single consultation without being forced to converge. Thermo-nuclear-style review prompts should be invokable with or without the convergence constraint. Every review prompt should echo a subagent invocation budget -- the prompt states how many subagent runs the loop may use, so the cost is bounded and visible before dispatch. Put the budget in the brief and the invocation. Raised 2026-09-29 when the operator observed advisor "work to consensus" is a hard constraint and thermo-nuclear carries no budget; record in handover `20260929-11`.
 ```
@@ -623,10 +623,10 @@ Scope: brief construction for every dispatched subagent, not only the parallel c
 state: open
 scoped: none
 legacy: none
-mitigation: M3.1.2 is planned with its task list and a `Not started` status, and `roadmap_policy.md` gains the invariant the practice relies on -- a milestone holding open rows is never `Complete`
+mitigation: M3.1.2 is planned with its task list and a `Not started` status, and the `task-list` convention states the invariant the practice relies on -- a milestone holding open rows is never `Complete`
 ```
 
-`roadmap_policy.md` `### Record shape` states: "Non-active sub-milestones -- carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active." The roadmap has not followed that for months. M3.2.2 carries four rows and reads `Not started` until this session made it `In progress`; M3.2.3 carries nine; the T tracks carry their work as rows; and this session creates M3.1.2 with two tasks and two moved rows against the same line. The alternative the policy names -- a milestone whose work lives in prose and no task list -- is the shape that produced the eighteen deferred items dropped from the handover chain, which were filed nowhere and surfaced only when a survey looked for them.
+The retired roadmap policy `### Record shape` stated: "Non-active sub-milestones -- carry an objective and scope paragraph only. No task checklist until the sub-milestone becomes active." The roadmap has not followed that for months. M3.2.2 carries four rows and reads `Not started` until this session made it `In progress`; M3.2.3 carries nine; the T tracks carry their work as rows; and this session creates M3.1.2 with two tasks and two moved rows against the same line. The alternative the policy names -- a milestone whose work lives in prose and no task list -- is the shape that produced the eighteen deferred items dropped from the handover chain, which were filed nowhere and surfaced only when a survey looked for them. The `task-list` convention now carries the rule and permits task rows on a non-active sub-milestone.
 
 The line protects something real: a reader scanning for unchecked work at the top level should find the active milestone, and a milestone reading `Complete` while holding open rows is a status that lies. But the line as written forbids the one thing that keeps work reachable, and the practice it forbids is what the roadmap depends on. The fix is not to restore the line; it is to replace it with the invariant the practice actually relies on, which is that a milestone holding open rows is never `Complete`, and that a milestone's rows move with it.
 
@@ -638,7 +638,7 @@ Raised by the operator during plan session `20261002-23`.
 state: mitigated
 scoped: T1 - Workflow + Policy Organization
 legacy: none
-mitigation: `prompt-authoring-conventions.md` carries `## A workflow document owns one step, and owns it whole`; the apply flow is recorded in `diff_packaging.md` and each step prints its own next hop.
+mitigation: `.agents/skills/instruction-authoring/references/body.md` and `patterns/handoff.md` carry the workflow-document shape; the apply flow is recorded in `diff_packaging.md` and each step prints its own next hop.
 ```
 
 `/package-branch` carried a `How to apply` section naming `make draft`, `make confirm`, `make reject`, and the soft-reset sequence. Every one of those is printed by a host script, and the section had drifted: it described only the fast-forward route, while a rebased bundle needs `make confirm TARGET_BRANCH=<new-branch> NEW=1`. The drift was silent, because nothing compared the prompt's copy against the scripts'.
