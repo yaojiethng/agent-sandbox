@@ -1,0 +1,10 @@
+{
+  "caseRoot": "tests/eval",
+  "caseSetDir": "cases",
+  "outputRoot": "$HOME/workspace/output/evals",
+  "gradeDir": "grade",
+  "gradeRawDir": "grade-raw",
+  "gradeMapFile": "grade-map.json",
+  "cellPrefix": "cell-",
+  "casePrefix": "case-"
+}
