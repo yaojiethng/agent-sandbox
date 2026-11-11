@@ -72,7 +72,7 @@ A record defect is not work: report it below the table rather than as a row.
 
 ## Output rules
 
-The three closing suggestions draw only from work items. A record defect is never one of them.
+When no intent was provided, the three closing suggestions draw only from work items. A record defect is never one of them.
 
 ## State summary
 
@@ -80,12 +80,12 @@ Two or three lines before the inventory: the active milestone, the time gap sinc
 
 ## Close
 
-If an intent was provided, filter the inventory by it, recommend one starting task, and say why it fits. If the argument already fixes a specific task, say the direction is set and the next step is opening the iteration.
+If an intent was provided, filter the inventory by it, recommend one starting task from the open rows, and say why it fits. Do not also present the three intents. If the argument already fixes a specific task, say the direction is set and the next step is opening the iteration.
 
 If no intent was provided, do not assume one. Suggest work along the intents actually present in the inventory:
 
 - easiest start -- smallest Size, offline Verification; re-entry after a break.
-- highest leverage -- Progress `gates other planned tasks`: the least complex task that unblocks the most downstream work. When a large task needs prefactors, suggest the prefactor, not the large task: tasks land in sequence, and the prefactor comes first.
+- highest leverage -- Progress `gates other planned tasks`: the least complex task that unblocks the most downstream work. When a large task needs prefactors, suggest the prefactor, not the large task.
 - most urgent -- Impact `blocking`, or `degrading` where the cost grows with delay.
 
 A record defect is never one of the three. Present a record contradiction apart from the table, naming what the record asserts, what the tree shows, and what has to be chosen.
