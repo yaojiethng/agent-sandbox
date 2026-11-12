@@ -8,7 +8,7 @@ M3.3.3 closed, and the next milestones are scoped well enough to run in parallel
 
 1. `active-milestone` is one scalar, so one milestone is allowed to move.
 2. A handover's `NN` is a per-day global counter (`max + 1`), so two tracks on one day collide at merge.
-3. The shared part of the roadmap -- frontmatter, summary table, changelog -- assumes one writer.
+3. The shared part of the roadmap -- frontmatter, summary table, changelog -- assumed one writer.
 
 The record already disagrees with itself: the summary table lists several milestones `In progress` while the scalar names one. M3.5 names this as its premise.
 
@@ -19,9 +19,11 @@ This stopgap is pulled forward from T5 into M3.5.1, the work-log layer of M3.5. 
 1. **A folder is a milestone.** `devlog/handovers/<milestone>/` holds that milestone's records. Every record in a folder belongs to it. There is no separate track ledger for identity.
 2. **The `NN` is an identity, not a position.** It stays globally unique because 1,142 bare references resolve by it (`scripts/lint/numbering.mjs` matches a basename and requires exactly one). It comes from a block reserved per track at opening, not from `max + 1` over the day.
 3. **Order is git.** Delete "the record with the highest date and index is the latest." The latest is the tip on the track, or a git query. The merge replay is where parallel lines become one; that replay is the order.
-4. **The shared roadmap part has one writer.** That writer is a role -- whoever is merging -- not a folder. If the merge work needs a record, it is an ordinary handover in the milestone being merged.
+4. **The shared roadmap part is a convergence point.** Each branch writes its own row and handover and resolves their conflicts when it prepares onto the head; the trunk only accepts. The single accept is serial, not a single record writer.
 5. **`archive/` is frozen.** It is not a track. Nothing enters, no open roadmap row names a file there, and orientation never reads it. T5 deletes the exception later.
 6. **The unit rule stays.** One iteration, one commit, one handover. It is reviewability and bisectability, not order. It is what makes a merged history legible.
+
+**Correction (2026-11-06):** an earlier version of item 4 named a merge role. The branch writes its own row and handover and resolves their conflicts at prepare; the trunk only accepts. See [`work_log_record_seam.md`](../../docs/adr/work_log_record_seam.md) and [`branching.md`](../../.agents/skills/git-discipline/references/branching.md).
 
 ### The smell family
 

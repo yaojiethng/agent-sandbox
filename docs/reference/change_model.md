@@ -20,7 +20,7 @@ The change model answers one question: can this branch be accepted by the trunk 
 
 The transitions are three: `not-ready -> ready` on prepare, `ready -> accepted` on accept, and `ready -> not-ready` when the head advances. `accepted` and `not-ready` are stable under a head advance.
 
-Mergeability is derived, not stored. `ready` is `git merge-base --is-ancestor <head> <tip>`, `accepted` is the inverse, and `not-ready` is neither. The chart is a diagnostic over the repository, not a variable the system writes.
+Mergeability is derived, not stored. `ready` is `git merge-base --is-ancestor <head> <tip>`, `accepted` is the inverse, and `not-ready` is neither. The chart is a rendered view of the model in the appendix; it is not a variable the system writes.
 
 <!-- snippet: illustrative -->
 ```mermaid
@@ -60,17 +60,7 @@ The queue is optional. A ready branch can go straight to accept, or through the 
 
 ## The accept operation
 
-Accept is a guarded atomic transition, not a state.
-
-- **Guard:** the branch is `ready` and it is at the head of the queue.
-- **Stage:** verify it at the head in a scratch worktree: the suite and the lint gate.
-- **Commit:** `update-ref refs/heads/<trunk> <tip> <head>` -- a compare-and-swap against the head that was checked.
-- **Success:** the head becomes the tip.
-- **Failure:** nothing is written; the head is unchanged.
-
-`ready` makes the fast-forward total: a pointer move cannot fail for a semantic reason, because the branch resolved every conflict during prepare. The only remaining failures are environmental -- the head moved between the check and the CAS, a lock, an I/O error -- and the CAS catches exactly that.
-
-This is the `make draft` / `make confirm` shape. Draft stages and verifies; confirm is the CAS. Verify before the CAS and there is nothing to roll back. Move first and verify after, and the rollback is the inverse CAS, which is why the old head is captured in the transaction.
+Accept is a guarded atomic transition, not a state. The guard is that the branch is `ready` and at the head of the queue. The trunk advances by `update-ref refs/heads/<trunk> <tip> <head>`, a compare-and-swap against the head the staged tree was verified at. If the CAS loses, nothing is written and the head is unchanged. `ready` makes the fast-forward total: the branch resolved every conflict during prepare, so the only failures left are environmental. The staging and verification steps are `accept-fast-forward`'s; this section states the contract.
 
 ## The branch work is separate
 
@@ -78,13 +68,7 @@ The branch has its own lifecycle: it is cut, worked, blocked or parked, and it i
 
 ## The early change
 
-A change is made available early when another branch needs it before the milestone's branch is complete. The change is a delivery commit like any other, cut onto its own branch.
-
-1. **Prepare.** The worker rebases the change onto the head, resolves every conflict, and makes it fast-forwardable. The change is its own delivery commit on its own branch: the branch tip is the change's commit, with its own closed handover. The remainder is a child branch.
-2. **Queue (optional).** `/merge-queue` orders it; the operator can hand the ready branch straight to accept. The grain is which delivery commit is queued now: a slice cut onto its own branch, or the whole milestone's branch.
-3. **Accept.** `/accept-fast-forward` CASes the head forward.
-4. **Re-evaluate.** Every queued branch is re-checked. A branch no longer based on the head is `not-ready` and re-prepares.
-5. **Continue.** The remainder is a child branch. It re-prepares onto the new head when the parent's prepare rewrote the shared base; when the parent was accepted without a rewrite, its tip already descends and it needs none.
+A change is made available early when another branch needs it before the milestone's branch is complete. The change is its own delivery commit on its own branch, with its own closed handover; the remainder is a child branch. The operator chooses the grain -- a slice cut onto its own branch, or the whole milestone's branch -- and the queue orders it. The steps are `prepare-rebase`, `merge-queue` and `accept-fast-forward`. When the head moves, every queued branch is re-checked: a branch no longer based on the head is `not-ready` and re-prepares.
 
 A stack is a contiguous run. When the parent was accepted without a rewrite, the child's tip already descends from the new head, so its accept is a fast-forward and needs no re-prepare. When the parent's prepare rewrote the base, the child re-prepares.
 
@@ -94,7 +78,7 @@ The defect flow is the change flow applied to a fix that more than one branch ne
 
 ## The check
 
-TLC reaches 11 states and 22 steps under `head <= 3`. The chart draws 3 states and 3 arrows. `TypeOK` and `NoDeadlock` hold. There is no forbidden path to mark, because the guard is the machine: an accept from `not-ready` is not a transition.
+TLC reaches 11 states and 22 steps under `head <= 3`. The chart draws 3 states and 3 arrows. `TypeOK` and `NoDeadlock` hold.
 
 The model is the appendix. It was checked with the `statechart` skill's TLC runner; the chart above is its rendered view.
 

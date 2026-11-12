@@ -13,7 +13,7 @@ Prove, with one rerunnable test, that two sessions can advance two sub-milestone
 
 ## Scope
 
-The concurrency-proof row of M3.5.3. The proof exercises the confirmed record protocol: each session writes only its own track's handover, and the shared roadmap is written once by the merge role. It does not change the `active-milestone` scalar; that is the parallel-milestone rule's, the next row.
+The concurrency-proof row of M3.5.3. The proof exercises the confirmed record protocol: each session writes its own track's handover and its own roadmap row, and resolves the shared-file conflict when it prepares onto the head. It does not change the `active-milestone` scalar; that is the parallel-milestone rule's, the next row.
 
 Out of scope, with reasons: the parallel-milestone rule, which changes the scalar to a set; the task-list mechanism (M3.5.2), which the proof does not need; any change to `worklog.sh` or the record layout.
 
@@ -23,7 +23,7 @@ Out of scope, with reasons: the parallel-milestone rule, which changes the scala
 |---|---|---|
 | `tests/test_parallel_records.sh` runs two concurrent writer sessions for a fixed round count and completes every round | `bash tests/test_parallel_records.sh` prints `rounds=3` and exits 0 | Agent [x] |
 | Every round's write from both sessions survives the merge: no lost update | the test's marker assertions over the merged fixture | Agent [x] |
-| The two session branches merge with no conflict and both sub-milestone updates reach the roadmap: no record conflict | the test's merge exit codes and roadmap assertions | Agent [x] |
+| The two session branches prepare onto the head and both sub-milestone updates reach the roadmap: no lost record | the test's prepare and fast-forward exit codes, and the roadmap assertions | Agent [x] |
 | The negative control shows two writers on one roadmap row conflict, so the proof can fail | the test's second case asserts a non-zero merge | Agent [x] |
 | The suite discovers and runs the new test with 0 failed | `bash scripts/run_tests.sh` | Agent [x] |
 | The concurrency-proof row closes with its landing note | `grep -n "concurrency proof" devlog/roadmap.md` | Agent [x] |
@@ -35,8 +35,10 @@ Out of scope, with reasons: the parallel-milestone rule, which changes the scala
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | The proof runs real concurrent writers for three rounds against a fixture git repository | the run directive requires real writers, not a simulation, and a fixed round count | this record and the test |
-| Each session writes only its own track's handover; the merge role writes the shared roadmap | the confirmed single-writer invariant for the shared part, and the reproduced record conflict | `20261105-design-concluded-handover_tracks.md` and this record |
+| Each session writes its own track's handover and its own roadmap row; the branch resolves the shared-file conflict at prepare | the confirmed branch-writes-its-own-records protocol, and the reproduced record conflict | `20261105-design-concluded-handover_tracks.md` and this record |
 | A negative control asserts two writers on one roadmap row do conflict | the proof must be able to fail | the test |
+
+**Correction (2026-11-12):** this record and its test were corrected to the branch-writes-its-own-records protocol. The merge-role wording was superseded on 2026-11-06.
 
 ## Decisions pending
 

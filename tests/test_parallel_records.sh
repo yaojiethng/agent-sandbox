@@ -4,18 +4,19 @@
 # The concurrency proof: two sessions advance two sub-milestones at once for a
 # fixed round count, with no lost update and no record conflict.
 #
-# The protocol under test is the one the work-log seam confirmed: each session
-# writes only its own track's handover, and the shared roadmap has one writer,
-# the merge role. Two real writer processes run three rounds each in two
-# linked worktrees; the ids come from the track's reserved block through
-# scripts/worklog.sh. The negative control proves the assertion can fail: two
-# writers on one roadmap row do conflict on merge.
+# The protocol under test is the one the change model confirms: each session
+# writes its own track's handover and its own roadmap row, and the branch
+# resolves the shared-file conflict when it prepares onto the head. Two real
+# writer processes run three rounds each in two linked worktrees; the ids come
+# from the track's reserved block through scripts/worklog.sh. The negative
+# control proves the assertion can fail: two writers on one roadmap row do
+# conflict on merge.
 #
 # Covers:
 #   concurrent writers    -- two sessions, two tracks, three rounds each
 #   no lost update        -- every round marker survives the merge
-#   no record conflict    -- both branches merge cleanly; one writer applies
-#                            both roadmap deltas
+#   no record conflict    -- both branches write their own row and merge
+#                            cleanly
 #   the negative control  -- two writers on one roadmap row conflict
 #
 # Run:   bash tests/test_parallel_records.sh
@@ -93,8 +94,8 @@ session_write() {
     id="$("$TOOL" reserve-id --root "$wt" --track "$track" --date "$DATE")" || return 1
     path="$wt/devlog/handovers/$track/$id-impl-round$i.md"
     write_handover "$path" "$track" "$prefix-round-$i"
-    printf -- '- [x] **%s row** -- %s rounds landed.\n' "$row" "$rounds" \
-      > "$wt/devlog/handovers/$track/roadmap-delta.txt"
+    sed -i "s|^- \[ \] \*\*$row row\*\*.*|- [x] **$row row** -- $rounds rounds landed.|" \
+      "$wt/devlog/roadmap.md"
     git -C "$wt" add -A || return 1
     git -C "$wt" commit -q -m "$prefix round $i" || return 1
   done
@@ -102,7 +103,7 @@ session_write() {
 
 test_two_sessions_advance_two_submilestones() {
   local root wt_a wt_b pid_a pid_b rc_a rc_b
-  local merge_a merge_b count_a count_b dups i
+  local merge_a merge_b prep count_a count_b dups i
   root="$FIXTURE_DIR/repo"
   make_repo "$root"
   wt_a="$FIXTURE_DIR/session-a"
@@ -118,10 +119,22 @@ test_two_sessions_advance_two_submilestones() {
   assert_eq "$rc_a" "0" "session A completed every round"
   assert_eq "$rc_b" "0" "session B completed every round"
 
-  git -C "$root" merge -q --no-ff session-a -m "merge session-a"; merge_a=$?
-  git -C "$root" merge -q --no-ff session-b -m "merge session-b"; merge_b=$?
-  assert_eq "$merge_a" "0" "the session-a branch merges with no conflict"
-  assert_eq "$merge_b" "0" "the session-b branch merges with no conflict"
+  # Session A lands first.
+  git -C "$root" merge -q --ff-only session-a; merge_a=$?
+  assert_eq "$merge_a" "0" "session-a fast-forwards the trunk"
+
+  # Session B prepares onto the new head and resolves the shared row.
+  git -C "$wt_b" merge -q session-a -m "prepare onto session-a" >/dev/null 2>&1; prep=$?
+  if [[ "$prep" -ne 0 ]]; then
+    printf '# Fixture Roadmap\n\n- [x] **M9.1 row** -- A rounds landed.\n- [x] **M9.2 row** -- B rounds landed.\n' \
+      > "$wt_b/devlog/roadmap.md"
+    git -C "$wt_b" add devlog/roadmap.md
+    git -C "$wt_b" commit -q --no-edit
+  fi
+
+  # The prepared branch is now a fast-forward from the trunk.
+  git -C "$root" merge -q --ff-only session-b; merge_b=$?
+  assert_eq "$merge_b" "0" "session-b fast-forwards after prepare"
 
   count_a="$(find "$root/devlog/handovers/M9.1" -name "*-round*.md" | wc -l | tr -d ' ')"
   count_b="$(find "$root/devlog/handovers/M9.2" -name "*-round*.md" | wc -l | tr -d ' ')"
@@ -135,15 +148,6 @@ test_two_sessions_advance_two_submilestones() {
     assert_eq "$(grep -Rl "A-round-$i" "$root/devlog/handovers" | wc -l | tr -d ' ')" "1" "round $i of session A survived"
     assert_eq "$(grep -Rl "B-round-$i" "$root/devlog/handovers" | wc -l | tr -d ' ')" "1" "round $i of session B survived"
   done
-
-  # The merge role is the shared roadmap's one writer.
-  local delta_a delta_b
-  delta_a="$(cat "$root/devlog/handovers/M9.1/roadmap-delta.txt")"
-  delta_b="$(cat "$root/devlog/handovers/M9.2/roadmap-delta.txt")"
-  sed -i "s|^- \[ \] \*\*M9.1 row\*\*.*|$delta_a|" "$root/devlog/roadmap.md"
-  sed -i "s|^- \[ \] \*\*M9.2 row\*\*.*|$delta_b|" "$root/devlog/roadmap.md"
-  git -C "$root" add -A
-  git -C "$root" commit -q -m "record both sub-milestones"
 
   assert_contains "$(cat "$root/devlog/roadmap.md")" "- [x] **M9.1 row**" "session A's sub-milestone advanced"
   assert_contains "$(cat "$root/devlog/roadmap.md")" "- [x] **M9.2 row**" "session B's sub-milestone advanced"

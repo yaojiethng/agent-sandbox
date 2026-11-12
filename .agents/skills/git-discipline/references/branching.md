@@ -42,7 +42,7 @@ The track's lifetime is the node's lifetime. It carries the type prefix of the w
 
 ## The trunk is a role
 
-At every node the parent branch is the trunk for its children. The trunk accepts or refuses; it never authors and never resolves a conflict. The child owns its rebase and its own merge-back.
+At every node the parent branch is the trunk for its children. The trunk accepts or refuses; it never authors and never resolves a conflict. The child owns its rebase and its own merge-back. The merge-back includes the branch's records: it writes its own handover and roadmap row, and resolves their conflicts at prepare. The trunk never writes them.
 
 `main` carries the host branch-protection rules in `docs/development/standard_operating_procedures.md#5-human--operational-protocols`. Every track carries the accept rule: it only fast-forwards.
 
