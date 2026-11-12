@@ -1,6 +1,6 @@
 # Change model
 
-**Current:** 2026-11-06
+**Current:** 2026-11-12
 
 ## Requirements
 
@@ -11,6 +11,8 @@
 | R3 | The trunk never authors | Prepare resolves every conflict; accept only fast-forwards. |
 | R4 | One model | The states, primitives and graph are stated once; the branch's own work is a separate machine. |
 | R5 | The defect flow is a branch | A shared change is prepared, queued and accepted; a consumer is `not-ready` until it is. |
+| R6 | The host lane is the operator's | The host lane includes the operator's raw git operations, not only the verbs; a competent operation re-derives the state. |
+| R7 | A mistake has a stated remediation | A broken draft is discarded by `make reject` and rebuilt by `make draft`; the bundle and the branch are unchanged. |
 
 ## 2026-11-06 -- The change flow is prepare, queue and accept
 
@@ -30,3 +32,19 @@
 - *Let a slice queue as a sub-range of a longer branch.* **Intent failure**: the accept fast-forwards to the branch tip, so a sub-range lands the remainder too. A slice is cut onto its own branch and is its own delivery commit.
 
 **Edge cases / drivers:** A branch whose trunk moved is `not-ready` and re-prepares; the queue never holds it. The accept's guard is the queue head, so a `ready` branch that is not at the head waits. An early change is its own delivery commit on its own branch, with its own closed handover; the remainder is a child. A stack is a contiguous run: when the parent is accepted without a rewrite, the child's tip already descends from the new head and needs no re-prepare; when the parent's prepare rewrote the shared base, the child re-prepares. The model leaves out the branch-work machine, the commit graph, the queue's order, the operator's grain reason, and the set of simultaneous branches.
+
+## 2026-11-12 -- The host lane is the operator's, and a mistake is rejected and redrafted
+
+**Decision:** The change model is two lanes. The agent lane prepares, cleans the series and exports; the host lane drafts, reviews, confirms or rejects, or applies. The lanes meet at the bundle and the draft worktree. The host lane's actor is the operator, and it includes the operator's raw git operations, not only the verbs. A mistaken operation is remediated by `make reject` then a new `make draft`: the bundle and the branch are unchanged, and only the draft is replaced. The host surface stays the four verbs; a repair verb is not added. Delivery is a parameter of the agent lane's entry: copy and mount change the workspace and the visibility assertions, not the handoff. The states, the transitions, the chart and the TLA+ model are [the reference](../reference/change_model.md)'s.
+
+**Rationale:** The 2026-11-06 model presented the host as a passive acceptor and the primitives as prompts. It hid the manual review and the operator's git, so a raw `git reset` or a broken draft had no stated place in the model. The operator does run git; a model that denies it is false. The reject-and-draft remediation already exists and composes the two host verbs, so it is cheaper than a new repair verb and leaves the bundle and the branch as the evidence. Delivery was modelled as a separate mechanism; the diff pipeline is indifferent to it, so delivery belongs at the agent lane's entry, not in the handoff.
+
+**Rejected alternatives:**
+
+- *Make the host lane verb-only.* **Intent failure**: the operator may run raw git; the model would be false and a mistake would have no stated path.
+- *Treat a host mistake as recovery.* **Intent failure**: recovery repairs the unit's claim; a broken draft is the host flow's object, and reject and draft restore it without touching the claim.
+- *Add a repair verb.* **Intent failure**: the existing reject and draft already compose; a new verb is a second surface to learn.
+- *Model delivery as a second pipeline.* **Intent failure**: the diff pipeline is delivery-indifferent; copy and mount change the agent lane's entry, not the handoff.
+- *Keep the change flow in prompts.* **Intent failure**: a prompt that mirrors a host verb is a second surface; the host verbs are the user surface and the agent operations are primitives.
+
+**Edge cases / drivers:** A competent raw git operation re-derives the mergeability; a branch left `not-ready` re-prepares. A mistaken operation leaves the draft inconsistent; `make reject` restores the source and deletes the draft, and `make draft` rebuilds it from the unchanged bundle. A raw git operation on the trunk is a head advance: every ready branch re-checks. The model leaves out the draft's internal states, which are [`draft_branch_statechart.md`](../reference/draft_branch_statechart.md)'s, the branch-work machine, and the queue's order.
