@@ -32,9 +32,9 @@ The fix belongs where the range is named: one sentence in the runbook or its she
 ## [A] 2026-11-01  --  A report was built before checking that the loader already prints one
 
 ```text
-state: open
-scoped: M3.3.3 - The skill maintenance pipeline; any task whose premise is that a surface nobody reads already holds the fact
-legacy: none
+state: probation
+scoped: the delegation judgement; any task whose premise is that a surface nobody reads already holds the fact
+legacy: `principle-delegation-over-machinery` states the rule; the M3.3.3 task closed with no code
 mitigation: before building a report over another party's data, run that party's own surface and read what it prints; a handoff's claim that a diagnostic is unread is a claim to check, not a premise to build on
 ```
 
@@ -203,23 +203,6 @@ Two testable claims sat in one sentence. "The worker deviated" is answered by a 
 
 Raised by the agent during handover `20261016-03`.
 
-## [A] 2026-10-15  --  The decomposition of a task into work units has no owner for a manual run
-
-```text
-state: open
-scoped: M3.3.1 - The prompt, skill and AGENTS.md interaction contract
-legacy: the manual half of [O] 2026-09-25 "An autonomous scope proposal must assign the work to units and commits"; that entry keeps the autonomous half, which this entry does not resolve.
-mitigation: `/scope` emits the work-unit table that `iteration_policy.md` `### Unit and scope invariants` defines -- the unit, its commit type, the owned files, its handover -- and files no roadmap row; the session close files it per the project's `task-list` convention. `/plan` gives up its "scoped unit at its stated grain" and hands the decomposition to `/scope`, and the four-move workflow handoff pattern gets one named home so `/scope` can hand off the way `/iter` does.
-```
-
-The decomposition has four writers and no owner. `/plan` writes what it calls "the scoped unit at its stated grain". `/iter` invents the granularity of its own single row. `/wrapup` files deferred items as it finds them. `/scope`, drawn before a run, wrote rows for a brief that had not run. All four point at the project's `task-list` convention `**Task granularity**`, which asks for the file and the nature of change, and nothing reads the result.
-
-Measured 2026-10-15 over 151 open rows in `roadmap.md` and `roadmap_future.md`: 87, or 58%, name no file at all, and 17, or 11%, exceed 900 characters against a median of 284 and a maximum of 1645.
-
-The same measurement found no duplicate task rows, zero exact duplicate titles and zero duplicates on the first 45 characters, so the list does not repeat itself. The repetition the operator sees is across `roadmap.md`, `roadmap_future.md` and `changelog.md`, which the churn study measured as six duplicated subjects. That is a property of the three-file record shape rather than of the filing owner, and it belongs to the task-list mechanism milestone.
-
-One owner plus one check. The owner is `/scope`. The check is the record-shape gate that milestone stages, which fails a row carrying neither a file nor a nature of change.
-
 ## [A] 2026-10-14  --  A parallel suite run flaked one unit, and no cause was found
 
 ```text
@@ -334,8 +317,8 @@ mitigation: validate evidence before trusting a conclusion, four sub-cases. (1) 
 
 ```text
 state: open
-scoped: M3.2.1 -- advisor-usage criteria
-legacy: none
+scoped: M3.6.2 - Measure
+legacy: M3.2.1 closed without an advisor-usage rule; the re-run cost is M3.6.2's
 mitigation: a second advisor run that only re-confirms a single mechanical correction adds little over the first run's defect list. In U4 the first run (deepseek-v4-flash) found one real defect (commit-type guidance); the second run merely re-verified the fix and returned a clean bill. The high-value re-run is when a fix touched multiple coupled files or changed the design -- then a fresh reviewer on the changed state earns its cost. Re-run sparingly: prefer one thorough advisor pass, fix, and only re-run when the change was structural or cross-file. Do not re-run to confirm a one-line correction against an authoritative table.
 ```
 
@@ -410,8 +393,8 @@ Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `work
 
 ```text
 state: open
-scoped: M3.3.3 -- the authoring surface
-legacy: none
+scoped: M3.3.6 - The instruction corpus and its map; the authoring surface
+legacy: the M3.3.3 close left the splice class unfiled
 mitigation: anchor a splice on the heading line (`\n### Name\n`), assert it occurs once, and read the surrounding lines back after writing. A bare `indexOf(message)` finds the first mention, and a document that names its own headings in prose has one before the heading itself.
 ```
 
