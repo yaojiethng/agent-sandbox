@@ -25,7 +25,7 @@
 - *Fold hermes into the shared tier* -- intent: it removes the fourth tier without deleting the provider. Execution: the 2026-10-17 objection stands, and it now buys nothing, because the provider is going.
 - *Delete the `<provider>-base` branch with the provider* -- intent: no shipped provider reaches it, so it reads as dead code. Execution: the W re-integration row needs it, so deleting it would have to be undone; the branch keeps its test on a fixture provider instead of a shipped one.
 
-**Edge cases / drivers:** The provider directory is deleted whole. The three image rows that listed `hermes` among their `providers` now list two, and the three `hermes` env rows are gone. Re-integration is filed as a W task rather than carried as a dormant provider. Historical records keep the old shape: the entries below, the handovers, the discussions and the 2026-10-16 studies state what was true when written.
+**Edge cases / drivers:** The provider directory is deleted whole. The three image rows that listed `hermes` among their `providers` now list two, and the three `hermes` env rows are gone. Re-integration is filed as a W task rather than carried as a dormant provider. Historical records keep the old shape: the entries below, the handovers and the discussions state what was true when written.
 
 ## 2026-11-07 -- The provider directory is `agent-runtime`
 
@@ -92,9 +92,9 @@ A provider base stays in the shape because the provider interface requires it. A
 
 `agent-payload` is a sibling image rather than a link in the provider chain, because a Dockerfile has one `FROM`. Tier 5 inherits the provider base and pulls the payload in with a single line, so the payload's `COPY` list is written once rather than once per provider.
 
-**Rationale:** The three tiers as they stood put the same dispatch CLI in two provider bases and the same payload list in three provider Dockerfiles. The census read both: `opencode-ai@1.19.1` installs in the pi base as a dispatch tool and in the opencode base as its runtime, and the payload is ten `COPY` lines for pi, five for opencode and five for hermes. Declaring a thing once and deriving the rest is the principle the instruction surfaces already follow, and it applies to the image layers for the same reason.
+**Rationale:** The three tiers as they stood put the same dispatch CLI in two provider bases and the same payload list in three provider Dockerfiles. The census read both: `opencode-ai@1.19.1` installs in the pi base as a dispatch tool and in the opencode base as its runtime, and the payload is ten `COPY` lines for pi, five for opencode and five for hermes. The census counted 41 install and copy steps across the three tiers, and the invalidation history counted the tier inputs changing 1, 22 and 448 times. Declaring a thing once and deriving the rest is the principle the instruction surfaces already follow, and it applies to the image layers for the same reason.
 
-The measured cost does not argue for a different shape. A base rebuild costs 2 to 3 seconds warm and a payload rebuild costs about 1 second, so the tiers earn their place through declaration and layering rather than through time saved.
+The measured cost does not argue for a different shape. A base rebuild costs 2 to 3 seconds warm, a payload rebuild costs about 1 second and a cold rebuild costs 77 seconds, so the tiers earn their place through declaration and layering rather than through time saved.
 
 **Rejected alternatives:**
 

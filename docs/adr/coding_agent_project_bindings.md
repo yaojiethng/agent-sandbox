@@ -123,7 +123,7 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 - **State the failure and continue on a workflow default.** Rejected: a default answers for a project that never chose, which the decision above forecloses.
 - **State the failure and stop.** Rejected: stopping is the agent's steering's decision, not the workflow's, since control has already passed.
 
-**Edge cases / drivers:** The mapping from each of the fourteen prompts and six skills to its conventions is in [`20261014-design-settled-handoff_contract.md`](../../devlog/discussions/20261014-design-settled-handoff_contract.md). The devlog's `AGENT_FEEDBACK.md` record has no convention; the fit is a third `work-log` structure. `communication` takes no handoff, being a standard read from the project's steering. The wiring of the prompts and skills is a separate iteration.
+**Edge cases / drivers:** Each prompt states the conventions it needs in its own `## Project conventions` block, and the `initialize` skill names the corpus. The devlog's `AGENT_FEEDBACK.md` record has no convention; the fit is a third `work-log` structure. `communication` takes no handoff, being a standard read from the project's steering. The wiring of the prompts and skills is a separate iteration.
 
 ## 2026-10-14 -- The policy form is retired by subtraction
 
