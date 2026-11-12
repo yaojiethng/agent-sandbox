@@ -18,6 +18,10 @@ Banned as a noun. It names no referent, so nothing in the text can be checked ag
 
 **Last updated:** 2026-11-22
 
+`seam` is not a reserved term. It is ordinary for where two things meet, and it is always qualified by what meets: a hook seam, a dispatch seam, a container seam. Where the sentence means the [plane](#plane), name the plane; where it means how a caller crosses one, name the interface.
+
+`interface` is not a reserved term. It names the contract a caller crosses a boundary by, and it is always qualified by the boundary: a declaration interface, a container interface, a tool interface, a provider interface. It is never a bare synonym for a [plane](#plane), which names the ownership of the concern rather than the access to it.
+
 ## modality
 
 The base a sentence appeals to and the modal strength it carries: what a reader owes, or what a reader must accept, and with what strength. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
@@ -508,11 +512,11 @@ A division of the [domain](#domain) by execution extent: infrastructure, single-
 
 ## plane
 
-An ownership slice within a [sub-domain](#sub-domain): host substrate, session guarantee, environment declaration, project data and caches, verification surface. Each plane owns one concern and has exactly one owner.
+An ownership slice within a [sub-domain](#sub-domain): host substrate, session guarantee, environment declaration, project data and caches, verification plane. Each plane owns one concern and has exactly one owner.
 
 ### Identity
 
-- host substrate; session guarantee; environment declaration; project data and caches; verification surface
+- host substrate; session guarantee; environment declaration; project data and caches; verification plane
 
 ### Scope
 
@@ -521,9 +525,10 @@ An ownership slice within a [sub-domain](#sub-domain): host substrate, session g
 ### Relationships
 
 - Planes resolve bottom-up within a sub-domain; the session guarantee is the invariant boundary of single-agent execution.
+- A plane has one owner at every point of a move: the plane's owner is named, and the target ownership is the work, not a present state.
 - Not a [layer](#layer), which names the container architecture.
 
-**Last updated:** 2026-10-15
+**Last updated:** 2026-11-12
 
 ---
 

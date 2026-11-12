@@ -582,13 +582,15 @@ The same class recurred on 2026-09-27 inside a dispatched subagent's output, one
 ### [A] 2026-09-25  --  A heavy test file flakes against the shared deadline, and a timeout hides the whole file's unit count
 
 ```text
-state: mitigated
+state: open
 scoped: M3.1 - Backpressure
-legacy: none
+legacy: the per-file `# TEST_DEADLINE` declaration, which this recurrence shows is not sufficient on its own
 mitigation: declare the budget in the file's first ten lines (`# TEST_DEADLINE: <seconds>`) instead of raising `TEST_TIMEOUT` for every file. The runner reads the declaration and names it when the file expires. The runner reads `TEST_DEADLINE`, and three test files declare one.
 ```
 
 One 5s default is a single budget for test files whose honest runtimes differ by more than an order of magnitude. A harness file that spawns 20+ probe invocations (`tests/test_dry_run_probe.sh`, 3.4 to 5.4s) or runs the real umbrella gate repeatedly (`tests/test_lint_umbrella.sh`, 4.0 to 5.8s) sits on the deadline, so the 8-way parallel suite run expires it at random as the container loads up. The failure mode is worse than a red test: the file prints no `UNIT:` report, so the aggregate silently drops every unit in the file. `tests/test_dry_run_probe.sh` expired once during a mutation run and the suite read 764 units against a 783-unit baseline, with one timeout and no other sign - which also made the mutation's verdict unreadable, since a timeout is not a proof of anything. Two files now declare 10s (`tests/test_lint_umbrella.sh`, `tests/test_runner_selftest.sh`) and the third is added with this entry. Three more files measured above 5s standalone on a loaded container (`test_start_agent.sh`, `test_runner_selftest.sh`, `test_dry_run_probe.sh`), so the declaration is a pattern, not a one-off.
+
+**Recurrence, 2026-11-12.** A file that already declares its own budget still expired under load. `tests/test_doc_wrap_legacy_gate.sh` declares `# TEST_DEADLINE: 45` against an honest cost of about 30s, and the full suite read `TIMEOUT ... exceeded 45s deadline`, 1596 of 1597 passing. The file then passed 5 of 5 alone in 21s. So the declaration moved the deadline without removing the failure mode: what is needed is a budget the runner can scale against load, or a file that reads the tree once and reuses it, rather than a larger constant. The suite's aggregate is the same as before - one file's units vanish and the total reads one low.
 
 Scope: `scripts/run_tests.sh` and every test file whose honest runtime is near the default. Cross-reference: [`docs/development/test_harness_mechanism.md`](../docs/development/test_harness_mechanism.md) (The gates, The selftest); the mutation-suite roadmap row, which reads the aggregate to judge a survivor.
 

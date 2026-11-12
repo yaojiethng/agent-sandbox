@@ -1,6 +1,6 @@
 # Container Execution Model
 
-**Current:** 2026-10-15
+**Current:** 2026-11-12
 
 ## Requirements
 
@@ -10,6 +10,25 @@
 | R2 | One owner per plane | each ownership slice has exactly one owner, named in the model |
 | R3 | Reserved vocabulary | `layer` names the container architecture and nothing else |
 | R4 | Stabilization order | a plane stabilizes before the next, within a sub-domain; a sub-domain stabilizes before the next |
+| R5 | A bidirectional declaration | what a project declares to the harness, and what the harness may write into a project, are both stated |
+
+## 2026-11-12 -- One owner at a time, and the declaration crosses in both directions
+
+**Decision:** A plane has exactly one owner at every point of a move. The environment declaration is **harness-owned today**, and M3.4 moves it to the project, so the model names the harness rather than a contested target. The fifth plane is the **verification plane**: a plane is named by its concern, and `surface` no longer names an ownership slice, so `surface` stays inside the workflow vocabulary, where instruction roots and the maintenance surface carry it. The environment declaration's access contract is the **declaration interface**. `seam` and `interface` are unreserved: both are ordinary with a qualifier, as `unit` is, and neither names a plane. The declaration is bidirectional per R5: a project declares its environment to the harness, and the harness writes into a project only what that declaration or the session guarantee permits.
+
+**Rationale:** R2 required exactly one owner while `system_overview.md` described the environment declaration as "contested; the project is the target owner". Contested is the transition the milestone performs, not an owner, so the authority document stated something R2 forbids. Naming the harness keeps the model true at every point, and it gives the milestone a mechanical close check: the owner cell is the evidence, so M3.4.7 cannot close without it changing. `surface` carried three senses - instruction root (`coding_agent_project_bindings.md`), the maintenance surface of the workflow prompts, and the ownership slice - and the third is the one that leaves. The bidirectional half is measured, not argued: the capability entrypoint installs a pre-commit hook into every project's `.git/hooks`, and the seeder writes the harness's git identity and config keys into every project's `.git/config`, while the model stated only the project-to-harness direction. The measurement is the record `20261112-design-open-m3_4_project_harness_contract_and_prefactors.md`.
+
+**Rejected alternatives:**
+
+- *Contested, with the project as target owner.* Rejected on execution. It leaves the model forbidding what the architecture document states, which is the defect rather than its fix, and it gives the milestone no close check.
+- *Keep `surface` for the ownership slice and define its senses.* Rejected on intent. Three senses under one word is what the reserved-terms table in `coding_agent_project_bindings.md` was written to prevent, and a glossary entry records the collision instead of resolving it.
+- *Project-to-harness only, as the milestone previously stated.* Rejected on execution. The measured table in the record falsifies it.
+
+**Edge cases / drivers:**
+
+- The declaration's element list is not settled, so the trust classification of each element is open and the record holds it. A declaration carrying build steps and hooks is code, not configuration, so a classification that treats the whole declaration as configuration would satisfy R5 in prose and not in effect.
+- The bidirectional rule is about writing into a project's tree and its git state. It does not reach the session volume, the diff pipeline or the session record, which are the session guarantee's and stay harness-owned.
+- Historical records are not retro-renamed: `verification surface`, `declaration seam` and `declaration surface` stay in closed handovers and discussions. The 2026-10-15 entry below also keeps `verification surface`, because an entry records what was decided then; this entry supersedes the name, and the live plane list is this one and [`system_overview.md`](../reference/system_overview.md)'s.
 
 ## 2026-10-15 -- Sub-domains and planes, with a reserved vocabulary
 

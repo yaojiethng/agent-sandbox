@@ -247,11 +247,11 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Status:** Indefinitely deferred, raised 2026-11-01 by handover `20261101-10`. Every requirement needed to start it is in this section; a session that picks it up should not have to re-derive why the move is expensive. The ruling it follows is in [`module_instruction_payload.md`](../docs/adr/module_instruction_payload.md), and the closed roadmap row is `Skill ingestion stays this repository's tool, not a shipped module`.
 
-**Reopens when:** a second project vendors a skill of its own, or the project-declaration seam lands.
+**Reopens when:** a second project vendors a skill of its own, or the project declaration interface lands.
 
 **Objective:** move the skill-ingestion pipeline into `workflow/<module>/`, so a project can enable ingestion or leave it off. It is repository-local today because two of its three members are project and harness state, and a module carries `prompts/` and `skills` only.
 
-**Depends on:** M3.4.7 `Environment declaration seam`, and a way for a shipped module to register a lint gate.
+**Depends on:** M3.4.7 `Environment declaration plane`, and a way for a shipped module to register a lint gate.
 
 **The prefactors, in the order they bind:**
 

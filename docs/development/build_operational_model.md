@@ -17,7 +17,7 @@ The layout is an implementation outcome, judged by the production run. A layout 
 
 ## The three layers
 
-The production run is measured by [`scripts/build_probe.sh`](../../scripts/build_probe.sh) on the host, because the agent's container has no Docker by design. The static wiring is a unit test in the container, because a wiring defect is cheap to catch without a build: the flag reaches each tier, the provider selects its tier, the pin has one home, and the manifest is the only COPY declaration. The e2e is the dry-run, which proves the image starts and the agent runs; the general verification surface is M3.4.5's.
+The production run is measured by [`scripts/build_probe.sh`](../../scripts/build_probe.sh) on the host, because the agent's container has no Docker by design. The static wiring is a unit test in the container, because a wiring defect is cheap to catch without a build: the flag reaches each tier, the provider selects its tier, the pin has one home, and the manifest is the only COPY declaration. The e2e is the dry-run, which proves the image starts and the agent runs; the general verification plane is M3.4.5's.
 
 | Layer | What it proves | Where |
 |---|---|---|
@@ -144,4 +144,4 @@ The agent reads the report from the input channel at `/home/agentuser/workspace/
 
 ## What this page does not own
 
-The requirements belong to the three ADRs. The e2e belongs to M3.4.5's verification surface. The dispatch measurement belongs to M3.6.2. The audit study holds the evidence and the gap map, and the [roadmap](../../devlog/roadmap.md) holds the work that remains.
+The requirements belong to the three ADRs. The e2e belongs to M3.4.5's verification plane. The dispatch measurement belongs to M3.6.2. The audit study holds the evidence and the gap map, and the [roadmap](../../devlog/roadmap.md) holds the work that remains.

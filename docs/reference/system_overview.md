@@ -37,11 +37,11 @@ The system is described by its domain model. The decision is recorded in the ADR
 |---|---|---|
 | Host substrate | Docker runtime, host filesystem, host tooling | operator |
 | Session guarantee | sandbox volume, snapshot, diff pipeline, session record | harness |
-| Environment declaration | image, toolchain, dependencies, mounts, volumes, services, lifecycle | contested; the project is the target owner |
+| Environment declaration | image, toolchain, dependencies, mounts, volumes, services, lifecycle | harness; M3.4.7 moves it to the project |
 | Project data and caches | source, virtual environment, node modules, build cache, logs, database data | project |
-| Verification surface | launch, drive, observe, isolate, cleanup, evidence | project, enabled by the harness |
+| Verification plane | launch, drive, observe, isolate, cleanup, evidence | project, enabled by the harness |
 
-The planes resolve in the order listed. The session guarantee is the invariant boundary of the single-agent sub-domain: it must hold while the planes above and below it change. The environment declaration is the plane the current work moves to project ownership, under that guarantee.
+The planes resolve in the order listed. The session guarantee is the invariant boundary of the single-agent sub-domain: it must hold while the planes above and below it change. The environment declaration is the plane M3.4 moves to project ownership, under that guarantee.
 
 Two elements frame the model without belonging to it:
 

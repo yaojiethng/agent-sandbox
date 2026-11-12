@@ -4,9 +4,9 @@ The run brief for M3.4. Draws on the plan session of handover `20261015-09`. Sta
 
 ## The premise under test
 
-The harness over-prescribes the project's development environment. The proposed fix is a declaration surface: the project declares its image, mounts, volumes, services and lifecycle, and the harness reads the declaration while keeping the session guarantee plane.
+The harness over-prescribes the project's development environment. The proposed fix is a declaration interface: the project declares its image, mounts, volumes, services and lifecycle, and the harness reads the declaration while keeping the session guarantee plane.
 
-Falsification: if moving the declaration to the project cannot hold the one-diff-source-of-truth invariant, or if the security posture cannot be rebaselined against a project-supplied build, then the answer is not a declaration surface and the model returns to M3.4.1.
+Falsification: if moving the declaration to the project cannot hold the one-diff-source-of-truth invariant, or if the security posture cannot be rebaselined against a project-supplied build, then the answer is not a declaration interface and the model returns to M3.4.1.
 
 ## What is already measured
 
@@ -31,13 +31,13 @@ Falsification: if moving the declaration to the project cannot hold the one-diff
 
 ## The phases
 
-Ordered by the stabilization rule. Each phase closes on a live `spread` run, not on a document.
+Ordered by the stabilization rule. Each phase closes on a live run of the sample project, not on a document.
 
 1. **The model.** Done by the plan session: the ADR, `system_overview.md`, `terminology.md`. The remaining work is the propagation sweep and the gate.
-2. **The declaration seam.** Design it, run it against `spread`, triage, fix, repeat.
-3. **Persistence.** State what survives teardown, deliver it, run the migration cycle on `spread`.
+2. **The declaration interface.** Design it, run it against the sample project, triage, fix, repeat.
+3. **Persistence.** State what survives teardown, deliver it, run the migration cycle on the sample project.
 4. **Service topology and the trust boundary.** Rebaseline the posture before any project service runs.
-5. **The verification surface.** The project's own verification must run launch to evidence inside the environment.
+5. **The verification plane.** The project's own verification must run launch to evidence inside the environment.
 6. **Project-owned checks and skills.** The project's hooks and checks replace the harness prescriptions.
 
 Phase 2 gates phases 3 to 6, and phase 4 gates phase 5 and 6.
@@ -48,7 +48,7 @@ Phase 2 gates phases 3 to 6, and phase 4 gates phase 5 and 6.
 |---|---|---|---|---|
 | U1 | The vocabulary propagation sweep over the live instruction surfaces | `docs` | `docs/`, `workflow/`, `.agents/skills/` | own |
 | U2 | The vocabulary gate: `layer` only for the container architecture | `test` | `scripts/check_instruction_surfaces.sh` | own |
-| U3 | The declaration surface: where a project declares its environment, and the reader | `feat` | `src/build/`, `docs/reference/execution_model.md` | own |
+| U3 | The declaration interface: where a project declares its environment, and the reader | `feat` | `src/build/`, `docs/reference/execution_model.md` | own |
 | U4 | The image build path: the project Dockerfile, the `snapshot.sh` dependency, preflight UID/GID, `REBUILD` reach | `fix` | `scripts/build.sh`, `src/build/` | own |
 | U5 | The per-image lib inventory manifest and drift test | `test` | `src/build/container-interface.json`, `scripts/check_container_layout.sh` | own |
 | U6 | The onboarding and refresh generated-artifact contract | `feat` | `scripts/onboard.sh`, `scripts/templates/` | own |
@@ -94,11 +94,11 @@ Each unit above names the rows it takes over. The close removes the originals fr
 | `Gate upkeep` project-hook seam | M3.1.2 | U21 (seam part; gate cost and procedure stay M3.1.2) |
 | Vault capability layer prototype portability arm | W1 | U20 (portability arm; MCP specifics stay W1) |
 
-New rows with no current home, filed by U3, U11, U15 and U18: the environment declaration surface, the persistence contract, the service topology, and the verification surface.
+New rows with no current home, filed by U3, U11, U15 and U18: the environment declaration interface, the persistence contract, the service topology, and the verification plane.
 
 ## The model assignment
 
-Resolve each role from `$AGENT_HOME/model-recommendations.md`. `_IMPLEMENTER` for the seam and code units. `_ADVISOR` for U16, the threat-model rebaseline. `_REVIEWER` for the pre-close pair on the model and the seam.
+Resolve each role from `$AGENT_HOME/model-recommendations.md`. `_IMPLEMENTER` for the declaration interface and code units. `_ADVISOR` for U16, the threat-model rebaseline. `_REVIEWER` for the pre-close pair on the model and the declaration interface.
 
 ## Verification
 
@@ -106,10 +106,10 @@ Resolve each role from `$AGENT_HOME/model-recommendations.md`. `_IMPLEMENTER` fo
 |---|---|
 | The vocabulary has one sense per term | `docs/reference/terminology.md` |
 | The model survives a fresh-context read | the ADR and `system_overview.md` |
-| The declaration seam produces an applicable diff bundle | a `spread` run, apply on the host |
-| Persistence survives teardown | a `spread` run across two sessions |
+| The declaration interface produces an applicable diff bundle | a sample-project run, apply on the host |
+| Persistence survives teardown | a sample-project run across two sessions |
 | The posture is stated for every project-supplied input | the threat model |
-| The verification contract runs launch to evidence | a `spread` run |
+| The verification contract runs launch to evidence | a sample-project run |
 | No consolidated row is duplicated | a grep per taken-over term |
 | The gates stay green | `bash scripts/lint.sh`, `bash scripts/run_tests.sh` |
 
@@ -124,4 +124,4 @@ Resolve each role from `$AGENT_HOME/model-recommendations.md`. `_IMPLEMENTER` fo
 
 - Whether the project declaration is a Dockerfile, a compose overlay, a devcontainer, or a harness-specific manifest. The brief takes the harness-specific manifest as the default and the word that reverses it is `devcontainer`.
 - Whether phase 4 gates phase 5, or they proceed together. The brief takes the gate.
-- Whether U20 runs before the seam is stable. The brief takes after.
+- Whether U20 runs before the declaration interface is stable. The brief takes after.
