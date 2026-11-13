@@ -4,6 +4,7 @@
   "defaultProvider": "opencode-go",
   "defaultModel": "deepseek-v4.1-flash",
   "defaultThinkingLevel": "low",
+  "steeringMode": "all",
   "followUpMode": "all",
   "tuiMode": "regular",
   "enablePromptCommands": true,
