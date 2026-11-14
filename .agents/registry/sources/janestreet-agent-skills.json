@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "id": "janestreet-agent-skills",
+  "url": "https://github.com/janestreet/agent_skills",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2026 Jane Street Group, LLC",
+  "reason": "Registered with no artifact taken from it: no skill is vendored or installed, so the row carries no edge. The repository publishes one skill, `socratic-tutor`, a procedure for an interactive teaching session - a diagnostic, a skill map at levels 0-5, one question at a time and spaced review.",
+  "artifacts": []
+}
