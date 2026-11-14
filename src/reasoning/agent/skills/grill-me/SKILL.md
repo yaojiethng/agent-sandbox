@@ -20,9 +20,13 @@ Interview the user relentlessly until you reach a shared understanding. Map the 
 
 Ask the questions one at a time. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask now without guessing at answers you have not heard. Put one frontier question, then wait. A question whose answer depends on one still open belongs to a later turn, not this one.
 
-The next question waits until every question already put is explicitly resolved: answered, withdrawn, or parked by the user. A side-question is parked in the open list rather than asked now, and is put in full once the question it interrupted is settled. Put a parked question in full rather than naming its number, and write down a correction to an earlier answer before putting anything new.
+The next question waits until every question already put is explicitly resolved: the user answered it, withdrew it, or parked it. A side-question of your own is parked in the open list rather than asked now, and is put in full once the question it interrupted is settled.
 
-A question the user probes is not a question the user has approved. Answer the probe, then put the pending question again, naming what the probe settled and what stays open.
+A question the user asks back takes precedence over the one you asked. It is not an answer, and not a side-question of yours: they may need it settled before they can answer, and it may expose an assumption the pending question rests on. Answer it in full, then ask what you need to close their thread, one question at a time, with the pending question held on the open list -- neither dropped nor answered for them.
+
+When the thread ends, re-derive the frontier before putting anything. The thread may have settled the pending question, moved the frontier past it, or broken an assumption a resolved branch rests on, which re-opens that branch and every question downstream of it; the earlier answer is corrected before anything new is put. Put the question the frontier now holds, naming what the thread settled and what it re-opened; only when the frontier is unchanged do you re-put the pending question, and then repaired -- narrowed, with the context it was missing, and with options that cover the choice it hid.
+
+A branch is resolved only by the user's choice, a withdrawal or a park. The recommendation is advice carried with a question, never a fallback for the one the user did not give.
 
 Test every branch against the problem summary: a branch that does not serve the stated problem is resolved or dropped before the plan widens.
 
@@ -42,4 +46,4 @@ Offer the options that differ in kind, each with its benefit and its tradeoff, t
 
 Finding _facts_ is your job, never the user's. When the question needs a fact from the environment (filesystem, tools, etc.), explore the codebase, or use the `dispatch` skill to send a read-only child after a search large enough to run beside the interview; do not ask the user for anything you could look up yourself. Do not block the whole interview on it: only a question downstream of that fact waits for the child to report.
 
-The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
+The session is done when the frontier is empty: every branch of the design tree decided by the user, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.
