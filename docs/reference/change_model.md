@@ -8,6 +8,10 @@ The change model answers one question: can the trunk accept this branch now? It 
 
 The work happens in two lanes. The agent lane prepares and exports; the host lane drafts, reviews, confirms or rejects, or applies. The lanes are parallel and meet at one handoff: the bundle and the draft worktree. The host lane never reads the agent's workspace, and the agent lane never writes the trunk.
 
+## The iteration relation
+
+The change flow is a peer machine to the iteration's, not a submachine of it. [`workflow_statechart.md`](workflow_statechart.md) models the session's progress; this model is the branch's mergeability against the trunk, and the two can rest at any pair of states. The iteration enters the change flow at packaging, when the branch leaves the agent's workspace, and the workflow chart points here rather than nesting these transitions.
+
 ## The two lanes
 
 | Lane | Actor | Entry | Work | Exit |

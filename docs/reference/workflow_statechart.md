@@ -4,7 +4,7 @@ reader: [agent]
 
 # The Workflow Statechart
 
-This is the app's workflow surface as one statechart: every state an agent rests in, every slash command that moves it, and every maintenance check a procedure invokes. The change flow has its own command table below, because it is a separate machine. The loop's concept document, [`autonomous_agent_loop.md`](autonomous_agent_loop.md), explains why the loop is split into workflows; this document draws the whole of it, and that one point at the chart.
+This is the app's workflow surface as one statechart: every state an agent rests in, every slash command that moves it, and every maintenance check a procedure invokes. The change flow is a separate machine, drawn in [`change_model.md`](change_model.md); it is orthogonal to this chart and is entered at packaging. The loop's concept document, [`autonomous_agent_loop.md`](autonomous_agent_loop.md), explains why the loop is split into workflows; this document draws the whole of it, and that one point at the chart.
 
 A node is a state the loop rests in. A gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. An arrow is a command, or the operator releasing a gate. Three edge types: **workflow-implemented** (a prompt performs the transition), **operator decision** (the operator releases the gate), and **workflow-assisted operator decision** (a workflow or skill narrows the choice and the operator picks). Three gate states, each an arrow's source rather than a resting place for closing work: `it_scope_gate`, `it_acceptance_gate` and `ms_close_gate`. Closing is the work that follows the acceptance decision, not a state.
 
@@ -248,7 +248,7 @@ The four types differ in what makes `rec_disc_concluded` true -- a story's appro
 
 ## Commands
 
-Every prompt in the iteration loop is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand. The change flow's three commands are in the next table, so the query reads both.
+Every prompt in the iteration loop is an event here, and the command table's row set is held to `workflow/coding-agent/prompts/` by the `Command coverage` query below, which is read by hand. The change flow is a separate machine, so this query reads this table alone.
 
 | Command | Fires from | Leaves the agent in | Dispatches |
 |---|---|---|---|
@@ -270,14 +270,9 @@ Every prompt in the iteration loop is an event here, and the command table's row
 
 `/auto` and `/goal` are reserved by the ADR for M4 and drive no transition here. A draft is not a command: a prompt that exists only under `.agents/drafts/` appears in no row of this table and in no node of the chart.
 
-## Change-flow commands
+## The change flow
 
-The change flow is a separate machine: the mergeability of a branch against the trunk, not the iteration's progress. Its two commands are listed here so the change-flow surface has one coverage check.
-
-| Command | Reads | Emits | Hands off |
-|---|---|---|---|
-| the `prepare` runbook | a branch and the trunk head | a `ready` branch | `make confirm` |
-| `make confirm` | a ready branch and the head | the trunk advanced | the `prepare` runbook when the branch is not ready |
+The change flow is a separate machine: the mergeability of a branch against the trunk, not the iteration's progress. The two machines have different objects -- the session's progress and the branch's mergeability -- and may rest at any pair of states, so the change flow is orthogonal to this chart and is entered at packaging, not nested here. Its transitions, lanes, actors and blocked paths are [`change_model.md`](change_model.md)'s. The `Command coverage` query below reads only the prompt table.
 
 ## Stories
 
@@ -313,7 +308,7 @@ Each check is a query a reader makes on the chart and the defect the query finds
 | Orphan record | every `rec_*` state has an inbound write edge and an outbound read edge | a record kept and never consulted |
 | Path resolution | every path in `## Stories` resolves id by id: each id is a declared state, and each consecutive pair is an edge | a story the map does not support |
 | Legend drift | the `## States` id and region columns equal the chart's declarations, in the chart's order | a state declared on one side only, or a region moved in the table |
-| Command coverage | every prompt file under `workflow/coding-agent/prompts/` appears in `## Commands` or `## Change-flow commands` | a command the map does not know |
+| Command coverage | every prompt file under `workflow/coding-agent/prompts/` appears in `## Commands` | a command the map does not know |
 
 ## Gaps
 
