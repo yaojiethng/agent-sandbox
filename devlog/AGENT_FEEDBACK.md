@@ -12,23 +12,6 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
-## [O] 2026-10-31  --  The review runbook lost the sentence that fixed its commit range
-
-```text
-state: mitigated
-scoped: M3.3.3 - The skill maintenance pipeline
-legacy: none
-mitigation: the `code-review` shell's input row now owns the range -- the operator's when named, otherwise the branch point the session started at, `.git/SESSION_STATE`'s `init_sha`, proposed for the operator to confirm -- and `references/loop.md` cites it; handover `20261103-02`
-```
-
-The `code-review` shell says a review is given "a scope to read", its `references/loop.md` says "Name the range", and the `thermo-nuclear-code-quality-review` runbook says "the current branch's changes". None of the three states where the branch point comes from. The instruction that did was lost when the skill moved to the runbook format, so the range is now inferred at the call site, by the party that has the least evidence for it.
-
-On this branch the inference has two defensible answers eleven commits apart: `init_sha a6b24204` in `.git/SESSION_STATE`, whose range is 6 commits and 42 files, and the skill-pipeline unit's own base `d1d5b636`, whose range is 17 commits and 86 files. A loop that must name its range before it spends a seat stopped to ask instead, and the round trip cost a turn of the operator's attention on the question the loop exists to settle.
-
-The fix belongs where the range is named: one sentence in the runbook or its shell, naming the branch point's source, so the range is derived rather than asked for.
-
----
-
 ## [A] 2026-11-01  --  A report was built before checking that the loader already prints one
 
 ```text
@@ -451,7 +434,7 @@ mitigation: a review prompt must not hard-mandate "work to consensus". The conve
 
 ```text
 state: open
-scoped: M3 T7 -- sandbox persistence (protect uncommitted session work from git ops)
+scoped: M3.7.2 -- the history-as-a-commons rewrite states the rule (protect uncommitted session work from git ops)
 legacy: none
 mitigation: negative-test mutation was reverted with `git restore scripts/stop.sh`, which
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the
