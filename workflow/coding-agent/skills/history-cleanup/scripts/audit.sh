@@ -80,7 +80,7 @@ check "4. tip content identity"
 if [[ -n "$REF" ]]; then
   skip=""
   for a in "${ADDITIONS[@]:-}"; do [ -n "$a" ] && skip="$skip|$a"; done
-  delta=$(diff <(git ls-tree -r "$REF" | grep -v "/$RECORDS/" | grep -vE "${skip:-^$}") <(git ls-tree -r "$TIP" | grep -v "/$RECORDS/" | grep -vE "${skip:-^$}"))
+  delta=$(diff <(git ls-tree -r "$REF" | grep -vE "(^|[[:space:]])$RECORDS/" | grep -vE "${skip:-^$}") <(git ls-tree -r "$TIP" | grep -vE "(^|[[:space:]])$RECORDS/" | grep -vE "${skip:-^$}"))
   if [[ -n "$delta" ]]; then
     finding "non-record content differs from $REF"
     echo "$delta" | sed 's/^/         /' | head -20

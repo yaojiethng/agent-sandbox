@@ -17,6 +17,8 @@
 #   an empty commit                         -- finding, check 6
 #   a commit whose own gate fails           -- finding, check 5
 #   a manifest row whose subject is wrong   -- finding, check 7
+#   a non-record change at the tip          -- finding, check 4
+#   a record-only change at the tip         -- clean, check 4 excludes it
 #   a clean range                           -- rc 0, no finding
 #
 # Run:   bash tests/test_history_cleanup_audit.sh
@@ -166,6 +168,20 @@ test_a_reference_that_differs_is_named() {
   assert_contains "$out" "non-record content differs" "check 4 names the difference"
 }
 
+test_a_record_change_at_the_tip_is_excluded() {
+  local d="$WORK/record" out rc=0 base
+  new_repo "$d" || fail "fixture"
+  base=$(git -C "$d" rev-list --max-parents=0 HEAD)
+  (
+    cd "$d" || exit 1
+    printf '# a\n' >devlog/handovers/M/20260101-05-e.md
+    git add -A && git commit -qm "add record e"
+  ) || fail "fixture commit"
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base") || rc=$?
+  assert_rc 0 "$rc" "a record-only change is not a finding"
+  assert_contains "$out" "audit: clean" "check 4 excludes the record path"
+}
+
 test_an_inversion_is_reported_not_counted() {
   local d="$WORK/inv" out rc=0
   new_repo "$d" || fail "fixture"
@@ -189,6 +205,7 @@ run_test test_a_failing_gate_is_named
 run_test test_a_manifest_subject_that_differs_is_named
 run_test test_a_clean_range_reports_clean
 run_test test_a_reference_that_differs_is_named
+run_test test_a_record_change_at_the_tip_is_excluded
 run_test test_an_inversion_is_reported_not_counted
 
 test_done

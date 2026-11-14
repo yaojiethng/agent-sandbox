@@ -140,7 +140,7 @@ Completion criterion: every commit passes the gate in its own tree, the records 
 | manifest conformance | the resulting subjects and file sets match the approved manifest |
 | inversions | delegates to `scripts/inversions.mjs`; no second implementation |
 
-Run it on the candidate, before asking for release. A manifest file holds one row per unit: `sha<TAB>subject<TAB>comma-separated paths`. A check that has never failed is not a check, so run it once against a range built to violate each one.
+Run it on the candidate, before asking for release. A manifest file holds one row per unit: `sha<TAB>subject<TAB>comma-separated paths`. Write the approved manifest to `.scratchpad/history-cleanup-manifest.tsv` and pass it as `--manifest=...`; without the file check 7 is skipped and the series is not audited against the approved shape. A check that has never failed is not a check, so run it once against a range built to violate each one.
 
 ## Prove the series, not only the endpoint
 
@@ -154,11 +154,11 @@ Completion criterion: the audit is clean apart from named additions, and the ran
 
 Run the gate on every commit, in its own tree, as `## Reorganize the series` states.
 
-Run the suite at the tip, once. A commit that changes only Markdown cannot break a shell test, and running the whole suite per commit spends minutes re-proving behaviour the commit did not touch; the tip is the tree a reviewer reads, and it is where the suite belongs.
+Run the suite at the tip, once. Run it with `TEST_PARALLEL=1`: the parallel runner's per-file deadlines are load-dependent, and a long test can trip one while the code is sound. A commit that changes only Markdown cannot break a shell test, and running the whole suite per commit spends minutes re-proving behaviour the commit did not touch; the tip is the tree a reviewer reads, and it is where the suite belongs.
 
 Capture the suite's own exit status. `out=$(cmd | tail)` records the status of `tail`, so redirect to a file and read `$?`, or use `PIPESTATUS`. A loop that reports success for a suite that failed is worse than no loop.
 
-A commit that fails once and passes on re-run at the same commit is a load-dependent failure, not a defect in the commit: re-run the failing file rather than the suite, which is the same evidence at a fraction of the cost, and record it. A failure that repeats is the commit's, and the series is not done.
+A commit that fails once and passes on re-run at the same commit is a load-dependent failure, not a defect in the commit: re-run the failing file rather than the suite, which is the same evidence at a fraction of the cost, and record it. A `TIMEOUT` whose file passes standalone is the same class: record it, do not fail the series. A failure that repeats is the commit's, and the series is not done.
 
 Completion criterion: every commit passes the gate in its own tree, the tip is green on the full suite, and every quoted number is true at its commit.
 
