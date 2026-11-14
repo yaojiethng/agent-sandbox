@@ -262,7 +262,7 @@ Every prompt in the iteration loop is an event here, and the command table's row
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
 | `/recovery` | `it_implementing`, `it_committed` | the repaired state | none |
-| `/record-correction` | `cor_bad` | `it_closed` | `/prepare-rebase` when the fold needs a port |
+| `/record-correction` | `cor_bad` | `it_closed` | the `prepare` runbook when the fold needs a port |
 | `/read-back` | `rep_partial` | `rep_partial` | none |
 | `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
 | `/commit` | a closed iteration | `it_committed` | none |
@@ -272,13 +272,12 @@ Every prompt in the iteration loop is an event here, and the command table's row
 
 ## Change-flow commands
 
-The change flow is a separate machine: the mergeability of a branch against the trunk, not the iteration's progress. Its three commands are listed here so the prompt set has one coverage check.
+The change flow is a separate machine: the mergeability of a branch against the trunk, not the iteration's progress. Its two commands are listed here so the change-flow surface has one coverage check.
 
 | Command | Reads | Emits | Hands off |
 |---|---|---|---|
-| `/prepare-rebase` | a branch and the trunk head | a `ready` branch | `/merge-queue` or `/accept-fast-forward` |
-| `/merge-queue` | the ready branches | an order | `/accept-fast-forward`, or `/prepare-rebase` when nothing is ready |
-| `/accept-fast-forward` | a ready branch and the head | the trunk advanced | `/prepare-rebase` when the branch is not ready |
+| the `prepare` runbook | a branch and the trunk head | a `ready` branch | `make confirm` |
+| `make confirm` | a ready branch and the head | the trunk advanced | the `prepare` runbook when the branch is not ready |
 
 ## Stories
 

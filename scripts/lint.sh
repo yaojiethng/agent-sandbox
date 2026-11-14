@@ -57,6 +57,7 @@ GATES=(
   check_statechart.sh
   check_draft_statechart.sh
   check_change_model.sh
+  check_agent_primitives.sh
   check_numbering.sh
   check_launch_sites.sh
   check_skill_sources.sh

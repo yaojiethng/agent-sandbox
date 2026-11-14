@@ -11,4 +11,4 @@ A recovery is the repair when the record and the repository disagree about work 
 
 The entry is `/recovery`, which hands the operator's description to the [`recovery`](../../../../workflow/coding-agent/skills/recovery/SKILL.md) skill. The skill classifies the description and opens the runbook.
 
-A child branch that will not rebase onto its parent is not a recovery: that is mergeability, and `prepare-rebase` owns it. A change the repository holds and the operator now disagrees with is a correction, and [`correction.md`](correction.md) owns it.
+A child branch that will not rebase onto its parent is not a recovery: that is mergeability, and the [`prepare`](prepare.md) runbook owns it. A change the repository holds and the operator now disagrees with is a correction, and [`correction.md`](correction.md) owns it.

@@ -25,7 +25,7 @@ First, one delivery commit per iteration: every `wip:` checkpoint and typed inte
 
 - `/iter` and `/plan` run the checkpoint during the session and land the commit at the end, handed here by `/wrapup`'s close.
 - `/sidequest` lands its single delivery commit here.
-- `/prepare-rebase` folds a port's current-state corrections here.
+- the `prepare` runbook folds a port's current-state corrections here.
 - `/milestone-close` does not invoke it: the milestone-record close lands its own bookkeeping commit.
 
 ## Input contract

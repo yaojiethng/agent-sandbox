@@ -48,9 +48,9 @@ At every node the parent branch is the trunk for its children. The trunk accepts
 
 ## The prepare obligation
 
-A branch is ready for its trunk when the trunk's head is an ancestor of its tip. When the trunk moves, the branch is `not-ready`; it re-prepares before it can be accepted. This holds at every level: a delivery branch re-prepares onto its track, and a track re-prepares onto its parent.
+A branch is ready for its trunk when the trunk's head is an ancestor of its tip. When the trunk moves, the branch is `not-ready`; it re-prepares before it can be accepted. This holds at every level: a delivery branch re-prepares onto its track, and a track re-prepares onto its parent. The [`prepare`](prepare.md) runbook owns the procedure.
 
-The queue is a view over the ready set and never holds a `not-ready` branch. A branch left out of the queue re-prepares and re-enters.
+The queue is a view over the ready set and never holds a `not-ready` branch. A branch left out of the queue re-prepares and re-enters. A stack is a contiguous run: a child follows its parent, and the run is not interrupted.
 
 ## Lifecycle
 

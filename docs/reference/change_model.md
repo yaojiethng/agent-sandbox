@@ -41,7 +41,7 @@ The transition table is the contract; the chart below is its rendered view. `Lan
 
 | Id | Lane | Actor | Event | Guard | From | To | Mechanism | Manual | Subject | Invariant | Test | Mutation |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `T01` | agent | agent | prepare | the head is not an ancestor of the tip | `not-ready` | `ready` | rebase onto the head | no | `prepare-rebase` | `PrepareResolvesEveryConflict` | `none: model check` | `none: model-only` |
+| `T01` | agent | agent | prepare | the head is not an ancestor of the tip | `not-ready` | `ready` | rebase onto the head | no | the prepare runbook | `PrepareResolvesEveryConflict` | `none: model check` | `none: model-only` |
 | `T02` | agent | agent | history-cleanup | the series is not reviewable | `ready` | `ready` | `history-cleanup` | no | the history-cleanup skill | `SeriesIsReviewable` | `none: model check` | `none: model-only` |
 | `T03` | agent | agent | export | the branch is prepared | `ready` | `ready` | the package step | no | the export step | `BundleCarriesTheBranchPoint` | `none: model check` | `none: model-only` |
 | `T04` | host | operator | draft | a bundle is present | `ready` | `drafted` | `make draft` | no | `scripts/workflows/draft.sh` | `MergeableRequiresForkable` | `test_draft_forks_from_branch_point_not_head` | `252` |
@@ -98,7 +98,7 @@ The agent lane's primitives are prepare, history-cleanup and export. The host la
 
 | Primitive | Lane | Command | What it does |
 |---|---|---|---|
-| Prepare | agent | `prepare-rebase` | rebases onto the head, resolves every conflict, makes it fast-forwardable |
+| Prepare | agent | the prepare runbook | rebases onto the head, resolves every conflict, makes it fast-forwardable |
 | History-cleanup | agent | `history-cleanup` | makes the series reviewable before export |
 | Export | agent | the package step | writes the bundle and its branch point |
 | Draft | host | `make draft` | creates the draft worktree from the bundle |
@@ -124,7 +124,7 @@ The branch has its own lifecycle: it is cut, worked, blocked or parked, and it i
 
 ## The early change
 
-A change is made available early when another branch needs it before the milestone's branch is complete. The change is its own delivery commit on its own branch, with its own closed handover; the remainder is a child branch. The operator chooses the grain -- a slice cut onto its own branch, or the whole milestone's branch -- and the queue orders it. The steps are `prepare-rebase`, the host's order and `make confirm`. When the head moves, every queued branch is re-checked: a branch no longer based on the head is `not-ready` and re-prepares.
+A change is made available early when another branch needs it before the milestone's branch is complete. The change is its own delivery commit on its own branch, with its own closed handover; the remainder is a child branch. The operator chooses the grain -- a slice cut onto its own branch, or the whole milestone's branch -- and the queue orders it. The steps are the `prepare` runbook, the host's order and `make confirm`. When the head moves, every queued branch is re-checked: a branch no longer based on the head is `not-ready` and re-prepares.
 
 A stack is a contiguous run. When the parent was accepted without a rewrite, the child's tip already descends from the new head, so its accept is a fast-forward and needs no re-prepare. When the parent's prepare rewrote the base, the child re-prepares.
 

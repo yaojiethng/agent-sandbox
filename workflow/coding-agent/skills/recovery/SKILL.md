@@ -26,7 +26,7 @@ The start is the operator's; the form is yours. Do not ask the operator to class
 | the record says it landed, and no commit holds it | absent | [`runbooks/absent.md`](runbooks/absent.md) |
 | the commit is wrong | correction | stop: `/record-correction` |
 | the series is messy, or a commit is not reviewable | correction | stop: `history-cleanup` |
-| the branch will not rebase onto its parent or the trunk | mergeability | stop: `prepare-rebase` |
+| the branch will not rebase onto its parent or the trunk | mergeability | stop: the `prepare` runbook |
 
 The last three are not recovery. Nothing was lost; the repository holds the work and the operator wants a different result. Naming the right command is the handoff, not a refusal.
 
@@ -40,7 +40,7 @@ Open the runbook the class names. It owns the procedure, the verification and th
 
 - A wrong commit: `/record-correction`.
 - A messy series: [`history-cleanup`](../history-cleanup/SKILL.md).
-- A branch that cannot land: `prepare-rebase`.
+- A branch that cannot land: the `prepare` runbook.
 
 ## Close
 
