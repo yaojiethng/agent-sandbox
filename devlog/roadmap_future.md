@@ -273,3 +273,19 @@ Progressive enforcement maturity for the documentation and architecture governan
 **Depends on:** the SSOT scoping merge, because it is the first test of whether `organization.md` can be the shared placement source.
 
 **Acceptance criteria:** a recorded decision, merge or keep separate, with the rationale. If merge, one convention carries the placement rule and the two authoring branches, and no release rule is lost. If keep separate, `organization.md` is the single placement source and `instruction-authoring` points at it. Ends when no placement rule is stated twice.
+
+### Trunk serialization when an agent manages the trunk (deferred, unscheduled)
+
+**Status:** Deferred, unscheduled, raised 2026-11-14 by the design iteration `20261114-02`. Merge-back is the operator's manual host act today: the operator runs `make confirm` and `make apply`, one branch at a time. The runbooks that tried to automate it (`accept-fast-forward`, `merge-queue`, `prepare-rebase`) were retired on 2026-11-12 because they mirrored host verbs. Nonblocking while the operator holds the trunk; blocking when an agent accepts a branch without the operator.
+
+**Reopens when:** an agent manages the trunk branch, accepting, serializing or applying branches on its own.
+
+**Objective:** the trunk accepts one branch at a time as a property of the flow, so serialization is a scheduler rather than a rule the operator must remember while running a host verb. The method is the implementer's; the requirement is that two branches cannot be accepted into one trunk position at once.
+
+**Scope:** the accept flow and the host verb set. Out of scope: the branch-preparation primitives, which landed as `prepare` and `history-cleanup`.
+
+**Depends on:** the change model's accept transitions in [`change_model.md`](../docs/reference/change_model.md), which are landed. The requirement is a property of the flow, not of this document.
+
+**Sources:** the merge queue as GitHub and Bors implement it, read for the queue's semantics rather than copied as a runbook. The citation record is the implementer's to add; the intent above does not depend on which one they choose.
+
+**Ends when:** an accept flow serializes the trunk mechanically, or the operator's serialization obligation is stated with its tradeoff named, and the source is recorded.
