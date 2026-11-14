@@ -11,7 +11,7 @@ An ADR records the reasoning behind one standing principle. It states the chosen
 
 - **One record per principle.** One ADR per standing principle. A local design choice rides under an existing ADR; it spawns a file only when its principle governs more than one local choice, or when no existing ADR covers it. A component may host several independent principles, each its own ADR, because an ADR belongs to a principle rather than to a file or module.
 - **When one begins.** A design settles a principle whose consequences reach beyond the change that introduced it: a contract other components must match to stay compatible, or a rule that stabilizes a convention for future work. Reach, not size. A choice that affects one implementation detail in one file does not spawn an ADR. Write it when the principle is committed or being actively resolved: it may precede or follow the implementation, and landing code does not create the obligation. The subjects that call for one are a primitive or model other components must reason about, an area whose invariants a reference document cannot state concisely, and a design document too long or branched to serve as a stable reference.
-- **The ADR is the authority, the record is evidence.** An entry holds the decision; the discussion record its work rests on holds the enquiry behind it. That record's life belongs to the [`work-log`](../work-log/SKILL.md) convention, so this one owes only the ADR side: the entry states the decision, and it does not restate the evidence the record already holds.
+- **The ADR is the authority, the record is evidence.** An entry holds the decision, its reason and the evidence that decides it. A discussion record holds the wider enquiry the entry distilled, and the ADR does not restate that. That record's life belongs to the [`work-log`](../work-log/SKILL.md) convention, so this one owes only the ADR side.
 - **Change the principle, change the record.** When a local choice outgrows its governing ADR, redesign the ADR. Do not carve out an exception inside it.
 - **The record is current.** An ADR holds the live decision and its history. When the principle changes, edit it in place.
 
@@ -29,7 +29,7 @@ A concept document states a model; its ADR states why that model beat its altern
 
 ## What an entry holds
 
-The newest entry sits at the top. The entry marked `Current:` is the live decision, and the entries below it are historical. Each entry keeps the template's field order: Decision, Rationale, Rejected alternatives, Edge cases / drivers.
+The newest entry sits at the top. The entry marked `Current:` is the live decision, and the entries below it are historical. Each entry written from the template keeps its field order: Decision (with its reason), Evidence, Rejected alternatives, Edge cases / drivers. A historical entry keeps the order it was written in.
 
 - **Requirements preamble.** A principle that has accumulated invariants across entries opens with a numbered requirements table between the `Current:` line and the first entry. The entries are judged against those requirements by name. The preamble is optional, and a young ADR with one entry may omit it.
 - **A rejection states its failure locus.** Intent (the idea cannot satisfy the requirements), execution (the idea is sound and its implementation failed), or neither (rejected as insufficient, for example superseded by a strictly better option). A rejection that surfaces a new standing requirement promotes it into the requirements table, marked with the entry that promoted it.

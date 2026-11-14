@@ -17,7 +17,7 @@ A lower-case type prefix, a colon, a space, and an imperative summary that compl
 
 | Part | Rule |
 |---|---|
-| subject | 50 characters or fewer, carrying no file path and no line number, because the diff shows those |
+| subject | 72 characters at most, targeting 50, carrying no file path and no line number, because the diff shows those |
 | body | optional, one sentence after a blank line, 280 characters or fewer |
 | footer | optional, for a reference that earns its place: a file, a record, or a decision a reader would otherwise hunt for |
 

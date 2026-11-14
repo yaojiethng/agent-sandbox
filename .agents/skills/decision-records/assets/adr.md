@@ -14,15 +14,15 @@ Copy the block into `docs/adr/<principle>.md` and replace every placeholder. The
 
 ## YYYY-MM-DD -- <decision name>
 
-**Decision:** <chosen option>
-**Rationale:** <why>
+**Decision:** <chosen option, with its reason inline>
+**Evidence:** <the material the decision rests on: a measurement, a failure, a prototype>
 **Rejected alternatives:** <each alternative and its rejection reason>
 **Edge cases / drivers:** <boundary conditions that shaped the choice>
 
 ## <prev date> -- <prior decision name>
 
 **Decision:** ...
-**Rationale:** ...
+**Evidence:** ...
 **Rejected alternatives:** ...
 **Reason superseded by <new date>:** <why the old pattern was rejected>
 ```

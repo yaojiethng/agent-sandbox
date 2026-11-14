@@ -434,7 +434,7 @@ mitigation: a review prompt must not hard-mandate "work to consensus". The conve
 
 ```text
 state: open
-scoped: M3.7.2 -- the history-as-a-commons rewrite states the rule (protect uncommitted session work from git ops)
+scoped: M3.7.2 -- the reframe subtask states the working-tree rule (protect uncommitted session work from git ops)
 legacy: none
 mitigation: negative-test mutation was reverted with `git restore scripts/stop.sh`, which
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the
