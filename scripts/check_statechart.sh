@@ -40,18 +40,24 @@ fi
 set +e
 ARGS=("$@")
 has_doc=0
+has_model=0
 for arg in "$@"; do
   case "$arg" in
-    --doc)
-      echo "Statechart gate: --doc requires a value: use --doc=PATH" >&2
+    --doc | --model | --discussion-model)
+      echo "Statechart gate: $arg requires a value: use $arg=PATH" >&2
       exit 1
       ;;
     --doc=*) has_doc=1 ;;
+    --model=*) has_model=1 ;;
+    --discussion-model=*) has_model=1 ;;
   esac
 done
-# The default document is the tree's chart, and a caller may replace it for a
-# fixture. The seam is added only when unset, so the scanner never receives two.
-if (( has_doc == 0 )); then
+# The default document is the tree's chart and the default model is its home.
+# A caller may replace either for a fixture; a doc-only fixture keeps reading its
+# own chart, so the legacy seam still works.
+if (( has_doc == 0 && has_model == 0 )); then
+  ARGS=(--doc="$REPO_ROOT/docs/reference/workflow_statechart.md" --model="$REPO_ROOT/tests/model/workflow_statechart/chart.mmd" --discussion-model="$REPO_ROOT/tests/model/workflow_statechart/discussion.mmd" "${ARGS[@]}")
+elif (( has_doc == 0 )); then
   ARGS=(--doc="$REPO_ROOT/docs/reference/workflow_statechart.md" "${ARGS[@]}")
 fi
 node "$SCAN_SCRIPT" "${ARGS[@]}"

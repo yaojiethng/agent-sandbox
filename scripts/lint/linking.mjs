@@ -211,7 +211,10 @@ export default [
             if (source === undefined) {
               onError({
                 lineNumber: index + 1,
-                detail: "link target does not exist in the image: " + target,
+                detail:
+                  "link target does not exist in the image: " +
+                  target +
+                  " -- scope: a shipped document may link only a shipped target; name a repository-only target, or ask whether this document belongs in the shipped layer",
               });
               continue;
             }

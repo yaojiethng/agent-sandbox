@@ -1,0 +1,17 @@
+stateDiagram-v2
+    state "Tenancy -- who names the record" as rec_disc_tenancy {
+        [*] --> rec_disc_owned
+        rec_disc_owned --> rec_disc_orphaned : the last naming roadmap row closes
+        rec_disc_orphaned --> rec_disc_owned : an open row takes the record over
+    }
+    state "Enquiry -- what the record has established" as rec_disc_enquiry {
+        [*] --> rec_disc_open
+        rec_disc_open --> rec_disc_concluded : the result lands
+        rec_disc_open --> rec_disc_rejected : the operator decides against
+    }
+    rec_disc_concluded --> rec_disc_retired : the file is deleted
+    rec_disc_rejected --> rec_disc_retired : the file is deleted
+    rec_disc_retired --> [*]
+    note right of rec_disc_tenancy
+        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires only from a concluded or rejected enquiry whose tenancy has become orphaned.
+    end note

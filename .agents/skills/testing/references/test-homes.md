@@ -16,6 +16,10 @@ Behavioural knowledge about seams the harness cannot call. Every file is self-co
 | Diagnostic script | `diagnose_*.sh` | Verify the internal invariants of one production script or subsystem when a dry run or pre-flight check fails to isolate the cause. It runs in a container for troubleshooting, not as a regression test, and it may be named in an acceptance criterion as a regression guard for a recurring bug class. It is named for the production script it diagnoses. |
 | Workflow test | `workflow_*.sh` | Validate a complete operator workflow against a mock repository - draft then confirm, draft then reject - asserting the resulting state, layout and exit codes. A multi-step operator workflow takes a workflow test over manual verification. |
 
+## `tests/model/`
+
+The statecharts and their TLA+ modules, as source files rather than prose. Each subject has a directory: `chart.mmd` (the Mermaid source), `transitions.md` when the model carries a transition table, and `ChangeModel.tla` and `ChangeModel.cfg` when it has an executable module. The reference documents render the chart and the table from here; `scripts/check_statechart.sh` and `scripts/check_change_model.sh` read the home and fail when a rendered copy drifts. No runner in `make test` executes a `.tla`; TLC is a manual check. A model here is not a fixture: a fixture is created and removed by its test, and a model is the maintained source a reference renders.
+
 ## `tests/integration/`
 
 End-to-end or environment-gated flows that cannot run deterministically in the unit harness: container or daemon requirements, chunky multi-process flows, metrics with no defined pass/fail. They are excluded from `make test` so the unit suite stays a deterministic `failed 0`. A flow whose seam becomes unit-testable is promoted, not kept here as a permanent home.

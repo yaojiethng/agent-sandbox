@@ -1,15 +1,17 @@
 // scripts/lint/statechart.mjs
 // Holds the statechart's two statements of the state set together: the state
-// declarations in `docs/reference/workflow_statechart.md`'s Mermaid chart, and
-// the `## States` table.
+// declarations in the model home, `tests/model/workflow_statechart/chart.mmd`,
+// and the `## States` table in `docs/reference/workflow_statechart.md`. The
+// document's chart block is a rendered copy of the model and is compared here,
+// so the model is the source and the document is the view.
 //
 // The unit is the column, not the table. The id and region columns restate the
 // chart, so they are derived from it and compared here; the gloss column is
-// authored prose and is never compared. `--write` rebuilds the two derived
-// columns and keeps every existing gloss, seeding a newly declared state's gloss
-// from its chart label.
+// authored prose and is never compared. `--write` rebuilds the document's chart
+// block and the two derived columns and keeps every existing gloss, seeding a
+// newly declared state's gloss from its chart label.
 //
-// Usage: node scripts/lint/statechart.mjs [--doc=PATH] [--write]
+// Usage: node scripts/lint/statechart.mjs [--doc=PATH] [--model=PATH] [--write]
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -17,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const usage = "usage: node scripts/lint/statechart.mjs [--doc=PATH] [--write]";
+const usage = "usage: node scripts/lint/statechart.mjs [--doc=PATH] [--model=PATH] [--discussion-model=PATH] [--write]";
 
 const die = (message) => {
   console.error(`statechart gate: ${message}`);
@@ -35,12 +37,14 @@ const valueArg = (flag) => {
 };
 
 for (const arg of args) {
-  if (arg === "--write" || arg.startsWith("--doc=")) continue;
-  if (arg === "--doc") die(`--doc requires a value with '='; ${usage}`);
+  if (arg === "--write" || arg.startsWith("--doc=") || arg.startsWith("--model=") || arg.startsWith("--discussion-model=")) continue;
+  if (arg === "--doc" || arg === "--model" || arg === "--discussion-model") die(`${arg} requires a value with '='; ${usage}`);
   die(`unknown argument ${arg}; ${usage}`);
 }
 
 const docPath = resolve(valueArg("--doc") ?? resolve(REPO_ROOT, "docs/reference/workflow_statechart.md"));
+const modelPath = valueArg("--model");
+const discussionPath = valueArg("--discussion-model");
 const write = args.includes("--write");
 
 let doc;
@@ -50,15 +54,34 @@ try {
   die(`cannot read ${docPath}: ${error.message}`);
 }
 
+let modelChart;
+if (modelPath) {
+  try {
+    modelChart = readFileSync(modelPath, "utf8").replace(/\n+$/, "");
+  } catch (error) {
+    die(`cannot read ${modelPath}: ${error.message}`);
+  }
+}
+
+let discussionChart;
+if (discussionPath) {
+  try {
+    discussionChart = readFileSync(discussionPath, "utf8").replace(/\n+$/, "");
+  } catch (error) {
+    die(`cannot read ${discussionPath}: ${error.message}`);
+  }
+}
+
 // The chart's declarations. A composite state opens a region; a plain state
 // declaration belongs to the innermost open region.
 const fence = /^```mermaid\n([\s\S]*?)\n```/m.exec(doc);
 if (!fence) die(`${docPath} has no \`\`\`mermaid block`);
+const chartText = modelChart ?? fence[1].replace(/\n+$/, "");
 
 const declared = [];
 const seen = new Set();
 const regions = [];
-for (const line of fence[1].split("\n")) {
+for (const line of chartText.split("\n")) {
   if (/^\s*}\s*$/.test(line)) {
     regions.pop();
     continue;
@@ -107,6 +130,15 @@ const rows = lines.slice(separatorAt + 1, tableEnd).map((line) => {
 const byId = new Map(rows.map((row) => [row.id, row]));
 const declaredIds = new Set(declared.map((entry) => entry.id));
 const findings = [];
+if (modelChart !== undefined && fence[1].replace(/\n+$/, "") !== modelChart) {
+  findings.push({ subject: "## The chart", message: `the rendered chart does not match ${modelPath}; run --write` });
+}
+if (discussionChart !== undefined) {
+  const blocks = [...doc.matchAll(/^```mermaid\n([\s\S]*?)\n```/gm)];
+  if ((blocks[1]?.[1] ?? "").replace(/\n+$/, "") !== discussionChart) {
+    findings.push({ subject: "## The discussion record", message: `the rendered chart does not match ${discussionPath}; run --write` });
+  }
+}
 
 for (const entry of declared) {
   const row = byId.get(entry.id);
@@ -135,8 +167,18 @@ const generatedRows = declared.map((entry) => {
 
 if (write) {
   const nextLines = [...lines.slice(0, separatorAt + 1), ...generatedRows, ...lines.slice(tableEnd)];
-  writeFileSync(docPath, doc.slice(0, sectionStart) + nextLines.join("\n") + doc.slice(sectionEnd));
-  console.log(`statechart: wrote ${generatedRows.length} row(s) to ${docPath}`);
+  let nextDoc = doc.slice(0, sectionStart) + nextLines.join("\n") + doc.slice(sectionEnd);
+  if (modelChart !== undefined) {
+    nextDoc = nextDoc.replace(/^```mermaid\n[\s\S]*?\n```/m, "```mermaid\n" + modelChart + "\n```");
+  }
+  if (discussionChart !== undefined) {
+    let index = 0;
+    nextDoc = nextDoc.replace(/^```mermaid\n[\s\S]*?\n```/gm, (match) =>
+      index++ === 1 ? "```mermaid\n" + discussionChart + "\n```" : match,
+    );
+  }
+  writeFileSync(docPath, nextDoc);
+  console.log(`statechart: wrote ${generatedRows.length} row(s) and the chart to ${docPath}`);
   process.exit(0);
 }
 

@@ -32,16 +32,23 @@ fi
 set +e
 ARGS=("$@")
 has_doc=0
+has_model=0
 for arg in "$@"; do
   case "$arg" in
-    --doc | --catalog | --tests-dir)
+    --doc | --model-dir | --catalog | --tests-dir)
       echo "Change model gate: $arg requires a value: use $arg=PATH" >&2
       exit 1
       ;;
     --doc=*) has_doc=1 ;;
+    --model-dir=*) has_model=1 ;;
   esac
 done
-if (( has_doc == 0 )); then
+# The default document renders the tree's model home. A fixture may replace
+# either; a doc-only fixture keeps reading its own chart and table, so the
+# legacy seam still works.
+if (( has_doc == 0 && has_model == 0 )); then
+  ARGS=(--doc="$REPO_ROOT/docs/reference/change_model.md" --model-dir="$REPO_ROOT/tests/model/change_model" "${ARGS[@]}")
+elif (( has_doc == 0 )); then
   ARGS=(--doc="$REPO_ROOT/docs/reference/change_model.md" "${ARGS[@]}")
 fi
 node "$SCAN_SCRIPT" "${ARGS[@]}"

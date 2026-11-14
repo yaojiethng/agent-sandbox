@@ -4,23 +4,26 @@
 // row names its lane, actor, mechanism, manual flag, subject, invariant, test
 // and mutation.
 //
-// The model is `docs/reference/change_model.md`. The chart is the diagram in
-// `## The chart`; the table is `## The transitions`. This scanner checks the
-// mapping, the lane vocabulary, the operator-git and remediation rows, the
-// delivery parameter's presence, and the mutation catalog's subject match. It
-// does not run TLC; `scripts/check_statechart.sh` owns the state table shape.
+// The model is `tests/model/change_model/`: `chart.mmd`, `transitions.md` and
+// the TLA+ module. The reference `docs/reference/change_model.md` renders the
+// chart and the table and links the TLA+; this scanner reads the home and
+// compares the rendered copy. The chart is the diagram in `## The chart`; the
+// table is `## The transitions`. This scanner checks the mapping, the lane
+// vocabulary, the operator-git and remediation rows, the delivery parameter's
+// presence, and the mutation catalog's subject match. It does not run TLC;
+// `scripts/check_statechart.sh` owns the state table shape.
 //
-// Usage: node scripts/lint/change_model.mjs [--doc=PATH] [--catalog=PATH]
-//        [--tests-dir=PATH]
+// Usage: node scripts/lint/change_model.mjs [--model-dir=PATH] [--doc=PATH]
+//        [--catalog=PATH] [--tests-dir=PATH] [--write]
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const usage = "usage: node scripts/lint/change_model.mjs [--doc=PATH] [--catalog=PATH] [--tests-dir=PATH]";
-const VALUE_FLAGS = ["--doc", "--catalog", "--tests-dir"];
+const usage = "usage: node scripts/lint/change_model.mjs [--model-dir=PATH] [--doc=PATH] [--catalog=PATH] [--tests-dir=PATH] [--write]";
+const VALUE_FLAGS = ["--model-dir", "--doc", "--catalog", "--tests-dir"];
 
 const die = (message) => {
   console.error(`change model gate: ${message}`);
@@ -38,6 +41,7 @@ const valueArg = (flag) => {
 };
 
 for (const arg of args) {
+  if (arg === "--write") continue;
   const eq = arg.indexOf("=");
   if (eq > 0 && VALUE_FLAGS.includes(arg.slice(0, eq))) continue;
   if (VALUE_FLAGS.includes(arg)) die(`${arg} requires a value with '='; ${usage}`);
@@ -45,8 +49,10 @@ for (const arg of args) {
 }
 
 const docPath = resolve(valueArg("--doc") ?? resolve(REPO_ROOT, "docs/reference/change_model.md"));
+const modelDir = valueArg("--model-dir");
 const catalogPath = resolve(valueArg("--catalog") ?? resolve(REPO_ROOT, "tests/mutations/catalog.jsonl"));
 const testsDir = resolve(valueArg("--tests-dir") ?? resolve(REPO_ROOT, "tests"));
+const write = args.includes("--write");
 
 const stripTicks = (value) => value.replace(/^`|`$/g, "").trim();
 const findings = [];
@@ -59,19 +65,51 @@ try {
   process.exit(1);
 }
 
-const chartEdges = [];
-for (const block of doc.matchAll(/^```mermaid\n([\s\S]*?)^```$/gm)) {
-  for (const line of block[1].split("\n")) {
-    const edge = /^\s*(\[\*\]|\w+)\s*-->\s*(\[\*\]|\w+)\s*(?::\s*(.*))?$/.exec(line);
-    if (!edge) continue;
-    const label = (edge[3] ?? "").trim();
-    const id = /^(T\d+)\b/.exec(label)?.[1];
-    if (!id) continue;
-    chartEdges.push({ id, from: edge[1], to: edge[2], label });
+let modelChart;
+let modelTransitions;
+if (modelDir) {
+  try {
+    modelChart = readFileSync(join(modelDir, "chart.mmd"), "utf8").replace(/\n+$/, "");
+    modelTransitions = readFileSync(join(modelDir, "transitions.md"), "utf8");
+  } catch (error) {
+    die(`cannot read the model home ${modelDir}: ${error.message}`);
   }
 }
 
-const section = /^## The transitions\n([\s\S]*?)(?=^## )/m.exec(doc)?.[1] ?? "";
+const modelTransitionsSection =
+  modelTransitions !== undefined
+    ? modelTransitions.slice(modelTransitions.indexOf("## The transitions"))
+    : undefined;
+
+if (modelChart !== undefined) {
+  const rendered = /^```mermaid\n([\s\S]*?)\n```/m.exec(doc)?.[1]?.replace(/\n+$/, "");
+  if (rendered !== modelChart) findings.push("the rendered chart does not match the model home; run --write");
+}
+if (modelTransitions !== undefined) {
+  const rendered = /^## The transitions\n[\s\S]*?(?=^## )/m.exec(doc)?.[0]?.replace(/\n+$/, "");
+  if (rendered !== modelTransitionsSection.replace(/\n+$/, "")) {
+    findings.push("the rendered transition section does not match the model home; run --write");
+  }
+}
+
+const chartText =
+  modelChart !== undefined
+    ? modelChart
+    : [...doc.matchAll(/^```mermaid\n([\s\S]*?)^```$/gm)].map((block) => block[1]).join("\n");
+const chartEdges = [];
+for (const line of chartText.split("\n")) {
+  const edge = /^\s*(\[\*\]|\w+)\s*-->\s*(\[\*\]|\w+)\s*(?::\s*(.*))?$/.exec(line);
+  if (!edge) continue;
+  const label = (edge[3] ?? "").trim();
+  const id = /^(T\d+)\b/.exec(label)?.[1];
+  if (!id) continue;
+  chartEdges.push({ id, from: edge[1], to: edge[2], label });
+}
+
+const section =
+  modelTransitionsSection !== undefined
+    ? modelTransitionsSection.replace(/^## The transitions\n/, "").replace(/\n+$/, "")
+    : (/^## The transitions\n([\s\S]*?)(?=^## )/m.exec(doc)?.[1] ?? "").replace(/\n+$/, "");
 const tableLines = section
   .split("\n")
   .map((line) => line.trim())
@@ -199,6 +237,23 @@ for (const row of rows) {
       findings.push(`${row.Id}: mutation ${id} mutates ${mutation.subject}, expected ${row.Subject}`);
     }
   }
+}
+
+if (write) {
+  if (modelChart === undefined || modelTransitions === undefined) {
+    die("--write needs --model-dir so there is a model to write from");
+  }
+  let nextDoc = doc.replace(
+    /^```mermaid\n[\s\S]*?\n```/m,
+    "```mermaid\n" + modelChart + "\n```",
+  );
+  nextDoc = nextDoc.replace(
+    /^## The transitions\n[\s\S]*?(?=^## )/m,
+    modelTransitionsSection.replace(/\n+$/, "") + "\n\n",
+  );
+  writeFileSync(docPath, nextDoc);
+  console.log(`change model: wrote the chart and the transitions to ${docPath}`);
+  process.exit(0);
 }
 
 if (findings.length > 0) {

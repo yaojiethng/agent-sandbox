@@ -258,6 +258,7 @@ test_repository_path_from_a_shipped_file_is_flagged() {
   # The target exists in the repository, and the file never runs there: the old
   # form is the defect this rule now catches.
   assert_contains "$out" 'does not exist in the image' 'the repository-relative form is flagged from a shipped file'
+  assert_contains "$out" 'name a repository-only target' 'the finding raises the scope question and the name form'
 }
 
 test_repository_path_from_a_bundled_document_is_flagged() {

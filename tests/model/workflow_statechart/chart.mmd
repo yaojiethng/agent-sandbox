@@ -1,0 +1,134 @@
+stateDiagram-v2
+    state "Entry and orientation" as entry {
+        [*] --> sess_start
+        state "sess_start -- a session begins, nothing read" as sess_start
+        state "sess_initialized -- the project's convention corpus is installed" as sess_initialized
+        state "sess_oriented -- a check-in has run, the tree is inventoried" as sess_oriented
+        state "sess_triaged -- the open rows are sorted into runnable and questioned" as sess_triaged
+        sess_start --> sess_initialized : /bootstrap
+        sess_start --> sess_oriented : /gm
+        sess_initialized --> sess_oriented : /gm
+        sess_oriented --> sess_triaged : /backlog-triage
+    }
+
+    state "Maintenance checks" as checks {
+        state "chk_orientation -- the /gm survey runs" as chk_orientation
+        state "chk_roadmap -- the roadmap-maintenance skill runs" as chk_roadmap
+        state "chk_record -- the handover-maintenance skill runs" as chk_record
+        state "chk_docs -- the documentation pass runs" as chk_docs
+        state "chk_history -- the history-cleanup skill runs" as chk_history
+        state "chk_corpus -- the initialize skill runs" as chk_corpus
+        state "chk_close -- both record checks rerun over the rows the close wrote" as chk_close
+    }
+
+    state "Milestone grain" as milestone {
+        state "ms_none -- no active milestone" as ms_none
+        state "ms_active -- one or more milestones are active, the summary table's In progress rows" as ms_active
+        state "ms_close_gate -- compaction and changelog presented, awaiting release" as ms_close_gate
+        state "ms_closed -- the close is recorded, its bookkeeping commit landed" as ms_closed
+        [*] --> ms_none
+        ms_none --> ms_active : /milestone-start or the operator promotes a successor
+        ms_active --> ms_close_gate : /milestone-close
+        ms_close_gate --> ms_closed : operator releases the close
+        ms_closed --> ms_active : the next milestone is promoted
+        ms_closed --> ms_none : the next milestone is shaped first
+    }
+
+    state "Iteration grain" as iteration {
+        state "it_open -- no Active handover on this track, awaiting a directive" as it_open
+        state "it_scope_gate -- scope table and acceptance criteria presented" as it_scope_gate
+        state "it_implementing -- work is landing in the tree, findings appended" as it_implementing
+        state "it_acceptance_gate -- the six-section summary presented, awaiting release" as it_acceptance_gate
+        state "it_closed -- the handover reads Closed, the write-back applied" as it_closed
+        state "it_committed -- the iteration's delivery commit landed" as it_committed
+        it_open --> it_scope_gate : /iter or /sidequest opens the iteration
+        it_scope_gate --> it_implementing : operator releases the scope
+        it_implementing --> it_scope_gate : a design question reopens the scope
+        it_implementing --> it_acceptance_gate : /iter reaches its pre-close summary
+        it_acceptance_gate --> it_implementing : a defect is fixed rather than filed
+        it_acceptance_gate --> chk_close : operator releases, /wrapup writes its rows
+        chk_close --> it_closed : both reports clean, the close hands off to /commit
+        it_closed --> it_committed : /commit
+        it_committed --> it_open : the operator picks the next iteration
+    }
+
+    state "Sidequest" as sidequest {
+        state "sq_running -- the open iteration is paused for operator-directed work" as sq_running
+        state "sq_committed -- the sidequest's own delivery commit landed" as sq_committed
+        it_implementing --> sq_running : /sidequest, when the work cannot wait
+        sq_running --> sq_committed : /commit
+        sq_committed --> it_implementing : the paused iteration resumes
+        sq_running --> it_implementing : the sidequest is ruled in scope, no run
+    }
+
+    state "Planning and publishing" as planning {
+        state "plan_scoping -- the milestone is being cut into iterations" as plan_scoping
+        state "plan_interview -- the grill-me skill probes the design" as plan_interview
+        state "plan_released -- rows, stories and ADRs are written back" as plan_released
+        ms_active --> plan_scoping : /plan or /scope
+        plan_scoping --> plan_interview : the design is probed
+        plan_scoping --> it_open : the operator releases the brief to a run
+        plan_interview --> plan_released : operator releases the scope
+        plan_released --> chk_close : /wrapup writes its rows
+    chk_close --> ms_active : both reports clean, no delivery commit
+    }
+
+    state "Recovery" as recovery {
+        state "rep_partial -- the record's intent and the disk disagree; the iteration is rebuilt" as rep_partial
+        state "rep_absent -- the record claims a commit the repository lacks; it is rebuilt" as rep_absent
+        it_implementing --> rep_partial : /recovery, the description is partial
+        rep_partial --> it_committed : rebuilt from the record
+        it_committed --> rep_absent : /recovery, the description is absent
+        rep_absent --> it_committed : rebuilt, one commit per iteration
+    }
+
+    state "Correction" as correction {
+        state "cor_bad -- the commit is wrong; it is amended or dropped" as cor_bad
+        state "cor_messy -- the series is noisy; history-cleanup rewrites it" as cor_messy
+        it_committed --> cor_bad : /record-correction, the commit is wrong
+        cor_bad --> it_closed : the fix folds into the closed commit
+        it_committed --> cor_messy : the series is noisy
+        cor_messy --> chk_history : the operator runs history-cleanup
+    }
+
+    state "Records at rest" as records {
+        state "rec_handover_active -- the iteration's record is open" as rec_handover_active
+        state "rec_handover_closed -- the iteration's record is closed" as rec_handover_closed
+        state "rec_roadmap_open -- a row is open" as rec_roadmap_open
+        state "rec_roadmap_closed -- a row is closed with its outcome" as rec_roadmap_closed
+        state "rec_discussion_open -- an enquiry is in flight" as rec_discussion_open
+        state "rec_discussion_concluded -- the enquiry concluded, its row still open" as rec_discussion_concluded
+        state "rec_adr_accepted -- a decision record is current" as rec_adr_accepted
+        it_scope_gate --> rec_handover_active : the handover is opened
+        rec_handover_active --> rec_handover_closed : /commit lands the status flip
+        plan_released --> rec_roadmap_open : a row is filed
+        it_closed --> rec_roadmap_closed : the write-back closes the row
+        plan_interview --> rec_discussion_open : a design or study opens
+        it_closed --> rec_discussion_concluded : an enquiry reaches its result
+        plan_released --> rec_adr_accepted : a settled decision gets an ADR
+        rec_handover_closed --> sess_oriented : the next iteration reads the prior record
+        rec_roadmap_open --> it_open : the operator picks the row
+        rec_roadmap_open --> plan_scoping : the milestone's rows are read
+        rec_roadmap_closed --> chk_roadmap : the closed rows are the compaction's input
+        rec_discussion_open --> it_scope_gate : the record is the scope's input
+        rec_discussion_concluded --> it_scope_gate : the concluded record is the design
+        rec_adr_accepted --> it_implementing : the decision constrains the work
+    }
+
+    sess_oriented --> it_open : the operator names a roadmap row
+    sess_triaged --> it_open : a runnable row is picked
+    it_open --> ms_active : no milestone is active and the row needs one
+
+    sess_oriented --> chk_orientation : /gm surveys the project
+    ms_active --> chk_roadmap : /milestone-close runs the compaction pass
+    it_implementing --> chk_roadmap : /iter runs the roadmap record check
+    it_implementing --> chk_record : /iter runs the handover record check
+    it_implementing --> chk_docs : /iter's information-gathering pass
+    sess_initialized --> chk_corpus : /bootstrap installs the corpus
+
+    chk_corpus --> sess_oriented : the corpus is installed
+    chk_orientation --> sess_oriented : the inventory is presented
+    chk_roadmap --> chk_record : the two reports meet at one gate
+    chk_record --> it_acceptance_gate : the findings queue carries the report
+    chk_docs --> it_implementing : the report is applied
+    chk_history --> it_committed : the series is clean

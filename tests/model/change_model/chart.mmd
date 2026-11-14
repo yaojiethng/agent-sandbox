@@ -1,0 +1,22 @@
+---
+title: "The change pipeline"
+---
+stateDiagram-v2
+  state "Legend" as legend {
+    l0: agent
+    l1: host
+  }
+  class l0 blue
+  class l1 teal
+  [*] --> NotReady
+  NotReady --> Ready: T01 prepare
+  Ready --> Ready: T02 history-cleanup
+  Ready --> Ready: T03 export
+  Ready --> Drafted: T04 draft
+  Drafted --> Drafted: T05 review
+  Drafted --> Accepted: T06 confirm
+  Drafted --> Rejected: T07 reject
+  Ready --> Applied: T08 apply
+  Ready --> NotReady: T09 the head advances
+  Drafted --> Drafted: T10 operator git
+  Drafted --> Drafted: T11 reject and redraft

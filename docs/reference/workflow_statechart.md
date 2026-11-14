@@ -18,6 +18,8 @@ The diagram is Mermaid 12.1.0, `stateDiagram-v2`, in the conservative subset: co
 
 ## The chart
 
+The block below and the `## States` table are rendered from the model's source by `scripts/check_statechart.sh --write`.
+
 <!-- snippet: illustrative -->
 ```mermaid
 stateDiagram-v2
@@ -158,7 +160,7 @@ stateDiagram-v2
 
 ## States
 
-The id and region columns are generated from the chart's declarations: edit the chart, then run `bash scripts/check_statechart.sh --write`. The gate `bash scripts/check_statechart.sh` fails when a state is declared on one side only, or when a region moves in the table alone. The gloss column is authored prose and is not compared, so it may say more than the chart's label.
+The id and region columns are generated from the chart's declarations: edit the model home, then run `bash scripts/check_statechart.sh --write`. The gate `bash scripts/check_statechart.sh` fails when the rendered block differs from the model, when a state is declared on one side only, or when a region moves in the table alone. The gloss column is authored prose and is not compared, so it may say more than the chart's label.
 
 | Id | Region | The state it names |
 |---|---|---|
@@ -201,6 +203,8 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `rec_adr_accepted` | records | a decision record is current |
 
 ## The discussion record
+
+The block below is rendered from the model's source by `scripts/check_statechart.sh --write`.
 
 One record is one instance of a two-region machine. What its enquiry has established, and whether a roadmap row still names the file, are independent facts: the first is the record's state, carried in its name and its `**Status:**` line, and the second is its tenancy, read from `devlog/roadmap.md`. The record dies only where the two meet.
 
