@@ -427,9 +427,9 @@ test_lint_gate_set_is_complete() {
   for g in check_shell.sh check_lib_contract.sh check_markdown.sh; do
     assert_contains "$gates" "$g" "GATES includes $g"
   done
-  # check_*.sh invoked by other entry points (the repo Makefile), never by the
-  # lint umbrella.
-  local non_umbrella="check_lib_liveness.sh check_test_coverage.sh check_test_liveness.sh check_test_smoke.sh"
+  # check_*.sh invoked by other entry points (the repo Makefile, `/commit`),
+  # never by the lint umbrella.
+  local non_umbrella="check_lib_liveness.sh check_test_coverage.sh check_test_liveness.sh check_test_smoke.sh check_commit_message.sh"
   for f in "$REPO_ROOT"/scripts/check_*.sh; do
     base=$(basename "$f")
     if [[ " $gates " == *" $base "* || " $non_umbrella " == *" $base "* ]]; then

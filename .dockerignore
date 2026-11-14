@@ -4,6 +4,7 @@
 # survive it, and scripts/check_build_context.sh holds the two equal in both
 # directions.
 .git/
+.githooks/
 .devcontainer/
 .scratchpad/
 .agents/

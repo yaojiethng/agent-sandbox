@@ -1,0 +1,15 @@
+{
+  "id": "conventional-commits",
+  "title": "Conventional Commits 1.0.0",
+  "author": "Conventional Commits contributors",
+  "publisher": "conventionalcommits.org",
+  "url": "https://www.conventionalcommits.org/en/v1.0.0/",
+  "version": "1.0.0, read 2026-11-14",
+  "record": {
+    "source": "The commit message grammar: `type[(scope)][!]: description`, a blank line before the body, an optional body and footers, and the `!` / `BREAKING CHANGE` marker. The specification is the world's; this repository adopts it as the grammar and states its own policy over it.",
+    "kept": "The grammar, and the breaking-change marker with it. A message that parses as Conventional Commits parses here, so a reader or a tool from outside this repository understands it.",
+    "rewritten": "The type vocabulary is closed to the active types in `references/commit-types.md`, and the scope field is not adopted because component boundaries are not stable enough to name. Both are policy, not grammar: the parser accepts `type(scope):`, and the policy refuses it with that layer named.",
+    "added": "A subject budget of 72 characters at most, targeting 50, and a body budget of 280 characters at most, which the specification does not state; the imperative subject; and the delivery/intermediate split, where a `wip:` intermediate is not a delivery message.",
+    "dropped": "Free-form types, the scope field for now, and the specification's silence on length."
+  }
+}

@@ -21,20 +21,6 @@ An iteration ends as one delivery commit carrying the work, the handover marked 
 
 First, one delivery commit per iteration: every `wip:` checkpoint and typed intermediate commit folds into it. Second, intermediate commits are `wip:` checkpoints, never typed deliveries: a `fix:`/`docs:`/`chore:`/`feat:` prefix mid-iteration is reserved for the delivery commit, and the status flip and write-back never form their own commit. Third, an open handover bounds the iteration: `iteration_protocol.md` requires the handover open before output, and a commit with no open handover is a missing record. Fourth, fix the root cause: squash the pile now and record what let it accumulate, as an entry on `devlog/AGENT_FEEDBACK.md` (grep first) or an amendment to the rule that failed to stop it.
 
-## Called from
-
-- `/iter` and `/plan` run the checkpoint during the session and land the commit at the end, handed here by `/wrapup`'s close.
-- `/sidequest` lands its single delivery commit here.
-- the `prepare` runbook folds a port's current-state corrections here.
-- `/milestone-close` does not invoke it: the milestone-record close lands its own bookkeeping commit.
-
-## Input contract
-
-| Input | Meaning |
-|---|---|
-| commit range | The branch's commits. The base is the branch point, which is the last delivery commit on the trunk; if no base is identifiable, use the current branch tip range back to the previous merge base. |
-| current branch | The branch holding the iteration's work, normally `feat/*` or `milestone/*`. |
-
 ## Part A - The checkpoint (in-session, recurring)
 
 Run this after each committed task group within the session. It is a hygiene pass, not a release point; it does not stop the session.
@@ -46,6 +32,8 @@ Commit the iteration's work before its boundary, even when incomplete: a `wip:` 
 ```bash
 git log --oneline <base>..HEAD
 ```
+
+`<base>` is the branch point, the last delivery commit on the trunk; with no named base, the previous merge base.
 
 List the commits. Identify each by kind: the delivery commit, `wip:` checkpoints, typed intermediate commits, and the close edit.
 
@@ -91,23 +79,29 @@ git status --short               # clean
 bash scripts/lint.sh             # pre-close gate clean
 ```
 
-## Part C - The commit (at the iteration's close)
+## Part B - The commit (at the iteration's close)
 
 Run once, after `/wrapup` has run the close steps and handed the commit here.
 
-### C1. Prepare all files for the commit
+### B1. Prepare all files for the commit
 
 Mark each AC accepted or pushed. Complete the Completed section and fold every not-in-scope item into a Scope sentence with its reason. Set `Status: Closed`. The handover format gate checks the record's shape at the commit. Confirm the roadmap write-back from `/wrapup` is staged, or that its recorded outcome is None. When the iteration completed or rescoped a roadmap task, that row edit rides this commit; an iteration that changed no task writes back nothing.
 
 A working tree holding changes from more than one iteration is split before the commit: save the diff, reset the file, and apply only the hunks that belong to each commit. Where the changes interleave inside one section, split the file or restructure so each iteration's work is disjoint.
 
-### C2. Land the single commit
+### B2. Land the single commit
 
-Generate the commit message per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`: a valid type prefix from the active types table, an imperative subject that completes "this commit will", and a body that carries the reason without restating the diff or duplicating the handover. Commit the work, the `Status: Closed` edit, and the roadmap write-back as one commit.
+Write the message per the `git-discipline` table: the type, an imperative subject, the reason. Commit the work, the `Status: Closed` edit, and the roadmap write-back as one commit:
 
-### C3. Post-commit compliance self-check
+```bash
+git commit -F <message-file>
+```
 
-Re-read the session's commits against the rules before reporting success. Run `git log` over the session's range and check it against the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): (1) the range's squash state holds exactly one delivery-typed commit per iteration and its handover -- read the amended history, not pre-amend hashes; (2) every subject's type is in the Active Types table; (3) no subject carries a scope field; (4) no commit's only path is a handover file, unless the iteration's deliverable was the record change itself; (5) no close edit or roadmap write-back is separated from its iteration's work -- a standalone `plan:` commit is bookkeeping, not this violation; (6) roadmap and milestone bookkeeping is typed `plan:`; (7) one handover bounds the range; (8) the delivery commit matches the handover's scope -- one iteration lands as one commit, no scope item outside the commit and no commit content outside the scope; (9) the range left a roadmap write-back -- one row event per the unconditional write-back invariant, either the session's own task marked with its landing note or a subtask row raised under the owning parent. An iteration whose work is not a roadmap task still writes back: the row that records what landed, or a Decision entry in the changelog when no task row applies. A `wip:` commit in the range is not a violation: it is legal and folds at the close. A violation found here is fixed before the commit is reported -- by amending, folding, or retyping -- or recorded as a deliberate deviation with its reason. This check is agent-side; it adds no operator stop beyond the release gate the iteration already passed.
+The `commit-msg` hook in `.githooks/` checks the message and refuses a non-conforming one, naming the layer and the rule; fix the message and commit again.
+
+### B3. Post-commit compliance self-check
+
+Re-read the session's commits against the rules before reporting success. Run `git log` over the session's range and check it against the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, and [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md): (1) the range's squash state holds exactly one delivery-typed commit per iteration and its handover -- read the amended history, not pre-amend hashes; (2) every commit's message passes `scripts/check_commit_message.sh`, which owns the type set, the scope field and the length; (3) no commit's only path is a handover file, unless the iteration's deliverable was the record change itself; (4) no close edit or roadmap write-back is separated from its iteration's work -- a standalone `plan:` commit is bookkeeping, not this violation; (5) roadmap and milestone bookkeeping is typed `plan:`; (6) one handover bounds the range; (7) the delivery commit matches the handover's scope -- one iteration lands as one commit, no scope item outside the commit and no commit content outside the scope; (8) the range left a roadmap write-back -- one row event per the unconditional write-back invariant, either the session's own task marked with its landing note or a subtask row raised under the owning parent. An iteration whose work is not a roadmap task still writes back: the row that records what landed, or a Decision entry in the changelog when no task row applies. A `wip:` commit in the range is not a violation: it is legal and folds at the close. A violation found here is fixed before the commit is reported -- by amending, folding, or retyping -- or recorded as a deliberate deviation with its reason. This check is agent-side; it adds no operator stop beyond the release gate the iteration already passed.
 
 ## Failure modes
 

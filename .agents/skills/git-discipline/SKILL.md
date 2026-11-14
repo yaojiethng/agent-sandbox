@@ -23,7 +23,9 @@ A lower-case type prefix, a colon, a space, and an imperative summary that compl
 
 The description states why the change happened and what category it is, not what changed line by line. A reason longer than 280 characters lives in the handover or the ADR, and the body points there. Drop a reference added for completeness, and never cite a transient identifier such as a session id.
 
-The shape follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): where this file is silent, that specification decides. The project narrows it in two ways, and neither is a gap: the type set is the nine active types, and there is no scope field.
+`scripts/check_commit_message.sh` checks a delivery message against this table; [`/commit`](../../../workflow/coding-agent/prompts/commit.md) runs it before the commit.
+
+The shape follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): where this file is silent, that specification decides. The project narrows it in two ways, and neither is a gap: the type set is the active types in [`references/commit-types.md`](references/commit-types.md), and there is no scope field.
 
 **The delivery commit carries an active type. An intermediate commit never does.** A typed intermediate reads as a closed deliverable that later folds away, a false delivery surface. An intermediate is a `wip:` commit, a fixup, or an amend.
 

@@ -1,0 +1,8 @@
+#!/bin/sh
+# .githooks/commit-msg
+# Validates the message before the commit is created, with the same check
+# `/commit` points at. Registered per clone by
+# `git config core.hooksPath .githooks`; without that line the file is inert.
+set -u
+root="$(git rev-parse --show-toplevel)" || exit 1
+exec "$root/scripts/check_commit_message.sh" "$1"
