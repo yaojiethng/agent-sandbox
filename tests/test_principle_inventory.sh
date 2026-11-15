@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Tests for scripts/judgement_inventory.mjs, the judgement inventory lever.
+# Tests for scripts/principle_inventory.mjs, the principle inventory lever.
 #
-# The lever's subject is the provider root's judgement skills. The fixture
+# The lever's subject is the provider root's principle skills. The fixture
 # builds that root under FIXTURE_DIR, one skill per structural fact, so the test
 # does not depend on the real corpus's current field population.
 #
 # Covers:
 #   fact    -- an unresolved declared name, a missing field, an explicit empty
 #              list, and a duplicate declared name are each reported
-#   edge    -- a prose link to another judgement is a candidate; a link to a
-#              non-judgement skill is not
+#   edge    -- a prose link to another principle is a candidate; a link to a
+#              non-principle skill is not
 #   answer  -- two runs print the same JSON, and an unreadable root refuses
 #
 # The known set is bound before it is asserted on: the test asserts which names
@@ -21,7 +21,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 REPO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LEVER="$REPO_ROOT_DIR/scripts/judgement_inventory.mjs"
+LEVER="$REPO_ROOT_DIR/scripts/principle_inventory.mjs"
 ROOT_REL="src/reasoning/agent-runtime/pi/config/agent/skills"
 
 write_skill() {
@@ -40,30 +40,30 @@ build_fixture() {
   local d="$1"
   write_skill "$d" principle-a \
     'name: principle-a
-description: "a judgement with duplicates and an unresolved name"
+description: "a principle with duplicates and an unresolved name"
 metadata:
   neighbours:
     - principle-b
     - principle-b
     - principle-missing' \
-    'See [b](../principle-b/SKILL.md) and [not a judgement](../not-a-judgement/SKILL.md).'
+    'See [b](../principle-b/SKILL.md) and [not a principle](../not-a-principle/SKILL.md).'
   write_skill "$d" principle-b \
     'name: principle-b
-description: "a judgement that declares no neighbour"
+description: "a principle that declares no neighbour"
 metadata:
   neighbours: []'
   write_skill "$d" principle-c \
     'name: principle-c
-description: "a judgement with no neighbours field"'
+description: "a principle with no neighbours field"'
   write_skill "$d" principle-d \
     'name: principle-d
-description: "a judgement with one valid neighbour"
+description: "a principle with one valid neighbour"
 metadata:
   neighbours:
     - principle-a'
-  write_skill "$d" not-a-judgement \
-    'name: not-a-judgement
-description: "a support skill, not a judgement"'
+  write_skill "$d" not-a-principle \
+    'name: not-a-principle
+description: "a support skill, not a principle"'
 }
 
 json() {
@@ -71,11 +71,11 @@ json() {
 }
 
 names() {
-  node -e 'const d=JSON.parse(process.argv[1]);console.log(d.judgements.map(j=>j.name).join(","))' "$1"
+  node -e 'const d=JSON.parse(process.argv[1]);console.log(d.principles.map(j=>j.name).join(","))' "$1"
 }
 
 state_of() {
-  node -e 'const d=JSON.parse(process.argv[1]);const j=d.judgements.find(x=>x.name===process.argv[2]);console.log(j?j.state:"absent")' "$1" "$2"
+  node -e 'const d=JSON.parse(process.argv[1]);const j=d.principles.find(x=>x.name===process.argv[2]);console.log(j?j.state:"absent")' "$1" "$2"
 }
 
 kinds_of() {
@@ -83,16 +83,16 @@ kinds_of() {
 }
 
 cross_of() {
-  node -e 'const d=JSON.parse(process.argv[1]);const j=d.judgements.find(x=>x.name===process.argv[2]);console.log(j?j.crossLinks.join(","):"absent")' "$1" "$2"
+  node -e 'const d=JSON.parse(process.argv[1]);const j=d.principles.find(x=>x.name===process.argv[2]);console.log(j?j.crossLinks.join(","):"absent")' "$1" "$2"
 }
 
-test_the_judgement_set_is_named() {
+test_the_principle_set_is_named() {
   local d out
   d="$(get_fixture_dir)"
   build_fixture "$d"
   out="$(json "$d")"
   assert_eq "$(names "$out")" "principle-a,principle-b,principle-c,principle-d" \
-    "the lever reads judgement names and ignores a support skill"
+    "the lever reads principle names and ignores a support skill"
 }
 
 test_unresolved_name_is_reported() {
@@ -101,7 +101,7 @@ test_unresolved_name_is_reported() {
   build_fixture "$d"
   out="$(json "$d")"
   assert_eq "$(kinds_of "$out" principle-a)" "duplicate-neighbour,unresolved-neighbour" \
-    "a duplicate and a name that resolves to no judgement are two findings"
+    "a duplicate and a name that resolves to no principle are two findings"
 }
 
 test_missing_field_is_reported() {
@@ -136,7 +136,7 @@ test_a_prose_link_is_a_candidate() {
   build_fixture "$d"
   out="$(json "$d")"
   assert_eq "$(cross_of "$out" principle-a)" "principle-b" \
-    "a prose link to another judgement is surfaced, and a non-judgement link is not"
+    "a prose link to another principle is surfaced, and a non-principle link is not"
 }
 
 test_two_runs_are_identical() {
@@ -157,7 +157,7 @@ test_an_unreadable_root_refuses() {
   assert_contains "$out" "no skills root at" "the refusal names the missing root"
 }
 
-run_test test_the_judgement_set_is_named
+run_test test_the_principle_set_is_named
 run_test test_unresolved_name_is_reported
 run_test test_missing_field_is_reported
 run_test test_explicit_empty_is_not_missing

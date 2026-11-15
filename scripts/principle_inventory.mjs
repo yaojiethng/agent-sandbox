@@ -1,19 +1,19 @@
 #!/usr/bin/env node
-// scripts/judgement_inventory.mjs
+// scripts/principle_inventory.mjs
 //
-// The judgement inventory: what each judgement declares as its nearest
-// judgements, and which judgements its prose already points at.
+// The principle inventory: what each principle declares as its nearest
+// principles, and which principles its prose already points at.
 //
-// The design record is devlog/discussions/20261114-design-concluded-judgement_corpus_admission.md.
+// The design record is devlog/discussions/20261114-design-concluded-principle_corpus_admission.md.
 // This is the lever, not the gate: it reports structural facts and exits zero,
 // so it can run before the corpus is complete. The gate row imports inventory()
 // and decides whether a finding fails.
 //
 // Usage:
-//   node scripts/judgement_inventory.mjs [--root DIR] [--json]
+//   node scripts/principle_inventory.mjs [--root DIR] [--json]
 //
-// A judgement is a skill under the provider root whose name starts with
-// `principle-` or `communication-principle-`. The root is the repository by
+// A principle is a skill under the provider root whose name starts with
+// `principle-` or `<type>-principle-`. The root is the repository by
 // default, so a caller from any directory reads the same corpus.
 
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -25,7 +25,7 @@ import { loadPiFrontmatter } from "./lint/pi-frontmatter.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SKILLS = join("src", "reasoning", "agent-runtime", "pi", "config", "agent", "skills");
-const JUDGEMENT = /^(?:communication-)?principle-/;
+const PRINCIPLE = /^(?:[a-z][a-z0-9]*-)?principle-/;
 const LINK_OUTSIDE = /^(?:[a-z][a-z0-9+.-]*:|\/|#|\$)/i;
 
 function isDirectory(path) {
@@ -75,14 +75,14 @@ function readNeighbours(frontmatter, skill, findings) {
   return { state: neighbours.length === 0 ? "empty" : "declared", neighbours };
 }
 
-/** Every judgement a skill's Markdown links to, deduplicated and sorted. */
-function crossLinks(skillDir, judgementDirs) {
+/** Every principle a skill's Markdown links to, deduplicated and sorted. */
+function crossLinks(skillDir, principleDirs) {
   const names = new Set();
   for (const file of markdownFiles(skillDir)) {
     for (const link of markdownLinks(file)) {
       if (!link.target || LINK_OUTSIDE.test(link.target)) continue;
       const target = resolve(dirname(file), link.target);
-      for (const [name, dir] of judgementDirs) {
+      for (const [name, dir] of principleDirs) {
         if (name === basename(skillDir)) continue;
         if (inside(target, dir)) {
           names.add(name);
@@ -103,7 +103,7 @@ function compareFindings(a, b) {
 }
 
 /**
- * Read the judgement corpus under `root`. `parseFrontmatter` is pi's own
+ * Read the principle corpus under `root`. `parseFrontmatter` is pi's own
  * parser, so the lever reads the block a skill loader reads. Throws when the
  * skills root is unreadable, because that is a failed run, not an empty corpus.
  */
@@ -117,14 +117,14 @@ export function inventory(root = REPO, parseFrontmatter) {
   }
 
   const dirs = discoverSkillDirs(skillsRoot)
-    .filter((dir) => JUDGEMENT.test(basename(dir)))
+    .filter((dir) => PRINCIPLE.test(basename(dir)))
     .sort((a, b) => basename(a).localeCompare(basename(b)));
-  const judgementDirs = dirs.map((dir) => [basename(dir), dir]);
-  const judgementNames = new Set(judgementDirs.map(([name]) => name));
+  const principleDirs = dirs.map((dir) => [basename(dir), dir]);
+  const principleNames = new Set(principleDirs.map(([name]) => name));
   const findings = [];
-  const judgements = [];
+  const principles = [];
 
-  for (const [name, dir] of judgementDirs) {
+  for (const [name, dir] of principleDirs) {
     const skillFile = join(dir, "SKILL.md");
     if (!isFile(skillFile)) {
       findings.push({ skill: name, kind: "missing-skill-file", detail: "SKILL.md is absent" });
@@ -157,45 +157,45 @@ export function inventory(root = REPO, parseFrontmatter) {
           kind: "self-neighbour",
           detail: `${name} names itself`,
         });
-      } else if (!judgementNames.has(neighbour)) {
+      } else if (!principleNames.has(neighbour)) {
         findings.push({
           skill: name,
           kind: "unresolved-neighbour",
-          detail: `${neighbour} is not a judgement in the provider root`,
+          detail: `${neighbour} is not a principle in the provider root`,
         });
       }
     }
 
-    judgements.push({
+    principles.push({
       name,
       state,
       neighbours,
-      crossLinks: crossLinks(dir, judgementDirs),
+      crossLinks: crossLinks(dir, principleDirs),
     });
   }
 
   findings.sort(compareFindings);
-  return { judgements, findings };
+  return { principles, findings };
 }
 
 function printPlain(result) {
   const findings = result.findings.length;
   console.log(
-    `judgement-inventory: ${result.judgements.length} judgement(s), ${findings} finding(s)`,
+    `principle-inventory: ${result.principles.length} principle(s), ${findings} finding(s)`,
   );
-  for (const judgement of result.judgements) {
-    console.log(`judgement ${judgement.name}`);
+  for (const principle of result.principles) {
+    console.log(`principle ${principle.name}`);
     const declared =
-      judgement.state === "declared"
-        ? judgement.neighbours.join(", ")
-        : judgement.state === "missing"
+      principle.state === "declared"
+        ? principle.neighbours.join(", ")
+        : principle.state === "missing"
           ? "undeclared"
-          : judgement.state === "empty"
+          : principle.state === "empty"
             ? "[]"
             : "malformed";
     console.log(`  neighbours: ${declared}`);
-    if (judgement.crossLinks.length > 0) {
-      console.log(`  cross-links: ${judgement.crossLinks.join(", ")}`);
+    if (principle.crossLinks.length > 0) {
+      console.log(`  cross-links: ${principle.crossLinks.join(", ")}`);
     }
   }
   for (const finding of result.findings) {
@@ -214,21 +214,21 @@ async function main(argv) {
     } else if (arg === "--json") {
       json = true;
     } else if (arg === "--help" || arg === "-h") {
-      console.log("usage: node scripts/judgement_inventory.mjs [--root DIR] [--json]");
+      console.log("usage: node scripts/principle_inventory.mjs [--root DIR] [--json]");
       return 0;
     } else {
-      console.error(`judgement inventory: unknown argument '${arg}'`);
+      console.error(`principle inventory: unknown argument '${arg}'`);
       return 2;
     }
   }
 
-  const { parseFrontmatter } = await loadPiFrontmatter("Judgement inventory");
+  const { parseFrontmatter } = await loadPiFrontmatter("Principle inventory");
 
   let result;
   try {
     result = inventory(root, parseFrontmatter);
   } catch (error) {
-    console.error(`judgement inventory: ${error.message}`);
+    console.error(`principle inventory: ${error.message}`);
     return 2;
   }
 

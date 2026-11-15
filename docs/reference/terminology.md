@@ -32,10 +32,11 @@ The sentences of instruction text: a prompt, a skill, and the conventions they r
 - A `rule` names the artifact that fails when it is broken.
 - A `fact` carries its evidence, or is marked as an inference.
 - A `permission` names what grants it.
+- A judgement's home is a `principle skill`; the artifact's definition is that entry, and the modality axis does not classify it.
 - The decision, the framework it follows and what that framework gave us, and why the classification is a standard rather than a gate: `docs/adr/instruction_modality.md`.
 - The obligations each kind owes are the `instruction-authoring` convention's.
 
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-14
 
 ## workflow document
 
@@ -52,6 +53,35 @@ A prompt or a skill: instruction text an agent executes. Its form is a second ax
 - The authoring rules are this project's `instruction-authoring` convention, which does not ship.
 
 **Last updated:** 2026-11-03
+
+## principle skill
+
+A skill that helps a reader produce or choose the criteria a piece of work needs, rather than apply a fixed procedure.
+
+### Identity
+
+- the general form is `principle-<slug>`; the domain-narrowed form is `<type>-principle-<slug>`, where `<type>` names the domain
+- a workflow document whose carrier is a skill: a directory with `SKILL.md` and the siblings it names
+- a meta-level narrowing of the general skill interface: a general skill applies a procedure, while a principle produces or chooses the criteria that procedure needs
+- the norm it states carries a modality; the skill is the artifact, the norm is the content
+- formerly called a "judgement skill"; `judgement` is a modality kind, not the artifact
+
+### Scope
+
+- the text or artifact the judgement applies to; the description names the situation the reader is in
+- the corpus is the set of these skills where a reader holds them; this tree's inventory reads the repo-owned provider root
+- the `<type>-` prefix narrows the domain of application, not the class; a principle without the prefix is general
+- not a procedure, a runbook, a prompt or a modality
+
+### Relationships
+
+- `modality` holds the norm's kind and force, and does not classify an artifact; a judgement's home is a principle skill
+- `workflow document` holds the carrier and form
+- the body shape and its gate: `docs/adr/principle_skill_shape.md`, `scripts/check_document_shape.sh`
+- the admission mechanism is the neighbour field, not yet built
+- the authoring rule is the `instruction-authoring` convention's step 2
+
+**Last updated:** 2026-11-14
 
 ## session
 
