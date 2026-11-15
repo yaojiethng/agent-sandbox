@@ -39,9 +39,9 @@ Each active-operator prompt invokes the part of this runbook that applies:
 
 Run this once, after the operator's forward signal on the release gate: that signal is this part's release, and Part B adds no second approval, per [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) gate invariants.
 
-### B1. AC verification
+### B1. AC verification and the status flip
 
-Read the acceptance criteria from the session's handover. For each criterion, state what was checked, what the result was, and whether it passes. If any criterion fails, stop -- do not close until the gap is resolved or explicitly deferred with a reason.
+Read the acceptance criteria from the handover. For each criterion, state what was checked, what the result was, and whether it passes, then mark it `Agent [x]`, or mark it pushed with the reason. If any criterion fails, stop -- do not close until the gap is resolved or explicitly deferred with a reason. Then set the handover's `status` to `Closed`: the record closes here, and [`/commit`](commit.md) stages what this step wrote.
 
 ### B2. Propagation replay
 
@@ -81,7 +81,7 @@ Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `handover-m
 
 The close stops here; the commit begins at [`/commit`](commit.md) Part C.
 
-- **What `/commit` owns.** Preparing the handover, marking each AC accepted or pushed, setting `Status: Closed`, landing the work, the status flip and the roadmap write-back as one delivery commit, and the post-commit compliance self-check. It also owns the in-session checkpoint that runs after each committed task group.
+- **What `/commit` owns.** Landing the work, the closed handover and the roadmap row as one delivery commit, and the post-commit self-check. It also owns the in-session checkpoint that runs after each committed task group.
 - **What stays here.** Every close step above, and the evidence they produced is the evidence `/commit` stages.
 - **Where this runbook stops.** At this handoff. `/commit` runs, reports the landed commit, and returns here for the close report below.
 
