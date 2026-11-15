@@ -1,6 +1,6 @@
 # A workflow document's body, and its form
 
-A workflow document is a prompt or a skill, and its **form** is a second axis, decided by what the body carries. The type sheets hold the mechanics, [`prompt-conventions.md`](prompt-conventions.md) and [`skill-conventions.md`](skill-conventions.md); this file holds the body both types share, then the forms it takes. Where a rule may live is [`agent_workflow.md`](../../../../docs/reference/agent_workflow.md) `### Where the rules live`, and which kind each sentence is, [`../SKILL.md`](../SKILL.md) `## The five kinds`.
+A workflow document is a prompt or a skill, and its **form** is a second axis, decided by what the body carries. The type sheets hold the mechanics, [`prompt-conventions.md`](prompt-conventions.md) and [`skill-conventions.md`](skill-conventions.md); this file holds the body both types share, then the forms it takes. Where a rule may live is [`agent_workflow.md`](../../../../docs/reference/agent_workflow.md) `### Where the rules live`, and which modality each sentence is, [`../SKILL.md`](../SKILL.md) `## What each modality owes the writer`.
 
 ## The body's common shape
 

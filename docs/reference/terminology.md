@@ -14,13 +14,14 @@ These are reserved technical terms: use them with exactly the meanings defined b
 
 ## modality
 
-The base a sentence appeals to and the force it carries: what a reader owes, or what a reader must accept, and how strongly. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
+The base a sentence appeals to and the modal strength it carries: what a reader owes, or what a reader must accept, and with what strength. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
 
 ### Identity
 
 - `rule`, `judgement`, `permission`, `fact`, `claim`
 - the base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case
-- the force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY
+- the modal strength is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY
+- the ADR's historical word for a modality is `kind`
 - formerly `norm`, `norm kind` and `sentence kind`, all deprecated; `statement` is the former name of `claim`
 
 ### Scope
@@ -34,7 +35,32 @@ The sentences of instruction text: a prompt, a skill, and the conventions they r
 - A `permission` names what grants it.
 - A judgement's home is a `principle skill`; the artifact's definition is that entry, and the modality axis does not classify it.
 - The decision, the framework it follows and what that framework gave us, and why the classification is a standard rather than a gate: `docs/adr/instruction_modality.md`.
-- The obligations each kind owes are the `instruction-authoring` convention's.
+- The obligations each modality owes are the `instruction-authoring` convention's.
+- The scale is `modal strength`; `strength` is its short form, and `force` is the ADR's historical word.
+
+**Last updated:** 2026-11-14
+
+## modal strength
+
+The strength a sentence carries, on the scale of necessity, graded, or possibility. It is the second axis of a `modality`, beside the base.
+
+### Identity
+
+- `necessity`, `graded`, `possibility`, which RFC 2119 names MUST, SHOULD and MAY
+- the scale is ordered: necessity is the strongest, possibility the weakest
+- short form: `strength`, used where the sentence is already about modality; the first mention in a document is the full term
+- the ADR's historical word for the scale is `force`; the reserved term is `modal strength`
+
+### Scope
+
+One sentence of instruction text. The strength is intrinsic to the statement: it does not measure the author's confidence, the enforcement that holds a rule, the commitment the act carries, or the text's granularity.
+
+### Relationships
+
+- The five modalities are a base and a modal strength: `rule` (deontic necessity), `judgement` (deontic graded), `permission` (deontic possibility), `fact` (epistemic necessity), and `claim` (epistemic possibility).
+- `modality` composes the base and this scale; the `modality` entry cites it.
+- The framework and the rejected ranking by strength: `docs/adr/instruction_modality.md`.
+- What each modality owes a writer: the `instruction-authoring` convention.
 
 **Last updated:** 2026-11-14
 
@@ -64,7 +90,7 @@ A skill that helps a reader produce or choose the criteria a piece of work needs
 - a workflow document whose carrier is a skill: a directory with `SKILL.md` and the siblings it names
 - a meta-level narrowing of the general skill interface: a general skill applies a procedure, while a principle produces or chooses the criteria that procedure needs
 - the norm it states carries a modality; the skill is the artifact, the norm is the content
-- formerly called a "judgement skill"; `judgement` is a modality kind, not the artifact
+- formerly called a "judgement skill"; `judgement` is a modality, not the artifact
 
 ### Scope
 
@@ -75,7 +101,7 @@ A skill that helps a reader produce or choose the criteria a piece of work needs
 
 ### Relationships
 
-- `modality` holds the norm's kind and force, and does not classify an artifact; a judgement's home is a principle skill
+- `modality` holds the norm's base and modal strength, and does not classify an artifact; a judgement's home is a principle skill
 - `workflow document` holds the carrier and form
 - the body shape and its gate: `docs/adr/principle_skill_shape.md`, `scripts/check_document_shape.sh`
 - the admission mechanism is the neighbour field, not yet built

@@ -13,7 +13,7 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 
 2. **Settle the type and the frontmatter.** A model must fire it without being named, or it must carry files beside its body: a skill, a directory. Neither, and it is a prompt, one file the operator starts by name, and the smaller format. A skill installed from upstream is not written here: `skill-fork` inherits its content and registers the source it came from. One that wraps a script or a command stops at the command line, per [`prose-entrypoint.md`](patterns/prose-entrypoint.md). A judgement that applies to any text makes it a principle skill, `principle-` in the name, with the six-part body at [`principle_skill_shape.md`](../../../docs/adr/principle_skill_shape.md), and a judgement about the writing of an instruction is a pattern in this skill rather than a principle. The artifact is defined at [`docs/reference/terminology.md`](../../../docs/reference/terminology.md#principle-skill). A skill only the operator fires carries `disable-model-invocation: true`, and a principle skill never does, because a writer reaches for one mid-draft. A prompt taking an argument states its shape in `argument-hint` and forwards the text with `> $ARGUMENTS`. A leading word, when one earns it, is `metadata: leitwort:`, and `communication-principle-maximize-conceptual-leverage` chooses it.
 
-3. **Write the body.** The shape a workflow document's body takes, and the forms it may take, are [`body.md`](references/body.md). A body carrying more than one kind, or a code-bearing form, splits into siblings per [`nested-patterns.md`](patterns/nested-patterns.md), with the parent `SKILL.md` as a router. A prompt's format rules are [`prompt-conventions.md`](references/prompt-conventions.md), a skill's are [`skill-conventions.md`](references/skill-conventions.md). Where the clauses come from the operator, the meaning is theirs and the arrangement is the drafter's, per `communication-principle-rewrite-syntax-never-semantics`, and a check goes where its input first exists, per `principle-check-placement`.
+3. **Write the body.** The shape a workflow document's body takes, and the forms it may take, are [`body.md`](references/body.md). A body carrying more than one mode, or a code-bearing form, splits into siblings per [`nested-patterns.md`](patterns/nested-patterns.md), with the parent `SKILL.md` as a router. A prompt's format rules are [`prompt-conventions.md`](references/prompt-conventions.md), a skill's are [`skill-conventions.md`](references/skill-conventions.md). Where the clauses come from the operator, the meaning is theirs and the arrangement is the drafter's, per `communication-principle-rewrite-syntax-never-semantics`, and a check goes where its input first exists, per `principle-check-placement`.
 
 4. **Write the title and the description last, from the body.** The description is the only context a model holds when it routes to a skill, so [`signposting.md`](patterns/signposting.md) governs it: it names the situation the agent is in. A skill only the operator fires is written from the operator's list. The title names the subject, not the mechanism.
 
@@ -34,11 +34,11 @@ What a prompt or a skill is belongs to [`agent_workflow.md`](../../../docs/refer
 | [`patterns/prose-entrypoint.md`](patterns/prose-entrypoint.md) | a skill that wraps a script stops at the command line, and the script owns the call | the artifact wraps a mechanism |
 | [`runbooks/review.md`](runbooks/review.md) | the rule-loss and length review | step 5 |
 
-## The five kinds
+## What each modality owes the writer
 
-The sentences an agent writes fall into five kinds, and the kind decides what the writer owes.
+The five modalities and the rule that nothing gates the choice are in [`agent_workflow.md`](../../../docs/reference/agent_workflow.md#instruction-modality); this table states what each owes the writer.
 
-| Kind | What it means for the writer |
+| Modality | What it means for the writer |
 |---|---|
 | `rule` | Clear, deterministic logic and a verifiable outcome. Where a machine can decide it, represent it as code or as a gate rather than as prose. |
 | `fact` | Presented alongside its evidence. An assertion without evidence is a claim. |
@@ -46,4 +46,6 @@ The sentences an agent writes fall into five kinds, and the kind decides what th
 | `permission` | A suggestion - "usually we do this" - and whether to take it up is the agent's. Suggested practice and conventions read as permissions, not as rules. |
 | `claim` | Verified before anything treats it as a fact. |
 
-Nothing gates the choice: the five answer whether the mechanism fits the problem, and a reviewer who disagrees says so in prose. The definitions are [`terminology.md`](../../../docs/reference/terminology.md#modality), and the derivation is [`instruction_modality.md`](../../../docs/adr/instruction_modality.md).
+The modal strength is the scale, and `strength` is its short form. It is not the enforcement strength: a modality can carry necessity and still be caught only by a reader.
+
+The definitions are [`terminology.md`](../../../docs/reference/terminology.md#modality), the scale is [`modal strength`](../../../docs/reference/terminology.md#modal-strength), and the derivation is [`instruction_modality.md`](../../../docs/adr/instruction_modality.md). A reviewer who disagrees says so in prose.
