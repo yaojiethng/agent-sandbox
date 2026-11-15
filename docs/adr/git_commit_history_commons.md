@@ -21,3 +21,13 @@
 **Rejected alternatives:** tighten the subject to 50 -- execution failure, 39% miss it; raise it to 80 -- intent, the ceiling is the display line; derive the body's bound from the review rate -- intent, there is no mapping; drop the numbers -- intent, an unchecked budget stops nothing.
 
 **Edge cases / drivers:** a 51-72 subject is legal; the body is one paragraph, not one sentence; a body over 280 points at the handover; a wider sha overruns the line by one column.
+
+## 2026-11-14 -- The working tree is where the session's work is not saved
+
+**Decision:** The convention carries one working-tree section, and its mechanism is the record. Work that no ref holds is the session's alone, and the convention's five discarding verbs take it. The section states a four-step discard -- read, save, run, confirm -- so the save precedes the verb rather than following a warning. A mutation the session made itself is the case a copy aside serves, because those verbs restore HEAD rather than the state before the edit.
+
+**Evidence:** two occurrences. `[A] 2026-08-10` -- `git restore scripts/stop.sh`, run to undo a test mutation, reverted a session's uncommitted refactor -- and its recurrence, `git checkout .markdownlint-cli2.mjs` run to recover a fixture, which dropped `doc-wrap` from the lint config and left a gate measuring nothing.
+
+**Rejected alternatives:** a gate over `scripts/` -- intent, it catches a script that discards a tree and not the agent who types the verb, and both occurrences are the latter; a wrapper the agent must call -- intent, `git` stays one keystroke away and the forgetful path bypasses it; a blanket ban on git while work is uncommitted -- intent, it forbids the backup branch that is the save.
+
+**Edge cases / drivers:** a stash is saved until `drop`; a fixture repository's own commits are its save; the outer tree is never a discard's target.

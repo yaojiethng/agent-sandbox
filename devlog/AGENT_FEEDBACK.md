@@ -433,9 +433,9 @@ mitigation: a review prompt must not hard-mandate "work to consensus". The conve
 ### [A] 2026-08-10  --  git operations touching the index/worktree revert uncommitted session work
 
 ```text
-state: open
-scoped: M3.7.2 -- the reframe subtask states the working-tree rule (protect uncommitted session work from git ops)
-legacy: none
+state: mitigated
+scoped: M3.7.2 -- the working-tree rule is stated in the convention, handover [`20261114-05`](handovers/M3.7.2/20261114-05-workflow-working_tree_rule.md)
+legacy: recurrence 2026-11-14: `git checkout .markdownlint-cli2.mjs`, run to recover a fixture, dropped `doc-wrap` from `customRules`, leaving a gate that measured nothing. The rule now puts the check before the verb, and the copy aside before a mutation.
 mitigation: negative-test mutation was reverted with `git restore scripts/stop.sh`, which
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the
 mutation check itself passed: the test failed as expected; only the revert was wrong).

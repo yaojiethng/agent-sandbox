@@ -47,6 +47,21 @@ Two cases decide who rules on a correction:
 
 [`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
 
+## The working tree
+
+The working tree is where work is unsaved; a discard is safe once it is saved.
+
+**To discard**, in order:
+
+1. Read what the command would take: `git status --porcelain -- <path>` and `git diff -- <path>`, or `git clean -n` for a clean.
+2. Save what no ref holds: `git stash push`, a `wip:` commit, a backup branch, or a copy aside.
+3. Run the discard.
+4. Confirm the path is clean: `git status --porcelain -- <path>`.
+
+The commands in scope are `git restore`, `git checkout -- <path>`, `git clean -f`, `git reset --hard` and `git stash drop`.
+
+A mutation you made yourself is the case the copy-aside serves: the verbs restore HEAD, not the state before your edit, so copy the file aside before mutating and copy it back after.
+
 ## Grouping
 
 A commit is a coherent change, and fewer meaningful commits beat many granular ones: a policy restructuring that touches six files is one commit, and a script with its tests is one. Unrelated changes are separate commits.
