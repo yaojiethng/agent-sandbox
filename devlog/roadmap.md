@@ -38,6 +38,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.4 - The prose standards as principles](changelog.md#m334---the-prose-standards-as-principles) | [Complete - see changelog](changelog.md#m334---the-prose-standards-as-principles) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.5 - The eval pipeline](changelog.md#m335---the-eval-pipeline) | [Complete - see changelog](changelog.md#m335---the-eval-pipeline) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.6 - The instruction corpus and its map](#m336---the-instruction-corpus-and-its-map) | [In progress](#m336---the-instruction-corpus-and-its-map) |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.7 - The judgement corpus admission](#m337---the-judgement-corpus-admission) | [In progress](#m337---the-judgement-corpus-admission) |
 | &nbsp;&nbsp;[M3.4 - Container Execution Model and Environment Ownership](#m34---container-execution-model-and-environment-ownership) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.1 - The container execution model and the controlled vocabulary](#m341---the-container-execution-model-and-the-controlled-vocabulary) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.2 - The resolution model and record primitives](#m342---the-resolution-model-and-record-primitives) | In progress |
@@ -353,6 +354,37 @@ M3.3.4 closed with the principle corpus filed; this sub-milestone holds what tha
   - [ ] **The merged principle is checked against a cold reader** -- three artifacts at three levels, a module directory, an ADR entry and a convention section, read once against the retired pair and once against the merged principle, six reads, by readers that do not know which text is current. The result counts only if the new text makes a reader name the same extent and the same boundary and at least one old-text read does not; otherwise it reports that it saw no difference. Carried from the acceptance criterion of handover `20261105-02`, which the close dropped on operator direction.
 - [x] **The check-in's report contract is cut** -- the JSONL schema, the auditor dispatch and the recommendation vocabulary are gone, the light check-in procedure is folded into `/gm`, and the surviving violation classes are parked in `.agents/drafts/` as requirements for the task-list and work-log redesign.
 - [x] **The presentation ladder is named in the principle that owns it** -- the fabric of an announcement, a claim and a restatement passes every sentence-level cut, so the principle now tests the passage: a first sentence whose subject is the text, a maxim before an unsupported fact, and a closing restatement. The field's name is metadiscourse, recorded with what this repository keeps and drops; a blind second editor agreed on nine of twelve items, and its three disagreements named the boundary the rule now states between a pointer, a guard and a restatement. No gate: the corpus sweep found no marker that fires without a judgement. Handover [`20261114-10`](handovers/M3.3.6/20261114-10-workflow-ladder_rule.md).
+
+##### M3.3.7 - The judgement corpus admission
+
+**Objective:** catch a missing or duplicated judgement when it is proposed, through a declared neighbour and one operator decision, rather than by a periodic corpus-wide pass.
+
+M3.3.6 owns the corpus's map, budget and record layer. This sub-milestone owns the judgements themselves: how one enters or changes. The mechanism is the design record [`20261114-design-concluded-judgement_corpus_admission.md`](../devlog/discussions/20261114-design-concluded-judgement_corpus_admission.md), settled in handover `20261114-01`.
+
+**Depends on:** nothing. It reads the corpus M3.3.4 closed.
+
+**Sequencing:** the inventory lever and the four-case replay first; the field and gate after; the field migration last. Runs beside M3.3.6, and its deletions land before M3.3.6's budget row measures the surface.
+
+**Task items.**
+
+- [ ] **The inventory lever and the four-case replay** -- a deterministic script reads the repo-owned provider root and extracts judgement cross-links and the proposed `metadata.neighbours` field, reporting only structural facts: a target that does not resolve, a judgement with no field, an explicit `[]`, a duplicate name. The replay freezes the four direct cases -- passthrough, `absent`, boundary merge and the `cut-what-serves-nothing` rename -- and records the candidates the lever surfaces, the operator's decision and the cost. The design record is [`20261114-design-concluded-judgement_corpus_admission.md`](../devlog/discussions/20261114-design-concluded-judgement_corpus_admission.md). Ends when the lever prints the same answer twice and the replay table covers all four, each caught with one operator decision or reported as a miss. **Mechanism:** `code` for the lever and its test; `record` for the replay. **Depends on:** nothing.
+- [ ] **The neighbour field, the admission pattern and the gate** -- `metadata.neighbours` on the judgement skills, the admission pattern under `instruction-authoring`, the citation from step 1 and from `scope`'s `## Check the boundary`, and the gate that checks liveness and presence against a shrinking baseline over the existing judgement skills. The passthrough row lands through the pattern as the first admission. Ends when a new judgement cannot land without the field, a declared name that does not resolve fails the gate, and the baseline is the only exception. **Mechanism:** `record` for the field and the pattern; `gate` for the check; `code` for the gate. **Depends on:** the inventory lever and the replay.
+- [ ] **The neighbour fields on the existing judgement skills are migrated** -- the lever extracts candidate neighbours from each skill's existing prose links; the agent proposes the field; the operator reviews the batch. The baseline shrinks as the fields land and is deleted when empty. Ends when every judgement carries the field or an explicit `[]`, the baseline is gone, and the gate holds the corpus without an exception list. **Mechanism:** `data` for the field values; `record` for the review. **Depends on:** the neighbour field and the gate.
+- [ ] **A relay that adds no guarantee has one judgement, not three fragments** -- a bridge document, a forwarding function and a staging-ground config each add no guarantee the party across the hop does not already hold, and no live judgement catches all three: `principle-single-source-of-truth`'s bridge sentence is scoped to a document that duplicates two others, `principle-justify-materialization-cost` needs a producer, and the code-review runbook sees the wrapper only after it is written. The general test was retired with `principle-delegation-over-machinery` into SSOT on 2026-11-04 (handover `20261104-04`) and did not survive the merge. Decide the home -- a sibling principle with the three artifact kinds, or the test restored in SSOT's `**The awkward cases.**` -- and land it with a description that names the act of adding a relay, the retired test as its core, and citations to `communication-principle-cut-what-serves-nothing` (sentence grain) and SSOT (duplicate grain). The first admission under the neighbour field. **Mechanism:** `record`; the shape gate holds the body. **Depends on:** the neighbour field, the admission pattern and the gate.
+
+**Acceptance criteria:**
+
+- The replay's four cases are each caught with one operator decision, or a miss is reported and the mechanism is revised or narrowed.
+- A judgement without `metadata.neighbours` fails the gate unless it is in the baseline; a declared name that does not resolve fails it.
+- The baseline reaches zero and the gate holds the corpus without it.
+- The passthrough judgement lands through the admission pattern.
+- `bash scripts/check_document_shape.sh`, `bash scripts/lint.sh` and `bash scripts/run_tests.sh` pass.
+
+##### Not in scope: M3.3.7
+
+- W2's communication-domain taxonomy and leitwort population, which own the controlled vocabulary.
+- The corpus map, the always-loaded budget and the instruction-lifecycle record layer, which M3.3.6 owns.
+- The leitwort revert, the review-runbook purpose gap and the materialization rename, which the design record names as different failure modes.
 
 ##### Not in scope: M3.3
 

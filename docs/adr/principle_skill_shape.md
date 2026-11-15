@@ -1,6 +1,23 @@
 # Principle Skill Shape
 
-**Current:** 2026-11-07
+**Current:** 2026-11-14
+
+## 2026-11-14 -- A judgement declares its neighbours, and admission is by case
+
+**Decision:** A judgement skill declares the judgements nearest to it in `metadata.neighbours`, a list of full skill names. Handoffs remain in prose and are not neighbours. A new or changed judgement is admitted by a decision that names the nearest existing judgement, the distinction, and the case that demanded it. The admission step is a pattern under `instruction-authoring`, cited from step 1 and from the `scope` prompt's `## Check the boundary`. A deterministic lever reads the repo-owned provider root and extracts the field; the gate checks that every name resolves and that every judgement carries the field or is named in a baseline of the existing skills, which must only shrink. The body's scope statement carries the meaning; a contested distinction belongs in the admission record, not in every skill.
+
+**Rationale:** A corpus-wide semantic pass is neither affordable nor reliable: the operator becomes the ground truth for every classification, and the cost repeats. The semantic decision is cheap only at admission, on the new case and its nearest neighbours. The field makes orphanhood a checkable property instead of counting arbitrary links, which conflate a handoff ("apply this next") with a neighbour ("a similar application under a different domain"). It has three consumers -- the lever, the gate and the admission pattern -- so it is not the metadata field the 2026-10-28 entry removed for having no consumer. The baseline lets the gate land before the existing-skill migration and forces the exception list to shrink.
+
+**Rejected alternatives:**
+
+- *A periodic whole-corpus pass.* **Intent failure**: the semantic judgement is unreliable at that grain, the operator will not adjudicate every rule, and the cost repeats.
+- *Reuse any Markdown link as the edge.* **Intent failure**: it conflates handoffs with neighbours, so orphanhood is a false proxy.
+- *A canonical `**Neighbours.**` body part.* **Neither**: it is correct and keeps one carrier, but the machine index was chosen independent of prose; the body part would put the edge in the text the lever parses and give up the field's explicit shape.
+- *Reciprocity.* **Intent failure**: it forces a link into the neighbour for every one-way distinction, manufacturing edges to satisfy the gate.
+- *No baseline; gate the corpus at once.* **Execution failure**: it forces a corpus-wide semantic review before the gate can land.
+- *An eval of model categorization.* **Intent failure**: nondeterministic under the current infrastructure, and it measures the model rather than the mechanism.
+
+**Edge cases / drivers:** `neighbours: []` declares that a judgement has no neighbour; an absent field is undeclared and is a baseline entry, so the two states are distinguishable. The lever reads the repo-owned provider root (`src/reasoning/agent-runtime/pi/config/agent/skills/`), not `$AGENT_HOME`, which carries extras and stale duplicates. The gate cannot judge whether the named neighbour is the right one; that is the admission decision. The baseline is a gated copy: the gate fails if a baseline entry gains the field and the baseline is not updated. The passthrough rule is the first admission; its restated test is the retired `principle-delegation-over-machinery` test. The case replay is the check that the mechanism surfaces the right neighbour on the four direct cases; a miss is reported and the mechanism is revised or narrowed.
 
 ## 2026-11-07 -- The communication corpus stays installed, and this entry states where it is read
 
