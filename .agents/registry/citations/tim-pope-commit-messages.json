@@ -8,7 +8,7 @@
   "record": {
     "source": "A subject of 50 characters or less, a blank line, then the body wrapped at 72 columns.",
     "kept": "The 50 and the 72, which are the convention's subject budget.",
-    "rewritten": "72 is the body's wrap width in the note; this repository uses it as the subject ceiling, because the display line carries the short sha, and bounds the body at one paragraph instead.",
+    "rewritten": "72 is the body's wrap width in the note; this repository uses it as the subject ceiling, because the display line carries the short sha, and bounds the body at 280 characters instead.",
     "added": "The reading of 72 as a ceiling, and the policy layer over the numbers that the note does not state.",
     "dropped": "The body-wrap rule as such, and the advice to amend with `git commit --amend` as the only fold."
   }

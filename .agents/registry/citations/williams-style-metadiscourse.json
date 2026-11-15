@@ -1,0 +1,15 @@
+{
+  "id": "williams-style-metadiscourse",
+  "title": "Style: Lessons in Clarity and Grace, the chapter on clarity",
+  "author": "Joseph M. Williams and Joseph Bizup",
+  "publisher": "Pearson",
+  "url": "no address is stable for a printed book; the edition is named in `version`",
+  "version": "12th edition, 2017; the text was not fetched in this container",
+  "record": {
+    "source": "Metadiscourse is prose that talks about the writing rather than about its subject -- hedges and emphatics, attributors, narrators, and announcements or signposts such as \"this section will show\" -- and a short passage should hold little of it, because it costs the reader attention that the content does not repay.",
+    "kept": "The category and its instruction: cut what points at the text instead of at the subject.",
+    "rewritten": "Williams measures it as a proportion of the sentences; this repository tests a sentence by what the reader would lose, because a guard -- a boundary the reader would otherwise cross -- is metadiscourse that earns its place.",
+    "added": "The ladder as the recurring arrangement: an announcement, a general claim, then a restatement of the claim, which a per-sentence test reads as three carriers.",
+    "dropped": "The proportion guidance, and the hedge/emphatic/attributor/narrator taxonomy, which a writer cannot apply without counting."
+  }
+}
