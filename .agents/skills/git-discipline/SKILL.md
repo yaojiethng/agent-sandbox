@@ -1,13 +1,13 @@
 ---
 name: git-discipline
-description: agent-sandbox's git-discipline convention - the history's readers, the commit message, the commit types, the branch names, the fold rules and the maintenance runbooks.
+description: agent-sandbox's git-discipline convention - the history as a commons, the four properties a series holds, the commit message, the commit types, the branch names, the fold rules and the maintenance runbooks.
 ---
 
 # git-discipline
 
-## The series
+Dense, self-carrying commits cost the writer a minute and save every later reader -- the accept, the next session, a bisect, whoever debugs, and the writer next pass -- the reconstruction of intent.
 
-Write the series so a reader with nothing but the series can answer why each change exists.
+## The series
 
 **atomic**
 
@@ -29,12 +29,12 @@ Write the series so a reader with nothing but the series can answer why each cha
 
 **self-explanatory**
 
-- **Invariant:** the subject names the change and the body states the reason, so the series answers a reader who has nothing but the series.
-- **Violated when** a reader cannot tell why a change exists without the chat or the diff.
+- **Invariant:** each commit explains itself, its subject naming the change and its body stating the reason, so no reader needs the chat, the handover or the diff.
+- **Violated when** a reader cannot tell why a commit exists without the chat, the handover or the diff.
 - **Check:** `scripts/check_commit_message.sh <message-file>`, then read the series cold.
 - **Rewrite when:** instead of a subject naming a file and a body restating the diff, name the change in the subject and the reason in the body.
 
-- **Source:** Chris Beams, *How to Write a Git Commit Message*; Tim Pope, *A Note About Git Commit Messages*.
+- **Source:** Chris Beams, *How to Write a Git Commit Message*; Tim Pope, *A Note About Git Commit Messages*; `git-commit(1)`, Git manual.
 
 **blameable**
 
@@ -49,49 +49,41 @@ Write the series so a reader with nothing but the series can answer why each cha
 
 ```text
 type: short description
+
+The reason the change happened, in at most 280 characters, wrapped to the
+display, never restating the diff.
+
+Ref: a file, a record or a decision a reader would otherwise hunt for
 ```
 
-A lower-case type prefix, a colon, a space, and an imperative summary that completes "this commit will...". `feat: add snapshot validation gate`, not `feat: added snapshot validation gate`.
+An adaptation of [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), narrowed to the active types in [`references/commit-types.md`](references/commit-types.md).
 
-| Part | Rule |
-|---|---|
-| subject | 72 characters at most, targeting 50, carrying no file path and no line number, because the diff shows those |
-| body | optional, one paragraph after a blank line, 280 characters or fewer |
-| footer | optional, for a reference that earns its place: a file, a record, or a decision a reader would otherwise hunt for |
+Write the subject in the imperative mood, as the Git manual puts it: as if giving orders to the codebase to change its behaviour. Keep it to 72 characters, targeting 50, with no file path and no line number, because the diff shows those. A reference earns its place in the footer or is dropped, and a transient identifier such as a session id is never cited.
 
-The description states why the change happened and what category it is, not what changed line by line. A reason longer than 280 characters lives in the handover or the ADR, and the body points there. Drop a reference added for completeness, and never cite a transient identifier such as a session id.
-
-`scripts/check_commit_message.sh` checks a delivery message against this table; [`/commit`](../../../workflow/coding-agent/prompts/commit.md) runs it before the commit.
-
-The shape follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): where this file is silent, that specification decides. The project narrows it in two ways, and neither is a gap: the type set is the active types in [`references/commit-types.md`](references/commit-types.md), and there is no scope field.
-
-**The delivery commit carries an active type. An intermediate commit never does.** A typed intermediate reads as a closed deliverable that later folds away, a false delivery surface. An intermediate is a `wip:` commit, a fixup, or an amend.
+`scripts/check_commit_message.sh` checks a delivery message against these rules; [`/commit`](../../../workflow/coding-agent/prompts/commit.md) runs it before the commit.
 
 ## The fold
 
-A change belongs to the commit of the work it corrects. Fold it there rather than appending it after: a run of one-line fixups on one logical change is the history's least readable form, and what the fold discards from the history the handover keeps.
+Fold a correction into the commit of the work it corrects, rather than leaving it as a later commit. That keeps the commit whole, and keeps the commit that introduced the line findable by `git blame`.
 
-The three grains are one method: a correction joins the commit it corrects, an iteration's work joins the delivery commit the protocol defines, and a run of dependent units is a stack. [`iteration_protocol.md`](../../../docs/reference/iteration_protocol.md) owns the iteration grain; [`change_model.md`](../../../docs/reference/change_model.md) owns the early change and the stack; the rules below are the correction grain.
+An iteration's work and a run of dependent units fold by the same rule: [`iteration_protocol.md`](../../../docs/reference/iteration_protocol.md) owns the iteration grain, and [`change_model.md`](../../../docs/reference/change_model.md) the early change and the stack.
 
 - A correction folds into the delivery commit, not into an intermediate commit. A change that alters the iteration's task description, its code and its records is one amendment across all three.
 - Amend while the history is cheap to rewrite: on the same branch, and ideally within the session that made the commit. Beyond that the operator rules.
 - Never rewrite a commit that has left this container, and never rewrite published history.
 - A temporary commit is a fine instrument where it is simpler: `fixup!`, `squash!`, or a `wip:` commit, then fold it.
 
+**The delivery commit carries an active type. An intermediate commit never does.** A typed intermediate reads as a closed deliverable that later folds away, a false delivery surface. An intermediate is a `wip:` commit, a fixup, or an amend.
+
 A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
-
-Two cases decide who rules on a correction:
-
-- **The session that made the commit is still live.** The agent folds the correction into that commit, whichever actor raised the defect, without asking.
-- **That session has ended.** The operator rules whether the correction folds into that commit or lands as a separate commit.
 
 [`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
 
 ## The working tree
 
-The working tree is where work is unsaved; a discard is safe once it is saved.
+A discard destroys whatever no ref holds, so save the work first.
 
-**To discard**, in order:
+To discard:
 
 1. Read what the command would take: `git status --porcelain -- <path>` and `git diff -- <path>`, or `git clean -n` for a clean.
 2. Save what no ref holds: `git stash push`, a `wip:` commit, a backup branch, or a copy aside.
@@ -100,15 +92,15 @@ The working tree is where work is unsaved; a discard is safe once it is saved.
 
 The commands in scope are `git restore`, `git checkout -- <path>`, `git clean -f`, `git reset --hard` and `git stash drop`.
 
-A mutation you made yourself is the case the copy-aside serves: the verbs restore HEAD, not the state before your edit, so copy the file aside before mutating and copy it back after.
+A mutation you made yourself is not undone by those verbs: they restore HEAD, not the state before your edit, so copy the file aside before mutating and copy it back after.
 
 ## Grouping
 
-A commit is a coherent change, and fewer meaningful commits beat many granular ones: a policy restructuring that touches six files is one commit, and a script with its tests is one. Unrelated changes are separate commits.
+Each commit should hold one coherent change, so a reader can judge it, a bisect can name it and a revert can undo it without touching anything else. A restructuring across six files is one commit, as is a script with its tests; unrelated changes are separate commits.
 
 ## The branch name
 
-A branch name carries the commit type, the milestone and a slug, in that order. [`references/branching.md`](references/branching.md) states the parts, the branch tree and tagging.
+Name the branch for the commit type, the milestone and a slug, in that order; the accept takes the branch by its name. [`references/branching.md`](references/branching.md) states the parts, the branch tree and tagging.
 
 ## Runbooks
 
@@ -119,9 +111,7 @@ A branch name carries the commit type, the milestone and a slug, in that order. 
 | [`recovery`](../../../workflow/coding-agent/skills/recovery/SKILL.md) | the record and the repository disagree; the operator starts `/recovery` and the skill classifies the description |
 | [`correction`](references/correction.md) | the repository agrees with the record and the operator disagrees; the commit is wrong or the series is messy |
 
-The branch-preparation primitives are `prepare` and `history-cleanup`. They leave a branch the operator's verbs can consume: `make draft`, `make confirm`, `make reject` and `make apply`. You prepare the branch and report its state; the operator runs the verb. A primitive is not a user-facing command and not a second flow.
-
-Each runbook states its own procedure.
+The branch-preparation primitives are `prepare` and `history-cleanup`. They leave a branch the operator's verbs can consume: `make draft`, `make confirm`, `make reject` and `make apply`. You prepare the branch and report its state; the operator runs the verb. A primitive is internal, never a second flow.
 
 ## Where to look
 

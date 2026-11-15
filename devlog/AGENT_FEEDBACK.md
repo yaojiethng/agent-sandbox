@@ -12,6 +12,23 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [A] 2026-11-14  --  The draft added a ladder around the sentence that carried the claim
+
+```text
+state: open
+scoped: the communication principles, and any convention or skill drafted from the session's own reasoning
+legacy: none
+mitigation: draft the claim in the deciding register, then revise by deletion only: an opener carries one claim and no evidence, and never states its own shape
+```
+
+Writing the `git-discipline` opener, the working version was: *Dense, self-carrying commits cost the writer a minute and save every later reader -- the writer next pass among them -- the reconstruction of intent.* The version that reached the file was: *The history is a commons: the operator accepts it, review reads it commit by commit, the next session inherits it, and whoever debugs a line follows it back, and none of them has the chat. A series written for those readers serves the writer too, who folds it, reverts it and blames it on the next pass.* Two sentences, one claim, and the role inventory the operator had already called overprescription.
+
+The published shape is a ladder: a maxim, its support, a restatement. The trace sentence is the conclusion alone, with the roles compressed into a parenthetical and a cost set against a loss, so it argues instead of asserting. A ladder is what exposition is taught to look like, so `cut-what-carries-nothing` passes it: each rung reads as content, and the deletion that removes the shape removes two thirds of the text.
+
+The tell is register, not length. Reasoning is written to decide something for a reader who holds the context; prose is written to present it to one who does not, and presenting adds the introduction and the summary. The fix that works is to keep the deciding sentence as the artifact and revise by deletion, never by addition.
+
+---
+
 ## [A] 2026-11-01  --  A report was built before checking that the loader already prints one
 
 ```text
