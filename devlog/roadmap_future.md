@@ -289,3 +289,11 @@ Progressive enforcement maturity for the documentation and architecture governan
 **Sources:** the merge queue as GitHub and Bors implement it, read for the queue's semantics rather than copied as a runbook. The citation record is the implementer's to add; the intent above does not depend on which one they choose.
 
 **Ends when:** an accept flow serializes the trunk mechanically, or the operator's serialization obligation is stated with its tradeoff named, and the source is recorded.
+
+### A size suggestion for one unit of work (deferred, unscheduled)
+
+**Status:** Deferred, unscheduled, raised 2026-11-14 by the operator as an aside to `20261114-04`. The project has no working definition of "one unit of work" beyond "a coherent change". The review literature offers a numeric one: Google's small-CL guidance (a change reviewable in one sitting, on the order of 100 lines) and the SmartBear/Cisco 2006 rate (200-400 lines per review hour before defect detection falls). Both bound the diff, which is what they can measure; a message-length number is not derivable from them.
+
+**Reopens when:** the delivery-commit rules or the change model need a size test, and the operator wants a suggestion rather than a gate.
+
+**Objective:** the project states a size suggestion for a unit of work as advice a reviewer and an agent may apply, never a gate. A mass rename, a regenerated artifact or a lockfile exceeds any line count while remaining one unit, so a threshold that failed a commit would refuse the changes most obviously single. The method is the implementer's; the requirement is that the suggestion carries the two sources and the exception it cannot judge.

@@ -18,7 +18,7 @@ A lower-case type prefix, a colon, a space, and an imperative summary that compl
 | Part | Rule |
 |---|---|
 | subject | 72 characters at most, targeting 50, carrying no file path and no line number, because the diff shows those |
-| body | optional, one sentence after a blank line, 280 characters or fewer |
+| body | optional, one paragraph after a blank line, 280 characters or fewer |
 | footer | optional, for a reference that earns its place: a file, a record, or a decision a reader would otherwise hunt for |
 
 The description states why the change happened and what category it is, not what changed line by line. A reason longer than 280 characters lives in the handover or the ADR, and the body points there. Drop a reference added for completeness, and never cite a transient identifier such as a session id.
