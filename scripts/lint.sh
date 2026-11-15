@@ -3,7 +3,8 @@
 # Umbrella static-check gate. Runs the ShellCheck gate (check_shell.sh), the
 # sourced-library contract gate (check_lib_contract.sh), the Markdown gate
 # (check_markdown.sh), the instruction-document gate
-# (check_document_shape.sh), the handover format gate
+# (check_document_shape.sh), the principle-neighbour gate
+# (check_principle_neighbours.sh), the handover format gate
 # (check_handover_format.sh), the exploration-record name gate
 # (check_record_names.sh), the record lifecycle gate
 # (check_record_lifecycle.sh), the legacy wrap gate (check_doc_wrap_legacy.sh),
@@ -42,6 +43,7 @@ GATES=(
   check_lib_contract.sh
   check_markdown.sh
   check_document_shape.sh
+  check_principle_neighbours.sh
   check_handover_format.sh
   check_record_names.sh
   check_record_lifecycle.sh
