@@ -1,0 +1,15 @@
+{
+  "id": "kernel-submitting-patches",
+  "title": "Submitting patches: the essential guide to getting your changes upstream",
+  "author": "The Linux kernel community",
+  "publisher": "docs.kernel.org",
+  "url": "https://docs.kernel.org/process/submitting-patches.html",
+  "version": "2026-11-14; the address is the publisher's canonical page and was not fetched in this container, so the revision is named rather than read",
+  "record": {
+    "source": "One logical change per patch, no unrelated changes mixed in, and every patch builds so that a bisect names a single commit; the message states why the change is needed, and a series is reviewed patch by patch.",
+    "kept": "The properties: a commit holds the whole of its change (atomic), every commit builds and passes (bisectable), and the message states its reason (self-explanatory).",
+    "rewritten": "The mechanism. The kernel sends patches by mail, reviews a series on a list, and keeps each patch independently applicable; this repository lands one delivery commit through the host verbs, so the unit is the iteration and the series is the branch.",
+    "added": "The blameable and no-noise properties, which the guide does not state, and the delivery-commit grain.",
+    "dropped": "Signed-off-by and the certificate of origin, the cover letter, the mail client, and the maintainer hierarchy."
+  }
+}

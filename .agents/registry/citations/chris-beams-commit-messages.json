@@ -1,0 +1,15 @@
+{
+  "id": "chris-beams-commit-messages",
+  "title": "How to Write a Git Commit Message",
+  "author": "Chris Beams",
+  "publisher": "cbea.ms",
+  "url": "https://cbea.ms/git-commit/",
+  "version": "2014-08-31; the address is the publisher's and was not fetched in this container",
+  "record": {
+    "source": "Seven rules: separate the subject from the body with a blank line, limit the subject to 50 characters, capitalise it, end it without a period, use the imperative mood, wrap the body at 72, and use the body to explain what and why rather than how.",
+    "kept": "The blank line, the imperative subject, and the body carrying the reason.",
+    "rewritten": "The 50 and 72 become the budgets the ADR adjudicates; capitalisation and the no-period rule are not adopted, because the subject begins with a lower-case type prefix.",
+    "added": "The type prefix, the machine check over the message, and the delivery/intermediate split.",
+    "dropped": "Capitalisation, the trailing-period rule, and the rule against wrapping the body, which this repository states as a paragraph budget instead."
+  }
+}

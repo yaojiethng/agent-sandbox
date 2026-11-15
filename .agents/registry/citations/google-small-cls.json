@@ -1,0 +1,15 @@
+{
+  "id": "google-small-cls",
+  "title": "Small CLs",
+  "author": "Google Engineering Practices",
+  "publisher": "google.github.io/eng-practices",
+  "url": "https://google.github.io/eng-practices/review/developer/small-cls.html",
+  "version": "2026-11-14; the address is the publisher's canonical page and was not fetched in this container",
+  "record": {
+    "source": "A change should be small and self-contained: one thing, reviewable in one sitting, with unrelated changes and cleanups left out so the review can see the feature.",
+    "kept": "Self-containment, and the exclusion of unrelated churn from a change.",
+    "rewritten": "The size measure. Google sizes a change in lines and review minutes; this repository sizes a unit by outcome -- one roadmap task, one delivery commit -- because a mass rename or a regenerated file breaks any line count while remaining one unit.",
+    "added": "The record case: a record created and retired inside the series is churn, so the property applies to `.agents/` and `devlog/` as much as to source.",
+    "dropped": "The line-count threshold and the review-time target."
+  }
+}

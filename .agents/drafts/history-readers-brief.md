@@ -6,7 +6,7 @@
 
 **Origin:** the operator's refinement of the `history-cleanup` ask, 2026-11-14, after the history-as-commons ADR (`docs/adr/git_commit_history_commons.md`) decided the convention leads from the commons intent without stating who the commons is for. It serves roadmap row 755a; row 755b consumes the result.
 
-**Delete when** row 755a closes: the table is in the convention, and the brief has no other reader.
+**Delete when** row 755b closes: the properties it produced are in the convention, the reasoning is in the ADR, and the brief has no other reader.
 
 ## Premise
 

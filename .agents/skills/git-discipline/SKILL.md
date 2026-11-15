@@ -1,11 +1,49 @@
 ---
 name: git-discipline
-description: agent-sandbox's git-discipline convention - the commit message, the commit types, the branch names, the fold rules and the maintenance runbooks.
+description: agent-sandbox's git-discipline convention - the history's readers, the commit message, the commit types, the branch names, the fold rules and the maintenance runbooks.
 ---
 
 # git-discipline
 
-A commit is what a reviewer reads. This file states the message, where a correction lands, and which runbook runs each history operation.
+## The series
+
+Write the series so a reader with nothing but the series can answer why each change exists.
+
+**atomic**
+
+- **Invariant:** a commit holds the whole of its change; no later commit completes, corrects or reverts it.
+- **Violated when** review cannot judge a commit on its own, because the change it starts is finished further up the series.
+- **Check:** `git log --oneline` read downward, and `git show --stat` per commit.
+- **Rewrite when:** instead of appending a correction above its unit, fold it -- `git commit --fixup=<sha>`, then `git rebase --autosquash <base>`; instead of splitting one outcome across commits, fold them; instead of leaving `wip:` checkpoints, squash them into the delivery commit; instead of committing a record the branch later retires, keep it out of the series until it lands.
+
+- **Source:** Linux kernel, *Submitting patches*; Google, *Small CLs*.
+
+**bisectable**
+
+- **Invariant:** every commit builds and passes the suite, so a bisect names one commit.
+- **Violated when** bisect cannot name the commit that introduced the failure, or the next session cannot adopt the tree at a commit.
+- **Check:** `git bisect run scripts/run_tests.sh`.
+- **Rewrite when:** instead of a commit that leaves the tree failing, land the failing change in the commit that makes it pass.
+
+- **Source:** Linux kernel, *Submitting patches*.
+
+**self-explanatory**
+
+- **Invariant:** the subject names the change and the body states the reason, so the series answers a reader who has nothing but the series.
+- **Violated when** a reader cannot tell why a change exists without the chat or the diff.
+- **Check:** `scripts/check_commit_message.sh <message-file>`, then read the series cold.
+- **Rewrite when:** instead of a subject naming a file and a body restating the diff, name the change in the subject and the reason in the body.
+
+- **Source:** Chris Beams, *How to Write a Git Commit Message*; Tim Pope, *A Note About Git Commit Messages*.
+
+**blameable**
+
+- **Invariant:** after a rewrite, the commit that introduced a line still names it.
+- **Violated when** archaeology cannot find where a line came from.
+- **Check:** `git blame`.
+- **Rewrite when:** instead of squashing a unit into an earlier commit and burying its origin, fold corrections only and leave the introducing commit in place.
+
+- **Source:** `git-blame(1)`, Git manual.
 
 ## The commit message
 

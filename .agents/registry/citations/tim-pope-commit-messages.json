@@ -1,0 +1,15 @@
+{
+  "id": "tim-pope-commit-messages",
+  "title": "A Note About Git Commit Messages",
+  "author": "Tim Pope",
+  "publisher": "tbaggery.com",
+  "url": "https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html",
+  "version": "2008-04-19; the address is the publisher's and was not fetched in this container",
+  "record": {
+    "source": "A subject of 50 characters or less, a blank line, then the body wrapped at 72 columns.",
+    "kept": "The 50 and the 72, which are the convention's subject budget.",
+    "rewritten": "72 is the body's wrap width in the note; this repository uses it as the subject ceiling, because the display line carries the short sha, and bounds the body at one paragraph instead.",
+    "added": "The reading of 72 as a ceiling, and the policy layer over the numbers that the note does not state.",
+    "dropped": "The body-wrap rule as such, and the advice to amend with `git commit --amend` as the only fold."
+  }
+}

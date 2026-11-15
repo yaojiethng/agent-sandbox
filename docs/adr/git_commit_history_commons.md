@@ -4,7 +4,7 @@
 
 ## 2026-11-14 -- The commit history is a commons
 
-**Decision:** The `git-discipline` convention leads from the commit history as a commons: legible, honest, cheap to amend, with the working tree as its boundary. The subject is 72 at most, targeting 50 -- 50 is the scanning length, 72 leaves the short sha room on an 80-column line. The body stays 280. The type set, the fold and the no-instance rules hold; the working tree gains its rule from 2026-08-10.
+**Decision:** The `git-discipline` convention leads from the commit history as a commons: legible, honest, cheap to amend, with the working tree as its boundary. The subject is 72 at most, targeting 50 -- 50 is the scanning length, 72 leaves the short sha room on an 80-column line. The body stays 280. The type set, the fold and the no-instance rules hold; the working tree gains its rule from 2026-08-10. The four properties the convention opens on -- atomic, bisectable, self-explanatory and blameable -- were derived from what the history's readers depend on it for: the operator at the accept (one ordered series), review (one unit and its reason per commit), a peer holding the series alone (it explains itself), archaeology (where a line came from), a bisect (which commit broke it), the next session (the branch's state), and the changelog (what shipped). The convention states the properties; this record keeps the reasoning that produced them.
 
 **Evidence:** measured 2026-11-14 over 1,458 commits: 39% of the last 300 non-merge subjects exceed 50 and 3% exceed 72; 17% of those bodies exceed 280; 99% of those commits carry an active type. Two failures produced rules: a `git restore` over a dirty file destroyed uncommitted work, and the change prompts mirrored host verbs.
 
