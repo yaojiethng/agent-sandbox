@@ -31,12 +31,14 @@ The shape follows [Conventional Commits](https://www.conventionalcommits.org/en/
 
 ## The fold
 
-A change belongs to the commit of the work it corrects. Fold it there rather than stacking it after: a stack of one-line fixups on one logical change is the history's least readable form, and what the fold discards from the history the handover keeps.
+A change belongs to the commit of the work it corrects. Fold it there rather than appending it after: a run of one-line fixups on one logical change is the history's least readable form, and what the fold discards from the history the handover keeps.
+
+The three grains are one method: a correction joins the commit it corrects, an iteration's work joins the delivery commit the protocol defines, and a run of dependent units is a stack. [`iteration_protocol.md`](../../../docs/reference/iteration_protocol.md) owns the iteration grain; [`change_model.md`](../../../docs/reference/change_model.md) owns the early change and the stack; the rules below are the correction grain.
 
 - A correction folds into the delivery commit, not into an intermediate commit. A change that alters the iteration's task description, its code and its records is one amendment across all three.
 - Amend while the history is cheap to rewrite: on the same branch, and ideally within the session that made the commit. Beyond that the operator rules.
 - Never rewrite a commit that has left this container, and never rewrite published history.
-- A temporary commit is a fine instrument where it is simpler: `fixup!`, `squash!`, or a `wip:` commit, then fold it. The end state is one delivery commit per iteration.
+- A temporary commit is a fine instrument where it is simpler: `fixup!`, `squash!`, or a `wip:` commit, then fold it.
 
 A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
 
@@ -65,12 +67,6 @@ A mutation you made yourself is the case the copy-aside serves: the verbs restor
 ## Grouping
 
 A commit is a coherent change, and fewer meaningful commits beat many granular ones: a policy restructuring that touches six files is one commit, and a script with its tests is one. Unrelated changes are separate commits.
-
-## The delivery commit and the slice
-
-A branch carries one iteration's work, folded into one delivery commit with one closed handover. The delivery commit is what the trunk accepts; the commits inside the branch before the fold are the reviewer's reading order.
-
-A slice is an early delivery commit cut onto its own branch: the commits it names, with its own closed handover. The remainder is a child branch, its own delivery commit. A slice never lands as a `wip:`; without its own closed handover it is not a delivery commit yet.
 
 ## The branch name
 

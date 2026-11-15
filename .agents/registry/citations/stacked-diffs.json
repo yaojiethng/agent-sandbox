@@ -1,0 +1,15 @@
+{
+  "id": "stacked-diffs",
+  "title": "Stacks and stacked diffs",
+  "author": "Graphite",
+  "publisher": "graphite.dev",
+  "url": "https://graphite.dev/docs/stacks",
+  "version": "2026-11-14; the address is the publisher's documentation root and was not fetched in this container, so the revision is named rather than read",
+  "record": {
+    "source": "A stack is a run of dependent units where each commit carries the one below it as its base, so rewriting a lower unit rewrites the units above it. Graphite, Sapling, Jujutsu (`jj`) and git-branchless publish the same method under different names, and each automates the restack.",
+    "kept": "The method: a unit is a commit, a dependent run is a stack, and a correction to a lower unit restacks the units above it. This is the grain the convention's fold, the protocol's iteration commit and the change model's early change each name.",
+    "rewritten": "The tool. The repository uses plain git -- a correction folds with `git rebase --autosquash`, and a stack is the branch tree `references/branching.md` states -- so no stack manager is adopted and no history is restacked outside the session that made it.",
+    "added": "The workflow rules no stack tool states, because they are policy rather than mechanics: which actor rules on a correction, and that a correction never rewrites published history.",
+    "dropped": "The hosted review surface and the rebase-on-update automation. The host's verbs own the accept path, and the branch is prepared before it reaches them."
+  }
+}
