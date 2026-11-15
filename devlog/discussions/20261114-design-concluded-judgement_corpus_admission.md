@@ -53,6 +53,21 @@ Excluded, with reason:
 - **The review-runbook purpose gap** (2026-10-31) is a standard without a stated purpose, not a duplicate judgement.
 - **The materialization rename** (`20261028-09`) is a trigger and description failure; the neighbour field does not test descriptions.
 
+## Replay results
+
+Run 2026-11-14 against a copy of the provider root with a draft for each case. The draft's prose links are the neighbours its author would have declared; the lever reports them, and the historical decision is the comparison. The boundary case restores `principle-delegation-over-machinery` as a stub because the replay is the historical state; the rename case removes the new name and adds the old one, for the same reason.
+
+| Case | Lever candidates | Historical decision | Cost | Verdict |
+|---|---|---|---|---|
+| Passthrough | `communication-principle-cut-what-serves-nothing`, `principle-justify-materialization-cost`, `principle-single-source-of-truth` | Distinguish the relay class and land it as a sibling | 3 judgements, 1 decision | Caught |
+| `absent` schema field (`20261103-04`) | `principle-single-source-of-truth` | Refuse the field; the bump's local diff already computes it | 1 judgement and 1 deciding document | Caught |
+| Boundary merge (`20261104-04`) | `principle-delegation-over-machinery`, `principle-single-source-of-truth` | Merge into SSOT and retire the delegation skill | 2 judgements, 1 decision | Caught |
+| `cut-what-serves-nothing` rename (2026-11-05) | `principle-single-source-of-truth` (its awkward bridge case) | Record the new unit and its neighbour | 1 judgement and 1 section, 1 decision | Caught |
+
+All four are caught with one decision, so A+B stands and the field, gate and migration rows proceed.
+
+The lever surfaces the links the draft declares; it does not infer a neighbour the draft never names, and the deciding document can sit outside the judgement corpus, as the bump runbook does in the `absent` case. That is the admission decision's half, not a miss: the lever makes the candidate set small and visible, and the operator decides.
+
 ## What the gate cannot decide
 
 The gate cannot judge whether the named neighbour is the right one, whether the distinction is real, or whether a handoff was mislabelled as a neighbour. Those are the admission decision. The gate is the mechanical half; the operator is the semantic half.
