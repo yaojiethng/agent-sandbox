@@ -4,7 +4,7 @@
 # The concurrency proof: two sessions advance two sub-milestones at once for a
 # fixed round count, with no lost update and no record conflict.
 #
-# The protocol under test is the one the change model confirms: each session
+# The protocol under test is the one the change pipeline confirms: each session
 # writes its own track's handover and its own roadmap row, and the branch
 # resolves the shared-file conflict when it prepares onto the head. Two real
 # writer processes run three rounds each in two linked worktrees; the ids come

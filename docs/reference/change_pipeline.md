@@ -2,9 +2,9 @@
 reader: [agent]
 ---
 
-# The change model
+# Change pipeline domain model
 
-The change model answers one question: what is the branch's life, from its fork to its deletion? The states are the mergeability relation and the host's staging of it. It is not the iteration's progress -- that is [`workflow_statechart.md`](workflow_statechart.md)'s -- and every mergeability value is a git predicate.
+The change pipeline answers one question: what is the branch's life, from its fork to its deletion? The states are the mergeability relation and the host's staging of it. It is not the iteration's progress -- that is [`workflow_statechart.md`](workflow_statechart.md)'s -- and every mergeability value is a git predicate.
 
 The work happens in two lanes. The agent lane prepares and exports; the host lane drafts, reviews, confirms or rejects, or applies. The lanes are parallel and meet at one handoff: the bundle and the draft worktree. The host lane never reads the agent's workspace, and the agent lane never writes the trunk.
 
@@ -163,6 +163,18 @@ A stack is a contiguous run. When the parent was accepted without a rewrite, the
 
 The defect flow is the change flow applied to a fix that more than one branch needs. A defect is reported in a handover's Findings, the operator triages it, and the fix lands once on the trunk lane as a delivery commit. Every other branch is `working` against the fix until it is accepted; then each re-prepares onto the new head and replays the fix rather than writing a variant. The model is `20261105-design-open-defect_flow.md`; this section states only its relation to the change flow.
 
+## The operations
+
+The model is one subject; the operations that move a change through it belong to the change-pipeline skills. This table is the dispatch: each operation names one owner, and the owner's file states its procedure. `git-discipline` (`workflow/coding-agent/skills/git-discipline/SKILL.md`) keeps its local Runbooks table for a reader who enters there; this section is the pipeline's dispatch.
+
+| Operation | Owner | Use when |
+|---|---|---|
+| commit and branch rules, prepare | `git-discipline` (`workflow/coding-agent/skills/git-discipline/SKILL.md`) | a commit, a branch, a fold, or a branch prepared for the trunk |
+| the series rewrite | `history-cleanup` (`workflow/coding-agent/skills/git-discipline/runbooks/history-cleanup/SKILL.md`) | a feature branch's series is messy before review |
+| a closed-commit correction | `/record-correction` (`workflow/coding-agent/prompts/record-correction.md`) | a correction belongs to a closed commit that is not HEAD |
+| lost work | `recovery` (`workflow/coding-agent/skills/recovery/SKILL.md`) | the record and the repository disagree |
+| the delivery commit | `/commit` (`workflow/coding-agent/prompts/commit.md`) | an iteration's work lands as one commit |
+
 ## The check
 
-The chart and the table are rendered from the model's source; the TLA+ module belongs to that source and is not copied here. TLC checks the module with the `statechart` skill's runner; run it to reproduce the state and step counts. `scripts/check_change_model.sh` reads the source, holds the rendered table to the rendered chart and to the mutation catalog, and `--write` regenerates the rendered chart and table.
+The chart and the table are rendered from the model's source; the TLA+ module belongs to that source and is not copied here. TLC checks the module with the `statechart` skill's runner; run it to reproduce the state and step counts. `scripts/check_change_pipeline.sh` reads the source, holds the rendered table to the rendered chart and to the mutation catalog, and `--write` regenerates the rendered chart and table.

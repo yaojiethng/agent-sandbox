@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# tests/test_change_model.sh
-# Tests for the change model gate: `scripts/check_change_model.sh` over a
+# tests/test_change_pipeline.sh
+# Tests for the change pipeline gate: `scripts/check_change_pipeline.sh` over a
 # fixture model, and the real tree.
 #
 # Covers:
@@ -21,8 +21,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-GATE="$REPO_ROOT/scripts/check_change_model.sh"
-DOC="$FIXTURE_DIR/change_model.md"
+GATE="$REPO_ROOT/scripts/check_change_pipeline.sh"
+DOC="$FIXTURE_DIR/change_pipeline.md"
 
 write_doc() {
   local edges="$1" rows="$2"
@@ -61,7 +61,7 @@ BASE_ROWS='| `T01` | agent | agent | prepare | the head is not an ancestor | `no
 test_clean_fixture() {
   write_doc "$BASE_EDGES" "$BASE_ROWS"
   assert_run 0 "$GATE --doc=$DOC" "the fixture is clean" || return 1
-  assert_contains "$RUN_OUT" "change model: clean across 5 transition(s)" "the clean summary names the transition count"
+  assert_contains "$RUN_OUT" "change pipeline: clean across 5 transition(s)" "the clean summary names the transition count"
 }
 
 test_edge_without_row_is_named() {
@@ -116,7 +116,7 @@ test_redraft_must_name_both_verbs() {
 
 test_real_tree_is_clean() {
   assert_run 0 "$GATE" "the committed model is clean" || return 1
-  assert_contains "$RUN_OUT" "change model: clean across" "the real summary is printed"
+  assert_contains "$RUN_OUT" "change pipeline: clean across" "the real summary is printed"
 }
 
 run_test test_clean_fixture
@@ -130,4 +130,4 @@ run_test test_operator_git_must_be_manual
 run_test test_redraft_must_name_both_verbs
 run_test test_real_tree_is_clean
 
-test_done "change model gate"
+test_done "change pipeline gate"

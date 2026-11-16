@@ -104,6 +104,8 @@ Name the branch for the commit type, the milestone and a slug, in that order; th
 
 ## Runbooks
 
+The pipeline's dispatch is [`change_pipeline.md`](/opt/sandbox/docs/reference/change_pipeline.md#the-operations)'s; this table is the skill's local index.
+
 | Runbook | Runs when |
 |---|---|
 | [`prepare`](references/prepare.md) | you are on a feature branch; make it consumable by the operator's `make confirm` |

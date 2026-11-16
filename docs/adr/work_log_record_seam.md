@@ -20,7 +20,7 @@
 
 **Amendment (2026-11-06):** the `active-milestone` scalar named above was deleted in M3.5.3. The active set is every Milestone Summary row reading `In progress`, so this serializer no longer exists.
 
-**Amendment (2026-11-06):** an earlier version of this rationale named a merge role as the shared header's writer. That is superseded. A branch writes its own handover and roadmap row and resolves their conflicts when it prepares onto the head; the trunk never authors or resolves. The model is [the branching reference](../../workflow/coding-agent/skills/git-discipline/references/branching.md) and [the change model](../reference/change_model.md).
+**Amendment (2026-11-06):** an earlier version of this rationale named a merge role as the shared header's writer. That is superseded. A branch writes its own handover and roadmap row and resolves their conflicts when it prepares onto the head; the trunk never authors or resolves. The model is [the branching reference](../../workflow/coding-agent/skills/git-discipline/references/branching.md) and [the change pipeline](../reference/change_pipeline.md).
 
 ### The read surface
 

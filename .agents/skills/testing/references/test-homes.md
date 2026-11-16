@@ -18,7 +18,7 @@ Behavioural knowledge about seams the harness cannot call. Every file is self-co
 
 ## `tests/model/`
 
-The statecharts and their TLA+ modules, as source files rather than prose. Each subject has a directory: `chart.mmd` (the Mermaid source), `transitions.md` when the model carries a transition table, and `ChangeModel.tla` and `ChangeModel.cfg` when it has an executable module. The reference documents render the chart and the table from here; `scripts/check_statechart.sh` and `scripts/check_change_model.sh` read the home and fail when a rendered copy drifts. No runner in `make test` executes a `.tla`; TLC is a manual check. A model here is not a fixture: a fixture is created and removed by its test, and a model is the maintained source a reference renders.
+The statecharts and their TLA+ modules, as source files rather than prose. Each subject has a directory: `chart.mmd` (the Mermaid source), `transitions.md` when the model carries a transition table, and `ChangeModel.tla` and `ChangeModel.cfg` when it has an executable module. The reference documents render the chart and the table from here; `scripts/check_statechart.sh` and `scripts/check_change_pipeline.sh` read the home and fail when a rendered copy drifts. No runner in `make test` executes a `.tla`; TLC is a manual check. A model here is not a fixture: a fixture is created and removed by its test, and a model is the maintained source a reference renders.
 
 ## `tests/integration/`
 

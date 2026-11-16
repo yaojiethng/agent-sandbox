@@ -4,7 +4,7 @@ reader: [agent]
 
 # The Workflow Statechart
 
-This is the app's workflow surface as one statechart: every state an agent rests in, every slash command that moves it, and every maintenance check a procedure invokes. The change flow is a separate machine, drawn in [`change_model.md`](change_model.md); it is orthogonal to this chart and is entered at packaging. The loop's concept document, [`autonomous_agent_loop.md`](autonomous_agent_loop.md), explains why the loop is split into workflows; this document draws the whole of it, and that one point at the chart.
+This is the app's workflow surface as one statechart: every state an agent rests in, every slash command that moves it, and every maintenance check a procedure invokes. The change flow is a separate machine, drawn in [`change_pipeline.md`](change_pipeline.md); it is orthogonal to this chart and is entered at packaging. The loop's concept document, [`autonomous_agent_loop.md`](autonomous_agent_loop.md), explains why the loop is split into workflows; this document draws the whole of it, and that one point at the chart.
 
 A node is a state the loop rests in. A gate is a node where the loop waits for the operator, and the arrow out of a gate is a decision. An arrow is a command, or the operator releasing a gate. Three edge types: **workflow-implemented** (a prompt performs the transition), **operator decision** (the operator releases the gate), and **workflow-assisted operator decision** (a workflow or skill narrows the choice and the operator picks). Three gate states, each an arrow's source rather than a resting place for closing work: `it_scope_gate`, `it_acceptance_gate` and `ms_close_gate`. Closing is the work that follows the acceptance decision, not a state.
 
@@ -278,7 +278,7 @@ Every prompt in the iteration loop is an event here, and the command table's row
 
 ## The change flow
 
-The change flow is a separate machine: the branch's life from its fork to its deletion, not the iteration's progress. The two machines have different objects -- the session's progress and the branch's mergeability -- and may rest at any pair of states, so the change flow is orthogonal to this chart and is entered at packaging, not nested here. Its transitions, lanes, actors and blocked paths are [`change_model.md`](change_model.md)'s. The `Command coverage` query below reads only the prompt table.
+The change flow is a separate machine: the branch's life from its fork to its deletion, not the iteration's progress. The two machines have different objects -- the session's progress and the branch's mergeability -- and may rest at any pair of states, so the change flow is orthogonal to this chart and is entered at packaging, not nested here. Its transitions, lanes, actors and blocked paths are [`change_pipeline.md`](change_pipeline.md)'s. The `Command coverage` query below reads only the prompt table.
 
 ## Stories
 

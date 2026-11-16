@@ -1,11 +1,11 @@
-// scripts/lint/change_model.mjs
-// Holds the change model's transition table to its chart: every Mermaid edge
+// scripts/lint/change_pipeline.mjs
+// Holds the change pipeline's transition table to its chart: every Mermaid edge
 // carries a transition id, every id has one `## The transitions` row, and every
 // row names its lane, actor, mechanism, manual flag, subject, invariant, test
 // and mutation.
 //
-// The model is `tests/model/change_model/`: `chart.mmd`, `transitions.md` and
-// the TLA+ module. The reference `docs/reference/change_model.md` renders the
+// The model is `tests/model/change_pipeline/`: `chart.mmd`, `transitions.md` and
+// the TLA+ module. The reference `docs/reference/change_pipeline.md` renders the
 // chart and the table and links the TLA+; this scanner reads the home and
 // compares the rendered copy. The chart is the diagram in `## The chart`; the
 // table is `## The transitions`. This scanner checks the mapping, the lane
@@ -13,7 +13,7 @@
 // presence, and the mutation catalog's subject match. It does not run TLC;
 // `scripts/check_statechart.sh` owns the state table shape.
 //
-// Usage: node scripts/lint/change_model.mjs [--model-dir=PATH] [--doc=PATH]
+// Usage: node scripts/lint/change_pipeline.mjs [--model-dir=PATH] [--doc=PATH]
 //        [--catalog=PATH] [--tests-dir=PATH] [--write]
 
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
@@ -22,11 +22,11 @@ import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const usage = "usage: node scripts/lint/change_model.mjs [--model-dir=PATH] [--doc=PATH] [--catalog=PATH] [--tests-dir=PATH] [--write]";
+const usage = "usage: node scripts/lint/change_pipeline.mjs [--model-dir=PATH] [--doc=PATH] [--catalog=PATH] [--tests-dir=PATH] [--write]";
 const VALUE_FLAGS = ["--model-dir", "--doc", "--catalog", "--tests-dir"];
 
 const die = (message) => {
-  console.error(`change model gate: ${message}`);
+  console.error(`change pipeline gate: ${message}`);
   process.exit(1);
 };
 
@@ -48,7 +48,7 @@ for (const arg of args) {
   die(`unknown argument ${arg}; ${usage}`);
 }
 
-const docPath = resolve(valueArg("--doc") ?? resolve(REPO_ROOT, "docs/reference/change_model.md"));
+const docPath = resolve(valueArg("--doc") ?? resolve(REPO_ROOT, "docs/reference/change_pipeline.md"));
 const modelDir = valueArg("--model-dir");
 const catalogPath = resolve(valueArg("--catalog") ?? resolve(REPO_ROOT, "tests/mutations/catalog.jsonl"));
 const testsDir = resolve(valueArg("--tests-dir") ?? resolve(REPO_ROOT, "tests"));
@@ -61,7 +61,7 @@ let doc;
 try {
   doc = readFileSync(docPath, "utf8");
 } catch (error) {
-  console.error(`change model gate: cannot read ${docPath}: ${error.message}`);
+  console.error(`change pipeline gate: cannot read ${docPath}: ${error.message}`);
   process.exit(1);
 }
 
@@ -206,7 +206,7 @@ try {
     if (typeof parsed.id === "number") catalog.set(parsed.id, parsed);
   }
 } catch (error) {
-  console.error(`change model gate: cannot read ${catalogPath}: ${error.message}`);
+  console.error(`change pipeline gate: cannot read ${catalogPath}: ${error.message}`);
   process.exit(1);
 }
 
@@ -252,7 +252,7 @@ if (write) {
     modelTransitionsSection.replace(/\n+$/, "") + "\n\n",
   );
   writeFileSync(docPath, nextDoc);
-  console.log(`change model: wrote the chart and the transitions to ${docPath}`);
+  console.log(`change pipeline: wrote the chart and the transitions to ${docPath}`);
   process.exit(0);
 }
 
@@ -260,4 +260,4 @@ if (findings.length > 0) {
   for (const finding of findings) console.error(`- ${finding}`);
   process.exit(1);
 }
-console.log(`change model: clean across ${rows.length} transition(s)`);
+console.log(`change pipeline: clean across ${rows.length} transition(s)`);

@@ -15,7 +15,7 @@
 | R7 | Verify the restored tree against the claim, and correct a record that overclaimed. | handovers `20260503-07`, `20260512-07`; session 2026-09-30 |
 | R8 | Record what was lost, what survived, the evidence source and the repair. | handover `20260512-07`; session 2026-09-29 |
 | R9 | Keep the evidence locations in a runtime and delivery-mode layer, apart from the sequence. | sessions 2026-07-22, 2026-08-12, 2026-09-29 |
-| R10 | The host draft repair is `T11`; correction, `history-cleanup` and `prepare` are redirects. | [`change_model.md`](change_model.md); roadmap M3.7.2 |
+| R10 | The host draft repair is `T11`; correction, `history-cleanup` and `prepare` are redirects. | [`change_pipeline.md`](change_pipeline.md); roadmap M3.7.2 |
 | R11 | Surface destructive or ambiguous choices; reconstruction is a choice the operator sees. | sessions 2026-09-12, 2026-09-22 |
 
 ## 2026-11-16 -- Recovery is derived from the evidence

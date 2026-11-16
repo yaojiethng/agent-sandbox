@@ -1,4 +1,4 @@
-# Change model transitions
+# Change pipeline transitions
 
 ## The transitions
 

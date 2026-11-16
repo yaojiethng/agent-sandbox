@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# tests/test_change_model_delivery.sh
-# The change model's delivery matrix: the same agent change exports the same
+# tests/test_change_pipeline_delivery.sh
+# The change pipeline's delivery matrix: the same agent change exports the same
 # diff under copy and mount delivery, full and flatten history.
 #
 # The model says delivery is a parameter of the agent lane's entry, not a second
@@ -80,11 +80,11 @@ test_delivery_matrix_is_one_pipeline() {
   pass "the four delivery entries export the same diff from the branch point"
 }
 
-# Given: the change model reference
+# Given: the change pipeline reference
 # When:  the delivery matrix is read
 # Then:  it names the parameter and the matrix
 test_model_names_the_delivery_matrix() {
-  local doc="$REPO_ROOT/docs/reference/change_model.md"
+  local doc="$REPO_ROOT/docs/reference/change_pipeline.md"
   grep -q 'Delivery is a parameter of the agent lane' "$doc" || fail "the model does not name delivery as a parameter"
   grep -q 'test matrix runs the same transitions' "$doc" || fail "the model does not name the test matrix"
   pass "the model names the delivery parameter and the matrix"
@@ -93,4 +93,4 @@ test_model_names_the_delivery_matrix() {
 run_test test_delivery_matrix_is_one_pipeline
 run_test test_model_names_the_delivery_matrix
 
-test_done "change model delivery matrix"
+test_done "change pipeline delivery matrix"
