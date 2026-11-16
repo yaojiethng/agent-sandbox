@@ -10,8 +10,7 @@
 # the instruction-surface gate (check_instruction_surfaces.sh), the vocabulary gate
 # (check_vocabulary.sh), the build-context
 # gate (check_build_context.sh), the reach gate
-# (check_reach.sh), the statechart gate (check_statechart.sh), the draft statechart gate
-# (check_draft_statechart.sh), the change model gate
+# (check_reach.sh), the statechart gate (check_statechart.sh), the change model gate
 # (check_change_model.sh) and the launch-site
 # gate (check_launch_sites.sh) and the source-catalog gate
 # (check_skill_sources.sh), the skill-layer gate (check_skill_map.sh) and the
@@ -55,7 +54,6 @@ GATES=(
   check_reach.sh
   check_references.sh
   check_statechart.sh
-  check_draft_statechart.sh
   check_change_model.sh
   check_agent_primitives.sh
   check_numbering.sh

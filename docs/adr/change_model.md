@@ -1,6 +1,6 @@
 # Change model
 
-**Current:** 2026-11-12
+**Current:** 2026-11-16
 
 ## Requirements
 
@@ -47,4 +47,19 @@
 - *Model delivery as a second pipeline.* **Intent failure**: the diff pipeline is delivery-indifferent; copy and mount change the agent lane's entry, not the handoff.
 - *Keep the change flow in prompts.* **Intent failure**: a prompt that mirrors a host verb is a second surface; the host verbs are the user surface and the agent operations are primitives.
 
-**Edge cases / drivers:** A competent raw git operation re-derives the mergeability; a branch left `not-ready` re-prepares. A mistaken operation leaves the draft inconsistent; `make reject` restores the source and deletes the draft, and `make draft` rebuilds it from the unchanged bundle. A raw git operation on the trunk is a head advance: every ready branch re-checks. The model leaves out the draft's internal states, which are [`draft_branch_statechart.md`](../reference/draft_branch_statechart.md)'s, the branch-work machine, and the queue's order.
+**Edge cases / drivers:** A competent raw git operation re-derives the mergeability; a branch left `working` re-prepares. A mistaken operation leaves the draft inconsistent; `make reject` restores the source and deletes the draft, and `make draft` rebuilds it from the unchanged bundle. A raw git operation on the trunk is a head advance: every ready branch re-checks. The model leaves out the draft's internal confirm steps, which are [the reference's confirm section](../reference/change_model.md#the-confirm-sequence)'s, the branch-work machine, and the queue's order.
+
+## 2026-11-16 -- One lifecycle from fork to deletion
+
+**Decision:** The change model is one lifecycle. The states are the mergeability relation and the host's staging of it: `working` (the head is not an ancestor of the tip), `ready` (mergeable; the operator's choice is the queue), `drafted` (a draft exists), `accepted` (on the trunk) and `deleted` (the ref is gone). The lanes are the actors, delivery is a parameter of the fork, and the draft's package and confirm detail are sections of the same model. `draft_branch_statechart.md` is retired; its content is in the reference. `branching.md`'s lifecycle links the model.
+
+**Rationale:** The 2026-11-06 entry split the branch work from mergeability, and the draft chart became a third document. The split was the interim: the branch's work, its mergeability and the draft are one object's life, and a reader had to assemble it from three sources. The meaningful axis is mergeability, not a branch-work state: `blocked` and `parked` named why the operator had not taken a branch, and both are the queue, not a state. The 2026-11-06 rejection of keeping the branch-work states in the same machine stands, because the model keeps no branch-work state beyond `working`, which is the absent mergeability.
+
+**Rejected alternatives:**
+
+- *Keep `blocked` and `parked` as states.* **Intent failure**: a dependency and a decision both leave the branch `working` or `ready`; the reason is not a git predicate and would need a declared store.
+- *Keep the draft chart as a peer document.* **Intent failure**: one subject in one mode has one source; the package and confirm detail is a section of the model.
+- *Keep both gates.* **Intent failure**: two gates over one model are a second source for the same claim.
+- *Keep the branch-work lifecycle in `branching.md`.* **Intent failure**: the fork-to-deletion life is the model's; the convention owns the track topology and the prepare obligation, not a second lifecycle.
+
+**Edge cases / drivers:** A ready branch that is not chosen is `ready` and waits in the queue. A head advance returns `ready` to `working`. A rejected draft returns the branch to `ready`. A stale branch is abandoned from `working` or `ready`. The model leaves out the queue's order, the commit graph, the package's byte-level form and the confirm's internal steps, which are the confirm section's.

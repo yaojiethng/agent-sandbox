@@ -1,5 +1,5 @@
 ---
-title: "The change pipeline"
+title: "The change lifecycle"
 ---
 stateDiagram-v2
   state "Legend" as legend {
@@ -8,15 +8,18 @@ stateDiagram-v2
   }
   class l0 blue
   class l1 teal
-  [*] --> NotReady
-  NotReady --> Ready: T01 prepare
+  [*] --> Working
+  Working --> Ready: T01 prepare
   Ready --> Ready: T02 history-cleanup
   Ready --> Ready: T03 export
   Ready --> Drafted: T04 draft
   Drafted --> Drafted: T05 review
   Drafted --> Accepted: T06 confirm
-  Drafted --> Rejected: T07 reject
-  Ready --> Applied: T08 apply
-  Ready --> NotReady: T09 the head advances
+  Drafted --> Ready: T07 reject
+  Ready --> Ready: T08 apply
+  Ready --> Working: T09 the head advances
   Drafted --> Drafted: T10 operator git
   Drafted --> Drafted: T11 reject and redraft
+  Accepted --> Deleted: T12 delete
+  Working --> Deleted: T13 abandon
+  Ready --> Deleted: T14 abandon

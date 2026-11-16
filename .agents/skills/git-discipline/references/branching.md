@@ -54,7 +54,7 @@ The queue is a view over the ready set and never holds a `not-ready` branch. A b
 
 ## Lifecycle
 
-A delivery branch is deleted when its trunk accepts it. A track is deleted when its node merges into its parent. A stale branch with no activity across two milestones is deleted.
+A branch's life from its fork to its deletion is the change model's [`## The life`](../../../../docs/reference/change_model.md#the-life). A delivery branch is deleted when its trunk accepts it; a track is deleted when its node merges into its parent; a stale branch with no activity across two milestones is abandoned. The model owns the states; this convention owns the track topology and the prepare obligation.
 
 ## Tagging
 

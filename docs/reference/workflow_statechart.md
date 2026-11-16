@@ -278,7 +278,7 @@ Every prompt in the iteration loop is an event here, and the command table's row
 
 ## The change flow
 
-The change flow is a separate machine: the mergeability of a branch against the trunk, not the iteration's progress. The two machines have different objects -- the session's progress and the branch's mergeability -- and may rest at any pair of states, so the change flow is orthogonal to this chart and is entered at packaging, not nested here. Its transitions, lanes, actors and blocked paths are [`change_model.md`](change_model.md)'s. The `Command coverage` query below reads only the prompt table.
+The change flow is a separate machine: the branch's life from its fork to its deletion, not the iteration's progress. The two machines have different objects -- the session's progress and the branch's mergeability -- and may rest at any pair of states, so the change flow is orthogonal to this chart and is entered at packaging, not nested here. Its transitions, lanes, actors and blocked paths are [`change_model.md`](change_model.md)'s. The `Command coverage` query below reads only the prompt table.
 
 ## Stories
 
