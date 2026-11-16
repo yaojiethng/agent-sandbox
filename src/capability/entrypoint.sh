@@ -170,11 +170,19 @@ fi
 # there can never execute on the host. The mount-delivery .git is a host
 # directory, so the harness installs no hook there. docs/adr/git_hooks.md.
 # Installed on every start (fresh and resume) so a refreshed image updates the
-# hook. The hook is harness-owned, not part of the project's committed files.
+# hook. The pre-commit is harness-owned, not part of the project's committed
+# files. The commit-msg is the project's own committed file and is seeded beside
+# it; the harness does not set core.hooksPath, because that would switch the
+# pre-commit off. See docs/adr/git_hooks.md.
 if [[ "$SANDBOX_TYPE" == "copy" && -f "$GIT_HOOKS_DIR/pre-commit.sh" ]]; then
   mkdir -p "$SANDBOX_DIR/.git/hooks"
   install -m 0755 "$GIT_HOOKS_DIR/pre-commit.sh" "$SANDBOX_DIR/.git/hooks/pre-commit"
   echo "Git hook installed: pre-commit (staged Markdown + ShellCheck lint)"
+fi
+if [[ "$SANDBOX_TYPE" == "copy" && -f "$SANDBOX_DIR/.githooks/commit-msg" ]]; then
+  mkdir -p "$SANDBOX_DIR/.git/hooks"
+  install -m 0755 "$SANDBOX_DIR/.githooks/commit-msg" "$SANDBOX_DIR/.git/hooks/commit-msg"
+  echo "Git hook installed: commit-msg (delivery commit message check)"
 fi
 
 echo "Working tree status:"

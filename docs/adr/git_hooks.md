@@ -1,6 +1,22 @@
 # Git Hooks
 
-**Current:** 2026-09-21
+**Current:** 2026-11-16
+
+## 2026-11-16 -- Copy delivery also seeds the project's commit-msg hook
+
+**Decision.** The capability entrypoint installs the project's `.githooks/commit-msg` into the session volume's `.git/hooks/commit-msg` on every start (fresh and resume), copy delivery only, beside the harness `pre-commit`. It installs nothing when the project ships no such file. It does not set `core.hooksPath`: the config route stays rejected, and pointing hooks at `.githooks` would switch the installed `pre-commit` off.
+
+**Rationale.** The delivery message check existed but was inert: nothing registered the hook, so a container accepted every message and the file read as enforcement. Copy delivery's `.git` lives inside the session volume, so a project-owned hook installed there cannot execute on the host. Seeding from the project tree keeps the hook project-owned rather than baking one project's message policy into the image.
+
+**Rejected alternatives.** Set `core.hooksPath .githooks`: rejected, both for the recorded reasons and because it disables the harness `pre-commit` in the same hook directory. Bake a `commit-msg` into the capability image: rejected, because the message policy and the active types are project files, so an image copy would either duplicate them or impose one project's policy on every project.
+
+**Edge cases / drivers.**
+
+- **Project without `.githooks/commit-msg`.** No hook is installed and the start is unchanged; the gate is the project's to ship.
+- **Mount delivery.** Installs neither hook, because the `.git` is host-resident; the recorded limitation stands.
+- **Project `core.hooksPath`.** A project that sets it still overrides the installed hooks; the harness does not fight the project's git topology.
+
+**Supersedes.** The "exactly one hook" framing of the `2026-09-21` and `2026-09-20` entries: copy delivery now seeds two hooks, and the second is project-owned.
 
 ## 2026-09-21 -- Host-initiated hook install gives the host checkout the same gate
 

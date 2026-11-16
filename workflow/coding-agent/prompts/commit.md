@@ -76,7 +76,7 @@ Write the message per the `git-discipline` table: the type, an imperative subjec
 git commit -F <message-file>
 ```
 
-The `commit-msg` hook in `.githooks/` checks the message and refuses a non-conforming one, naming the layer and the rule; fix the message and commit again.
+The `commit-msg` hook in `.githooks/` is installed into `.git/hooks/commit-msg` at container start on copy delivery, and checks the message and refuses a non-conforming one, naming the layer and the rule; fix the message and commit again.
 
 ### B3. Self-check the range
 

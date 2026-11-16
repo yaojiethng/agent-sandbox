@@ -13,6 +13,7 @@ Sources: the three reflection reviewers of 2026-10-02 (`judgment`, `tooling`, `d
 | Surface | Where | What it does |
 |---|---|---|
 | Copy-delivery hook | `src/capability/git-hooks/pre-commit.sh` | Markdown and ShellCheck over the staged set; blocks the commit. Mount delivery installs no hook, because its `.git` is a host directory ([`git_hooks.md`](../../docs/adr/git_hooks.md)) |
+| Copy-delivery commit-msg hook | `.githooks/commit-msg` | The project's message check; the entrypoint installs it into `.git/hooks/commit-msg` on copy delivery, beside the pre-commit |
 | Host hook install | `scripts/manual/install_host_git_hooks.sh` | gives the host checkout the same gate |
 | Lint umbrella | `scripts/lint.sh` | five gates run concurrently: shell, lib-contract, markdown, prompt frontmatter, legacy wrap |
 | Markdown gate | `scripts/check_markdown.sh` | markdownlint-cli2 over the tree; owns the linking rule, the doc-wrap rule and the unresolved-rule warning |

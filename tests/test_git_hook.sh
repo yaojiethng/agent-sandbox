@@ -11,6 +11,7 @@
 #   hook missing tool   --  a missing linter prints a note and allows the commit
 #   hook directive hint --  an unparseable shellcheck directive is explained
 #   entrypoint install  --  copy delivery installs an executable hook
+#   entrypoint commit-msg -- copy delivery seeds the project's commit-msg hook
 #   entrypoint skip     --  mount delivery installs no hook
 #   entrypoint copy     --  copy delivery writes workspace paths and reconciles identity
 #   entrypoint abort    --  copy delivery against an unseeded volume fails closed
@@ -93,6 +94,7 @@ EOF
 #   install line or preflight completion, SIGTERMs it, and collects rc/output.
 invoke_entrypoint() {
   local dir="$1" type="$2" sandbox_name="$3"
+  local ready="${4:-Git hook installed\|ALL CHECKS PASSED}"
   ( cd "$dir" && SANDBOX_LIB_DIR="$STUB_LIB_DIR" \
     GIT_HOOKS_DIR="$REPO_ROOT/src/capability/git-hooks" \
     SANDBOX_TYPE="$type" \
@@ -107,7 +109,7 @@ invoke_entrypoint() {
     exec bash "$dir/entrypoint.sh" ) >"$dir/log" 2>&1 &
   local pid=$!
   for _ in $(seq 1 100); do
-    grep -q "Git hook installed\|ALL CHECKS PASSED" "$dir/log" 2>/dev/null && break
+    grep -q "$ready" "$dir/log" 2>/dev/null && break
     kill -0 "$pid" 2>/dev/null || break
     sleep 0.1
   done
@@ -364,12 +366,59 @@ test_entrypoint_installs_hook_for_copy() {
   assert_contains "$EP_OUT" "Git hook installed" "copy entrypoint reports the hook install"
   assert_file_exists "$repo/.git/hooks/pre-commit" "copy delivery installs the pre-commit hook"
   assert_run 0 "test -x '$repo/.git/hooks/pre-commit'" "installed hook is executable"
+  assert_run 1 "test -f '$repo/.git/hooks/commit-msg'" "a project without .githooks/commit-msg gets no second hook"
 
   local state
   state="$(cat "$repo/.git/SESSION_STATE")"
   assert_contains "$state" "changes_dir=" "copy entrypoint writes changes_dir into SESSION_STATE"
   assert_contains "$state" "input_dir=" "copy entrypoint writes input_dir into SESSION_STATE"
   assert_contains "$state" "output_dir=" "copy entrypoint writes output_dir into SESSION_STATE"
+}
+
+# Given: a copy-delivery entrypoint copy for a project that ships .githooks/commit-msg
+# When:  the entrypoint runs
+# Then:  it seeds the hook and the clone's first commits are audited by it
+# Asserts: the project commit-msg seeding, and the install/uninstalled contrast
+test_entrypoint_seeds_commit_msg_hook() {
+  local dir="$FIXTURE_DIR/copy_commit_msg"
+  local repo="$dir/sandbox"
+  mkdir -p "$repo" "$dir/.workspace/session-diffs" \
+           "$dir/.workspace/input" "$dir/.workspace/output"
+  make_repo "$repo"
+  mkdir -p "$repo/.githooks" "$repo/scripts" \
+           "$repo/.agents/skills/git-discipline/references"
+  cp "$REPO_ROOT/.githooks/commit-msg" "$repo/.githooks/"
+  cp "$REPO_ROOT/scripts/check_commit_message.sh" "$repo/scripts/"
+  cp "$REPO_ROOT/.agents/skills/git-discipline/references/commit-types.md" \
+     "$repo/.agents/skills/git-discipline/references/"
+  chmod +x "$repo/.githooks/commit-msg" "$repo/scripts/check_commit_message.sh"
+  git -C "$repo" add -A
+  git -C "$repo" commit -q --no-verify -m "fixture setup"
+  printf 'init_sha=%s\nsession_ts=20260912-120000\n' \
+    "$(git -C "$repo" rev-parse HEAD)" > "$repo/.git/SESSION_STATE"
+  sed "s|^ROOT=.*$|ROOT=$dir|" "$ENTRYPOINT" > "$dir/entrypoint.sh"
+
+  invoke_entrypoint "$dir" copy sandbox "commit-msg (delivery"
+
+  assert_rc 0 "$EP_RC" "copy entrypoint exits cleanly after both hook installs"
+  assert_file_exists "$repo/.git/hooks/commit-msg" \
+    "copy delivery seeds the project commit-msg hook"
+  assert_run 0 "test -x '$repo/.git/hooks/commit-msg'" \
+    "seeded commit-msg hook is executable"
+
+  local out rc=0
+  printf 'change\n' >> "$repo/file.txt"
+  git -C "$repo" add file.txt
+  printf 'impl: do the thing\n' > "$repo/msg.txt"
+  out="$(cd "$repo" && git commit -F msg.txt 2>&1)" || rc=$?
+  assert_rc 1 "$rc" "the seeded hook refuses a non-conforming message"
+  assert_contains "$out" "policy: the type 'impl' is not an active type" \
+    "the refusal names the policy layer"
+
+  printf 'feat: add the thing\n\nA reason under the body budget.\n' > "$repo/msg.txt"
+  rc=0
+  (cd "$repo" && git commit -q -F msg.txt) || rc=$?
+  assert_rc 0 "$rc" "the seeded hook passes a conforming message"
 }
 
 # Given: a copy-delivery entrypoint copy and a sandbox directory with no .git
@@ -458,6 +507,8 @@ test_entrypoint_skips_hook_for_mount() {
 
   assert_run 1 "test -f '$worktree/.git/hooks/pre-commit'" \
     "mount delivery installs no hook (host-resident .git)"
+  assert_run 1 "test -f '$worktree/.git/hooks/commit-msg'" \
+    "mount delivery installs no commit-msg hook"
 }
 
 # ---------------------------------------------------------------------------
@@ -476,6 +527,7 @@ run_test test_hook_allows_when_markdownlint_missing
 run_test test_hook_allows_when_shellcheck_missing
 run_test test_hook_explains_shellcheck_directive_parse_error
 run_test test_entrypoint_installs_hook_for_copy
+run_test test_entrypoint_seeds_commit_msg_hook
 run_test test_entrypoint_aborts_unseeded_copy_volume
 run_test test_entrypoint_copy_reconciles_stale_identity
 run_test test_entrypoint_copy_keeps_matching_identity
