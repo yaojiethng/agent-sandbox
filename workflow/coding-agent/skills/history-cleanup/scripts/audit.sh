@@ -47,6 +47,22 @@ note() { echo "  note   $*"; }
 finding() { echo "  FIND   $*"; findings=$((findings + 1)); }
 check() { echo "$*"; }
 
+escape_re() { printf '%s' "$1" | sed 's/[.[\*^$()+?{}|]/\\&/g'; }
+
+# Check 4 holds content fixed and lets records move. The record set is wider
+# than check 1's handover root: the roadmaps, the feedback record, the
+# discussion tree and the changelog are records too.
+record_paths_regex() {
+  local rp esc out=""
+  for rp in "$RECORDS" devlog/roadmap.md devlog/roadmap_future.md \
+    devlog/AGENT_FEEDBACK.md devlog/discussions devlog/changelog.md; do
+    [[ -n "$rp" ]] || continue
+    esc=$(escape_re "$rp")
+    out="${out:+$out|}$esc"
+  done
+  printf '%s' "$out"
+}
+
 COMMITS=$(git rev-list --reverse "$BASE".."$TIP")
 
 check "1. record added once"
@@ -78,9 +94,16 @@ done
 
 check "4. tip content identity"
 if [[ -n "$REF" ]]; then
-  skip=""
-  for a in "${ADDITIONS[@]:-}"; do [ -n "$a" ] && skip="$skip|$a"; done
-  delta=$(diff <(git ls-tree -r "$REF" | grep -vE "(^|[[:space:]])$RECORDS/" | grep -vE "${skip:-^$}") <(git ls-tree -r "$TIP" | grep -vE "(^|[[:space:]])$RECORDS/" | grep -vE "${skip:-^$}"))
+  record_re=$(record_paths_regex)
+  add_re=""
+  for a in "${ADDITIONS[@]:-}"; do
+    [[ -n "$a" ]] || continue
+    esc=$(escape_re "$a")
+    add_re="${add_re:+$add_re|}$esc"
+  done
+  exclude_record() { grep -vE "(^|[[:space:]])($record_re)(/|$)"; }
+  exclude_add() { grep -vE "(^|[[:space:]])(${add_re:-^$})(/|$)"; }
+  delta=$(diff <(git ls-tree -r "$REF" | exclude_record | exclude_add) <(git ls-tree -r "$TIP" | exclude_record | exclude_add))
   if [[ -n "$delta" ]]; then
     finding "non-record content differs from $REF"
     echo "$delta" | sed 's/^/         /' | head -20

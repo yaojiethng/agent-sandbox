@@ -1,6 +1,6 @@
 # Git commit history commons
 
-**Current:** 2026-11-14
+**Current:** 2026-11-16
 
 ## 2026-11-14 -- The commit history is a commons
 
@@ -31,3 +31,15 @@
 **Rejected alternatives:** a gate over `scripts/` -- intent, it catches a script that discards a tree and not the agent who types the verb, and both occurrences are the latter; a wrapper the agent must call -- intent, `git` stays one keystroke away and the forgetful path bypasses it; a blanket ban on git while work is uncommitted -- intent, it forbids the backup branch that is the save.
 
 **Edge cases / drivers:** a stash is saved until `drop`; a fixture repository's own commits are its save; the outer tree is never a discard's target.
+
+## 2026-11-16 -- The series is the cleanup's, not the commit's
+
+**Decision:** `history-cleanup` is a change-pipeline workflow, not a branch-preparation primitive beside `prepare`. Its granularity is a feature branch and its consumer the PR or merge-request reviewer; its input is a commit range and its output a range conforming to six sequence properties: complete at every point, one unit per commit, a reviewable order, a bisectable path, records true at their commit, and origin surviving the rewrite. The convention keeps the four per-commit properties and declares the boundary: a commit is judged alone; the series is the cleanup's pass. `prepare` owns trunk alignment, and the host's one-commit delivery is the pipeline's squash, a different consumer. The two are independent: either can run on its own, and running both is two separate operator calls.
+
+**Rationale:** a commit cannot know its successors. Making every commit read its neighbours spends O(n) agent turns and tokens per commit instead of once at the cleanup, and the full range exists only there. The convention's four properties are local at write time; the sequence properties are global and belong to the one pass that has the evidence. Self-explanatory means standalone, so a commit does not carry the sequence's readability. The earlier primitive frame hid the consumer and let the skill restate the convention and `prepare`.
+
+**Evidence:** the skill measured 182 lines, restating the four properties, the rebase and gate of `prepare`, and the audit's eight checks. The audit's check 4 excluded only the handover root, so a roadmap, feedback or discussion delta at the tip read as non-record content; its `--addition` exclude began with an empty alternative, which disabled the content proof whenever an addition was named.
+
+**Rejected alternatives:** declare the sequence properties in the convention -- intent failure, it makes them a per-commit obligation that is unknowable; make each commit read its neighbours -- intent failure, the successors do not exist yet and the cost is O(n) per commit; keep the primitive frame -- intent failure, the consumer is the reviewer and the overlap with the convention and `prepare` is duplication; prescribe the rewrite mechanism -- intent failure, the invariant is the output and the method is the agent's; serve the host's one-commit delivery -- intent failure, the cleanup serves the PR reviewer and the squash is the pipeline's.
+
+**Edge cases / drivers:** a stack's contiguity is `branching.md`'s, not the series'. The cleanup folds corrections, not introductions, so `git blame` keeps the origin. A record that a later commit retires is record noise. The branch point, the export and the draft are the change pipeline's; the cleanup's base stays the base.

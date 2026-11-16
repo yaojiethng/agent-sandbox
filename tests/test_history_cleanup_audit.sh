@@ -19,6 +19,8 @@
 #   a manifest row whose subject is wrong   -- finding, check 7
 #   a non-record change at the tip          -- finding, check 4
 #   a record-only change at the tip         -- clean, check 4 excludes it
+#   a record change in each record tree     -- clean, check 4 excludes all of them
+#   an addition that does not cover a change -- finding, check 4 still runs
 #   a clean range                           -- rc 0, no finding
 #
 # Run:   bash tests/test_history_cleanup_audit.sh
@@ -182,6 +184,56 @@ test_a_record_change_at_the_tip_is_excluded() {
   assert_contains "$out" "audit: clean" "check 4 excludes the record path"
 }
 
+# Given: a base that carries every record tree
+# When:  the tip changes only those records
+# Then:  check 4 excludes all of them and the range is clean
+test_a_record_change_in_each_record_tree_is_excluded() {
+  local d="$WORK/records" out rc=0 base
+  new_repo "$d" || fail "fixture"
+  (
+    cd "$d" || exit 1
+    mkdir -p devlog/discussions
+    printf '# future\n' >devlog/roadmap_future.md
+    printf '# feedback\n' >devlog/AGENT_FEEDBACK.md
+    printf '# changelog\n' >devlog/changelog.md
+    printf '# discussion\n' >devlog/discussions/x.md
+    git add -A && git commit -q --amend -m base
+  ) || fail "fixture base"
+  base=$(git -C "$d" rev-list --max-parents=0 HEAD)
+  (
+    cd "$d" || exit 1
+    for f in devlog/roadmap.md devlog/roadmap_future.md \
+      devlog/AGENT_FEEDBACK.md devlog/changelog.md devlog/discussions/x.md; do
+      printf 'more\n' >>"$f"
+    done
+    git add -A && git commit -qm "update records"
+  ) || fail "fixture commit"
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base") || rc=$?
+  assert_rc 0 "$rc" "a record-only change in each tree is not a finding"
+  assert_contains "$out" "audit: clean" "check 4 excludes the roadmaps, feedback, discussions and changelog"
+}
+
+# Given: a non-record change and an addition that does not name it
+# When:  check 4 runs
+# Then:  it reports the change; naming the change as an addition is clean
+test_an_addition_does_not_disable_the_content_check() {
+  local d="$WORK/addition" out rc=0 base
+  new_repo "$d" || fail "fixture"
+  base=$(git -C "$d" rev-list --max-parents=0 HEAD)
+  (
+    cd "$d" || exit 1
+    printf 'new content\n' >notes.txt
+    git add -A && git commit -qm "add notes"
+  ) || fail "fixture commit"
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --addition=other.txt) || rc=$?
+  assert_rc 1 "$rc" "an addition that does not name the change leaves check 4 running"
+  assert_contains "$out" "non-record content differs" "check 4 reports the change"
+  rc=0
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --addition=notes.txt) || rc=$?
+  assert_rc 0 "$rc" "an addition that names the change is excluded"
+  assert_contains "$out" "audit: clean" "check 4 excludes the named addition"
+}
+
 test_an_inversion_is_reported_not_counted() {
   local d="$WORK/inv" out rc=0
   new_repo "$d" || fail "fixture"
@@ -206,6 +258,8 @@ run_test test_a_manifest_subject_that_differs_is_named
 run_test test_a_clean_range_reports_clean
 run_test test_a_reference_that_differs_is_named
 run_test test_a_record_change_at_the_tip_is_excluded
+run_test test_a_record_change_in_each_record_tree_is_excluded
+run_test test_an_addition_does_not_disable_the_content_check
 run_test test_an_inversion_is_reported_not_counted
 
 test_done

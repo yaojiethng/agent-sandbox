@@ -107,11 +107,13 @@ Name the branch for the commit type, the milestone and a slug, in that order; th
 | Runbook | Runs when |
 |---|---|
 | [`prepare`](references/prepare.md) | you are on a feature branch; make it consumable by the operator's `make confirm` |
-| [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a draft branch's series holds an inversion, before the branch is packaged for review |
+| [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a feature branch's series is messy before its PR or merge-request review |
 | [`recovery`](../../../workflow/coding-agent/skills/recovery/SKILL.md) | the record and the repository disagree; the operator starts `/recovery` and the skill classifies the description |
 | [`correction`](references/correction.md) | the repository agrees with the record and the operator disagrees; the commit is wrong or the series is messy |
 
-The branch-preparation primitives are `prepare` and `history-cleanup`. They leave a branch the operator's verbs can consume: `make draft`, `make confirm`, `make reject` and `make apply`. You prepare the branch and report its state; the operator runs the verb. A primitive is internal, never a second flow.
+`prepare` is the branch-preparation primitive; it leaves a branch the operator's verbs can consume. `history-cleanup` is the operator-invoked series pass under the change pipeline, and it serves the PR or merge-request reviewer rather than the host's one-commit delivery. The two are independent: either can run on its own, and running both is two separate operator calls. You prepare the branch and report its state; the operator runs the verb. A primitive is internal, never a second flow.
+
+The four properties are per-commit and local: a commit is judged alone. The series is judged as a whole by `history-cleanup`, because a commit cannot know its successors and reading the sequence at each commit spends agent turns for a judgement only the full range supports.
 
 ## Where to look
 

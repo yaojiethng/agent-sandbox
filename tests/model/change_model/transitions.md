@@ -7,7 +7,7 @@ The transition table is the contract; the chart is its rendered view. `Lane` and
 | Id | Lane | Actor | Event | Guard | From | To | Mechanism | Manual | Subject | Invariant | Test | Mutation |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `T01` | agent | agent | prepare | the head is not an ancestor of the tip | `working` | `ready` | rebase onto the head | no | the prepare runbook | `PrepareResolvesEveryConflict` | `none: model check` | `none: model-only` |
-| `T02` | agent | agent | history-cleanup | the series is not reviewable | `ready` | `ready` | `history-cleanup` | no | the history-cleanup skill | `SeriesIsReviewable` | `none: model check` | `none: model-only` |
+| `T02` | agent | agent | history-cleanup | the series is not reviewable | `ready` | `ready` | `history-cleanup` | yes | the history-cleanup skill | `SeriesIsReviewable` | `none: model check` | `none: model-only` |
 | `T03` | agent | agent | export | the branch is prepared | `ready` | `ready` | the package step | no | the export step | `BundleCarriesTheBranchPoint` | `none: model check` | `none: model-only` |
 | `T04` | host | operator | draft | a bundle is present and forkable | `ready` | `drafted` | `make draft` | no | `scripts/workflows/draft.sh` | `MergeableRequiresForkable` | `test_draft_forks_from_branch_point_not_head` | `252` |
 | `T05` | host | operator | review | a draft is present | `drafted` | `drafted` | read the diff | yes | none: operator action | `ReviewBeforeAccept` | `none: operator action` | `none: operator action` |
