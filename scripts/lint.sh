@@ -53,6 +53,7 @@ GATES=(
   check_pins.sh
   check_reach.sh
   check_references.sh
+  check_record_citations.sh
   check_statechart.sh
   check_change_pipeline.sh
   check_agent_primitives.sh

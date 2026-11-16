@@ -14,6 +14,18 @@
 | R6 | The host lane is the operator's | The host lane includes the operator's raw git operations, not only the verbs; a competent operation re-derives the state. |
 | R7 | A mistake has a stated remediation | A broken draft is discarded by `make reject` and rebuilt by `make draft`; the bundle and the branch are unchanged. |
 
+## 2026-11-16 -- The git operations are defined over generic files
+
+**Decision:** The change pipeline's git operations read paths and blobs. A change is a set of `(path, blob)`; a series is a sequence of such sets. Series properties 1-4 and 6 hold without reading a file's format. Property 5 is generic over a record set the caller declares: a record root and a record path list. The audit carries seven content checks: record added once, nothing born and buried, tip content identity, the per-commit gate, no empty unit, manifest conformance, inversions. The citation check is not the audit's. It is a tip-level project gate, `scripts/check_record_citations.sh`, run by `scripts/lint.sh`; the audit's per-commit gate loop applies the project's gate at each commit. The bundle names no project convention: the record set is its only record input, and `record-correction`'s forms are default forms. The audit's record defaults are empty.
+
+**Rationale:** The git operations need paths and blobs, not a record schema. The record set is the one input that names the files whose content may move. The citation format is local -- a roadmap path and Markdown link syntax -- so a shipped audit cannot carry it. The audit already checks out each commit and runs the project's gate, so moving the citation check into that gate applies it per commit without a second range loop. A separate range-aware citation script would duplicate the loop; a hardcoded check in the audit would leak a project format into the bundle.
+
+**Rejected alternatives:** keep the citation check in the audit -- a shipped skill carries a local path and format; add a range-aware citation script -- a second loop over the same commits; keep a caller-supplied citation hook -- the project's own gate already is the hook; link the bundle to `task-list` -- the bundle would depend on a project convention.
+
+**Evidence:** the audit's checks 1 and 3-7 read paths and git trees; its per-commit gate check runs the project's gate. `test_history_cleanup_audit.sh` proves the content checks with and without a record set. `test_record_citations.sh` proves the project gate; `test_change_pipeline_generic_files.sh` keeps the bundle free of convention names and the audit free of `devlog`, `roadmap` and `citation`.
+
+**Edge cases / drivers:** A project with no record set runs check 1 and check 3's record exclusion as skips; a project with another record form names it, and the default forms are not a link. A tip-only gate alone misses a citation that is broken at its commit and fixed later; the audit's per-commit gate loop is what preserves the per-commit property. A project whose pre-commit gate includes tests points the audit's `--gate` at that gate; the loop does not care what the gate checks.
+
 ## 2026-11-16 -- The change pipeline is the model's name, and the main document dispatches
 
 **Decision:** The reference is `docs/reference/change_pipeline.md`, titled "Change pipeline domain model"; the ADR renames with it. The reference's `## The operations` is the dispatch: `git-discipline` owns the commit and branch rules and prepare; `history-cleanup` owns the series rewrite; `record-correction` owns a closed-commit correction; `recovery` owns lost work; `/commit` lands the delivery commit. The skills keep their own procedures. `git-discipline`'s Runbooks table stays the skill's local index and cites the reference for the pipeline.

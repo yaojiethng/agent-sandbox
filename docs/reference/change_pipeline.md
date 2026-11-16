@@ -175,6 +175,12 @@ The model is one subject; the operations that move a change through it belong to
 | lost work | `recovery` (`workflow/coding-agent/skills/recovery/SKILL.md`) | the record and the repository disagree |
 | the delivery commit | `/commit` (`workflow/coding-agent/prompts/commit.md`) | an iteration's work lands as one commit |
 
+## The generic files
+
+The pipeline's git operations read paths and blobs. A change is a set of `(path, blob)`; a series is a sequence; the series properties 1-4 and 6 hold without reading a file's format. The one record input is a declared record set: a record root and a record path list. Property 5 is generic over it; the audit's record checks use it, and without it they are skipped.
+
+The citation format is not a git property. It is a tip-level project gate, `scripts/check_record_citations.sh`, run by `scripts/lint.sh`. The audit's per-commit gate loop applies the project's gate at each commit, so a citation is checked at the commit that carries it. The bundle names no project convention; the record forms are default forms, and the record set is the caller's.
+
 ## The check
 
 The chart and the table are rendered from the model's source; the TLA+ module belongs to that source and is not copied here. TLC checks the module with the `statechart` skill's runner; run it to reproduce the state and step counts. `scripts/check_change_pipeline.sh` reads the source, holds the rendered table to the rendered chart and to the mutation catalog, and `--write` regenerates the rendered chart and table.

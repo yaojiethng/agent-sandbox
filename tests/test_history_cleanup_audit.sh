@@ -12,17 +12,16 @@
 #
 # Covers:
 #   a record rewritten after its birth      -- finding, check 1
-#   a roadmap link to a missing record      -- finding, check 2
-#   a path added then deleted in the range  -- finding, check 3
-#   an empty commit                         -- finding, check 6
-#   a commit whose own gate fails           -- finding, check 5
-#   a manifest row whose subject is wrong   -- finding, check 7
-#   a non-record change at the tip          -- finding, check 4
-#   a record-only change at the tip         -- clean, check 4 excludes it
-#   a record change in each record tree     -- clean, check 4 excludes all of them
+#   a path added then deleted in the range  -- finding, check 2
+#   a non-record change at the tip          -- finding, check 3
+#   a record-only change at the tip         -- clean, check 3 excludes it
+#   a record change in each record tree     -- clean, check 3 excludes all of them
 #   a record root not named                 -- clean, check 1 skipped
-#   a roadmap change with no task-list paths -- finding, check 4 treats it as content
-#   an addition that does not cover a change -- finding, check 4 still runs
+#   a record path not named                 -- finding, check 3 treats it as content
+#   a commit whose own gate fails           -- finding, check 4
+#   an empty commit                         -- finding, check 5
+#   a manifest row whose subject is wrong   -- finding, check 6
+#   an addition that does not cover a change -- finding, check 3 still runs
 #   a clean range                           -- rc 0, no finding
 #
 # Run:   bash tests/test_history_cleanup_audit.sh
@@ -74,22 +73,9 @@ test_a_record_rewritten_after_birth_is_named() {
     printf 'more\n' >>devlog/handovers/M/20260101-01-a.md
     git add -A && git commit -qm "rewrite record a"
   ) || fail "fixture commits"
-  out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
+  out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh --records=devlog/handovers) || rc=$?
   assert_rc 1 "$rc" "rc"
   assert_contains "$out" "record rewritten after birth" "check 1 names the record"
-}
-
-test_a_missing_citation_is_named() {
-  local d="$WORK/cite" out rc=0
-  new_repo "$d" || fail "fixture"
-  (
-    cd "$d" || exit 1
-    printf '| row | [b](handovers/M/20260101-02-b.md) |\n' >>devlog/roadmap.md
-    git add -A && git commit -qm "cite a missing record"
-  ) || fail "fixture commit"
-  out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
-  assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "citation does not resolve" "check 2 names the link"
 }
 
 test_a_path_born_and_buried_is_named() {
@@ -103,7 +89,7 @@ test_a_path_born_and_buried_is_named() {
   ) || fail "fixture commits"
   out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
   assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "added then deleted inside the range" "check 3 names the path"
+  assert_contains "$out" "added then deleted inside the range" "check 2 names the path"
 }
 
 test_an_empty_commit_is_named() {
@@ -112,7 +98,7 @@ test_an_empty_commit_is_named() {
   ( cd "$d" && git commit -q --allow-empty -m "empty" ) || fail "fixture commit"
   out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
   assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "empty commit" "check 6 names the commit"
+  assert_contains "$out" "empty commit" "check 5 names the commit"
 }
 
 test_a_failing_gate_is_named() {
@@ -125,7 +111,7 @@ test_a_failing_gate_is_named() {
   ) || fail "fixture commit"
   out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
   assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "gate fails at" "check 5 names the commit"
+  assert_contains "$out" "gate fails at" "check 4 names the commit"
 }
 
 test_a_manifest_subject_that_differs_is_named() {
@@ -140,7 +126,7 @@ test_a_manifest_subject_that_differs_is_named() {
   printf '%s\t%s\t%s\n' "$sha" "a subject the commit does not have" "devlog/roadmap.md" >"$WORK/manifest.tsv"
   out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh --manifest="$WORK/manifest.tsv") || rc=$?
   assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "manifest subject differs" "check 7 names the row"
+  assert_contains "$out" "manifest subject differs" "check 6 names the row"
 }
 
 test_a_clean_range_reports_clean() {
@@ -149,10 +135,9 @@ test_a_clean_range_reports_clean() {
   (
     cd "$d" || exit 1
     printf '# a\n' >devlog/handovers/M/20260101-04-d.md
-    printf '| row | [d](handovers/M/20260101-04-d.md) |\n' >>devlog/roadmap.md
-    git add -A && git commit -qm "add record d and cite it"
+    git add -A && git commit -qm "add record d"
   ) || fail "fixture commit"
-  out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
+  out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh --records=devlog/handovers) || rc=$?
   assert_rc 0 "$rc" "rc"
   assert_contains "$out" "audit: clean" "the clean range passes"
 }
@@ -169,7 +154,7 @@ test_a_reference_that_differs_is_named() {
   git -C "$d" tag reference-tip "$base"
   out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference=reference-tip) || rc=$?
   assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "non-record content differs" "check 4 names the difference"
+  assert_contains "$out" "non-record content differs" "check 3 names the difference"
 }
 
 test_a_record_change_at_the_tip_is_excluded() {
@@ -181,14 +166,14 @@ test_a_record_change_at_the_tip_is_excluded() {
     printf '# a\n' >devlog/handovers/M/20260101-05-e.md
     git add -A && git commit -qm "add record e"
   ) || fail "fixture commit"
-  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base") || rc=$?
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --records=devlog/handovers) || rc=$?
   assert_rc 0 "$rc" "a record-only change is not a finding"
-  assert_contains "$out" "audit: clean" "check 4 excludes the record path"
+  assert_contains "$out" "audit: clean" "check 3 excludes the record path"
 }
 
 # Given: a base that carries every record tree
 # When:  the tip changes only those records
-# Then:  check 4 excludes all of them and the range is clean
+# Then:  check 3 excludes all of them and the range is clean
 test_a_record_change_in_each_record_tree_is_excluded() {
   local d="$WORK/records" out rc=0 base
   new_repo "$d" || fail "fixture"
@@ -210,9 +195,9 @@ test_a_record_change_in_each_record_tree_is_excluded() {
     done
     git add -A && git commit -qm "update records"
   ) || fail "fixture commit"
-  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base") || rc=$?
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --records=devlog/handovers --record-paths=devlog/roadmap.md,devlog/roadmap_future.md,devlog/AGENT_FEEDBACK.md,devlog/discussions,devlog/changelog.md) || rc=$?
   assert_rc 0 "$rc" "a record-only change in each tree is not a finding"
-  assert_contains "$out" "audit: clean" "check 4 excludes the roadmaps, feedback, discussions and changelog"
+  assert_contains "$out" "audit: clean" "check 3 excludes the roadmaps, feedback, discussions and changelog"
 }
 
 # Given: a record range with no record root named
@@ -233,8 +218,8 @@ test_no_record_root_skips_check_1() {
   assert_contains "$out" "skipped: no record root" "check 1 names the skip"
 }
 
-# Given: a roadmap change at the tip and no task-list record paths
-# When:  check 4 runs with --record-paths=
+# Given: a roadmap change at the tip and no record paths
+# When:  check 3 runs with --record-paths=
 # Then:  the roadmap is content and the difference is a finding
 test_no_record_paths_keeps_the_roadmap_as_content() {
   local d="$WORK/nopaths" out rc=0 base
@@ -247,11 +232,11 @@ test_no_record_paths_keeps_the_roadmap_as_content() {
   ) || fail "fixture commit"
   out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --record-paths=) || rc=$?
   assert_rc 1 "$rc" "rc"
-  assert_contains "$out" "non-record content differs" "check 4 treats the roadmap as content"
+  assert_contains "$out" "non-record content differs" "check 3 treats the roadmap as content"
 }
 
 # Given: a non-record change and an addition that does not name it
-# When:  check 4 runs
+# When:  check 3 runs
 # Then:  it reports the change; naming the change as an addition is clean
 test_an_addition_does_not_disable_the_content_check() {
   local d="$WORK/addition" out rc=0 base
@@ -263,12 +248,12 @@ test_an_addition_does_not_disable_the_content_check() {
     git add -A && git commit -qm "add notes"
   ) || fail "fixture commit"
   out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --addition=other.txt) || rc=$?
-  assert_rc 1 "$rc" "an addition that does not name the change leaves check 4 running"
-  assert_contains "$out" "non-record content differs" "check 4 reports the change"
+  assert_rc 1 "$rc" "an addition that does not name the change leaves check 3 running"
+  assert_contains "$out" "non-record content differs" "check 3 reports the change"
   rc=0
   out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --addition=notes.txt) || rc=$?
   assert_rc 0 "$rc" "an addition that names the change is excluded"
-  assert_contains "$out" "audit: clean" "check 4 excludes the named addition"
+  assert_contains "$out" "audit: clean" "check 3 excludes the named addition"
 }
 
 test_an_inversion_is_reported_not_counted() {
@@ -283,11 +268,10 @@ test_an_inversion_is_reported_not_counted() {
   ) || fail "fixture commits"
   out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh) || rc=$?
   assert_rc 0 "$rc" "an inversion is not a finding"
-  assert_contains "$out" "total 1 line(s)" "check 8 reports the inversion"
+  assert_contains "$out" "total 1 line(s)" "check 7 reports the inversion"
 }
 
 run_test test_a_record_rewritten_after_birth_is_named
-run_test test_a_missing_citation_is_named
 run_test test_a_path_born_and_buried_is_named
 run_test test_an_empty_commit_is_named
 run_test test_a_failing_gate_is_named

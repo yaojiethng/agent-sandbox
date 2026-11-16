@@ -6,13 +6,9 @@ disable-model-invocation: true
 
 # recovery
 
-## Project conventions
+## The record set
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
-
-- `work-log`, `task-list`
-
-`work-log` owns the claim and the record; `task-list` owns the roadmap. Without them, the claim is the operator's description and the repository, and the result is reported.
+The claim is the caller's record, or without one the operator's description and the repository. The record write is the caller's. Without a record set, the result is reported and no record is written.
 
 ## What this is for
 
@@ -22,7 +18,7 @@ A session that is merely open is resumed, not recovered. These are not recovery 
 
 ## Triage
 
-1. **State the claim.** Read the handover, the roadmap and the session record for what the unit was for, what range or files it covered, and what the record says landed. When `work-log` or `task-list` is absent, the claim is the operator's description plus what the repository holds; state that the record arm is skipped. Write the claim down before searching; it is what the evidence is compared against.
+1. **State the claim.** Read the record the caller names for what the unit was for, what range or files it covered, and what the record says landed. When the caller names no record set, the claim is the operator's description plus what the repository holds; state that the record arm is skipped. Write the claim down before searching; it is what the evidence is compared against.
 2. **Preserve.** Capture a recovery point before any destructive operation: the working tree, the stash, the reflog and the branch, or a `git bundle`. A `git restore`, `checkout`, `clean`, `reset --hard` or `stash drop` before this step can destroy the only copy; the working-tree rule is [`git-discipline`'s](../git-discipline/SKILL.md).
 3. **Search.** Look for the work in the order below and name every source you checked. [`references/evidence.md`](references/evidence.md) states where each one lives by runtime and delivery mode.
    - the working tree and the index
@@ -35,7 +31,7 @@ A session that is merely open is resumed, not recovered. These are not recovery 
    - the host checkpoints
 4. **Decide from the evidence.** `partial` when a fragment survives; `absent` only when the search above found nothing. Within `absent`, the evidence state selects retrieval or rebuild: work in a ref, the reflog, a dangling object or a bundle is retrieved; work only in the record is rebuilt.
 5. **Restore and verify.** Apply the retrieval or the rebuild, then check it against the claim: the file set, the suite, and the commit or handover the record names. Where the record overclaimed, correct the record.
-6. **Record.** In the handover, state what was lost, what survived, the source that decided it, what you searched, and what the repair did. When there is no `work-log`, report the class, the evidence and the repair in the response; there is no handover to write.
+6. **Record.** In the record the caller names, state what was lost, what survived, the source that decided it, what you searched, and what the repair did. When the caller names no record set, report the class, the evidence and the repair in the response; there is no record to write.
 
 ## The classes and their runbooks
 

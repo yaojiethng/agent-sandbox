@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Audits a rewritten range: the eight checks `history-cleanup` names.
+# Audits a rewritten range: the seven checks `history-cleanup` names.
 #
 #   bash scripts/audit.sh <base> [tip] [options]
 #
 # Options:
-#   --reference=<ref>   the tip the rewrite must reproduce; check 4 is skipped without it
+#   --reference=<ref>   the tip the rewrite must reproduce; check 3 is skipped without it
 #   --gate=<path>       the gate to run per commit (default scripts/lint.sh)
-#   --records=<dir>     the record root (default devlog/handovers); empty skips check 1
-#   --record-paths=<p>  comma-separated record paths for check 4 (default: the task-list paths); empty excludes none
-#   --manifest=<file>   rows of "sha<TAB>subject<TAB>paths"; check 7 is skipped without it
-#   --gate=<path>       the gate to run per commit (default scripts/lint.sh); it always runs
+#   --records=<dir>     the record root (default: empty; check 1 is skipped)
+#   --record-paths=<p>  comma-separated record paths for check 3 (default: empty; excludes none)
+#   --manifest=<file>   rows of "sha<TAB>subject<TAB>paths"; check 6 is skipped without it
+#   --addition=<path>   a path check 3 excludes as an approved addition
 #
 # Exit: 0 = no finding, 1 = a finding. Inversions are reported, never counted as
 # findings: a rewrite collapses them by construction and the caller classifies each.
 #
-# A check that has never failed is not a check. Run this against a range that
-# violates one before trusting a clean result.
+# Citation resolution is the project's gate, run at each commit by check 4; the
+# audit does not parse a record's link syntax.
 
 set -uo pipefail
 
@@ -25,8 +25,8 @@ shift
 TIP="HEAD"
 REF=""
 GATE="scripts/lint.sh"
-RECORDS="devlog/handovers"
-RECORD_PATHS="devlog/roadmap.md,devlog/roadmap_future.md,devlog/AGENT_FEEDBACK.md,devlog/discussions,devlog/changelog.md"
+RECORDS=""
+RECORD_PATHS=""
 MANIFEST=""
 ADDITIONS=()
 for arg in "$@"; do
@@ -52,9 +52,8 @@ check() { echo "$*"; }
 
 escape_re() { printf '%s' "$1" | sed 's/[.[\*^$()+?{}|]/\\&/g'; }
 
-# Check 4 holds content fixed and lets records move. The record set is wider
-# than check 1's handover root: the roadmaps, the feedback record, the
-# discussion tree and the changelog are records too.
+# Check 3 holds content fixed and lets records move. The record set is the
+# caller's: the root plus the listed record paths.
 record_paths_regex() {
   local rp esc out="" extra=()
   local -a paths=()
@@ -91,22 +90,12 @@ else
   note "skipped: no record root (--records=)"
 fi
 
-check "2. citation resolves at its commit"
-for f in devlog/roadmap.md devlog/roadmap_future.md; do
-  for c in $(git log --format=%H "$BASE".."$TIP" -- "$f"); do
-    for t in $(git show "$c:$f" 2>/dev/null | grep -oE '\]\([^)]*2026[0-9]{4}-[0-9]{2}[^)]*\.md\)' | sed -e 's/^](//' -e 's/)$//' -e 's/#.*//' | sort -u); do
-      case "$t" in http*) continue ;; esac
-      git cat-file -e "$c:devlog/$t" 2>/dev/null || finding "citation does not resolve at ${c:0:8}: $t"
-    done
-  done
-done
-
-check "3. nothing born and buried"
+check "2. nothing born and buried"
 for p in $(git log --diff-filter=A --name-only --format= "$BASE".."$TIP" | sort -u); do
   git cat-file -e "$TIP:$p" 2>/dev/null || finding "added then deleted inside the range: $p"
 done
 
-check "4. tip content identity"
+check "3. tip content identity"
 if [[ -n "$REF" ]]; then
   record_re=$(record_paths_regex)
   add_re=""
@@ -126,7 +115,7 @@ else
   note "skipped: pass --reference=<ref> to compare against the tip being reproduced"
 fi
 
-check "5. each commit passes its own gate"
+check "4. each commit passes its own gate"
 wt=$(mktemp -d)
 git worktree add -q --detach "$wt" "$BASE" 2>/dev/null
 for c in $COMMITS; do
@@ -135,7 +124,7 @@ for c in $COMMITS; do
 done
 git worktree remove --force "$wt" 2>/dev/null
 
-check "6. no silent empty unit"
+check "5. no silent empty unit"
 for c in $COMMITS; do
   changed=$(git diff --name-only "$c^" "$c")
   [[ -n "$changed" ]] || finding "empty commit ${c:0:8}"
@@ -144,7 +133,7 @@ for c in $COMMITS; do
   fi
 done
 
-check "7. manifest conformance"
+check "6. manifest conformance"
 if [[ -n "$MANIFEST" ]]; then
   while IFS=$'\t' read -r sha subject paths; do
     [[ -n "$sha" ]] || continue
@@ -159,12 +148,12 @@ else
   note "skipped: pass --manifest=<file> to check the series against the approved manifest"
 fi
 
-check "8. inversions (reported, not counted)"
+check "7. inversions (reported, not counted)"
 node "$HERE/inversions.mjs" "$BASE" "$TIP" 2>/dev/null | sed -n '/^none$/p;/^total /p' | sed 's/^/  /'
 
 echo
 if [[ "$findings" -eq 0 ]]; then
-  echo "audit: clean across 8 checks"
+  echo "audit: clean across 7 checks"
   exit 0
 fi
 echo "audit: $findings finding(s)"

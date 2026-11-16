@@ -5,13 +5,9 @@ argument-hint: "[target commit hash or subject] [what the correction changes] [w
 
 > $ARGUMENTS
 
-## Project conventions
+## The record forms
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
-
-- `work-log`, `decision-records`, `task-list`
-
-`work-log` owns the handover form, `decision-records` the ADR form and `task-list` the roadmap form. Without them, the commit fold still runs.
+The git fold reads paths and blobs. The forms below are the default record forms; the caller's record convention governs. Without a record form, the commit fold still runs.
 
 ## Mandate
 
@@ -107,7 +103,7 @@ git status --porcelain    # clean
 
 ## Correcting a record
 
-This section runs for the record kinds the project provides. When `work-log`, `decision-records` or `task-list` is absent, skip the form that reads it, keep the commit fold, and report the skipped arm.
+This section runs for the record form the caller names. When the caller names no record form, skip the form that reads it, keep the commit fold, and report the skipped arm.
 
 A closed record is edited only at the operator's direction, and every edit carries the corresponding form. The operator signals direction any way it is said: "amend the handover", "reopen the handover", "edit it", "fix the typo", or by naming the change. A correction is never applied unasked.
 

@@ -68,6 +68,8 @@ Non-integer labels ("Phase 1", "Phase 1.5", "Step A") are prohibited. A mileston
 
 **Acceptance criteria** - the active sub-milestone carries an `**Acceptance criteria:**` block listing the end-to-end operator checks that must pass before the sub-milestone is complete. The task list records what is built; the criteria describe what the operator runs and observes, not what files contain or what tasks are checked off. A criterion that duplicates a task checklist item is not an acceptance criterion.
 
+**Citation resolution** - every dated record citation in `roadmap.md` and `roadmap_future.md` resolves in the tree that carries it. `scripts/check_record_citations.sh` is the gate; it runs in `scripts/lint.sh`, so the history-cleanup audit's per-commit gate loop applies it at each commit.
+
 **Non-active sub-milestones** - carry an objective and scope paragraph, and their task rows may be written before the milestone becomes active, because task rows written only in a plan document are not tracked anywhere. A milestone holding an open row is never `Complete`, whatever its status column says. Deferred work from prior sub-milestones is filed in `roadmap_future.md`, not accumulated in the scope paragraph.
 
 **Objective** - a milestone's objective is stated in one sentence. The scope paragraph beneath it carries the rest of the framing.
