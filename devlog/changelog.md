@@ -287,3 +287,11 @@ The package and draft prompts are one path: the bundle records its branch point,
 The eval harness now takes a case declaration for the fixture, measure, prompt and configurations, validates it before a run, and records a capped `--cells` batch with its stop state, per-cell assertions and analysis. The `/gm` case calibrated its control eight times, then measured the current-milestone rule in both cell orders; the rule aligned 6/8 and 7/8 against the control's 3/8 and 5/8 and landed. The procedure was then tested against its own archived results: a stored verdict was reproduced by a clean-context agent, the arithmetic re-derived the stored figures, and a null pair came back inconclusive. The instruction-cleanup case was retired with its old fixture, because it measured a prompt and carriers that no longer exist.
 
 ---
+
+## M3.7.2 - The change model and its refinements
+
+*A branch's whole life from fork to deletion is one model, so the operator reads one lifecycle and the agent prepares one surface.*
+
+The ADR, the reference and the model home now state the same lifecycle -- `working`, `ready`, `drafted`, `accepted` and `deleted`, with mergeability as the axis -- and the chart and transition table are regenerated from the test home and gated. The two-lane transition evidence, the branch-preparation surface, the loop-document split and the retirement of the concluded work-log design record landed. `history-cleanup` is the operator-invoked series pass for the PR reviewer, independent of `prepare`, and the commit message is enforced and seeded.
+
+---

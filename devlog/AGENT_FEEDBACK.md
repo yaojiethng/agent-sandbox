@@ -29,21 +29,6 @@ The tell is register, not length. Reasoning is written to decide something for a
 
 ---
 
-## [A] 2026-11-01  --  A report was built before checking that the loader already prints one
-
-```text
-state: probation
-scoped: the delegation judgement; any task whose premise is that a surface nobody reads already holds the fact
-legacy: `principle-delegation-over-machinery` states the rule; the M3.3.3 task closed with no code
-mitigation: before building a report over another party's data, run that party's own surface and read what it prints; a handoff's claim that a diagnostic is unread is a claim to check, not a premise to build on
-```
-
-The task asked for a session-start report naming a skill name held twice, on the premise that pi records the collision "in a diagnostic nobody reads". pi renders a `[Skill conflicts]` block at every session start, naming the winner and each skipped path, and a quiet startup still shows it. Two versions of a script were written, tested and corrected before anyone ran the loader's own output. Both are deleted and the task closed with no code.
-
-The pattern is not "read the docs first". The premise arrived inside a task, in the operator's voice, and that is the voice an agent is least likely to check. The same session had written the rule for it two commits earlier: name the party that already answers the question, and hand the question to it. Writing that rule was easier than applying it to a task handed over with confidence.
-
----
-
 ## [A] 2026-10-31  --  The review runbook grades structure without the artifact's purpose
 
 ```text
@@ -87,6 +72,8 @@ Cross-references: `docs/adr/principle_skill_shape.md` and `.agents/skills/instru
 Two probes say what the fix is and is not. A cold agent asked to "catch a stale record" found R3 in the ADR and rejected its own hash proposal, so the failure is not reproducible from a cold start: it was a narrow goal inside a long session, not a wording defect. A second cold agent given the narrow task now reads `vendor-bump.md`, `skill-fork/SKILL.md`, `skill_source_catalog.md` and `source_tracking.md` before writing. The fix is a routing row and a named decision, not a reminder; a reminder would have been unfalsifiable.
 
 **Maintained at M3.7.1 close, 2026-11-09:** no recurrence during the milestone; the description and routing fixes stand, and probation continues.
+
+**Maintained at M3.7.2 close, 2026-11-16:** no recurrence during the milestone; the description and routing fixes stand, and probation continues.
 
 ---
 
