@@ -2,7 +2,7 @@
 # scripts/check_commit_message.sh
 # Validates a delivery commit message in two layers: the Conventional Commits
 # 1.0.0 grammar, then this project's policy -- the active type set from
-# `.agents/skills/git-discipline/references/commit-types.md`, no scope field,
+# `workflow/coding-agent/skills/git-discipline/references/commit-types.md`, no scope field,
 # a subject 72 characters at most, and a body 280 characters at most.
 #
 # Usage: check_commit_message.sh [--root=DIR] <message-file>
@@ -29,7 +29,7 @@ if [ ${#files[@]} -ne 1 ]; then
 fi
 
 FILE="${files[0]}"
-TYPES="$ROOT/.agents/skills/git-discipline/references/commit-types.md"
+TYPES="$ROOT/workflow/coding-agent/skills/git-discipline/references/commit-types.md"
 
 if [ ! -f "$FILE" ]; then
   echo "error: no such message file: $FILE" >&2

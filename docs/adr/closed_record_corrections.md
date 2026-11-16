@@ -42,7 +42,7 @@
 
 ## 2026-10-18 -- The content judgement leaves, and the operator's direction narrows to a closed session
 
-**Decision:** The judgement about what a correction may contain leaves this record for `principle-minimal-corrections`, and the `git-discipline` convention's fold rules decide only where a correction lands. R5 governs the landing once the session that made the commit has ended. While that session is live and the commit is the agent's own, the agent folds the correction without asking, whichever actor raised the defect. R1, R2, R3, R4 and R6 are unchanged here; the assessment the roadmap row asked for is the 2026-10-19 entry of this record, which keeps all six with a reason and supersedes nothing.
+**Decision:** The judgement about what a correction may contain leaves this record for `principle-minimal-corrections`, and the `git-discipline` skill's fold rules decide only where a correction lands. R5 governs the landing once the session that made the commit has ended. While that session is live and the commit is the agent's own, the agent folds the correction without asking, whichever actor raised the defect. R1, R2, R3, R4 and R6 are unchanged here; the assessment the roadmap row asked for is the 2026-10-19 entry of this record, which keeps all six with a reason and supersedes nothing.
 
 **Rationale:** R5 named one direction for two decisions. A content instruction then read as a landing instruction, and a correction that should have folded into `582af1eb` landed as `f82d1a0d` twenty minutes later, with its own handover and its own record. Naming the two decisions separately is what closes the case that the single clause could not separate.
 

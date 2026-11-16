@@ -21,10 +21,10 @@ GATE="$REPO_ROOT/scripts/check_agent_primitives.sh"
 
 seed_fixture() {
   FIXTURE="$FIXTURE_DIR/root"
-  mkdir -p "$FIXTURE/.agents/skills/git-discipline/references" \
+  mkdir -p "$FIXTURE/workflow/coding-agent/skills/git-discipline/references" \
     "$FIXTURE/workflow/coding-agent/prompts" "$FIXTURE/docs"
   printf '# Prepare\n' \
-    > "$FIXTURE/.agents/skills/git-discipline/references/prepare.md"
+    > "$FIXTURE/workflow/coding-agent/skills/git-discipline/references/prepare.md"
   printf 'the operator runs make confirm\n' > "$FIXTURE/docs/live.md"
 }
 
@@ -36,7 +36,7 @@ test_clean_fixture() {
 
 test_missing_runbook_is_named() {
   seed_fixture
-  rm "$FIXTURE/.agents/skills/git-discipline/references/prepare.md"
+  rm "$FIXTURE/workflow/coding-agent/skills/git-discipline/references/prepare.md"
   assert_run 1 "$GATE --root=$FIXTURE" "a missing runbook fails the gate"
   assert_contains "$RUN_OUT" "missing" "the finding names the missing runbook"
 }

@@ -88,8 +88,8 @@ test_breaking_marker() {
 test_fixture_types() {
   local root f
   root="$FIXTURE_DIR/root"
-  mkdir -p "$root/.agents/skills/git-discipline/references"
-  cat > "$root/.agents/skills/git-discipline/references/commit-types.md" <<'EOF'
+  mkdir -p "$root/workflow/coding-agent/skills/git-discipline/references"
+  cat > "$root/workflow/coding-agent/skills/git-discipline/references/commit-types.md" <<'EOF'
 # Commit types
 
 ## The active types

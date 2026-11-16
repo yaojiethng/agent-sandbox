@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `git-discipline`, `work-log`
+- `work-log`, `task-list`
 
 ## When it runs
 
@@ -40,7 +40,7 @@ A desirable series:
 5. **Records true at their commit** -- no record is born and retired inside the range; each record describes the commit that carries it.
 6. **Origin survives the rewrite** -- a correction folds into the unit it corrects, not an introduction; `git blame` still names the commit that introduced the line.
 
-The per-commit properties -- atomic, bisectable, self-explanatory, blameable -- are `git-discipline`'s; this skill cites them and does not restate them. A stack's contiguity is `branching.md`'s.
+The per-commit properties -- atomic, bisectable, self-explanatory, blameable -- are [`git-discipline`'s](../../SKILL.md); this skill cites them and does not restate them. A stack's contiguity is [`branching.md`](../../references/branching.md)'s.
 
 An inversion is the mechanical form of the first property: content the range writes and a later commit replaces -- a file added then deleted, a line set added and later rewritten, a patch id applied twice. The audit's inversion detector finds it; the property is what forbids it. A generated file regenerated whole is classified, not counted. Record paths are excluded from the content proof, so a record delta is a record move, not an inversion.
 

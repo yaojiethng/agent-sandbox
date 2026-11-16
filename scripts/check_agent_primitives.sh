@@ -18,7 +18,7 @@ for arg in "$@"; do
 done
 
 fail=0
-runbook="$ROOT/.agents/skills/git-discipline/references/prepare.md"
+runbook="$ROOT/workflow/coding-agent/skills/git-discipline/references/prepare.md"
 if [ ! -f "$runbook" ]; then
   echo "agent primitives: missing $runbook" >&2
   fail=1

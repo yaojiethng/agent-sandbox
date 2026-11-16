@@ -13,17 +13,17 @@ trap 'rm -rf "$TMP"' EXIT
 
 make_repo_with_base() {
   local dir="$1"
-  mkdir -p "$dir/.agents/skills/git-discipline"
+  mkdir -p "$dir/.agents/skills/work-log"
   git -C "$dir" init -q
   printf '# agents\n' >"$dir/AGENTS.md"
-  printf '## The fold\n' >"$dir/.agents/skills/git-discipline/SKILL.md"
+  printf '## The fold\n' >"$dir/.agents/skills/work-log/SKILL.md"
   git -C "$dir" add -A
   git -C "$dir" -c user.email=t@t -c user.name=t commit -q -m "fixture state"
 }
 
 commit_with() {
   local dir="$1" subject="$2" body="$3"
-  printf 'change\n' >>"$dir/.agents/skills/git-discipline/SKILL.md"
+  printf 'change\n' >>"$dir/.agents/skills/work-log/SKILL.md"
   git -C "$dir" add -A
   if [[ -n "$body" ]]; then
     git -C "$dir" -c user.email=t@t -c user.name=t commit -q -m "$subject" -m "$body"
@@ -86,7 +86,7 @@ test_measure_rejects_long_body() {
 test_measure_rejects_path_list() {
   local dir="$TMP/pathlist"
   make_repo_with_base "$dir"
-  commit_with "$dir" "docs: state the fold rule" "It touches .agents/skills/git-discipline/SKILL.md and devlog/roadmap.md."
+  commit_with "$dir" "docs: state the fold rule" "It touches .agents/skills/work-log/SKILL.md and devlog/roadmap.md."
   assert_eq "$(jq -r '.no_path_list' <<<"$(bash "$MEASURE" "$dir" 1)")" "false" "paths in the body fail"
 }
 
@@ -136,12 +136,12 @@ make_stub_workspace() {
   mkdir -p "$work/bin" "$work/candidate"
   make_repo_with_base "$base"
   git -C "$base" bundle create "$work/base.bundle" --all >/dev/null 2>&1
-  printf 'change\n' >>"$base/.agents/skills/git-discipline/SKILL.md"
+  printf 'change\n' >>"$base/.agents/skills/work-log/SKILL.md"
   git -C "$base" diff >"$work/change.patch"
   git -C "$base" checkout -q -- .
   cp "$base/AGENTS.md" "$work/candidate/AGENTS.md"
-  mkdir -p "$work/candidate/.agents/skills/git-discipline"
-  cp "$base/.agents/skills/git-discipline/SKILL.md" "$work/candidate/.agents/skills/git-discipline/SKILL.md"
+  mkdir -p "$work/candidate/.agents/skills/work-log"
+  cp "$base/.agents/skills/work-log/SKILL.md" "$work/candidate/.agents/skills/work-log/SKILL.md"
   mkdir -p "$work/candidate/custom"
   printf 'overlaid\n' >"$work/candidate/custom/policy.txt"
   printf '%s\n' "$stub_body" >"$work/bin/pi"
@@ -229,7 +229,7 @@ FAIL_STUB='#!/usr/bin/env bash
 exit 1'
 
 DIRTY_STUB='#!/usr/bin/env bash
-printf "not committed\n" >> .agents/skills/git-discipline/SKILL.md
+printf "not committed\n" >> .agents/skills/work-log/SKILL.md
 exit 0'
 
 # Commits with no identity flags, so the clone has to supply one.

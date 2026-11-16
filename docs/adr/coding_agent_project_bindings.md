@@ -1,6 +1,6 @@
 # Coding-Agent Project Bindings
 
-**Current:** 2026-10-14
+**Current:** 2026-11-16
 
 ## Requirements
 
@@ -11,6 +11,20 @@
 | R3 | A project must bind its mechanics; a required binding that is absent fails fast | superseded 2026-10-14: a project does not run on silent defaults |
 | R4 | A mechanism and a convention do not share a form | a rule that says how and a rule that says what are separate |
 | R5 | Project knowledge survives the work ledger | pruning the ledger must not lose project context |
+
+## 2026-11-16 -- Git discipline is workflow mechanism
+
+**Decision:** `git-discipline` ships in the `coding-agent` module at `workflow/coding-agent/skills/git-discipline/`, not in the default convention-skill corpus. It is a workflow mechanism: the commit vocabulary, the branch scheme and the fold rules are fixed by the procedure, and a project does not bind them. `history-cleanup` moves under it as `runbooks/history-cleanup/`, behind the thin `/history-cleanup` prompt; `record-correction` stays a prompt. The convention corpus loses `git-discipline`; it keeps `task-list`, `work-log`, `decision-records`, `project-documentation`, `testing` and the optional `evals`. `git` remains an available tool, and the module is the coding-agent workflow rather than a git module.
+
+This supersedes the `git-discipline` row of the convention list in the 2026-10-14 "workflow ships convention-skills" entry. The 2026-10-14 statement that `git` is an available tool rather than a module stands: the coding-agent module is the workflow, not a git module.
+
+**Rationale:** The commit types, the branch names and the fold rules are the same in every project the workflow runs, because the workflow's prompts read them to land a commit and prepare a branch. Treating them as a project binding duplicated a fixed procedure as project policy, and it made a provisioned project seed a git-discipline stub the workflow then had to reason over. The history-cleanup pass is the series arm of the same subject, so it belongs inside the skill rather than beside it. The bundle is the existing coding-agent module, which already carries the prompt set and the mounts.
+
+**Evidence:** the live references to `git-discipline` are procedure, not project choice: the prompts, the commit-message gate, the branch runbooks and the tests. The only project value a convention would add is a different vocabulary, and no prompt is written to read one.
+
+**Rejected alternatives:** keep `git-discipline` as a project convention -- execution failure, the prompts and the gates read the workflow's vocabulary and a project stub leaves them without one; put it in a new module -- intent failure, the coding-agent module already carries the change pipeline and a second module adds a mount and a settings entry for no separation; merge the skills into one file -- intent failure, the commit rules and the series pass have different consumers and different runtimes; leave `history-cleanup` as a sibling skill -- intent failure, the series properties cite the per-commit properties and the two share one subject.
+
+**Edge cases / drivers:** `recovery` stays a sibling skill and reads git-discipline from the module; its move is a later row. A project that wants a different commit vocabulary cannot bind it, and the workflow's vocabulary stands. The default corpus no longer seeds git-discipline, so `initialize` reports one fewer convention. The `history-cleanup` runbook now declares `task-list` because its audit reads the roadmap and changelog.
 
 ## 2026-10-14 -- The workflow declares a project binding surface
 

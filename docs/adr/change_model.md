@@ -60,6 +60,6 @@
 - *Keep `blocked` and `parked` as states.* **Intent failure**: a dependency and a decision both leave the branch `working` or `ready`; the reason is not a git predicate and would need a declared store.
 - *Keep the draft chart as a peer document.* **Intent failure**: one subject in one mode has one source; the package and confirm detail is a section of the model.
 - *Keep both gates.* **Intent failure**: two gates over one model are a second source for the same claim.
-- *Keep the branch-work lifecycle in `branching.md`.* **Intent failure**: the fork-to-deletion life is the model's; the convention owns the track topology and the prepare obligation, not a second lifecycle.
+- *Keep the branch-work lifecycle in `branching.md`.* **Intent failure**: the fork-to-deletion life is the model's; the skill owns the track topology and the prepare obligation, not a second lifecycle.
 
 **Edge cases / drivers:** A ready branch that is not chosen is `ready` and waits in the queue. A head advance returns `ready` to `working`. A rejected draft returns the branch to `ready`. A stale branch is abandoned from `working` or `ready`. The model leaves out the queue's order, the commit graph, the package's byte-level form and the confirm's internal steps, which are the confirm section's.

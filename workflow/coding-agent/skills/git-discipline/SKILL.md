@@ -1,6 +1,6 @@
 ---
 name: git-discipline
-description: agent-sandbox's git-discipline convention - the history as a commons, the four properties a series holds, the commit message, the commit types, the branch names, the fold rules and the maintenance runbooks.
+description: agent-sandbox's git-discipline skill - the history as a commons, the four properties a series holds, the commit message, the commit types, the branch names, the fold rules and the maintenance runbooks.
 ---
 
 # git-discipline
@@ -60,13 +60,13 @@ An adaptation of [Conventional Commits](https://www.conventionalcommits.org/en/v
 
 Write the subject in the imperative mood, as the Git manual puts it: as if giving orders to the codebase to change its behaviour. Keep it to 72 characters, targeting 50, with no file path and no line number, because the diff shows those. A reference earns its place in the footer or is dropped, and a transient identifier such as a session id is never cited.
 
-`scripts/check_commit_message.sh` checks a delivery message against these rules; [`/commit`](../../../workflow/coding-agent/prompts/commit.md) runs it before the commit.
+`scripts/check_commit_message.sh` checks a delivery message against these rules; [`/commit`](/opt/workflow/agent/modules/coding-agent/prompts/commit.md) runs it before the commit.
 
 ## The fold
 
 Fold a correction into the commit of the work it corrects, rather than leaving it as a later commit. That keeps the commit whole, and keeps the commit that introduced the line findable by `git blame`.
 
-An iteration's work and a run of dependent units fold by the same rule: [`iteration_protocol.md`](../../../docs/reference/iteration_protocol.md) owns the iteration grain, and [`change_model.md`](../../../docs/reference/change_model.md) the early change and the stack.
+An iteration's work and a run of dependent units fold by the same rule.
 
 - A correction folds into the delivery commit, not into an intermediate commit. A change that alters the iteration's task description, its code and its records is one amendment across all three.
 - Amend while the history is cheap to rewrite: on the same branch, and ideally within the session that made the commit. Beyond that the operator rules.
@@ -77,7 +77,7 @@ An iteration's work and a run of dependent units fold by the same rule: [`iterat
 
 A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
 
-[`record-correction`](../../../workflow/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
+[`record-correction`](/opt/workflow/agent/modules/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
 
 ## The working tree
 
@@ -107,8 +107,8 @@ Name the branch for the commit type, the milestone and a slug, in that order; th
 | Runbook | Runs when |
 |---|---|
 | [`prepare`](references/prepare.md) | you are on a feature branch; make it consumable by the operator's `make confirm` |
-| [`history-cleanup`](../../../workflow/coding-agent/skills/history-cleanup/SKILL.md) | a feature branch's series is messy before its PR or merge-request review |
-| [`recovery`](../../../workflow/coding-agent/skills/recovery/SKILL.md) | the record and the repository disagree; the operator starts `/recovery` and the skill classifies the description |
+| [`history-cleanup`](runbooks/history-cleanup/SKILL.md) | a feature branch's series is messy before its PR or merge-request review |
+| [`recovery`](../recovery/SKILL.md) | the record and the repository disagree; the operator starts `/recovery` and the skill classifies the description |
 | [`correction`](references/correction.md) | the repository agrees with the record and the operator disagrees; the commit is wrong or the series is messy |
 
 `prepare` is the branch-preparation primitive; it leaves a branch the operator's verbs can consume. `history-cleanup` is the operator-invoked series pass under the change pipeline, and it serves the PR or merge-request reviewer rather than the host's one-commit delivery. The two are independent: either can run on its own, and running both is two separate operator calls. You prepare the branch and report its state; the operator runs the verb. A primitive is internal, never a second flow.

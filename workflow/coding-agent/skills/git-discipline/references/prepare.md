@@ -1,6 +1,6 @@
 # Prepare
 
-A branch is ready for the operator's `make confirm` when its tip descends from the trunk head and carries one delivery commit. This runbook produces that state. [`branching.md`](branching.md) owns the readiness rule and the queue; the `git-discipline` convention owns the branch and commit rules.
+A branch is ready for the operator's `make confirm` when its tip descends from the trunk head and carries one delivery commit. This runbook produces that state. [`branching.md`](branching.md) owns the readiness rule and the queue; the `git-discipline` skill owns the branch and commit rules.
 
 ## The scenario
 

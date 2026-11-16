@@ -20,7 +20,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DETECTOR="$REPO_ROOT/workflow/coding-agent/skills/history-cleanup/scripts/inversions.mjs"
+DETECTOR="$REPO_ROOT/workflow/coding-agent/skills/git-discipline/runbooks/history-cleanup/scripts/inversions.mjs"
 
 # The fixture repository. Git runs through `-C` rather than a `cd`, so the
 # calling shell never leaves the real repository behind.

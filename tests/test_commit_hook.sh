@@ -19,10 +19,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 seed_repo() {
   local repo="$1"
   mkdir -p "$repo/scripts" "$repo/.githooks" \
-    "$repo/.agents/skills/git-discipline/references"
+    "$repo/workflow/coding-agent/skills/git-discipline/references"
   cp "$REPO_ROOT/scripts/check_commit_message.sh" "$repo/scripts/"
-  cp "$REPO_ROOT/.agents/skills/git-discipline/references/commit-types.md" \
-    "$repo/.agents/skills/git-discipline/references/"
+  cp "$REPO_ROOT/workflow/coding-agent/skills/git-discipline/references/commit-types.md" \
+    "$repo/workflow/coding-agent/skills/git-discipline/references/"
   cp "$REPO_ROOT/.githooks/commit-msg" "$repo/.githooks/"
   chmod +x "$repo/.githooks/commit-msg" "$repo/scripts/check_commit_message.sh"
   git -C "$repo" init -q

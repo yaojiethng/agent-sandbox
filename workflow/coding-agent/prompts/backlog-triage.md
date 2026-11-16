@@ -47,7 +47,7 @@ Apply the well-specifiedness test to every candidate: a row is runnable only whe
 
 Write the answer sheet per row before judging it. The sheet has four lines: the type, what is in scope, what is deferred, and the acceptance criteria with their checks. Read the sheet back. Any line that would be a question parks the row, and the line is the question.
 
-Use the commit types from the `git-discipline` convention's active types, `.agents/skills/git-discipline/references/commit-types.md`, for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
+Use the commit types from the [`git-discipline`](../skills/git-discipline/SKILL.md) skill's active types, [`commit-types.md`](../skills/git-discipline/references/commit-types.md), for the type line, so the table sorts the way the commits will. Read the list there rather than from memory.
 
 Two rows that cannot be separated by the records alone are one row. Merge them and say so in the verdict, rather than guessing where the boundary falls.
 

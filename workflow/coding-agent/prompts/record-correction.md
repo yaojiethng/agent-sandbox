@@ -9,13 +9,13 @@ argument-hint: "[target commit hash or subject] [what the correction changes] [w
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `work-log`, `decision-records`, `git-discipline`
+- `work-log`, `decision-records`, `task-list`
 
 ## Mandate
 
 You are correcting a record that has already been closed. The operator named the commit the correction belongs to. Your deliverable is that commit rewritten to carry the correction, with no other commit touched, no commit added, and no port artifact left behind.
 
-A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. The `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`, owns that rule. This prompt owns the record principle behind it and the mechanics that apply it.
+A correction is not a new commit. A closed iteration's commit keeps its identity, its message, and its place in history, and the fix folds into it. The [`git-discipline`](/opt/workflow/agent/modules/coding-agent/skills/git-discipline/SKILL.md) skill owns that rule. This prompt owns the record principle behind it and the mechanics that apply it.
 
 Two rules govern the run.
 

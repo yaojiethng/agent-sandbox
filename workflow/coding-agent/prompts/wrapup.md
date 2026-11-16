@@ -13,7 +13,7 @@ argument-hint: "[optional: a session to close]"
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list`, `work-log`, `decision-records`, `git-discipline`, `testing`
+- `task-list`, `work-log`, `decision-records`, `testing`
 
 ## Mandate
 

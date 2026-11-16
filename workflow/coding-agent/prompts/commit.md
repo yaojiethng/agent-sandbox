@@ -7,13 +7,7 @@ argument-hint: "[optional: a commit range to audit]"
 
 # /commit - The Delivery Commit
 
-**Scope:** landing the iteration's work as one commit. It owns the three operations, the checkpoint and the self-check. The close that prepares the record is [`/wrapup`](wrapup.md)'s, and the rules a commit satisfies are the protocol's and the `git-discipline` convention's.
-
-## Project conventions
-
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
-
-- `git-discipline`
+**Scope:** landing the iteration's work as one commit. It owns the three operations, the checkpoint and the self-check. The close that prepares the record is [`/wrapup`](wrapup.md)'s, and the rules a commit satisfies are the protocol's and the [`git-discipline`](../skills/git-discipline/SKILL.md) skill's.
 
 ## The three operations
 
@@ -70,7 +64,7 @@ bash scripts/lint.sh
 
 ### B2. Land the single commit
 
-Write the message per the `git-discipline` table: the type, an imperative subject, the reason.
+Write the message per the [`git-discipline`](../skills/git-discipline/SKILL.md) table: the type, an imperative subject, the reason.
 
 ```bash
 git commit -F <message-file>
@@ -80,4 +74,4 @@ The `commit-msg` hook in `.githooks/` is installed into `.git/hooks/commit-msg` 
 
 ### B3. Self-check the range
 
-Read the range back against three records: `scripts/check_commit_message.sh` owns the message, the `git-discipline` convention owns the fold and the branch, and [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) owns the close's invariants. Fix what you find by amending or squashing, or record it as a deliberate deviation with its reason.
+Read the range back against three records: `scripts/check_commit_message.sh` owns the message, the [`git-discipline`](../skills/git-discipline/SKILL.md) skill owns the fold and the branch, and [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md) owns the close's invariants. Fix what you find by amending or squashing, or record it as a deliberate deviation with its reason.

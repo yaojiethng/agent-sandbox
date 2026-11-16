@@ -10,18 +10,18 @@ disable-model-invocation: true
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `git-discipline`, `work-log`
+- `work-log`, `task-list`
 
 ## What this is for
 
 The operator believes directed work is lost. Find out what survived before deciding anything. The claim is what the record says; the evidence is what the repository, the session record and the artifacts hold; the repair reconciles them.
 
-A session that is merely open is resumed, not recovered. These are not recovery either: a wrong commit (`/record-correction`), a messy series ([`history-cleanup`](../history-cleanup/SKILL.md)), a branch that will not land (the `prepare` runbook), and a broken host draft (`T11`: `make reject` then `make draft`). Nothing was lost in any of them; the repository holds the work and the operator wants a different result.
+A session that is merely open is resumed, not recovered. These are not recovery either: a wrong commit (`/record-correction`), a messy series ([`history-cleanup`](../git-discipline/runbooks/history-cleanup/SKILL.md)), a branch that will not land (the `prepare` runbook), and a broken host draft (`T11`: `make reject` then `make draft`). Nothing was lost in any of them; the repository holds the work and the operator wants a different result.
 
 ## Triage
 
 1. **State the claim.** Read the handover, the roadmap and the session record for what the unit was for, what range or files it covered, and what the record says landed. Write the claim down before searching; it is what the evidence is compared against.
-2. **Preserve.** Capture a recovery point before any destructive operation: the working tree, the stash, the reflog and the branch, or a `git bundle`. A `git restore`, `checkout`, `clean`, `reset --hard` or `stash drop` before this step can destroy the only copy.
+2. **Preserve.** Capture a recovery point before any destructive operation: the working tree, the stash, the reflog and the branch, or a `git bundle`. A `git restore`, `checkout`, `clean`, `reset --hard` or `stash drop` before this step can destroy the only copy; the working-tree rule is [`git-discipline`'s](../git-discipline/SKILL.md).
 3. **Search.** Look for the work in the order below and name every source you checked. [`references/evidence.md`](references/evidence.md) states where each one lives by runtime and delivery mode.
    - the working tree and the index
    - the stash

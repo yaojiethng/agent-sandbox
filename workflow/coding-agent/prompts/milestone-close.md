@@ -83,7 +83,7 @@ Then:
 1. Mark every acceptance criterion accepted in the handover.
 2. Run scope reconciliation and the deferred-resolution gate at milestone grain; see [iteration_protocol.md](/opt/sandbox/docs/reference/iteration_protocol.md). The items compared are the milestone's Carried forward entries across its iterations -- not one iteration's scope.
 3. Set the handover `Status: Closed` before the commit -- the commit is the close.
-4. Land one delivery commit per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`. Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of the active types there.
+4. Land one delivery commit per the [`git-discipline`](../skills/git-discipline/SKILL.md) skill. Milestone-close bookkeeping -- compaction, changelog, and promotion -- types `plan`, per the `plan` row of the active types there.
 
 After the close commit, stop: report the landed commit and the updated records; nothing substantive lands after it.
 

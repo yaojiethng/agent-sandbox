@@ -2,7 +2,7 @@
 # TEST_DEADLINE: 120
 # tests/test_history_cleanup_audit.sh
 # Behavioural tests for the history-cleanup audit,
-# workflow/coding-agent/skills/history-cleanup/scripts/audit.sh.
+# workflow/coding-agent/skills/git-discipline/runbooks/history-cleanup/scripts/audit.sh.
 #
 # The failure this covers: the audit's checks were run by hand, five passes in a
 # row, and each pass found one more class of defect the pass before had missed.
@@ -30,7 +30,7 @@ set -uo pipefail
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
-AUDIT="$REPO_ROOT/workflow/coding-agent/skills/history-cleanup/scripts/audit.sh"
+AUDIT="$REPO_ROOT/workflow/coding-agent/skills/git-discipline/runbooks/history-cleanup/scripts/audit.sh"
 
 # shellcheck source=libs/test_common.sh
 source "$TEST_DIR/libs/test_common.sh"

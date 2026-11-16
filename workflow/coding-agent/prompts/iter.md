@@ -9,7 +9,7 @@ argument-hint: "[workflow|impl|design|spec|plan|story|study|chore] <focus descri
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
 
-- `task-list`, `work-log`, `decision-records`, `project-documentation`, `git-discipline`, `testing`
+- `task-list`, `work-log`, `decision-records`, `project-documentation`, `testing`
 
 ## Orient
 
@@ -150,7 +150,7 @@ The iteration protocol at [`iteration_protocol.md`](/opt/sandbox/docs/reference/
 
 - **Record decisions live.** A decision is recorded in the handover's Decisions table as it is made, with the document where it was recorded. A decision that lives only in chat does not exist for the next iteration.
 - **Record a document-relevant change when you make it.** A change to an invariant, interface or contract is recorded when it is made, not at the close; a record that waits lets a stale document govern the work in the meantime.
-- **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when it resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes the record is provisional; commit it as `wip:` per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
+- **Open exchanges are recorded before the next commit.** An exchange is a conversation with the operator whose result is not yet resolved. Write its results to a record before committing: the iteration's handover when it resolves inside the iteration, a `devlog/discussions/` record when it opens its own question. Until the iteration closes the record is provisional; commit it as `wip:` per the [`git-discipline`](../skills/git-discipline/SKILL.md) skill.
 - **Verify record writes landed.** When announcing a record write -- a finding row, a decision, a task, a roadmap row -- grep the row key or content claimed. A claimed record that is not verified to exist is a defect: the write is not done until the grep finds it.
 
 The handover write-back fires at three moments in the runbook's operation:
@@ -174,7 +174,7 @@ Step 7 is the pre-close verification before the release gate. Present a pre-clos
 
 Every row must carry a status. A deferred or not-started row must be written back to the roadmap as an open row before the gate closes.
 
-4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
+4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the [`git-discipline`](../skills/git-discipline/SKILL.md) skill.
 5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
 
 6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbooks/content.md) of `handover-maintenance` over this handover. Read the findings from the handover's `## Findings` table, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
@@ -187,7 +187,7 @@ Present the acceptance criteria status table, the findings queue, and the commit
 
 ## Steps 8-9  --  Close and seed (via /wrapup)
 
-After the release gate, run the consolidated close from [`/wrapup`](wrapup.md). `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, settling the ADR entries and retiring the discussion records whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. It hands the commit to [`/commit`](commit.md), which keeps the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per the `git-discipline` convention, `.agents/skills/git-discipline/SKILL.md`.
+After the release gate, run the consolidated close from [`/wrapup`](wrapup.md). `/wrapup` owns the shared close steps -- AC verification, propagation replay, scope reconciliation, roadmap write-back, carry-forward resolution, findings review/publish, settling the ADR entries and retiring the discussion records whose work landed, closing the handover, and seeding what's next -- so this prompt does not restate them. It hands the commit to [`/commit`](commit.md), which keeps the close as **one commit**: the work, the handover marked `Closed`, the roadmap write-back, and the `Status: Closed` edit all fold into it, and the commit message matches the iteration type per the [`git-discipline`](../skills/git-discipline/SKILL.md) skill.
 
 Steps that stay specific to `/iter` because they gate the release, not the mechanical close:
 

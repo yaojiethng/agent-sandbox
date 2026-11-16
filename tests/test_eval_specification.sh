@@ -20,20 +20,20 @@ session_json() {
 # make_workspace <dir> <stub-body>
 make_workspace() {
   local work="$1" stub="$2" base="$1/base"
-  mkdir -p "$work/bin" "$work/candidate/.agents/skills/git-discipline" "$work/pi"
-  mkdir -p "$base/.agents/skills/git-discipline"
+  mkdir -p "$work/bin" "$work/candidate/.agents/skills/work-log" "$work/pi"
+  mkdir -p "$base/.agents/skills/work-log"
   git -C "$base" init -q
   printf '# agents\n' >"$base/AGENTS.md"
-  printf '## The fold\n' >"$base/.agents/skills/git-discipline/SKILL.md"
+  printf '## The fold\n' >"$base/.agents/skills/work-log/SKILL.md"
   git -C "$base" add -A
   git -C "$base" -c user.email=t@t -c user.name=t commit -q -m "fixture state"
   git -C "$base" bundle create "$work/base.bundle" --all >/dev/null 2>&1
-  printf 'change\n' >>"$base/.agents/skills/git-discipline/SKILL.md"
+  printf 'change\n' >>"$base/.agents/skills/work-log/SKILL.md"
   git -C "$base" diff >"$work/change.patch"
   git -C "$base" checkout -q -- .
   cp "$base/AGENTS.md" "$work/candidate/AGENTS.md"
-  cp "$base/.agents/skills/git-discipline/SKILL.md" \
-    "$work/candidate/.agents/skills/git-discipline/SKILL.md"
+  cp "$base/.agents/skills/work-log/SKILL.md" \
+    "$work/candidate/.agents/skills/work-log/SKILL.md"
   printf '%s\n' "$stub" >"$work/bin/pi"
   chmod +x "$work/bin/pi"
   printf '{}\n' >"$work/pi/settings.json"
