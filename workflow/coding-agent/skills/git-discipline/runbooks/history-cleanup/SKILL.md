@@ -8,9 +8,11 @@ disable-model-invocation: true
 
 ## Project conventions
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
 
 - `work-log`, `task-list`
+
+`work-log` owns property 5, the record rewrite, the handover record root, `devlog/AGENT_FEEDBACK.md` and `devlog/discussions`; `task-list` owns the roadmap and changelog paths in the audit. Without either, the content properties still run.
 
 ## When it runs
 
@@ -40,6 +42,8 @@ A desirable series:
 5. **Records true at their commit** -- no record is born and retired inside the range; each record describes the commit that carries it.
 6. **Origin survives the rewrite** -- a correction folds into the unit it corrects, not an introduction; `git blame` still names the commit that introduced the line.
 
+Property 5 is the only record property. When the project has no `work-log`, mark it not applicable, skip the record rewrite and the audit's check 1, and name the skip in the report; properties 1-4 and 6 stand. When the project has no `task-list`, pass only the `work-log` record paths to the audit's check 4; when it has no `work-log`, pass only the `task-list` paths; when it has neither, pass `--record-paths=` and name that skip.
+
 The per-commit properties -- atomic, bisectable, self-explanatory, blameable -- are [`git-discipline`'s](../../SKILL.md); this skill cites them and does not restate them. A stack's contiguity is [`branching.md`](../../references/branching.md)'s.
 
 An inversion is the mechanical form of the first property: content the range writes and a later commit replaces -- a file added then deleted, a line set added and later rewritten, a patch id applied twice. The audit's inversion detector finds it; the property is what forbids it. A generated file regenerated whole is classified, not counted. Record paths are excluded from the content proof, so a record delta is a record move, not an inversion.
@@ -54,11 +58,11 @@ Create the backup ref `pre-squash-<date>` at the tip and keep it until the opera
 
 The properties are the contract; the method is yours. Rewrite in place -- an interactive rebase, `--fixup` and `--autosquash` -- or build the target series on a scratch ref and move the branch after approval. Choose by the unit's complexity and the series' shape; if a unit does not converge, report the residue rather than forcing it.
 
-Rewrite the records in the same pass, one per unit, because a record that disagrees with its commit is worse than none. Delete a record the range supersedes.
+Rewrite the records in the same pass, one per unit, where `work-log` is present, because a record that disagrees with its commit is worse than none. Delete a record the range supersedes.
 
 ## The proof
 
-The audit is the evidence; do not invent a second check. `scripts/audit.sh <base> [tip]` runs the checks and exits non-zero on a finding, and `scripts/inversions.mjs` is its inversion detector. A manifest file holds one row per unit, written to `.scratchpad/history-cleanup-manifest.tsv` and passed as `--manifest=...`; without it the audit does not check the series against the approved shape.
+The audit is the evidence; do not invent a second check. `scripts/audit.sh <base> [tip]` runs the checks and exits non-zero on a finding, and `scripts/inversions.mjs` is its inversion detector. When there is no `work-log`, pass `--records=` and check 1 is skipped; when there is no `task-list`, pass only the `work-log` record paths; when there is neither, pass `--record-paths=` and check 4 excludes no record path. A manifest file holds one row per unit, written to `.scratchpad/history-cleanup-manifest.tsv` and passed as `--manifest=...`; without it the audit does not check the series against the approved shape.
 
 `git range-diff <base>..<old> <base>..<new>` shows content that moved between commits. Run the repo's gate (`scripts/lint.sh`) on every commit in its own tree, and the suite (`scripts/run_tests.sh`) once at the tip with `TEST_PARALLEL=1`; a commit that fails its own gate is not bisectable, so stop and report it. A commit with no gate is an operator decision, not a silent pass.
 
@@ -71,7 +75,7 @@ A release covers the proposal as presented. Content that enters after it needs a
 
 ## Report
 
-Report the old-to-new hash map, the operation each unit took, the range-diff summary, the record delta, any addition named after the release, and the audit's output.
+Report the old-to-new hash map, the operation each unit took, the range-diff summary, the record delta, any addition named after the release, the skipped record arm, and the audit's output.
 
 ## Non-goals
 

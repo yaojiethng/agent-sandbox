@@ -6,7 +6,8 @@
 # Options:
 #   --reference=<ref>   the tip the rewrite must reproduce; check 4 is skipped without it
 #   --gate=<path>       the gate to run per commit (default scripts/lint.sh)
-#   --records=<dir>     the record root (default devlog/handovers)
+#   --records=<dir>     the record root (default devlog/handovers); empty skips check 1
+#   --record-paths=<p>  comma-separated record paths for check 4 (default: the task-list paths); empty excludes none
 #   --manifest=<file>   rows of "sha<TAB>subject<TAB>paths"; check 7 is skipped without it
 #   --gate=<path>       the gate to run per commit (default scripts/lint.sh); it always runs
 #
@@ -25,6 +26,7 @@ TIP="HEAD"
 REF=""
 GATE="scripts/lint.sh"
 RECORDS="devlog/handovers"
+RECORD_PATHS="devlog/roadmap.md,devlog/roadmap_future.md,devlog/AGENT_FEEDBACK.md,devlog/discussions,devlog/changelog.md"
 MANIFEST=""
 ADDITIONS=()
 for arg in "$@"; do
@@ -32,6 +34,7 @@ for arg in "$@"; do
   --reference=*) REF="${arg#*=}" ;;
   --gate=*) GATE="${arg#*=}" ;;
   --records=*) RECORDS="${arg#*=}" ;;
+  --record-paths=*) RECORD_PATHS="${arg#*=}" ;;
   --manifest=*) MANIFEST="${arg#*=}" ;;
   --addition=*) ADDITIONS+=("${arg#*=}") ;;
   --*) echo "audit: unknown option: $arg" >&2; exit 2 ;;
@@ -53,29 +56,40 @@ escape_re() { printf '%s' "$1" | sed 's/[.[\*^$()+?{}|]/\\&/g'; }
 # than check 1's handover root: the roadmaps, the feedback record, the
 # discussion tree and the changelog are records too.
 record_paths_regex() {
-  local rp esc out=""
-  for rp in "$RECORDS" devlog/roadmap.md devlog/roadmap_future.md \
-    devlog/AGENT_FEEDBACK.md devlog/discussions devlog/changelog.md; do
-    [[ -n "$rp" ]] || continue
-    esc=$(escape_re "$rp")
-    out="${out:+$out|}$esc"
-  done
+  local rp esc out="" extra=()
+  local -a paths=()
+  [[ -n "$RECORDS" ]] && paths+=("$RECORDS")
+  if [[ -n "$RECORD_PATHS" ]]; then
+    IFS=',' read -r -a extra <<< "$RECORD_PATHS"
+    paths+=("${extra[@]}")
+  fi
+  if [[ ${#paths[@]} -gt 0 ]]; then
+    for rp in "${paths[@]}"; do
+      [[ -n "$rp" ]] || continue
+      esc=$(escape_re "$rp")
+      out="${out:+$out|}$esc"
+    done
+  fi
   printf '%s' "$out"
 }
 
 COMMITS=$(git rev-list --reverse "$BASE".."$TIP")
 
 check "1. record added once"
-added=$(git log --diff-filter=A --name-only --format= "$BASE".."$TIP" -- "$RECORDS" | sort -u)
-for p in $added; do
-  n=$(git log --diff-filter=A --format=%H "$BASE".."$TIP" -- "$p" | wc -l)
-  [[ "$n" -eq 1 ]] || finding "record added $n times: $p"
-  birth=$(git log --diff-filter=A --format=%H "$BASE".."$TIP" -- "$p" | tail -1)
-  if git cat-file -e "$TIP:$p" 2>/dev/null; then
-    [[ "$(git rev-parse "$birth:$p")" == "$(git rev-parse "$TIP:$p")" ]] || finding "record rewritten after birth: $p"
-  fi
-done
-[[ -n "$added" ]] || note "no record added in the range"
+if [[ -n "$RECORDS" ]]; then
+  added=$(git log --diff-filter=A --name-only --format= "$BASE".."$TIP" -- "$RECORDS" | sort -u)
+  for p in $added; do
+    n=$(git log --diff-filter=A --format=%H "$BASE".."$TIP" -- "$p" | wc -l)
+    [[ "$n" -eq 1 ]] || finding "record added $n times: $p"
+    birth=$(git log --diff-filter=A --format=%H "$BASE".."$TIP" -- "$p" | tail -1)
+    if git cat-file -e "$TIP:$p" 2>/dev/null; then
+      [[ "$(git rev-parse "$birth:$p")" == "$(git rev-parse "$TIP:$p")" ]] || finding "record rewritten after birth: $p"
+    fi
+  done
+  [[ -n "$added" ]] || note "no record added in the range"
+else
+  note "skipped: no record root (--records=)"
+fi
 
 check "2. citation resolves at its commit"
 for f in devlog/roadmap.md devlog/roadmap_future.md; do
@@ -101,8 +115,8 @@ if [[ -n "$REF" ]]; then
     esc=$(escape_re "$a")
     add_re="${add_re:+$add_re|}$esc"
   done
-  exclude_record() { grep -vE "(^|[[:space:]])($record_re)(/|$)"; }
-  exclude_add() { grep -vE "(^|[[:space:]])(${add_re:-^$})(/|$)"; }
+  exclude_record() { if [[ -n "$record_re" ]]; then grep -vE "(^|[[:space:]])($record_re)(/|$)"; else cat; fi; }
+  exclude_add() { if [[ -n "$add_re" ]]; then grep -vE "(^|[[:space:]])($add_re)(/|$)"; else cat; fi; }
   delta=$(diff <(git ls-tree -r "$REF" | exclude_record | exclude_add) <(git ls-tree -r "$TIP" | exclude_record | exclude_add))
   if [[ -n "$delta" ]]; then
     finding "non-record content differs from $REF"
@@ -125,7 +139,7 @@ check "6. no silent empty unit"
 for c in $COMMITS; do
   changed=$(git diff --name-only "$c^" "$c")
   [[ -n "$changed" ]] || finding "empty commit ${c:0:8}"
-  if [[ -n "$changed" ]] && [[ -z "$(echo "$changed" | grep -v "^$RECORDS/")" ]]; then
+  if [[ -n "$RECORDS" ]] && [[ -n "$changed" ]] && [[ -z "$(echo "$changed" | grep -v "^$RECORDS/")" ]]; then
     note "record-only commit ${c:0:8} -- the manifest must declare it"
   fi
 done

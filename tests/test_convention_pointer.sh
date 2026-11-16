@@ -22,7 +22,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
 
-POINTER='Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.'
+POINTER='Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.'
 
 # offenders ROOT -- print each file whose `## Project conventions` section does
 # not carry the pointer sentence, as a path relative to ROOT.

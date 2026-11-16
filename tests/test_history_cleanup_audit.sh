@@ -20,6 +20,8 @@
 #   a non-record change at the tip          -- finding, check 4
 #   a record-only change at the tip         -- clean, check 4 excludes it
 #   a record change in each record tree     -- clean, check 4 excludes all of them
+#   a record root not named                 -- clean, check 1 skipped
+#   a roadmap change with no task-list paths -- finding, check 4 treats it as content
 #   an addition that does not cover a change -- finding, check 4 still runs
 #   a clean range                           -- rc 0, no finding
 #
@@ -213,6 +215,41 @@ test_a_record_change_in_each_record_tree_is_excluded() {
   assert_contains "$out" "audit: clean" "check 4 excludes the roadmaps, feedback, discussions and changelog"
 }
 
+# Given: a record range with no record root named
+# When:  the audit runs with --records=
+# Then:  check 1 is skipped and the range is clean
+test_no_record_root_skips_check_1() {
+  local d="$WORK/norecords" out rc=0
+  new_repo "$d" || fail "fixture"
+  (
+    cd "$d" || exit 1
+    printf '# a\n' >devlog/handovers/M/20260101-07-g.md
+    git add -A && git commit -qm "add record g"
+    printf 'more\n' >>devlog/handovers/M/20260101-07-g.md
+    git add -A && git commit -qm "rewrite record g"
+  ) || fail "fixture commits"
+  out=$(audit "$d" "$(git -C "$d" rev-list --max-parents=0 HEAD)" HEAD --gate=gate.sh --records= --record-paths=) || rc=$?
+  assert_rc 0 "$rc" "rc"
+  assert_contains "$out" "skipped: no record root" "check 1 names the skip"
+}
+
+# Given: a roadmap change at the tip and no task-list record paths
+# When:  check 4 runs with --record-paths=
+# Then:  the roadmap is content and the difference is a finding
+test_no_record_paths_keeps_the_roadmap_as_content() {
+  local d="$WORK/nopaths" out rc=0 base
+  new_repo "$d" || fail "fixture"
+  base=$(git -C "$d" rev-list --max-parents=0 HEAD)
+  (
+    cd "$d" || exit 1
+    printf 'more\n' >>devlog/roadmap.md
+    git add -A && git commit -qm "update the roadmap"
+  ) || fail "fixture commit"
+  out=$(audit "$d" "$base" HEAD --gate=gate.sh --reference="$base" --record-paths=) || rc=$?
+  assert_rc 1 "$rc" "rc"
+  assert_contains "$out" "non-record content differs" "check 4 treats the roadmap as content"
+}
+
 # Given: a non-record change and an addition that does not name it
 # When:  check 4 runs
 # Then:  it reports the change; naming the change as an addition is clean
@@ -259,6 +296,8 @@ run_test test_a_clean_range_reports_clean
 run_test test_a_reference_that_differs_is_named
 run_test test_a_record_change_at_the_tip_is_excluded
 run_test test_a_record_change_in_each_record_tree_is_excluded
+run_test test_no_record_root_skips_check_1
+run_test test_no_record_paths_keeps_the_roadmap_as_content
 run_test test_an_addition_does_not_disable_the_content_check
 run_test test_an_inversion_is_reported_not_counted
 

@@ -75,7 +75,7 @@ An iteration's work and a run of dependent units fold by the same rule.
 
 **The delivery commit carries an active type. An intermediate commit never does.** A typed intermediate reads as a closed deliverable that later folds away, a false delivery surface. An intermediate is a `wip:` commit, a fixup, or an amend.
 
-A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold.
+A correction to the work of a closed iteration folds into that iteration's commit and never opens a new one; the record amendments ride with the fold. When the project has no `work-log`, the fold is the commit alone; there are no record amendments to ride with it.
 
 [`record-correction`](/opt/workflow/agent/modules/coding-agent/prompts/record-correction.md) runs the fold and carries the record arm for a closed artifact. A correction that would change the target's type, or that needs a handover the target does not have, is its own commit with its own handover.
 

@@ -7,9 +7,11 @@ argument-hint: "[target commit hash or subject] [what the correction changes] [w
 
 ## Project conventions
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
 
 - `work-log`, `decision-records`, `task-list`
+
+`work-log` owns the handover form, `decision-records` the ADR form and `task-list` the roadmap form. Without them, the commit fold still runs.
 
 ## Mandate
 
@@ -105,6 +107,8 @@ git status --porcelain    # clean
 
 ## Correcting a record
 
+This section runs for the record kinds the project provides. When `work-log`, `decision-records` or `task-list` is absent, skip the form that reads it, keep the commit fold, and report the skipped arm.
+
 A closed record is edited only at the operator's direction, and every edit carries the corresponding form. The operator signals direction any way it is said: "amend the handover", "reopen the handover", "edit it", "fix the typo", or by naming the change. A correction is never applied unasked.
 
 Three forms qualify:
@@ -162,4 +166,4 @@ A correction may reopen the record. Reopening to adjust the work and closing aga
 
 ## Close
 
-Report the target commit's before and after hash, the fixup's new hash, the output of all three verification commands, and the gate numbers. State whether the correction folded or became its own commit, and why. If the target was a merge commit, say so, because a folded correction into a merge is a history rewrite the operator may want to see again.
+Report the target commit's before and after hash, the fixup's new hash, the output of all three verification commands, and the gate numbers. State whether the correction folded or became its own commit, and why. State the skipped record arm, if any. If the target was a merge commit, say so, because a folded correction into a merge is a history rewrite the operator may want to see again.

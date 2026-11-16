@@ -7,7 +7,7 @@ argument-hint: "[<base>..<tip> - the commit range to clean]"
 
 ## Project conventions
 
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, raise it to the operator.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
 
 - `work-log`, `task-list`
 

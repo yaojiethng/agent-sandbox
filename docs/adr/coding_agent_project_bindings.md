@@ -12,6 +12,18 @@
 | R4 | A mechanism and a convention do not share a form | a rule that says how and a rule that says what are separate |
 | R5 | Project knowledge survives the work ledger | pruning the ledger must not lose project context |
 
+## 2026-11-16 -- The change pipeline's record arms are optional
+
+**Decision:** The change-pipeline bundle runs when a project provides no `work-log` or `task-list`. The content path is fixed; the record arms are optional, and a skipped arm is named in the report. `work-log` owns `history-cleanup` property 5, the record rewrite, audit check 1, the handover record root, `devlog/AGENT_FEEDBACK.md` and `devlog/discussions`; `task-list` owns the roadmap and changelog record paths in audit check 4. `recovery`'s claim falls back to the operator's description and the repository, and its record step reports instead of writing a handover. `record-correction` keeps the commit fold and skips the record form it cannot serve. The main loop (`iter`, `commit`, `wrapup`) still requires both conventions, and the commit fold is not a record arm.
+
+**Rationale:** The workflow imposes nothing. A project may run the change pipeline without a work log or a task list; the repository still holds the evidence for the content properties, the commit and the recovery. A missing optional convention should not turn into a stop, and a silent content-only pass would let the operator mistake a partial pass for a complete one, so the report names it.
+
+**Rejected alternatives:** require both conventions -- intent failure, it makes the bundle unportable to a project that keeps no ledger; one `--no-records` switch -- execution failure, `work-log` and `task-list` own different paths and one switch cannot name which arm was skipped; skip the whole bundle -- intent failure, the content properties do not depend on the records.
+
+**Evidence:** `audit.sh` hardcoded the record paths in `record_paths_regex`; `recovery` read the handover and roadmap in step 1 and wrote the handover in step 6; `record-correction` assumed all three record conventions. Each is a record arm beside a content path that already ran.
+
+**Edge cases / drivers:** the audit defaults are unchanged; the runbook passes `--records=` and `--record-paths=` when the conventions are absent. A project with `task-list` but no `work-log` keeps the roadmap and changelog exclusions and skips check 1. A project with `work-log` but no `task-list` keeps the feedback and discussion exclusions and drops the roadmap and changelog paths. A project with neither passes `--records=` and `--record-paths=`.
+
 ## 2026-11-16 -- Git discipline is workflow mechanism
 
 **Decision:** `git-discipline` ships in the `coding-agent` module at `workflow/coding-agent/skills/git-discipline/`, not in the default convention-skill corpus. It is a workflow mechanism: the commit vocabulary, the branch scheme and the fold rules are fixed by the procedure, and a project does not bind them. `history-cleanup` moves under it as `runbooks/history-cleanup/`, behind the thin `/history-cleanup` prompt; `record-correction` stays a prompt. The convention corpus loses `git-discipline`; it keeps `task-list`, `work-log`, `decision-records`, `project-documentation`, `testing` and the optional `evals`. `git` remains an available tool, and the module is the coding-agent workflow rather than a git module.
