@@ -190,8 +190,8 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `plan_scoping` | planning | the milestone is being cut into iterations |
 | `plan_interview` | planning | the `grill-me` skill is probing the design |
 | `plan_released` | planning | rows, stories and ADRs are written back |
-| `rep_partial` | recovery | the record's intent and the disk disagree; the iteration is rebuilt |
-| `rep_absent` | recovery | the record claims a commit the repository lacks; it is rebuilt |
+| `rep_partial` | recovery | the record's intent and the disk disagree; the evidence search finds the fragment and the unit is finished or retrieved |
+| `rep_absent` | recovery | the record claims a commit the repository lacks; the evidence search decides retrieve or rebuild |
 | `cor_bad` | correction | the commit is wrong; it is amended or dropped |
 | `cor_messy` | correction | the series is noisy; history-cleanup rewrites it |
 | `rec_handover_active` | records | the iteration's record is open |
@@ -201,6 +201,8 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `rec_discussion_open` | records | an enquiry is in flight |
 | `rec_discussion_concluded` | records | the enquiry concluded, its row still open |
 | `rec_adr_accepted` | records | a decision record is current |
+
+A recovery starts from the evidence search in the recovery skill; a broken host draft is `T11` (`make reject` then `make draft`), not a recovery, because nothing was lost.
 
 ## The discussion record
 
