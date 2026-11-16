@@ -59,6 +59,6 @@ Out of scope, with reasons: every implementation carrier in the design's propaga
 | File | Change |
 |---|---|
 | [`20261105-14-plan-handover_tracks_design.md`](20261105-14-plan-handover_tracks_design.md) | this record |
-| [`../discussions/20261105-design-concluded-handover_tracks.md`](../discussions/20261105-design-concluded-handover_tracks.md) | opened the design record with the confirmed model and the smell family, and concluded it into the ADR |
+| the design record `20261105-design-concluded-handover_tracks.md` | opened with the confirmed model and the smell family, concluded into the ADR, and retired |
 | [`../../docs/adr/work_log_record_seam.md`](../../docs/adr/work_log_record_seam.md) | the standing decision: the work-log layout is declared once and derived reads go through one tool |
 | [`../roadmap.md`](../roadmap.md) | `active-milestone` set to M3.5.1 for the session; the M3.5 reorg into M3.5.1/2/3; T5 absorbed; the scoped stopgap row added |

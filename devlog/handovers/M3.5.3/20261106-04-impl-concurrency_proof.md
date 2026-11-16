@@ -35,7 +35,7 @@ Out of scope, with reasons: the parallel-milestone rule, which changes the scala
 | Decision | Rationale | Where recorded |
 |---|---|---|
 | The proof runs real concurrent writers for three rounds against a fixture git repository | the run directive requires real writers, not a simulation, and a fixed round count | this record and the test |
-| Each session writes its own track's handover and its own roadmap row; the branch resolves the shared-file conflict at prepare | the confirmed branch-writes-its-own-records protocol, and the reproduced record conflict | `20261105-design-concluded-handover_tracks.md` and this record |
+| Each session writes its own track's handover and its own roadmap row; the branch resolves the shared-file conflict at prepare | the confirmed branch-writes-its-own-records protocol, and the reproduced record conflict | the seam ADR (`docs/adr/work_log_record_seam.md`) and this record |
 | A negative control asserts two writers on one roadmap row do conflict | the proof must be able to fail | the test |
 
 **Correction (2026-11-12):** this record and its test were corrected to the branch-writes-its-own-records protocol. The merge-role wording was superseded on 2026-11-06.
