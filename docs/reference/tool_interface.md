@@ -125,6 +125,8 @@ The `--channel` flag (aliased as `CHANNEL=` in Makefile; shorthand `FROM=<channe
 
 `DIFFS=<start>..<end>` selects a sub-range of patches. `BRANCH_SUMMARY=<slug>` overrides the branch name suffix.
 
+**After the draft:** `make draft` prints the changed files and hands over to `make confirm` or `make reject`. When the bundle replaces the source history, it prints the `NEW=1` route and the two commands that move the source onto the series. `make apply` is the separate path for a diff without a branch.
+
 **Interactive mode:** `INTERACTIVE=1` (flag `--interactive`) guides the operator through a two-step numbered picker: channel selection and bundle selection. When both `BUNDLE=<name>` and a channel (via `FROM=` or `CHANNEL=`) are supplied with `--interactive`, the picker is skipped -- the resolved patch list is shown and confirmed with a single y/N prompt. After selections are made, the equivalent non-interactive `make` command is printed (e.g. `Running: make draft CHANNEL=session BUNDLE=<name>`) before execution. When `BUNDLE=<name>` is provided and the named bundle is not in the displayed list, it is injected as option 0 in the bundle picker and becomes the default. When more bundles exist than the display limit (10), `n` and `p` navigate between pages. Interactive mode is opt-in; a non-interactive run requires an explicit `BUNDLE=<name>`.
 
 ### `make confirm [TARGET_BRANCH=<branch>] [NEW=1]`

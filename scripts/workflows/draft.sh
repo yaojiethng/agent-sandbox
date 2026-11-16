@@ -473,6 +473,12 @@ _run_draft_workflow() {
   echo ""
   echo "Diffs applied: $DIFF_COUNT"
   [[ -n "$UC" ]] && echo "Uncommitted diff applied: $UC"
+  local CHANGED
+  CHANGED=$(git -C "$PROJECT_DIR" diff --name-only "$BASE_COMMIT" 2>/dev/null || true)
+  if [[ -n "$CHANGED" ]]; then
+    echo "Changed files: $(printf '%s\n' "$CHANGED" | wc -l | tr -d ' ')"
+    printf '%s\n' "$CHANGED" | sed 's/^/  /'
+  fi
   echo ""
   draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH" "$BASE_COMMIT"
 }
@@ -501,17 +507,16 @@ draft_print_confirm_hint() {
     echo "  make confirm TARGET_BRANCH=${SOURCE_BRANCH}"
     echo ""
     echo "To discard: make reject"
-    echo "To apply one diff without a branch: make apply DIFF=<path>"
   else
     echo "This bundle replaces history on ${SOURCE_BRANCH}; it cannot fast-forward."
     echo "Create a new branch from the reviewed series instead:"
     echo "  make confirm TARGET_BRANCH=<new-branch> NEW=1"
     echo ""
-    echo "That leaves ${SOURCE_BRANCH} untouched and prints the two commands"
-    echo "that move it onto the series."
+    echo "That leaves ${SOURCE_BRANCH} untouched. Then move it onto the series:"
+    echo "  git switch ${SOURCE_BRANCH}"
+    echo "  git reset --soft <new-branch>"
     echo ""
     echo "To discard instead: make reject"
-    echo "To apply one diff without a branch: make apply DIFF=<path>"
   fi
 }
 

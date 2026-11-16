@@ -1377,6 +1377,7 @@ test_draft_hint_routes_to_fast_forward_when_ancestor() {
   [[ "$OUT" == *"git rebase -i"* ]] || OK=false
   [[ "$OUT" == *"make confirm TARGET_BRANCH=$SRC"* ]] || OK=false
   [[ "$OUT" != *"NEW=1"* ]] || OK=false
+  [[ "$OUT" != *"make apply"* ]] || OK=false
 
   if [[ "$OK" == true ]]; then
     pass "draft names the fast-forward route when the source branch is an ancestor"
@@ -1414,6 +1415,9 @@ test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
   [[ "$OUT" != *"git rebase -i"* ]] || OK=false
   # The untouched-branch fact is what no other host step prints.
   [[ "$OUT" == *"untouched"* ]] || OK=false
+  [[ "$OUT" == *"git switch $SRC"* ]] || OK=false
+  [[ "$OUT" == *"git reset --soft <new-branch>"* ]] || OK=false
+  [[ "$OUT" != *"make apply"* ]] || OK=false
 
   if [[ "$OK" == true ]]; then
     pass "draft names the soft-reset route when the source branch cannot fast-forward"
@@ -1421,6 +1425,27 @@ test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
     fail "hint did not route to soft-reset: $OUT"
   fi
 }
+# Given: a draft built from two patches
+# When:  the orchestration completes
+# Then:  the output names the two changed files
+# Asserts: the reviewer sees the subject of the review, not only a diff count
+test_draft_lists_changed_files() {
+  make_draft_fixture draft_changed 2
+  local OUT
+  OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1)
+
+  local OK=true
+  [[ "$OUT" == *"Changed files: 2"* ]] || OK=false
+  [[ "$OUT" == *"file-1.txt"* ]] || OK=false
+  [[ "$OUT" == *"file-2.txt"* ]] || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "the draft output lists the changed files"
+  else
+    fail "changed files not listed: $OUT"
+  fi
+}
+
 # Given: a script invocation with --help
 # When:  draft.sh runs as a script
 # Then:  it prints the usage and exits 0
@@ -1462,5 +1487,6 @@ run_test test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable
 run_test test_draft_script_entry_requires_identity
 run_test test_draft_script_entry_help
 run_test test_draft_prints_one_resolved_branch_point
+run_test test_draft_lists_changed_files
 
 test_done
