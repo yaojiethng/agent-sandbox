@@ -1,22 +1,21 @@
-// The instruction documents carry one shape.
+// The instruction documents carry one frontmatter contract.
 //
 // Two claims over the same file set, because the same walk, the same roots and
 // the same parser serve both:
 //
-//   1. Every prompt, skill and policy block parses. Pi drops a prompt whose
-//      frontmatter does not parse, with no message in the session.
-//   2. Every skill whose name carries `principle-` carries the corpus shape: a
-//      sentence-case title, a judgement, a rule part the card names, `**Why.**`,
-//      the named parts the card needs, and `**The test.**`
+//   1. Every prompt, skill and policy block parses, and a skill's
+//      `disable-model-invocation` is a boolean. Pi drops a prompt whose
+//      frontmatter does not parse, with no message in the session, and tests the
+//      flag with `=== true`.
+//   2. Every shipping document declares the reader it serves.
 //
 // Enforces .agents/skills/instruction-authoring/references/skill-conventions.md
-// `## Frontmatter` and `## A judgement skill`, its `prompt-conventions.md`
-// `## Frontmatter`, `.agents/skills/project-documentation/SKILL.md` `## How a document
-// opens`, and the decision in docs/adr/principle_skill_shape.md.
+// `## Frontmatter`, its `prompt-conventions.md` `## Frontmatter`,
+// `.agents/skills/project-documentation/SKILL.md` `## How a document opens`, and
+// the decision in docs/adr/principle_skill_shape.md.
 //
 // Every set is derived. The instruction roots come from the manifest's cells, so
-// a new surface enters with the declaration. A principle is named by its
-// directory, so it enters the gate the day it exists.
+// a new surface enters with the declaration.
 //
 // Test seams: DOCUMENT_SHAPE_SCAN_ROOT points the tree scan at a fixture,
 // DOCUMENT_SHAPE_MANIFEST_ROOT points the declaration read elsewhere, and
@@ -71,7 +70,6 @@ const ROOTS = [
 
 const POLICY_ROOT = "docs";
 const POLICY_SUFFIX = "_policy.md";
-const NAME_SEGMENT = "principle-";
 
 /** Every file under a root with the given suffix, or nothing when it is absent. */
 function collect(root, suffix = ".md") {
@@ -87,23 +85,6 @@ function collect(root, suffix = ".md") {
     }
   };
   if (existsSync(root)) walk(root);
-  return out;
-}
-
-/** Every directory under a declared root that holds a `SKILL.md`. */
-function skillDirs() {
-  const out = [];
-  for (const root of ROOTS) {
-    const full = join(REPO_ROOT, root);
-    if (!existsSync(full)) continue;
-    for (const entry of readdirSync(full)) {
-      const dir = join(full, entry);
-      if (!statSync(dir).isDirectory()) continue;
-      if (existsSync(join(dir, "SKILL.md"))) {
-        out.push({ name: entry, rel: join(root, entry, "SKILL.md"), path: join(dir, "SKILL.md") });
-      }
-    }
-  }
   return out;
 }
 
@@ -218,103 +199,15 @@ for (const file of shippedFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// A principle carries the corpus shape.
-// ---------------------------------------------------------------------------
-const WHY = "**Why.**";
-const TEST = "**The test.**";
-// A named part carries its label in bold, and the label ends on a period so a
-// reader scanning the file sees the parts as one set. The first named part
-// before `**Why.**` is the rule part, and the card chooses its label.
-const NAMED_PART = /^\*\*[^*]+\.\*\*/;
-
-/** A title-case word: an uppercase letter opening a word that is not all caps. */
-const titleCaseWord = (word) => /^[A-Z][a-z]/.test(word);
-
-/** Findings for one principle skill file. */
-function inspect(rel, text) {
-  const out = [];
-  const lines = text.split("\n");
-  const at = (i) => i + 1;
-  const titles = [];
-  let ruleSeen = false;
-  let whySeen = false;
-  let testSeen = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (/^## /.test(line)) {
-      out.push({ rel, line: at(i), msg: "a `##` heading below the title; a part is a bold lead-in" });
-      continue;
-    }
-    if (/^# /.test(line)) {
-      titles.push({ i, text: line.slice(2) });
-      continue;
-    }
-    if (!line.startsWith("**")) continue;
-
-    if (line.startsWith(WHY)) {
-      if (whySeen) out.push({ rel, line: at(i), msg: "a second `**Why.**`" });
-      else if (!ruleSeen) out.push({ rel, line: at(i), msg: "`**Why.**` must follow the rule part" });
-      whySeen = true;
-      continue;
-    }
-    if (line.startsWith(TEST)) {
-      if (testSeen) out.push({ rel, line: at(i), msg: "a second `**The test.**`" });
-      else if (!whySeen) out.push({ rel, line: at(i), msg: "`**The test.**` must follow `**Why.**`" });
-      testSeen = true;
-      continue;
-    }
-    if (NAMED_PART.test(line)) {
-      if (!ruleSeen) ruleSeen = true;
-      continue;
-    }
-    out.push({ rel, line: at(i), msg: "a bold lead-in with no closing period; a part wraps its label as `**Label.**`" });
-  }
-
-  if (titles.length === 0) out.push({ rel, line: 1, msg: "no `# ` title" });
-  if (titles.length > 1) out.push({ rel, line: at(titles[1].i), msg: "a second `# ` title; the file has one" });
-  if (titles.length > 0) {
-    const words = titles[0].text.split(/\s+/).slice(1);
-    for (const word of words) {
-      if (titleCaseWord(word)) {
-        out.push({ rel, line: at(titles[0].i), msg: `the title is not sentence case: \`${word}\` begins uppercase` });
-        break;
-      }
-    }
-  }
-  if (!ruleSeen) out.push({ rel, line: 1, msg: "missing a rule part before `**Why.**`" });
-  if (!whySeen) out.push({ rel, line: 1, msg: "missing `**Why.**`" });
-  if (!testSeen) out.push({ rel, line: 1, msg: "missing `**The test.**`" });
-  return out;
-}
-
-const targets = skillDirs().filter((d) => d.name.includes(NAME_SEGMENT));
-// Fail closed on the module tree: a rename that dropped the segment from every
-// directory would otherwise turn the shape check into a pass over nothing. A
-// fixture root is pointed at one skill at a time, so a fixture holding no
-// principle is a tree with no corpus to check rather than a failed gate.
-if (targets.length === 0 && REPO_ROOT === MODULE_ROOT) {
-  finding(NAME_SEGMENT, 0, "no skill directory carries `" + NAME_SEGMENT + "`; the gate would pass over nothing", { kind: "corpus" });
-}
-
-for (const { rel, path } of targets) {
-  findings.push(...inspect(rel, readFileSync(path, "utf8")));
-}
-
-// ---------------------------------------------------------------------------
 // One report, one exit.
 // ---------------------------------------------------------------------------
 for (const f of findings) {
   if (f.kind === "frontmatter") console.log(`${f.rel} frontmatter: ${f.msg}`);
-  else if (f.kind === "corpus") console.log(`document shape: ${f.msg}`);
   else console.log(f.line ? `${f.rel}:${f.line} ${f.msg}` : `${f.rel}: ${f.msg}`);
   if (f.offending) console.log("  offending line: " + f.offending.trim().slice(0, 100));
 }
 
-const summary =
-  `${files.length} instruction file(s), ${shippedFiles.length} shipping document(s) ` +
-  `and ${targets.length} principle skill(s)`;
+const summary = `${files.length} instruction file(s) and ${shippedFiles.length} shipping document(s)`;
 if (findings.length === 0) {
   console.log(`document shape: clean across ${summary}`);
 } else {

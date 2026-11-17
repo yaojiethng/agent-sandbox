@@ -2,7 +2,7 @@
 date: 2026-11-16
 milestone: M3.3.7 - The principle corpus admission
 type: Implementation
-status: Active
+status: Closed
 ---
 
 # Handover - A principle records its operator's intent and mechanism

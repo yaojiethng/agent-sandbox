@@ -2,6 +2,21 @@
 
 **Current:** 2026-11-16
 
+## 2026-11-16 -- The principle frontmatter is one gate, and the body shape is a convention
+
+**Decision:** The document-shape gate keeps the frontmatter parse, the `disable-model-invocation` boolean and the shipping reader declaration. The principle body shape leaves the gate and stays a convention in `skill-conventions.md` and the exemplar. One provider-root gate, `scripts/check_principle_frontmatter.sh`, owns the principle frontmatter: `name`, `description` and `metadata.neighbours` are required; `metadata.leitwort`, `intent` and `mechanism` are validated when present; `disable-model-invocation` is rejected. This supersedes the gate clause of the 2026-10-21 entry; the shape itself stands.
+
+**Rationale:** The frontmatter is what a parser reads: pi's loader, the inventory lever and the admission field row. The body is what a reader and an author judge. A gate belongs where its evidence exists and its decision is cheapest, and the body's observer is the review and the exemplar. The 2026-10-28 entry is the precedent: the claim field went because no consumer acted on it and no check could falsify it. The split also ends the label collision the role-based entry fixed, because the gate no longer reads a body label at all.
+
+**Rejected alternatives:**
+
+- *Keep the body gate and add a second frontmatter gate.* **Execution failure**: two walks of the same corpus, and the frontmatter's fields split across gates.
+- *A data-driven schema over the body.* **Intent failure**: the rules are a handful of labels and an order; a schema is more machinery for the same rule.
+- *Require `leitwort`, `intent` and `mechanism` now.* **Execution failure**: the corpus does not carry them uniformly; the field row makes them required.
+- *Gate the frontmatter but leave the body as it was.* **Neither**: the machine contract is the part with a parser, and the body rule is what the operator asked to trim.
+
+**Edge cases / drivers:** The gate is provider-only, matching the principle definition in the terminology registry; a project `principle-` skill is outside the corpus. The body can drift with no mechanical check, and the review and the exemplar carry it; that is the accepted cost. The conditional fields are checked for presence and type only, because the operator's value lives in the admission record. The gate rename keeps the document gate's name, `check_document_shape.sh`, because the frontmatter is still a shape, and its header states which one.
+
 ## 2026-11-16 -- The principle body gives its parts roles, not fixed labels
 
 **Decision:** The rule part is the first bold lead-in and the card names it. It carries the general rule, whether that rule is a pattern, a test or a principle. `**Why.**` and `**The test.**` keep their labels because they are the rationale and the check. Any named part may follow the rule, and a boundary part may follow the test.

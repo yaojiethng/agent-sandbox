@@ -103,11 +103,11 @@ A skill that helps a reader produce or choose the criteria a piece of work needs
 
 - `modality` holds the norm's base and modal strength, and does not classify an artifact; a judgement's home is a principle skill
 - `workflow document` holds the carrier and form
-- the body shape and its gate: `docs/adr/principle_skill_shape.md`, `scripts/check_document_shape.sh`
-- the admission mechanism is `metadata.neighbours`, decided by the `instruction-authoring` admission pattern (`.agents/skills/instruction-authoring/patterns/admission.md`) and held by `scripts/check_principle_neighbours.sh`
+- the body shape is a convention (`docs/adr/principle_skill_shape.md`); the frontmatter gate is `scripts/check_principle_frontmatter.sh`
+- the admission mechanism is `metadata.neighbours`, decided by the `instruction-authoring` admission pattern (`.agents/skills/instruction-authoring/patterns/admission.md`) and held by `scripts/check_principle_frontmatter.sh`
 - the authoring rule is the `instruction-authoring` convention's step 2
 
-**Last updated:** 2026-11-14
+**Last updated:** 2026-11-16
 
 ## session
 

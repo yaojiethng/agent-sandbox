@@ -75,6 +75,20 @@ function readNeighbours(frontmatter, skill, findings) {
   return { state: neighbours.length === 0 ? "empty" : "declared", neighbours };
 }
 
+/** The other frontmatter fields the principle gate reads, as declared. */
+function readDeclaration(frontmatter) {
+  const metadata = frontmatter.metadata;
+  const field = (key) => (metadata && typeof metadata === "object" ? metadata[key] : undefined);
+  return {
+    declaredName: frontmatter.name,
+    description: frontmatter.description,
+    leitwort: field("leitwort"),
+    intent: field("intent"),
+    mechanism: field("mechanism"),
+    disableModelInvocation: frontmatter["disable-model-invocation"],
+  };
+}
+
 /** Every principle a skill's Markdown links to, deduplicated and sorted. */
 function crossLinks(skillDir, principleDirs) {
   const names = new Set();
@@ -170,6 +184,7 @@ export function inventory(root = REPO, parseFrontmatter) {
       name,
       state,
       neighbours,
+      ...readDeclaration(frontmatter),
       crossLinks: crossLinks(dir, principleDirs),
     });
   }
