@@ -20,7 +20,7 @@ A principle enters or changes by an **admission decision**: the author names the
 - The field lists neighbours only. A handoff ("apply this next") is a different edge and stays in prose.
 - The body's scope statement carries the meaning. A per-neighbour explanation is not stored; the patterns in standards, lint catalogs and legal codes carry a scope and a citation, and the boundary is argued where a case contests it.
 - A contested distinction lives in the admission record, which is this corpus's case law, not in every skill.
-- `neighbours: []` declares that a principle has no neighbour. An absent field is undeclared.
+- `neighbours: []` declares that no neighbour is declared. An absent field is undeclared; a principle the survey finds with no neighbour is recorded on the survey map, not in a different field value.
 
 ## The mechanism
 
@@ -83,7 +83,9 @@ The gate cannot judge whether the named neighbour is the right one, whether the 
 
 ## Remaining work
 
-- The migration is the scope brief's work table: the lever extracts candidate neighbours from the existing prose, the agent proposes the field, and the operator reviews the batch. The baseline shrinks as the fields land.
+The migration this record assumed is withdrawn. The neighbour relation is not decidable per skill: without a case, "neighbour" degrades to "shares a subject", a conflict has no state to be parked in, and unresolved edges propagate into a tangled group. The existing corpus therefore declares `[]`, the baseline is deleted with its `--update`, and the edges are produced by a survey rather than a migration. The survey, its census, the five-card dry run and the full map are on the M3.3.7 task list.
+
+`[]` now means "no neighbour declared". A principle the survey finds with no neighbour is recorded on the survey map, not as a different field value.
 
 ## Evidence
 
