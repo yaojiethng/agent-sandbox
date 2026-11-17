@@ -31,7 +31,7 @@ The full survey over the 25 repo-owned principles. The dry run settled the rule.
 | `match-precision-to-stakes` | Instruction scope | the precision does not match the stakes | name the assumption, gap, undo and reporter | -- |
 | `one-addressing-axis` | Instruction scope | two axes in one list | one axis per presentation | -- |
 | `rewrite-syntax-never-semantics` | Instruction scope | a rewrite changes the meaning | change syntax, raise semantics | -- |
-| `cut-what-serves-nothing` | Instruction scope | a sentence serves another mode | cut it and point at the owner | RT task-holding |
+| `cut-metadiscourse` | Instruction scope | a sentence talks about the prose | cut it whole | RT cut's second rule |
 | `maximize-conceptual-leverage` | Shared domain model | the text has no leitwort | one word, defined once | -- |
 | `align-the-mental-model` | Shared domain model | a word and a thing disagree | one word for one thing | -- |
 | `check-placement` | Check placement | a check runs before its evidence | place it at the input | -- |
@@ -50,7 +50,7 @@ The family is the family aim. The card's `intent` is its specific judgement, and
 | Shared domain model | `define-terminology-before-use`, `align-the-mental-model`, `maximize-conceptual-leverage` | the ambiguous term, the word and thing that disagree, the missing leitwort |
 | The artifact has one authoritative place | Organization: `single-source-of-truth`, `propagation-discipline` | the duplicate copy, the stale carrier |
 | The text carries what the reader can check or act on | Grounding: `show-dont-describe`, `only-derive-what-you-own`, `name-the-value-not-a-literal`, `dont-forecast-undone-work` | the description, the derived value, the literal, the forecast |
-| The instruction means what it says and fits its doer | Instruction scope: `state-intent-delegate-method`, `match-precision-to-stakes`, `one-addressing-axis`, `rewrite-syntax-never-semantics`, `cut-what-serves-nothing`, `say-what-done-looks-like` | the over-specified method, the precision, the axes, the semantics, the purpose, the unstated finish |
+| The instruction means what it says and fits its doer | Instruction scope: `state-intent-delegate-method`, `match-precision-to-stakes`, `one-addressing-axis`, `rewrite-syntax-never-semantics`, `cut-metadiscourse`, `say-what-done-looks-like` | the over-specified method, the precision, the axes, the semantics, the purpose, the unstated finish |
 | The check and its resources are measured | Check placement: `check-placement`, `guard-the-context-window`, `justify-materialization-cost` | the evidence order, the capacity claim, the stored copy |
 | The decision is in the artifact | Landed work: `approval-writes-the-artifact` | the lost decision |
 
@@ -81,7 +81,7 @@ The other families carry no BT umbrella yet. Their cards are RT within the famil
 
 - **Task-holding.** `dont-forecast-undone-work`, `say-what-done-looks-like`, `approval-writes-the-artifact`.
 - **Meticulous execution.** `approval-writes-the-artifact`, `propagation-discipline`.
-- **Cut's second rule.** `cut-what-serves-nothing`, `single-train-of-thought`, `single-source-of-truth`.
+- **Cut's second rule.** `cut-metadiscourse`, `single-train-of-thought`, `single-source-of-truth`.
 
 These are RT edges, not hierarchies, and they are pair-local.
 
@@ -93,7 +93,7 @@ These are RT edges, not hierarchies, and they are pair-local.
 | D4 | the terminology trio | Is the terminology concern one family, or three cards that share a word? | resolved: one family, `shared domain model`, with `define`, `align`, `maximize`; `define` keeps its `correct disclosure` broader term |
 | D5 | the correction trio | Is the correction concern one family, and is `approval-writes-the-artifact` part of it? | resolved: the organization family is `single-source-of-truth` and `propagation-discipline`; `minimal-corrections` is flagged for deletion; `approval` is an RT in Landed work |
 | D6 | the task-holding trio | Is the task-holding concern one family, or three cards that share a task? | resolved: an RT group, not a family; the three share a writing mechanism, and their intents differ: forecast (the just-in-time demand), say-done (dispatch alignment), approval (Landed work, with the note-taking discipline as its intent and meticulous execution as its neighbour) |
-| D7 | `cut-what-serves-nothing` | Does its second rule, the sediment test, split into its own principle? | resolved: split. Part 1 is the organization principle: the Diataxis mode, with the technical concerns not conflated. Part 2 is the writing rule: trim the sediment by managing the amount of metadiscourse. They were combined by the removal-based drafting mechanism, not the aim. Part 1 landed 2026-11-16 as `communication-principle-organize-by-diataxis`; part 2 is the open roadmap row. |
+| D7 | `cut-what-serves-nothing` | Does its second rule, the sediment test, split into its own principle? | resolved: split. Part 1 is the organization principle: the Diataxis mode, with the technical concerns not conflated. Part 2 is the writing rule: trim the sediment by managing the amount of metadiscourse. They were combined by the removal-based drafting mechanism, not the aim. Part 1 landed 2026-11-16 as `communication-principle-organize-by-diataxis`; part 2 landed as `communication-principle-cut-metadiscourse`. |
 | D8 | `keep-a-subject-near` | Does the card carry `colocation` as its leitwort? | resolved: `colocation` is the leitwort; the mechanism is the placement of the parts, and `proximity` names its effect. The co-location organizes within the `information hierarchy`; the umbrella benefit is `findability`, and the failure is `overload`. The roadmap row lands the re-signpost and the name. |
 
 ## Review packet

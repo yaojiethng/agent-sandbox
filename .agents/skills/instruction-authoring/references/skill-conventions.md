@@ -32,7 +32,7 @@ A skill is a `SKILL.md` and the siblings it names, and a sibling the `SKILL.md` 
 
 ## A principle skill
 
-A principle skill carries a judgement, and its body is fixed: a sentence-case title, one sentence stating the judgement, `**The pattern.**`, `**Why.**`, zero or more named parts, and `**The test.**`, in that order.
+A principle skill carries a judgement, and its body is fixed: a sentence-case title, one sentence stating the judgement, a rule part the card names, `**Why.**`, any named parts, and `**The test.**`, in that order. The rule part is the first bold lead-in, and a boundary part may follow the test.
 
 `docs/adr/principle_skill_shape.md` records the decision and `scripts/check_document_shape.sh` holds it, so no copy of the shape is stated here. The artifact and the norm are separate axes: [`docs/reference/terminology.md`](../../../../docs/reference/terminology.md#principle-skill) defines the principle skill, and the same registry's `modality` entry defines the judgement it carries.
 

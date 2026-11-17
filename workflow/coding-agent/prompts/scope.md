@@ -41,7 +41,7 @@ Write the brief to ask for exactly what the four answers describe, and do not pr
 The principle corpus decides how the brief is formed and phrased, and each judgement is linked where the brief must satisfy it, never restated.
 
 - Forming the plan: `principle-model-the-domain`, `principle-subtract-before-you-add`, `principle-never-block-on-the-human`, `principle-match-precision-to-stakes`, `principle-sequence-verifiable-units`.
-- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-what-serves-nothing`, `communication-principle-only-derive-what-you-own`, `communication-principle-show-dont-describe`, `communication-principle-align-the-mental-model`, `communication-principle-attach-as-you-read`, `communication-principle-one-addressing-axis`, `communication-principle-keep-a-subject-near`, `communication-principle-maximize-conceptual-leverage`.
+- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-metadiscourse`, `communication-principle-only-derive-what-you-own`, `communication-principle-show-dont-describe`, `communication-principle-align-the-mental-model`, `communication-principle-attach-as-you-read`, `communication-principle-one-addressing-axis`, `communication-principle-keep-a-subject-near`, `communication-principle-maximize-conceptual-leverage`.
 
 ## The brief's parts
 

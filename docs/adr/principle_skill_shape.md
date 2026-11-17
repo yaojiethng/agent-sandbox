@@ -2,6 +2,12 @@
 
 **Current:** 2026-11-16
 
+## 2026-11-16 -- The principle body gives its parts roles, not fixed labels
+
+**Decision:** The rule part is the first bold lead-in and the card names it. It carries the general rule, whether that rule is a pattern, a test or a principle. `**Why.**` and `**The test.**` keep their labels because they are the rationale and the check. Any named part may follow the rule, and a boundary part may follow the test.
+
+**Rationale:** The literal `**The pattern.**` forced one card's label onto every card. A card whose rule is a deletion test had to call it a pattern, and a card with acceptable and unacceptable examples had to put both under one heading. The labels belong to the card, and the gate checks that the parts exist in a workable order.
+
 ## 2026-11-16 -- A principle records its operator's intent and mechanism
 
 **Decision:** A principle declares `metadata.intent` and `metadata.mechanism`. Both are operator-led: the operator writes them when the skill is created or ratified, and the agent reads them rather than inferring them from the body. `intent` is the judgement the skill serves. `mechanism` is the way that judgement expresses itself, or the specific way the principle exerts influence on the workflow. The admission record that holds the case is the provenance. The five reader-context principles carry the pilot values; the remaining corpus declares the fields as the operator ratifies each skill.

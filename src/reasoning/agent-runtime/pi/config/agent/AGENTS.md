@@ -69,7 +69,7 @@ Before creating any new document, check the project's `AGENTS.md` for the policy
 
 Follow these general communication guidelines for all agent prose. Read the leaf skill in full for any principle you apply. The agent names each entry when it applies.
 
-- [`communication-principle-cut-what-serves-nothing`](./skills/communication-principle-cut-what-serves-nothing/SKILL.md): A document has one purpose -- its Diataxis mode -- and a sentence serving another belongs to the document of that mode.
+- [`communication-principle-cut-metadiscourse`](./skills/communication-principle-cut-metadiscourse/SKILL.md): Cut the prose that talks about the prose, and cut whole rather than trim.
 - [`communication-principle-organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): Organize documentation by the Diataxis mode each unit serves.
 - [`communication-principle-organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): Organize documentation by the Diataxis mode each unit serves.
 - [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md): Write so the reader attaches each phrase as it arrives.

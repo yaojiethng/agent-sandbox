@@ -7,8 +7,8 @@
 #   a conforming principle        --  clean, and the run names the skill count
 #   a `##` heading below the title --  flagged as a part that is not a bold lead-in
 #   a missing `**The test.**`     --  flagged by name
-#   the why before the pattern    --  flagged: the order is fixed
-#   a named part after the test   --  flagged: named parts sit before the test
+#   the why before the rule     --  flagged: the why follows the rule part
+#   a named part after the test   --  allowed: a boundary part follows the test
 #   a title-case title            --  flagged, naming the word
 #   a skill with no `principle-`  --  clean, and its departure is not read
 #   a root with no principle      --  not read; the module tree is what fails closed
@@ -50,9 +50,8 @@ write_skill() {
   printf '%s\n' "$body" > "$root/.agents/skills/$name/SKILL.md"
 }
 
-# conforming BODY -- the six parts, so a case can replace one line of them.
+# conforming -- the six parts, so a case can replace one line of them.
 conforming() {
-  local extra="${1:-}"
   printf '%s' "---
 name: principle-example
 description: \"fixture\"
@@ -66,7 +65,7 @@ State the judgement in one sentence.
 
 **Why.** The wrong form fails silently.
 
-$extra**The test.** Ask the question of the draft."
+**The test.** Ask the question of the draft."
 }
 
 # write_prompt ROOT BODY -- a prompt under the root's own `.agents/prompts`,
@@ -111,25 +110,49 @@ test_missing_test_is_flagged() {
   assert_contains "$GATE_OUT" 'missing `**The test.**`' 'the finding names the missing part'
 }
 
-test_why_before_the_pattern_is_flagged() {
+test_why_before_the_rule_is_flagged() {
   local root
   root="$(make_root order)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^\*\*The pattern\.\*\*.*|**Why.** The wrong form fails silently.\n\n**The pattern.** The wrong form beside the right form.|; s|^\*\*Why\.\*\* The wrong form fails silently\.$||')"
+  write_skill "$root" principle-example "---
+name: principle-example
+description: \"fixture\"
+---
+
+# One example judgement
+
+State the judgement in one sentence.
+
+**Why.** The wrong form fails silently.
+
+**The deletion test.** The wrong form beside the right form.
+
+**The test.** Ask the question of the draft."
   run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'the why before the pattern fails the gate'
-  assert_contains "$GATE_OUT" 'must follow `**The pattern.**`' 'the finding names the order'
+  assert_ne 0 "$GATE_RC" 'the why before the rule fails the gate'
+  assert_contains "$GATE_OUT" 'must follow the rule part' 'the finding names the order'
 }
 
-test_named_part_after_the_test_is_flagged() {
+test_named_part_after_the_test_is_allowed() {
   local root
   root="$(make_root part_after)"
-  write_skill "$root" principle-example "$(conforming '**The test.** Ask the question of the draft.
+  write_skill "$root" principle-example "---
+name: principle-example
+description: \"fixture\"
+---
 
-**Where a rule wins.** A caveat.
-')"
+# One example judgement
+
+State the judgement in one sentence.
+
+**The deletion test.** The rule.
+
+**Why.** The wrong form fails silently.
+
+**The test.** Ask the question of the draft.
+
+**Where a rule wins.** A caveat."
   run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a named part after the test fails the gate'
-  assert_contains "$GATE_OUT" 'a named part belongs between' 'the finding names the placement'
+  assert_eq 0 "$GATE_RC" 'a named part after the test is allowed'
 }
 
 test_title_case_title_is_flagged() {
@@ -215,8 +238,8 @@ run_test test_non_boolean_flag_is_flagged
 run_test test_shipping_document_without_a_reader_is_flagged
 run_test test_heading_below_the_title_is_flagged
 run_test test_missing_test_is_flagged
-run_test test_why_before_the_pattern_is_flagged
-run_test test_named_part_after_the_test_is_flagged
+run_test test_why_before_the_rule_is_flagged
+run_test test_named_part_after_the_test_is_allowed
 run_test test_title_case_title_is_flagged
 run_test test_skill_without_the_name_segment_is_not_read
 run_test test_a_fixture_root_with_no_principle_is_not_read

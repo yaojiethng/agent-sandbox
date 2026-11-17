@@ -6,8 +6,8 @@
 //   1. Every prompt, skill and policy block parses. Pi drops a prompt whose
 //      frontmatter does not parse, with no message in the session.
 //   2. Every skill whose name carries `principle-` carries the corpus shape: a
-//      sentence-case title, `**The pattern.**`, `**Why.**`, any named part, then
-//      `**The test.**`
+//      sentence-case title, a judgement, a rule part the card names, `**Why.**`,
+//      the named parts the card needs, and `**The test.**`
 //
 // Enforces .agents/skills/instruction-authoring/references/skill-conventions.md
 // `## Frontmatter` and `## A judgement skill`, its `prompt-conventions.md`
@@ -220,11 +220,11 @@ for (const file of shippedFiles) {
 // ---------------------------------------------------------------------------
 // A principle carries the corpus shape.
 // ---------------------------------------------------------------------------
-const PATTERN = "**The pattern.**";
 const WHY = "**Why.**";
 const TEST = "**The test.**";
 // A named part carries its label in bold, and the label ends on a period so a
-// reader scanning the file sees the parts as one set.
+// reader scanning the file sees the parts as one set. The first named part
+// before `**Why.**` is the rule part, and the card chooses its label.
 const NAMED_PART = /^\*\*[^*]+\.\*\*/;
 
 /** A title-case word: an uppercase letter opening a word that is not all caps. */
@@ -236,8 +236,9 @@ function inspect(rel, text) {
   const lines = text.split("\n");
   const at = (i) => i + 1;
   const titles = [];
-  let phase = 0; // 0 before the pattern, 1 before the why, 2 between the why and the test, 3 after it
-  const seen = new Set();
+  let ruleSeen = false;
+  let whySeen = false;
+  let testSeen = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -252,29 +253,20 @@ function inspect(rel, text) {
     }
     if (!line.startsWith("**")) continue;
 
-    if (line.startsWith(PATTERN)) {
-      if (seen.has(PATTERN)) out.push({ rel, line: at(i), msg: "a second `**The pattern.**`" });
-      else if (phase > 0) out.push({ rel, line: at(i), msg: "`**The pattern.**` after a part that must follow it" });
-      seen.add(PATTERN);
-      phase = Math.max(phase, 1);
-      continue;
-    }
     if (line.startsWith(WHY)) {
-      if (seen.has(WHY)) out.push({ rel, line: at(i), msg: "a second `**Why.**`" });
-      else if (phase !== 1) out.push({ rel, line: at(i), msg: "`**Why.**` must follow `**The pattern.**`" });
-      seen.add(WHY);
-      phase = Math.max(phase, 2);
+      if (whySeen) out.push({ rel, line: at(i), msg: "a second `**Why.**`" });
+      else if (!ruleSeen) out.push({ rel, line: at(i), msg: "`**Why.**` must follow the rule part" });
+      whySeen = true;
       continue;
     }
     if (line.startsWith(TEST)) {
-      if (seen.has(TEST)) out.push({ rel, line: at(i), msg: "a second `**The test.**`" });
-      else if (phase !== 2) out.push({ rel, line: at(i), msg: "`**The test.**` must follow `**Why.**` and the where parts" });
-      seen.add(TEST);
-      phase = 3;
+      if (testSeen) out.push({ rel, line: at(i), msg: "a second `**The test.**`" });
+      else if (!whySeen) out.push({ rel, line: at(i), msg: "`**The test.**` must follow `**Why.**`" });
+      testSeen = true;
       continue;
     }
     if (NAMED_PART.test(line)) {
-      if (phase !== 2) out.push({ rel, line: at(i), msg: "a named part belongs between `**Why.**` and `**The test.**`" });
+      if (!ruleSeen) ruleSeen = true;
       continue;
     }
     out.push({ rel, line: at(i), msg: "a bold lead-in with no closing period; a part wraps its label as `**Label.**`" });
@@ -291,9 +283,9 @@ function inspect(rel, text) {
       }
     }
   }
-  for (const [part, name] of [[PATTERN, "the pattern"], [WHY, "the why"], [TEST, "the test"]]) {
-    if (!seen.has(part)) out.push({ rel, line: 1, msg: `missing \`${part}\`, ${name}` });
-  }
+  if (!ruleSeen) out.push({ rel, line: 1, msg: "missing a rule part before `**Why.**`" });
+  if (!whySeen) out.push({ rel, line: 1, msg: "missing `**Why.**`" });
+  if (!testSeen) out.push({ rel, line: 1, msg: "missing `**The test.**`" });
   return out;
 }
 
