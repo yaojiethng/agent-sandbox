@@ -33,6 +33,6 @@ Whether to store a generated result is a decision you keep paying for: a materia
 
 **A cache's lifecycle is its scope.** A cache kept past that scope is a bug. A committed cache never had a scope to outlive.
 
-**A value in a sentence is the neighbouring question.** `communication-principle-only-derive-what-you-own` at `$AGENT_HOME/agent/skills/communication-principle-only-derive-what-you-own/SKILL.md` judges a count or a total stated in prose. This one judges the artifact a file stores. The root is shared and the object is not.
+**A value in a sentence is the neighbouring question.** [`communication-principle-only-derive-what-you-own`](../communication-principle-only-derive-what-you-own/SKILL.md) judges a count or a total stated in prose. This one judges the artifact a file stores. The root is shared and the object is not.
 
 **The test.** Look for the cost that materialization avoids: an impossible re-derivation, state the tree cannot hold, or minutes of compute. If none holds, derive it. If one does, materialize it and gate the copy. Then ask what breaks if the copy drifts, and who detects it; if nothing does, the copy is unjustified.

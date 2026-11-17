@@ -47,7 +47,7 @@ Every text is written for the reader who holds it, not for the session that prod
 
 **Fires on.** A sentence whose referent lives in the session: a label, an option letter, a session id, a narration of how the work went, a clause that rebuts a sentence the file no longer contains.
 
-**What it does not cover.** Whether the reader can reach a target: `communication-principle-link-what-the-reader-can-open`. Whether the sentence earns its place at all: `communication-principle-cut-metadiscourse`.
+**What it does not cover.** Whether the reader can reach a target: [`communication-principle-link-what-the-reader-can-open`](../communication-principle-link-what-the-reader-can-open/SKILL.md). Whether the sentence earns its place at all: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md).
 
 **The family.** This is one of the `context disclosure` principles. It shares the `correct disclosure` term with `define-terminology-before-use` and `link-what-the-reader-can-open`, and its remedy is the session context.
 

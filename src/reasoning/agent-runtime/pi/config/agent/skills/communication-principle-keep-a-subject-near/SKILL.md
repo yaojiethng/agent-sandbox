@@ -40,9 +40,9 @@ Nothing reports either failure. Each half reads as complete, and so does each se
 - **Attention.** A section carrying a second subject spends attention nobody asked to spend.
 - **The next edit.** A writer who cannot see the whole subject edits part of it.
 
-**Where another rule wins.** A second copy is a different defect: the rule then has two sources of truth. `principle-single-source-of-truth` owns that defect, at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, and the copy points at the source of truth.
+**Where another rule wins.** A second copy is a different defect: the rule then has two sources of truth. [`principle-single-source-of-truth`](../principle-single-source-of-truth/SKILL.md) owns that defect, and the copy points at the source of truth.
 
-This rule covers the other case: one source of truth whose parts the reader never reaches. One place carrying a second subject is `principle-single-source-of-truth`'s, which owns a unit and the mode its material serves.
+This rule covers the other case: one source of truth whose parts the reader never reaches. One place carrying a second subject is [`principle-single-source-of-truth`](../principle-single-source-of-truth/SKILL.md)'s, which owns a unit and the mode its material serves.
 
 **The family.** This is a neighbour of the `context disclosure` family, not a member. Its remedy, colocation, is a different axis.
 

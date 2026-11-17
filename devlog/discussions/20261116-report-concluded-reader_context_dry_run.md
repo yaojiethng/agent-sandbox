@@ -3,7 +3,6 @@
 **Status:** concluded
 **Date:** 2026-11-16
 **Procedure:** [`.agents/skills/instruction-authoring/references/corpus-survey.md`](../../.agents/skills/instruction-authoring/references/corpus-survey.md)
-**Census:** [`20261116-report-concluded-principle_link_census.md`](20261116-report-concluded-principle_link_census.md)
 
 ## Why this exists
 

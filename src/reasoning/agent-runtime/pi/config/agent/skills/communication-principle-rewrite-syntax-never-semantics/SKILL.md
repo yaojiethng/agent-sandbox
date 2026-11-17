@@ -21,7 +21,7 @@ metadata:
 
 **Fires on.** A rewrite of text a person wrote or approved, by the agent rather than its author, where the meaning must survive.
 
-**What it does not cover.** Whether the rewritten text reads well: the other principles in this corpus. Whether the text belongs where it sits: `principle-single-source-of-truth`.
+**What it does not cover.** Whether the rewritten text reads well: the other principles in this corpus. Whether the text belongs where it sits: [`principle-single-source-of-truth`](../principle-single-source-of-truth/SKILL.md).
 
 The agent may rearrange, join, reorder, restructure, and organize the contents and add headings as general descriptors of the instruction, because none of that moves what the instruction requires. It may not touch the words that decide what is required: the quantifiers, the negations, the modals, the logical connectives, the actors, the conditions, the exceptions, and the keywords the instruction is anchored on.
 

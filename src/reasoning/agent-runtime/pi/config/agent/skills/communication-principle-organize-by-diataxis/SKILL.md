@@ -29,6 +29,6 @@ The questions run on the unit, not on the file. A unit that answers two needs is
 
 **The unit.** A meaning unit (Graneheim and Lundman, 2004) may be a sentence, a paragraph, a section or a document. Units compose into larger ones, and the same test applies at each grain.
 
-**What it does not cover.** Which copy of a subject owns it: `principle-single-source-of-truth`. Whether a unit that serves its mode still carries prose about itself: `communication-principle-cut-metadiscourse`.
+**What it does not cover.** Which copy of a subject owns it: [`principle-single-source-of-truth`](../principle-single-source-of-truth/SKILL.md). Whether a unit that serves its mode still carries prose about itself: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md).
 
 **The test.** Name the unit's central meaning and the need it serves. Name the mode that answers the need, then check that every part serves that one meaning. A part that serves another is its own unit, and it belongs where its mode lives. Apply the test to one unit at a time.

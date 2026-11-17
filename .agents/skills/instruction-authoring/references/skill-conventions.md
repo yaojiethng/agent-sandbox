@@ -54,7 +54,13 @@ The membership of each question is not maintained here. A principle's descriptio
 
 ## Where its references resolve
 
-A skill runs from its own root, so a link is relative to the directory the skill is delivered in: `.agents/skills/<name>/` for a project skill, `$AGENT_HOME/agent/skills/<name>/` for a provider skill. The `linking` convention states the test.
+A skill runs from its own root, so a link is relative to the directory the skill is delivered in: `.agents/skills/<name>/` for a project skill, `$AGENT_HOME/agent/skills/<name>/` for a provider skill. A reference to a sibling skill takes this form, relative to the skill's own directory:
+
+```text
+[`<skill-name>`](../<skill-name>/SKILL.md)
+```
+
+It resolves in the repository and in the installed tree. The `linking` convention states the test.
 
 ## The review
 

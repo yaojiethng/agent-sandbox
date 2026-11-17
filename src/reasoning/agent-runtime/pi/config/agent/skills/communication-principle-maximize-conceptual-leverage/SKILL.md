@@ -32,10 +32,10 @@ Set it only where the body already teaches the word, because a candidate the bod
 
 **Fires on.** A skill or a document that needs a word the reader thinks with, and a draft that spells the concept out in phrases.
 
-**What it does not cover.** Whether a sentence stays at all: `communication-principle-cut-metadiscourse`. Which claim to make: the principle of the domain in hand.
+**What it does not cover.** Whether a sentence stays at all: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md). Which claim to make: the principle of the domain in hand.
 
 **The test.** Read the text. Is there one word the reader will carry away? Does each sentence use it, or add to its definition? A text with two words for one concept, or a concept spelled out in phrases, has not anchored.
 
 New and changed prose in this corpus meets ASD-STE100, and this skill states the rules that meet it. A phrase dictionary is a source for wording, and these rules live here.
 
-A term the reader may not hold is defined at first use, per `communication-principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/communication-principle-define-terminology-before-use/SKILL.md`.
+A term the reader may not hold is defined at first use, per [`communication-principle-define-terminology-before-use`](../communication-principle-define-terminology-before-use/SKILL.md).

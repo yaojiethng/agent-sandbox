@@ -30,7 +30,7 @@ Carry one line of reasoning through the document, and let each sentence advance 
 
 **Fires on.** A second line of reasoning placed beside the first, in a parenthesis or a caveat, or a detour that returns.
 
-**What it does not cover.** A sentence that carries nothing: `communication-principle-cut-metadiscourse`. A word that loses a distinction: `communication-principle-maximize-conceptual-leverage`.
+**What it does not cover.** A sentence that carries nothing: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md). A word that loses a distinction: [`communication-principle-maximize-conceptual-leverage`](../communication-principle-maximize-conceptual-leverage/SKILL.md).
 
 **The family.** This is a neighbour of the `context disclosure` family, not a member. Its remedy, one line of reasoning, is a different axis.
 

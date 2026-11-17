@@ -32,4 +32,4 @@ A sentence in the flow that can be deleted without loss is metadiscourse, and it
 
 **The test.** Delete the sentence. Read the passage without it. Restore it only if the reader loses one of the things above. If none goes, the deletion stands. Cut whole, not trim. Run the test on the flow, not on the signpost.
 
-**What it does not cover.** Which mode a unit serves: `communication-principle-organize-by-diataxis`. A sentence that serves its mode but sits where the reader cannot use it: `communication-principle-single-train-of-thought`. A second copy of one unit: `principle-single-source-of-truth`.
+**What it does not cover.** Which mode a unit serves: [`communication-principle-organize-by-diataxis`](../communication-principle-organize-by-diataxis/SKILL.md). A sentence that serves its mode but sits where the reader cannot use it: [`communication-principle-single-train-of-thought`](../communication-principle-single-train-of-thought/SKILL.md). A second copy of one unit: [`principle-single-source-of-truth`](../principle-single-source-of-truth/SKILL.md).

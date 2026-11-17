@@ -31,7 +31,7 @@ Which of a project's documents fall in each class, and where a handoff link belo
 
 **Fires on.** A pointer, and the one question it settles: whether the reader's copy holds the target.
 
-**What it does not cover.** Whether the reader needs the target or the material itself: `communication-principle-write-for-the-reader`. Where a project files each kind of document: that project's reference convention.
+**What it does not cover.** Whether the reader needs the target or the material itself: [`communication-principle-write-for-the-reader`](../communication-principle-write-for-the-reader/SKILL.md). Where a project files each kind of document: that project's reference convention.
 
 **The family.** This is one of the `context disclosure` principles. It shares the `correct disclosure` term with `define-terminology-before-use` and `write-for-the-reader`, and its remedy is the pointer's target.
 
