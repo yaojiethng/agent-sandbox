@@ -3,11 +3,10 @@
 **Status:** concluded
 **Date:** 2026-11-16
 **Procedure:** [`.agents/skills/instruction-authoring/references/corpus-survey.md`](../../.agents/skills/instruction-authoring/references/corpus-survey.md)
-**Dry run:** [`20261116-report-concluded-reader_context_dry_run.md`](20261116-report-concluded-reader_context_dry_run.md)
 
 ## What this is
 
-The full survey over the 25 repo-owned principles. The dry run settled the rule. Each card has one **root defect**, the trigger, and a **remedy**. The family is the **family aim**, the higher intent the cards serve; the card's `intent` is its specific judgement; the defect is the axis within the family. A card whose remedy lives on the other axis carries an **RT** to that axis. The map is provisional, and the operator's review is its acceptance.
+The full survey over the 25 repo-owned principles. Each card has one **root defect**, the trigger, and a **remedy**. The family is the **family aim**, the higher intent the cards serve; the card's `intent` is its specific judgement; the defect is the axis within the family. A card whose remedy lives on the other axis carries an **RT** to that axis. The map is provisional, and the operator's review is its acceptance.
 
 ## The cards
 

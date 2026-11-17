@@ -26,7 +26,7 @@ Give the reader something to attach each phrase to before the next phrase arrive
 | a condition long enough to bury the main clause | the main clause first, the condition after it |
 | a reading the reader must revise at the sentence end | the reading that holds from the first word |
 
-**Why.** Comprehension is incremental and memory-limited. A hidden actor, an unanchored object, a split main clause, and a late reversal each spend the same limited memory, so the reader pays a cost the writer could have removed. Good-enough processing means the reader stops at a plausible reading rather than the intended one, so a misread arrives as a wrong instruction rather than a stumble.
+**Why.** Comprehension is incremental and memory-limited. The text carries high extraneous load when it cannot be parsed on the first pass, or its reading is ambiguous. The reader spends working memory parsing the text's form rather than its meaning, re-parsing what did not attach and choosing between readings. Reducing the load buys a first-pass attachment, so that memory goes to the instruction and the reading arrives once rather than twice. Good-enough processing makes the failure silent: the reader settles on the plausible reading, so a misread arrives as a wrong instruction rather than a stumble.
 
 **Where another rule wins.** A passive is felicitous when the agent is unknown or the patient is the topic. End-weight puts the heavy constituent last, which can put a short condition first. A longer marked construction can beat a shorter garden path. A verbatim quote keeps its wording.
 
