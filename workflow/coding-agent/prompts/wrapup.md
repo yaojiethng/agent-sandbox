@@ -71,7 +71,7 @@ A table holding only the canonical marker is closed with no work.
 
 ### B8. Settle the ADR entries and retire the records whose work landed
 
-Write the `[CORRECTION]` or `[AMENDMENT]` block the release gate's record check names into each `docs/adr/` entry whose work landed this session. A discussion record is not settled, it is retired: the one whose roadmap row closes here is deleted, and the one an open row takes over is re-pointed rather than deleted, per `.agents/skills/decision-records/SKILL.md`. A document whose recorded work shipped but that stays open after the session is a stale record, so settle it here. A finding the gate missed is `late`, per B4.
+Settle each `docs/adr/` entry whose work landed this session: a content correction is rewritten in place, and a non-content change takes the `[AMENDMENT]` block the release gate's record check names. A discussion record is not settled, it is retired: the one whose roadmap row closes here is deleted, and the one an open row takes over is re-pointed rather than deleted, per `.agents/skills/decision-records/SKILL.md`. A document whose recorded work shipped but that stays open after the session is a stale record, so settle it here. A finding the gate missed is `late`, per B4.
 
 ### B9. Check what the close wrote
 

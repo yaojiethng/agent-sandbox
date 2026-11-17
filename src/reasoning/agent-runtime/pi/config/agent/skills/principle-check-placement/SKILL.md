@@ -28,4 +28,4 @@ A check reads evidence and produces a decision. Put the check where the evidence
 
 **The test.** Name the record the check reads and the gate that owns its decision. If you cannot name both, the check is misplaced.
 
-Related: [`principle-minimal-corrections`](../principle-minimal-corrections/SKILL.md) treats a repair commit as a sign that a check ran too late. `principle-encode-lessons-in-structure` covers the placement a mechanism can detect. `principle-sequence-verifiable-units` sequences the units of work rather than the decisions.
+Related: a repair commit is a sign that a check ran too late. `principle-encode-lessons-in-structure` covers the placement a mechanism can detect. `principle-sequence-verifiable-units` sequences the units of work rather than the decisions.

@@ -21,7 +21,7 @@ First, verify the fold, never assume it. `git rebase --autosquash` reports succe
 
 Second, a correction that changes what kind of commit it is does not fold. If the correction would change the target's type, or would make it need a handover it does not have, it is its own commit with its own iteration and handover. Folding is for a correction that belongs to the commit it names.
 
-Report and stop when the fold needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port, the `prepare` runbook. What may be amended after a close is in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md); which change a correction may contain is the judgement of `principle-minimal-corrections`, and this runbook decides only where it lands.
+Report and stop when the fold needs an interactive rebase with several conflict edits. The cost has moved past an amendment, and the alternative instrument is a port, the `prepare` runbook. What may be amended after a close is in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md); this runbook decides only where it lands.
 
 ## Input contract
 
@@ -123,36 +123,24 @@ A record that states what is true is corrected in place. The changelog, which tr
 
 | Record | Nature | Form |
 |---|---|---|
-| Handover | states what the iteration did | rewrite the paragraph, or reopen and close it again; either way the tag at the end of the corrected section |
+| Handover | states what the iteration did | rewrite the paragraph, or reopen and close it again |
 | Roadmap entry | a task in the live list | edit in place, no marker; a correction that creates work is a new open row |
 | Changelog entry | tracks closed tasks, archived | keep the entry, add the marker, add the successor entry |
-| Discussion record | states reasoning and evidence | rewrite, tag |
-| ADR, concept, architecture, policy | states what the system does | rewrite, tag |
+| Discussion record | states reasoning and evidence | rewrite |
+| ADR, concept, architecture, policy | states what the system does | rewrite |
 
 **Propagation.** A correction inherits the record set of the iteration it corrects: an iteration that changed code, a task description and a handover is corrected in all three, and every closed record among them takes its type's form. A correction that leaves a closed record contradicting its successor is incomplete.
 
 **Archival is not amendment.** Moving a closed milestone's entries from the roadmap to the changelog is a length boundary, not a correction, and carries no marker.
 
-**Two stops bound the work.** A correction that changes the iteration's scope, or that carries new work, is a new iteration. A correction whose edit would carry no marker is a rewrite, and it stops too.
+**A stop bounds the work.** A correction that changes the iteration's scope, or that carries new work, is a new iteration.
 
 ### Procedure
 
 1. Confirm the operator's direction and identify the paragraph or section.
 2. Rewrite the entire affected paragraph, or section, in place. Do not leave an inline marker such as a reference count or a `[see correction below]` label. The rewritten text reads as the record.
-3. Insert the correction tag as a block at the end of the corrected section, immediately before the start of the next section:
-
-```text
----
-[CORRECTION -- YYYY-MM-DD: <one to three lines describing the change and the reason>]
-
----
-```
-
-Keep the blank line before the closing fence. Without it, the tag paragraph parses as a setext heading and the Markdown lint gate reports `MD022`.
-
-4. Order multiple correction tags newest first, oldest last, the way an ADR orders its dated entries.
-5. Do not alter the `status`, the date, or any other frontmatter field in the corrected record. A reopen and re-close cycle is a procedure step, not a record edit: the record ends `Closed`, with the date and metadata it carried before.
-6. **Findings triage.** If the correction surfaces a new finding, route it before the correction is finalised: to the active handover's `## Findings`, to a new roadmap row, or to the document the finding concerns. The correction tag states where the finding was routed.
+3. Do not alter the `status`, the date, or any other frontmatter field in the corrected record. A reopen and re-close cycle is a procedure step, not a record edit: the record ends `Closed`, with the date and metadata it carried before.
+4. **Findings triage.** If the correction surfaces a new finding, route it before the correction is finalised: to the active handover's `## Findings`, to a new roadmap row, or to the document the finding concerns. The record states where the finding was routed.
 
 ### What this is not
 

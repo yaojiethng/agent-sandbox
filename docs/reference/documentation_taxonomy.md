@@ -65,7 +65,7 @@ A record moves through stages. Each stage is a readable summary; the rule that g
 - **Format.** Every `docs/` document opens with the same header block. Rule: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- How a document opens.
 - **Maintain.** A durable record is written for its reader, not for the session that produced it. Judgement: `communication-principle-write-for-the-reader` at `$AGENT_HOME/agent/skills/communication-principle-write-for-the-reader/SKILL.md`. Procedure: the `project-documentation` convention, `.agents/skills/project-documentation/SKILL.md` -- Drafting.
 - **Check.** A record must satisfy the document lint gate to close. Rule: the `doc-maintenance` procedure, `.agents/skills/project-documentation/runbooks/doc-maintenance/SKILL.md` -- The lint rule set.
-- **Correct after close.** A closed record's content does not change; it gains its type's marker. Rule: the `record-correction` procedure, `workflow/coding-agent/prompts/record-correction.md` -- Correcting a record.
+- **Correct after close.** A claim record is rewritten in place; a state record gains its marker and successor. Rule: the `record-correction` procedure, `workflow/coding-agent/prompts/record-correction.md` -- Correcting a record.
 - **Reference a missing document.** A missing document is an error unless its link carries `[REMOVED]`. Rule: the project `AGENTS.md` -- Missing Documents.
 
 ## Promotion topology

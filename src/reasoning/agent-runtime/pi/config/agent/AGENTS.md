@@ -49,8 +49,6 @@ Tools you have access to:
 
 An approval that produces an artifact edits the file that is its source of truth, in the same unit of work, per `principle-approval-writes-the-artifact` at `$AGENT_HOME/agent/skills/principle-approval-writes-the-artifact/SKILL.md`. With version control the write is cheap to undo; a decision held in the conversation cannot be reverted, resumed or checked. A decision kept only in the conversation is re-derived later, and its re-derivation fails no gate.
 
-A fix to work already written lands in the artifact the defect is in and produces no second artifact beside it, naming `principle-minimal-corrections` at `$AGENT_HOME/agent/skills/principle-minimal-corrections/SKILL.md`.
-
 An instruction set stays lean: an edit improves the existing text in place rather than appending clarification beside it. `scripts/report_instruction_growth.sh` measures the growth.
 
 When writing code, always take into account the following:

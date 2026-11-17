@@ -1,17 +1,31 @@
 # Closed Record Corrections
 
-**Current:** 2026-10-28
+**Current:** 2026-11-17
 
 ## Requirements
 
 | # | Requirement | Meaning |
 |---|---|---|
 | R1 | State consistency | a closed record ends closed, whatever path the correction took |
-| R2 | The marker | no closed record's content changes without its type's marker |
+| R2 | The marker | a state record's content changes only under its marker and successor; a claim record is corrected in place |
 | R3 | The successor entry | a record that tracks state gains the entry that carries the correction |
 | R4 | Propagation | a correction inherits the record set of the unit it corrects |
 | R5 | Operator direction | the agent folds a correction to its own commit while that session is live, and applies one only at the operator's direction after it has ended |
 | R6 | The fold | corrected content rides the unit's own commit, folded, so the history reads as if it had always been that way |
+
+## 2026-11-17 -- The correction tag is dropped with the minimal-corrections principle
+
+**Decision:** The `[CORRECTION]` tag is dropped. A closed claim record is corrected by rewriting it in place, with no block at the end of the section. The state record keeps its form: the changelog entry gains its marker and its successor, and the roadmap row is edited in place. `principle-minimal-corrections` is deleted and its content rule is not replaced; R2 narrows to the state-record marker. R1, R3, R4, R5 and R6 stand.
+
+**Rationale:** The tag was the card's only row without another carrier. Each other row is already the fold (`git-discipline`), the check's placement (`principle-check-placement`), the rule's strength (`principle-match-precision-to-stakes`), the record (`work-log`) or the artifact count (`single-source-of-truth`, `propagation-discipline`). The tag added a block per correction and a composition procedure for it, and the operator judged the admin churn worth less than the signal. The state-record marker is a different form: it belongs to the changelog's archive and to the roadmap's live list, and dropping it would collapse two record kinds.
+
+**Rejected alternatives:**
+
+- *Keep the tag for handovers only* -- intent failure. The handover is a session record, and its `## Completed` table already carries what changed; the block restated it.
+- *Move the tag to a list of permitted forms* -- execution failure. It keeps the composition procedure and the per-correction block, which is the churn the drop removes.
+- *Keep the card as a content rule without the tag* -- intent failure. The remaining rows are carried elsewhere, so the card would restate them.
+
+**Edge cases / drivers:** Existing `[CORRECTION]` tags stay as history; this record's own 2026-10-26 tag and the tags in `coding_agent_loop_workflow.md` and `lint_gate_exit_codes.md` are not rewritten. The `[AMENDMENT]` block stays for a non-content change. The claim-record entries of 2026-09-27, 2026-10-18 and 2026-10-19 are historical for the claim form; their state-record and fold content still stands. A correction that changes the iteration's scope or carries new work is a new iteration, which is the one stop the procedure keeps.
 
 ## 2026-10-28 -- The marker is the changelog's; the roadmap is edited in place
 

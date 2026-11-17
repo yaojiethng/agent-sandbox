@@ -29,7 +29,7 @@ The gate checks the frontmatter fields and the body section set over the named f
 
 An anomaly the gate reports as a missing section falls into one of two categories, and the finding names which:
 
-- **Replaceable one to one.** The heading has a canonical equivalent that differs only in casing. The fix is a heading replacement plus a `[CORRECTION]` block.
+- **Replaceable one to one.** The heading has a canonical equivalent that differs only in casing. The fix is a heading replacement.
 - **Not replaceable one to one.** The heading carries custom content with no canonical equivalent. The fix is an `[AMENDMENT]` block, leaving the content unchanged.
 
 A section that is present but empty carries its canonical marker, and one that does not is an anomaly of the first category.
@@ -64,7 +64,7 @@ For each function or variable named, grep the codebase to confirm it still exist
 
 Where a finding is a correction to a closed record, the report states the form the fix must take, and the fix carries it. The procedure that applies a correction is [`record-correction`](/opt/workflow/agent/modules/coding-agent/prompts/record-correction.md); the forms are:
 
-- A **misrecording** gets the paragraph rewritten in place and the tag moved to a `[CORRECTION -- YYYY-MM-DD: ...]` block at the end of the corrected section.
+- A **misrecording** gets the paragraph rewritten in place; no tag.
 - A non-standard format or a policy violation that cannot be corrected cleanly gets an `[AMENDMENT -- YYYY-MM-DD: ...]` block, leaving the content unchanged.
 - An abandoned or superseded **changelog** entry gets `[REMOVED in MX.X]`; a closed **roadmap** row is edited in place, and a correction that creates work is a new open row.
 
@@ -77,6 +77,6 @@ Report every finding for every handover in scope in your reply. A check that pro
 ## Failure modes
 
 - **A dropped deferred item reads as resolved.** Step 3 exists because an item can vanish from the chain silently. Older handovers carried deferred items in sections now removed; read the roadmap rows the items were written back to before concluding an item was resolved.
-- **A reported correction loses its form.** A finding that names a fix without naming the `[CORRECTION]` or `[AMENDMENT]` form leaves the caller to invent one, and the closed record's history is rewritten without a block that says what changed and why. Name the form.
+- **A reported correction loses its form.** A finding that names a fix without saying whether it is an in-place rewrite or an `[AMENDMENT]` block leaves the caller to invent one, and the closed record's history is rewritten without a note of what changed and why. Name the form.
 - **A case-only header repair loses content.** Confirm a header differs only in casing before reporting it replaceable. A header with custom content is not replaceable one to one.
 - **A skipped check reported as silence.** A run that reports no skip for a check it did not run reads as a clean chain. Report the skip.
