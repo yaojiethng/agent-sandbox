@@ -22,6 +22,8 @@ The value is a boolean and the frontmatter gate holds it. A hidden skill's descr
 
 A principle skill also declares `metadata: neighbours:`, a list of the full skill names of the principles whose judgements it touches. `[]` states that no neighbour is declared; a principle the corpus survey finds with no neighbour is recorded on the survey map. An absent field is undeclared, which the gate fails. The list holds neighbours only, and a handoff ("apply this next") is prose. [`../patterns/admission.md`](../patterns/admission.md) decides the list; `scripts/check_principle_neighbours.sh` holds presence and liveness.
 
+A principle also declares `metadata: intent:` and `metadata: mechanism:`. Both are operator-led: they record the judgement the operator made when the skill was created or ratified, and the agent reads them rather than inferring them. `intent` states the judgement the skill serves. `mechanism` states the way that judgement expresses itself, or the specific way the principle exerts influence on the workflow. The admission record that holds the case is the provenance. The legacy corpus declares the fields as the operator ratifies each skill; until then the survey map carries a provisional value.
+
 ## The body
 
 No fixed section order is mandated. `writing-for-agents` gives the two content types, steps and reference, and the split a document earns.

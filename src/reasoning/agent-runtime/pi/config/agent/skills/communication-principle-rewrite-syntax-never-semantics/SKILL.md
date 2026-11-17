@@ -1,6 +1,6 @@
 ---
 name: communication-principle-rewrite-syntax-never-semantics
-description: "Apply when an agent rewrites, tightens, reorders or merges instruction text a person wrote or approved. Syntax may change; the quantifiers, negations, modals and keywords that decide what is required may not."
+description: "Apply when an agent rewrites, tightens, reorders or merges text a person wrote or approved. Syntax may change; the quantifiers, negations, modals and keywords that decide what is required may not. A disagreement names the clause, the apparent requirement and the alternative, then waits for the ruling."
 metadata:
   neighbours: []
 ---
@@ -15,9 +15,9 @@ metadata:
 
 **Why.** The goal is to avoid drift from accepting unreviewed rewrites. Where a wording already leads to a form of evaluation we like, carry it unchanged: a gratuitous reflow is likely to break that evaluation.
 
-**Disagreement.** A rewrite is not the place to correct the author. When the rewriter judges that a clause is wrong, unclear or suboptimal, the judgement is raised to the author rather than applied: state the clause, what it appears to require, the alternative the rewriter would prefer as a suggestion under the raise, and wait for the author's ruling. A keyword believed to name the wrong concept, a condition that looks over-broad, a misspelling inside a protected word, and an ambiguity the rewriter can resolve but the author has not are each this case.
+**Disagreement.** A rewrite is not the place to correct the author. When the rewriter judges that a clause is wrong, unclear or suboptimal, raise it to the author rather than apply it: state the clause, what it appears to require, and the alternative, then wait for the ruling. Nothing changes until the ruling. A keyword believed to name the wrong concept, a condition that looks over-broad, a misspelling inside a protected word, and an ambiguity the rewriter can resolve but the author has not are each this case.
 
-**Fires on.** A rewrite of instruction text, by the agent rather than by its author, where the meaning must survive.
+**Fires on.** A rewrite of text a person wrote or approved, by the agent rather than its author, where the meaning must survive.
 
 **What it does not cover.** Whether the rewritten text reads well: the other principles in this corpus. Whether the text belongs where it sits: `principle-single-source-of-truth`.
 

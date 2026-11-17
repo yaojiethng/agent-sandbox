@@ -2,6 +2,21 @@
 
 **Current:** 2026-11-16
 
+## 2026-11-16 -- A principle records its operator's intent and mechanism
+
+**Decision:** A principle declares `metadata.intent` and `metadata.mechanism`. Both are operator-led: the operator writes them when the skill is created or ratified, and the agent reads them rather than inferring them from the body. `intent` is the judgement the skill serves. `mechanism` is the way that judgement expresses itself, or the specific way the principle exerts influence on the workflow. The admission record that holds the case is the provenance. The five reader-context principles carry the pilot values; the remaining corpus declares the fields as the operator ratifies each skill.
+
+**Rationale:** The intent is obvious to the operator and not to the agent, and the agent re-derives it wrong when it categorizes the corpus. The judgement is expensive to get back after the fact, because it lives in the admission conversation and the body's prose. Recording it at creation is cheap, and it gives the label a provenance. The field differs from the removed `metadata.claim`, which was agent-led: here the operator authors the value, so the field records a decision rather than a categorization the agent guessed.
+
+**Rejected alternatives:**
+
+- *An agent-derived label from the body.* **Intent failure**: it repeats `metadata.claim`, which was removed because the agent's categorization had no gate and drifted.
+- *A prose section in the survey report.* **Execution failure**: it is a second source, and the agent reads the skill's frontmatter before the report.
+- *A gate that validates the value.* **Neither**: the gate can check presence and provenance, not whether the intent is right; that judgement is the operator's.
+- *A third field for provenance.* **Execution failure**: the admission record already holds the case, and a second pointer drifts.
+
+**Edge cases / drivers:** `write-for-the-reader` and `link-what-the-reader-can-open` carry the same intent and differ in mechanism, so the intent is a family and the mechanism is the axis. The mechanism's name is qualified: a task's `Mechanism:` names its delivery mode, and this field names how the judgement exerts influence; the two are read in their own context. `single-train-of-thought` carries its own intent and is a neighbour of the context family, not a member. The legacy corpus has no recorded judgement, so its values are ratified by the operator; the survey map's provisional value is not the field. An absent field means the operator has not ratified the skill yet, not that it declares nothing.
+
 ## 2026-11-16 -- The corpus declares no neighbour, and the gate holds without a baseline
 
 **Decision:** Every principle carries `metadata.neighbours`, and a missing field fails the gate. The existing corpus declares `[]`, meaning "no neighbour declared"; "surveyed, none" is carried by the survey map, not by a third field value. The baseline and the gate's `--update` are deleted. The gate's remaining rules are presence and liveness: a declared name resolves, and a duplicate, a self name or a malformed value fails.

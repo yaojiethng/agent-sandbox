@@ -78,7 +78,7 @@ Follow these general communication guidelines for all agent prose. Read the leaf
 - [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): Print one addressing axis per presentation.
 - [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): Choose the word that carries the most distinction and loses none.
 - [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md): Give every word one meaning and every thing one word.
-- [`communication-principle-rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md): Syntax is the agent's; semantics is the operator's. A rewrite may rearrange, join, reorder, restructure and relabel, and it may not touch the words that decide what is required.
+- [`communication-principle-rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md): Syntax is the agent's; semantics is the operator's. Rearrange, join, reorder, restructure and relabel; do not touch the words that decide what is required, and do not edit the author's wording silently: name the issue, offer the alternatives and wait.
 - [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): Carry one line of reasoning through the document.
 - [`communication-principle-state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): When writing or dispatching instructions, state the intent and leave the route to the doer.
 

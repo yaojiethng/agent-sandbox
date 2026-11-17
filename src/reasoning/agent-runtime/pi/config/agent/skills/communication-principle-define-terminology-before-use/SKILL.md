@@ -2,6 +2,8 @@
 name: communication-principle-define-terminology-before-use
 description: "Apply before the work relies on a word whose meaning the reader has to supply: the word can carry two meanings, it arrives from another field, or the repository states no definition for it."
 metadata:
+  intent: "To establish the domain model and align shared understanding; to define important terms before the work relies on it."
+  mechanism: "Prose structure. The definition is critical reference material that needs to be established before anything else builds on it, in a manner where the reader of the work will always be able to access the definition."
   neighbours: []
 ---
 

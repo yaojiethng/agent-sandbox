@@ -147,6 +147,8 @@ The confirmed Pass 1 shape supersedes the `progressive context disclosure` premi
 
 The families table above is the rejected first cut. It is kept as the record of what was rejected, not as the map. The dry run's model was family equals intent, with the defect as the axis within the family; the full map made the defect the family, and the intent was lost.
 
+Pass 2's replacement is now materialized. The five reader-context skills carry the operator's `metadata.intent` and `metadata.mechanism`, and the convention and shape record state the rule. `write-for-the-reader` and `link-what-the-reader-can-open` share the intent and differ in the mechanism, so the intent is the family and the mechanism is the axis. The remaining 20 await the operator's ratification.
+
 ### Settled, provisional, not decided
 
 Settled by the dry run: the root-defect rule, the RT rule, and the context cluster's two-axis model. Provisional: the six family boundaries and the cross-family RT groups. Not decided: the field values, the cluster rewrite, the link normalisation.

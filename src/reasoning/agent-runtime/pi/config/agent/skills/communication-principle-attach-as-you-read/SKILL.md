@@ -2,6 +2,8 @@
 name: communication-principle-attach-as-you-read
 description: "Apply to a sentence that has to be re-read: its actor is hidden, a clause arrives before the reader can attach it, or the reader must hold material in memory to finish it."
 metadata:
+  intent: "Establish a context disclosure rule that ensures the reader can always build on existing context to incorporate new information."
+  mechanism: "Sentence structure and clause ordering, so each phrase attaches to structure already built."
   neighbours: []
 ---
 

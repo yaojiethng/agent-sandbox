@@ -2,6 +2,8 @@
 name: communication-principle-write-for-the-reader
 description: "Apply when writing or revising prose: a chat label, an option letter, a session id, a narration of the work, or a clause answering text the file no longer holds. State the thing the reader holds."
 metadata:
+  intent: "The text is written with the reader's context in mind; it does not reference context the reader does not have."
+  mechanism: "Discipline around list bullets, referents and avoiding transient references. Prefer referents to persistent records."
   neighbours: []
 ---
 

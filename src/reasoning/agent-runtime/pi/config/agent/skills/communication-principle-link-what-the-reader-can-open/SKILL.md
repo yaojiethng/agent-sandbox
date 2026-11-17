@@ -2,6 +2,8 @@
 name: communication-principle-link-what-the-reader-can-open
 description: "Apply to a pointer: a sentence naming material the reader must reach. It claims the target is reachable where the citing text is read, so link what that reader can open and name what they cannot."
 metadata:
+  intent: "The text is written with the reader's context in mind; it does not reference context the reader does not have."
+  mechanism: "Discipline around links, references and records. Prefer links to files the reader has access to."
   neighbours: []
 ---
 
