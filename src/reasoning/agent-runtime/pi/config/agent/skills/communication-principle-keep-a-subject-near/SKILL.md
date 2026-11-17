@@ -3,7 +3,12 @@ name: communication-principle-keep-a-subject-near
 description: "Apply when writing or revising a text: a caveat at the far end, a definition below its first use, a section split so its subject leaves the screen, or a section carrying a second subject. Keep them close by proximity, so one read meets the whole rule."
 metadata:
   leitwort: proximity
-  neighbours: []
+  neighbours:
+    - communication-principle-define-terminology-before-use
+    - communication-principle-write-for-the-reader
+    - communication-principle-link-what-the-reader-can-open
+    - communication-principle-attach-as-you-read
+    - communication-principle-single-train-of-thought
 ---
 
 # Keep a subject near
@@ -34,5 +39,7 @@ Nothing reports either failure. Each half reads as complete, and so does each se
 **Where another rule wins.** A second copy is a different defect: the rule then has two sources of truth. `principle-single-source-of-truth` owns that defect, at `$AGENT_HOME/agent/skills/principle-single-source-of-truth/SKILL.md`, and the copy points at the source of truth.
 
 This rule covers the other case: one source of truth whose parts the reader never reaches. One place carrying a second subject is `principle-single-source-of-truth`'s, which owns a unit and the mode its material serves.
+
+**The family.** This is a neighbour of the `context disclosure` family, not a member. Its remedy, colocation, is a different axis.
 
 **The test.** Read the document in the order it is written. At each caveat, ask whether the reader still holds the rule it qualifies. At each section, ask what one subject it serves. A caveat that reaches back further than one section means the parts are apart. A section that serves two subjects means one of them belongs elsewhere.

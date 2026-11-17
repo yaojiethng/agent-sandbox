@@ -4,7 +4,12 @@ description: "Apply to a sentence that has to be re-read: its actor is hidden, a
 metadata:
   intent: "Establish a context disclosure rule that ensures the reader can always build on existing context to incorporate new information."
   mechanism: "Sentence structure and clause ordering, so each phrase attaches to structure already built."
-  neighbours: []
+  neighbours:
+    - communication-principle-define-terminology-before-use
+    - communication-principle-write-for-the-reader
+    - communication-principle-link-what-the-reader-can-open
+    - communication-principle-single-train-of-thought
+    - communication-principle-keep-a-subject-near
 ---
 
 # Attach as you read
@@ -26,6 +31,8 @@ Give the reader something to attach each phrase to before the next phrase arrive
 **Where another rule wins.** A passive is felicitous when the agent is unknown or the patient is the topic. End-weight puts the heavy constituent last, which can put a short condition first. A longer marked construction can beat a shorter garden path. A verbatim quote keeps its wording.
 
 Where the word itself needs a definition, settle it first at `communication-principle-define-terminology-before-use` at `$AGENT_HOME/agent/skills/communication-principle-define-terminology-before-use/SKILL.md`, then place it here.
+
+**The family.** This is one of the `context disclosure` principles, in the `sentence context` term. Its remedy is the sentence's order.
 
 **The test.** Read the sentence left to right, and ask at each phrase whether it can attach to structure already built. Rewrite the sentence if the reader must do any of three things:
 

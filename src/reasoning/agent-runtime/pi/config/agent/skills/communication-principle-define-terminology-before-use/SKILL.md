@@ -4,7 +4,12 @@ description: "Apply before the work relies on a word whose meaning the reader ha
 metadata:
   intent: "To establish the domain model and align shared understanding; to define important terms before the work relies on it."
   mechanism: "Prose structure. The definition is critical reference material that needs to be established before anything else builds on it, in a manner where the reader of the work will always be able to access the definition."
-  neighbours: []
+  neighbours:
+    - communication-principle-write-for-the-reader
+    - communication-principle-link-what-the-reader-can-open
+    - communication-principle-attach-as-you-read
+    - communication-principle-single-train-of-thought
+    - communication-principle-keep-a-subject-near
 ---
 
 # Define terminology before use
@@ -22,5 +27,7 @@ A definition stated once and pointed at from every use keeps the term attached w
 **Why.** An overloaded term reads normally. Nothing in the sentence marks it, so the second meaning arrives without a signal, and two readers proceed on two definitions. The cost arrives later, where the two meanings have already driven different decisions.
 
 **What it does not cover.** What to call a thing, which is naming rather than definition. A word with one settled meaning, which needs nothing. And which things the domain contains, which is a design question the work answers, not a writing rule.
+
+**The family.** This is one of the `context disclosure` principles. It shares the `correct disclosure` term with `write-for-the-reader` and `link-what-the-reader-can-open`, and its remedy is the definition.
 
 **The test.** Point at the definition of each term the sentence relies on. A definition in the reader's head, or one inherited from a neighbouring field, is not one here. Where a term names two things, count the names: one name with two meanings is two terms waiting to be split.

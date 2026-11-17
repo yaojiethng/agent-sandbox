@@ -4,7 +4,12 @@ description: "Apply to a pointer: a sentence naming material the reader must rea
 metadata:
   intent: "The text is written with the reader's context in mind; it does not reference context the reader does not have."
   mechanism: "Discipline around links, references and records. Prefer links to files the reader has access to."
-  neighbours: []
+  neighbours:
+    - communication-principle-define-terminology-before-use
+    - communication-principle-write-for-the-reader
+    - communication-principle-attach-as-you-read
+    - communication-principle-single-train-of-thought
+    - communication-principle-keep-a-subject-near
 ---
 
 # Link what the reader can open
@@ -27,5 +32,7 @@ Which of a project's documents fall in each class, and where a handoff link belo
 **Fires on.** A pointer, and the one question it settles: whether the reader's copy holds the target.
 
 **What it does not cover.** Whether the reader needs the target or the material itself: `communication-principle-write-for-the-reader`. Where a project files each kind of document: that project's reference convention.
+
+**The family.** This is one of the `context disclosure` principles. It shares the `correct disclosure` term with `define-terminology-before-use` and `write-for-the-reader`, and its remedy is the pointer's target.
 
 **The test.** Name the reader, then name where they read the text. For each pointer, does the target exist there? Where it does not, is the pointer a name rather than a link, and does the sentence say what to do instead?

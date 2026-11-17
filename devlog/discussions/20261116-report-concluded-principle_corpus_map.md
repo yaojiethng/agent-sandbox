@@ -69,7 +69,7 @@ Kept as the record of what was rejected. The first cut keyed the family on the r
 
 ## The edges
 
-The only clear BT hierarchy is the reader-context cluster. `context disclosure` is the BT of `correct disclosure` and `sentence context`. The context cards are NTs under the BT; the root defect is the axis within the family, and the remedy axis carries the RT.
+The only clear BT hierarchy is the reader-context cluster. `context disclosure` is the BT of `correct disclosure` and `sentence context`. The context cards are NTs under the BT; the root defect is the axis within the family, and the remedy axis carries the RT. Landed on 2026-11-16: the six skills name `context disclosure` in the body and declare the other five in `metadata.neighbours`. The field carries adjacency; the kinds stay on this map.
 
 The document-load concern is `information hierarchy`. The context load is retrieval. Its failure is `overload`, its benefit is `findability`, and its moves are `progressive disclosure` (the ladder), `co-location` (the within), and `SSOT` (the source). The cognitive load is reasoning. Its failure is `extraneous load`, and its moves are the clarity rules. The cards keep `colocation` and `SSOT`; `findability` is the umbrella benefit. The [`writing-for-agents`](../../src/reasoning/agent/skills/writing-for-agents/SKILL.md) meta-skill holds the ladder, so the map records the concern rather than a card. The load-level terms are the umbrella's; a new principle that claims one defines it in its own body. The definitions follow Sweller's cognitive-load theory (1988, 1998, 2019) and the retrieval literature (information overload, Eppler and Mengis; information foraging, Pirolli and Card; findability, Rosenfeld and Morville).
 
