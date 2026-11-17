@@ -66,6 +66,6 @@ Out of scope: the remaining 20 values, the gate that holds presence, and the sur
 | `docs/adr/principle_skill_shape.md` | Records the decision, the rationale, the alternatives and the edge cases. |
 | `src/reasoning/agent-runtime/pi/config/agent/AGENTS.md` | Names the raise-and-wait rule in the rewrite-syntax entry. |
 | `src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md` | Widens the scope to text a person wrote or approved and makes the disagreement method imperative. |
-| `devlog/discussions/20261116-report-open-principle_corpus_map.md` | Notes the pilot values and the shared-intent finding. |
+| `devlog/discussions/20261116-report-concluded-principle_corpus_map.md` | Notes the pilot values and the shared-intent finding. |
 | `devlog/roadmap.md` | Adds the field row, open for the remaining 20. |
 | `devlog/handovers/M3.3.7/20261116-13-impl-principle_intent_mechanism_fields.md` | This record. |

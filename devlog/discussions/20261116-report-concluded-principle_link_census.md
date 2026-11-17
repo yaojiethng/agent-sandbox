@@ -1,6 +1,6 @@
 # The principle cross-references, censused
 
-**Status:** open
+**Status:** concluded
 **Date:** 2026-11-16
 **Instrument:** `.scratchpad/census.mjs`, throwaway; it reads the 25 principle `SKILL.md` files under `src/reasoning/agent-runtime/pi/config/agent/skills/` and prints one row per cross-reference.
 
