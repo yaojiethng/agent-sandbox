@@ -1,6 +1,8 @@
 ---
 name: communication-principle-define-terminology-before-use
 description: "Apply before the work relies on a word whose meaning the reader has to supply: the word can carry two meanings, it arrives from another field, or the repository states no definition for it."
+metadata:
+  neighbours: []
 ---
 
 # Define terminology before use

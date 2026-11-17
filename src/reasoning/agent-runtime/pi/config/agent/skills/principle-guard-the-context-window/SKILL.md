@@ -1,6 +1,8 @@
 ---
 name: principle-guard-the-context-window
 description: "Apply when routing bulk work, planning a multi-file pass, or before stating how much room is left. Measure the window, route bulk out, and name the unit each pass counts."
+metadata:
+  neighbours: []
 ---
 
 # Guard the context window

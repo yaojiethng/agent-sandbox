@@ -1,6 +1,8 @@
 ---
 name: principle-match-precision-to-stakes
 description: Apply when an instruction could be followed wrongly without anything reporting it. Set its precision by the assumption it rests on, how far a wrong move reaches, whether the move can be undone, and what reports it.
+metadata:
+  neighbours: []
 ---
 
 # Match precision to stakes

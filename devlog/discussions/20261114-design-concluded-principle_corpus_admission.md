@@ -31,10 +31,10 @@ A principle enters or changes by an **admission decision**: the author names the
 The gate checks liveness and presence:
 
 - every declared name resolves to a live principle skill;
-- every principle carries the field or is named in a baseline;
-- the baseline holds the existing principle skills and must only shrink: the gate fails if a baseline entry now carries the field and the baseline is not updated.
+- every principle carries the field;
+- a duplicate, a self name or a malformed value fails;
 
-The baseline makes the check enforceable before the migration completes. It is a gated copy, not a registry: its only consumer is the gate, and the gate forces it to shrink.
+The baseline made the check enforceable before the existing-skill migration. The migration was withdrawn and the baseline is deleted; every principle now carries the field, and the existing corpus declares `[]`.
 
 ## The replay set
 
@@ -78,7 +78,7 @@ The gate cannot judge whether the named neighbour is the right one, whether the 
 - **Any Markdown link as the edge.** Intent failure: it conflates handoffs with neighbours, so orphanhood becomes a false proxy.
 - **A canonical neighbour body part.** **Neither**: it is correct and keeps one carrier, but the operator chose a machine index independent of prose. The body part would put the machine edge in text the lever parses and give up the field's explicit shape.
 - **Reciprocity.** Intent failure: it forces a link into the neighbour for every one-way distinction, manufacturing edges to satisfy the gate.
-- **No baseline; gate the corpus at once.** Execution failure: it forces a full semantic review before the gate can land.
+- **No baseline; gate the corpus at once.** **Execution failure**: it forces a full semantic review before the gate can land. Superseded 2026-11-16: the corpus declares `[]`, so the gate lands without the review and the baseline is deleted.
 - **An eval of model categorization.** Intent failure: nondeterministic under the current infrastructure, and it measures the model rather than the mechanism.
 
 ## Remaining work

@@ -1,6 +1,8 @@
 ---
 name: communication-principle-single-train-of-thought
 description: "Apply when writing or revising text: a parenthesis, a caveat, a detour, or a summary that adds a claim the body never made carries two lines of reasoning at once. Carry one line, and let each sentence advance it."
+metadata:
+  neighbours: []
 ---
 
 # Keep to a single train of thought

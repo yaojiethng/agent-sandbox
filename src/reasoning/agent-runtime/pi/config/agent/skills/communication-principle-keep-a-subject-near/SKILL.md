@@ -3,6 +3,7 @@ name: communication-principle-keep-a-subject-near
 description: "Apply when writing or revising a text: a caveat at the far end, a definition below its first use, a section split so its subject leaves the screen, or a section carrying a second subject. Keep them close by proximity, so one read meets the whole rule."
 metadata:
   leitwort: proximity
+  neighbours: []
 ---
 
 # Keep a subject near

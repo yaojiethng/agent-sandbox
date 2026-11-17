@@ -3,6 +3,7 @@ name: principle-single-source-of-truth
 description: "Apply when work or text is being divided into parts, or when two places seem to carry the same material: one subject in one mode has one source of truth."
 metadata:
   leitwort: SSOT
+  neighbours: []
 ---
 
 # Single source of truth

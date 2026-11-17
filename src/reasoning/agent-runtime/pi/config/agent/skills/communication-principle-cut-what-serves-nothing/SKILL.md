@@ -3,6 +3,7 @@ name: communication-principle-cut-what-serves-nothing
 description: "Apply when writing or revising prose, or after a removal pass: a sentence serving another document's purpose, or a passage announcing its claim, stating it, then restating it. A document's purpose is its Diataxis mode; keep what serves this one, cut the rest."
 metadata:
   leitwort: sediment
+  neighbours: []
 ---
 
 # Cut what serves nothing

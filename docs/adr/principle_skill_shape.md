@@ -1,6 +1,20 @@
 # Principle Skill Shape
 
-**Current:** 2026-11-14
+**Current:** 2026-11-16
+
+## 2026-11-16 -- The corpus declares no neighbour, and the gate holds without a baseline
+
+**Decision:** Every principle carries `metadata.neighbours`, and a missing field fails the gate. The existing corpus declares `[]`, meaning "no neighbour declared"; "surveyed, none" is carried by the survey map, not by a third field value. The baseline and the gate's `--update` are deleted. The gate's remaining rules are presence and liveness: a declared name resolves, and a duplicate, a self name or a malformed value fails.
+
+**Rationale:** The migration the baseline served was withdrawn. Without a case, the neighbour relation is not decidable per skill: "neighbour" degrades to "shares a subject", a conflict has no state to be parked in, and unresolved edges propagate into a tangled group. The existing corpus cannot declare real neighbours before the survey, so `[]` is the honest declaration. The baseline's only purpose was the pre-migration corpus, so it has nothing left to hold.
+
+**Rejected alternatives:**
+
+- *Keep the baseline as a permanent exception list.* **Intent failure**: it hides a missing field indefinitely, and the gate's presence rule becomes unenforceable for the corpus it covers.
+- *Delay the gate until the survey fills the fields.* **Execution failure**: it blocks the gate on a survey that may produce a map rather than edges, and the presence check works today.
+- *Give the field a third value for "not surveyed".* **Neither**: a third state needs a gate, a reader and a migration of its own; the survey map carries the distinction with no schema change.
+
+**Edge cases / drivers:** `[]` means "no neighbour declared", not "has no neighbour". A principle the survey finds with no neighbour is recorded on the survey map. The gate reads the repo-owned provider root; `$AGENT_HOME` carries extras and stale duplicates. The gate cannot judge whether a named neighbour is the right one; that is the admission decision.
 
 ## 2026-11-14 -- A principle declares its neighbours, and admission is by case
 

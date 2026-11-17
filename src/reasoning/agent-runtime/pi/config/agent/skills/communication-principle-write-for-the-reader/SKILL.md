@@ -1,6 +1,8 @@
 ---
 name: communication-principle-write-for-the-reader
 description: "Apply when writing or revising prose: a chat label, an option letter, a session id, a narration of the work, or a clause answering text the file no longer holds. State the thing the reader holds."
+metadata:
+  neighbours: []
 ---
 
 # Write for the reader

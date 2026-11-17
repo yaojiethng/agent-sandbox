@@ -1,6 +1,8 @@
 ---
 name: principle-check-placement
 description: "A check reads evidence and produces a decision. Apply when placing, moving or adding a check, a verification step or an audit. Put it where its evidence first exists and where its decision is cheapest to take."
+metadata:
+  neighbours: []
 ---
 
 # Place the check at its input
