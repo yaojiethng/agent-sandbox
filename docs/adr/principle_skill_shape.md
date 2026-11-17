@@ -14,7 +14,7 @@
 - *Delay the gate until the survey fills the fields.* **Execution failure**: it blocks the gate on a survey that may produce a map rather than edges, and the presence check works today.
 - *Give the field a third value for "not surveyed".* **Neither**: a third state needs a gate, a reader and a migration of its own; the survey map carries the distinction with no schema change.
 
-**Edge cases / drivers:** `[]` means "no neighbour declared", not "has no neighbour". A principle the survey finds with no neighbour is recorded on the survey map. The gate reads the repo-owned provider root; `$AGENT_HOME` carries extras and stale duplicates. The gate cannot judge whether a named neighbour is the right one; that is the admission decision.
+**Edge cases / drivers:** `[]` means "no neighbour declared", not "has no neighbour". A principle the survey finds with no neighbour is recorded on the survey map; the procedure is [`corpus-survey.md`](../../.agents/skills/instruction-authoring/references/corpus-survey.md), and the field stays `[]`. The gate reads the repo-owned provider root; `$AGENT_HOME` carries extras and stale duplicates. The gate cannot judge whether a named neighbour is the right one; that is the admission decision.
 
 ## 2026-11-14 -- A principle declares its neighbours, and admission is by case
 
