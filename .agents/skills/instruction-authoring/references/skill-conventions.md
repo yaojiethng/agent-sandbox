@@ -20,7 +20,7 @@ Do not write in `$AGENT_HOME/agent/skills/` directly. The config home is seeded 
 
 The value is a boolean and the frontmatter gate holds it. A hidden skill's description is read from the operator's list, so write that one for the operator, while a model-invoked description is written for the model's discovery.
 
-A principle skill also declares `metadata: neighbours:`, a list of the full skill names of the principles whose judgements it touches. `[]` states that it has no neighbour; an absent field is undeclared, which the gate fails. The list holds neighbours only, and a handoff ("apply this next") is prose. [`../patterns/admission.md`](../patterns/admission.md) decides the list; `scripts/check_principle_neighbours.sh` holds presence and liveness.
+A principle skill also declares `metadata: neighbours:`, a list of the full skill names of the principles whose judgements it touches. `[]` states that no neighbour is declared; a principle the corpus survey finds with no neighbour is recorded on the survey map. An absent field is undeclared, which the gate fails. The list holds neighbours only, and a handoff ("apply this next") is prose. [`../patterns/admission.md`](../patterns/admission.md) decides the list; `scripts/check_principle_neighbours.sh` holds presence and liveness.
 
 ## The body
 

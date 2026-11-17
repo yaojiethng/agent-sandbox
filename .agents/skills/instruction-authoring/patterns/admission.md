@@ -10,7 +10,7 @@ Does a live principle already answer this? A principle carries a judgement with 
 
 Name the nearest existing principles: the ones whose judgement the new one shares a subject with, narrows, or splits from. Run `node scripts/principle_inventory.mjs`; its cross-links are candidates, and its missing-field report says which principles still carry no declaration. Read the candidates' descriptions and their `**The test.**` parts, not their whole bodies.
 
-The field is `metadata: neighbours:`, a list of full skill names. It holds neighbours only; a handoff ("apply this next") is prose. `[]` declares that the principle has none; an absent field is undeclared and fails the gate.
+The field is `metadata: neighbours:`, a list of full skill names. It holds neighbours only; a handoff ("apply this next") is prose. `[]` declares that no neighbour is declared; a principle the corpus survey finds with no neighbour is recorded on the survey map. An absent field is undeclared and fails the gate.
 
 ## The case
 
