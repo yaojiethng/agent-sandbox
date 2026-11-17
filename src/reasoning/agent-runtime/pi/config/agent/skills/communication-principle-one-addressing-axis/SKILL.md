@@ -2,6 +2,8 @@
 name: communication-principle-one-addressing-axis
 description: "Apply when writing or revising a list that carries two ordering axes at once, or where a reader may address one item by number and another by letter. A numbered or lettered list asserts a relation between its items, so print one axis per presentation and name each axis when two sets appear together."
 metadata:
+  intent: "A numbered or lettered list asserts a relation between its items; print one axis per presentation."
+  mechanism: "List form: print one axis per presentation, and name each axis when two sets appear."
   neighbours: []
 ---
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # scripts/check_principle_frontmatter.sh
 # The principle-frontmatter gate: every principle under the provider root
-# declares `name`, `description` and `metadata.neighbours`, the conditional
-# `metadata.leitwort`, `intent` and `mechanism` are valid when present, and the
-# principle does not set `disable-model-invocation`.
+# declares `name`, `description`, `metadata.neighbours`, `metadata.intent`
+# and `metadata.mechanism`, the conditional `metadata.leitwort` is valid when
+# present, and the principle does not set `disable-model-invocation`.
 #
 # The body shape is a convention, not this gate's subject:
 # .agents/skills/instruction-authoring/references/skill-conventions.md

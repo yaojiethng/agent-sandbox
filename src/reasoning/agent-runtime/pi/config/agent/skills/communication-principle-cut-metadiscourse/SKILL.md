@@ -2,6 +2,8 @@
 name: communication-principle-cut-metadiscourse
 description: "Apply when revising prose: a passage that announces its claim, states it, then restates it, or a sentence trimmed to a shorter form. Cut the prose that talks about the prose, and cut whole rather than trim."
 metadata:
+  intent: "Information is to be made as concise and dense and stripped-down as possible, and metadiscourse hampers that."
+  mechanism: "A deletion test on a sentence in the flow: a sentence that can be deleted without loss is cut whole."
   leitwort: metadiscourse
   neighbours: []
 ---

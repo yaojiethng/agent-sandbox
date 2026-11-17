@@ -5,7 +5,7 @@
 #
 # The fixture builds the provider root under FIXTURE_DIR. The neighbour rules
 # keep their tests, and the declaration fields gain one case each: name,
-# description, the conditional leitwort/intent/mechanism, and the forbidden
+# description, the required intent/mechanism, the conditional leitwort, and the forbidden
 # disable-model-invocation.
 
 set -uo pipefail
@@ -31,11 +31,16 @@ build_root() {
   local d="$1"
   write_skill "$d" principle-a \
     'name: principle-a
-description: "a principle"'
+description: "a principle"
+metadata:
+  intent: a judgement
+  mechanism: a mechanism'
   write_skill "$d" principle-b \
     'name: principle-b
 description: "a principle with no neighbour"
 metadata:
+  intent: a judgement
+  mechanism: a mechanism
   neighbours: []'
 }
 
@@ -62,6 +67,8 @@ test_an_explicit_empty_list_is_clean() {
     'name: principle-a
 description: "a principle with no neighbour"
 metadata:
+  intent: a judgement
+  mechanism: a mechanism
   neighbours: []'
   out="$(run_gate "$d" 2>&1)"
   assert_eq "$?" "0" "an explicit empty list declares no neighbour and passes"
@@ -185,7 +192,7 @@ metadata:
   done
 }
 
-test_a_principle_with_only_the_required_fields_is_clean() {
+test_a_principle_with_the_required_fields_is_clean() {
   local d out
   d="$(get_fixture_dir)"
   build_root "$d"
@@ -193,10 +200,42 @@ test_a_principle_with_only_the_required_fields_is_clean() {
     'name: principle-a
 description: "a principle"
 metadata:
+  intent: a judgement
+  mechanism: a mechanism
   neighbours: []'
   out="$(run_gate "$d" 2>&1)"
-  assert_eq "$?" "0" "the conditional fields are optional"
+  assert_eq "$?" "0" "the optional leitwort is absent and the principle passes"
   assert_contains "$out" "0 finding(s)" "the clean run reports no finding"
+}
+
+test_a_missing_intent_fails() {
+  local d out
+  d="$(get_fixture_dir)"
+  build_root "$d"
+  write_skill "$d" principle-a \
+    'name: principle-a
+description: "a principle"
+metadata:
+  mechanism: a mechanism
+  neighbours: []'
+  out="$(run_gate "$d" 2>&1)"
+  assert_eq "$?" "1" "a principle with no intent fails"
+  assert_contains "$out" "missing-intent" "the finding names the missing intent"
+}
+
+test_a_missing_mechanism_fails() {
+  local d out
+  d="$(get_fixture_dir)"
+  build_root "$d"
+  write_skill "$d" principle-a \
+    'name: principle-a
+description: "a principle"
+metadata:
+  intent: a judgement
+  neighbours: []'
+  out="$(run_gate "$d" 2>&1)"
+  assert_eq "$?" "1" "a principle with no mechanism fails"
+  assert_contains "$out" "missing-mechanism" "the finding names the missing mechanism"
 }
 
 test_a_principle_with_the_conditional_fields_is_clean() {
@@ -212,7 +251,7 @@ metadata:
   intent: keep the rule and its caveat together
   mechanism: place the parts in one spot'
   out="$(run_gate "$d" 2>&1)"
-  assert_eq "$?" "0" "well-formed conditional fields pass"
+  assert_eq "$?" "0" "well-formed declaration fields pass"
   assert_contains "$out" "0 finding(s)" "the clean run reports no finding"
 }
 
@@ -250,7 +289,9 @@ run_test test_a_missing_name_fails
 run_test test_a_name_mismatch_fails
 run_test test_a_missing_description_fails
 run_test test_a_malformed_conditional_field_fails
-run_test test_a_principle_with_only_the_required_fields_is_clean
+run_test test_a_principle_with_the_required_fields_is_clean
+run_test test_a_missing_intent_fails
+run_test test_a_missing_mechanism_fails
 run_test test_a_principle_with_the_conditional_fields_is_clean
 run_test test_disable_model_invocation_fails
 run_test test_an_unknown_argument_refuses

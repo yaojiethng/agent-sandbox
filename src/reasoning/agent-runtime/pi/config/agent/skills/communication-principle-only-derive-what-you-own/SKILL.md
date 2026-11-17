@@ -2,6 +2,8 @@
 name: communication-principle-only-derive-what-you-own
 description: "Apply when writing or revising a sentence that states a total, a percentage, a count, or any value computed from data held elsewhere. The document stating a derived value does not own it, so an update to the underlying data misses the copy and the staleness is silent. State the primary data, or name the source that derives the value."
 metadata:
+  intent: "A derived value is a copy of data held elsewhere, and the copy is what an update misses."
+  mechanism: "The sentence that states a total, a percentage or a count: it names the source rather than restating the derived value."
   neighbours: []
 ---
 

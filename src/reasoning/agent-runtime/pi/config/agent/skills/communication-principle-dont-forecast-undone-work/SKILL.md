@@ -2,6 +2,8 @@
 name: communication-principle-dont-forecast-undone-work
 description: "Apply when writing or revising text: a sentence that describes work no task holds -- a plan for a later milestone, a TODO, a pre-announcement, or a promise in a record. A forecast belongs where a task holds the work, and a guess is written as a gap."
 metadata:
+  intent: "Prevent speculative requirements, avoid overengineering, ensure that the content written back reflects reality."
+  mechanism: "A deletion rule for text: a forecast is removed, or moved to the record that holds the work."
   neighbours: []
 ---
 

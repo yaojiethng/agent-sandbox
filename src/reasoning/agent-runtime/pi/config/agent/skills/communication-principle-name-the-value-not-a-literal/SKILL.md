@@ -2,6 +2,8 @@
 name: communication-principle-name-the-value-not-a-literal
 description: "Apply when writing or revising a snippet, command, or instruction that carries a value the reader must set. Name the value; do not fix a literal that reads as the chosen one."
 metadata:
+  intent: "The reader can access a value the text presents, not the text assuming that the reader can."
+  mechanism: "Referents and labelling: how do I point at what you are talking about? A reference to the record that holds the value, so the reader can reach it."
   neighbours: []
 ---
 

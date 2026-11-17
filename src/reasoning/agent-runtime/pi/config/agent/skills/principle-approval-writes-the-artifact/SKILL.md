@@ -2,6 +2,8 @@
 name: principle-approval-writes-the-artifact
 description: Write an approved artifact into the file that is its source of truth in the same unit of work as the approval, so the decision never lives only in the conversation. Use when a design, a scope, a plan, or a set of items will be produced later.
 metadata:
+  intent: "Making sure changes are not lost in chat: write them back, so that if the session is ended or lost, we won't drop decisions or changes."
+  mechanism: "The file that is the artifact's source of truth: the approved text is written there in the same unit of work as the approval."
   neighbours: []
 ---
 

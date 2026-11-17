@@ -25,7 +25,8 @@ import { fileURLToPath } from "node:url";
 import { inventory, REPO } from "../principle_inventory.mjs";
 import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
 
-const CONDITIONAL = ["leitwort", "intent", "mechanism"];
+const CONDITIONAL = ["leitwort"];
+const REQUIRED_TEXT = ["intent", "mechanism"];
 
 function compareFindings(a, b) {
   return a.skill.localeCompare(b.skill) || a.kind.localeCompare(b.kind);
@@ -59,6 +60,23 @@ function declarationFindings(principles) {
         kind: "missing-description",
         detail: "description is absent or empty",
       });
+    }
+
+    for (const field of REQUIRED_TEXT) {
+      const value = principle[field];
+      if (value === undefined) {
+        findings.push({
+          skill: name,
+          kind: `missing-${field}`,
+          detail: `metadata.${field} is absent`,
+        });
+      } else if (typeof value !== "string" || value.trim() === "") {
+        findings.push({
+          skill: name,
+          kind: `malformed-${field}`,
+          detail: `metadata.${field} is not a non-empty string`,
+        });
+      }
     }
 
     for (const field of CONDITIONAL) {

@@ -2,6 +2,8 @@
 name: communication-principle-organize-by-diataxis
 description: "Apply when adding to documentation or tidying it: name the Diataxis mode each unit serves, tutorial, how-to, reference or explanation, then file it under that mode and link the seam, and move what serves another need."
 metadata:
+  intent: "Organizing documents and contents according to the Diataxis mode, not conflating the technical concerns."
+  mechanism: "Name the Diataxis mode each unit serves, then file it under that mode, link the seam, and move what serves another need."
   leitwort: diataxis
   neighbours: []
 ---

@@ -2,6 +2,8 @@
 name: principle-match-precision-to-stakes
 description: Apply when an instruction could be followed wrongly without anything reporting it. Set its precision by the assumption it rests on, how far a wrong move reaches, whether the move can be undone, and what reports it.
 metadata:
+  intent: "An instruction's precision follows what the writer can establish, not what the consequence would cost."
+  mechanism: "The rule's modal strength and its checks: rule, judgement or permission, with a check that reports a departure."
   neighbours: []
 ---
 

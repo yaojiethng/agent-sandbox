@@ -2,6 +2,8 @@
 name: principle-guard-the-context-window
 description: "Apply when routing bulk work, planning a multi-file pass, or before stating how much room is left. Measure the window, route bulk out, and name the unit each pass counts."
 metadata:
+  intent: "A capacity claim is a reading or an inference, and the reading comes from the window itself."
+  mechanism: "The claim about room left: measure the window, route bulk out, and name the unit each pass counts."
   neighbours: []
 ---
 

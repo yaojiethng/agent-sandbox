@@ -2,6 +2,8 @@
 name: communication-principle-maximize-conceptual-leverage
 description: "Apply when a skill or a document needs one word the reader thinks with. Choose the leitwort, define it once, and write the text around it instead of the weaker terms a writer reaches for by default."
 metadata:
+  intent: "Choosing precise, descriptive domain terms, so that communication is as concise and dense and stripped-down as possible."
+  mechanism: "The best leading words are terms already prominent within a domain's problem language; prefer terms already common in the corpus."
   leitwort: leitwort
   neighbours: []
 ---

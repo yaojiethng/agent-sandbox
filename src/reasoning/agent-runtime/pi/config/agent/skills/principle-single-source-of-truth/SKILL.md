@@ -2,6 +2,8 @@
 name: principle-single-source-of-truth
 description: "Apply when work or text is being divided into parts, or when two places seem to carry the same material: one subject in one mode has one source of truth."
 metadata:
+  intent: "Clarity in organization: the artifact has one authoritative place, the reader does not get conflicting information, and maintenance is easy."
+  mechanism: "One subject in one mode has one source of truth."
   leitwort: SSOT
   neighbours: []
 ---

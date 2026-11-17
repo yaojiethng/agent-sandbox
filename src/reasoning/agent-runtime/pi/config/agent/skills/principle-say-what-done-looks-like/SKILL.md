@@ -2,6 +2,8 @@
 name: principle-say-what-done-looks-like
 description: State where the work stops and what shows it is done, before starting it, so a finish can be checked rather than claimed. Use when starting a task, a step, or a segment of work, and when work is about to be reported complete.
 metadata:
+  intent: "Agent-operator alignment during task dispatch: an agreement on the final result, so that no party is surprised."
+  mechanism: "The instruction and its acceptance: the finish, the bound, and one criterion with an instrument other than the agent's belief."
   neighbours: []
 ---
 

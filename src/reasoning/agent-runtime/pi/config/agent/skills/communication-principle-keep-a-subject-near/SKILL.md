@@ -2,6 +2,8 @@
 name: communication-principle-keep-a-subject-near
 description: "Apply when writing or revising a text: a caveat at the far end, a definition below its first use, a section split so its subject leaves the screen, or a section carrying a second subject. Colocation keeps them close, so one read meets the whole rule; proximity names the effect."
 metadata:
+  intent: "Keep related concepts together, so the reader can point at what you are talking about."
+  mechanism: "Colocation: a subject and its parts share one place."
   leitwort: colocation
   neighbours:
     - communication-principle-define-terminology-before-use

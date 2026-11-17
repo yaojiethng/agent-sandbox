@@ -2,6 +2,8 @@
 name: principle-justify-materialization-cost
 description: "Whether to materialize a generated result, and what catches its drift if you do. Use when a build, script, gate, test or pipeline produces a result that could become a file."
 metadata:
+  intent: "Whether to store a generated result is a decision you keep paying for: a materialized copy must be maintained, and it drifts without a warning."
+  mechanism: "The materialization decision: name what catches the drift, and store only when the cost is justified."
   leitwort: materialization
   neighbours: []
 ---

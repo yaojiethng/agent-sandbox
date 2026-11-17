@@ -23,6 +23,20 @@
 
 **Rationale:** The literal `**The pattern.**` forced one card's label onto every card. A card whose rule is a deletion test had to call it a pattern, and a card with acceptable and unacceptable examples had to put both under one heading. The labels belong to the card, and the gate checks that the parts exist in a workable order.
 
+## 2026-11-17 -- The intent and mechanism fields are required
+
+**Decision:** `metadata.intent` and `metadata.mechanism` are required on every principle, and the frontmatter gate fails a card that lacks either. The 25-card corpus carries both, so the conditional period ends.
+
+**Rationale:** An absent field meant the operator had not ratified the card. All 25 are now ratified, so an absent field means a new card was admitted without its provenance. The gate holds presence; the value stays the operator's judgement.
+
+**Rejected alternatives:**
+
+- *Keep the fields optional.* **Execution failure:** a new card could land with no recorded judgement, which is the state the field exists to prevent.
+- *Gate the value against the survey map.* **Neither:** the map carries a provisional value, and a comparison would make the weak source the authority.
+- *Require `leitwort` too.* **Execution failure:** not every card needs one; the corpus carries it unevenly by design.
+
+**Edge cases / drivers:** The five pilot values and the 20 back-constructed ones are the current corpus; handover `20261117-02` holds the provenance table. `single-train-of-thought` already carried its value and is unchanged.
+
 ## 2026-11-16 -- A principle records its operator's intent and mechanism
 
 **Decision:** A principle declares `metadata.intent` and `metadata.mechanism`. Both are operator-led: the operator writes them when the skill is created or ratified, and the agent reads them rather than inferring them from the body. `intent` is the judgement the skill serves. `mechanism` is the way that judgement expresses itself, or the specific way the principle exerts influence on the workflow. The admission record that holds the case is the provenance. The five reader-context principles carry the pilot values; the remaining corpus declares the fields as the operator ratifies each skill.

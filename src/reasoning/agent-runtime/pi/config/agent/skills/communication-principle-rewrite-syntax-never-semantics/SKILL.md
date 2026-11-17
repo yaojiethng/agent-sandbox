@@ -2,6 +2,8 @@
 name: communication-principle-rewrite-syntax-never-semantics
 description: "Apply when an agent rewrites, tightens, reorders or merges text a person wrote or approved. Syntax may change; the quantifiers, negations, modals and keywords that decide what is required may not. A disagreement names the clause, the apparent requirement and the alternative, then waits for the ruling."
 metadata:
+  intent: "Syntax may change; the quantifiers, negations, modals and keywords that decide what is required may not."
+  mechanism: "A diff against the author's words: the syntax is rearranged, the semantic keywords are held, and a disagreement names the clause."
   neighbours: []
 ---
 
