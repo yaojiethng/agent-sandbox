@@ -1,8 +1,8 @@
 ---
 name: communication-principle-keep-a-subject-near
-description: "Apply when writing or revising a text: a caveat at the far end, a definition below its first use, a section split so its subject leaves the screen, or a section carrying a second subject. Keep them close by proximity, so one read meets the whole rule."
+description: "Apply when writing or revising a text: a caveat at the far end, a definition below its first use, a section split so its subject leaves the screen, or a section carrying a second subject. Colocation keeps them close, so one read meets the whole rule; proximity names the effect."
 metadata:
-  leitwort: proximity
+  leitwort: colocation
   neighbours:
     - communication-principle-define-terminology-before-use
     - communication-principle-write-for-the-reader
@@ -11,13 +11,13 @@ metadata:
     - communication-principle-single-train-of-thought
 ---
 
-# Keep a subject near
+# Keep a subject's parts colocated
 
-Give each subject one place, and keep all of its parts there.
+Colocation gives each subject one place, and keeps all of its parts there.
 
 **The pattern.**
 
-| Instead of | Grouped by proximity |
+| Instead of | Colocated |
 |---|---|
 | a caveat three sections from the rule it qualifies | the caveat under that rule |
 | a definition wherever the term first appears | the definition beside its rules and caveats, where the reader first needs it |
@@ -25,9 +25,11 @@ Give each subject one place, and keep all of its parts there.
 | parts ordered as the author wrote them | parts ordered as the reader needs them: definition, rule, caveat |
 | a section carrying a rule and a second, unrelated subject | one section per subject, with a pointer between them |
 
-**Why.** Proximity is what a reader's working memory depends on. A reader who meets a rule without its caveat understands the rule too widely, and meets the caveat after that understanding has settled, so the correction costs a second pass over what they already read. A reader who comes for one subject and meets a second spends attention on text nobody asked for. The same order serves the next edit, because a writer who sees the whole subject at once changes every part and a writer who does not changes some.
+**Why.** Proximity is the effect a reader's working memory depends on, and colocation is the placement that produces it. A reader who meets a rule without its caveat understands the rule too widely, and meets the caveat after that understanding has settled, so the correction costs a second pass over what they already read. A reader who comes for one subject and meets a second spends attention on text nobody asked for. The same order serves the next edit, because a writer who sees the whole subject at once changes every part and a writer who does not changes some.
 
 Nothing reports either failure. Each half reads as complete, and so does each section.
+
+**Where it sits.** The co-location organizes within the information hierarchy, and `progressive disclosure` maintains it. The umbrella benefit is `findability`, and the failure is `overload`.
 
 **The four costs a writer checks.**
 
