@@ -1,6 +1,6 @@
 # The content runbook - the handover the iteration is writing
 
-Checks the content quality of the handover the current iteration is writing. `/iter` opens this runbook at its scope gate and again at its pre-close; `wrapup` B9 opens it over the closed record.
+Checks the content quality of the handover the current iteration is writing. `/iter` opens this runbook at its scope gate and again at its pre-close; `wrapup` B6 opens it over the closed record.
 
 ## When to run
 

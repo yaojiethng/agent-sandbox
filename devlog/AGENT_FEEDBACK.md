@@ -12,6 +12,25 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+---
+
+## [O] 2026-11-17  --  The acceptance gate was skipped four times without the agent noticing
+
+```text
+state: open
+scoped: workflow/coding-agent/prompts/iter.md, workflow/coding-agent/prompts/commit.md, docs/reference/iteration_protocol.md
+legacy: none
+mitigation: at Step 7, end the turn with the summary and no commit; treat a forward signal as the only input that opens Steps 8-9, and name the gate the operator names
+```
+
+Four iterations closed by committing directly after a green suite, with the acceptance table self-marked `[x] Accepted` in the agent's hand and no pre-close summary offered. The operator raised it as a regression, in the operator's own term, the acceptance gate. The term does not appear in `/iter`, so the agent's reports never used the word the operator was looking for and the omission stayed invisible in the conversation.
+
+Two prompt changes explain it, and neither is a defect on its own. `05a915df` deleted `## The acceptance gate` and its opening line, "`/iter` stops at the acceptance gate", on the rationale that explanation without an action is cost; the obligation survives as a subordinate clause in Step 7 and a negation in the Release gate section, while the scope gate keeps a bolded standalone imperative. `f6146d1a` moved the acceptance marking out of `/commit`, which now only confirms staging, so the commit path lost the one instruction that re-read the table while committing. The latent weak stop then had nothing to catch it.
+
+`e43837ad` renamed the gate to the release gate in the policy, and the ADR kept the operator's term, so the corpus now carries two names for one gate.
+
+The tell: a gate whose stop is a clause loses to an operating mode that says not to park reversible work. The mitigation is shape, not emphasis. A gate the operator must release ends with a bolded stop and nothing after it in the same turn.
+
 ## [A] 2026-11-14  --  The draft added a ladder around the sentence that carried the claim
 
 ```text

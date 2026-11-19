@@ -55,6 +55,7 @@ Not yet defined.
 | The roadmap's M3.3.7 section still speaks in the retired vocabulary and carries facts the tree falsifies: ten rows said `card`, two carried census counts, one named the deleted `patterns/admission.md`, two sub-milestone criteria named the retired survey and map, and row 390 still declared a dependency on a landed row. | drift | A reader of the task list meets a term the registry no longer defines and links to files that no longer exist. | Applied in this iteration's maintenance pass and recorded in the Completed table of this record. |
 
 | The change runbook assigns the generation of a principle to the agent, and the operator is the author of every part of a skill. The reference states operator-led authorship for `intent` and `mechanism` only, and the runbook's first three steps generate the name, the nearest set and the case, with a ruling at the end. | contradiction | Every content row this iteration drafted is void, the five pending rulings are withdrawn, and the runbook is the artefact to change before the principle can be written. | The sidequest [20261117-09](20261117-09-workflow-operator_authors_principles.md), which rewrites the change procedure. |
+| The acceptance gate was skipped in the iterations leading here, and the marking of the table had no home that runs before it. | contradiction | The iteration discipline this one is meant to follow is being repaired while it is paused. | The sidequest [20261117-10](20261117-10-workflow-acceptance_gate_stop.md). |
 
 ## Completed
 

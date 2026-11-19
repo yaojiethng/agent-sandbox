@@ -69,7 +69,7 @@ The principle behind this shape -- a document's invariants must not couple to it
 
 ### Acceptance criteria
 
-The iteration derives the criteria at the scope gate and the handover records them. `iter` Step 5 states the authoring bar, the project's `work-log` convention owns the table, its columns and its markers, and `wrapup` B1 verifies each criterion at the close.
+The iteration derives the criteria at the scope gate and the handover records them. `iter` Step 5 states the authoring bar, the project's `work-log` convention owns the table, its columns and its markers, and `iter` Step 7 marks each criterion before the gate, and `wrapup`'s first step flips the record closed after the release.
 
 ### Close invariants
 
