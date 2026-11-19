@@ -1,11 +1,12 @@
 ---
 name: communication-principle-cut-metadiscourse
-description: "Apply when revising prose: a passage that announces its claim, states it, then restates it, or a sentence trimmed to a shorter form. Cut the prose that talks about the prose, and cut whole rather than trim."
+description: "Apply when revising prose: a passage that announces its claim, states it, then restates it, a passage that counts its own parts, or a sentence trimmed to a shorter form. Cut the prose that talks about the prose, and cut whole rather than trim."
 metadata:
   intent: "Information is to be made as concise and dense and stripped-down as possible, and metadiscourse hampers that."
   mechanism: "A deletion test on a sentence in the flow: a sentence that can be deleted without loss is cut whole."
   leitwort: metadiscourse
-  neighbours: []
+  neighbours:
+    - principle-single-source-of-truth
 ---
 
 # Cut metadiscourse
@@ -29,6 +30,7 @@ A sentence in the flow that can be deleted without loss is metadiscourse, and it
 - **The announce-restate frame.** The passage says what it will say, says it, then says what it said. This is the five-paragraph essay's introduction and conclusion applied to a document that is not an essay.
 - **The buried lede.** The fact arrives after a wind-up, a definition or a general claim. The first sentence is not the point.
 - **The maxim before the support.** A general claim stands before the sentence that carries the fact, the number or the name. The maxim adds nothing the support does not carry.
+- **The self-count.** The passage counts its own parts, "two rules", "the following three points". The list is the count, so the number costs the reader a phrase and returns nothing, and it goes stale as soon as an item lands.
 
 **The test.** Delete the sentence. Read the passage without it. Restore it only if the reader loses one of the things above. If none goes, the deletion stands. Cut whole, not trim. Run the test on the flow, not on the signpost.
 

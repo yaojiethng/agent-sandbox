@@ -74,7 +74,6 @@ Follow these general communication guidelines for all agent prose. Read the leaf
 - [`communication-principle-define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): Define a term before the work relies on it.
 - [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): Write for the reader, not the session that produced it.
 - [`communication-principle-name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md): Name a value rather than fixing a literal the reader must set.
-- [`communication-principle-only-derive-what-you-own`](./skills/communication-principle-only-derive-what-you-own/SKILL.md): State the primary data, not a value derived from it.
 - [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): Print one addressing axis per presentation.
 - [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): Choose the word that carries the most distinction and loses none.
 - [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md): Give every word one meaning and every thing one word.

@@ -5,7 +5,9 @@ metadata:
   intent: "Clarity in organization: the artifact has one authoritative place, the reader does not get conflicting information, and maintenance is easy."
   mechanism: "One subject in one mode has one source of truth."
   leitwort: SSOT
-  neighbours: []
+  neighbours:
+    - communication-principle-cut-metadiscourse
+    - principle-justify-materialization-cost
 ---
 
 # Single source of truth
