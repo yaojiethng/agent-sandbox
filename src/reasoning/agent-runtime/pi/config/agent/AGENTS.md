@@ -47,9 +47,7 @@ Tools you have access to:
 
 ## Write Discipline
 
-An approval that produces an artifact edits the file that is its source of truth, in the same unit of work, per `principle-approval-writes-the-artifact` at `$AGENT_HOME/agent/skills/principle-approval-writes-the-artifact/SKILL.md`. With version control the write is cheap to undo; a decision held in the conversation cannot be reverted, resumed or checked. A decision kept only in the conversation is re-derived later, and its re-derivation fails no gate.
-
-An instruction set stays lean: an edit improves the existing text in place rather than appending clarification beside it. `scripts/report_instruction_growth.sh` measures the growth.
+An instruction set stays lean: an edit improves the existing text in place rather than appending clarification beside it, and [`produce-just-in-time`](./skills/principle-produce-just-in-time/SKILL.md) is the judgement behind it. `scripts/report_instruction_growth.sh` measures the growth.
 
 When writing code, always take into account the following:
 
@@ -63,33 +61,48 @@ When writing code, always take into account the following:
 
 Before creating any new document, check the project's `AGENTS.md` for the policy that governs the document type.
 
-## Communication Standards
+## Principles
 
-Follow these general communication guidelines for all agent prose. Read the leaf skill in full for any principle you apply. The agent names each entry when it applies.
+Read the leaf skill in full for any principle you apply, and name it when it applies.
 
-- [`communication-principle-cut-metadiscourse`](./skills/communication-principle-cut-metadiscourse/SKILL.md): Cut the prose that talks about the prose, and cut whole rather than trim.
-- [`communication-principle-organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): Organize documentation by the Diataxis mode each unit serves.
-- [`communication-principle-organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): Organize documentation by the Diataxis mode each unit serves.
-- [`communication-principle-attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md): Write so the reader attaches each phrase as it arrives.
-- [`communication-principle-define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): Define a term before the work relies on it.
-- [`communication-principle-write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): Write for the reader, not the session that produced it.
-- [`communication-principle-name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md): Name a value rather than fixing a literal the reader must set.
-- [`communication-principle-one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): Print one addressing axis per presentation.
-- [`communication-principle-maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): Choose the word that carries the most distinction and loses none.
-- [`communication-principle-align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md): Give every word one meaning and every thing one word.
-- [`communication-principle-rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md): Syntax is the agent's; semantics is the operator's. Rearrange, join, reorder, restructure and relabel; do not touch the words that decide what is required, and do not edit the author's wording silently: name the issue, offer the alternatives and wait.
-- [`communication-principle-single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): Carry one line of reasoning through the document.
-- [`communication-principle-state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): When writing or dispatching instructions, state the intent and leave the route to the doer.
-
-The judgements that fire on a whole artifact rather than a sentence: [`communication-principle-show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md) when a sentence asks the reader to interpret what could have been handed over, [`communication-principle-dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md) when a record describes work no task holds, [`communication-principle-keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md) when a subject and its parts end up apart.
-
-How a document points at another: [`communication-principle-link-what-the-reader-can-open`](./skills/communication-principle-link-what-the-reader-can-open/SKILL.md). Where a project states a numbering scheme or a reference form of its own, that convention is the project's, and this file names no path to it. Line wrapping and the character set: the `project-documentation` convention's `## What a document may contain`, which the `doc-wrap` and `doc-ascii` lint rules catch.
-
-Report honestly. A claim about an unobservable state is an inference and is marked as one, and no capacity claim is made without a signal in the environment.
-
-Follow the target document's own conventions; a pattern its rules forbid is a defect in your copy.
-
-Before rewriting a sentence someone else wrote, or wording the operator approved, apply `communication-principle-rewrite-syntax-never-semantics`: it governs what may be touched and the test that confirms it.
+- **Context disclosure**: the reader reaches what the text points at.
+  - **Correct disclosure**: the referent named, the target reachable.
+    - [`write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): a label the session invented and the reader cannot place
+    - [`link-what-the-reader-can-open`](./skills/communication-principle-link-what-the-reader-can-open/SKILL.md): a target the reader cannot reach, linked as though they could
+    - [`attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md): a clause that arrives before its actor
+  - **Sentence context**: the order, the length, the distance.
+    - [`single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): a detour, or a summary that adds a claim the body never made
+    - [`keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md): a caveat at the far end, or a second subject in the section
+    - [`cut-metadiscourse`](./skills/communication-principle-cut-metadiscourse/SKILL.md): a sentence about the text, not its subject
+- **Shared domain model**: one word for one thing, defined before it is relied on.
+  - [`define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): a word the reader has to define for themselves
+  - [`align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md): one thing under two names, or one word for two things
+  - [`maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): the weaker term, where one word would carry the distinction
+- **Organization**: the artifact is the one the work needs, in one place.
+  - **One owner**: the state lives once.
+    - [`single-source-of-truth`](./skills/principle-single-source-of-truth/SKILL.md): a second copy no reader can choose between
+    - [`propagation-discipline`](./skills/principle-propagation-discipline/SKILL.md): a carrier of the old state left behind, a description as much as a reference
+  - **One job**: the artifact earns its existence.
+    - [`organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): a unit answering one need while sitting where another is answered
+    - [`remove-the-passthrough`](./skills/principle-remove-the-passthrough/SKILL.md): an artifact only the next hop reads
+    - [`produce-just-in-time`](./skills/principle-produce-just-in-time/SKILL.md): an artifact nothing in the scope claimed
+- **Grounding**: the text carries what the reader can check or act on.
+  - [`show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md): a sentence asking the reader to interpret what could be handed over
+  - [`name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md): a literal the reader takes as the chosen one
+  - [`dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md): a plan no task holds, or a guess written as fact
+- **Communication**: the text says what its sender means, and a rewrite does not move it.
+  - [`state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): a method fixed by someone further from the work than its doer
+  - [`one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): two ordering axes read as one, or item four on a list of letters
+  - [`rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md): a requirement moved by a rewrite, or an author's wording edited unasked
+- **Mandate**: the work's bounds: how precise the ask, and what finish counts.
+  - [`match-precision-to-stakes`](./skills/principle-match-precision-to-stakes/SKILL.md): a wrong move nothing reports, or supervision the risk did not need
+  - [`say-what-done-looks-like`](./skills/principle-say-what-done-looks-like/SKILL.md): a finish claimed rather than checked
+- **Check placement**: a check sits where its evidence first exists, and a stored copy names what catches its drift.
+  - [`check-placement`](./skills/principle-check-placement/SKILL.md): a check placed where its evidence does not yet exist
+  - [`justify-materialization-cost`](./skills/principle-justify-materialization-cost/SKILL.md): a stored result with nothing catching its drift
+- **Agentic operation**: a rule that exists because the doer is a model in a harness: its window is finite, and its context does not travel with the work.
+  - [`guard-the-context-window`](./skills/principle-guard-the-context-window/SKILL.md): a capacity claim with no reading behind it
+  - [`approval-writes-the-artifact`](./skills/principle-approval-writes-the-artifact/SKILL.md): a decision living only in the conversation
 
 ## Read Discipline
 
