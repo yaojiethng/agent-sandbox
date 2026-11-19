@@ -6,6 +6,7 @@ metadata:
   mechanism: "A deletion rule for text: a forecast is removed, or moved to the record that holds the work."
   neighbours:
     - principle-produce-just-in-time
+    - principle-vacuous
 ---
 
 # Don't forecast undone work

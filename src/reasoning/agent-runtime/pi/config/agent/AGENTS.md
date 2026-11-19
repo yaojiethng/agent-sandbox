@@ -90,6 +90,7 @@ Read the leaf skill in full for any principle you apply, and name it when it app
   - [`show-dont-describe`](./skills/communication-principle-show-dont-describe/SKILL.md): a sentence asking the reader to interpret what could be handed over
   - [`name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md): a literal the reader takes as the chosen one
   - [`dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md): a plan no task holds, or a guess written as fact
+  - [`vacuous`](./skills/principle-vacuous/SKILL.md): a predicate with no check, or a claim that holds whatever the case
 - **Communication**: the text says what its sender means, and a rewrite does not move it.
   - [`state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): a method fixed by someone further from the work than its doer
   - [`one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): two ordering axes read as one, or item four on a list of letters

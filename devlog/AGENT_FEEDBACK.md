@@ -17,10 +17,10 @@ This file is tied into the session's Findings section for recording and into the
 ## [O] 2026-11-17  --  The acceptance gate was skipped four times without the agent noticing
 
 ```text
-state: open
+state: open (recurrence 2026-11-18)
 scoped: workflow/coding-agent/prompts/iter.md, workflow/coding-agent/prompts/commit.md, docs/reference/iteration_protocol.md
 legacy: none
-mitigation: at Step 7, end the turn with the summary and no commit; treat a forward signal as the only input that opens Steps 8-9, and name the gate the operator names
+mitigation: at Step 7, end the turn with the summary and no commit; treat a forward signal as the only input that opens Steps 8-9, and name the gate the operator names. The mitigation did not hold: on 2026-11-18, `192643da` was committed with six criteria self-marked `Accepted.` after an operator "admit" that ruled the leaf, not the iteration. The marking is restored to `Not yet.` in the same amend.
 ```
 
 Four iterations closed by committing directly after a green suite, with the acceptance table self-marked `[x] Accepted` in the agent's hand and no pre-close summary offered. The operator raised it as a regression, in the operator's own term, the acceptance gate. The term does not appear in `/iter`, so the agent's reports never used the word the operator was looking for and the omission stayed invisible in the conversation.

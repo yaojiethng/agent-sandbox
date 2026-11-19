@@ -4,7 +4,8 @@ description: "Apply when writing or revising prose: a template, a command, an ex
 metadata:
   intent: "When statements are backed up with evidence, it replaces a claim with a stronger modal equivalent: a fact. Less effort to verify, better input into decision making."
   mechanism: "The prose: a template, a command, an example or the output stands where a description asks the reader to interpret."
-  neighbours: []
+  neighbours:
+    - principle-vacuous
 ---
 
 # Show, don't describe
