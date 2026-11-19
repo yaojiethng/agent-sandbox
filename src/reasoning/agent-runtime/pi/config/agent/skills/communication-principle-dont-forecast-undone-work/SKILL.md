@@ -4,7 +4,8 @@ description: "Apply when writing or revising text: a sentence that describes wor
 metadata:
   intent: "Prevent speculative requirements, avoid overengineering, ensure that the content written back reflects reality."
   mechanism: "A deletion rule for text: a forecast is removed, or moved to the record that holds the work."
-  neighbours: []
+  neighbours:
+    - principle-produce-just-in-time
 ---
 
 # Don't forecast undone work

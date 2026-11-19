@@ -5,7 +5,8 @@ metadata:
   intent: "Whether to store a generated result is a decision you keep paying for: a materialized copy must be maintained, and it drifts without a warning."
   mechanism: "The materialization decision: name what catches the drift, and store only when the cost is justified."
   leitwort: materialization
-  neighbours: []
+  neighbours:
+    - principle-produce-just-in-time
 ---
 
 # Justify the materialization cost
