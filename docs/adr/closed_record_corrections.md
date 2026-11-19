@@ -17,13 +17,13 @@
 
 **Decision:** The `[CORRECTION]` tag is dropped. A closed claim record is corrected by rewriting it in place, with no block at the end of the section. The state record keeps its form: the changelog entry gains its marker and its successor, and the roadmap row is edited in place. `principle-minimal-corrections` is deleted and its content rule is not replaced; R2 narrows to the state-record marker. R1, R3, R4, R5 and R6 stand.
 
-**Rationale:** The tag was the card's only row without another carrier. Each other row is already the fold (`git-discipline`), the check's placement (`principle-check-placement`), the rule's strength (`principle-match-precision-to-stakes`), the record (`work-log`) or the artifact count (`single-source-of-truth`, `propagation-discipline`). The tag added a block per correction and a composition procedure for it, and the operator judged the admin churn worth less than the signal. The state-record marker is a different form: it belongs to the changelog's archive and to the roadmap's live list, and dropping it would collapse two record kinds.
+**Rationale:** The tag was the skill's only row without another carrier. Each other row is already the fold (`git-discipline`), the check's placement (`principle-check-placement`), the rule's strength (`principle-match-precision-to-stakes`), the record (`work-log`) or the artifact count (`single-source-of-truth`, `propagation-discipline`). The tag added a block per correction and a composition procedure for it, and the operator judged the admin churn worth less than the signal. The state-record marker is a different form: it belongs to the changelog's archive and to the roadmap's live list, and dropping it would collapse two record kinds.
 
 **Rejected alternatives:**
 
 - *Keep the tag for handovers only* -- intent failure. The handover is a session record, and its `## Completed` table already carries what changed; the block restated it.
 - *Move the tag to a list of permitted forms* -- execution failure. It keeps the composition procedure and the per-correction block, which is the churn the drop removes.
-- *Keep the card as a content rule without the tag* -- intent failure. The remaining rows are carried elsewhere, so the card would restate them.
+- *Keep the skill as a content rule without the tag* -- intent failure. The remaining rows are carried elsewhere, so the skill would restate them.
 
 **Edge cases / drivers:** Existing `[CORRECTION]` tags stay as history; this record's own 2026-10-26 tag and the tags in `coding_agent_loop_workflow.md` and `lint_gate_exit_codes.md` are not rewritten. The `[AMENDMENT]` block stays for a non-content change. The claim-record entries of 2026-09-27, 2026-10-18 and 2026-10-19 are historical for the claim form; their state-record and fold content still stands. A correction that changes the iteration's scope or carries new work is a new iteration, which is the one stop the procedure keeps.
 

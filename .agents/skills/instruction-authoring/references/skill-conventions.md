@@ -22,7 +22,7 @@ The value is a boolean and the document gate holds it. A hidden skill's descript
 
 A principle's frontmatter is held by `scripts/check_principle_frontmatter.sh`: `name`, `description`, `metadata.neighbours`, `metadata.intent` and `metadata.mechanism` are required, `metadata.leitwort` is validated when present, and a principle does not set `disable-model-invocation`.
 
-A principle skill also declares `metadata: neighbours:`, a list of the full skill names of the principles whose judgements it touches. `[]` states that no neighbour is declared; a principle the corpus survey finds with no neighbour is recorded on the survey map. An absent field is undeclared, which the gate fails. The list holds neighbours only, and a handoff ("apply this next") is prose. [`../patterns/admission.md`](../patterns/admission.md) decides the list; `scripts/check_principle_frontmatter.sh` holds presence and liveness.
+A principle skill also declares `metadata: neighbours:`, a list of the full skill names of the principles whose judgements it touches. `[]` states that no neighbour is declared; a principle the corpus finds with no neighbour is recorded on the corpus map. An absent field is undeclared, which the gate fails. The list holds neighbours only, and a handoff ("apply this next") is prose. [`../runbooks/principle-change.md`](../runbooks/principle-change.md) decides the list; `scripts/check_principle_frontmatter.sh` holds presence and liveness.
 
 A principle also declares `metadata: intent:` and `metadata: mechanism:`. Both are operator-led: they record the judgement the operator made when the skill was created or ratified, and the agent reads them rather than inferring them. `intent` states the judgement the skill serves. `mechanism` states the way that judgement expresses itself, or the specific way the principle exerts influence on the workflow. The admission record that holds the case is the provenance. Every principle carries both fields; the survey map's provisional value is not the field.
 
@@ -34,7 +34,7 @@ A skill is a `SKILL.md` and the siblings it names, and a sibling the `SKILL.md` 
 
 ## A principle skill
 
-A principle skill carries a judgement, and its body follows the convention: a sentence-case title, one sentence stating the judgement, a rule part the card names, `**Why.**`, any named parts, and `**The test.**`, in that order. The rule part is the first bold lead-in, and a boundary part may follow the test.
+A principle skill carries a judgement, and its body follows the convention: a sentence-case title, one sentence stating the judgement, a rule part the skill names, `**Why.**`, any named parts, and `**The test.**`, in that order. The rule part is the first bold lead-in, and a boundary part may follow the test.
 
 `docs/adr/principle_skill_shape.md` records the shape. The body is a convention, held by this section and the exemplar; `scripts/check_principle_frontmatter.sh` holds the frontmatter, not the body. The artifact and the norm are separate axes: [`docs/reference/terminology.md`](../../../../docs/reference/terminology.md#principle-skill) defines the principle skill, and the same registry's `modality` entry defines the judgement it carries.
 

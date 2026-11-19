@@ -8,7 +8,7 @@
 # The body shape is a convention, not this gate's subject:
 # .agents/skills/instruction-authoring/references/skill-conventions.md
 # `## A principle skill`. The neighbour rule is
-# .agents/skills/instruction-authoring/patterns/admission.md.
+# .agents/skills/instruction-authoring/runbooks/principle-change.md.
 #
 # Usage: bash scripts/check_principle_frontmatter.sh
 # Exit:  0 = clean, 1 = a finding, 2 = the root could not be read

@@ -30,7 +30,7 @@ Ask all four, in order, before rewriting the ask, and answer them in chat. Each 
 
 ## Check the boundary
 
-Before forming the brief, check whether the scope duplicates a responsibility another component owns. If it does, stop and raise the boundary violation to the operator. Do not decide the fix. See `principle-single-source-of-truth`. When the unit is a principle, the boundary is the admission decision: name the nearest principles, the distinction and the case, then record `metadata.neighbours` per `.agents/skills/instruction-authoring/patterns/admission.md`.
+Before forming the brief, check whether the scope duplicates a responsibility another component owns. If it does, stop and raise the boundary violation to the operator. Do not decide the fix. See `principle-single-source-of-truth`. When the unit is a principle, the boundary is the admission decision: name the nearest principles, the distinction and the case, then record `metadata.neighbours` per `.agents/skills/instruction-authoring/runbooks/principle-change.md`.
 
 ## Rewrite the ask
 

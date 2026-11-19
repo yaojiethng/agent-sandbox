@@ -2,11 +2,11 @@
 
 **Status:** concluded
 **Date:** 2026-11-16
-**Procedure:** [`.agents/skills/instruction-authoring/references/corpus-survey.md`](../../.agents/skills/instruction-authoring/references/corpus-survey.md)
+**Procedure:** [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md)
 
 ## What this is
 
-The full survey over the 25 repo-owned principles. Each card has one **root defect**, the trigger, and a **remedy**. The family is the **family aim**, the higher intent the cards serve; the card's `intent` is its specific judgement; the defect is the axis within the family. A card whose remedy lives on the other axis carries an **RT** to that axis. The map is provisional, and the operator's review is its acceptance.
+The full survey over the repo-owned principles. Each card has one **root defect**, the trigger, and a **remedy**. The family is the **family aim**, the higher intent the cards serve; the card's `intent` is its specific judgement; the defect is the axis within the family. A card whose remedy lives on the other axis carries an **RT** to that axis. The map is provisional, and the operator's review is its acceptance.
 
 ## The cards
 
@@ -180,7 +180,7 @@ Settled: the root-defect rule, the RT rule, the context cluster's two-axis model
 
 ## What the map says
 
-The method held at 25 scale. It produced seven family aims, three cross-family RT groups and six cases from 25 cards, and it did so without closing an RT edge or forcing a merge. The reader-context cluster is the only family with a clear BT umbrella; the other families are aims without a BT.
+The method held at corpus scale. It produced seven family aims, three cross-family RT groups and six cases from the cards, and it did so without closing an RT edge or forcing a merge. The reader-context cluster is the only family with a clear BT umbrella; the other families are aims without a BT.
 
 The map also supports the cluster reorganization you named. The reader-context cards are clean once the family aim, the card's specific intent and the defect are separated, and the umbrella is `context disclosure`, not `progressive context disclosure`.
 

@@ -19,21 +19,21 @@
 
 ## 2026-11-16 -- The principle body gives its parts roles, not fixed labels
 
-**Decision:** The rule part is the first bold lead-in and the card names it. It carries the general rule, whether that rule is a pattern, a test or a principle. `**Why.**` and `**The test.**` keep their labels because they are the rationale and the check. Any named part may follow the rule, and a boundary part may follow the test.
+**Decision:** The rule part is the first bold lead-in and the skill names it. It carries the general rule, whether that rule is a pattern, a test or a principle. `**Why.**` and `**The test.**` keep their labels because they are the rationale and the check. Any named part may follow the rule, and a boundary part may follow the test.
 
-**Rationale:** The literal `**The pattern.**` forced one card's label onto every card. A card whose rule is a deletion test had to call it a pattern, and a card with acceptable and unacceptable examples had to put both under one heading. The labels belong to the card, and the gate checks that the parts exist in a workable order.
+**Rationale:** The literal `**The pattern.**` forced one skill's label onto every skill. A skill whose rule is a deletion test had to call it a pattern, and a skill with acceptable and unacceptable examples had to put both under one heading. The labels belong to the skill, and the gate checks that the parts exist in a workable order.
 
 ## 2026-11-17 -- The intent and mechanism fields are required
 
-**Decision:** `metadata.intent` and `metadata.mechanism` are required on every principle, and the frontmatter gate fails a card that lacks either. The 25-card corpus carries both, so the conditional period ends.
+**Decision:** `metadata.intent` and `metadata.mechanism` are required on every principle, and the frontmatter gate fails a skill that lacks either. The corpus carries both, so the conditional period ends.
 
-**Rationale:** An absent field meant the operator had not ratified the card. All 25 are now ratified, so an absent field means a new card was admitted without its provenance. The gate holds presence; the value stays the operator's judgement.
+**Rationale:** An absent field meant the operator had not ratified the skill. All 25 are now ratified, so an absent field means a new skill was admitted without its provenance. The gate holds presence; the value stays the operator's judgement.
 
 **Rejected alternatives:**
 
-- *Keep the fields optional.* **Execution failure:** a new card could land with no recorded judgement, which is the state the field exists to prevent.
+- *Keep the fields optional.* **Execution failure:** a new skill could land with no recorded judgement, which is the state the field exists to prevent.
 - *Gate the value against the survey map.* **Neither:** the map carries a provisional value, and a comparison would make the weak source the authority.
-- *Require `leitwort` too.* **Execution failure:** not every card needs one; the corpus carries it unevenly by design.
+- *Require `leitwort` too.* **Execution failure:** not every skill needs one; the corpus carries it unevenly by design.
 
 **Edge cases / drivers:** The five pilot values and the 20 back-constructed ones are the current corpus; handover `20261117-02` holds the provenance table. `single-train-of-thought` already carried its value and is unchanged.
 
@@ -64,7 +64,7 @@
 - *Delay the gate until the survey fills the fields.* **Execution failure**: it blocks the gate on a survey that may produce a map rather than edges, and the presence check works today.
 - *Give the field a third value for "not surveyed".* **Neither**: a third state needs a gate, a reader and a migration of its own; the survey map carries the distinction with no schema change.
 
-**Edge cases / drivers:** `[]` means "no neighbour declared", not "has no neighbour". A principle the survey finds with no neighbour is recorded on the survey map; the procedure is [`corpus-survey.md`](../../.agents/skills/instruction-authoring/references/corpus-survey.md), and the field stays `[]`. The gate reads the repo-owned provider root; `$AGENT_HOME` carries extras and stale duplicates. The gate cannot judge whether a named neighbour is the right one; that is the admission decision.
+**Edge cases / drivers:** `[]` means "no neighbour declared", not "has no neighbour". A principle the corpus finds with no neighbour is recorded on the corpus map; the change is [`principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md), and the field stays `[]`. The gate reads the repo-owned provider root; `$AGENT_HOME` carries extras and stale duplicates. The gate cannot judge whether a named neighbour is the right one; that is the admission decision.
 
 ## 2026-11-14 -- A principle declares its neighbours, and admission is by case
 
