@@ -14,7 +14,7 @@ Write the judgement only once the discussion has settled it. A principle written
 
 State back your understanding of the intent, take the correction or the research question the operator answers with, and repeat until the decision is settled.
 
-- **Ask the operator for the purpose**, `metadata.intent` and `metadata.mechanism`, with the row's provenance, the operator's own words quoted from the logs, and the corpus's neighbouring intents.
+- **Ask the operator for the purpose**, `metadata.intent` and `metadata.mechanism`, with the row's provenance, the operator's own words quoted from the logs, the corpus's neighbouring intents, and the language unit the mechanism reads.
 - **Ask for the domain**: the field the judgement takes reference from, the terms it borrows, and the verdict on the research. Bring the field's primary sources, the candidate terms with their definitions, and what the corpus already borrows.
 - **Ask for the scope and the body**: what the test inspects, the test, and the `**Why.**`. Bring the exemplar, the friction the test must catch, and the cost recorded where it landed.
   - **Write the `**Why.**` motivation first.** It answers what applying the judgement wins, in the operator's words or the operator's own communications, and a reader who sees the win applies the judgement.
@@ -58,7 +58,7 @@ The comparison names the edge, and a shared subject only tells you where to look
 
 - **Name the kind.** USE and UF are two names for one judgement and become a merge case. BT and NT are one judgement narrowing another and become a hierarchy case. RT is the same subject with a different judgement and becomes a neighbour. See-also is a handoff, so write it as prose. A contested pair is provisional and stays in the docket.
 - **Declare the field on every skill.** `metadata.neighbours` holds the neighbours only, as a symmetric list of full skill names; write `[]` when no neighbour is declared, and the gate fails an absent field.
-- **Separate by axis.** **Defect** is what fails. **Grain** is what the judgement inspects: term, sentence, passage, document, artifact, corpus. **Moment** is when it fires: propose, write, revise, review, admit. Two artefacts sharing a facet are co-located; read the comparison for the relation.
+- **Separate by axis.** **Defect** is what fails. **Language unit** is what the judgement inspects, one of the language units `term`, `phrase`, `clause`, `sentence`, `passage` and `document`, or none where the judgement is about a file or a queue; [`terminology.md`](../../../../docs/reference/terminology.md#language-unit) defines the list. **Moment** is when it fires: propose, write, revise, review, admit. Two artefacts sharing a facet are co-located; read the comparison for the relation.
 - **Settle the conflict by precedence.** Record the id, the parties, the issue as a question, the evidence, the status and the disposition. Try *lex specialis* when a BT/NT edge changes neither body, then *lex posterior* when the later decision was made with the earlier in view, then a scope note on each artefact, and stay the case last. Keep a conflict pair-local, since RT does not carry.
 
 ## Record each decision with the evidence it rested on

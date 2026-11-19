@@ -1,5 +1,5 @@
 ---
-date: 2026-11-18
+date: 2026-11-19
 milestone: M3.3.7 - The principle corpus admission
 type: Plan
 status: Closed
@@ -90,5 +90,5 @@ None.
 |---|---|
 | [`devlog/roadmap.md`](devlog/roadmap.md) | The census row for `attach-as-you-read` becomes the voice item, and a new act item joins it, both carrying their requirements and their dropped parts. |
 | [`devlog/roadmap_future.md`](devlog/roadmap_future.md) | Unchanged from the draft: the deferred item for the modal vocabulary, stating the problem only. |
-| `devlog/handovers/M3.3.7/20261118-06-plan-act_and_voice_split.md` | This record, replacing the implementation handover. |
+| `devlog/handovers/M3.3.7/20261119-03-plan-act_and_voice_split.md` | This record, replacing the implementation handover. |
 | The draft skill, its index leaf and its edge | Reverted, so the plan commit carries no implementation. |

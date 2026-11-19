@@ -10,7 +10,7 @@ reader: [agent, operator]
 
 These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
-`unit` is not a reserved term. It is ordinary as a quantifier -- a unit of work, a unit of a pass, a unit of measure, an experimental unit -- and inside a compound such as `unit test`, `unit suite` or `test unit`. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. The compounds `harness unit` and `operator unit` are the session and the iteration, not the work.
+The bare noun is never left unqualified. A size of text is a [language unit](#language-unit): give the full term at its first mention in a document and `unit` after it. Every other sense carries its own qualifier, a `work unit`, a `test unit`, a `unit of a pass`, a `unit of measure`, and `unit test`, `unit suite` and `test unit` are compounds that stand as they are. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. `harness unit` and `operator unit` are the session and the iteration.
 
 ## modality
 
@@ -518,3 +518,31 @@ An ownership slice within a [sub-domain](#sub-domain): host substrate, session g
 - Not a [layer](#layer), which names the container architecture.
 
 **Last updated:** 2026-10-15
+
+---
+
+## language unit
+
+A language unit is a size of text, taken as the thing a judgement reads. Two families, split by the relation inside each. The grammatical units compose into one another: each is made of the unit below. The text units are spans whose parts are related rather than composed. The vocabulary is borrowed from the grammar's rank scale, and the list of units is this repository's, because no settled scale exists above the sentence.
+
+### Identity
+
+- grammatical units: `term`, `phrase`, `clause`, `sentence`
+- text units: `passage`, `document`
+- short form: `unit`, in a document after the full term's first mention
+
+### Scope
+
+- The size a judgement inspects, not the kind of meaning it inspects. Kind is the perpendicular axis: what a unit means, what it does to its reader, and with what strength, are [modality](#modality) and [modal strength](#modal-strength), and neither is a size.
+- Not the span a comparison runs between artefacts, where the units are the file and the corpus.
+- A judgement about a file, a queue, or a check's position in a workflow declares no unit.
+
+### Relationships
+
+- The borrowing, and what this repository keeps, rewrites, adds and drops: `.agents/registry/citations/halliday-rank-scale.json`.
+- The grammatical units are what ASD-STE100 Issue 9 sections its rules by: Section 1 Words, 2 Multi-word nouns, 3 Verbs and 4 Sentences. The text units are its writing types: Section 5 Procedural, 6 Descriptive with the paragraph rules 6.4 to 6.6, and 7 Safety.
+- `phrase` is the language unit neither the corpus nor STE holds a rule at.
+- Not a [layer](#layer) or a [plane](#plane), which name the container architecture.
+- Not grain, which is how finely a thing is divided: an iteration has a grain, a section has a grain, and a language unit is the thing divided.
+
+**Last updated:** 2026-11-19

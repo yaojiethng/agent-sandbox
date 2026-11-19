@@ -1,5 +1,5 @@
 ---
-date: 2026-11-18
+date: 2026-11-19
 milestone: M3.3.7 - The principle corpus admission
 type: Workflow
 status: Closed
@@ -58,4 +58,4 @@ None.
 |---|---|
 | [`src/reasoning/agent-runtime/pi/config/agent/AGENTS.md`](src/reasoning/agent-runtime/pi/config/agent/AGENTS.md) | The preamble adopts the two sentences: name the principle and the choice it changed, cite only leaves read this session. |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | The routing-miss row becomes the check on the naming rule. |
-| `devlog/handovers/M3.3.7/20261118-05-workflow-naming_rule_wording.md` | This record. |
+| `devlog/handovers/M3.3.7/20261119-02-workflow-naming_rule_wording.md` | This record. |

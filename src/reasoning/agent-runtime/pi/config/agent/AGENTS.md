@@ -83,7 +83,7 @@ Read the leaf skill in full for any principle you apply. In your reply, name eac
     - [`single-source-of-truth`](./skills/principle-single-source-of-truth/SKILL.md): a second copy no reader can choose between
     - [`propagation-discipline`](./skills/principle-propagation-discipline/SKILL.md): a carrier of the old state left behind, a description as much as a reference
   - **One job**: the artifact earns its existence.
-    - [`organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): a unit answering one need while sitting where another is answered
+    - [`organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): a language unit answering one need while sitting where another is answered
     - [`remove-the-passthrough`](./skills/principle-remove-the-passthrough/SKILL.md): an artifact only the next hop reads
     - [`produce-just-in-time`](./skills/principle-produce-just-in-time/SKILL.md): an artifact nothing in the scope claimed
 - **Grounding**: the text carries what the reader can check or act on.

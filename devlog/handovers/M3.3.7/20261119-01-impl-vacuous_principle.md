@@ -1,5 +1,5 @@
 ---
-date: 2026-11-18
+date: 2026-11-19
 milestone: M3.3.7 - The principle corpus admission
 type: Implementation
 status: Closed
@@ -62,4 +62,4 @@ None.
 | [`communication-principle-show-dont-describe/SKILL.md`](src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-show-dont-describe/SKILL.md) | Declares the edge, replacing `[]`. |
 | [`communication-principle-dont-forecast-undone-work/SKILL.md`](src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-dont-forecast-undone-work/SKILL.md) | Declares the edge. |
 | [`devlog/roadmap.md`](devlog/roadmap.md) | One row closes with its landed summary. |
-| `devlog/handovers/M3.3.7/20261118-04-impl-vacuous_principle.md` | This record. |
+| `devlog/handovers/M3.3.7/20261119-01-impl-vacuous_principle.md` | This record. |
