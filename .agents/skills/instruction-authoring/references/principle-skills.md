@@ -21,7 +21,7 @@ A principle never sets `disable-model-invocation`, because a writer reaches for 
 
 `neighbours` is a symmetric list of neighbours only, and a handoff ("apply this next") is prose. `[]` says no neighbour is declared, which is not the same as finding none. An absent field is undeclared and fails the gate. [`../runbooks/principle-change.md`](../runbooks/principle-change.md) decides the list.
 
-`intent` and `mechanism` are operator-led. The operator writes them when the skill is created or ratified, and the agent reads them rather than inferring them, because the intent is obvious to the operator and the agent re-derives it wrong. The change record that holds the case is their provenance, and the gate checks presence, never whether the value is right.
+Every part of a principle skill is written by the operator, and the agent scaffolds the questions rather than drafting an answer. [`../runbooks/principle-change.md`](../runbooks/principle-change.md) carries the sequence, from the judgement to the neighbours, and the agent reads a value rather than inferring it, because the judgement is obvious to the operator and re-derived wrong by the agent. The recorded answers are the provenance, and the gate checks presence, never whether the value is right.
 
 ## The body
 

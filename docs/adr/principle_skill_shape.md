@@ -2,6 +2,20 @@
 
 **Current:** 2026-11-17
 
+## 2026-11-17 -- The operator writes a principle, and the agent scaffolds the questions
+
+**Decision:** Every part of a principle skill is written by the operator. [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) carries a question sequence that asks for each part in turn, and the agent supplies the evidence at each question, assembles the answers verbatim into the shape, and runs the gates. The agent writes no clause of the skill.
+
+**Rationale:** The operator holds the judgement a principle carries, and an agent that drafts it produces a proposal the operator must read, correct and read again, which costs more than writing the part. The runbook's earlier steps assigned the generative work to the doer and delivered the ruling after the draft existed, so the draft was the artefact under review. Authorship is not the body shape: the shape stays fixed, and who fills it changes.
+
+**Rejected alternatives:**
+
+- *Agent drafts, operator rules.* **Intent failure**: a drafted part that the operator rewrites costs the read and yields no content.
+- *A form the operator fills in.* **Boundary failure**: the parts depend on each other, and the name cannot be answered before the judgement is.
+- *Operator-led for `intent` and `mechanism` only.* **Execution failure**: the four remaining parts then default to the general authoring procedure, which is agent-authored by design, and the default is read first.
+
+**Edge cases / drivers:** An answer that does not meet the shape's requirement is a question back, not a clause the agent adds. The sequence stops at the overlap question when a live principle already answers the change. The answers are recorded as they arrive, so a lost context resumes at the next question. The sequence asks for the parts a principle has, and a change that only moves an edge asks fewer.
+
 ## 2026-11-17 -- One runbook changes a principle, and one reference says what one is
 
 **Decision:** [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) owns every change to the corpus, and [`references/principle-skills.md`](../../.agents/skills/instruction-authoring/references/principle-skills.md) owns what a principle skill carries. The admission pattern and the survey reference are deleted, and the survey map and this record's predecessor, the admission design, are deleted with them. The four-case replay stands as the mechanism's evidence: the passthrough, the `absent` schema field, the boundary merge and the rename, each caught with one operator decision.

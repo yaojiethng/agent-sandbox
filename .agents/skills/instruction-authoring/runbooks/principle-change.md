@@ -1,6 +1,6 @@
 # Change a principle
 
-A change to the principle corpus starts here. Name the change, settle whether a live principle already answers it, and record the decision where the next reader looks. One change per pass, because a change carrying two intents is two changes.
+A change to the principle corpus starts here. The operator writes every part of the skill and this file carries the questions that draw them out; the agent asks, assembles and checks. One change per pass, because a change carrying two intents is two changes.
 
 The corpus is at its most valuable when a principle changes, so this file owns the whole change: the five intents, the overlap case that decides admission, the edges the corpus records, and where the decision lands. It replaces the admission pattern and the corpus survey, which mapped the corpus once and will not run again.
 
@@ -12,17 +12,28 @@ The corpus is at its most valuable when a principle changes, so this file owns t
 
 The corpus as it stands is `node scripts/principle_inventory.mjs`: the fields, the declared neighbours, the cross-links and any missing declaration. What a principle skill carries is [`../references/principle-skills.md`](../references/principle-skills.md).
 
-## Steps
+## The sequence
 
-1. **Name the change as one of five intents.** Add, consolidate, split, rename, remove. Say which intent, and name the artefact it touches: a skill, a section, a field, a prompt. Done when the intent is one of the five and the artefact is a path you can open.
+Ask one question, take the answer, then ask the next. Nothing enters the skill before its answer is in hand. A question the operator answers with a change to an earlier answer reopens that answer, and the later ones follow from it.
 
-2. **Find the nearest principles before writing anything.** Name the principles whose judgement shares the subject, narrows it or splits from it, and say why each one is near. Read their descriptions and their `**The test.**` parts, not their bodies, because the body answers a different question. `node scripts/principle_inventory.mjs` lists the cross-links and any missing declaration, and its candidates are a start rather than an answer. Done when the nearest set is named with a reason each, drawn from the inventory rather than from memory.
+| The agent asks | The operator writes | The agent brings |
+|---|---|---|
+| What changes, and by which of the five intents? | the change and the artefact, in one sentence | the five intents with the question each asks, and the inventory for the artefact |
+| Which live principles are nearest, and why? | near or not near, and the reason, for each candidate | the inventory's candidates with their descriptions and `**The test.**` parts, and the cross-links |
+| Does a live principle already answer it? | the case, and what each artefact determines about it | candidate cases from the decision records, `git log -S` on the line, and the chat logs |
+| What is the judgement, in one sentence? | the sentence, in their words | the shape's requirement for that part, and the exemplar |
+| What fails without it? | the `**Why.**` text | the shape's requirement for that part |
+| What does the test ask? | the `**The test.**` text, and any named part the shape allows | the shape's requirement, and the exemplar's test |
+| What is it called? | the name | the existing names, the gate's naming rule, and what a cold reader predicts from it |
+| What situation does the description name? | the description | the routing rule, that selection reads this alone, and the exemplar's description |
+| What are `intent`, `mechanism` and the leitwort? | the three values, or `none` for the leitwort | the field meanings and the gate's rule for each |
+| Which neighbours does it declare? | the list, ruled from the candidates | the candidates ruled near above, and the symmetry the gate checks |
 
-3. **Settle the overlap with one case.** Two artefacts overlap when they give the same outcome for the same input. Take one case from the record, a sentence the corpus misread, a document it produced or a decision it took, say what each artefact determines about it, and compare. Both claim it and agree, and they carry one judgement, so the change does not land as a new principle. Both claim it and differ, and the case is their boundary, which goes into both. One claims it, and they are distinct, so the change goes ahead. Quote the case and both determinations. Done when the record carries the case and the comparison, or the change names no overlapping artefact and says so.
+Three rules hold the sequence together.
 
-4. **Collect what the operator needs, and say which decision it feeds.** Each finding carries a witness: a decision record, a commit, a quoted pair or a chat exchange. Three sources say what the corpus meant, and each is read for the intent alone: the decision records, the git history of the surface (`git log -S` on the line) and the chat logs. A finding with no witness is a preference, and it stays in the chat. Done when every finding carries its witness and names the decision it serves.
-
-5. **Land the change where the decision lives.** What the skill carries is [`../references/principle-skills.md`](../references/principle-skills.md), and the design behind it is [`principle_skill_shape.md`](../../../../docs/adr/principle_skill_shape.md). This file does not restate either. Record the decision in the iteration's `## Decisions` table, and take a judgement that outlives the iteration to an ADR. Done when `bash scripts/check_principle_frontmatter.sh` and `bash scripts/lint.sh` are clean, and each decision names the file that holds it.
+1. **One question at a time.** The sequence is the procedure, not a form, and a batch of questions is a form.
+2. **Assembly is verbatim.** The agent writes the frontmatter keys, the bold lead-ins and the order the shape fixes, and no clause of its own. A part missing from an answer is a question back, never a sentence the agent adds.
+3. **Each answer lands the moment it arrives**, in the iteration's `## Decisions` table, with the question it answers. A lost context resumes at the next question, and the diff is checkable against the record.
 
 ## The five intents
 
@@ -60,9 +71,9 @@ Resolve by precedence before merging. Try *lex specialis* first, a BT/NT edge th
 
 ## What a change owes the record
 
-- The intent, out of the five.
-- The nearest set, with a reason each.
-- The overlap case and both determinations, or the statement that none overlaps.
+- Every answer, with the question it answers.
+- The case and both determinations, or the statement that nothing overlaps.
 - The edge, when the change adds or moves one.
 - A witness for every finding.
-- The decision, in the iteration's `## Decisions` table.
+
+The answers are the decision, which is why they are recorded rather than summarised.
