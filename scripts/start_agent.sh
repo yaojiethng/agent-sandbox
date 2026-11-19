@@ -105,6 +105,24 @@ validate_wsl_path() {
 
 
 # -------------------------
+# SANDBOX_DIR canonicalisation
+# -------------------------
+# One spelling of the sandbox path, so identity, compose labels and any
+# downstream filter agree. Called before resolution for an explicitly named
+# sandbox, so a misspelt path reports as a path rather than as the .env the
+# resolver could not find inside it, and after resolution for one the ladder
+# supplied.
+_canon_sandbox_dir() {
+  validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
+
+  # Fails loudly when unresolvable (the parent must exist for start to proceed).
+  local canon
+  if ! canon="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
+  SANDBOX_DIR="$canon"
+}
+
+
+# -------------------------
 # Interactive config wizard (F2 design D11)
 # -------------------------
 # `make start INTERACTIVE=1` collects the config (provider + build policy)
@@ -316,23 +334,18 @@ main() {
   fi
 
   # -------------------------
-  # SANDBOX_DIR derivation
+  # SANDBOX_DIR resolution
   # -------------------------
-  if [[ -n "$SANDBOX_DIR_OVERRIDE" ]]; then
-    SANDBOX_DIR="$SANDBOX_DIR_OVERRIDE"
-  else
-    SANDBOX_DIR="$(dirname "$PROJECT_DIR")/$(basename "$PROJECT_DIR")-sandbox"
-  fi
+  # The sandbox path is a ladder value, not a computed guess: the explicit
+  # --sandbox, then AGENT_SANDBOX_SANDBOX_DIR, then the .env, then the error
+  # naming onboard. It resolves with the rest of the triple at the identity
+  # call below. A path derived from PROJECT_DIR here would occupy the explicit
+  # level, so the value onboard writes into the .env could never win.
+  SANDBOX_DIR="$SANDBOX_DIR_OVERRIDE"
 
   validate_wsl_path "PROJECT_DIR" "$PROJECT_DIR"
-  validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
 
-  # Canonicalize the sandbox dir once so identity, compose labels, and any
-  # downstream filter agree regardless of path spelling. Fails loudly when
-  # unresolvable (the dir must exist for start to proceed).
-  local canon_dir
-  if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
-  SANDBOX_DIR="$canon_dir"
+  [[ -n "$SANDBOX_DIR" ]] && _canon_sandbox_dir
 
   if [[ "${INTERACTIVE:-false}" == "true" ]]; then
     _start_wizard
@@ -362,6 +375,11 @@ main() {
   # DRYRUN_SID_PREFIX + session_is_dry_run (canonical dry-run id labeling).
   source "$REPO_ROOT/src/libs/session_inventory.sh"
   env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "${ENV_REL:-}" || exit 1
+
+  # A value the ladder supplied is canonicalized here; an explicit one was
+  # canonicalized above.
+  [[ -z "$SANDBOX_DIR_OVERRIDE" ]] && _canon_sandbox_dir
+
   resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR"
   
   if [[ "${REFRESH:-false}" == "true" ]]; then

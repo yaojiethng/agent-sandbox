@@ -358,18 +358,28 @@ test_missing_provider_fails_fast_with_clear_error() {
   fi
 }
 
-# When --sandbox is absent, start derives <dirname project>/<basename project>-sandbox.
-# The convention is load-bearing for direct invocation (the CLI always passes
-# --sandbox explicitly), so the derived directory is the only one the run can use.
-# Given: a project at <dir>/project and the conventional sandbox at <dir>/project-sandbox
+# When --sandbox is absent, start resolves the sandbox from the ladder: the
+# .env, then AGENT_SANDBOX_SANDBOX_DIR. Nothing is derived from PROJECT_DIR, so
+# a sandbox the operator onboarded elsewhere wins over the conventional sibling.
+# Given: a project at <dir>/project, a decoy sibling <dir>/project-sandbox, and
+#        an invocation-CWD .env naming <dir>/onboarded-sandbox
 # When:  start runs without --sandbox
-# Then:  the session starts from the derived sandbox and persists its compose record there
-# Asserts: the -sandbox suffix derivation
-test_derived_sandbox_dir_uses_sandbox_suffix() {
+# Then:  the session uses the onboarded sandbox and never the sibling
+# Asserts: the sandbox path is a ladder value, not a computed guess
+#          (docs/adr/resolution_model.md, R3)
+test_env_supplies_sandbox_dir_over_the_sibling() {
   local dir="$FIXTURE_DIR/derive_sandbox"
-  local sbx="$dir/project-sandbox"
-  mkdir -p "$sbx/.workspace/session-diffs" "$sbx/.workspace/input" "$sbx/.workspace/output"
-  cat > "$sbx/.env" <<EOF
+  local sbx="$dir/onboarded-sandbox"
+  local decoy="$dir/project-sandbox"
+  local d
+  for d in "$sbx" "$decoy"; do
+    mkdir -p "$d/.workspace/session-diffs" "$d/.workspace/input" "$d/.workspace/output"
+    cat > "$d/.env" <<EOF
+SANDBOX_DIR=$d
+PROJECT_DIR=$dir/project
+EOF
+  done
+  cat > "$dir/.env" <<EOF
 SANDBOX_DIR=$sbx
 PROJECT_DIR=$dir/project
 EOF
@@ -385,9 +395,14 @@ EOF
       --name=stest --project="$dir/project" --provider=pi 2>&1)" || rc=$?
 
   if [[ "$rc" -eq 0 ]] && ls "$sbx/.compose"/*.yml >/dev/null 2>&1; then
-    pass "start without --sandbox: derived <project>-sandbox is the session sandbox"
+    pass "start without --sandbox: the .env's sandbox is the session sandbox"
   else
-    fail "start without --sandbox: expected the derived sandbox to be used, rc=$rc out=$(head -2 <<<"$out")"
+    fail "start without --sandbox: expected the onboarded sandbox to be used, rc=$rc out=$(head -2 <<<"$out")"
+  fi
+  if ls "$decoy/.compose"/*.yml >/dev/null 2>&1; then
+    fail "start without --sandbox: the <project>-sandbox sibling was used instead"
+  else
+    pass "start without --sandbox: the <project>-sandbox sibling is never used"
   fi
 }
 
@@ -813,7 +828,7 @@ run_test test_removed_rebuild_base_flag_is_rejected
 run_test test_help_flag_prints_full_usage
 run_test test_help_short_flag_prints_usage
 run_test test_missing_provider_fails_fast_with_clear_error
-run_test test_derived_sandbox_dir_uses_sandbox_suffix
+run_test test_env_supplies_sandbox_dir_over_the_sibling
 run_test test_unresolvable_sandbox_reports_canonicalisation
 run_test test_wizard_rejects_non_standard_mode
 run_test test_wsl_path_accepts_linux_paths

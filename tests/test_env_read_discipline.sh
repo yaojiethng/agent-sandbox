@@ -82,8 +82,31 @@ test_prelude_carries_exactly_one_call_site() {
   assert_eq "1" "$n" "the prelude reads the .env exactly once, for the bulk load"
 }
 
+# Given: a project directory, no --sandbox, and a CWD holding no .env
+# When:  start_agent.sh resolves the sandbox path
+# Then:  it refuses, naming onboard, and names no path computed from PROJECT_DIR
+# Asserts: the sandbox path is a ladder value. A PROJECT_DIR-derived default
+#          occupies the explicit level, so the value onboard writes into the
+#          .env could never win (docs/adr/resolution_model.md, R3).
+test_sandbox_path_is_a_ladder_value() {
+  local work out status
+  work="$(mktemp -d)"
+  mkdir -p "$work/proj"
+  if out=$(cd "$work" && bash "$REPO/scripts/start_agent.sh" standard \
+      --name=probe --project="$work/proj" --provider=pi 2>&1); then
+    status=0
+  else
+    status=$?
+  fi
+  assert_eq "1" "$status" "start refuses to invent a sandbox path"
+  assert_contains "$out" "onboard" "the refusal names the onboard remedy"
+  assert_not_contains "$out" "proj-sandbox" "no path is computed from PROJECT_DIR"
+  rm -rf "$work"
+}
+
 run_test test_env_resolution_call_census
 run_test test_no_second_env_parser
 run_test test_prelude_carries_exactly_one_call_site
+run_test test_sandbox_path_is_a_ladder_value
 
 test_done test_env_read_discipline.sh
