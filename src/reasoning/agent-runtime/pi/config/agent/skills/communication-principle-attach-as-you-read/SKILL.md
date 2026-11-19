@@ -10,6 +10,7 @@ metadata:
     - communication-principle-link-what-the-reader-can-open
     - communication-principle-single-train-of-thought
     - communication-principle-keep-a-subject-near
+    - communication-principle-structure-instructions-imperatively
 ---
 
 # Attach as you read

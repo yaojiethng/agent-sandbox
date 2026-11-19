@@ -1,0 +1,15 @@
+{
+  "id": "google-developer-style",
+  "title": "Google developer documentation style guide",
+  "author": "Google",
+  "publisher": "Google for Developers",
+  "url": "https://developers.google.com/style",
+  "version": "read 2026-11-19, one retrieval per page; the Procedures page is dated 2026-10-27 and the Voice and tone page 2024-10-15",
+  "record": {
+    "source": "A style guide organised by text type, each page opening with a summary table of one-line guidelines in a Guidance, Recommended and Not recommended column, then sections for the neighbouring cases. Procedures states that a step begins with an imperative verb and pairs the guideline with the step it fails; Voice and tone carries active voice on its own page and does not mention procedures.",
+    "kept": "The imperative guideline as a check, \"Make sure that the first sentence in a procedural step includes an imperative verb\", and the failing example beside it, \"You need the project ID later in this document. Retrieve the project ID.\"",
+    "rewritten": "The guideline reads as the test a writer applies rather than a summary row a reader scans, and the failing example is read for the shape it shows, an act arriving after a statement of need.",
+    "added": "Nothing. The guide supplies the check and the example, and the standard supplies the rule and its reason.",
+    "dropped": "The page's other guidelines, the recommended and not-recommended table form, the section on where an action's location goes, the sections on goals, results, optional steps and keyboard shortcuts, and the active voice rule of the Voice and tone page, which belongs to the voice leaf. The guide's scope, developer documentation rather than any instruction surface, is also dropped, because this corpus applies the check wherever a step is written."
+  }
+}

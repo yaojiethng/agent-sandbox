@@ -5,7 +5,8 @@ metadata:
   intent: "An instruction states what the work must achieve, and the route through it belongs to the party who holds the context."
   mechanism: "The instruction's wording: the intent and the boundary are stated, and the method is left to the doer."
   leitwort: subsidiarity
-  neighbours: []
+  neighbours:
+    - communication-principle-structure-instructions-imperatively
 ---
 
 # State the intent; delegate the method

@@ -33,7 +33,7 @@ A statement is vacuous when no observation separates its holding from its not ho
 | a tautology | every case satisfies it | cut it, or name the case that differs |
 | a contradiction | no case satisfies it | pick the clause that holds |
 
-**The test.** Name the predicate, then the observation that would settle it. An observation that separates its cases keeps the statement. None at all, and the statement is cut, or it becomes the assumption it is. Every case, and the claim is a tautology. No case, and two clauses disagree. A report of the writer's own reasoning is checkable when it names its evidence, and an assumption when it does not.
+**The test.** Name the predicate, then the observation that would settle it. An observation that separates its cases keeps the statement. None at all, and the statement is cut, or it becomes the assumption it is. Every case, and the claim is a tautology. No case, and two clauses disagree. A definition settles what a word means, not whether a claim holds, so a reason that restates it supports nothing. A report of the writer's own reasoning is checkable when it names its evidence, and an assumption when it does not.
 
 **Where the vacuous form earns its place.** "It is what it is" concedes and ends the exchange, "either we ship or we do not" closes a debate, and "nothing else changes" bounds a wider reading by naming a guard. Each does something the reader can act on, which is what the test asks for.
 
