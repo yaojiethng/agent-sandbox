@@ -2,7 +2,23 @@
 
 **Current:** 2026-11-17
 
+## 2026-11-17 -- The operator dictates a principle, and the agent writes the file
+
+**Decision:** A change is a discussion. The agent brings the evidence a decision needs, the operator asks, judges and decides, and the agent tidies the conversation into the skill, keeping its word choice, semantics and implementation details. [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) holds the five decisions the discussion settles: the judgement's purpose, the domain, the scope and the body, the placement, and the action.
+
+**Rationale:** The judgement is the operator's and the writing is the agent's, and `communication-principle-rewrite-syntax-never-semantics` is the rule that separates them: semantics from the dialogue, syntax from the writer. A procedure that assigns the writing to the operator makes the operator type what the agent can reflow, and a procedure that assigns the judgement to the agent produces a proposal the operator pays to read, correct and read again.
+
+**Rejected alternatives:**
+
+- *The operator writes every part and the agent asks the questions.* **Execution failure**: the operator types the file the agent could assemble, and the question sequence then carries the parts rather than the decisions.
+- *The agent drafts each part and the operator rules it.* **Intent failure**: a drafted part that the operator rewrites costs the read and yields no content, which is the failure the earlier entry in this file recorded.
+- *A form with one slot per part.* **Boundary failure**: the parts depend on each other, and the name cannot be settled before the judgement is.
+
+**Edge cases / drivers:** A part the conversation did not settle is a question back, never a clause the agent invents. The domain is a decision of its own, because a principle takes reference from a field and the terms it borrows are the operator's to pick. `**Why.**` leads on consequence and benefit, so the operator validates it against what applying the judgement wins, taken from the operator's own communications.
+
 ## 2026-11-17 -- The operator writes a principle, and the agent scaffolds the questions
+
+**Status:** historical. Superseded by the entry above: the operator dictates and the agent writes.
 
 **Decision:** Every part of a principle skill is written by the operator. [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) carries a question sequence that asks for each part in turn, and the agent supplies the evidence at each question, assembles the answers verbatim into the shape, and runs the gates. The agent writes no clause of the skill.
 

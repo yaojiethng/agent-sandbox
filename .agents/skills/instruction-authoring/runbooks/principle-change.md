@@ -1,79 +1,72 @@
 # Change a principle
 
-A change to the principle corpus starts here. The operator writes every part of the skill and this file carries the questions that draw them out; the agent asks, assembles and checks. One change per pass, because a change carrying two intents is two changes.
+Write the judgement only once the discussion has settled it. A principle written ahead of its discussion is rewritten within the week, and the rewrite costs the reading that the discussion would have saved. So run the change as a discussion, a butler pass and a write: the operator dictates the judgement, and the agent writes the file under [`communication-principle-rewrite-syntax-never-semantics`](../../../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md).
 
-The corpus is at its most valuable when a principle changes, so this file owns the whole change: the five intents, the overlap case that decides admission, the edges the corpus records, and where the decision lands. It replaces the admission pattern and the corpus survey, which mapped the corpus once and will not run again.
+- **Call it** from `/iter` when a row changes a principle, or from the operator at any time. A change arriving from elsewhere names this file to the operator.
+- **Read the corpus** with `node scripts/principle_inventory.mjs`, and **read what a skill carries** in [`../references/principle-skills.md`](../references/principle-skills.md).
 
-## Called from
+## Settle the judgement in discussion, in any order, and reopen a decision when a later one moves its ground
 
-- `/iter`, when the iteration's row changes a principle.
-- The operator, for any change to the corpus.
-- No other workflow dispatches it. A change arriving from elsewhere names this file to the operator rather than deciding on its own.
+State back your understanding of the intent, take the correction or the research question the operator answers with, and repeat until the decision is settled.
 
-The corpus as it stands is `node scripts/principle_inventory.mjs`: the fields, the declared neighbours, the cross-links and any missing declaration. What a principle skill carries is [`../references/principle-skills.md`](../references/principle-skills.md).
+- **Hold the file** while the discussion runs, and record each decision as it lands with the evidence behind it, so a lost context resumes from the record.
+- **Ask the operator for the purpose**, `metadata.intent` and `metadata.mechanism`, with the row's provenance, the operator's own words quoted from the logs, and the corpus's neighbouring intents.
+- **Ask for the domain**: the field the judgement takes reference from, the terms it borrows, and the verdict on the research. Bring the field's primary sources, the candidate terms with their definitions, and what the corpus already borrows.
+- **Ask for the scope and the body**: what the test inspects, the test, and the `**Why.**`. Bring the exemplar, the friction the test must catch, and the cost recorded where it landed.
+  - **Write the `**Why.**` motivation first.** It answers what applying the judgement wins, in the operator's words or the operator's own communications, and a reader who sees the win applies the judgement.
+- **Ask for the placement**: which action intent stands, and which neighbours it declares. Run the scan below and propose.
+- **Ask for the action**: the title, the description, the leitwort, and the go-ahead. Bring the corpus's names, the routing rule, the gate's rule per field, and the diff the action would make.
 
-## The sequence
+## Converge on a presentation the operator can release
 
-Ask one question, take the answer, then ask the next. Nothing enters the skill before its answer is in hand. A question the operator answers with a change to an earlier answer reopens that answer, and the later ones follow from it.
+Restate the judgement in the operator's words, name the domain and the borrowed terms, state the scope and the test, and propose a placement with its evidence. A reader who can evaluate the skill from that presentation has what the gate needs.
 
-| The agent asks | The operator writes | The agent brings |
-|---|---|---|
-| What changes, and by which of the five intents? | the change and the artefact, in one sentence | the five intents with the question each asks, and the inventory for the artefact |
-| Which live principles are nearest, and why? | near or not near, and the reason, for each candidate | the inventory's candidates with their descriptions and `**The test.**` parts, and the cross-links |
-| Does a live principle already answer it? | the case, and what each artefact determines about it | candidate cases from the decision records, `git log -S` on the line, and the chat logs |
-| What is the judgement, in one sentence? | the sentence, in their words | the shape's requirement for that part, and the exemplar |
-| What fails without it? | the `**Why.**` text | the shape's requirement for that part |
-| What does the test ask? | the `**The test.**` text, and any named part the shape allows | the shape's requirement, and the exemplar's test |
-| What is it called? | the name | the existing names, the gate's naming rule, and what a cold reader predicts from it |
-| What situation does the description name? | the description | the routing rule, that selection reads this alone, and the exemplar's description |
-| What are `intent`, `mechanism` and the leitwort? | the three values, or `none` for the leitwort | the field meanings and the gate's rule for each |
-| Which neighbours does it declare? | the list, ruled from the candidates | the candidates ruled near above, and the symmetry the gate checks |
+- **Release it**, and the presentation becomes the proto-skill. From there the operator answers gaps, and a decision that moves the proto-skill reopens the discussion.
 
-Three rules hold the sequence together.
+## Evaluate the proto-skill to find what the presentation left open
 
-1. **One question at a time.** The sequence is the procedure, not a form, and a batch of questions is a form.
-2. **Assembly is verbatim.** The agent writes the frontmatter keys, the bold lead-ins and the order the shape fixes, and no clause of its own. A part missing from an answer is a question back, never a sentence the agent adds.
-3. **Each answer lands the moment it arrives**, in the iteration's `## Decisions` table, with the question it answers. A lost context resumes at the next question, and the diff is checkable against the record.
+Check every part the shape demands against the conversation, gather the placement evidence the proto-skill now makes possible, and return a gap list.
 
-## The five intents
+- **Mine the discussion first.** Use each answer already given, in the operator's words, and ask again only for a part the discussion never reached.
+- **Gather the scan.** Run one case from the record against each artefact near it, take the carrier census for the intent, and read the name as a cold reader meets it.
+- **List the gaps.** Carry the evidence already in hand into each question and name what is missing, so the operator decides rather than searches.
+- **Hold the write** until the operator fills each gap, and record what filled it.
 
-| Intent | The question it asks | What settles it |
-|---|---|---|
-| Add | Does a live principle already answer this? | The overlap case: no live artefact claims it |
-| Consolidate | Do two artefacts carry one judgement? | The case both claim, with one determination |
-| Split | Does one artefact carry two judgements? | One case whose answer depends on which half you read |
-| Rename | Does the name predict the judgement? | A reader who meets the name cold and cannot predict the test |
-| Remove | Does anything still hold this? | No carrier: no owner row, no live pointer, no test |
+## Take the supplement, write the file, and hold it for review
 
-An intent is not a method. The row that triggers the change states the problem and the evidence, and how to integrate it is the doer's proposal, ruled at the gate. `communication-principle-state-intent-delegate-method` holds that split.
+Take the operator's words for each gap and assemble the file around them. Keep the word choice, the semantics and the implementation details as they were said, and take the keys, the bold lead-ins and the order from the shape.
 
-## The edges the corpus records
+- **Send a part back as a question** when it misses the shape's requirement.
+- **Hold the finished file for review.** Run `bash scripts/check_principle_frontmatter.sh` and `bash scripts/lint.sh`, and check the skill's words against the conversation.
 
-| Kind | Meaning | Disposition |
-|---|---|---|
-| USE / UF | two names for one judgement | a merge case |
-| BT / NT | one judgement narrows the other | a hierarchy case |
-| RT | same subject, different judgement | a neighbour |
-| see-also | a handoff ("apply this next") | prose, not a neighbour |
-| contested | an open conflict | the docket, provisional |
+## Place the judgement by scanning one case against every artefact near it
 
-`metadata.neighbours` holds the neighbours only, a symmetric list of full skill names, and `[]` says no neighbour is declared. An absent field is undeclared and fails the gate. A shared mechanism is not a neighbour: the field records the judgement's subject, and a shared mechanism is recorded in prose, as a broader and narrower judgement.
+Every intent answers the same question from the same comparison, so carry one case from the record into each scan and let its outcome name the intent.
 
-Three axes describe an artefact, and a shared value on any of them is not an edge. **Defect** is what fails. **Grain** is what the judgement inspects: term, sentence, passage, document, artifact, corpus. **Moment** is when it fires: propose, write, revise, review, admit. Two artefacts sharing a facet are co-located, not related.
+- **Add** when nothing live claims the case: state the judgement in one sentence.
+- **Consolidate** when two artefacts claim the case and reach one determination: name the survivor.
+- **Split** when one artefact claims the case and answers it two ways: name each judgement with its own test.
+- **Rename** when the name predicts a different test from the one the skill passes: name the replacement.
+- **Remove** when the carrier census returns empty for owner rows, live pointers, tests and gate entries.
 
-A **family** is a defect shared by two or more artefacts. Order a family by grain. A singleton stays unsorted, and the map is provisional and lossy, an index rather than an ontology.
+**Rerun the scan** when the operator names an intent it missed. The intent names the change; the doer proposes the method, ruled at the gate.
 
-## A conflict
+## Read the edge from the comparison, and settle a conflict as a case
 
-A conflict is a **case**: the id, the parties, the issue written as a question rather than a verdict, the evidence (the two cases), the status (`open`, `stayed`, `resolved`) and the disposition. A stayed case marks only its own pair provisional, and it never closes over the pair's neighbours.
+The comparison names the edge, and a shared subject only tells you where to look. Record a conflict as a case and settle it by precedence.
 
-Resolve by precedence before merging. Try *lex specialis* first, a BT/NT edge that changes neither body. Then *lex posterior*, the later decision governing when it was made with the earlier in view. Then a one-line scope note on each artefact saying what it does not cover. Only then stay the case. RT is never transitive, and a conflict stays pair-local.
+- **Name the kind.** USE and UF are two names for one judgement and become a merge case. BT and NT are one judgement narrowing another and become a hierarchy case. RT is the same subject with a different judgement and becomes a neighbour. See-also is a handoff, so write it as prose. A contested pair is provisional and stays in the docket.
+- **Declare the field on every skill.** `metadata.neighbours` holds the neighbours only, as a symmetric list of full skill names; write `[]` when no neighbour is declared, and the gate fails an absent field.
+- **Separate by axis.** **Defect** is what fails. **Grain** is what the judgement inspects: term, sentence, passage, document, artifact, corpus. **Moment** is when it fires: propose, write, revise, review, admit. Two artefacts sharing a facet are co-located; read the comparison for the relation.
+- **Settle the conflict by precedence.** Record the id, the parties, the issue as a question, the evidence, the status and the disposition. Try *lex specialis* when a BT/NT edge changes neither body, then *lex posterior* when the later decision was made with the earlier in view, then a scope note on each artefact, and stay the case last. Keep a conflict pair-local, since RT does not carry.
 
-## What a change owes the record
+## Record each decision with the evidence it rested on
 
-- Every answer, with the question it answers.
-- The case and both determinations, or the statement that nothing overlaps.
+The record is what the next reader checks the skill against, so it holds the reasoning.
+
+- Each of the five decisions, with the evidence it rested on.
+- The presentation, as released.
+- The placement scan, the case, and what each artefact determined about it.
+- The gap list and what filled each gap.
 - The edge, when the change adds or moves one.
 - A witness for every finding.
-
-The answers are the decision, which is why they are recorded rather than summarised.

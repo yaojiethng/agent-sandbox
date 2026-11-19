@@ -21,11 +21,11 @@ A principle never sets `disable-model-invocation`, because a writer reaches for 
 
 `neighbours` is a symmetric list of neighbours only, and a handoff ("apply this next") is prose. `[]` says no neighbour is declared, which is not the same as finding none. An absent field is undeclared and fails the gate. [`../runbooks/principle-change.md`](../runbooks/principle-change.md) decides the list.
 
-Every part of a principle skill is written by the operator, and the agent scaffolds the questions rather than drafting an answer. [`../runbooks/principle-change.md`](../runbooks/principle-change.md) carries the sequence, from the judgement to the neighbours, and the agent reads a value rather than inferring it, because the judgement is obvious to the operator and re-derived wrong by the agent. The recorded answers are the provenance, and the gate checks presence, never whether the value is right.
+The operator dictates a principle and the agent writes the file. The words, the domain and the scope come from the dialogue, and the reflow, the order and the checks are the agent's; [`../runbooks/principle-change.md`](../runbooks/principle-change.md) carries the five decisions the dialogue settles. The agent reads a dictated value rather than inferring it, because the judgement is obvious to the operator and re-derived wrong by the agent. The recorded decisions are the provenance, and the gate checks presence, never whether the value is right.
 
 ## The body
 
-A sentence-case title, one sentence stating the judgement, a rule part that the first bold lead-in names, `**Why.**`, any named parts, and `**The test.**`, in that order. The rule part carries the general rule, whether it is a pattern, a test or a principle, and a boundary part may follow the test. No gate reads the body; the review and the exemplar carry it.
+A sentence-case title, one sentence stating the judgement, a rule part that the first bold lead-in names, `**Why.**`, any named parts, and `**The test.**`, in that order. `**Why.**` leads on consequence and benefit, so it answers what applying the judgement wins rather than why the principle exists. The rule part carries the general rule, whether it is a pattern, a test or a principle, and a boundary part may follow the test. No gate reads the body; the review and the exemplar carry it.
 
 The exemplar is `communication-principle-show-dont-describe`. A description names a situation rather than a property of finished text, because a property can be read only once the text exists. A principle claims no moment: it is in force whenever the work is in front of the reader.
 
