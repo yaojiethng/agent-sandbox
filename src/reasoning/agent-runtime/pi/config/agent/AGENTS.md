@@ -63,7 +63,7 @@ Before creating any new document, check the project's `AGENTS.md` for the policy
 
 ## Principles
 
-Read the leaf skill in full for any principle you apply, and name it when it applies.
+Read the leaf skill in full for any principle you apply. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
 - **Context disclosure**: the reader reaches what the text points at.
   - **Correct disclosure**: the referent named, the target reachable.
