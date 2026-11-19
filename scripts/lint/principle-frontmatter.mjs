@@ -8,8 +8,7 @@
 // rejects `disable-model-invocation` on a principle.
 //
 // The body shape is a convention, not this gate's subject:
-// .agents/skills/instruction-authoring/references/skill-conventions.md
-// `## A principle skill`.
+// .agents/skills/instruction-authoring/references/principle-skills.md.
 //
 // The inventory it imports is the lever: it reads the corpus once and reports
 // the declared values, and this gate decides whether they fail.

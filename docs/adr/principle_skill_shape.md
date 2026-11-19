@@ -1,6 +1,21 @@
 # Principle Skill Shape
 
-**Current:** 2026-11-16
+**Current:** 2026-11-17
+
+## 2026-11-17 -- One runbook changes a principle, and one reference says what one is
+
+**Decision:** [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) owns every change to the corpus, and [`references/principle-skills.md`](../../.agents/skills/instruction-authoring/references/principle-skills.md) owns what a principle skill carries. The admission pattern and the survey reference are deleted, and the survey map and this record's predecessor, the admission design, are deleted with them. The four-case replay stands as the mechanism's evidence: the passthrough, the `absent` schema field, the boundary merge and the rename, each caught with one operator decision.
+
+**Rationale:** The pattern answered one question while the change needs five, and the survey mapped the corpus once and will not run again, so the operator paid the search twice. A convention skill was rejected as the home because it becomes a loose collection of procedures with no caller. The map's remaining content was its vocabulary, which the runbook now carries, so its index role passed to `scripts/principle_inventory.mjs` and no task was left for the record to serve. One reference and one runbook are two modes of one subject, which the organization principle asks for and the split across a general skill convention and a procedure did not give.
+
+**Rejected alternatives:**
+
+- *Keep the pattern beside the runbook.* **Execution failure**: two carriers for one decision, and a reader cannot tell which governs.
+- *Keep the survey map as the corpus index.* **Intent failure**: its counts were already stale and the inventory derives the same facts from the fields.
+- *Keep the admission design for its replay table.* **Record failure**: the replay is evidence for a decision, which is where a design's conclusion belongs.
+- *Hold the rules inside the runbook.* **Boundary failure**: a how-to that carries its reference buries the field rules behind a procedure a reader may not be running.
+
+**Edge cases / drivers:** The design record's replay named four cases, and the two admissions this milestone settled since, the passthrough and the load-level terms, were applied to the runbook and reached their recorded rulings. `card` named the survey's index entry and lost its referent when the survey retired, so the word is gone from the surface. `[]` keeps its meaning; the map that recorded "surveyed, none" is gone, and the field states only that no neighbour is declared. A concluded record that becomes standing reference has no disposition under the record lifecycle, and deleting it once its conclusion is here is the resolution.
 
 ## 2026-11-16 -- The principle frontmatter is one gate, and the body shape is a convention
 

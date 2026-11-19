@@ -6,8 +6,8 @@
 # present, and the principle does not set `disable-model-invocation`.
 #
 # The body shape is a convention, not this gate's subject:
-# .agents/skills/instruction-authoring/references/skill-conventions.md
-# `## A principle skill`. The neighbour rule is
+# .agents/skills/instruction-authoring/references/principle-skills.md.
+# The neighbour rule is
 # .agents/skills/instruction-authoring/runbooks/principle-change.md.
 #
 # Usage: bash scripts/check_principle_frontmatter.sh

@@ -10,7 +10,7 @@ The corpus is at its most valuable when a principle changes, so this file owns t
 - The operator, for any change to the corpus.
 - No other workflow dispatches it. A change arriving from elsewhere names this file to the operator rather than deciding on its own.
 
-The survey's result is [`20261116-report-concluded-principle_corpus_map.md`](../../../../devlog/discussions/20261116-report-concluded-principle_corpus_map.md). Read it when you need the corpus as it stands. It is an index, not a procedure to rerun.
+The corpus as it stands is `node scripts/principle_inventory.mjs`: the fields, the declared neighbours, the cross-links and any missing declaration. What a principle skill carries is [`../references/principle-skills.md`](../references/principle-skills.md).
 
 ## Steps
 
@@ -22,7 +22,7 @@ The survey's result is [`20261116-report-concluded-principle_corpus_map.md`](../
 
 4. **Collect what the operator needs, and say which decision it feeds.** Each finding carries a witness: a decision record, a commit, a quoted pair or a chat exchange. Three sources say what the corpus meant, and each is read for the intent alone: the decision records, the git history of the surface (`git log -S` on the line) and the chat logs. A finding with no witness is a preference, and it stays in the chat. Done when every finding carries its witness and names the decision it serves.
 
-5. **Land the change where the decision lives.** A principle skill's body shape is [`principle_skill_shape.md`](../../../../docs/adr/principle_skill_shape.md), and this file does not restate it. Record the decision in the iteration's `## Decisions` table, and take a judgement that outlives the iteration to an ADR. Done when `bash scripts/check_principle_frontmatter.sh` and `bash scripts/lint.sh` are clean, and each decision names the file that holds it.
+5. **Land the change where the decision lives.** What the skill carries is [`../references/principle-skills.md`](../references/principle-skills.md), and the design behind it is [`principle_skill_shape.md`](../../../../docs/adr/principle_skill_shape.md). This file does not restate either. Record the decision in the iteration's `## Decisions` table, and take a judgement that outlives the iteration to an ADR. Done when `bash scripts/check_principle_frontmatter.sh` and `bash scripts/lint.sh` are clean, and each decision names the file that holds it.
 
 ## The five intents
 
