@@ -294,7 +294,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Scope:** the accept flow and the host verb set. Out of scope: the branch-preparation primitives, which landed as `prepare` and `history-cleanup`.
 
-**Depends on:** the change model's accept transitions in [`change_model.md`](../docs/reference/change_pipeline.md), which are landed. The requirement is a property of the flow, not of this document.
+**Depends on:** the change model's accept transitions in [`change_pipeline.md`](../docs/reference/change_pipeline.md), which are landed. The requirement is a property of the flow, not of this document.
 
 **Sources:** the merge queue as GitHub and Bors implement it, read for the queue's semantics rather than copied as a runbook. The citation record is the implementer's to add; the intent above does not depend on which one they choose.
 
