@@ -111,8 +111,8 @@ draft_create_and_init_branch() {
   # created, remove it so no inert section is left behind.
   draft_record_write "$PROJECT_DIR" "$WORKING_BRANCH" "$SOURCE_BRANCH" "$COMMIT" || return 1
 
-  echo "Creating draft branch '$WORKING_BRANCH' from ${COMMIT:0:7}..."
-  if ! git -C "$PROJECT_DIR" checkout -b "$WORKING_BRANCH" "$COMMIT"; then
+  echo "Creating draft branch '$WORKING_BRANCH' from ${COMMIT:0:7}"
+  if ! git -C "$PROJECT_DIR" checkout -q -b "$WORKING_BRANCH" "$COMMIT"; then
     draft_record_clear "$PROJECT_DIR" "$WORKING_BRANCH"
     echo "Error: failed to create draft branch: $WORKING_BRANCH" >&2
     return 1
@@ -137,8 +137,10 @@ draft_apply_patches() {
     [[ -z "$diff_file" ]] && continue
     local COMMIT_MSG
     COMMIT_MSG=$(draft_resolve_commit_message "$diff_file")
-    echo "  Applying: $(basename "$diff_file")"
-    apply_and_commit "$PROJECT_DIR" "$diff_file" "$COMMIT_MSG" "$AUTHOR" "$FORCE" || {
+    # Drop the branch name from each commit line: the header already names the
+    # branch, and it does not change across the patches.
+    apply_and_commit "$PROJECT_DIR" "$diff_file" "$COMMIT_MSG" "$AUTHOR" "$FORCE" \
+      | sed -E 's/^\[[^]]* ([0-9a-f]+)\]/[\1]/' || {
       echo "Error: failed to apply $(basename "$diff_file")" >&2
       echo "  Patch file: $diff_file" >&2
       git -C "$PROJECT_DIR" diff --stat HEAD >&2 || true
@@ -316,7 +318,6 @@ draft_run() {
   draft_create_and_init_branch "$PROJECT_DIR" "$WORKING_BRANCH" "$FROM_HASH" \
     "$SOURCE_BRANCH" || return 1
 
-  echo "Draft branch created: $WORKING_BRANCH"
   echo "Source: $SOURCE_DIR"
   echo "Diffs to apply: $DIFF_COUNT"
 }
@@ -471,16 +472,38 @@ _run_draft_workflow() {
   local UC=""
   [[ -f "$SOURCE_DIR/uncommitted.diff" && -s "$SOURCE_DIR/uncommitted.diff" ]] && UC="yes"
   echo ""
-  echo "Diffs applied: $DIFF_COUNT"
+  local COMMIT_WORD="commits"
+  [[ "$DIFF_COUNT" -eq 1 ]] && COMMIT_WORD="commit"
+  local CHANGED_COUNT
+  CHANGED_COUNT=$(git -C "$PROJECT_DIR" diff --name-only "$BASE_COMMIT" 2>/dev/null | grep -c . || true)
+  echo "Applied $DIFF_COUNT $COMMIT_WORD, $CHANGED_COUNT files changed."
   [[ -n "$UC" ]] && echo "Uncommitted diff applied: $UC"
-  local CHANGED
-  CHANGED=$(git -C "$PROJECT_DIR" diff --name-only "$BASE_COMMIT" 2>/dev/null || true)
-  if [[ -n "$CHANGED" ]]; then
-    echo "Changed files: $(printf '%s\n' "$CHANGED" | wc -l | tr -d ' ')"
-    printf '%s\n' "$CHANGED" | sed 's/^/  /'
-  fi
   echo ""
   draft_print_confirm_hint "$PROJECT_DIR" "$SOURCE_BRANCH" "$BASE_COMMIT"
+}
+
+# =============================================================================
+# =============================================================================
+# draft_next_free_branch  --  next series-branch name
+# =============================================================================
+
+# draft_next_free_branch PROJECT_DIR BASE
+#   Prints BASE-1 when no BASE-<n> branch exists, else one past the highest n.
+#   A number is never reused, so deleting a series branch does not hand its
+#   number to the next suggestion.
+draft_next_free_branch() {
+  local PROJECT_DIR="$1"
+  local BASE="$2"
+  local MAX=0 NAME N
+  while IFS= read -r NAME; do
+    [[ -z "$NAME" ]] && continue
+    N="${NAME#"${BASE}-"}"
+    [[ "$N" =~ ^[0-9]+$ ]] || continue
+    if (( 10#$N > MAX )); then
+      MAX=$((10#$N))
+    fi
+  done < <(git -C "$PROJECT_DIR" for-each-ref --format='%(refname:short)' "refs/heads/${BASE}-*")
+  printf '%s-%d\n' "$BASE" "$((MAX + 1))"
 }
 
 # =============================================================================
@@ -488,11 +511,21 @@ _run_draft_workflow() {
 #
 #   draft_print_confirm_hint <project-dir> <source-branch> <branch-point>
 #
-# Which route applies is decided here, not by the agent: `make confirm`
-# fast-forwards the target, so it only works when the target is an ancestor of
-# the draft tip. After a rebase inside the container it is not, and telling the
-# operator to fast-forward would send them into a failed merge. Both routes
-# state the fork point, so the operator never has to recover it from chat.
+# Which route applies is decided here, not by the agent. The hint states
+# whether a rebase is required and whether the draft fast-forwards as it
+# stands, so the operator is not sent into a rebase that changes the result:
+#
+#   source is an ancestor   --  fast-forwards; a rebase is optional, to shape
+#                               the commits.
+#   the branch point is an
+#   ancestor of source      --  the source moved since the export; `make
+#                               confirm` rebases the draft onto it.
+#   otherwise               --  the bundle replaces history on the source, so
+#                               a rebase would duplicate it; confirm onto a new
+#                               branch and move the source onto that.
+#
+# Every route states the fork point, so the operator never has to recover it
+# from chat.
 # =============================================================================
 draft_print_confirm_hint() {
   local PROJECT_DIR="$1"
@@ -502,19 +535,28 @@ draft_print_confirm_hint() {
   echo "Branch point: ${BRANCH_POINT:0:7}"
 
   if git -C "$PROJECT_DIR" merge-base --is-ancestor "$SOURCE_BRANCH" HEAD >/dev/null 2>&1; then
-    echo "Shape your commits, then confirm:"
+    echo "Confirm fast-forwards onto ${SOURCE_BRANCH}; no rebase required."
+    echo "To shape the commits first:"
     echo "  git rebase -i ${SOURCE_BRANCH}"
+    echo "Then confirm:"
+    echo "  make confirm TARGET_BRANCH=${SOURCE_BRANCH}"
+    echo ""
+    echo "To discard: make reject"
+  elif git -C "$PROJECT_DIR" merge-base --is-ancestor "$BRANCH_POINT" "$SOURCE_BRANCH" >/dev/null 2>&1; then
+    echo "${SOURCE_BRANCH} has moved since the branch point; confirm rebases onto it first."
     echo "  make confirm TARGET_BRANCH=${SOURCE_BRANCH}"
     echo ""
     echo "To discard: make reject"
   else
+    local NEW_BRANCH
+    NEW_BRANCH=$(draft_next_free_branch "$PROJECT_DIR" "$SOURCE_BRANCH")
     echo "This bundle replaces history on ${SOURCE_BRANCH}; it cannot fast-forward."
     echo "Create a new branch from the reviewed series instead:"
-    echo "  make confirm TARGET_BRANCH=<new-branch> NEW=1"
+    echo "  make confirm TARGET_BRANCH=${NEW_BRANCH} NEW=1"
     echo ""
     echo "That leaves ${SOURCE_BRANCH} untouched. Then move it onto the series:"
     echo "  git switch ${SOURCE_BRANCH}"
-    echo "  git reset --soft <new-branch>"
+    echo "  git reset --soft ${NEW_BRANCH}"
     echo ""
     echo "To discard instead: make reject"
   fi

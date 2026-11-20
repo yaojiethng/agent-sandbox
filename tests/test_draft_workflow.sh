@@ -1361,7 +1361,7 @@ test_draft_script_entry_requires_identity() {
 
 # Given: a project whose source branch is an ancestor of the draft tip
 # When:  the confirm hint prints
-# Then:  it names the rebase and fast-forward route
+# Then:  it says no rebase is required and names the fast-forward route
 # Asserts: the hint matches what `make confirm` can actually do
 test_draft_hint_routes_to_fast_forward_when_ancestor() {
   make_draft_fixture draft_ffroute 1
@@ -1374,6 +1374,7 @@ test_draft_hint_routes_to_fast_forward_when_ancestor() {
 
   local OK=true
   [[ "$OUT" == *"Branch point: ${POINT:0:7}"* ]] || OK=false
+  [[ "$OUT" == *"no rebase required"* ]] || OK=false
   [[ "$OUT" == *"git rebase -i"* ]] || OK=false
   [[ "$OUT" == *"make confirm TARGET_BRANCH=$SRC"* ]] || OK=false
   [[ "$OUT" != *"NEW=1"* ]] || OK=false
@@ -1383,6 +1384,39 @@ test_draft_hint_routes_to_fast_forward_when_ancestor() {
     pass "draft names the fast-forward route when the source branch is an ancestor"
   else
     fail "hint did not route to fast-forward: $OUT"
+  fi
+}
+
+# Given: a source branch that moved on since the branch point
+# When:  the confirm hint prints
+# Then:  it says confirm rebases the draft onto it
+# Asserts: the route for an intact draft whose source advanced, which is not
+#          the history-replacement route
+test_draft_hint_names_rebase_when_source_moved() {
+  make_draft_fixture draft_moved 1
+  local POINT
+  POINT=$(git -C "$P" rev-parse HEAD)
+
+  # Advance the source past the branch point, leaving the draft tip behind.
+  local ADVANCED
+  ADVANCED=$(git -C "$P" commit-tree "${POINT}^{tree}" -p "$POINT" -m "host moved on")
+  local SRC="main"
+  git -C "$P" checkout -q --detach "$POINT"
+  git -C "$P" branch -f "$SRC" "$ADVANCED"
+
+  local OUT
+  OUT=$(draft_print_confirm_hint "$P" "$SRC" "$POINT" 2>&1)
+
+  local OK=true
+  [[ "$OUT" == *"has moved since the branch point"* ]] || OK=false
+  [[ "$OUT" == *"confirm rebases onto it"* ]] || OK=false
+  [[ "$OUT" == *"make confirm TARGET_BRANCH=$SRC"* ]] || OK=false
+  [[ "$OUT" != *"NEW=1"* ]] || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "draft says confirm rebases when the source branch moved on"
+  else
+    fail "hint did not route to rebase: $OUT"
   fi
 }
 
@@ -1411,12 +1445,12 @@ test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
   local OK=true
   [[ "$OUT" == *"Branch point: ${POINT:0:7}"* ]] || OK=false
   [[ "$OUT" == *"cannot fast-forward"* ]] || OK=false
-  [[ "$OUT" == *"NEW=1"* ]] || OK=false
+  [[ "$OUT" == *"make confirm TARGET_BRANCH=$SRC-1 NEW=1"* ]] || OK=false
   [[ "$OUT" != *"git rebase -i"* ]] || OK=false
   # The untouched-branch fact is what no other host step prints.
   [[ "$OUT" == *"untouched"* ]] || OK=false
   [[ "$OUT" == *"git switch $SRC"* ]] || OK=false
-  [[ "$OUT" == *"git reset --soft <new-branch>"* ]] || OK=false
+  [[ "$OUT" == *"git reset --soft $SRC-1"* ]] || OK=false
   [[ "$OUT" != *"make apply"* ]] || OK=false
 
   if [[ "$OK" == true ]]; then
@@ -1425,24 +1459,53 @@ test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable() {
     fail "hint did not route to soft-reset: $OUT"
   fi
 }
+
+# Given: series branches that exist, and one that was deleted
+# When:  the next branch name is asked for
+# Then:  it starts at 1 and afterwards steps past the highest number, never
+#        reusing a deleted one
+# Asserts: the suggestion is deterministic and never hands out a name twice
+test_draft_next_free_branch_steps_past_the_highest() {
+  make_draft_fixture draft_seriesname 0
+
+  local FIRST SECOND THIRD
+  git -C "$P" branch "main-extra"
+  FIRST=$(draft_next_free_branch "$P" main)
+  git -C "$P" branch "$FIRST"
+  SECOND=$(draft_next_free_branch "$P" main)
+  git -C "$P" branch "$SECOND"
+  git -C "$P" branch -D "$FIRST" >/dev/null
+  THIRD=$(draft_next_free_branch "$P" main)
+
+  local OK=true
+  [[ "$FIRST" == "main-1" ]] || OK=false
+  [[ "$SECOND" == "main-2" ]] || OK=false
+  [[ "$THIRD" == "main-3" ]] || OK=false
+
+  if [[ "$OK" == true ]]; then
+    pass "the suggested branch name steps past the highest number in use"
+  else
+    fail "unexpected names: $FIRST / $SECOND / $THIRD"
+  fi
+}
 # Given: a draft built from two patches
 # When:  the orchestration completes
-# Then:  the output names the two changed files
-# Asserts: the reviewer sees the subject of the review, not only a diff count
-test_draft_lists_changed_files() {
+# Then:  the summary counts the changed files and does not list them
+# Asserts: the reviewer gets the size of the review, not the file paths
+#          already printed by each commit
+test_draft_reports_changed_file_count() {
   make_draft_fixture draft_changed 2
   local OUT
   OUT=$(_test_draft_run "$P" "$EXPORT" "$(basename "$EXPORT")" "" "" "" 2>&1)
 
   local OK=true
-  [[ "$OUT" == *"Changed files: 2"* ]] || OK=false
-  [[ "$OUT" == *"file-1.txt"* ]] || OK=false
-  [[ "$OUT" == *"file-2.txt"* ]] || OK=false
+  [[ "$OUT" == *"2 files changed"* ]] || OK=false
+  [[ "$OUT" != *"Changed files:"* ]] || OK=false
 
   if [[ "$OK" == true ]]; then
-    pass "the draft output lists the changed files"
+    pass "the draft summary counts the changed files"
   else
-    fail "changed files not listed: $OUT"
+    fail "changed file count not reported: $OUT"
   fi
 }
 
@@ -1483,10 +1546,12 @@ test_draft_prints_one_resolved_branch_point() {
 }
 
 run_test test_draft_hint_routes_to_fast_forward_when_ancestor
+run_test test_draft_hint_names_rebase_when_source_moved
 run_test test_draft_hint_routes_to_soft_reset_when_not_fast_forwardable
+run_test test_draft_next_free_branch_steps_past_the_highest
 run_test test_draft_script_entry_requires_identity
 run_test test_draft_script_entry_help
 run_test test_draft_prints_one_resolved_branch_point
-run_test test_draft_lists_changed_files
+run_test test_draft_reports_changed_file_count
 
 test_done
