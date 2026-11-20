@@ -429,6 +429,8 @@ M3.3.6 owns the corpus's map, budget and record layer. This sub-milestone owns t
 - The principle corpus has one home for a change, with a named caller, and the procedures it subsumes are retired.
 - `bash scripts/check_document_shape.sh`, `bash scripts/lint.sh` and `bash scripts/run_tests.sh` pass.
 
+- [x] **The prose skill fires on less than its body governs** -- `writing-for-agents` described a skill and an `AGENTS.md` while its body claims any document an agent consumes, and `AGENTS.md` asked for format compliance with nothing that reads the text back. The operator paid for both at review. **Landed:** the description names docs, RFCs, readmes, PR descriptions and commit messages, `## What it governs` states the PR and commit case, both are recorded fork divergences because the pinned upstream carries the narrowing, and `AGENTS.md` sends every output through one read-back against the skill. Handover [20261120-03](handovers/M3.3.7/20261120-03-workflow-prose_skill_scope.md).
+
 ##### Not in scope: M3.3.7
 
 - W2's communication-domain taxonomy and leitwort population, which own the controlled vocabulary.
