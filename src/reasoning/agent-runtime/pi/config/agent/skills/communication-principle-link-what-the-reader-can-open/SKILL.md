@@ -25,6 +25,8 @@ A pointer claims a target exists and is reachable from where the citing text is 
 | a pointer the reader's copy cannot reach | the name, and what the reader does when the target is absent |
 | a heading fragment the reader must convert by hand | the grep command that finds the section |
 
+**The pointer's text.** Link with words that say where the link goes: the page title or a short description. Never "click here". Prefer a sentence of context on the page over a link off it.
+
 Which of a project's documents fall in each class, and where a handoff link belongs, belongs to that project's reference convention, where the project states one.
 
 **Why.** Two readers take a broken pointer differently. A reader with the repository open finds the file by hand. A reader in a container has no repository to search, so the pointer returns nothing and the work stops. Nothing reports the difference, because the sentence reads normally either way.

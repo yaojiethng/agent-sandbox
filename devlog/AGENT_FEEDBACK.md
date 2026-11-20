@@ -14,6 +14,27 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+## [O] 2026-11-20  --  The installed skill root goes stale and nothing checks or updates it
+
+```text
+state: open
+scoped: the sandbox's installed config home, `$AGENT_HOME/agent/` (the brief and `skills/`)
+legacy: none
+mitigation: the stale copies were cleared by hand on 2026-11-20; clearing files is not the fix, because the next retirement or edit puts another one there
+```
+
+The installed root is written from the payload and never pruned, so a retired skill survives in the directory a session loads. Measured 2026-11-20 at handover `20261120-01`: `$AGENT_HOME/agent/skills/` held 44 principle skills against the payload's 28, and the extras included `communication-principle-cut-what-serves-nothing` and `communication-principle-only-derive-what-you-own`, both retired by earlier iterations. A running session therefore read a superseded rule beside its replacement, and nothing reported it.
+
+A third case sits in the same directory: `technical-writing`, a personal install that no `packages` entry provides and no store edge pins, so the tree could neither review nor bump it. It was deleted with the retired copies.
+
+**The three stale classes, re-checked 2026-11-20.** The installed root held 85 skills. `AGENTS.md` showed no drift: the repo source, the image template and the installed copy were byte-identical, and every principle skill the brief indexes was present. Six skills removed in source were still loaded -- `communication-principle-hand-off-by-naming-the-boundary`, `principle-delegation-over-machinery`, `principle-guard-derived-state`, `principle-minimal-corrections`, `principle-own-the-scope-you-declare`, `principle-skill-signposting` -- and were deleted. Nine skills present in source held stale content -- the seven `communication-principle-*` files edited since install, `principle-guard-the-context-window`, and `principle-single-source-of-truth` -- and were refreshed from the payload. A set comparison finds the first class and misses the third; only a content comparison finds drift in a directory that still has the name.
+
+Nothing checks the directory. `scripts/check_instruction_surfaces.sh` compares `$AGENT_HOME/agent/AGENTS.md` and never reads `skills/`, and the roadmap row that owns that gate, `The installed layer copy has no gate`, is scoped to the one file.
+
+The durable fix is a comparison over the directory: `AGENTS.md` equals its payload copy, each installed skill either matches the payload's content or is a declared personal install, and no skill removed from the payload remains. Until then a retirement and an edit both leave a copy that reads as current.
+
+---
+
 ## [O] 2026-11-17  --  The acceptance gate was skipped four times without the agent noticing
 
 ```text

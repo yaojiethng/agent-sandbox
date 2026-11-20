@@ -27,11 +27,21 @@ Give the reader something to attach each phrase to before the next phrase arrive
 | a condition long enough to bury the main clause | the main clause first, the condition after it |
 | a reading the reader must revise at the sentence end | the reading that holds from the first word |
 
+**The words that must stay in place.** Keep words like "only" and "not" next to the word they change: "only fails on growth" and "fails only on growth" say different things.
+
+Break up long noun strings: "the proto import budget check script" becomes "the script that checks the proto-import budget".
+
+Make every "it", "they", and "this" point at one obvious thing. Repeat the noun when in doubt. Never use "this" or "which" to point at a whole clause.
+
+Don't drop verbs: "Phase 1 moves the converters and Phase 2 the runtime" leaves Phase 2 without one. Give it one.
+
 **Why.** Comprehension is incremental and memory-limited. The text carries high extraneous load when it cannot be parsed on the first pass, or its reading is ambiguous. The reader spends working memory parsing the text's form rather than its meaning, re-parsing what did not attach and choosing between readings. Reducing the load buys a first-pass attachment, so that memory goes to the instruction and the reading arrives once rather than twice. Good-enough processing makes the failure silent: the reader settles on the plausible reading, so a misread arrives as a wrong instruction rather than a stumble.
 
 **Where another rule wins.** A passive is felicitous when the agent is unknown or the patient is the topic. End-weight puts the heavy constituent last, which can put a short condition first. A longer marked construction can beat a shorter garden path. A verbatim quote keeps its wording.
 
 Where the word itself needs a definition, settle it first at [`communication-principle-define-terminology-before-use`](../communication-principle-define-terminology-before-use/SKILL.md), then place it here.
+
+**Where it comes from.** ASD-STE100 Issue 9, Section 3 Rule 3.6, for the actor in the subject slot, and The Global English Style Guide for the modifier's place, the noun string, the pronoun's referent and the dropped verb. What each source carries and what this repository drops is recorded in `.agents/registry/citations/asd-ste100.json` and `.agents/registry/citations/global-english.json`.
 
 **The family.** This is one of the `context disclosure` principles, in the `sentence context` term. Its remedy is the sentence's order.
 

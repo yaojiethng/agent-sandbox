@@ -21,6 +21,8 @@ A description asks the reader to interpret. An artifact asks them to copy. Give 
 | prose describing a system | a diagram |
 | a diagnosis that explains a failure | the command that avoids it |
 | a rule stated in the abstract | the literal string to write |
+| a synonym, or a description of the symbol | the real symbol, file, flag, or command name |
+| "schema changes can cause issues" | "a column rename fails the build" |
 | the roadmap write-back described | the rows to write back, listed |
 | the commit-message rule stated | the commit message itself |
 | a rule the reader is trusted to follow | the output that proves it was followed |

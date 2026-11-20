@@ -39,6 +39,8 @@ The agent may link and move. Removing, or widening a language unit to take mater
 
 **A fast path is not a second source.** An inline that names its source is a pointer, and it stays one while the name is there. Remove the name and it is a copy.
 
+**A value in a sentence.** Make every count or tree claim true at the commit that lands it, and include the command that regenerates it. A value retyped from its source is a state another language unit carries, which is why [`principle-justify-materialization-cost`](../principle-justify-materialization-cost/SKILL.md) delegates a count or a total stated in prose here.
+
 **The awkward cases.** A document needing two modes splits: a convention states the rule, the record states why it beat its alternatives. A bridge document whose only job is to join two others is a duplicate with extra steps: collapse it into the more relevant of the two. A definition belongs to the language unit whose work produces the thing.
 
 **The test.** Name the subject and the mode of the material, then name the language unit that owns that pair. If it is another language unit, the material is out of place here. If it is this one and something else carries it, that copy is the second source.

@@ -27,6 +27,8 @@ Colocation gives each subject one place, and keeps all of its parts there.
 | parts ordered as the author wrote them | parts ordered as the reader needs them: definition, rule, caveat |
 | a section carrying a rule and a second, unrelated subject | one section per subject, with a pointer between them |
 
+**Put the common case first.** Exceptions after.
+
 **Why.** Proximity is the effect a reader's working memory depends on, and colocation is the placement that produces it. A reader who meets a rule without its caveat understands the rule too widely, and meets the caveat after that understanding has settled, so the correction costs a second pass over what they already read. A reader who comes for one subject and meets a second spends attention on text nobody asked for. The same order serves the next edit, because a writer who sees the whole subject at once changes every part and a writer who does not changes some.
 
 Nothing reports either failure. Each half reads as complete, and so does each section.

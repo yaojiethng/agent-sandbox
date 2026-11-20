@@ -22,6 +22,8 @@ Write the verb of an instruction in the imperative form, and write a sentence th
 | Oil and grease are to be removed with a degreasing agent. | Remove oil and grease with a degreasing agent. |
 | The component must be installed. | Install the component. |
 
+**One instruction in each sentence.** ASD-STE100 Issue 9, Part 1 Rule 5.2: "Write only one instruction in each sentence unless two or more actions occur at the same time."
+
 **Why.** The imperative form gives the reader a clear instruction, and another sentence structure causes ambiguity: "Thus, the reader will not know" whether it is important to do a work step, whether a different person did the work step, or whether a different person must do the work step in the future. One verb form answers all three, so the reader does the step.
 
 **Where the mode decides.** Procedural writing takes the imperative, and descriptive writing takes the declarative: "Descriptive writing gives information, not instructions. Thus, the imperative form of the verb is not permitted." A note inside a procedure takes the declarative: "Write notes only to give information, not instructions" (Rule 5.5). Google puts the same rule on the first sentence of a step: "Make sure that the first sentence in a procedural step includes an imperative verb", against a step that states a need before the act, "You need the project ID later in this document. Retrieve the project ID."

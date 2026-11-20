@@ -25,6 +25,10 @@ A sentence whose subject is the text itself says what the text already says, so 
 | paragraph | the topic sentence |
 | sentence | the guard, and the claim itself |
 
+**Cut every word that does no work.** If the sentence survives without a word, the word goes. "In order to" is "to". "It is important to note that" is nothing.
+
+**Never "simply", "easy", or "quickly" in a procedure.** Avoid letting subjective judgement pollute prose. If it were simple, the reader would not be here.
+
 **The test.** Delete the sentence. Read the passage without it. Restore it only if the reader loses one of the things above. If none goes, the deletion stands. Cut whole, not trim. Run the test on the flow, not on the signpost.
 
 **What it does not cover.** Which mode a language unit serves: [`communication-principle-organize-by-diataxis`](../communication-principle-organize-by-diataxis/SKILL.md). The point that arrives after a wind-up, ordered as the author wrote it rather than as the reader needs it: [`communication-principle-keep-a-subject-near`](../communication-principle-keep-a-subject-near/SKILL.md). A sentence that serves its mode but sits where the reader cannot use it: [`communication-principle-single-train-of-thought`](../communication-principle-single-train-of-thought/SKILL.md). A second copy of one unit: [`principle-single-source-of-truth`](../principle-single-source-of-truth/SKILL.md).
