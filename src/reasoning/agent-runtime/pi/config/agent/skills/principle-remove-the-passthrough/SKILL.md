@@ -9,7 +9,6 @@ metadata:
     - communication-principle-cut-metadiscourse
     - principle-justify-materialization-cost
     - principle-propagation-discipline
-    - principle-single-source-of-truth
 ---
 
 # Remove the passthrough

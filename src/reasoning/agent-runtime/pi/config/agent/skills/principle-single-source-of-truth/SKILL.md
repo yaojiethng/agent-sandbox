@@ -1,46 +1,38 @@
 ---
 name: principle-single-source-of-truth
-description: "Apply when work or text is being divided into parts, or when two places seem to carry the same material: one subject in one mode has one source of truth."
+description: "Apply when two places seem to carry the same material: every judgement, piece of logic and value is stated once, and a second restatement is a collision."
 metadata:
-  intent: "Clarity in organization: the artifact has one authoritative place, the reader does not get conflicting information, and maintenance is easy."
-  mechanism: "One subject in one mode has one source of truth."
-  leitwort: SSOT
+  intent: "Clarity in organization: each judgement, piece of logic and value is stated once, so the reader does not get conflicting statements, and maintenance is easy."
+  mechanism: "A collision: one of the three stated twice, so no reader can tell which statement is authoritative. The repair splits it, points at the one statement, or justifies the copy as a view."
+  leitwort: ownership
   neighbours:
     - communication-principle-cut-metadiscourse
+    - communication-principle-organize-by-diataxis
     - principle-justify-materialization-cost
 ---
 
 # Single source of truth
 
-One subject in one mode has one source of truth: two documents may serve one subject, and one mode has one document.
+Single source of truth is the practice of structuring documents such that every judgement, piece of logic and value is stated once.
 
-**The pattern.**
+**The kinds of fact.**
 
-Name the mode of the material in front of you before asking which document owns it, because the mode is the answer. A procedure says what to do. A reference states what is true. An explanation states why, and what it beat. A tutorial teaches it the first time. One subject may be carried by all four.
+- A **judgement**, a rule, a principle or a convention, is stated once, in one document, and every other document names it and links there.
+- A **piece of logic** has one canonical implementation, and a second is a copy unless it behaves differently.
+- A **value** has one stored copy, and a second store is a materialized view; a count or total stated in prose is the same thing, and it carries the command that regenerates it.
 
-It is two documents serving one mode for one subject that is the violation. The second one is a second source, and no reader can tell which governs.
+**Why.**
 
-Extent follows the mode. A language unit carries what its own mode owes and none of another's. The explanation of why the language unit is shaped this way belongs with the record of the decision; the contract of what it produces belongs with the thing described. Both name the same subject, and neither repeats the unit.
+- **Authoritative ownership.** Each of the three is stated once, in one document, and updated there; this repository first assigns that document its Diataxis mode, per [`communication-principle-organize-by-diataxis`](../communication-principle-organize-by-diataxis/SKILL.md).
+- **Downstream consumption.** Other documents read from or reference that statement instead of repeating it in their own text.
+- **Regeneration, not editing.** A change at the statement does not reach a copy by itself, so a copy needs something that catches its drift.
 
-A rule is the same language unit at its smallest grain, and its mode is reference, because it states what is true of a situation. Two rules for one situation are one rule, however differently worded. A rule a reader must hold another rule to apply is coupled, and the coupling is the defect rather than the length.
+When one is stated twice anyway, the statements collide: the reader cannot tell which is authoritative. Multiple statements are harder to keep in sync, so they drift apart, go stale, and contradict each other. Catching a collision early is cheap; after the work is built, the copy has readers of its own, and the boundary is harder to redraw.
 
-When material is out of place, four methods apply, and whether the owner already exists picks between them.
+**The test.** Where is this stated?
 
-- **Link it**, where the owner exists and this text only needs to reach it.
-- **Move it**, where the owner exists and this text was carrying it.
-- **Remove it**, where it duplicates the owner and nothing reads this copy.
-- **Widen the language unit**, where the material is genuinely this language unit's and the declared extent was too narrow.
+- **The material spans more than one mode.** Then no single statement can hold it. Split it, and [`communication-principle-organize-by-diataxis`](../communication-principle-organize-by-diataxis/SKILL.md) places each part.
+- **This document restates content it is not responsible for.** Point at the statement that holds it. A link stays a link only while it names its source; remove the name and it is a copy.
+- **A second file copies or derives the content without being responsible for it.** If it asserts what the responsible document asserts, at the same time and in the same form, it is a second statement, and that is the collision. If it asserts something else, an as-of time or a named transformation, it is a materialized view, and [`principle-justify-materialization-cost`](../principle-justify-materialization-cost/SKILL.md) decides whether it is justified.
 
-The agent may link and move. Removing, or widening a language unit to take material another language unit carries, is the operator's: name the responsibility, the language unit that owns it, and the language unit that would duplicate it, and stop.
-
-**Why.** A violation caught while scoping is cheap; caught after the work is built, the duplicate has readers of its own and the boundary is harder to redraw. Two copies also drift, silently, because each reads as current.
-
-**What a violation looks like.** Something another language unit already carries, restated here: a validation, a state, a rule, a step, a code path, a contract. A parallel vocabulary kept to hold the two apart. A failure that is not the failure this unit was meant to catch. An output the other unit already produces. Defensiveness that does not trust the owner, which is a leaky boundary rather than a safe one.
-
-**A fast path is not a second source.** An inline that names its source is a pointer, and it stays one while the name is there. Remove the name and it is a copy.
-
-**A value in a sentence.** Make every count or tree claim true at the commit that lands it, and include the command that regenerates it. A value retyped from its source is a state another language unit carries, which is why [`principle-justify-materialization-cost`](../principle-justify-materialization-cost/SKILL.md) delegates a count or a total stated in prose here.
-
-**The awkward cases.** A document needing two modes splits: a convention states the rule, the record states why it beat its alternatives. A bridge document whose only job is to join two others is a duplicate with extra steps: collapse it into the more relevant of the two. A definition belongs to the language unit whose work produces the thing.
-
-**The test.** Name the subject and the mode of the material, then name the language unit that owns that pair. If it is another language unit, the material is out of place here. If it is this one and something else carries it, that copy is the second source.
+Only the operator splits content across documents, deletes a copy, or widens what a document is responsible for. The agent adds the pointer, names the content, the document that states it, and the document that would end up with the copy, then stops.

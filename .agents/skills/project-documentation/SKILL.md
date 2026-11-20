@@ -9,7 +9,7 @@ description: "Apply when writing or editing project documentation under `docs/`:
 
 This convention covers the project documentation under `docs/`. The `devlog/` records are the `work-log` convention's, the roadmap and changelog are `task-list`'s, and ADR entry structure is `decision-records`'s.
 
-Each document belongs to exactly one folder and serves one mode. The modes, the folder each serves, and what each folder holds are [`references/organization.md`](references/organization.md), which is this convention's organization rule. Which folder holds what, and each type's durability, is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy).
+Each document belongs to exactly one folder and serves one Diataxis mode. Which folder each mode serves, and what each folder holds, are [`references/organization.md`](references/organization.md), which is this convention's organization rule; the modes themselves are `communication-principle-organize-by-diataxis`. Which folder holds what, and each type's durability, is [`documentation_taxonomy.md`](../../../docs/reference/documentation_taxonomy.md#folder-taxonomy).
 
 An architecture document describes what the planes do today. Future work belongs in the task-list. The domain model and the stabilization rule are [`system_overview.md`](../../../docs/reference/system_overview.md#architecture-domain-model).
 

@@ -14,6 +14,8 @@ metadata:
 
 Whether to store a generated result is a decision you keep paying for: a materialized copy must be maintained, and it drifts without a warning. The question is not whether storing is cheap but whether deriving again costs more than the upkeep. Derive by default; materialize when re-deriving is the expensive side, and gate the copy.
 
+**A copy asserts a different proposition.** Not what is true, but what was true at a time, or what follows from its source by a named transformation. That difference is what the copy buys, and the drift the copy risks, which is why a justified one names two things: the source it derives from, and what checks that it is still current. A copy that names neither is dead weight.
+
 **The pattern.** Ask three questions in this order. The first that holds decides.
 
 1. **Can the result be derived again?** If not, materialize it. A derivation bound to point-in-time state, such as a network resolution or a version that moves, or to data that no longer exists, is the highest cost there is.

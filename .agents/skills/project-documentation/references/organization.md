@@ -1,23 +1,10 @@
 # Organization
 
-This file is this convention's organization rule: the mode each corpus serves, the folder it sits in, and what it holds. The view of the tree is `docs/reference/documentation_taxonomy.md`, and the decision that adopted the frame is `docs/adr/documentation_quadrants.md`.
+This file is this convention's organization rule: the Diataxis mode each corpus serves, the folder it sits in, and what it holds. The view of the tree is `docs/reference/documentation_taxonomy.md`, and the decision that adopted the frame is `docs/adr/documentation_quadrants.md`.
 
-## Pick the mode first (Diataxis)
+## The mode each corpus serves
 
-One document, one mode. Two questions pick it: does the content inform action (doing) or understanding (thinking), and does it serve learning or work?
-
-- Action + learning: **tutorial**.
-- Action + work: **how-to**.
-- Understanding + work: **reference**.
-- Understanding + learning: **explanation**.
-
-Use the compass on a whole document or on one sentence.
-
-One mode per document, and the four modes themselves, are `principle-single-source-of-truth`'s judgement: what it owns is a subject together with a mode, so the classification lives with it. What this file owns is what each mode is written like, and which folder holds it in this repository.
-
-## The corpora
-
-Each mode is one of this repository's corpora, and each corpus is one folder except the how-to, which is not a folder at all.
+This convention applies [`communication-principle-organize-by-diataxis`](../../../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-organize-by-diataxis/SKILL.md) to this repository's documents: each corpus serves one Diataxis mode, and its folder follows from that.
 
 | Mode | Folder | Holds |
 |---|---|---|
@@ -26,9 +13,13 @@ Each mode is one of this repository's corpora, and each corpus is one folder exc
 | reference | `docs/reference/` | the harness as built: contracts, states and sequences, the interface index, and the glossary |
 | explanation | `docs/adr/` | the rationale behind standing principles, interface shapes and contracts, with superseded or awaiting-review ADRs under `adr/archive/` |
 
+Each corpus is one folder except the how-to, which is not a folder at all.
+
 A document lives in exactly one folder. Which folder holds what, and each type's durability, is `docs/reference/documentation_taxonomy.md`; that a document lands in exactly one of them is this convention's.
 
 Two corpora sit outside the four. The `devlog/` records are read by a later session continuing the work, and `.agents/skills/work-log/SKILL.md` states why a record has no mode.
+
+## What each mode is written like
 
 **Tutorial: learning by doing.** The learner's success is your job, not theirs. Open by saying what the learner will build, not what they will "learn". Every step produces a visible result, early and often. Tell them what they should see: the expected output, the prompt change, the log line. Cut explanation to one clause and a link. Stay concrete. Write as "we", in commands: "First, do x. Now, do y."
 

@@ -5,7 +5,8 @@ metadata:
   intent: "Organizing documents and contents according to the Diataxis mode, not conflating the technical concerns."
   mechanism: "Name the Diataxis mode each language unit serves, then file it under that mode, link the seam, and move what serves another need."
   leitwort: diataxis
-  neighbours: []
+  neighbours:
+    - principle-single-source-of-truth
 ---
 
 # Organize documentation by mode
