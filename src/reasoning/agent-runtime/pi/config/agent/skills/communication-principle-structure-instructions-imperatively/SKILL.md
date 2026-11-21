@@ -6,7 +6,7 @@ metadata:
   mechanism: "The clause type, chosen by what the sentence does: the imperative form where it tells the reader to act, the declarative where it gives information."
   leitwort: instruction
   neighbours:
-    - communication-principle-attach-as-you-read
+    - communication-principle-order-for-incremental-parsing
     - communication-principle-state-intent-delegate-method
 ---
 
@@ -30,7 +30,7 @@ Write the verb of an instruction in the imperative form, and write a sentence th
 
 **The test.** Name what the statement does. Where it tells the reader to act, the first word is the bare verb, as in "Clone the repository that contains the sample data." Where it explains, the sentence opens on its subject. A step written as a state fails, because the reader cannot tell whether to do it.
 
-**Where another rule wins.** A condition the reader must know first opens the sentence as a descriptive statement, and the command follows the comma: "When the light comes on, set the switch to NORMAL" (Rule 5.4). Give the step its bare imperative, and keep `must` for a safety instruction or an important condition, "unless the instruction is very important for safety ... or when you give an important condition" (Rule 5.3). Which voice carries the clause is [`communication-principle-attach-as-you-read`](../communication-principle-attach-as-you-read/SKILL.md)'s.
+**Where another rule wins.** A condition the reader must know first opens the sentence as a descriptive statement, and the command follows the comma: "When the light comes on, set the switch to NORMAL" (Rule 5.4). Give the step its bare imperative, and keep `must` for a safety instruction or an important condition, "unless the instruction is very important for safety ... or when you give an important condition" (Rule 5.3). Which voice carries the clause is [`communication-principle-order-for-incremental-parsing`](../communication-principle-order-for-incremental-parsing/SKILL.md)'s.
 
 **What it does not cover.** Whether a brief states the method where it owes the intent: [`communication-principle-state-intent-delegate-method`](../communication-principle-state-intent-delegate-method/SKILL.md). A sentence about the text rather than about its subject: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md).
 

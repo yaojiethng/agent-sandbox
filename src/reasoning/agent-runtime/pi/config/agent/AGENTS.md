@@ -69,7 +69,7 @@ Read the leaf skill in full for any principle you apply. In your reply, name eac
   - **Correct disclosure**: the referent named, the target reachable.
     - [`write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): a label the session invented and the reader cannot place
     - [`link-what-the-reader-can-open`](./skills/communication-principle-link-what-the-reader-can-open/SKILL.md): a target the reader cannot reach, linked as though they could
-    - [`attach-as-you-read`](./skills/communication-principle-attach-as-you-read/SKILL.md): a clause that arrives before its actor
+    - [`order-for-incremental-parsing`](./skills/communication-principle-order-for-incremental-parsing/SKILL.md): when writing, order clauses for incremental parsing, so the reader can attach each new phrase to the structure already built
   - **Sentence context**: the order, the length, the distance.
     - [`single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): a detour, or a summary that adds a claim the body never made
     - [`keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md): a caveat at the far end, or a second subject in the section

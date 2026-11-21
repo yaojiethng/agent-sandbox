@@ -9,7 +9,7 @@ metadata:
     - communication-principle-define-terminology-before-use
     - communication-principle-write-for-the-reader
     - communication-principle-link-what-the-reader-can-open
-    - communication-principle-attach-as-you-read
+    - communication-principle-order-for-incremental-parsing
     - communication-principle-single-train-of-thought
 ---
 

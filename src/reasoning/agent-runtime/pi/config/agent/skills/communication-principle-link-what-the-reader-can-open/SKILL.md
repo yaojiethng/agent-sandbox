@@ -7,7 +7,7 @@ metadata:
   neighbours:
     - communication-principle-define-terminology-before-use
     - communication-principle-write-for-the-reader
-    - communication-principle-attach-as-you-read
+    - communication-principle-order-for-incremental-parsing
     - communication-principle-single-train-of-thought
     - communication-principle-keep-a-subject-near
 ---
