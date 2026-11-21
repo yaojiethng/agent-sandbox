@@ -14,7 +14,7 @@ Dense, self-carrying commits cost the writer a minute and save every later reade
 - **Invariant:** a commit holds the whole of its change; no later commit completes, corrects or reverts it.
 - **Violated when** review cannot judge a commit on its own, because the change it starts is finished further up the series.
 - **Check:** `git log --oneline` read downward, and `git show --stat` per commit.
-- **Rewrite when:** instead of appending a correction above its unit, fold it -- `git commit --fixup=<sha>`, then `git rebase --autosquash <base>`; instead of splitting one outcome across commits, fold them; instead of leaving `wip:` checkpoints, squash them into the delivery commit; instead of committing a record the branch later retires, keep it out of the series until it lands.
+- **Rewrite when:** instead of appending a correction above its work unit, fold it -- `git commit --fixup=<sha>`, then `git rebase --autosquash <base>`; instead of splitting one outcome across commits, fold them; instead of leaving `wip:` checkpoints, squash them into the delivery commit; instead of committing a record the branch later retires, keep it out of the series until it lands.
 
 - **Source:** Linux kernel, *Submitting patches*; Google, *Small CLs*.
 
@@ -41,7 +41,7 @@ Dense, self-carrying commits cost the writer a minute and save every later reade
 - **Invariant:** after a rewrite, the commit that introduced a line still names it.
 - **Violated when** archaeology cannot find where a line came from.
 - **Check:** `git blame`.
-- **Rewrite when:** instead of squashing a unit into an earlier commit and burying its origin, fold corrections only and leave the introducing commit in place.
+- **Rewrite when:** instead of squashing a work unit into an earlier commit and burying its origin, fold corrections only and leave the introducing commit in place.
 
 - **Source:** `git-blame(1)`, Git manual.
 
