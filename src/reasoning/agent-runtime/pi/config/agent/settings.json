@@ -11,7 +11,12 @@
   "compaction": {
     "enabled": true,
     "reserveTokens": 32768,
-    "keepRecentTokens": 20000
+    "keepRecentTokens": 20000,
+    "modelOverrides": {
+      "deepseek/deepseek-flash": {
+        "reserveTokens": 600000
+      }
+    }
   },
   "retry": {
     "enabled": true,
@@ -19,7 +24,9 @@
     "baseDelayMs": 1000,
     "maxAgentDelayMs": 3600000
   },
-  "defaultTools": ["+codemode"],
+  "defaultTools": [
+    "+codemode"
+  ],
   "tools": {
     "web_fetch": {
       "enabled": true,
