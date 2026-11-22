@@ -82,7 +82,7 @@ Decisions are recorded by default in the handover's `## Decisions` table, which 
 - the decision changes an interface, a contract, or a file set that another iteration builds against;
 - the work would otherwise produce an ADR with no record of the alternatives it rejected.
 
-Record decisions in the roadmap and handover per the project's `task-list` convention, and if the design settles an implementation decision, create an ADR before releasing, per the project's `decision-records` convention.
+Record decisions in the roadmap and handover per the project's `task-list` convention, and if the design settles an implementation decision, create an ADR before releasing, per the project's `decision-records` convention. When the row changes an instruction or a principle, the design goes through the project's `instruction-authoring` convention, whose `Open when` column names the runbook for the artifact.
 
 Exit condition: all design questions resolved and recorded, any suggestion carried to the scope gate, and the ADR created if applicable.
 
