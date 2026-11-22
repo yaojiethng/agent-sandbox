@@ -23,6 +23,8 @@ Run throwaway verification in `.scratchpad/`, the session-local scratch, never e
 
 **Output is complete and ready for review when:** a single branch, one commit per iteration plus corresponding handover, type prefix per the [`git-discipline`](workflow/coding-agent/skills/git-discipline/SKILL.md) skill. Intermediate `wip:` and correction commits during the iteration are free-form; `wip:` commits squash into the delivery commit at iteration end. Only the delivery commit at iteration end is subject to format enforcement.
 
+**Makefile targets are the operator's.** `scripts/templates/Makefile.template` is the operator's curated alias table: do not add, rename or remove a target, and do not add another Makefile template, unless the operator asks. A change that needs an invocation adds a script and states the command in the document that uses it, or asks the operator for the alias.
+
 ## Collaboration Protocol
 
 These principles are stable. The operating workflow and policy documents are their realisations -- they will evolve; the principles do not.
@@ -55,13 +57,11 @@ When a task applies a change across multiple files -- a naming rule, a structura
 
 ## Instruction Surface
 
-What is read before any work starts is the two `AGENTS.md` files and one line per skill and per prompt; everything else is read only when a file is opened. That index has grown faster than the corpus it indexes, so it is the budget this section governs.
+What is read before any work starts is the two `AGENTS.md` files and one line per skill and per prompt; everything else is read only when a file is opened. That index has grown faster than the corpus it indexes, so this section keeps the index lean.
 
 - **The index is the budget.** A description is one trigger sentence. A subject that needs a paragraph to be found is a subject that needs narrowing, not a longer description.
 - **Rules live where the work happens.** A rule is stated once, in the file a reader is already in when they need it, and cited from everywhere else. A rule reachable only by search is a routing defect.
 - **The check, not the story.** An instruction says what to do and how that is verified. Rationale stays only where a reader would otherwise take the wrong action; history belongs in `devlog/`.
-- **Add by replacing.** A rule, skill, prompt or reference document lands with the removal of something of comparable size in the same commit, or one sentence naming why nothing can be removed.
-- **A budget is a number.**
 
 ## Operator commands
 
