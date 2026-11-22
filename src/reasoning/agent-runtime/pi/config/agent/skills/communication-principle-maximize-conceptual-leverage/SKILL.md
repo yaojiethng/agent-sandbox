@@ -19,10 +19,10 @@ Use this skill to choose a leitwort: a dense term that invokes a compact concept
 |---|---|
 | a plainer word that drops the distinction the reader needs | the leitwort, defined once |
 | a phrase that spells the concept out | the leitwort |
-| a synonym that renames the concept | the leitwort, one word for one thing |
+| a synonym that renames the concept | the leitwort, one word for one concept |
 | a metaphor standing in for the mechanism | the mechanism, or the leitwort that names it |
 | a hedge, an ornate verb, a condition struck for smoothness | the claim with the distinction it needs |
-| a metaphor for a thing that already has a name ("rides along", "a dial worth turning") | that name |
+| a metaphor for a concept that already has a name ("rides along", "a dial worth turning") | that name |
 
 **Why.** A reader holds a concept, not a sentence. The leitwort invokes the concept each time it appears, so the text spends one token where a phrase would spend a dozen, and the reader reaches for the same meaning every time.
 

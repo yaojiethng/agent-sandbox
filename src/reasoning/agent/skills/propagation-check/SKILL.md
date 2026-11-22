@@ -40,7 +40,7 @@ Search the tree for references to the old name (`grep -rn "<old name>" .`), upda
 
 Run this when coverage must be verified rather than asserted.
 
-**Establish the change signature.** State in one line what the change looks like in code or text, specific enough for a grep to find it -- `OLD_NAME` -> `NEW_NAME`, or a label added to every definition of a thing.
+**Establish the change signature.** State in one line what the change looks like in code or text, specific enough for a grep to find it -- `OLD_NAME` -> `NEW_NAME`, or a label added to every definition of a symbol.
 
 **Find the candidates.** Grep for every file that holds the old form, references the changed symbol, or belongs to the affected component. Grep is the authority, not memory and not the task brief.
 

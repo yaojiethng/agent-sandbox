@@ -68,7 +68,7 @@ Set a non-interactive sequence editor. An unset one makes the rebase stop for an
 GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash --autostash HEAD~<n>
 ```
 
-`--autosquash` moves the fixup to sit immediately after the commit whose subject its message names, then squashes it. It silently does nothing when no commit carries that subject. Three things cause that, and all three are silent:
+`--autosquash` moves the fixup to sit immediately after the commit whose subject its message names, then squashes it. It silently does nothing when no commit carries that subject. Three causes produce that, and all three are silent:
 
 - The target's subject changed since the fixup was written, so the `fixup!` prefix points at text no commit holds.
 - The target is a merge commit, so `--autosquash` has no single line to move the fixup onto.

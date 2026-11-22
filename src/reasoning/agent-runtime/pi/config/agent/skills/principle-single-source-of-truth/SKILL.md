@@ -20,7 +20,7 @@ Single source of truth is the practice of structuring documents such that every 
 
 - A **judgement**, a rule, a principle or a convention, is stated once, in one document, and every other document names it and links there.
 - A **piece of logic** has one canonical implementation, and a second is a copy unless it behaves differently.
-- A **value** has one stored copy, and a second store is a materialized view; a count or total stated in prose is the same thing, and it carries the command that regenerates it.
+- A **value** has one stored copy, and a second store is a materialized view; a count or total stated in prose is the same value, and it carries the command that regenerates it.
 
 **Why.**
 

@@ -25,7 +25,7 @@ A document, a prompt, a skill or a section of one needs a judgement its author d
 
 ## Translating the runbook's requirements
 
-Almost every review asks for the same few things. Where a runbook states how to satisfy one, the runbook wins; where it is silent, this is how it is done here.
+Almost every review asks for the same few questions. Where a runbook states how to satisfy one, the runbook wins; where it is silent, this is how it is done here.
 
 | The runbook asks for | How it is met here |
 |---|---|

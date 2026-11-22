@@ -14,7 +14,7 @@ The bare noun is never left unqualified. A size of text is a [language unit](#la
 
 ## thing
 
-Banned as a noun. It names no referent, so nothing in the text can be checked against it: write the artifact, the file, the value, the clause, the field, the row, the command or the output instead.
+Banned as a noun. It names no referent, so nothing in the text can be checked against it: write the artifact, the file, the value, the clause, the field, the row, the command or the output instead. `scripts/check_vocabulary.sh` holds the ban over the shipping instruction surfaces, and the gate skips the heading that states the word; a record keeps it.
 
 **Last updated:** 2026-11-22
 
@@ -529,7 +529,7 @@ An ownership slice within a [sub-domain](#sub-domain): host substrate, session g
 
 ## language unit
 
-A language unit is a size of text, taken as the thing a judgement reads. Two families, split by the relation inside each. The grammatical units compose into one another: each is made of the unit below. The text units are spans whose parts are related rather than composed. The vocabulary is borrowed from the grammar's rank scale, and the list of units is this repository's, because no settled scale exists above the sentence.
+A language unit is a size of text, taken as the span a judgement reads. Two families, split by the relation inside each. The grammatical units compose into one another: each is made of the unit below. The text units are spans whose parts are related rather than composed. The vocabulary is borrowed from the grammar's rank scale, and the list of units is this repository's, because no settled scale exists above the sentence.
 
 ### Identity
 
@@ -549,6 +549,6 @@ A language unit is a size of text, taken as the thing a judgement reads. Two fam
 - The grammatical units are what ASD-STE100 Issue 9 sections its rules by: Section 1 Words, 2 Multi-word nouns, 3 Verbs and 4 Sentences. The text units are its writing types: Section 5 Procedural, 6 Descriptive with the paragraph rules 6.4 to 6.6, and 7 Safety.
 - `phrase` is the language unit neither the corpus nor STE holds a rule at.
 - Not a [layer](#layer) or a [plane](#plane), which name the container architecture.
-- Not grain, which is how finely a thing is divided: an iteration has a grain, a section has a grain, and a language unit is the thing divided.
+- Not grain, which is how finely a unit is divided: an iteration has a grain, a section has a grain, and a language unit is the unit divided.
 
 **Last updated:** 2026-11-19

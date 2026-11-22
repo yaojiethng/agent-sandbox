@@ -41,7 +41,7 @@ Edit only the lines the operator named. Keep the header, the format line and eve
 
 ### 4. Report what the file now says
 
-Print the resulting lines for the roles that changed, and say that the next dispatch reads them. Do not report a model as available. The only thing this skill knows is what the file says.
+Print the resulting lines for the roles that changed, and say that the next dispatch reads them. Do not report a model as available. This skill knows only what the file says.
 
 ## What this skill never does
 

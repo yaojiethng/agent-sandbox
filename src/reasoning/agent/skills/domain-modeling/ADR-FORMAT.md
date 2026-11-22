@@ -43,4 +43,4 @@ What qualifies:
 - **Constraints not visible in the code.** "We can't use AWS because of compliance requirements."
 - **Rejected alternatives when the rejection is non-obvious.** Otherwise someone will suggest GraphQL again in six months.
 
-If a decision is easy to reverse, skip it. If it's not surprising, nobody will wonder why. If there was no real alternative, there is nothing to record beyond "we did the obvious thing."
+If a decision is easy to reverse, skip it. If it's not surprising, nobody will wonder why. If there was no real alternative, there is nothing to record beyond "we took the only option."

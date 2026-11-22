@@ -16,7 +16,7 @@ Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missin
 
 ## Purpose
 
-An eval needs three things: the task stream that was given, the state the work started from, and the state it reached. The script writes all three as files, so a snapshot taken today and one taken a month from now have the same shape and can be compared. The half that needs judgement -- what an eval would score, and whether the scan found a secret -- is this prompt's.
+An eval needs three inputs: the task stream that was given, the state the work started from, and the state it reached. The script writes all three as files, so a snapshot taken today and one taken a month from now have the same shape and can be compared. The half that needs judgement -- what an eval would score, and whether the scan found a secret -- is this prompt's.
 
 ## When to use
 

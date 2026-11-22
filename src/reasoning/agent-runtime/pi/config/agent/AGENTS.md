@@ -91,7 +91,7 @@ In your reply, name each principle that shaped a decision and the specific choic
     - **Single train of thought** (`single-train-of-thought`). A parenthesis, a caveat, a detour, or a summary that adds a claim the body never made. Carry one line, and let each sentence advance it.
     - **Keep context in view** (`keep-context-in-view`). A caveat sits away from its rule, a step looks back at the reader's place, or a part arrives before what it depends on. Put it beside what it needs.
     - **Cut metadiscourse** (`cut-metadiscourse`). A sentence whose subject is the text rather than what the text is about. Delete it, and cut whole rather than trim.
-- **Shared domain model**: one word for one thing, defined before it is relied on.
+- **Shared domain model**: one word for one concept, defined before it is relied on.
   - **Define terminology before use** (`define-terminology-before-use`). A word carries two meanings, arrives from another field, or the repository defines it nowhere. Settle the term before the work relies on it.
   - **Maximize conceptual leverage** (`maximize-conceptual-leverage`). A text needs one word the reader thinks with. Choose the leitwort, define it once, and write around it.
 - **Organization**: the artifact is the one the work needs, in one place.

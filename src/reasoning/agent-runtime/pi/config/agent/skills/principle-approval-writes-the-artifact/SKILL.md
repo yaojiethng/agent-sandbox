@@ -21,7 +21,7 @@ Edit the file in place. Do not park a copy beside it, and do not write a note th
 
 A batch of approvals edits the live files as each item is approved. One file rewritten once per item is the accepted cost.
 
-**Why.** The conversation does not travel with the work, compaction is lossy, and a re-typed clause fails no gate. Git holds the undo, so a written file is recoverable, and a copy kept beside it is one more thing to keep current.
+**Why.** The conversation does not travel with the work, compaction is lossy, and a re-typed clause fails no gate. Git holds the undo, so a written file is recoverable, and a copy kept beside it is one more file to keep current.
 
 This rule is the sum of four that each look local, which is why a batch shape survives review. A decision has one source of truth. Work is sequenced into units that each end green. Verification reads the real artifact rather than a re-telling. Context holding approved work that is not yet written is context at risk.
 

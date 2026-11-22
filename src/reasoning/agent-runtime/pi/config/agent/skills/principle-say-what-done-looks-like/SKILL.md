@@ -12,7 +12,7 @@ metadata:
 
 Work with no stated finish cannot be declared done. It can only be abandoned or claimed.
 
-**The pattern.** Before you start, state two things.
+**The pattern.** Before you start, state where the work stops and what shows it is done.
 
 1. The inventory, which is what the work covers, and the bound, which is what it excludes. Give the reason for each.
 2. The acceptance criteria, one per line, each naming its verification: the tool or the method, other than the agent, whose output shows that criterion is met.

@@ -1,6 +1,6 @@
 ---
 name: communication-principle-write-for-the-reader
-description: "Apply when writing or revising prose: a chat label, an option letter, a session id, a narration of the work, or a clause answering text the file no longer holds. State the thing the reader holds."
+description: "Apply when writing or revising prose: a chat label, an option letter, a session id, a narration of the work, or a clause answering text the file no longer holds. State what the reader holds."
 metadata:
   intent: "The text is written with the reader's context in mind; it does not reference context the reader does not have."
   mechanism: "Discipline around list bullets, referents and avoiding transient references. Prefer referents to persistent records."
@@ -16,7 +16,7 @@ metadata:
 
 Every text is written for the reader who holds it, not for the session that produced it.
 
-**The pattern.** A sentence about the session is a sentence the reader cannot use. Give the thing the reader needs, or link the session record once.
+**The pattern.** A sentence about the session is a sentence the reader cannot use. Give what the reader needs, or link the session record once.
 
 | Instead of | Give |
 |---|---|
@@ -51,4 +51,4 @@ Every text is written for the reader who holds it, not for the session that prod
 
 **The family.** This is one of the `context disclosure` principles. It shares the `correct disclosure` term with `define-terminology-before-use` and `link-what-the-reader-can-open`, and its remedy is the session context.
 
-**The test.** Ask four questions of the sentence. Would the reader need the session to use it? If yes, state the thing. Would the reader need an earlier version of the file? If yes, state the current rule and move the comparison to the record. Is it about the subject, or about how the text was written or revised? If the latter, state the state. Does it leave the reader to invent the permitted form? If yes, write that form.
+**The test.** Ask four questions of the sentence. Would the reader need the session to use it? If yes, state it. Would the reader need an earlier version of the file? If yes, state the current rule and move the comparison to the record. Is it about the subject, or about how the text was written or revised? If the latter, state the state. Does it leave the reader to invent the permitted form? If yes, write that form.

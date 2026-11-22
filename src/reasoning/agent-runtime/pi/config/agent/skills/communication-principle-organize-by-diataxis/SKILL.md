@@ -21,7 +21,7 @@ Two questions pick the mode. Does the content inform action or understanding, an
 |---|---|---|
 | tutorial | learning by doing | a lesson that leads a beginner to a first success |
 | how-to | doing a job | steps to a goal, with no teaching and no background |
-| reference | looking something up | facts only, dry and complete, mirroring the thing described |
+| reference | looking something up | facts only, dry and complete, mirroring the artifact described |
 | explanation | understanding why | one bounded topic, with its context and its alternatives |
 
 The questions run on the language unit, not on the file. A language unit that answers two needs is two language units.

@@ -110,7 +110,7 @@ A check reads an external capability, a tool, a daemon, a repository or an envir
 - Fail closed. When a check cannot determine its answer, refuse and stop, and the refusal names the failing check on stderr.
 - Never absorb a check's status with a bare `|| true`, which discards the distinction the check exists to make. Where proceeding is safe, a named opt-in override prints a warning naming what it bypassed.
 - Never presume a predecessor succeeded. `cmd1 | cmd2` and `if cmd; then` are not proof that the earlier stage ran: read `PIPESTATUS[0]`, or split the pipeline and validate the stage that matters, because a collection fed by one failed stage writes a trustworthy-looking partial result.
-- Never alias "the capability could not run" to "nothing to report": empty output answers only when the empty means there is no such thing.
+- Never alias "the capability could not run" to "nothing to report": empty output answers only when the empty means the resource is absent.
 
 Bash's `$( )` captures stdout only, so a probe returning both a value and a status falls back to treating empty output as the sentinel. That is why these defects cluster at a few substitution and pipe boundaries rather than everywhere, and why a `|| true` over a status that does not matter stays fine. A check that can read a silent failure as a success owes a test for its failed path, and for its cannot-run path where the capability can be absent.
 

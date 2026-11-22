@@ -6,7 +6,7 @@
  * the one blocking call through which break points are waited for and
  * handled: one call records, schedules, and triggers them as one atomic
  * transition and returns the join payload, so the operator's decision is
- * the only thing the primary drives. The join has three modes and the
+ * the only surface the primary drives. The join has three modes and the
  * selector picks one: any task, one named task, or a whole pool of tasks
  * in one batch. Around the join sit the termination audit, the two
  * re-queue routes, the write-back proposal, the bring-back, and the clean

@@ -34,7 +34,7 @@ Order clauses so the reader can attach each new phrase to the structure already 
 **Prevent reanalysis.** When an early parse must be discarded:
 
 - Commit to one reading early: structure the opening words so the initial parse holds through the end of the sentence.
-- Pin scope modifiers: keep "only" and "not" directly next to the word they modify; "only fails on growth" and "fails only on growth" say different things.
+- Pin scope modifiers: keep "only" and "not" directly next to the word they modify; "only fails on growth" and "fails only on growth" say different requirements.
 
 **Why.** When a phrase cannot attach, the text carries high extraneous load: the reader spends working memory on the form rather than the meaning, re-parsing what did not attach and choosing between readings. Reducing the load buys a first-pass attachment, so the memory goes to the instruction and the reading arrives once rather than twice. Good-enough processing makes the failure silent: the reader settles on the plausible reading, so a misread arrives as a wrong instruction rather than a stumble.
 

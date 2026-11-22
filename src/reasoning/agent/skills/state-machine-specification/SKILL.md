@@ -69,7 +69,7 @@ An invariant that is none of the three is not an invariant. Rewrite it until it 
 
 ## Enumerate the tests
 
-Six rules. Apply all six. They check a suite that already exists. When none exists, they are the worklist instead: the model is the test plan, and each rule names one thing to write.
+Six rules. Apply all six. They check a suite that already exists. When none exists, they are the worklist instead: the model is the test plan, and each rule names one item to write.
 
 1. Every transition names at least one invariant, or records why it has none. A transition with no invariant is a finding.
 2. Every state invariant and every transition invariant gets a test case, including the blocked path.

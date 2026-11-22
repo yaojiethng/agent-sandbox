@@ -40,4 +40,4 @@ A gap you do not name cannot be checked, so a wrong result it hides arrives as a
 
 **What it does not cover.** What the instruction is about, how much room it costs, or how bad the consequence would be. The last cannot be known before the move.
 
-**The test.** Name the assumption, the gaps, the undo path and the reporter. Name one thing you did not verify, and say why the instruction stands without it.
+**The test.** Name the assumption, the gaps, the undo path and the reporter. Name one claim you did not verify, and say why the instruction stands without it.

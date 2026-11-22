@@ -36,7 +36,7 @@ Given, When and Then are the preconditions, the invariant under test and the pos
 
 ## The close
 
-> Three things I noticed while preparing this, for the findings log:
+> Three findings I noted while preparing this, for the findings log:
 >
 > 1. `_self_env_dir` is assigned and never used in this file.
 > 2. No test asserts that comment lines are warning-free (the comment skip has no dedicated bite).

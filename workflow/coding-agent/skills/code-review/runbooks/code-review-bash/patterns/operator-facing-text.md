@@ -6,7 +6,7 @@ Open this when code decides what to print, to which stream, or whether it may te
 
 ```bash
 # Library
-do_thing || { echo "ERROR: thing failed: $reason" >&2; return 1; }
+fetch_config || { echo "ERROR: could not fetch config: $reason" >&2; return 1; }
 
 # Orchestrator
 echo "Done. Next: run make start"
@@ -24,7 +24,7 @@ emit_paths "${FILES[@]}" > "$LIST"
 warn() { printf 'Warning: %s\n' "$*" >&2; }
 ```
 
-A caller captures standard output and prints standard error to the terminal, so the two streams carry different things: a value the caller will use, and a message a human reads. A diagnostic on stdout lands inside the captured value and corrupts it, and a value on stderr is lost to a variable assignment. Route each line by who reads it.
+A caller captures standard output and prints standard error to the terminal, so the two streams carry different payloads: a value the caller will use, and a message a human reads. A diagnostic on stdout lands inside the captured value and corrupts it, and a value on stderr is lost to a variable assignment. Route each line by who reads it.
 
 Replaces: `echo "Warning: ..."` inside a function whose output the caller captures.
 
