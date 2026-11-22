@@ -27,8 +27,7 @@ Provide the evidence in place of the description: the template, the command, the
 | a statement that the work was done, and a description of it | the diff, or the command output that shows it |
 | "the database stays close at hand" | "`.toSQL()` returns the exact string sent to the database" |
 | "SQL you can read", "types that follow your schema" | the query it produces, the type it emits |
-| "a dial worth turning" | "a parameter worth varying" |
-| an aphorism, or personified code ("the plan holds it") | the literal act, and its subject |
+| "wire it or delete it" | "connect it to the entry point, or delete the file" |
 | "Parser rejects bad date -> exit 2, no write" | "The parser rejects a bad date, exits with code 2, and writes nothing." |
 
 **Why.** The evidence cannot be misread. A command runs or it does not, so the meaning survives the writer. An assumption about compliance is not evidence; the output is.

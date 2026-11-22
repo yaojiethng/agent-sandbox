@@ -4,7 +4,8 @@ description: "Apply when a word names a thing the reader may hold differently, w
 metadata:
   intent: "Aligning domain model and task intent."
   mechanism: "Naming: one word for each thing and one meaning for each word."
-  neighbours: []
+  neighbours:
+    - communication-principle-maximize-conceptual-leverage
 ---
 
 # Align the mental model
@@ -20,6 +21,7 @@ Use one word for each thing and one meaning for each word, so the reader builds 
 | a word whose meaning the reader supplies | the definition before the first use |
 | a term that changes between a summary and the section it summarises | the same term in both |
 | a bucket of near-equivalents ("rule", "norm", "policy") for one thing | the one the repository defines |
+| a metaphor for a thing that already has a name ("rides along", "a dial worth turning") | that name |
 
 **Why.** The reader builds a model from the words in front of them. When a word carries two meanings, the reader chooses one, and the model follows that choice. The text reports nothing. The writer meets the divergence at a review, or in work built on the other reading, and the sentence still reads correctly to them. A task's scope and its acceptance criteria are the same mapping, and two readers who map them differently have the same fault.
 

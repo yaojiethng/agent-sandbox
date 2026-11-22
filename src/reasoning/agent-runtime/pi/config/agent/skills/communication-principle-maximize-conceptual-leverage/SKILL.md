@@ -5,7 +5,8 @@ metadata:
   intent: "Choosing precise, descriptive domain terms, so that communication is as concise and dense and stripped-down as possible."
   mechanism: "The best leading words are terms already prominent within a domain's problem language; prefer terms already common in the corpus."
   leitwort: leitwort
-  neighbours: []
+  neighbours:
+    - communication-principle-align-the-mental-model
 ---
 
 # Maximize conceptual leverage
