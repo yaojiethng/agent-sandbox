@@ -6,7 +6,7 @@ metadata:
   mechanism: "Name the observation that settles the statement's predicate: one that separates its cases keeps the sentence, and its absence cuts the sentence."
   leitwort: vacuous
   neighbours:
-    - communication-principle-show-dont-describe
+    - communication-principle-provide-evidence
     - communication-principle-dont-forecast-undone-work
 ---
 

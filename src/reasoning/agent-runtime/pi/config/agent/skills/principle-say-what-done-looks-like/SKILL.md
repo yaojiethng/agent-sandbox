@@ -4,7 +4,8 @@ description: State where the work stops and what shows it is done, before starti
 metadata:
   intent: "Agent-operator alignment during task dispatch: an agreement on the final result, so that no party is surprised."
   mechanism: "The instruction and its acceptance: the finish, the bound, and one criterion with an instrument other than the agent's belief."
-  neighbours: []
+  neighbours:
+    - communication-principle-provide-evidence
 ---
 
 # Say what done looks like

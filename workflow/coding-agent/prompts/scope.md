@@ -26,7 +26,7 @@ Ask all four, in order, before rewriting the ask, and answer them in chat. Each 
 1. **What would a top professional in this field do here that the asker is not asking for?** `principle-attack-the-premise`.
 2. **What is the rawest material they would start from, rather than what has already been digested for me?** `principle-justify-materialization-cost`, `principle-guard-the-context-window`.
 3. **What specific methods and tools would they use?** `principle-build-the-lever`, `principle-check-placement`, `principle-exhaust-the-design-space`.
-4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-show-dont-describe`.
+4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-provide-evidence`.
 
 ## Check the boundary
 
@@ -41,7 +41,7 @@ Write the brief to ask for exactly what the four answers describe, and do not pr
 The principle corpus decides how the brief is formed and phrased, and each judgement is linked where the brief must satisfy it, never restated.
 
 - Forming the plan: `principle-model-the-domain`, `principle-subtract-before-you-add`, `principle-never-block-on-the-human`, `principle-match-precision-to-stakes`, `principle-sequence-verifiable-units`.
-- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-metadiscourse`, `communication-principle-show-dont-describe`, `communication-principle-align-the-mental-model`, `communication-principle-order-for-incremental-parsing`, `communication-principle-one-addressing-axis`, `communication-principle-keep-context-in-view`, `communication-principle-maximize-conceptual-leverage`.
+- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-metadiscourse`, `communication-principle-provide-evidence`, `communication-principle-align-the-mental-model`, `communication-principle-order-for-incremental-parsing`, `communication-principle-one-addressing-axis`, `communication-principle-keep-context-in-view`, `communication-principle-maximize-conceptual-leverage`.
 
 ## The brief's parts
 

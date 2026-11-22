@@ -12,6 +12,12 @@ These are reserved technical terms: use them with exactly the meanings defined b
 
 The bare noun is never left unqualified. A size of text is a [language unit](#language-unit): give the full term at its first mention in a document and `unit` after it. Every other sense carries its own qualifier, a `work unit`, a `test unit`, a `unit of a pass`, a `unit of measure`, and `unit test`, `unit suite` and `test unit` are compounds that stand as they are. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. `harness unit` and `operator unit` are the session and the iteration.
 
+## thing
+
+Banned as a noun. It names no referent, so nothing in the text can be checked against it: write the artifact, the file, the value, the clause, the field, the row, the command or the output instead.
+
+**Last updated:** 2026-11-22
+
 ## modality
 
 The base a sentence appeals to and the modal strength it carries: what a reader owes, or what a reader must accept, and with what strength. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
