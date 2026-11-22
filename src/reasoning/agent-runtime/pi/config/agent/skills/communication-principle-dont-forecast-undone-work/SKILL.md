@@ -1,6 +1,12 @@
 ---
 name: communication-principle-dont-forecast-undone-work
 description: "Apply when writing or revising text: a sentence that describes work no task holds -- a plan for a later milestone, a TODO, a pre-announcement, or a promise in a record. A forecast belongs where a task holds the work, and a guess is written as a gap."
+metadata:
+  intent: "Prevent speculative requirements, avoid overengineering, ensure that the content written back reflects reality."
+  mechanism: "A deletion rule for text: a forecast is removed, or moved to the record that holds the work."
+  neighbours:
+    - principle-produce-just-in-time
+    - principle-vacuous
 ---
 
 # Don't forecast undone work
@@ -32,6 +38,6 @@ Nothing reports the error. The sentence is grammatical, and it names a real mile
 | a discussion page | its own question and its options |
 | a reference document, a changelog entry | nothing, because they describe what is built or in force |
 
-**Where another rule wins.** A guess about how built work will behave is not a description of undone work, so it is not a forecast. `principle-match-precision-to-stakes` owns the assumption and the gap, at `$AGENT_HOME/agent/skills/principle-match-precision-to-stakes/SKILL.md`, and the `testing` skill's test homes own the knowledge test for a seam that cannot be changed.
+**Where another rule wins.** A guess about how built work will behave is not a description of undone work, so it is not a forecast. [`principle-match-precision-to-stakes`](../principle-match-precision-to-stakes/SKILL.md) owns the assumption and the gap, and the `testing` skill's test homes own the knowledge test for a seam that cannot be changed.
 
 **The test.** Name the task that owns the work. Where no task holds it, the sentence is a gap or it belongs to a task, and it goes in one of those two places. Then name the section the sentence sits in: if the work belongs to a different milestone, the sentence points at the task instead of describing the work.

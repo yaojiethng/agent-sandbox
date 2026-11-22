@@ -55,7 +55,7 @@ An unfinished plane above is a reason to leave a low plane alone. Settled never 
 
 ### What going around it costs
 
-A low-plane change looks locally correct: tests pass, the diff is small. Four things follow.
+A low-plane change looks locally correct: tests pass, the diff is small. Four consequences follow.
 
 1. Changing a plane out of order invalidates the interface that future work relies on, so that work has to be replanned or rescoped.
 2. The review cannot catch it: everyone who uses the interface today gets updated in the same change, and the future work is not in the tree to read.

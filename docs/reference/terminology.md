@@ -10,17 +10,24 @@ reader: [agent, operator]
 
 These are reserved technical terms: use them with exactly the meanings defined below, and do not use either as a bare noun or loose synonym in prose or code. Historical records and past handovers are not retro-renamed. Deprecated tokens are noted in the relevant term's entry.
 
-`unit` is not a reserved term. It is ordinary as a quantifier -- a unit of work, a unit of a pass, a unit of measure, an experimental unit -- and inside a compound such as `unit test`, `unit suite` or `test unit`. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. The compounds `harness unit` and `operator unit` are the session and the iteration, not the work.
+The bare noun is never left unqualified. A size of text is a [language unit](#language-unit): give the full term at its first mention in a document and `unit` after it. Every other sense carries its own qualifier, a `work unit`, a `test unit`, a `unit of a pass`, a `unit of measure`, and `unit test`, `unit suite` and `test unit` are compounds that stand as they are. It is not a synonym for a record entity: where the sentence means the [iteration](#iteration), the delivery commit, the branch, the handover, the roadmap row or the numbered item, name that. `harness unit` and `operator unit` are the session and the iteration.
+
+## thing
+
+Banned as a noun. It names no referent, so nothing in the text can be checked against it: write the artifact, the file, the value, the clause, the field, the row, the command or the output instead. `scripts/check_vocabulary.sh` holds the ban over the shipping instruction surfaces, and the gate skips the heading that states the word; a record keeps it.
+
+**Last updated:** 2026-11-22
 
 ## modality
 
-The base a sentence appeals to and the force it carries: what a reader owes, or what a reader must accept, and how strongly. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
+The base a sentence appeals to and the modal strength it carries: what a reader owes, or what a reader must accept, and with what strength. Classified as `rule`, `judgement`, `permission`, `fact` or `claim`.
 
 ### Identity
 
 - `rule`, `judgement`, `permission`, `fact`, `claim`
 - the base is deontic when the sentence states what a reader owes, and epistemic when it states what is the case
-- the force is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY
+- the modal strength is necessity, graded, or possibility, which RFC 2119 names MUST, SHOULD and MAY
+- the ADR's historical word for a modality is `kind`
 - formerly `norm`, `norm kind` and `sentence kind`, all deprecated; `statement` is the former name of `claim`
 
 ### Scope
@@ -32,10 +39,36 @@ The sentences of instruction text: a prompt, a skill, and the conventions they r
 - A `rule` names the artifact that fails when it is broken.
 - A `fact` carries its evidence, or is marked as an inference.
 - A `permission` names what grants it.
+- A judgement's home is a `principle skill`; the artifact's definition is that entry, and the modality axis does not classify it.
 - The decision, the framework it follows and what that framework gave us, and why the classification is a standard rather than a gate: `docs/adr/instruction_modality.md`.
-- The obligations each kind owes are the `instruction-authoring` convention's.
+- The obligations each modality owes are the `instruction-authoring` convention's.
+- The scale is `modal strength`; `strength` is its short form, and `force` is the ADR's historical word.
 
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-14
+
+## modal strength
+
+The strength a sentence carries, on the scale of necessity, graded, or possibility. It is the second axis of a `modality`, beside the base.
+
+### Identity
+
+- `necessity`, `graded`, `possibility`, which RFC 2119 names MUST, SHOULD and MAY
+- the scale is ordered: necessity is the strongest, possibility the weakest
+- short form: `strength`, used where the sentence is already about modality; the first mention in a document is the full term
+- the ADR's historical word for the scale is `force`; the reserved term is `modal strength`
+
+### Scope
+
+One sentence of instruction text. The strength is intrinsic to the statement: it does not measure the author's confidence, the enforcement that holds a rule, the commitment the act carries, or the text's granularity.
+
+### Relationships
+
+- The five modalities are a base and a modal strength: `rule` (deontic necessity), `judgement` (deontic graded), `permission` (deontic possibility), `fact` (epistemic necessity), and `claim` (epistemic possibility).
+- `modality` composes the base and this scale; the `modality` entry cites it.
+- The framework and the rejected ranking by strength: `docs/adr/instruction_modality.md`.
+- What each modality owes a writer: the `instruction-authoring` convention.
+
+**Last updated:** 2026-11-14
 
 ## workflow document
 
@@ -52,6 +85,35 @@ A prompt or a skill: instruction text an agent executes. Its form is a second ax
 - The authoring rules are this project's `instruction-authoring` convention, which does not ship.
 
 **Last updated:** 2026-11-03
+
+## principle skill
+
+A skill that helps a reader produce or choose the criteria a piece of work needs, rather than apply a fixed procedure.
+
+### Identity
+
+- the general form is `principle-<slug>`; the domain-narrowed form is `<type>-principle-<slug>`, where `<type>` names the domain
+- a workflow document whose carrier is a skill: a directory with `SKILL.md` and the siblings it names
+- a meta-level narrowing of the general skill interface: a general skill applies a procedure, while a principle produces or chooses the criteria that procedure needs
+- the norm it states carries a modality; the skill is the artifact, the norm is the content
+- formerly called a "judgement skill"; `judgement` is a modality, not the artifact
+
+### Scope
+
+- the text or artifact the judgement applies to; the description names the situation the reader is in
+- the corpus is the set of these skills where a reader holds them; this tree's inventory reads the repo-owned provider root
+- the `<type>-` prefix narrows the domain of application, not the class; a principle without the prefix is general
+- not a procedure, a runbook, a prompt or a modality
+
+### Relationships
+
+- `modality` holds the norm's base and modal strength, and does not classify an artifact; a judgement's home is a principle skill
+- `workflow document` holds the carrier and form
+- the body shape is a convention (`docs/adr/principle_skill_shape.md`); the frontmatter gate is `scripts/check_principle_frontmatter.sh`
+- the admission mechanism is `metadata.neighbours`, decided by the `instruction-authoring` change runbook (`.agents/skills/instruction-authoring/runbooks/principle-change.md`) and held by `scripts/check_principle_frontmatter.sh`
+- the authoring rule is the `instruction-authoring` convention's step 2
+
+**Last updated:** 2026-11-16
 
 ## session
 
@@ -462,3 +524,31 @@ An ownership slice within a [sub-domain](#sub-domain): host substrate, session g
 - Not a [layer](#layer), which names the container architecture.
 
 **Last updated:** 2026-10-15
+
+---
+
+## language unit
+
+A language unit is a size of text, taken as the span a judgement reads. Two families, split by the relation inside each. The grammatical units compose into one another: each is made of the unit below. The text units are spans whose parts are related rather than composed. The vocabulary is borrowed from the grammar's rank scale, and the list of units is this repository's, because no settled scale exists above the sentence.
+
+### Identity
+
+- grammatical units: `term`, `phrase`, `clause`, `sentence`
+- text units: `passage`, `document`
+- short form: `unit`, in a document after the full term's first mention
+
+### Scope
+
+- The size a judgement inspects, not the kind of meaning it inspects. Kind is the perpendicular axis: what a unit means, what it does to its reader, and with what strength, are [modality](#modality) and [modal strength](#modal-strength), and neither is a size.
+- Not the span a comparison runs between artefacts, where the units are the file and the corpus.
+- A judgement about a file, a queue, or a check's position in a workflow declares no unit.
+
+### Relationships
+
+- The borrowing, and what this repository keeps, rewrites, adds and drops: `.agents/registry/citations/halliday-rank-scale.json`.
+- The grammatical units are what ASD-STE100 Issue 9 sections its rules by: Section 1 Words, 2 Multi-word nouns, 3 Verbs and 4 Sentences. The text units are its writing types: Section 5 Procedural, 6 Descriptive with the paragraph rules 6.4 to 6.6, and 7 Safety.
+- `phrase` is the language unit neither the corpus nor STE holds a rule at.
+- Not a [layer](#layer) or a [plane](#plane), which name the container architecture.
+- Not grain, which is how finely a unit is divided: an iteration has a grain, a section has a grain, and a language unit is the unit divided.
+
+**Last updated:** 2026-11-19

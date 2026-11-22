@@ -1,6 +1,10 @@
 ---
 name: principle-approval-writes-the-artifact
 description: Write an approved artifact into the file that is its source of truth in the same unit of work as the approval, so the decision never lives only in the conversation. Use when a design, a scope, a plan, or a set of items will be produced later.
+metadata:
+  intent: "Making sure changes are not lost in chat: write them back, so that if the session is ended or lost, we won't drop decisions or changes."
+  mechanism: "The file that is the artifact's source of truth: the approved text is written there in the same unit of work as the approval."
+  neighbours: []
 ---
 
 # An approval writes the artifact
@@ -17,7 +21,7 @@ Edit the file in place. Do not park a copy beside it, and do not write a note th
 
 A batch of approvals edits the live files as each item is approved. One file rewritten once per item is the accepted cost.
 
-**Why.** The conversation does not travel with the work, compaction is lossy, and a re-typed clause fails no gate. Git holds the undo, so a written file is recoverable, and a copy kept beside it is one more thing to keep current.
+**Why.** The conversation does not travel with the work, compaction is lossy, and a re-typed clause fails no gate. Git holds the undo, so a written file is recoverable, and a copy kept beside it is one more file to keep current.
 
 This rule is the sum of four that each look local, which is why a batch shape survives review. A decision has one source of truth. Work is sequenced into units that each end green. Verification reads the real artifact rather than a re-telling. Context holding approved work that is not yet written is context at risk.
 

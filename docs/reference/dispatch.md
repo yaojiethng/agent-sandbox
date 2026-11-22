@@ -52,7 +52,7 @@ The route machine has four states. A route is untried before its first attempt, 
 | dead | any attempt | dead |
 | cooling | clock reaches the stated moment | untried |
 
-Selection answers with one of three things: attempt this entry, blocked until a stated moment for a stated reason, or unroutable because every entry is dead. The loop then either finishes or moves to the next entry, so the walk itself carries no state beyond the attempt it is on.
+Selection answers with one of three verdicts: attempt this entry, blocked until a stated moment for a stated reason, or unroutable because every entry is dead. The loop then either finishes or moves to the next entry, so the walk itself carries no state beyond the attempt it is on.
 
 An invocation without `--run` prints the command it would have run and stops there. It records nothing, so its report is a prediction rather than a measurement, and the caller reads only the command.
 

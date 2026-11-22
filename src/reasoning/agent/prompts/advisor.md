@@ -26,7 +26,7 @@ If the run fails or the log is empty, fix the invocation and rerun before triagi
 Write the brief to a throwaway file in `/tmp`. It must contain:
 
 1. **What to review:** the full path of the target file, and the instruction to read it in full.
-2. **The review concerns, in priority order.** Name the in-scope targets explicitly. Do not ask the advisor to judge things you know are out of scope.
+2. **The review concerns, in priority order.** Name the in-scope targets explicitly. Do not ask the advisor to judge work you know is out of scope.
 3. **A limited deliverable format:** numbered defects, each with location, defect, and suggested fix; then an overall verdict. Give the advisor a way to say "no remaining defects" plainly so the loop can terminate.
 4. **The advisor framing:** it is an advisor, not the decision-maker.
 5. Enough surrounding context (the artifact's purpose, how it will be used) that the advisor does not need any other file to review it.

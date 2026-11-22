@@ -53,7 +53,7 @@ There is no resolved state: a resolved node is pruned, because its history is th
 
 An append-only log is the storage, and a bounded view is the reading budget. The view is at most 16 lines by 240 characters; when it overflows, `note` reports a merge due, and the two ranges it names merge into one summary. A summary is a cache, so `forget` drops one and the originals resurface. The log is never pruned.
 
-`wake` and `report` print the view at re-orientation, for a reader who has the tree and not the transcript. Write what that reader cannot get from the tree and what changes their next decision. A count or a gate result lives in its artifact, so name the artifact with `--home` and leave the value out (`communication-principle-only-derive-what-you-own`).
+`wake` and `report` print the view at re-orientation, for a reader who has the tree and not the transcript. Write what that reader cannot get from the tree and what changes their next decision. A count or a gate result lives in its artifact, so name the artifact with `--home` and leave the value out (`principle-single-source-of-truth`).
 
 `note` appends one occurrence. `--restates <n>` records a restatement and adds no view line. `--home <path>` points at a durable record. `wake` prints the view, and `zoom <lo>-<hi>` prints the log range.
 

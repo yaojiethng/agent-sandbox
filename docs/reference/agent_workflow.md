@@ -119,9 +119,9 @@ Prompt templates are iteration tooling. They structure operator input, reduce it
 
 ### Instruction modality
 
-Instruction modality is a concept for categorising the instruction text we write. It names five kinds of sentence - `rule`, `fact`, `judgement`, `permission` and `claim` - and each kind owes its writer something different, so a draft that mixes them unexamined reads as stronger or weaker than it is. Nothing gates the choice; it is applied by whoever writes the prompt or the skill.
+Instruction modality is a concept for categorising the instruction text we write. It names five modalities of sentence - `rule`, `fact`, `judgement`, `permission` and `claim` - and each modality owes its writer something different, so a draft that mixes them unexamined reads with more or less modal strength than it carries. Nothing gates the choice; it is applied by whoever writes the prompt or the skill.
 
-Its definitions are `docs/reference/terminology.md` `## modality`, the decision and the derivation behind the five are `docs/adr/instruction_modality.md`, and what each kind means for a writer is the `instruction-authoring` convention.
+Its definitions are `docs/reference/terminology.md` `## modality`, the scale is `## modal strength`, the decision and the derivation behind the five are `docs/adr/instruction_modality.md`, and what each modality means for a writer is the `instruction-authoring` convention.
 
 ### Persistent devlog records (interim)
 
@@ -160,7 +160,7 @@ Every cell names its document in the form its reader can open. A document under 
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the provider and project `AGENTS.md` model and the role of each file -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider `AGENTS.md` files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, decide it with `principle-single-source-of-truth` and the kind table in `docs/adr/instruction_modality.md`.
+When a rule appears to exist in two documents in this map, decide it with `principle-single-source-of-truth` and the five modalities in `docs/adr/instruction_modality.md`.
 
 ## References
 

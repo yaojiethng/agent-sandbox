@@ -267,7 +267,7 @@ export interface VerifyParams {
  * The termination audit, recorded on the task. The audit is the primary's
  * own run - read the diff, run the brief's checks, confirm the report
  * landed - and this op records its finding (I8). Usable terminates the
- * task; not-usable leaves it in the queue, because the only thing left to
+ * task; not-usable leaves it in the queue, because the only action left to
  * decide is another segment. One audit per terminal break point: a second
  * recording of the same entry is refused, so a re-queue cannot be skipped
  * by re-auditing what was already judged.

@@ -6,6 +6,9 @@
 #
 #   a conforming tree                              --  rc 0
 #   a replaced sense of 'layer' in a surface       --  rc 1; the file is named
+#   a banned noun ('thing') in a surface           --  rc 1; the file is named
+#   the banned noun's own registry entry           --  rc 0 (the heading states it)
+#   a longer word carrying the letters ('nothing')  --  rc 0 (a different word)
 #   the container-architecture sense of 'layer'    --  rc 0 (not a finding)
 #   a surface the manifest declares but is absent  --  rc 1; the source is named
 #   a manifest with no instruction-surface source  --  rc 1 (fails closed)
@@ -95,6 +98,37 @@ test_container_architecture_sense_allowed() {
   assert_rc 0 "$GATE_RC" 'the container-architecture sense is not a finding'
 }
 
+test_banned_noun_flagged() {
+  local root="$FIXTURE_DIR/noun"
+  write_conforming_tree "$root"
+  printf '\nEvery thing follows from the manifest.\n' >> "$root/docs/reference/overview.md"
+  run_gate "$root"
+  assert_rc 1 "$GATE_RC" 'the banned noun fails'
+  assert_contains "$GATE_OUT" 'overview.md' 'the offending file is named'
+}
+
+test_banned_noun_entry_allowed() {
+  local root="$FIXTURE_DIR/noun-entry"
+  write_conforming_tree "$root"
+  cat > "$root/docs/reference/terminology.md" <<'EOF2'
+## thing
+
+Banned as a noun.
+
+**Last updated:** 2026-11-22
+EOF2
+  run_gate "$root"
+  assert_rc 0 "$GATE_RC" 'the registry entry states the banned word'
+}
+
+test_longer_word_allowed() {
+  local root="$FIXTURE_DIR/noun-longer"
+  write_conforming_tree "$root"
+  printf '\nNothing happened, and something else did.\n' >> "$root/docs/reference/overview.md"
+  run_gate "$root"
+  assert_rc 0 "$GATE_RC" 'a longer word carrying the letters is not the noun'
+}
+
 test_missing_surface_flagged() {
   local root="$FIXTURE_DIR/missing"
   write_conforming_tree "$root"
@@ -115,6 +149,9 @@ test_manifest_with_no_source_fails_closed() {
 
 run_test test_conforming_tree_passes
 run_test test_disallowed_sense_flagged
+run_test test_banned_noun_flagged
+run_test test_banned_noun_entry_allowed
+run_test test_longer_word_allowed
 run_test test_container_architecture_sense_allowed
 run_test test_missing_surface_flagged
 run_test test_manifest_with_no_source_fails_closed

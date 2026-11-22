@@ -22,7 +22,7 @@ The statecharts and their TLA+ modules, as source files rather than prose. Each 
 
 ## `tests/integration/`
 
-End-to-end or environment-gated flows that cannot run deterministically in the unit harness: container or daemon requirements, chunky multi-process flows, metrics with no defined pass/fail. They are excluded from `make test` so the unit suite stays a deterministic `failed 0`. A flow whose seam becomes unit-testable is promoted, not kept here as a permanent home.
+End-to-end or environment-gated flows that cannot run deterministically in the test-unit harness: container or daemon requirements, chunky multi-process flows, metrics with no defined pass/fail. They are excluded from `make test` so the unit suite stays a deterministic `failed 0`. A flow whose seam becomes unit-testable is promoted, not kept here as a permanent home.
 
 ## `tests/eval/`
 

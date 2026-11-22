@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # scripts/check_document_shape.sh
-# The instruction-document gate: every prompt, skill and policy block parses;
-# every shipping document declares its reader; every `principle-` skill carries
-# the corpus shape.
+# The instruction-frontmatter gate: every prompt, skill and policy block parses;
+# a skill's `disable-model-invocation` is a boolean; every shipping document
+# declares its reader. The principle body shape is a convention, not this gate's
+# subject.
 #
-# Both checks share one file set, one walk and one parser, so they share one
+# The checks share one file set, one walk and one parser, so they share one
 # gate. Enforced documents are `.agents/skills/instruction-authoring/references/`
-# `skill-conventions.md` `## Frontmatter` and `## A judgement skill`, its
-# `prompt-conventions.md` `## Frontmatter`,
-# `.agents/skills/project-documentation/SKILL.md` `## How a document opens`,
-# and the decision in docs/adr/principle_skill_shape.md. The scanner is
-# scripts/lint/document-shape.mjs.
+# `skill-conventions.md` `## Frontmatter`, its `prompt-conventions.md`
+# `## Frontmatter`, `.agents/skills/project-documentation/SKILL.md`
+# `## How a document opens`, and the decision in docs/adr/principle_skill_shape.md.
+# The scanner is scripts/lint/document-shape.mjs.
 #
 # A prompt whose frontmatter does not parse is dropped by pi at load time with no
 # message in the session, so it simply never appears in the command list. That is
@@ -57,6 +57,6 @@ rc=$?
 if (( rc == 0 )); then
   echo "Clean (${SECONDS}s)"
 else
-  echo "Blocking gate: fix the findings above (see `.agents/skills/instruction-authoring/references/skill-conventions.md` and `.agents/skills/project-documentation/SKILL.md`)." >&2
+  printf '%s\n' 'Blocking gate: fix the findings above (see .agents/skills/instruction-authoring/references/skill-conventions.md and .agents/skills/project-documentation/SKILL.md).' >&2
 fi
 exit "$rc"

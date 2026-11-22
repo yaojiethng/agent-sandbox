@@ -1,6 +1,10 @@
 ---
 name: principle-propagation-discipline
 description: Apply when a change removes or renames something, or lands across more than one file. Every carrier of the old state is part of the task, and a deletion's carriers include the descriptions as well as the references.
+metadata:
+  intent: "Maintaining the organization of the repo: preventing the occurrence of stale content by making sure that changes propagate to all related files."
+  mechanism: "Every carrier of the old state is part of the task, and a deletion's carriers include the descriptions as well as the references."
+  neighbours: []
 ---
 
 # Propagation discipline
@@ -9,8 +13,8 @@ A change is not done while anything in the tree still asserts the old state.
 
 **The pattern.**
 
-- Before the first edit, list every carrier in chat. A carrier is a file, a test, a record, or a sentence that describes the thing rather than naming it.
-- An issue inside the artifact you are changing is a carrier, not an adjacent issue. A reference to the thing you just deleted is part of the deletion.
+- Before the first edit, list every carrier in chat. A carrier is a file, a test, a record, or a sentence that describes an artifact rather than naming it.
+- An issue inside the artifact you are changing is a carrier, not an adjacent issue. A reference to the artifact you just deleted is part of the deletion.
 - For a rename, the key is the old name. Search the tree for it and update every hit.
 - For a deletion, the key is the phrase the tree uses to describe the artifact. Record that phrase before you delete, then search for it. A filename key cannot find prose that never names the file.
 - Every carrier that survives the sweep gets a destination. It is fixed here, or it becomes an open task row.

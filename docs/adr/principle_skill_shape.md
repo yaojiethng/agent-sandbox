@@ -1,6 +1,140 @@
 # Principle Skill Shape
 
-**Current:** 2026-11-07
+**Current:** 2026-11-22
+
+## 2026-11-22 -- The wording is the author's, and an edit fixes only a mistake
+
+**Decision:** [`communication-principle-preserve-original-wording`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-preserve-original-wording/SKILL.md) replaces the rule that gave the agent the syntax. An edit fixes a typo, spelling, punctuation, broken grammar or broken markup, and raises every other change as a disagreement, with its evidence, held for the author's review. A section the author asked the agent to draft, and output the author asked to include, become the author's wording.
+
+**Rationale:** The earlier split gave the agent the syntax, so the same rule that reserved the meaning permitted a reflow of the author's prose. A rewrite of wording the agent did not write carries the problems the rewrite introduces, and the author pays for them in a re-read. The narrower rule leaves the author's wording intact and puts every other judgement where the author can rule on it.
+
+**Edge cases / drivers:** A minor mistake is the closed list the rule states; anything outside it is a disagreement, a factual error included. The rewrite of a mechanical defect still stops where the defect sits inside a protected term, which is raised rather than fixed.
+
+## 2026-11-17 -- The operator dictates a principle, and the agent writes the file
+
+**Decision:** A change is a discussion. The agent brings the evidence a decision needs, the operator asks, judges and decides, and the agent tidies the conversation into the skill, keeping its word choice, semantics and implementation details. [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) holds the five decisions the discussion settles: the judgement's purpose, the domain, the scope and the body, the placement, and the action.
+
+**Rationale:** The judgement is the operator's and the writing is the agent's, and `communication-principle-preserve-original-wording` is the rule that separates them: semantics from the dialogue, syntax from the writer. A procedure that assigns the writing to the operator makes the operator type what the agent can reflow, and a procedure that assigns the judgement to the agent produces a proposal the operator pays to read, correct and read again.
+
+**Rejected alternatives:**
+
+- *The operator writes every part and the agent asks the questions.* **Execution failure**: the operator types the file the agent could assemble, and the question sequence then carries the parts rather than the decisions.
+- *The agent drafts each part and the operator rules it.* **Intent failure**: a drafted part that the operator rewrites costs the read and yields no content, which is the failure the earlier entry in this file recorded.
+- *A form with one slot per part.* **Boundary failure**: the parts depend on each other, and the name cannot be settled before the judgement is.
+
+**Edge cases / drivers:** A part the conversation did not settle is a question back, never a clause the agent invents. The domain is a decision of its own, because a principle takes reference from a field and the terms it borrows are the operator's to pick. `**Why.**` leads on consequence and benefit, so the operator validates it against what applying the judgement wins, taken from the operator's own communications.
+
+## 2026-11-17 -- The operator writes a principle, and the agent scaffolds the questions
+
+**Status:** historical. Superseded by the entry above: the operator dictates and the agent writes.
+
+**Decision:** Every part of a principle skill is written by the operator. [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) carries a question sequence that asks for each part in turn, and the agent supplies the evidence at each question, assembles the answers verbatim into the shape, and runs the gates. The agent writes no clause of the skill.
+
+**Rationale:** The operator holds the judgement a principle carries, and an agent that drafts it produces a proposal the operator must read, correct and read again, which costs more than writing the part. The runbook's earlier steps assigned the generative work to the doer and delivered the ruling after the draft existed, so the draft was the artefact under review. Authorship is not the body shape: the shape stays fixed, and who fills it changes.
+
+**Rejected alternatives:**
+
+- *Agent drafts, operator rules.* **Intent failure**: a drafted part that the operator rewrites costs the read and yields no content.
+- *A form the operator fills in.* **Boundary failure**: the parts depend on each other, and the name cannot be answered before the judgement is.
+- *Operator-led for `intent` and `mechanism` only.* **Execution failure**: the four remaining parts then default to the general authoring procedure, which is agent-authored by design, and the default is read first.
+
+**Edge cases / drivers:** An answer that does not meet the shape's requirement is a question back, not a clause the agent adds. The sequence stops at the overlap question when a live principle already answers the change. The answers are recorded as they arrive, so a lost context resumes at the next question. The sequence asks for the parts a principle has, and a change that only moves an edge asks fewer.
+
+## 2026-11-17 -- One runbook changes a principle, and one reference says what one is
+
+**Decision:** [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) owns every change to the corpus, and [`references/principle-skills.md`](../../.agents/skills/instruction-authoring/references/principle-skills.md) owns what a principle skill carries. The admission pattern and the survey reference are deleted, and the survey map and this record's predecessor, the admission design, are deleted with them. The four-case replay stands as the mechanism's evidence: the passthrough, the `absent` schema field, the boundary merge and the rename, each caught with one operator decision.
+
+**Rationale:** The pattern answered one question while the change needs five, and the survey mapped the corpus once and will not run again, so the operator paid the search twice. A convention skill was rejected as the home because it becomes a loose collection of procedures with no caller. The map's remaining content was its vocabulary, which the runbook now carries, so its index role passed to `scripts/principle_inventory.mjs` and no task was left for the record to serve. One reference and one runbook are two modes of one subject, which the organization principle asks for and the split across a general skill convention and a procedure did not give.
+
+**Rejected alternatives:**
+
+- *Keep the pattern beside the runbook.* **Execution failure**: two carriers for one decision, and a reader cannot tell which governs.
+- *Keep the survey map as the corpus index.* **Intent failure**: its counts were already stale and the inventory derives the same facts from the fields.
+- *Keep the admission design for its replay table.* **Record failure**: the replay is evidence for a decision, which is where a design's conclusion belongs.
+- *Hold the rules inside the runbook.* **Boundary failure**: a how-to that carries its reference buries the field rules behind a procedure a reader may not be running.
+
+**Edge cases / drivers:** The design record's replay named four cases, and the two admissions this milestone settled since, the passthrough and the load-level terms, were applied to the runbook and reached their recorded rulings. `card` named the survey's index entry and lost its referent when the survey retired, so the word is gone from the surface. `[]` keeps its meaning; the map that recorded "surveyed, none" is gone, and the field states only that no neighbour is declared. A concluded record that becomes standing reference has no disposition under the record lifecycle, and deleting it once its conclusion is here is the resolution.
+
+## 2026-11-16 -- The principle frontmatter is one gate, and the body shape is a convention
+
+**Decision:** The document-shape gate keeps the frontmatter parse, the `disable-model-invocation` boolean and the shipping reader declaration. The principle body shape leaves the gate and stays a convention in `skill-conventions.md` and the exemplar. One provider-root gate, `scripts/check_principle_frontmatter.sh`, owns the principle frontmatter: `name`, `description` and `metadata.neighbours` are required; `metadata.leitwort`, `intent` and `mechanism` are validated when present; `disable-model-invocation` is rejected. This supersedes the gate clause of the 2026-10-21 entry; the shape itself stands.
+
+**Rationale:** The frontmatter is what a parser reads: pi's loader, the inventory lever and the admission field row. The body is what a reader and an author judge. A gate belongs where its evidence exists and its decision is cheapest, and the body's observer is the review and the exemplar. The 2026-10-28 entry is the precedent: the claim field went because no consumer acted on it and no check could falsify it. The split also ends the label collision the role-based entry fixed, because the gate no longer reads a body label at all.
+
+**Rejected alternatives:**
+
+- *Keep the body gate and add a second frontmatter gate.* **Execution failure**: two walks of the same corpus, and the frontmatter's fields split across gates.
+- *A data-driven schema over the body.* **Intent failure**: the rules are a handful of labels and an order; a schema is more machinery for the same rule.
+- *Require `leitwort`, `intent` and `mechanism` now.* **Execution failure**: the corpus does not carry them uniformly; the field row makes them required.
+- *Gate the frontmatter but leave the body as it was.* **Neither**: the machine contract is the part with a parser, and the body rule is what the operator asked to trim.
+
+**Edge cases / drivers:** The gate is provider-only, matching the principle definition in the terminology registry; a project `principle-` skill is outside the corpus. The body can drift with no mechanical check, and the review and the exemplar carry it; that is the accepted cost. The conditional fields are checked for presence and type only, because the operator's value lives in the admission record. The gate rename keeps the document gate's name, `check_document_shape.sh`, because the frontmatter is still a shape, and its header states which one.
+
+## 2026-11-16 -- The principle body gives its parts roles, not fixed labels
+
+**Decision:** The rule part is the first bold lead-in and the skill names it. It carries the general rule, whether that rule is a pattern, a test or a principle. `**Why.**` and `**The test.**` keep their labels because they are the rationale and the check. Any named part may follow the rule, and a boundary part may follow the test.
+
+**Rationale:** The literal `**The pattern.**` forced one skill's label onto every skill. A skill whose rule is a deletion test had to call it a pattern, and a skill with acceptable and unacceptable examples had to put both under one heading. The labels belong to the skill, and the gate checks that the parts exist in a workable order.
+
+## 2026-11-17 -- The intent and mechanism fields are required
+
+**Decision:** `metadata.intent` and `metadata.mechanism` are required on every principle, and the frontmatter gate fails a skill that lacks either. The corpus carries both, so the conditional period ends.
+
+**Rationale:** An absent field meant the operator had not ratified the skill. All 25 are now ratified, so an absent field means a new skill was admitted without its provenance. The gate holds presence; the value stays the operator's judgement.
+
+**Rejected alternatives:**
+
+- *Keep the fields optional.* **Execution failure:** a new skill could land with no recorded judgement, which is the state the field exists to prevent.
+- *Gate the value against the survey map.* **Neither:** the map carries a provisional value, and a comparison would make the weak source the authority.
+- *Require `leitwort` too.* **Execution failure:** not every skill needs one; the corpus carries it unevenly by design.
+
+**Edge cases / drivers:** The five pilot values and the 20 back-constructed ones are the current corpus; handover `20261117-02` holds the provenance table. `single-train-of-thought` already carried its value and is unchanged.
+
+## 2026-11-16 -- A principle records its operator's intent and mechanism
+
+**Decision:** A principle declares `metadata.intent` and `metadata.mechanism`. Both are operator-led: the operator writes them when the skill is created or ratified, and the agent reads them rather than inferring them from the body. `intent` is the judgement the skill serves. `mechanism` is the way that judgement expresses itself, or the specific way the principle exerts influence on the workflow. The admission record that holds the case is the provenance. The five reader-context principles carry the pilot values; the remaining corpus declares the fields as the operator ratifies each skill.
+
+**Rationale:** The intent is obvious to the operator and not to the agent, and the agent re-derives it wrong when it categorizes the corpus. The judgement is expensive to get back after the fact, because it lives in the admission conversation and the body's prose. Recording it at creation is cheap, and it gives the label a provenance. The field differs from the removed `metadata.claim`, which was agent-led: here the operator authors the value, so the field records a decision rather than a categorization the agent guessed.
+
+**Rejected alternatives:**
+
+- *An agent-derived label from the body.* **Intent failure**: it repeats `metadata.claim`, which was removed because the agent's categorization had no gate and drifted.
+- *A prose section in the survey report.* **Execution failure**: it is a second source, and the agent reads the skill's frontmatter before the report.
+- *A gate that validates the value.* **Neither**: the gate can check presence and provenance, not whether the intent is right; that judgement is the operator's.
+- *A third field for provenance.* **Execution failure**: the admission record already holds the case, and a second pointer drifts.
+
+**Edge cases / drivers:** `write-for-the-reader` and `link-what-the-reader-can-open` carry the same intent and differ in mechanism, so the intent is a family and the mechanism is the axis. The mechanism's name is qualified: a task's `Mechanism:` names its delivery mode, and this field names how the judgement exerts influence; the two are read in their own context. `single-train-of-thought` carries its own intent and is a neighbour of the context family, not a member. The legacy corpus has no recorded judgement, so its values are ratified by the operator; the survey map's provisional value is not the field. An absent field means the operator has not ratified the skill yet, not that it declares nothing.
+
+## 2026-11-16 -- The corpus declares no neighbour, and the gate holds without a baseline
+
+**Decision:** Every principle carries `metadata.neighbours`, and a missing field fails the gate. The existing corpus declares `[]`, meaning "no neighbour declared"; "surveyed, none" is carried by the survey map, not by a third field value. The baseline and the gate's `--update` are deleted. The gate's remaining rules are presence and liveness: a declared name resolves, and a duplicate, a self name or a malformed value fails.
+
+**Rationale:** The migration the baseline served was withdrawn. Without a case, the neighbour relation is not decidable per skill: "neighbour" degrades to "shares a subject", a conflict has no state to be parked in, and unresolved edges propagate into a tangled group. The existing corpus cannot declare real neighbours before the survey, so `[]` is the honest declaration. The baseline's only purpose was the pre-migration corpus, so it has nothing left to hold.
+
+**Rejected alternatives:**
+
+- *Keep the baseline as a permanent exception list.* **Intent failure**: it hides a missing field indefinitely, and the gate's presence rule becomes unenforceable for the corpus it covers.
+- *Delay the gate until the survey fills the fields.* **Execution failure**: it blocks the gate on a survey that may produce a map rather than edges, and the presence check works today.
+- *Give the field a third value for "not surveyed".* **Neither**: a third state needs a gate, a reader and a migration of its own; the survey map carries the distinction with no schema change.
+
+**Edge cases / drivers:** `[]` means "no neighbour declared", not "has no neighbour". A principle the corpus finds with no neighbour is recorded on the corpus map; the change is [`principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md), and the field stays `[]`. The gate reads the repo-owned provider root; `$AGENT_HOME` carries extras and stale duplicates. The gate cannot judge whether a named neighbour is the right one; that is the admission decision.
+
+## 2026-11-14 -- A principle declares its neighbours, and admission is by case
+
+**Decision:** A principle skill declares the principles nearest to it in `metadata.neighbours`, a list of full skill names. Handoffs remain in prose and are not neighbours. A new or changed principle is admitted by a decision that names the nearest existing principle, the distinction, and the case that demanded it. The admission step is a pattern under `instruction-authoring`, cited from step 1 and from the `scope` prompt's `## Check the boundary`. A deterministic lever reads the repo-owned provider root and extracts the field; the gate checks that every name resolves and that every principle carries the field or is named in a baseline of the existing skills, which must only shrink. The body's scope statement carries the meaning; a contested distinction belongs in the admission record, not in every skill. The artifact and the norm are separate axes: `docs/reference/terminology.md` defines the principle skill, and `instruction_modality.md` holds the judgement it carries.
+
+**Rationale:** A corpus-wide semantic pass is neither affordable nor reliable: the operator becomes the ground truth for every classification, and the cost repeats. The semantic decision is cheap only at admission, on the new case and its nearest neighbours. The field makes orphanhood a checkable property instead of counting arbitrary links, which conflate a handoff ("apply this next") with a neighbour ("a similar application under a different domain"). It has three consumers -- the lever, the gate and the admission pattern -- so it is not the metadata field the 2026-10-28 entry removed for having no consumer. The baseline lets the gate land before the existing-skill migration and forces the exception list to shrink.
+
+**Rejected alternatives:**
+
+- *A periodic whole-corpus pass.* **Intent failure**: the semantic decision is unreliable at that grain, the operator will not adjudicate every rule, and the cost repeats.
+- *Reuse any Markdown link as the edge.* **Intent failure**: it conflates handoffs with neighbours, so orphanhood is a false proxy.
+- *A canonical `**Neighbours.**` body part.* **Neither**: it is correct and keeps one carrier, but the machine index was chosen independent of prose; the body part would put the edge in the text the lever parses and give up the field's explicit shape.
+- *Reciprocity.* **Intent failure**: it forces a link into the neighbour for every one-way distinction, manufacturing edges to satisfy the gate.
+- *No baseline; gate the corpus at once.* **Execution failure**: it forces a corpus-wide semantic review before the gate can land.
+- *An eval of model categorization.* **Intent failure**: nondeterministic under the current infrastructure, and it measures the model rather than the mechanism.
+
+**Edge cases / drivers:** `neighbours: []` declares that no neighbour is declared; a principle the survey finds with no neighbour is recorded on the survey map. An absent field is undeclared and is a baseline entry, so the two states are distinguishable. The lever reads the repo-owned provider root (`src/reasoning/agent-runtime/pi/config/agent/skills/`), not `$AGENT_HOME`, which carries extras and stale duplicates. The gate cannot judge whether the named neighbour is the right one; that is the admission decision. The baseline is a gated copy: the gate fails if a baseline entry gains the field and the baseline is not updated. The passthrough rule is the first admission; its restated test is the retired `principle-delegation-over-machinery` test. The case replay is the check that the mechanism surfaces the right neighbour on the four direct cases; a miss is reported and the mechanism is revised or narrowed.
 
 ## 2026-11-07 -- The communication corpus stays installed, and this entry states where it is read
 
@@ -93,7 +227,7 @@ A principle claims no moment. It is in force whenever the work is in front of th
 
 ## 2026-10-21 -- A principle skill carries six parts in one shape, and a gate holds it
 
-**Decision:** Every skill whose directory name carries `principle-` carries the same body: a sentence-case title, one sentence stating the judgement, `**The pattern.**`, `**Why.**`, zero or more named parts, each a bold label ending on a period and labelled for what it carries, and `**The test.**`. The pattern states the wrong form beside the right one, and its vehicle follows the material: a table where a contrast exists, a list where the parts are steps. The title is the file's only heading. `scripts/check_document_shape.sh` reads those rules off every such skill and fails the gate on a departure, so the shape is a rule with an observer rather than a judgement. A writer copies the shape from the `instruction-authoring` convention's `references/skill-conventions.md` `## A judgement skill`.
+**Decision:** Every skill whose directory name carries `principle-` carries the same body: a sentence-case title, one sentence stating the judgement, `**The pattern.**`, `**Why.**`, zero or more named parts, each a bold label ending on a period and labelled for what it carries, and `**The test.**`. The pattern states the wrong form beside the right one, and its vehicle follows the material: a table where a contrast exists, a list where the parts are steps. The title is the file's only heading. `scripts/check_document_shape.sh` reads those rules off every such skill and fails the gate on a departure, so the shape is a rule with an observer rather than a judgement. A writer copies the shape from the `instruction-authoring` convention's `references/skill-conventions.md` `## A principle skill`.
 
 **Rationale:** The corpus held two shapes for the same parts, so the exemplar that M3.3.4 measures a new principle against was one of two answers, and a writer copying it met a third answer in the next file. Adopting the exemplar's own form keeps the roadmap's exemplar sentence and the acceptance criterion built on it unchanged. The shape is a rule by the test in [`instruction_modality.md`](instruction_modality.md): it asserts structure and asks the author to follow it, and a gate detects a departure, so it needs a home in the authoring convention and an observer in the lint umbrella. The gate's subject is derived from the name instead of listed, so a new principle is covered the day its directory exists.
 

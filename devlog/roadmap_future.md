@@ -171,6 +171,16 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 ## Deferred (Unplanned)
 
+### The instruction modality has five homes (deferred)
+
+**Status:** Deferred (not planned), raised 2026-11-18 while admitting the mood principle. The resolution is this task's scope and this entry states only the problem.
+
+**The problem as it stands.** The five modalities, the MUST/SHOULD/MAY scale, the Kratzer derivation, the obligations a modality owes a writer, and the strength a stake sets are stated in five places: [`instruction_modality.md`](../docs/adr/instruction_modality.md), [`terminology.md`](../docs/reference/terminology.md#modality) for `## modality` and `## modal strength`, the `instruction-authoring` convention's `## What each modality owes the writer`, and [`principle-match-precision-to-stakes`](../src/reasoning/agent-runtime/pi/config/agent/skills/principle-match-precision-to-stakes/SKILL.md). A sixth statement was drafted in the mood principle and withdrawn, because the ADR rejects a keyword rule on a 12-of-20 reader agreement and rejects ranking the kinds by strength, and no reader can tell which of the five homes governs a sentence. Whether the vocabulary consolidates into one home, and which, is not decided here.
+
+**Objective:** one home for the modal vocabulary, so a writer reads one statement of the scale and one statement of what each modality owes, and a principle cites rather than restates.
+
+**Scope:** the five homes above, the sentences in each that state the scale, and the citations that point at them. The mood principle's rendering rule and the `must` case belong to this scope, and the mood principle states only the form rule until it lands.
+
 ### The eval's measurement infrastructure (deferred)
 
 **Status:** Deferred (not planned), raised 2026-11-09 by the `/gm` A/B write-back `20261109-10`. It waits until the A/B pipeline is running; the current eval milestone files it as the dependency, not the work.
@@ -284,7 +294,7 @@ Progressive enforcement maturity for the documentation and architecture governan
 
 **Scope:** the accept flow and the host verb set. Out of scope: the branch-preparation primitives, which landed as `prepare` and `history-cleanup`.
 
-**Depends on:** the change model's accept transitions in [`change_model.md`](../docs/reference/change_pipeline.md), which are landed. The requirement is a property of the flow, not of this document.
+**Depends on:** the change model's accept transitions in [`change_pipeline.md`](../docs/reference/change_pipeline.md), which are landed. The requirement is a property of the flow, not of this document.
 
 **Sources:** the merge queue as GitHub and Bors implement it, read for the queue's semantics rather than copied as a runbook. The citation record is the implementer's to add; the intent above does not depend on which one they choose.
 

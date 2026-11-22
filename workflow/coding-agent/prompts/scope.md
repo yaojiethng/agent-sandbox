@@ -24,13 +24,13 @@ An ask that needs decisions resolved before it can be written is [`plan.md`](pla
 Ask all four, in order, before rewriting the ask, and answer them in chat. Each question's judgement is a principle skill at `$AGENT_HOME/agent/skills/`, linked rather than restated.
 
 1. **What would a top professional in this field do here that the asker is not asking for?** `principle-attack-the-premise`.
-2. **What is the rawest material they would start from, rather than what has already been digested for me?** `principle-justify-materialization-cost`, `communication-principle-only-derive-what-you-own`, `principle-guard-the-context-window`.
+2. **What is the rawest material they would start from, rather than what has already been digested for me?** `principle-justify-materialization-cost`, `principle-guard-the-context-window`.
 3. **What specific methods and tools would they use?** `principle-build-the-lever`, `principle-check-placement`, `principle-exhaust-the-design-space`.
-4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-show-dont-describe`.
+4. **What, other than you or me, would show the result is right?** `principle-prove-it-works`, `communication-principle-provide-evidence`.
 
 ## Check the boundary
 
-Before forming the brief, check whether the scope duplicates a responsibility another component owns. If it does, stop and raise the boundary violation to the operator. Do not decide the fix. See `principle-single-source-of-truth`.
+Before forming the brief, check whether the scope duplicates a responsibility another component owns. If it does, stop and raise the boundary violation to the operator. Do not decide the fix. See `principle-single-source-of-truth`. When the unit is a principle, the boundary is the admission decision: name the nearest principles, the distinction and the case, then record `metadata.neighbours` per `.agents/skills/instruction-authoring/runbooks/principle-change.md`.
 
 ## Rewrite the ask
 
@@ -41,7 +41,7 @@ Write the brief to ask for exactly what the four answers describe, and do not pr
 The principle corpus decides how the brief is formed and phrased, and each judgement is linked where the brief must satisfy it, never restated.
 
 - Forming the plan: `principle-model-the-domain`, `principle-subtract-before-you-add`, `principle-never-block-on-the-human`, `principle-match-precision-to-stakes`, `principle-sequence-verifiable-units`.
-- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-what-serves-nothing`, `communication-principle-only-derive-what-you-own`, `communication-principle-show-dont-describe`, `communication-principle-align-the-mental-model`, `communication-principle-attach-as-you-read`, `communication-principle-one-addressing-axis`, `communication-principle-keep-a-subject-near`, `communication-principle-maximize-conceptual-leverage`.
+- Phrasing the brief: `communication-principle-write-for-the-reader`, `communication-principle-cut-metadiscourse`, `communication-principle-provide-evidence`, `communication-principle-order-for-incremental-parsing`, `communication-principle-one-addressing-axis`, `communication-principle-keep-context-in-view`, `communication-principle-maximize-conceptual-leverage`.
 
 ## The brief's parts
 

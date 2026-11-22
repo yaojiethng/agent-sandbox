@@ -1,6 +1,15 @@
 ---
 name: communication-principle-single-train-of-thought
 description: "Apply when writing or revising text: a parenthesis, a caveat, a detour, or a summary that adds a claim the body never made carries two lines of reasoning at once. Carry one line, and let each sentence advance it."
+metadata:
+  intent: "Carry one line of reasoning through the document, and let each sentence advance it."
+  mechanism: "Document and paragraph structure."
+  neighbours:
+    - communication-principle-define-terminology-before-use
+    - communication-principle-write-for-the-reader
+    - communication-principle-link-what-the-reader-can-open
+    - communication-principle-order-for-incremental-parsing
+    - communication-principle-keep-context-in-view
 ---
 
 # Keep to a single train of thought
@@ -21,6 +30,8 @@ Carry one line of reasoning through the document, and let each sentence advance 
 
 **Fires on.** A second line of reasoning placed beside the first, in a parenthesis or a caveat, or a detour that returns.
 
-**What it does not cover.** A sentence that carries nothing: `communication-principle-cut-what-serves-nothing`. A word that loses a distinction: `communication-principle-maximize-conceptual-leverage`.
+**What it does not cover.** A sentence that carries nothing: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md). A word that loses a distinction: [`communication-principle-maximize-conceptual-leverage`](../communication-principle-maximize-conceptual-leverage/SKILL.md).
+
+**The family.** This is a neighbour of the `context disclosure` family, not a member. Its remedy, one line of reasoning, is a different axis.
 
 **The test.** After each sentence, ask whether it advances the line the previous sentence was on. A sentence that opens a new line either closes the previous one or belongs in another document.

@@ -1,0 +1,15 @@
+{
+  "id": "halliday-rank-scale",
+  "title": "An Introduction to Functional Grammar, the account of constituency and the rank scale",
+  "author": "M. A. K. Halliday and Christian M. I. M. Matthiessen",
+  "publisher": "Routledge",
+  "url": "no address is stable for a printed book; the edition is named in `version`",
+  "version": "4th edition, 2014; the text was not fetched in this container, so the rank names are the standard ones and no page reference is given",
+  "record": {
+    "source": "The rank scale is the size hierarchy inside the grammar: clause complex, clause, group or phrase, word, morpheme. Each rank is composed of the rank next below it, and a unit doing work at a lower rank is a rank shift. The scale stops at the top of the grammar, so it says nothing about paragraphs, sections or documents.",
+    "kept": "The composition relation and the four sizes this repository reads: word gives `term`, group or phrase gives `phrase`, clause gives `clause`, and the top rank gives `sentence`. The corpus borrows the sizes and the relation between them.",
+    "rewritten": "The ranks are read as inspection units rather than as structure being built, so the question becomes which unit a judgement reads. The top rank is named `sentence` rather than clause complex, because a technical writer names the sentence and a writer is the reader here.",
+    "added": "The two families and their different relations, and the text units `passage` and `document`, which the scale does not carry because it stops at the grammar. The split is the repository's, and ASD-STE100 Issue 9 sections its rules along the same seam.",
+    "dropped": "Stratification, metafunction, the system and structure axes, rank shift, the clause complex as a rank, and the grammar's own analysis rules. The corpus borrows sizes, not the theory that places them, and it writes no grammatical analysis."
+  }
+}

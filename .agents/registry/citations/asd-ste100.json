@@ -1,0 +1,15 @@
+{
+  "id": "asd-ste100",
+  "title": "ASD-STE100 Simplified Technical English, Part 1 Writing rules",
+  "author": "Aerospace, Security and Defence Industries Association of Europe (ASD), through the Simplified Technical English Maintenance Group",
+  "publisher": "ASD",
+  "url": "https://www.asd-ste100.org/STE_downloads.html",
+  "version": "Issue 9, January 2025, dated 2025-01-15, the official free copy; read 2026-11-19 from the PDF the operator supplied",
+  "record": {
+    "source": "A controlled language for technical documentation, written as numbered rules in nine sections plus a dictionary. Two sections split the writing by type: Section 5, procedural writing, where Rule 5.3 requires the imperative form; Section 6, descriptive writing, where the imperative is not permitted. Rule 3.6 carries voice, and Section 5 carries the neighbouring rules for conditions, notes and one instruction per sentence.",
+    "kept": "The rule and its reason. Rule 5.3, \"Write instructions in the imperative (command) form\", the three ambiguities the explanatory text names, and the exception for \"must\" before an imperative. Rule 5.4 for the condition that opens a sentence, Rule 5.5 for notes, and Rule 3.6 for voice, which this repository states on the instruction surface rather than in a principle.",
+    "rewritten": "The rules read as judgements about any instruction surface rather than as conformance criteria for an aerospace maintenance manual. The corpus cites a rule by its section and number instead of reprinting the numbered part, and it reads the imperative rule and the descriptive bar as one judgement with a mode switch, where the standard states them as two rules in two sections.",
+    "added": "The mode as the selector, stated once in the act leaf's boundary, and the passive where the object is the topic, which the standard does not permit. Otherwise the corpus takes the standard's requirements as written.",
+    "dropped": "The approved-word dictionary and the word rules of Sections 1 and 2, the verb and sentence rules this corpus does not cite, the 20-word and 25-word sentence limits, the punctuation and word-count rules of Section 8, the writing-practice rules of Section 9, and the safety-instruction rules of Section 7. The standard's authority as a certification basis is also dropped: this corpus cites it as a source for a judgement, and makes no conformance claim."
+  }
+}

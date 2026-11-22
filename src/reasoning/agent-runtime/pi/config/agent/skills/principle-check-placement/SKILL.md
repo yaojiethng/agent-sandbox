@@ -1,6 +1,10 @@
 ---
 name: principle-check-placement
 description: "A check reads evidence and produces a decision. Apply when placing, moving or adding a check, a verification step or an audit. Put it where its evidence first exists and where its decision is cheapest to take."
+metadata:
+  intent: "A check reads evidence and produces a decision. Put the check where the evidence first exists, and where the decision is cheapest to take."
+  mechanism: "The check's position in the workflow: after the producer of its evidence and at the step that owns the decision."
+  neighbours: []
 ---
 
 # Place the check at its input
@@ -26,4 +30,4 @@ A check reads evidence and produces a decision. Put the check where the evidence
 
 **The test.** Name the record the check reads and the gate that owns its decision. If you cannot name both, the check is misplaced.
 
-Related: [`principle-minimal-corrections`](../principle-minimal-corrections/SKILL.md) treats a repair commit as a sign that a check ran too late. `principle-encode-lessons-in-structure` covers the placement a mechanism can detect. `principle-sequence-verifiable-units` sequences the units of work rather than the decisions.
+Related: a repair commit is a sign that a check ran too late. `principle-encode-lessons-in-structure` covers the placement a mechanism can detect. `principle-sequence-verifiable-units` sequences the units of work rather than the decisions.

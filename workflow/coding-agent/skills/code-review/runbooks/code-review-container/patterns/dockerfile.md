@@ -46,7 +46,7 @@ COPY src/libs/     /opt/sandbox/lib/
 COPY docs/reference/ /opt/sandbox/docs/reference/
 ```
 
-`COPY` copies. `ADD` copies and then decides from the argument whether to do something else, so one instruction means two things and the reader cannot tell which from the line.
+`COPY` copies. `ADD` copies and then decides from the argument whether to do something else, so one instruction carries two meanings and the reader cannot tell which from the line.
 
 - Variant: `ADD` has two shapes `COPY` cannot express, extracting a local tar archive and fetching a URL. A URL fetch belongs in a `RUN` layer with `curl` or `wget`, so the layer records what arrived and can be pinned; tar extraction is a build step that unpacks a tarball the build already has, and then writes `ADD <file>.tar.gz /`. Neither shape is a reason to copy a directory with `ADD`.
 

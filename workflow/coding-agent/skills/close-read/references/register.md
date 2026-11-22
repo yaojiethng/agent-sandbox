@@ -28,9 +28,9 @@ The class says what kind of claim failed, so subject area belongs in `files`. Fr
 | Class | Means |
 |---|---|
 | `coverage` | no unit pins the behaviour |
-| `assertion` | a unit exists and asserts too little, or the wrong thing |
+| `assertion` | a unit exists and asserts too little, or the wrong claim |
 | `logic` | the behaviour is wrong for some input |
-| `contract` | a claim and the thing it claims about disagree: header, docstring, document or sibling interface |
+| `contract` | a claim and its subject disagree: header, docstring, document or sibling interface |
 | `dead` | code, parameter or guard with no effect |
 | `robustness` | fails, or misleads, on input it should handle |
 | `design` | a seam, boundary or duplication judgement rather than a defect |

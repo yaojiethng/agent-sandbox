@@ -46,7 +46,7 @@ A root the caller may override is read from the environment and defaulted to the
 | Host installed CLI | `AGENT_SANDBOX_REPO` | the macro, defaulted as in `p-3` |
 | Host repository scripts and test files | `REPO_ROOT` | derived from `_self_dir` |
 
-Each context resolves its own location by the idiom in `p-1` and uses exactly this name, so a second name for the same thing is the fault: `SCRIPT_DIR`, `_self` and the per-file prefixes such as `_DIFF_SH_DIR` are spellings of `_self_dir` rather than names that may exist beside it.
+Each context resolves its own location by the idiom in `p-1` and uses exactly this name, so a second name for the same directory is the fault: `SCRIPT_DIR`, `_self` and the per-file prefixes such as `_DIFF_SH_DIR` are spellings of `_self_dir` rather than names that may exist beside it.
 
 Replaces: a name invented per file, and two names for one directory along a call chain.
 
@@ -56,7 +56,7 @@ Replaces: a name invented per file, and two names for one directory along a call
 ln -s "/absolute/path/to/target" "$LINK_PATH"
 ```
 
-A relative symlink across a repository boundary encodes the host's directory layout, so it breaks when either repository moves or when the checkout is at a different depth. Write the target as an absolute path, which is the one thing both sides agree on.
+A relative symlink across a repository boundary encodes the host's directory layout, so it breaks when either repository moves or when the checkout is at a different depth. Write the target as an absolute path, which is the one path both sides agree on.
 
 Replaces: `ln -s ../../other-repo/file "$LINK_PATH"`.
 

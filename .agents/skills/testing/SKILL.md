@@ -5,7 +5,7 @@ description: agent-sandbox's testing convention - the suite and the lint umbrell
 
 # testing
 
-A change is verified by the project's suite: `make test` runs `scripts/run_tests.sh` over `tests/test_*.sh`, and `bash scripts/lint.sh` runs the gates. The harness's mechanism - discovery, parallel dispatch, the result protocol, the unit contract - is [`docs/development/test_harness_mechanism.md`](../../../docs/development/test_harness_mechanism.md).
+A change is verified by the project's suite: `make test` runs `scripts/run_tests.sh` over `tests/test_*.sh`, and `bash scripts/lint.sh` runs the gates. The harness's mechanism - discovery, parallel dispatch, the result protocol, the test-unit contract - is [`docs/development/test_harness_mechanism.md`](../../../docs/development/test_harness_mechanism.md).
 
 ## Judgements
 
@@ -16,7 +16,7 @@ A test's quality is judged, not gated; no cheap check detects a breach. These ar
 - **No shared state between calls.** A helper call preserves what an earlier call created unless destroying it is the test's purpose.
 - **Self-contained files.** A test file sources only `tests/libs/`; it never sources another test file, because that file's tests would run as a side effect.
 - **Tests arrive with the code.** Any function with meaningful branching, error handling, or external dependencies gets tests, produced alongside the implementation rather than deferred.
-- **Where a test belongs.** A seam of our own maintained code with a callable API is tested directly under `tests/test_*.sh`, in the suite `make test` runs. A knowledge test is the last resort for a seam the harness cannot call - an external binary or network service, or legacy code mid-refactor whose current behaviour is being documented - and is never a source of truth for our own behaviour. A flow that cannot run in the unit harness but is worth keeping goes to `tests/integration/`. When a mock makes a seam callable, promote it to a unit test.
+- **Where a test belongs.** A seam of our own maintained code with a callable API is tested directly under `tests/test_*.sh`, in the suite `make test` runs. A knowledge test is the last resort for a seam the harness cannot call - an external binary or network service, or legacy code mid-refactor whose current behaviour is being documented - and is never a source of truth for our own behaviour. A flow that cannot run in the test-unit harness but is worth keeping goes to `tests/integration/`. When a mock makes a seam callable, promote it to a unit test.
 - **A tautology asserts nothing.** A test that restates its own setup holds no evidence: an assertion on a value the test itself wrote, a mock returning its own stub, a check whose every failure mode the fixture has already ruled out. Read the assertion as a claim about the system; when the claim is about the test's own input, the test proves only that it ran.
 - **A derived case set is bound before it is asserted on.** A test that generates its own cases from live data -- a config file, a directory listing, a table -- states the invariant that data must have and checks it before asserting anything about the items, because an absence assertion over an empty or narrowed derivation is a green build over no evidence. Bind the structure, not a count and not a literal: a count tracks the data's size, and a literal is a second copy of it that goes stale.
 
@@ -26,7 +26,7 @@ A test's quality is judged, not gated; no cheap check detects a breach. These ar
 |---|---|
 | [`patterns/fixtures.md`](patterns/fixtures.md) | you create, name or clean a fixture, or share a helper between files |
 | [`patterns/structure.md`](patterns/structure.md) | you shape a test file, name it, or decide how many units it holds |
-| [`patterns/assertions.md`](patterns/assertions.md) | you choose what a unit asserts |
+| [`patterns/assertions.md`](patterns/assertions.md) | you choose what a test unit asserts |
 | [`patterns/dispatch-mocks.md`](patterns/dispatch-mocks.md) | you test a CLI dispatch layer |
 | [`patterns/debugging.md`](patterns/debugging.md) | a test fails and the cause is not obvious |
 | [`references/test-homes.md`](references/test-homes.md) | you choose between the unit suite, `tests/knowledge/` and `tests/integration/` |
@@ -38,7 +38,7 @@ The fill-in file is [`assets/test-file-template.md`](assets/test-file-template.m
 - The placement judgement decided the home.
 - The fixture comes from `FIXTURE_DIR` or `get_fixture_dir`, never a bare `mktemp -d`; the allocator tears it down, so the test carries no `trap ... EXIT`.
 - Every shared helper is sourced from `tests/libs/`; no test file sources another test file.
-- One unit per behaviour, and the assertion states the meaning ([`patterns/assertions.md`](patterns/assertions.md)).
+- One test unit per behaviour, and the assertion states the meaning ([`patterns/assertions.md`](patterns/assertions.md)).
 - Every `test_*()` carries exactly one `run_test` in the same file; the liveness gate is the check.
 - The failure message says what went wrong, and an assertion that pins a behaviour names the record that explains it.
 - `make test` passes clean with the new test in place.

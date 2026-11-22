@@ -16,7 +16,7 @@ A set is a list of named paths, and it resolves to those paths as they stand. A 
 
 The caller may hand the claim ledger written for the set alongside it. The ledger is evidence and not a substitute for reading: the review reads every document in the set and judges what the ledger cannot. It carries one line per finding, giving the document, its section, the rule applied and what the source shows instead, and a line missing any of those is refused, because a finding the review cannot place is one it cannot judge.
 
-A ledger changes one thing. Given one, a claim it reports is evidence about the document rather than a finding of this review, and the review does not restate it. Given none, the review reports a claim it meets, and that finding promises nothing about the claims it did not meet. A ledger naming a document outside the set is a refused dispatch, because the review would be judging a document it has not read.
+A ledger changes one claim. Given one, a claim it reports is evidence about the document rather than a finding of this review, and the review does not restate it. Given none, the review reports a claim it meets, and that finding promises nothing about the claims it did not meet. A ledger naming a document outside the set is a refused dispatch, because the review would be judging a document it has not read.
 
 ## Returns
 
@@ -38,9 +38,9 @@ A document that holds a claim no source decides is reported as undecidable rathe
 
 **Temporal staleness.** The document describes a shape the system no longer has, or names a target that no longer exists. Four forms: a mechanism presented as running that was replaced; a status or mode claim the document's own content contradicts; a path, document or folder named in it that is gone; a description accurate at a milestone and never revised when the shape changed.
 
-**Vagueness.** Language that reads precise and commits to nothing. Three forms: a scope marker that names no boundary ("as needed", "where relevant", "if applicable"); false precision, a specific-sounding name for a thing that has no implementation; audience confusion, where a document switches register mid-section, or a conceptual document that a reader must open another document to understand.
+**Vagueness.** Language that reads precise and commits to nothing. Three forms: a scope marker that names no boundary ("as needed", "where relevant", "if applicable"); false precision, a specific-sounding name for a concept that has no implementation; audience confusion, where a document switches register mid-section, or a conceptual document that a reader must open another document to understand.
 
-**Difficulty of explanation.** A document whose core claim cannot be stated in one sentence without a dependent clause. The finding is a design question for the operator, never a request for more prose: ask whether the architecture it describes has complected things that should be separate. A difficulty in the writing is corrected by cutting. A difficulty in the design is reported as a question and not edited around.
+**Difficulty of explanation.** A document whose core claim cannot be stated in one sentence without a dependent clause. The finding is a design question for the operator, never a request for more prose: ask whether the architecture it describes has complected concerns that should be separate. A difficulty in the writing is corrected by cutting. A difficulty in the design is reported as a question and not edited around.
 
 ### The closing test
 

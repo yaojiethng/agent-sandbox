@@ -74,7 +74,7 @@ A run to convergence is the loop below. A maintenance run that ranks where the t
 
 ## Translating the runbook's requirements
 
-Almost every review asks for the same few things. Where a runbook states how to satisfy one, the runbook wins; where it is silent, this is how it is done here.
+Almost every review asks for the same few questions. Where a runbook states how to satisfy one, the runbook wins; where it is silent, this is how it is done here.
 
 | The runbook asks for | How it is met here |
 |---|---|

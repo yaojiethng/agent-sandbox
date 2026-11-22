@@ -1,24 +1,16 @@
 #!/usr/bin/env bash
 # tests/test_document_shape.sh
 # Behavioural tests for scripts/lint/document-shape.mjs -- the gate that holds
-# every instruction document's frontmatter and every `principle-` skill's shape.
+# every instruction document's frontmatter and every shipping document's reader.
+# The principle body shape is a convention, not this gate's subject; the
+# principle frontmatter gate is tested in test_principle_frontmatter.sh.
 #
 # Covers:
-#   a conforming principle        --  clean, and the run names the skill count
-#   a `##` heading below the title --  flagged as a part that is not a bold lead-in
-#   a missing `**The test.**`     --  flagged by name
-#   the why before the pattern    --  flagged: the order is fixed
-#   a named part after the test   --  flagged: named parts sit before the test
-#   a title-case title            --  flagged, naming the word
-#   a skill with no `principle-`  --  clean, and its departure is not read
-#   a root with no principle      --  not read; the module tree is what fails closed
-#   a broken block                --  flagged, naming the parse
-#   a non-boolean flag            --  flagged: pi tests it with `=== true`
-#   a shipping document's reader  --  flagged when absent, clean when declared
-#
-# The subject is derived from the directory name, so the non-principle case is
-# the rule's boundary: a runbook skill departs from the shape on purpose and the
-# gate must not read it.
+#   a malformed block            --  flagged, naming the parse
+#   a non-boolean flag           --  flagged: pi tests it with `=== true`
+#   a shipping document's reader --  flagged when absent, clean when declared
+#   a principle body             --  not checked: the body shape is a convention
+#   a non-principle skill        --  scanned, because the gate covers every skill
 #
 # The whole-tree behaviour is the lint umbrella's job (check_document_shape.sh in
 # scripts/lint.sh), not a fixture unit test's: see .agents/skills/testing/patterns/assertions.md,
@@ -50,25 +42,6 @@ write_skill() {
   printf '%s\n' "$body" > "$root/.agents/skills/$name/SKILL.md"
 }
 
-# conforming BODY -- the six parts, so a case can replace one line of them.
-conforming() {
-  local extra="${1:-}"
-  printf '%s' "---
-name: principle-example
-description: \"fixture\"
----
-
-# One example judgement
-
-State the judgement in one sentence.
-
-**The pattern.** The wrong form beside the right form.
-
-**Why.** The wrong form fails silently.
-
-$extra**The test.** Ask the question of the draft."
-}
-
 # write_prompt ROOT BODY -- a prompt under the root's own `.agents/prompts`,
 # which the manifest declares as an instruction root.
 write_prompt() {
@@ -84,96 +57,23 @@ run_gate() {
   GATE_RC=$?
 }
 
-test_conforming_principle_is_clean() {
+test_principle_body_is_not_checked() {
   local root
-  root="$(make_root conforming)"
-  write_skill "$root" principle-example "$(conforming)"
-  run_gate "$root"
-  assert_eq_num 0 "$GATE_RC" 'a conforming principle passes'
-  assert_contains "$GATE_OUT" 'clean across 1 instruction file(s), 0 shipping document(s) and 1 principle skill(s)' 'the run names what it read'
-}
-
-test_heading_below_the_title_is_flagged() {
-  local root
-  root="$(make_root heading)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^\*\*Why\.\*\*|## Why|')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a heading below the title fails the gate'
-  assert_contains "$GATE_OUT" 'a `##` heading below the title' 'the finding names the heading'
-}
-
-test_missing_test_is_flagged() {
-  local root
-  root="$(make_root no_test)"
-  write_skill "$root" principle-example "$(conforming | grep -v '^\*\*The test\.\*\*')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a principle with no test fails the gate'
-  assert_contains "$GATE_OUT" 'missing `**The test.**`' 'the finding names the missing part'
-}
-
-test_why_before_the_pattern_is_flagged() {
-  local root
-  root="$(make_root order)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^\*\*The pattern\.\*\*.*|**Why.** The wrong form fails silently.\n\n**The pattern.** The wrong form beside the right form.|; s|^\*\*Why\.\*\* The wrong form fails silently\.$||')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'the why before the pattern fails the gate'
-  assert_contains "$GATE_OUT" 'must follow `**The pattern.**`' 'the finding names the order'
-}
-
-test_named_part_after_the_test_is_flagged() {
-  local root
-  root="$(make_root part_after)"
-  write_skill "$root" principle-example "$(conforming '**The test.** Ask the question of the draft.
-
-**Where a rule wins.** A caveat.
-')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a named part after the test fails the gate'
-  assert_contains "$GATE_OUT" 'a named part belongs between' 'the finding names the placement'
-}
-
-test_title_case_title_is_flagged() {
-  local root
-  root="$(make_root title_case)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^# One example judgement|# One Example Judgement|')"
-  run_gate "$root"
-  assert_ne 0 "$GATE_RC" 'a title-case title fails the gate'
-  assert_contains "$GATE_OUT" 'the title is not sentence case' 'the finding names the case'
-}
-
-test_skill_without_the_name_segment_is_not_read() {
-  local root
-  root="$(make_root not_a_principle)"
-  write_skill "$root" note-taking "---
-name: note-taking
+  root="$(make_root body)"
+  write_skill "$root" principle-example "---
+name: principle-example
 description: \"fixture\"
 ---
 
-# Take a note
+# One example judgement
 
 ## Steps
 
 1. Read the record.
 "
-  write_skill "$root" principle-example "$(conforming)"
   run_gate "$root"
-  assert_eq_num 0 "$GATE_RC" 'a runbook skill departs on purpose and is not read'
-  assert_contains "$GATE_OUT" '1 principle skill(s)' 'only the principle counts'
-}
-
-test_a_fixture_root_with_no_principle_is_not_read() {
-  local root
-  root="$(make_root empty)"
-  write_skill "$root" note-taking "---
-name: note-taking
-description: \"fixture\"
----
-
-# Take a note
-"
-  run_gate "$root"
-  assert_eq_num 0 "$GATE_RC" 'a fixture with no principle is a tree with no corpus to check'
-  assert_contains "$GATE_OUT" '0 principle skill(s)' 'the run says how much corpus it read'
+  assert_eq_num 0 "$GATE_RC" 'a principle body departs from the convention and the gate does not read it'
+  assert_contains "$GATE_OUT" 'clean across 1 instruction file(s)' 'the run names what it read'
 }
 
 test_broken_block_is_flagged() {
@@ -192,7 +92,14 @@ description: "a value that never closes
 test_non_boolean_flag_is_flagged() {
   local root
   root="$(make_root non_boolean_flag)"
-  write_skill "$root" principle-example "$(conforming | sed 's|^name: principle-example$|name: principle-example\ndisable-model-invocation: yes|')"
+  write_skill "$root" x "---
+name: x
+description: \"fixture\"
+disable-model-invocation: yes
+---
+
+# X
+"
   run_gate "$root"
   assert_ne 0 "$GATE_RC" 'a string flag fails the gate'
   assert_contains "$GATE_OUT" 'disable-model-invocation is "yes"' 'the finding names the field and its value'
@@ -209,16 +116,25 @@ test_shipping_document_without_a_reader_is_flagged() {
   assert_contains "$GATE_OUT" 'no reader declared' 'the finding names the missing declaration'
 }
 
-run_test test_conforming_principle_is_clean
+test_a_non_principle_skill_is_scanned() {
+  local root
+  root="$(make_root every_skill)"
+  write_skill "$root" note-taking "---
+name: note-taking
+description: a skill: an unquoted colon
+---
+
+# Take a note
+"
+  run_gate "$root"
+  assert_ne 0 "$GATE_RC" 'the parse covers every skill, not only the principles'
+  assert_contains "$GATE_OUT" 'note-taking/SKILL.md' 'the finding names the non-principle skill'
+}
+
+run_test test_principle_body_is_not_checked
 run_test test_broken_block_is_flagged
 run_test test_non_boolean_flag_is_flagged
 run_test test_shipping_document_without_a_reader_is_flagged
-run_test test_heading_below_the_title_is_flagged
-run_test test_missing_test_is_flagged
-run_test test_why_before_the_pattern_is_flagged
-run_test test_named_part_after_the_test_is_flagged
-run_test test_title_case_title_is_flagged
-run_test test_skill_without_the_name_segment_is_not_read
-run_test test_a_fixture_root_with_no_principle_is_not_read
+run_test test_a_non_principle_skill_is_scanned
 
 test_done

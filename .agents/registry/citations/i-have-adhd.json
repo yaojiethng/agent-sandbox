@@ -1,0 +1,15 @@
+{
+  "id": "i-have-adhd",
+  "title": "i-have-adhd",
+  "author": "ayghri",
+  "publisher": "GitHub",
+  "url": "https://github.com/ayghri/i-have-adhd/blob/main/skills/i-have-adhd/SKILL.md",
+  "version": "main branch, read 2026-11-22; MIT license",
+  "record": {
+    "source": "A session output-style skill for a reader with ADHD. Its first of five facts is that working memory is small, that anything not on screen is forgotten, and that a writer must not ask the reader to keep a thing in mind. Rule 4 suppresses tangents; rule 5 restates state every turn.",
+    "kept": "The limited-memory premise and its consequence: what the reader must still hold when a part arrives sits within reach, and the writer does not ask the reader to hold it off-screen. Rule 5's restatement is kept as the case where the reader's place in a procedure is stated once at the start.",
+    "rewritten": "The ADHD-specific reader becomes every reader: the corpus states the limited contextual memory as the general condition and this skill as one articulation. 'On screen' becomes 'within reach of the part that needs it', a document's placement rather than a turn's restatement.",
+    "added": "The distinction from working memory inside one sentence, which order-for-incremental-parsing owns, and the boundaries with single-train-of-thought, define-terminology-before-use, link-what-the-reader-can-open and write-for-the-reader.",
+    "dropped": "The session-style rules that are not placement: lead with the next action, numbered steps, one closing action, time estimates, visible progress, matter-of-fact errors, list caps, no preamble. Visible progress is carried by the AGENTS.md reporting footer, not by a principle."
+  }
+}

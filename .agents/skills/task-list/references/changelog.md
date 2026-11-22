@@ -35,4 +35,4 @@ A closed changelog entry does not change: it keeps its text, gains one of the ma
 
 A correction that cannot be finished leaves the record as it was, with the metadata it carried before. A correction that does finish reopens the record and closes it again with the successor entry.
 
-The shared principle, the direction, the propagation rule and the form per record type are in the [`record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) procedure, `## Correcting a record`. The decisions behind the form are in [`closed_record_corrections.md`](../../../../docs/adr/closed_record_corrections.md).
+The direction, the propagation rule and the form per record type are in the [`record-correction`](../../../../workflow/coding-agent/prompts/record-correction.md) procedure, `## Correcting a record`. The decisions behind the form are in [`closed_record_corrections.md`](../../../../docs/adr/closed_record_corrections.md).

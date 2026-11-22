@@ -12,6 +12,46 @@ This file is tied into the session's Findings section for recording and into the
 
 ---
 
+---
+
+## [O] 2026-11-20  --  The installed skill root goes stale and nothing checks or updates it
+
+```text
+state: open
+scoped: the sandbox's installed config home, `$AGENT_HOME/agent/` (the brief and `skills/`)
+legacy: none
+mitigation: the stale copies were cleared by hand on 2026-11-20; clearing files is not the fix, because the next retirement or edit puts another one there
+```
+
+The installed root is written from the payload and never pruned, so a retired skill survives in the directory a session loads. Measured 2026-11-20 at handover `20261120-01`: `$AGENT_HOME/agent/skills/` held 44 principle skills against the payload's 28, and the extras included `communication-principle-cut-what-serves-nothing` and `communication-principle-only-derive-what-you-own`, both retired by earlier iterations. A running session therefore read a superseded rule beside its replacement, and nothing reported it.
+
+A third case sits in the same directory: `technical-writing`, a personal install that no `packages` entry provides and no store edge pins, so the tree could neither review nor bump it. It was deleted with the retired copies.
+
+**The three stale classes, re-checked 2026-11-20.** The installed root held 85 skills. `AGENTS.md` showed no drift: the repo source, the image template and the installed copy were byte-identical, and every principle skill the brief indexes was present. Six skills removed in source were still loaded -- `communication-principle-hand-off-by-naming-the-boundary`, `principle-delegation-over-machinery`, `principle-guard-derived-state`, `principle-minimal-corrections`, `principle-own-the-scope-you-declare`, `principle-skill-signposting` -- and were deleted. Nine skills present in source held stale content -- the seven `communication-principle-*` files edited since install, `principle-guard-the-context-window`, and `principle-single-source-of-truth` -- and were refreshed from the payload. A set comparison finds the first class and misses the third; only a content comparison finds drift in a directory that still has the name.
+
+Nothing checks the directory. `scripts/check_instruction_surfaces.sh` compares `$AGENT_HOME/agent/AGENTS.md` and never reads `skills/`, and the roadmap row that owns that gate, `The installed layer copy has no gate`, is scoped to the one file.
+
+The durable fix is a comparison over the directory: `AGENTS.md` equals its payload copy, each installed skill either matches the payload's content or is a declared personal install, and no skill removed from the payload remains. Until then a retirement and an edit both leave a copy that reads as current.
+
+---
+
+## [O] 2026-11-17  --  The acceptance gate was skipped four times without the agent noticing
+
+```text
+state: open (recurrence 2026-11-18)
+scoped: workflow/coding-agent/prompts/iter.md, workflow/coding-agent/prompts/commit.md, docs/reference/iteration_protocol.md
+legacy: none
+mitigation: at Step 7, end the turn with the summary and no commit; treat a forward signal as the only input that opens Steps 8-9, and name the gate the operator names. The mitigation did not hold: on 2026-11-18, `192643da` was committed with six criteria self-marked `Accepted.` after an operator "admit" that ruled the leaf, not the iteration. The marking is restored to `Not yet.` in the same amend.
+```
+
+Four iterations closed by committing directly after a green suite, with the acceptance table self-marked `[x] Accepted` in the agent's hand and no pre-close summary offered. The operator raised it as a regression, in the operator's own term, the acceptance gate. The term does not appear in `/iter`, so the agent's reports never used the word the operator was looking for and the omission stayed invisible in the conversation.
+
+Two prompt changes explain it, and neither is a defect on its own. `05a915df` deleted `## The acceptance gate` and its opening line, "`/iter` stops at the acceptance gate", on the rationale that explanation without an action is cost; the obligation survives as a subordinate clause in Step 7 and a negation in the Release gate section, while the scope gate keeps a bolded standalone imperative. `f6146d1a` moved the acceptance marking out of `/commit`, which now only confirms staging, so the commit path lost the one instruction that re-read the table while committing. The latent weak stop then had nothing to catch it.
+
+`e43837ad` renamed the gate to the release gate in the policy, and the ADR kept the operator's term, so the corpus now carries two names for one gate.
+
+The tell: a gate whose stop is a clause loses to an operating mode that says not to park reversible work. The mitigation is shape, not emphasis. A gate the operator must release ends with a bolded stop and nothing after it in the same turn.
+
 ## [A] 2026-11-14  --  The draft added a ladder around the sentence that carried the claim
 
 ```text
@@ -43,37 +83,6 @@ The runbook is a generic maintainability standard: eight non-negotiable rules, t
 Two properties make the drift structural rather than accidental. A fresh seat holds no memory of the earlier rounds' remedies, so it cannot see that it is asking for the opposite. And "assume there is often a code judo move available" plus "end each round on a verdict" is a mandate to find something every round, so convergence has to come from outside the standard - from the purpose, which it does not name.
 
 What the loop did buy is real and worth keeping: a link resolved against the shell's directory, a malformed graph walked after being reported, two readers of one store, 49 test assertions with their arguments reversed, and five gates that printed a pass over input they had failed to read. Those were wrong answers, and the runbook's own pressure is what found them. The fix is not a weaker standard but a bound one: the intent goes in the brief, and a blocker has to name a consumer.
-
----
-
-## [A] 2026-10-29  --  Two prose principles could not fire while a document was being written, only once it existed
-
-```text
-state: probation
-scoped: src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-*/SKILL.md, the description of each; .agents/skills/instruction-authoring/SKILL.md and docs/adr/principle_skill_shape.md; .agents/skills/project-documentation/SKILL.md `## Drafting`; .agents/skills/skill-fork/SKILL.md `## Which half`; .agents/skills/skill-fork/patterns/vendor-bump.md `## Register an edge`
-legacy: none
-mitigation: a description names the situation the agent is in, so a rule that governs what to write triggers on the act of writing and a rule that governs a reading triggers on what the reading finds. Ten descriptions that govern a draft now open on writing or revising, both prose paths read their own draft back against the two judgements that catch this failure, and the rule sits where a principle skill is authored. Nothing observes whether selection actually fires, which is why the entry is on probation rather than mitigated.
-
-reopened 2026-11-03, same class, different door: the rule was in context and the deciding document was not on the read path. A routing table now names every task the store serves, so a task with no home is a visible gap, and the section a store field is written in names the ADR that decides the field set. Measured on the read-set from the session log and two cold probes; see handover `20261103-04`. The prior mitigation stays, and it did not cover this door: no description rewrite reaches a file the reader never opens.
-```
-
-Asked for a reference page on writing a document, I wrote one that opened by describing the gap it filled, then carried a heading per step and a closing section: 33 lines against the 14 that already covered the same five steps in the tree. The two judgements that forbid exactly that were named in the file I was editing and quoted in the layer loaded at session start, and neither fired.
-
-The cause is the shape of the trigger, not the address of the rule. A skill is selected on its `description` alone, and both of those descriptions named a property the finished text has: "a sentence that needs your session", "apply to sediment". A property can only be read once the text exists, so the two principles could fire on a revision pass and no authoring path asked for one. What the description says now is the act: writing or revising prose.
-
-The second half of the fix is the one that does not depend on selection. Both paths that produce prose now end on a read-back step against those two judgements, beside the draft, after it exists.
-
-This is the same class as the 2026-10-27 entry below, a rule held and not applied while drafting, with a different mechanism: there the sentence carried an argument the reader was not in, here the trigger could not be evaluated until the sentence was finished. What would settle it is a recurrence in the same form, a draft whose subject is the document or the session rather than the thing the document is about.
-
-Cross-references: `docs/adr/principle_skill_shape.md` and `.agents/skills/instruction-authoring/SKILL.md`; handover `20261029-01`.
-
-**Recurrence, 2026-11-03.** Writing a store edge, the agent proposed a schema field (`absent`) whose job the bump's three-way merge already does, and the principle now `principle-single-source-of-truth` (then `principle-delegation-over-machinery`, whose description named "a schema, a second record of someone else's guarantee") was in the loaded layer and did not fire. The trace from this session's tool-call log: 231 calls, and of the nine rules bearing on the decision, three were read; the two that settle it (`vendor-bump.md` steps 2 and 7, and the ADR's R3) were opened only after the operator objected. `fork-and-strip.md`, which registers an edge at steps 1 and 5, was never opened, because the artifact was already in the tree and no routing row named that task.
-
-Two probes say what the fix is and is not. A cold agent asked to "catch a stale record" found R3 in the ADR and rejected its own hash proposal, so the failure is not reproducible from a cold start: it was a narrow goal inside a long session, not a wording defect. A second cold agent given the narrow task now reads `vendor-bump.md`, `skill-fork/SKILL.md`, `skill_source_catalog.md` and `source_tracking.md` before writing. The fix is a routing row and a named decision, not a reminder; a reminder would have been unfalsifiable.
-
-**Maintained at M3.7.1 close, 2026-11-09:** no recurrence during the milestone; the description and routing fixes stand, and probation continues.
-
-**Maintained at M3.7.2 close, 2026-11-16:** no recurrence during the milestone; the description and routing fixes stand, and probation continues.
 
 ---
 
@@ -388,6 +397,19 @@ mitigation: anchor a splice on the heading line (`\n### Name\n`), assert it occu
 Rewriting `### Instruction modality` in `docs/reference/agent_workflow.md` by slicing at `indexOf("### Instruction modality")` cut from a sentence one section above that links to the heading by name, and took the heading line with it: the section lost its title and the paragraph that pointed at it lost its tail. The lint gate passed, because a file with a broken heading is still well-formed Markdown.
 
 This is the second time on this file. The 2026-11-02 handover `20261102-04` records the same failure from a different script, which is what makes it a class rather than a slip: the file names its own sections in prose in at least two places, so the first occurrence is never the heading.
+
+### [A] 2026-11-22  --  A supplied PDF was decrypted by hand while an installed library had already read it
+
+```text
+state: probation
+scoped: none
+legacy: none
+mitigation: read a supplied PDF with `pdf-parse`, not a hand-rolled parser. `cd .scratchpad && mkdir -p pdfx && cd pdfx && npm i --silent --no-audit --no-fund pdf-parse@1.1.1`, then a ten-line CommonJS script that calls `pdf(fs.readFileSync(path))` and writes `d.text`. It returns 434 pages and 659,921 characters from the ASD-STE100 copy in under a minute.
+```
+
+The operator supplies reference documents under `/home/agentuser/workspace/input/`. `pdftotext`, `mutool` and `gs` are absent from this image, and the ASD-STE100 copy is encrypted with the standard security handler (V4, AESV2), so a hand-rolled extractor has to derive the file key, then an object key per stream, then decrypt each stream and inflate it. I rebuilt that path three times: the derived file key validated against the stored `/U` string, and the object-key and AES-128-CBC step still failed on every stream and every encrypted string, which cost about forty minutes and answered nothing. `pdf-parse` carries pdf.js, which handles the same handler with the empty user password.
+
+Session `2026-11-16` had installed exactly that dependency for exactly this file, so the route was already recorded: the shell command sits in `~/.pi/agent/sessions/--home-agentuser-sandbox--/*.jsonl`. Grep the session store for the input path before building an instrument to read it, and check for an installed library before writing a decoder. The extracted text is session-local at `.scratchpad/ste100.txt`, and nothing durable should rest on it: the source is a controlled document, and the records cite it by section and rule number.
 
 ---
 

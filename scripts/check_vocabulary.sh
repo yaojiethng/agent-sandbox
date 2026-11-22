@@ -2,6 +2,13 @@
 # scripts/check_vocabulary.sh
 # Holds the shipping instruction surfaces to the reserved vocabulary.
 #
+# Two bans, each an entry in docs/reference/terminology.md.
+#
+# `thing` names no referent, so nothing in the sentence can be checked against it:
+# write the artifact the sentence means (the file, the value, the clause, the
+# record). The entry's own heading is the one line that states the word, and the
+# gate skips that line.
+#
 # `layer` is reserved for the container architecture: the capability layer and
 # the reasoning layer. The other senses are replaced, per the reserved-terms
 # table in docs/adr/coding_agent_project_bindings.md and the model in
@@ -34,6 +41,11 @@ MANIFEST_REL="src/build/container-interface.json"
 # capability or reasoning layer never matches, and Docker's own build term is
 # not a qualifier here.
 PATTERN='(provider|project|sandbox|user|universal|workflow|record|delivery|reference|instruction|implementation)[ -]layer'
+
+# The banned noun, as a standalone word: `do_thing` is an identifier and
+# `nothing` is a different word. The registry entry's own heading is the single
+# line that may state it.
+PATTERN_THING='(^|[^A-Za-z0-9_])things?([^A-Za-z0-9_]|$)'
 
 FINDINGS=0
 finding() {
@@ -74,6 +86,16 @@ for src in "${SOURCES[@]}"; do
   done < <(grep -rnE "$PATTERN" "$target" 2>/dev/null)
 done
 
+for src in "${SOURCES[@]}"; do
+  target="$SCAN_ROOT/$src"
+  [[ -e "$target" ]] || continue
+  while IFS= read -r hit; do
+    [[ -z "$hit" ]] && continue
+    [[ "$hit" == *":## thing" ]] && continue
+    finding "${hit%%:*}" "$(printf '%s' "$hit" | cut -d: -f2,3-)"
+  done < <(grep -rnE "$PATTERN_THING" "$target" 2>/dev/null)
+done
+
 if (( FINDINGS == 0 )); then
   echo "Vocabulary gate: clean across ${#SOURCES[@]} instruction-surface source(s)"
   echo "Clean (${SECONDS}s)"
@@ -81,5 +103,5 @@ if (( FINDINGS == 0 )); then
 fi
 
 echo "Vocabulary gate: $FINDINGS finding(s)" >&2
-echo "Blocking gate: replace the sense of 'layer' in the finding above with the reserved term (see docs/adr/container_execution_model.md)." >&2
+echo "Blocking gate: fix each finding above. A 'layer' sense takes the reserved term (docs/adr/container_execution_model.md); a 'thing' takes the artifact the sentence means (docs/reference/terminology.md)." >&2
 exit 1

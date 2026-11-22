@@ -10,7 +10,7 @@ Find the defects in a component that its gates cannot see. The suite, the mutati
 
 ## Done looks like
 
-A finding that reaches the record carries four things:
+A finding that reaches the record carries four fields:
 
 1. a minimal reproducer that fails today;
 2. the invariant it violates, named from the contract;

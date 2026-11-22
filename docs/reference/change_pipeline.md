@@ -151,7 +151,7 @@ The host lane's actor is the operator, who may run git outside the verbs. The mo
 
 A competent operation is indistinguishable from a verb's mechanism: the next verb re-reads the state, and the branch's mergeability re-derives. A raw `git reset` on the branch can make it `working`; the next prepare fixes it.
 
-A mistaken operation leaves the draft inconsistent: a wrong checkout, uncommitted edits, a half-applied bundle. The remediation is `make reject`, which discards the draft and restores the source, then `make draft`, which rebuilds the draft from the bundle. The bundle is unchanged; the branch is unchanged; only the draft is replaced. This is the host flow's repair, not the recovery of a unit's claim and not a new verb.
+A mistaken operation leaves the draft inconsistent: a wrong checkout, uncommitted edits, a half-applied bundle. The remediation is `make reject`, which discards the draft and restores the source, then `make draft`, which rebuilds the draft from the bundle. The bundle is unchanged; the branch is unchanged; only the draft is replaced. This is the host flow's repair, not the recovery of a work unit's claim and not a new verb.
 
 ## The early change
 

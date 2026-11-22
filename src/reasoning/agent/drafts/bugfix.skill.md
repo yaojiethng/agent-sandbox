@@ -68,7 +68,7 @@ Apply targeted edits to the minimum set of files that address the root causes:
 
 Document the bug and fix in two places:
 
-**A. Handover `[CORRECTION]` block** (per the `record-correction` procedure):
+**A. Handover record** (the `record-correction` procedure for a closed iteration):
 
 - What was wrong, root cause for each distinct bug, what was changed, which files were modified
 
@@ -77,7 +77,7 @@ Document the bug and fix in two places:
 ### 6. Close
 
 - Confirm the original failing command now passes.
-- If the diagnostic was created as part of this iteration, note it in the `[CORRECTION]` block.
+- If the diagnostic was created as part of this iteration, note it in the handover.
 - Do not alter the handover's `Status`, timestamps, or acceptance criteria markers.
 
 ## Common Bug Patterns

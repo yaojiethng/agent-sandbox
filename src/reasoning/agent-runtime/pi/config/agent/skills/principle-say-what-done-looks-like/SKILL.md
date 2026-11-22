@@ -1,13 +1,18 @@
 ---
 name: principle-say-what-done-looks-like
 description: State where the work stops and what shows it is done, before starting it, so a finish can be checked rather than claimed. Use when starting a task, a step, or a segment of work, and when work is about to be reported complete.
+metadata:
+  intent: "Agent-operator alignment during task dispatch: an agreement on the final result, so that no party is surprised."
+  mechanism: "The instruction and its acceptance: the finish, the bound, and one criterion with an instrument other than the agent's belief."
+  neighbours:
+    - communication-principle-provide-evidence
 ---
 
 # Say what done looks like
 
 Work with no stated finish cannot be declared done. It can only be abandoned or claimed.
 
-**The pattern.** Before you start, state two things.
+**The pattern.** Before you start, state where the work stops and what shows it is done.
 
 1. The inventory, which is what the work covers, and the bound, which is what it excludes. Give the reason for each.
 2. The acceptance criteria, one per line, each naming its verification: the tool or the method, other than the agent, whose output shows that criterion is met.

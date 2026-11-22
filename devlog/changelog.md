@@ -295,3 +295,11 @@ The eval harness now takes a case declaration for the fixture, measure, prompt a
 The ADR, the reference and the model home now state the same lifecycle -- `working`, `ready`, `drafted`, `accepted` and `deleted`, with mergeability as the axis -- and the chart and transition table are regenerated from the test home and gated. The two-lane transition evidence, the branch-preparation surface, the loop-document split and the retirement of the concluded work-log design record landed. `history-cleanup` is the operator-invoked series pass for the PR reviewer, independent of `prepare`, and the commit message is enforced and seeded.
 
 ---
+
+## M3.3.7 - The principle corpus admission
+
+*The principle corpus now admits and changes a principle through one decision, and its index names each principle at the moment it fires.*
+
+The change runbook holds the five decisions a principle settles, the frontmatter gate holds the fields that carry them, and the neighbour list is symmetric and gated. The close narrowed the rewrite rule to fixing a mistake and raising every other change, moved the voice rule onto the shipped surface beside the operator's structure rule, merged the mental-model mapping into the terminology principle so one rule covers both directions of a mismatch, stated a skill's description as a pointer in the authoring pattern, and banned a noun that names no referent, with the vocabulary gate holding it across every shipping instruction surface.
+
+---

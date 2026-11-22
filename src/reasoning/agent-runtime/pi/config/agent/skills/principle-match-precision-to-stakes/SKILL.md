@@ -1,6 +1,10 @@
 ---
 name: principle-match-precision-to-stakes
 description: Apply when an instruction could be followed wrongly without anything reporting it. Set its precision by the assumption it rests on, how far a wrong move reaches, whether the move can be undone, and what reports it.
+metadata:
+  intent: "An instruction's precision follows what the writer can establish, not what the consequence would cost."
+  mechanism: "The rule's modal strength and its checks: rule, judgement or permission, with a check that reports a departure."
+  neighbours: []
 ---
 
 # Match precision to stakes
@@ -36,4 +40,4 @@ A gap you do not name cannot be checked, so a wrong result it hides arrives as a
 
 **What it does not cover.** What the instruction is about, how much room it costs, or how bad the consequence would be. The last cannot be known before the move.
 
-**The test.** Name the assumption, the gaps, the undo path and the reporter. Name one thing you did not verify, and say why the instruction stands without it.
+**The test.** Name the assumption, the gaps, the undo path and the reporter. Name one claim you did not verify, and say why the instruction stands without it.

@@ -4,7 +4,7 @@
 
 This document describes how the unit-test harness runs: discovery, parallel dispatch, the result protocol, and the gates around the suite. It is the mechanism layer. The judgements, patterns and completion lists for writing a test live in [`.agents/skills/testing/SKILL.md`](../../.agents/skills/testing/SKILL.md).
 
-The harness guarantees one invariant: a trustworthy green or red signal. Every unit result must be counted exactly once, and a failure must never look green. The design satisfies this by carrying counts over a self-describing report, not by re-parsing the test's printed noise.
+The harness guarantees one invariant: a trustworthy green or red signal. Every test-unit result must be counted exactly once, and a failure must never look green. The design satisfies this by carrying counts over a self-describing report, not by re-parsing the test's printed noise.
 
 ## The runner (`scripts/run_tests.sh`)
 
@@ -22,27 +22,27 @@ Dispatch runs every file through a child copy of the runner: `printf '%s\n' "$TE
 
 The deadline is pure bash: `run_with_deadline DEADLINE OUT FILE` backgrounds the file, polls it at 0.1 second, kills it on expiry with SIGTERM, and returns 124. No external `timeout` binary is needed, which keeps the runner safe on the GNU and BSD `sleep` variants. The deadline is `TEST_TIMEOUT` (default 10 seconds), and a file may declare its own with a `# TEST_DEADLINE: <seconds>` line in its first ten lines; the declaration overrides the default for that file only, so a heavy harness file states its own budget instead of raising the deadline for every file. The declaration is a budget, not a licence: the file must stay near the cost it declares.
 
-The parent summarizes the workers' records, prints the aggregate line, lists the failing test names in one `Failed tests:` block, and exits 1 when any unit failed or timed out.
+The parent summarizes the workers' records, prints the aggregate line, lists the failing test names in one `Failed tests:` block, and exits 1 when any test unit failed or timed out.
 
 ## The suite contract
 
-The suite reports `failed 0`. A failing unit fails the run, and a test that cannot run deterministically moves to `tests/knowledge/` or `tests/integration/` rather than being skipped in place. A skip is a temporary warning, never the resting place for a seam the unit harness cannot reach.
+The suite reports `failed 0`. A failing test unit fails the run, and a test that cannot run deterministically moves to `tests/knowledge/` or `tests/integration/` rather than being skipped in place. A skip is a temporary warning, never the resting place for a seam the test-unit harness cannot reach.
 
-## The unit contract (`tests/libs/test_common.sh`)
+## The test-unit contract (`tests/libs/test_common.sh`)
 
-A test file sources `test_common.sh`, writes one `test_*()` function per unit, registers each with `run_test NAME`, and ends with `test_done`.
+A test file sources `test_common.sh`, writes one `test_*()` function per test unit, registers each with `run_test NAME`, and ends with `test_done`.
 
-One test is one unit. `run_test` runs the named function in a fresh subshell, so a test's environment, working directory, globals, and traps cannot leak into a sibling. The same subshell allocates a fresh `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, when the subshell exits. `get_fixture_dir` (alias `get_test_dir`) allocates extra per-test directories; a test never uses a bare `mktemp -d`. `test_setup` at file scope sets `TEST_DIR`, `REPO_ROOT`, and a file-scope `FIXTURE_ROOT` for scaffolding a file's tests share.
+One test is one test unit. `run_test` runs the named function in a fresh subshell, so a test's environment, working directory, globals, and traps cannot leak into a sibling. The same subshell allocates a fresh `FIXTURE_DIR` (the test's default root) and removes it, and every directory the test allocates, when the subshell exits. `get_fixture_dir` (alias `get_test_dir`) allocates extra per-test directories; a test never uses a bare `mktemp -d`. `test_setup` at file scope sets `TEST_DIR`, `REPO_ROOT`, and a file-scope `FIXTURE_ROOT` for scaffolding a file's tests share.
 
 The assertion helpers (`assert_eq`, `assert_contains`, `assert_run`, and the rest) each call `pass` or `fail` themselves. They are one way to assert; an inline `if ...; then pass; else fail; fi` is the alternative. fail-fast means a `fail()` inside a test ends the subshell immediately.
 
-A unit is one of three outcomes:
+A test unit is one of three outcomes:
 
 - PASS: the subshell exited 0 and emitted at least one assertion.
 - FAIL: the subshell exited non-zero (a `fail()` or a crash) or completed with no assertion.
-- SKIP: the test called `skip()` because its subject is not ready (an unstubbed operation, a missing dependency). A skip is a warning, not a failure. `skip()` ends the test immediately and counts the unit as skipped; the cause is resolved so skips trend back to zero.
+- SKIP: the test called `skip()` because its subject is not ready (an unstubbed operation, a missing dependency). A skip is a warning, not a failure. `skip()` ends the test immediately and counts the test unit as skipped; the cause is resolved so skips trend back to zero.
 
-`test_done` prints the per-file report: `Results: N passed, M failed, K skipped`. It exits with the failing-unit count, so a file's exit status carries the number of failures. It also emits the `UNIT:` report line described next.
+`test_done` prints the per-file report: `Results: N passed, M failed, K skipped`. It exits with the failing test-unit count, so a file's exit status carries the number of failures. It also emits the `UNIT:` report line described next.
 
 `run_test` invokes the test function as `$1 || true`. Bash suppresses `set -e` for a command in a `||` list, and that suppression covers the whole test function body - nested function calls and any background subshell the body starts are also exempt. The consequences for a test: it cannot observe whether a production `set -e` guard exists by calling the production function directly, because the guard is never exercised. Assert the observable outcome instead - a call count, a marker file, a captured artefact. When the abort itself is the contract, run the probe in a fresh `bash` process outside the harness, as `tests/test_routing.sh::test_autosave_tick_absorbs_status_under_real_set_e` does: the probe sources the production libraries, starts its own `set -euo pipefail`, and the test asserts on a marker the probe writes.
 
@@ -56,7 +56,7 @@ Counts travel from the test file to the runner as self-describing key-value line
 UNIT: pass=16 fail=0 skip=1
 ```
 
-The worker finds the last `UNIT:` line in the file's output and validates it against the anchored shape `UNIT: pass=<int> fail=<int> skip=<int>`. A file that produced no `UNIT:` line (a crash, a missing `test_done`) or a malformed line (a drifted shape) is a failure by construction. A report of `pass=0 fail=0 skip=0` is also a failure: a test file that executed no unit is broken.
+The worker finds the last `UNIT:` line in the file's output and validates it against the anchored shape `UNIT: pass=<int> fail=<int> skip=<int>`. A file that produced no `UNIT:` line (a crash, a missing `test_done`) or a malformed line (a drifted shape) is a failure by construction. A report of `pass=0 fail=0 skip=0` is also a failure: a test file that executed no test unit is broken.
 
 The worker writes one record per file for the parent to aggregate:
 
@@ -66,7 +66,7 @@ pass=16 fail=0 skip=1 rc=0
 
 The parent reads the record and validates it against the same strict key-value shape. A missing or malformed record is a failure. The failure verdict rides the exit code or the fail count; a skip never fails the run.
 
-Why drift is loud by construction: the failure count rides the file's real exit status (which cannot be misparsed), and the pass and skip counts ride a self-describing `UNIT:` report the file must emit or the run fails. A format drift at either hop becomes a missing or malformed line, which is a hard error. A test file cannot silently report fewer units than it passed by accident of presentation.
+Why drift is loud by construction: the failure count rides the file's real exit status (which cannot be misparsed), and the pass and skip counts ride a self-describing `UNIT:` report the file must emit or the run fails. A format drift at either hop becomes a missing or malformed line, which is a hard error. A test file cannot silently report fewer test units than it passed by accident of presentation.
 
 ## The gates
 
@@ -110,9 +110,9 @@ The runner is load-bearing infrastructure, so `tests/test_runner_selftest.sh` pi
 
 ## What the harness cannot observe
 
-A unit test sees what the docker stub reproduces. The stub records every invocation's arguments and simulates failure through environment variables, so an argument is assertable. It does not present a TTY, prompt, progress table, or stdin, so a guard whose only job is to shape an interactive compose session cannot fail a unit.
+A unit test sees what the docker stub reproduces. The stub records every invocation's arguments and simulates failure through environment variables, so an argument is assertable. It does not present a TTY, prompt, progress table, or stdin, so a guard whose only job is to shape an interactive compose session cannot fail a test unit.
 
-The following guards in `scripts/run_agent.sh` rest on live observation, not on a unit:
+The following guards in `scripts/run_agent.sh` rest on live observation, not on a test unit:
 
 - `-T` on the seeder invocation, which the script's comment cites to an attach that never closed.
 - the two `< /dev/null` redirections on compose invocations, which keep an attached session from reading the caller's stdin.
