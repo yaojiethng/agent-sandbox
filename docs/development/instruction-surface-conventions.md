@@ -140,6 +140,7 @@ A rule about where sections belong is maintenance material and lives here, not i
 | the container paths this layer covers | `Scope` | provider |
 | the two containers and the tool set | `The Container` | provider |
 | write rules | `Write Discipline` | provider |
+| how prose output is written | `Output` | provider |
 | the principles, by the aim each serves | `Principles` | provider |
 | reading a tree before opening it | `Read Discipline` | provider |
 | dispatching a subagent, and the review as its seat-count mode | `Subagents` | provider |

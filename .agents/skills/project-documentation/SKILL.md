@@ -49,8 +49,6 @@ A document whose subject exists in the code and nowhere in the document set is g
 
 Write for the reader of the artifact, not for the session that produced it. Before a draft lands, read it back against two judgements: a sentence that needs the session, and a sentence the reader could drop without losing an action. `communication-principle-write-for-the-reader` and `communication-principle-cut-metadiscourse` state them.
 
-**Voice.** Write in the voice the operator heard when the decision was made: active, first person where a person did it, the claim first, one clause of reason. Read each sentence back as speech, and rewrite it if you would not say it to the operator. Address the record to the next agent session, which holds the tree, the conventions and the handover chain and can act as soon as it understands; stop there. Do not match the register of the records around you, which run heavier, and lighten any sentence of a record you are already rewriting. Where the decision was already put to the operator, carry that sentence rather than write a second version of it.
-
 A code block derives from the file that owns it: the document names that file and lets the reader open it rather than copying its lines into a fence. A block with no owner to point at, such as a diagram, a section skeleton or output quoted from a tool, declares itself with a marker the gate reads. The four patterns, the markers and the gate are [`references/code-snippets.md`](references/code-snippets.md).
 
 ## What each document type owes

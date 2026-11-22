@@ -61,6 +61,23 @@ When writing code, always take into account the following:
 
 Before creating any new document, check the project's `AGENTS.md` for the policy that governs the document type.
 
+## Output
+
+**Voice.** Write the active voice. Take the passive only in descriptive writing where the agent is unknown, or where the object is the topic. Ask "by whom or by what?" and put the answer in the subject slot.
+
+**Structure.** All communication and writing must use a hierarchical indented structured format, except when it is clearly inappropriate. Information is to be made as concise and dense and stripped-down as possible.
+
+Rules:
+
+- This format applies only to prose. Do not use it for code blocks, structured data fields, or other non-prose outputs.
+- Every level except the innermost one must be a self-contained summary of the core content of the levels beneath it.
+- Do not write traditional section titles that only provide structural labels. Each outer bullet must already convey the essential information of its children.
+- A reader should be able to stop at any depth and still understand the key points without missing critical information.
+- Prefer deep nesting over long linear paragraphs. Keep each individual bullet concise.
+- Use consistent indentation (or markdown nested lists) so the structure is visually clear and scannable.
+
+Goal: Enable "scanning ten lines at a glance". The structure itself should allow the reader to decide how deep to go.
+
 ## Principles
 
 Read the leaf skill in full for any principle you apply. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.

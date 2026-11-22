@@ -429,6 +429,19 @@ Rewriting `### Instruction modality` in `docs/reference/agent_workflow.md` by sl
 
 This is the second time on this file. The 2026-11-02 handover `20261102-04` records the same failure from a different script, which is what makes it a class rather than a slip: the file names its own sections in prose in at least two places, so the first occurrence is never the heading.
 
+### [A] 2026-11-22  --  A supplied PDF was decrypted by hand while an installed library had already read it
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: read a supplied PDF with `pdf-parse`, not a hand-rolled parser. `cd .scratchpad && mkdir -p pdfx && cd pdfx && npm i --silent --no-audit --no-fund pdf-parse@1.1.1`, then a ten-line CommonJS script that calls `pdf(fs.readFileSync(path))` and writes `d.text`. It returns 434 pages and 659,921 characters from the ASD-STE100 copy in under a minute.
+```
+
+The operator supplies reference documents under `/home/agentuser/workspace/input/`. `pdftotext`, `mutool` and `gs` are absent from this image, and the ASD-STE100 copy is encrypted with the standard security handler (V4, AESV2), so a hand-rolled extractor has to derive the file key, then an object key per stream, then decrypt each stream and inflate it. I rebuilt that path three times: the derived file key validated against the stored `/U` string, and the object-key and AES-128-CBC step still failed on every stream and every encrypted string, which cost about forty minutes and answered nothing. `pdf-parse` carries pdf.js, which handles the same handler with the empty user password.
+
+Session `2026-11-16` had installed exactly that dependency for exactly this file, so the route was already recorded: the shell command sits in `~/.pi/agent/sessions/--home-agentuser-sandbox--/*.jsonl`. Grep the session store for the input path before building an instrument to read it, and check for an installed library before writing a decoder. The extracted text is session-local at `.scratchpad/ste100.txt`, and nothing durable should rest on it: the source is a controlled document, and the records cite it by section and rule number.
+
 ---
 
 ## Gotchas  --  operator-raised entries

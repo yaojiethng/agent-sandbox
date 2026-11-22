@@ -22,7 +22,6 @@ Order clauses so the reader can attach each new phrase to the structure already 
 
 **Prevent working-memory holds.** When a phrase arrives before its host:
 
-- Name the actor first: put the actor in the subject slot instead of hiding it in the passive voice.
 - Name the object first: introduce the object before the imperative.
 - Keep the main clause whole: put the modifier or long condition after it.
 - Unpack the noun string: "the proto import budget check script" becomes "the script that checks the proto-import budget".
@@ -39,7 +38,7 @@ Order clauses so the reader can attach each new phrase to the structure already 
 
 **Why.** When a phrase cannot attach, the text carries high extraneous load: the reader spends working memory on the form rather than the meaning, re-parsing what did not attach and choosing between readings. Reducing the load buys a first-pass attachment, so the memory goes to the instruction and the reading arrives once rather than twice. Good-enough processing makes the failure silent: the reader settles on the plausible reading, so a misread arrives as a wrong instruction rather than a stumble.
 
-**Where another rule wins.** This rule governs how each phrase attaches to the structure already built, within a sentence; the text's structure is another rule's. It yields to a valid exception: the passive voice when the actor is unknown or the object is the topic, and a verbatim quote.
+**Where another rule wins.** This rule governs how each phrase attaches to the structure already built, within a sentence; the text's structure is another rule's. It yields to a valid exception: a verbatim quote.
 
 - **A condition before an instruction:** `structure-instructions-imperatively` lets the reader skip what does not apply.
 - **A part away from what it needs, across the text:** `keep-context-in-view` places the caveat, the state reminder and the split part beside the rule or step.
@@ -52,4 +51,4 @@ Order clauses so the reader can attach each new phrase to the structure already 
 - supply a missing element,
 - reanalyse.
 
-Source: ASD-STE100 Issue 9, Section 3 Rule 3.6, for the actor; The Global English Style Guide for the modifier, noun string, pronoun and gapped verb; Frazier and Fodor (1978) for incremental parsing; Gibson (1998) for working memory; Ferreira et al. (2002) for good-enough processing. The style-guide records are `.agents/registry/citations/asd-ste100.json` and `.agents/registry/citations/global-english.json`.
+Source: The Global English Style Guide for the modifier, noun string, pronoun and gapped verb; Frazier and Fodor (1978) for incremental parsing; Gibson (1998) for working memory; Ferreira et al. (2002) for good-enough processing. The style-guide record is `.agents/registry/citations/global-english.json`.
