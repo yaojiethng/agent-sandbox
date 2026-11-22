@@ -16,7 +16,7 @@ A rename reaches every document that cites the name, so a rename carries a list 
 
 **The scheme this repository suggests.** Nothing checks a name. A principle follows `[<domain>-]principle-<judgement>`: a bare `principle-` where the judgement holds for any agentic work, and a domain prefix where it is confined to one (`communication-principle-write-for-the-reader`, `bash-coding-principle-<judgement>` for language-specific work). The scheme shadows `pstack`'s, so a name states the class and never the provenance; the skill's maintenance record states where it came from. Every other skill follows `<verb-noun>`, so `/<action>` reads to the operator as "do <action>", the shape `node run <action>` already holds. A mode keeps the `-mode` suffix.
 
-**The description.** Spend the description on words an agent can match: the work the skill does, named by its object, and the situations that call for it. Two phrases for one situation spend the space twice.
+**The description.** The description is the pointer, and its job is to be matched against the work in hand. Name the situations that call for the skill, one situation per branch, in its first words, and do not repeat what the body carries. Two phrases for one situation spend the space twice.
 
 A skill only the operator invokes is read from the operator's list, so its description uses the words that operator searches with. A router skill names the other skills and when to reach for each, for when the operator-invoked set outgrows one list.
 
@@ -26,4 +26,4 @@ Use the leading word in the name, the description and the body. It steers the ag
 
 **What this pattern does not cover.** The choice of leading word. What the skill does once it is loaded, and how its body is written.
 
-**The test.** Read the name and the description. Do they summarize the skill's purpose? Would an invoker recall the skill in a situation that needs it? Cut anything that would not match an invocation query.
+**The test.** Read the name and the description. Do they summarize the skill's purpose? For each situation the skill serves, do the description's first words name it, and does no second phrase name the same one? Cut anything that would not match an invocation query.
