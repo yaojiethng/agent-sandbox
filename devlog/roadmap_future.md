@@ -33,17 +33,18 @@ The hermes provider was removed on 2026-11-07 rather than kept dormant: it was u
 
 ## W2 -- Communication Domain Taxonomy
 
-**Status:** Not started. Scoped 2026-10-19.
+**Status:** Not started.
 
-**Objective:** A consolidated workflow section for the deep approach to the communication domain: a taxonomy of the reader's processing costs that slices the domain into principles, a controlled vocabulary of the domain terms, and a measured answer to whether those terms signal the domain to an agent. The output is one communication surface that owns the domain.
+**Objective:** The communication domain settles on one principle taxonomy and one vocabulary, and learns whether that vocabulary changes what an agent writes.
 
-**Depends on:** M3.3.5, which owns the eval module the signalling experiment needs; and M3.3.4's principle cleanup, at minimum the removal of the duplicate declaration locations across `documentation_policy.md` `## Communication Standards`, `prompt-authoring-conventions.md`, and the `instruction-authoring` skill.
+**Scope:** The taxonomy is the intent family and the mechanism axis, recorded in [`principle_skill_shape.md`](../docs/adr/principle_skill_shape.md) and read from the corpus by `scripts/principle_inventory.mjs`. The vocabulary is each principle's `intent`, `mechanism` and `leitwort` fields, ratified at admission. What remains is the leading word on the principles that leave it blank, and whether the words earn their place in the instruction surface.
+
+**Depends on:** M3.3.4 and M3.3.5, both closed in [`changelog.md`](changelog.md#m334---the-prose-standards-as-principles).
 
 **Tasks:**
 
-- [ ] Run the communication-domain taxonomy. Run brief: [`.agents/drafts/communication-domain-taxonomy-run.md`](../.agents/drafts/communication-domain-taxonomy-run.md). Primary evidence: [`20261019-design-settled-sentence_structure_principle.md`](discussions/20261019-design-settled-sentence_structure_principle.md) and its [`20261019-report-settled-sentence_structure_evidence.md`](discussions/20261019-report-settled-sentence_structure_evidence.md).
-- [ ] **Populate the leading words across the corpus.** `metadata: leitwort:` is declared on the principle skills and most words are blank; its definition half is closed, the population pass remains. M3.3.4 ran a pass that produced one word per skill, the operator rejected the set, and it was reverted, so `proximity` and `leverage` stand, each naming its own skill's subject, and `sediment` stands on `cut-what-carries-nothing`, adopted 2026-10-28 with the body anchored to it. What a leading word is, and which word leads, is `communication-principle-maximize-conceptual-leverage`; where it goes is `instruction-authoring`'s signposting pattern. The judging pass belongs with this sub-milestone's controlled vocabulary, where the territory is settled before a part of it is named. A gate over the field is unfiled, because presence is all a gate can read and no gate sees a thinking trace. Evidence: [`AGENT_FEEDBACK.md`](AGENT_FEEDBACK.md) **A vocabulary was chosen for flavour and reverted**.
-  - [x] **The field's definition is stated** -- what the word is, that it sits at `metadata: leitwort:`, and that it is set only where the body already teaches it. Closed 2026-10-28: the definition is in `communication-principle-maximize-conceptual-leverage`, the placement owner names the field, and the feedback entry is mitigated. Filed out of order; W2 stays `Not started` until its dependencies land.
+- [ ] **Decide the leading word on every principle that leaves `metadata.leitwort` blank** (`data`, `record`) -- each principle under the provider root takes the word its body already teaches, or a recorded deferral where none is evident. `communication-principle-maximize-conceptual-leverage` decides the word, and `scripts/check_principle_frontmatter.sh` holds the field's form. A word the body does not support is not declared.
+- [ ] **Measure whether the domain vocabulary changes an agent's rewrite** (`record`) -- a case under `tests/eval/` grades one principle's rewrite blind under a control and a term-carrying treatment. The experiment declaration carries the metric set, and the operator sets the grader-reliability floor and the run count `n` when the eval is scoped. A run is evidence inside a stated band, not proof: the verdict reports the measured A/A band, the effect against the pre-registered decision rule, the grader's reliability and the validity threat the design leaves open, and a delta inside the band or an unattributable cell is not a win. A tie or a loss keeps the vocabulary out of the instruction surface. The eval skill's scope alignment may find that a read answers the claim, and that finding is the verdict.
 
 ---
 
