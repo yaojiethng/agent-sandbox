@@ -10,7 +10,7 @@ metadata:
     - communication-principle-write-for-the-reader
     - communication-principle-link-what-the-reader-can-open
     - communication-principle-single-train-of-thought
-    - communication-principle-keep-a-subject-near
+    - communication-principle-keep-context-in-view
     - communication-principle-structure-instructions-imperatively
 ---
 
@@ -39,7 +39,12 @@ Order clauses so the reader can attach each new phrase to the structure already 
 
 **Why.** When a phrase cannot attach, the text carries high extraneous load: the reader spends working memory on the form rather than the meaning, re-parsing what did not attach and choosing between readings. Reducing the load buys a first-pass attachment, so the memory goes to the instruction and the reading arrives once rather than twice. Good-enough processing makes the failure silent: the reader settles on the plausible reading, so a misread arrives as a wrong instruction rather than a stumble.
 
-**Where another rule wins.** Use the passive voice when the actor is unknown or the object is the topic. A verbatim quote keeps its wording. Put the condition before the instruction, so the reader skips what does not apply; that form is [`communication-principle-structure-instructions-imperatively`](../communication-principle-structure-instructions-imperatively/SKILL.md)'s. A reference to context outside the text - a session label, an earlier version - is [`communication-principle-write-for-the-reader`](../communication-principle-write-for-the-reader/SKILL.md)'s; a subject's parts apart across a document is [`communication-principle-keep-a-subject-near`](../communication-principle-keep-a-subject-near/SKILL.md)'s; a term that needs a definition is [`communication-principle-define-terminology-before-use`](../communication-principle-define-terminology-before-use/SKILL.md)'s to settle first, then place it here.
+**Where another rule wins.** This rule governs how each phrase attaches to the structure already built, within a sentence; the text's structure is another rule's. It yields to a valid exception: the passive voice when the actor is unknown or the object is the topic, and a verbatim quote.
+
+- **A condition before an instruction:** `structure-instructions-imperatively` lets the reader skip what does not apply.
+- **A part away from what it needs, across the text:** `keep-context-in-view` places the caveat, the state reminder and the split part beside the rule or step.
+- **A missing definition:** `define-terminology-before-use` settles it first.
+- **Context outside the text:** `write-for-the-reader` names the referent.
 
 **The test.** Read the sentence left to right, and ask at each phrase whether it can attach to the structure already built. Rewrite the sentence if it forces the reader to:
 

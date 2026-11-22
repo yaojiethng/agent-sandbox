@@ -17,7 +17,7 @@ State back your understanding of the intent, take the correction or the research
 - **Ask the operator for the purpose**, `metadata.intent` and `metadata.mechanism`, with the row's provenance, the operator's own words quoted from the logs, the corpus's neighbouring intents, and the language unit the mechanism reads.
 - **Ask for the domain**: the field the judgement takes reference from, the terms it borrows, and the verdict on the research. Bring the field's primary sources, the candidate terms with their definitions, and what the corpus already borrows.
 - **Ask for the scope and the body**: what the test inspects, the test, and the `**Why.**`. Bring the exemplar, the friction the test must catch, and the cost recorded where it landed.
-  - **Write the `**Why.**` motivation first.** It answers what applying the judgement wins, in the operator's words or the operator's own communications, and a reader who sees the win applies the judgement.
+  - **Write the `**Why.**` from the benefit and the cost of violation.** Take the operator's words for both; the content rule is [`../references/principle-skills.md`](../references/principle-skills.md)'s.
 - **Ask for the placement**: which action intent stands, and which neighbours it declares. Run the scan below and propose.
 - **Ask for the action**: the title, the description, the leitwort, and the go-ahead. Bring the corpus's names, the routing rule, the gate's rule per field, and the diff the action would make.
 

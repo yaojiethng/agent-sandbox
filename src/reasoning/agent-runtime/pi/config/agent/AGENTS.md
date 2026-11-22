@@ -72,7 +72,7 @@ Read the leaf skill in full for any principle you apply. In your reply, name eac
     - [`order-for-incremental-parsing`](./skills/communication-principle-order-for-incremental-parsing/SKILL.md): when writing, order clauses for incremental parsing, so the reader can attach each new phrase to the structure already built
   - **Sentence context**: the order, the length, the distance.
     - [`single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): a detour, or a summary that adds a claim the body never made
-    - [`keep-a-subject-near`](./skills/communication-principle-keep-a-subject-near/SKILL.md): a caveat at the far end, or a second subject in the section
+    - [`keep-context-in-view`](./skills/communication-principle-keep-context-in-view/SKILL.md): a caveat at the far end, or a part that needs what was said earlier
     - [`cut-metadiscourse`](./skills/communication-principle-cut-metadiscourse/SKILL.md): a sentence about the text, not its subject
 - **Shared domain model**: one word for one thing, defined before it is relied on.
   - [`define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): a word the reader has to define for themselves

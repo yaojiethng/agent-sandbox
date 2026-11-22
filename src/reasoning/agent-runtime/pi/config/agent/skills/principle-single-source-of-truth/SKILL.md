@@ -9,6 +9,7 @@ metadata:
     - communication-principle-cut-metadiscourse
     - communication-principle-organize-by-diataxis
     - principle-justify-materialization-cost
+    - communication-principle-keep-context-in-view
 ---
 
 # Single source of truth

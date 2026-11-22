@@ -23,16 +23,18 @@ A pointer does two jobs: state what the material is, and list the **branches** t
 
 ## The two loads
 
-Every document and pointer you add spends one of two budgets. Both bear on the person and the agent, and they differ in what they tax.
+Every document and pointer you add spends on both budgets:
 
-- **Context load** is the retrieval and volume cost: how much material must be found, held and read to reach the answer, and how much arrives whether or not it fires (`principle-guard-the-context-window`). Its failure is **overload** and its benefit is **findability**. Its moves are **progressive disclosure** (the ladder), **co-location** (the within) and a single source of truth (the source).
-- **Cognitive load** is the reasoning cost: the working memory spent integrating what the reader meets. Its failure is **extraneous load**, and its moves are the clarity rules (`communication-principle-write-for-the-reader` among them).
+- **Context load** is the retrieval and volume cost. For the agent: the cost of always-loaded and on-demand material in the agent's context window (`principle-guard-the-context-window`). For the human: the documents to find and choose; attention is a limited resource and the price of human agency, to spend where human judgement matters. When information is scattered, duplicated, or sprawling, it is not findable, and leads to context overload.
+- **Cognitive load** is the working-memory cost of comprehension. For the agent: the reasoning capacity spent integrating what they read. For the human: the working memory spent comprehending (`communication-principle-write-for-the-reader`).
 
-The two are not one budget per party. A person who must find a document pays context load, and so does an agent whose window carries a bloated file. A person who re-reads a clause pays cognitive load, and so does an agent that re-derives a rule scattered across a file.
+Extraneous load is the waste the presentation adds: for the agent, tokens spent on material that does not help; for the human, working memory and attention spent on the form. It crowds out finite reasoning capacity and degrades comprehension without helping solve the task.
 
-The definitions follow Sweller's cognitive-load theory (1988, *Cognitive Science* 12: 257-285; 1998, *Educational Psychology Review* 10: 251-296; 2019, *Educational Psychology Review* 31: 261-292) and the retrieval literature (information overload, Eppler and Mengis; information foraging, Pirolli and Card; findability, Rosenfeld and Morville).
+See: `communication-principle-order-for-incremental-parsing`, `communication-principle-keep-context-in-view`, `principle-single-source-of-truth` and `communication-principle-cut-metadiscourse`
 
-Material reached only through a pointer escapes context load at the price of the pointer's own line; material with no pointer at all stays loaded whether or not it fires.
+Material reached only through a pointer escapes context load at the price of the pointer's own line; material with no pointer at all rides entirely on context load.
+
+The cognitive load follows Sweller's cognitive-load theory (1988, *Cognitive Science* 12: 257-285; 1998, *Educational Psychology Review* 10: 251-296; 2019, *Educational Psychology Review* 31: 261-292); the context load, the retrieval literature (information overload, Eppler and Mengis; information foraging, Pirolli and Card; findability, Rosenfeld and Morville).
 
 ## Information hierarchy
 
@@ -46,7 +48,7 @@ Push too little down and the top bloats; push too much and you hide material the
 
 **Progressive disclosure** is the move down the ladder (out of the main file and behind a pointer) so the top stays legible. Not primarily a token optimisation: it is how the hierarchy is protected. Branching is the cleanest disclosure test: inline what every branch needs, and push behind a pointer what only some branches reach. When a document has steps, in-file reference that should be disclosed buries them and turns attending to them into a coin-flip: a variance lever, not just a legibility one.
 
-**Co-location** (`communication-principle-keep-a-subject-near`) is the within-file companion: where the ladder decides _how far down_ a piece sits, co-location decides _what sits beside it_ once there. Keep a concept's definition, rules, and caveats under one heading rather than scattered, so reading one part brings its neighbours with it. The test: the document should read like documentation written for the agent. Grouped material reads that way; scattered material does not. (Distinct from duplication: that repeats one meaning in two places; scattering fragments one meaning across many.)
+**Colocation** (`communication-principle-keep-context-in-view`) is the within-file companion: where the ladder decides _how far down_ a piece sits, colocation decides _what sits beside it_ once there. Keep a concept's definition, rules, and caveats under one heading rather than scattered, so reading one part brings its neighbours with it. The test: the document should read like documentation written for the agent. Grouped material reads that way; scattered material does not. (Distinct from duplication: that repeats one meaning in two places; scattering fragments one meaning across many.)
 
 **Sprawl** (`communication-principle-cut-metadiscourse`) is the failure mode here: a document simply too long, even when every line is live and unique. Attention thins across the excess, and every extra line is one more to keep relevant. The cure is the ladder: disclose reference behind pointers, and split by branch or sequence so each path carries only what it needs.
 

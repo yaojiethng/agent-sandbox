@@ -25,7 +25,7 @@ The operator dictates a principle and the agent writes the file. The words, the 
 
 ## The body
 
-A sentence-case title, one sentence stating the judgement, a rule part that the first bold lead-in names, `**Why.**`, any named parts, and `**The test.**`, in that order. `**Why.**` leads on consequence and benefit, so it answers what applying the judgement wins rather than why the principle exists. The rule part carries the general rule, whether it is a pattern, a test or a principle, and a boundary part may follow the test. No gate reads the body; the review and the exemplar carry it.
+A sentence-case title, one sentence stating the judgement, a rule part that the first bold lead-in names, `**Why.**`, any named parts, and `**The test.**`, in that order. `**Why.**` answers why the reader, writer, agent or operator should care: the benefit the judgement brings, and the consequence of violating it. It is not why the principle was written this way. The rule part carries the general rule, whether it is a pattern, a test or a principle, and a boundary part may follow the test. No gate reads the body; the review and the exemplar carry it.
 
 The exemplar is `communication-principle-show-dont-describe`. A description names a situation rather than a property of finished text, because a property can be read only once the text exists. A principle claims no moment: it is in force whenever the work is in front of the reader.
 

@@ -9,7 +9,7 @@ metadata:
     - communication-principle-link-what-the-reader-can-open
     - communication-principle-order-for-incremental-parsing
     - communication-principle-single-train-of-thought
-    - communication-principle-keep-a-subject-near
+    - communication-principle-keep-context-in-view
 ---
 
 # Write for the reader
