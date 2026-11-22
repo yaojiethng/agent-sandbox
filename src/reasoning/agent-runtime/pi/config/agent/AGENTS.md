@@ -80,47 +80,47 @@ Goal: Enable "scanning ten lines at a glance". The structure itself should allow
 
 ## Principles
 
-Read the leaf skill in full for any principle you apply. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
+In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session, so read the leaf in full for any principle you apply.
 
 - **Context disclosure**: the reader reaches what the text points at.
   - **Correct disclosure**: the referent named, the target reachable.
-    - [`write-for-the-reader`](./skills/communication-principle-write-for-the-reader/SKILL.md): a label the session invented and the reader cannot place
-    - [`link-what-the-reader-can-open`](./skills/communication-principle-link-what-the-reader-can-open/SKILL.md): a target the reader cannot reach, linked as though they could
-    - [`order-for-incremental-parsing`](./skills/communication-principle-order-for-incremental-parsing/SKILL.md): when writing, order clauses for incremental parsing, so the reader can attach each new phrase to the structure already built
+    - **Write for the reader** (`write-for-the-reader`). A chat label, an option letter, a session id, a narration of the work, or a clause answering text the file no longer holds. State what the reader holds.
+    - **Link what the reader can open** (`link-what-the-reader-can-open`). A pointer names material the reader must reach. Link what that reader can open, and name what they cannot.
+    - **Order for incremental parsing** (`order-for-incremental-parsing`). A sentence with clauses. Order them so each new phrase attaches to the structure already built.
   - **Sentence context**: the order, the length, the distance.
-    - [`single-train-of-thought`](./skills/communication-principle-single-train-of-thought/SKILL.md): a detour, or a summary that adds a claim the body never made
-    - [`keep-context-in-view`](./skills/communication-principle-keep-context-in-view/SKILL.md): a caveat at the far end, or a part that needs what was said earlier
-    - [`cut-metadiscourse`](./skills/communication-principle-cut-metadiscourse/SKILL.md): a sentence about the text, not its subject
+    - **Single train of thought** (`single-train-of-thought`). A parenthesis, a caveat, a detour, or a summary that adds a claim the body never made. Carry one line, and let each sentence advance it.
+    - **Keep context in view** (`keep-context-in-view`). A caveat sits away from its rule, a step looks back at the reader's place, or a part arrives before what it depends on. Put it beside what it needs.
+    - **Cut metadiscourse** (`cut-metadiscourse`). A sentence whose subject is the text rather than what the text is about. Delete it, and cut whole rather than trim.
 - **Shared domain model**: one word for one thing, defined before it is relied on.
-  - [`define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): a word the reader has to define for themselves
-  - [`maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): the weaker term, where one word would carry the distinction
+  - **Define terminology before use** (`define-terminology-before-use`). A word carries two meanings, arrives from another field, or the repository defines it nowhere. Settle the term before the work relies on it.
+  - **Maximize conceptual leverage** (`maximize-conceptual-leverage`). A text needs one word the reader thinks with. Choose the leitwort, define it once, and write around it.
 - **Organization**: the artifact is the one the work needs, in one place.
   - **One owner**: the state lives once.
-    - [`single-source-of-truth`](./skills/principle-single-source-of-truth/SKILL.md): a second copy no reader can choose between
-    - [`propagation-discipline`](./skills/principle-propagation-discipline/SKILL.md): a carrier of the old state left behind, a description as much as a reference
+    - **Single source of truth** (`single-source-of-truth`). Two places seem to carry the same material. State it once; a second restatement is a collision.
+    - **Propagation discipline** (`propagation-discipline`). A change removes or renames something, or lands across more than one file. Every carrier of the old state is part of the task.
   - **One job**: the artifact earns its existence.
-    - [`organize-by-diataxis`](./skills/communication-principle-organize-by-diataxis/SKILL.md): a language unit answering one need while sitting where another is answered
-    - [`remove-the-passthrough`](./skills/principle-remove-the-passthrough/SKILL.md): an artifact only the next hop reads
-    - [`produce-just-in-time`](./skills/principle-produce-just-in-time/SKILL.md): an artifact nothing in the scope claimed
+    - **Organize by diataxis** (`organize-by-diataxis`). You are adding to a document or tidying it. Name the mode each unit serves, file it there, and move what serves another need.
+    - **Remove the passthrough** (`remove-the-passthrough`). A change adds a bridge document, a forwarding function or a staged commit that only the next hop reads. Remove it.
+    - **Produce just in time** (`produce-just-in-time`). You are about to create a file, a record, a section or a result the scope does not ask for. Skip it.
 - **Grounding**: the text carries what the reader can check or act on.
-  - [`provide-evidence`](./skills/communication-principle-provide-evidence/SKILL.md): a sentence asking the reader to interpret what could be handed over
-  - [`name-the-value-not-a-literal`](./skills/communication-principle-name-the-value-not-a-literal/SKILL.md): a literal the reader takes as the chosen one
-  - [`dont-forecast-undone-work`](./skills/communication-principle-dont-forecast-undone-work/SKILL.md): a plan no task holds, or a guess written as fact
-  - [`vacuous`](./skills/principle-vacuous/SKILL.md): a predicate with no check, or a claim that holds whatever the case
+  - **Provide evidence** (`provide-evidence`). A sentence describes what a file, a command or a rule does. Give the template, the command, the example or the output instead.
+  - **Name the value, not a literal** (`name-the-value-not-a-literal`). A snippet or instruction carries a value the reader must set. Name the value; do not fix a literal that reads as the chosen one.
+  - **Don't forecast undone work** (`dont-forecast-undone-work`). A sentence describes work no task holds: a plan for a later milestone, a TODO, a pre-announcement. Write the gap instead.
+  - **Vacuous** (`vacuous`). A statement asserts what no observation could settle. Name the check it carries, or cut it.
 - **Communication**: the text says what its sender means, and a rewrite does not move it.
-  - [`state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): a method fixed by someone further from the work than its doer
-  - [`structure-instructions-imperatively`](./skills/communication-principle-structure-instructions-imperatively/SKILL.md): an instruction written as a state, so the reader cannot tell whether the step is theirs
-  - [`one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): two ordering axes read as one, or item four on a list of letters
-  - [`preserve-original-wording`](./skills/communication-principle-preserve-original-wording/SKILL.md): a requirement moved by a rewrite, or an author's wording edited unasked
+  - **State intent, delegate method** (`state-intent-delegate-method`). You are writing a prompt, a brief or a dispatch, or a draft has grown into a procedure. State the intent, and let the doer pick the method.
+  - **Structure instructions imperatively** (`structure-instructions-imperatively`). A procedure, a step or a runbook. A sentence that tells the reader to act carries its verb in the imperative form.
+  - **One addressing axis** (`one-addressing-axis`). A list carries two ordering axes, or a reader may address one item by number and another by letter. Print one axis, and name each axis when two appear.
+  - **Preserve the original wording** (`preserve-original-wording`). You are editing text a person wrote or approved. Fix a typo, punctuation, broken grammar or broken markup; raise anything else as a disagreement.
 - **Mandate**: the work's bounds: how precise the ask, and what finish counts.
-  - [`match-precision-to-stakes`](./skills/principle-match-precision-to-stakes/SKILL.md): a wrong move nothing reports, or supervision the risk did not need
-  - [`say-what-done-looks-like`](./skills/principle-say-what-done-looks-like/SKILL.md): a finish claimed rather than checked
+  - **Match precision to stakes** (`match-precision-to-stakes`). An instruction could be followed wrongly with nothing reporting it. Set its precision by the assumption it rests on, how far a wrong move reaches, and what reports it.
+  - **Say what done looks like** (`say-what-done-looks-like`). You are starting a task, a step or a segment, or about to report one complete. State where it stops and what shows it is done.
 - **Check placement**: a check sits where its evidence first exists, and a stored copy names what catches its drift.
-  - [`check-placement`](./skills/principle-check-placement/SKILL.md): a check placed where its evidence does not yet exist
-  - [`justify-materialization-cost`](./skills/principle-justify-materialization-cost/SKILL.md): a stored result with nothing catching its drift
+  - **Check placement** (`check-placement`). You are placing, moving or adding a check, a verification step or an audit. Put it where its evidence first exists and its decision is cheapest.
+  - **Justify materialization cost** (`justify-materialization-cost`). A build, a script, a gate or a test could become a file. Name what catches its drift, or do not store it.
 - **Agentic operation**: a rule that exists because the doer is a model in a harness: its window is finite, and its context does not travel with the work.
-  - [`guard-the-context-window`](./skills/principle-guard-the-context-window/SKILL.md): a capacity claim with no reading behind it
-  - [`approval-writes-the-artifact`](./skills/principle-approval-writes-the-artifact/SKILL.md): a decision living only in the conversation
+  - **Guard the context window** (`guard-the-context-window`). You are routing bulk work, planning a multi-file pass, or about to state how much room is left. Measure, route the bulk out, and name the work unit each pass counts.
+  - **Approval writes the artifact** (`approval-writes-the-artifact`). A design, a scope, a plan or a set of items is approved. Write it into the file that owns it in the same unit of work.
 
 ## Read Discipline
 
