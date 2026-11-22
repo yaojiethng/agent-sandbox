@@ -1,12 +1,20 @@
 # Principle Skill Shape
 
-**Current:** 2026-11-17
+**Current:** 2026-11-22
+
+## 2026-11-22 -- The wording is the author's, and an edit fixes only a mistake
+
+**Decision:** [`communication-principle-preserve-original-wording`](../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-preserve-original-wording/SKILL.md) replaces the rule that gave the agent the syntax. An edit fixes a typo, spelling, punctuation, broken grammar or broken markup, and raises every other change as a disagreement, with its evidence, held for the author's review. A section the author asked the agent to draft, and output the author asked to include, become the author's wording.
+
+**Rationale:** The earlier split gave the agent the syntax, so the same rule that reserved the meaning permitted a reflow of the author's prose. A rewrite of wording the agent did not write carries the problems the rewrite introduces, and the author pays for them in a re-read. The narrower rule leaves the author's wording intact and puts every other judgement where the author can rule on it.
+
+**Edge cases / drivers:** A minor mistake is the closed list the rule states; anything outside it is a disagreement, a factual error included. The rewrite of a mechanical defect still stops where the defect sits inside a protected term, which is raised rather than fixed.
 
 ## 2026-11-17 -- The operator dictates a principle, and the agent writes the file
 
 **Decision:** A change is a discussion. The agent brings the evidence a decision needs, the operator asks, judges and decides, and the agent tidies the conversation into the skill, keeping its word choice, semantics and implementation details. [`runbooks/principle-change.md`](../../.agents/skills/instruction-authoring/runbooks/principle-change.md) holds the five decisions the discussion settles: the judgement's purpose, the domain, the scope and the body, the placement, and the action.
 
-**Rationale:** The judgement is the operator's and the writing is the agent's, and `communication-principle-rewrite-syntax-never-semantics` is the rule that separates them: semantics from the dialogue, syntax from the writer. A procedure that assigns the writing to the operator makes the operator type what the agent can reflow, and a procedure that assigns the judgement to the agent produces a proposal the operator pays to read, correct and read again.
+**Rationale:** The judgement is the operator's and the writing is the agent's, and `communication-principle-preserve-original-wording` is the rule that separates them: semantics from the dialogue, syntax from the writer. A procedure that assigns the writing to the operator makes the operator type what the agent can reflow, and a procedure that assigns the judgement to the agent produces a proposal the operator pays to read, correct and read again.
 
 **Rejected alternatives:**
 

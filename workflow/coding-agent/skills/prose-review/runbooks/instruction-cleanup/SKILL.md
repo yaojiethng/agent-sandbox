@@ -36,4 +36,4 @@ A ruling on a section of an `AGENTS.md` layer is one of five: **keep** (the sect
 
 **The open list.** What the review could not settle, or settled on thin evidence, as work rather than as an opinion. A refinement names the condition that would settle it; a wish to improve does not.
 
-What the cleaned surface reads like is judged by `writing-for-agents`, `write-for-the-reader` and `rewrite-syntax-never-semantics`.
+What the cleaned surface reads like is judged by `writing-for-agents`, `write-for-the-reader` and `preserve-original-wording`.

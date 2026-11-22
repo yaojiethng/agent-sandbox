@@ -112,7 +112,7 @@ Read the leaf skill in full for any principle you apply. In your reply, name eac
   - [`state-intent-delegate-method`](./skills/communication-principle-state-intent-delegate-method/SKILL.md): a method fixed by someone further from the work than its doer
   - [`structure-instructions-imperatively`](./skills/communication-principle-structure-instructions-imperatively/SKILL.md): an instruction written as a state, so the reader cannot tell whether the step is theirs
   - [`one-addressing-axis`](./skills/communication-principle-one-addressing-axis/SKILL.md): two ordering axes read as one, or item four on a list of letters
-  - [`rewrite-syntax-never-semantics`](./skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md): a requirement moved by a rewrite, or an author's wording edited unasked
+  - [`preserve-original-wording`](./skills/communication-principle-preserve-original-wording/SKILL.md): a requirement moved by a rewrite, or an author's wording edited unasked
 - **Mandate**: the work's bounds: how precise the ask, and what finish counts.
   - [`match-precision-to-stakes`](./skills/principle-match-precision-to-stakes/SKILL.md): a wrong move nothing reports, or supervision the risk did not need
   - [`say-what-done-looks-like`](./skills/principle-say-what-done-looks-like/SKILL.md): a finish claimed rather than checked

@@ -1,6 +1,6 @@
 # Change a principle
 
-Write the judgement only once the discussion has settled it. A principle written ahead of its discussion is rewritten within the week, and the rewrite costs the reading that the discussion would have saved. So run the change as a discussion, a butler pass and a write: the operator dictates the judgement, and the agent writes the file under [`communication-principle-rewrite-syntax-never-semantics`](../../../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-rewrite-syntax-never-semantics/SKILL.md).
+Write the judgement only once the discussion has settled it. A principle written ahead of its discussion is rewritten within the week, and the rewrite costs the reading that the discussion would have saved. So run the change as a discussion, a butler pass and a write: the operator dictates the judgement, and the agent writes the file under [`communication-principle-preserve-original-wording`](../../../../src/reasoning/agent-runtime/pi/config/agent/skills/communication-principle-preserve-original-wording/SKILL.md).
 
 - **Call it** from `/iter` when a row changes a principle, or from the operator at any time. A change arriving from elsewhere names this file to the operator.
 - **Read the corpus** with `node scripts/principle_inventory.mjs`, and **read what a skill carries** in [`../references/principle-skills.md`](../references/principle-skills.md).
