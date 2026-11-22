@@ -24,7 +24,7 @@ Use this skill to choose a leitwort: a dense term that invokes a compact concept
 
 **Why.** A reader holds a concept, not a sentence. The leitwort invokes the concept each time it appears, so the text spends one token where a phrase would spend a dozen, and the reader reaches for the same meaning every time.
 
-**Choosing it.** Draw the leitwort from the domain the text works in, and prefer a word the reader already holds. A coined word recruits no prior; it costs the definition and returns nothing.
+**Choosing it.** Draw the leitwort from the domain the text works in, and prefer a word the reader already holds. A coined word recruits no prior; it costs the definition and returns nothing. **Take one word.** Use a phrase only where no word carries the distinction.
 
 **Placing it.** Define the leitwort clearly in the body, anchor the body around it, and repeat it in the description. Record it as `metadata: leitwort:` in the frontmatter. It anchors twice: in the body, where the agent reaches for the same behaviour each time the word appears, and in the description, where the word triggers the skill.
 
@@ -34,7 +34,7 @@ Set it only where the body already teaches the word, because a candidate the bod
 
 **What it does not cover.** Whether a sentence stays at all: [`communication-principle-cut-metadiscourse`](../communication-principle-cut-metadiscourse/SKILL.md). Which claim to make: the principle of the domain in hand.
 
-**The test.** Read the text. Is there one word the reader will carry away? Does each sentence use it, or add to its definition? A text with two words for one concept, or a concept spelled out in phrases, has not anchored.
+**The test.** Read the text. Is there one word the reader will carry away? Does each sentence use it, or add to its definition? A text with two words for one concept, or a concept spelled out in phrases where a single word would carry it, has not anchored.
 
 New and changed prose in this corpus meets ASD-STE100, and this skill states the rules that meet it. A phrase dictionary is a source for wording, and these rules live here.
 

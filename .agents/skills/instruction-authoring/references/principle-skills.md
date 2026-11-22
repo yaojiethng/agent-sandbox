@@ -15,7 +15,7 @@ The corpus is the `principle-` skills under the repo-owned provider root, `src/r
 | `metadata.neighbours` | the principles whose judgements this one touches, by full skill name | required |
 | `metadata.intent` | the judgement the skill serves, as the operator stated it | required |
 | `metadata.mechanism` | how the judgement exerts influence, as the operator stated it | required |
-| `metadata.leitwort` | the one word the reader thinks with, when one earns it | validated when present |
+| `metadata.leitwort` | the word the reader thinks with, when one earns it: a single word, or a phrase where no word carries the distinction | validated when present |
 
 A principle never sets `disable-model-invocation`, because a writer reaches for a judgement mid-draft.
 

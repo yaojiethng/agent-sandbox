@@ -255,6 +255,23 @@ metadata:
   assert_contains "$out" "0 finding(s)" "the clean run reports no finding"
 }
 
+test_a_phrase_valued_leitwort_is_clean() {
+  local d out
+  d="$(get_fixture_dir)"
+  build_root "$d"
+  write_skill "$d" principle-a \
+    'name: principle-a
+description: "a principle"
+metadata:
+  neighbours: []
+  leitwort: incremental parsing
+  intent: keep the reader on the structure already built
+  mechanism: order clauses for incremental parsing'
+  out="$(run_gate "$d" 2>&1)"
+  assert_eq "$?" "0" "a phrase-valued leitwort passes"
+  assert_contains "$out" "0 finding(s)" "the clean run reports no finding"
+}
+
 test_disable_model_invocation_fails() {
   local d out
   d="$(get_fixture_dir)"
@@ -293,6 +310,7 @@ run_test test_a_principle_with_the_required_fields_is_clean
 run_test test_a_missing_intent_fails
 run_test test_a_missing_mechanism_fails
 run_test test_a_principle_with_the_conditional_fields_is_clean
+run_test test_a_phrase_valued_leitwort_is_clean
 run_test test_disable_model_invocation_fails
 run_test test_an_unknown_argument_refuses
 
