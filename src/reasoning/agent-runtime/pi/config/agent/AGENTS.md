@@ -93,7 +93,6 @@ Read the leaf skill in full for any principle you apply. In your reply, name eac
     - [`cut-metadiscourse`](./skills/communication-principle-cut-metadiscourse/SKILL.md): a sentence about the text, not its subject
 - **Shared domain model**: one word for one thing, defined before it is relied on.
   - [`define-terminology-before-use`](./skills/communication-principle-define-terminology-before-use/SKILL.md): a word the reader has to define for themselves
-  - [`align-the-mental-model`](./skills/communication-principle-align-the-mental-model/SKILL.md): one thing under two names, or one word for two things
   - [`maximize-conceptual-leverage`](./skills/communication-principle-maximize-conceptual-leverage/SKILL.md): the weaker term, where one word would carry the distinction
 - **Organization**: the artifact is the one the work needs, in one place.
   - **One owner**: the state lives once.

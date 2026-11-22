@@ -6,7 +6,7 @@ metadata:
   mechanism: "The best leading words are terms already prominent within a domain's problem language; prefer terms already common in the corpus."
   leitwort: leitwort
   neighbours:
-    - communication-principle-align-the-mental-model
+    - communication-principle-define-terminology-before-use
 ---
 
 # Maximize conceptual leverage
@@ -22,6 +22,7 @@ Use this skill to choose a leitwort: a dense term that invokes a compact concept
 | a synonym that renames the concept | the leitwort, one word for one thing |
 | a metaphor standing in for the mechanism | the mechanism, or the leitwort that names it |
 | a hedge, an ornate verb, a condition struck for smoothness | the claim with the distinction it needs |
+| a metaphor for a thing that already has a name ("rides along", "a dial worth turning") | that name |
 
 **Why.** A reader holds a concept, not a sentence. The leitwort invokes the concept each time it appears, so the text spends one token where a phrase would spend a dozen, and the reader reaches for the same meaning every time.
 
