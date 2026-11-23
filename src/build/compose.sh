@@ -36,6 +36,7 @@
 #
 #   compose_sandbox_wait  Polls until sandbox container reports healthy.
 
+source "$(dirname "${BASH_SOURCE[0]}")/../libs/common.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/../libs/dry_run_record.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 
@@ -127,12 +128,53 @@ compose_generate() {
   # operator's and not the harness's to write.
   local autosave_interval="${AUTOSAVE_INTERVAL:-60}"
 
-  # Apply {{VAR}} substitutions to each input file into a temp staging dir,
-  # then run docker compose config --no-interpolate to merge them. The staging
-  # dir is cleaned explicitly on every return path (no RETURN trap: under bats'
-  # functrace a RETURN trap fires across command-substitution boundaries, so the
-  # dir could be deleted mid-function). Paths before staging creation need no
-  # cleanup.
+  # One table of every value the templates carry: `q` marks a placeholder the
+  # template writes inside single quotes, `p` an unquoted one. Every value is
+  # escaped once here, so a host path carrying an ampersand, a backslash or
+  # the sed delimiter reaches the template intact, and a quoted value cannot
+  # end the scalar early.
+  local -a values=(
+    "q|PROJECT_NAME|${project_name}"
+    "q|PROJECT_DIR|${PROJECT_DIR:-}"
+    "q|REPO_ROOT|${REPO_ROOT:-}"
+    "q|SANDBOX_IMAGE_NAME|${sandbox_image}"
+    "q|AGENT_IMAGE_NAME|${agent_image}"
+    "q|PROVIDER_NAME|${provider_name}"
+    "q|SANDBOX_CONTAINER_NAME|${SANDBOX_CONTAINER_NAME:-}"
+    "q|AGENT_CONTAINER_NAME|${AGENT_CONTAINER_NAME:-}"
+    "q|SESSION_TS|${SESSION_TS:-}"
+    "q|SESSION_ID|${SESSION_ID:-}"
+    "q|HOST_HEAD_SHA|${HOST_HEAD_SHA:-}"
+    "q|AGENT_IMAGE_DIGEST|${agent_image_digest:-}"
+    "q|SANDBOX_IMAGE_DIGEST|${sandbox_image_digest:-}"
+    "p|INTERFACE_CONTRACT_VERSION|$(interface_contract_version)"
+    "q|SANITIZED_HOST_BRANCH|${SANITIZED_HOST_BRANCH:-}"
+    "p|FLATTEN|${FLATTEN:-false}"
+    "q|DRY_RUN_CAPABILITY_SCRIPT|${DRY_RUN_CAPABILITY_SCRIPT:-}"
+    "q|DRY_RUN_SCRIPT|${DRY_RUN_SCRIPT:-}"
+    "p|HOST_UID|${HOST_UID:-1000}"
+    "p|HOST_GID|${HOST_GID:-1000}"
+    "p|AUTOSAVE_INTERVAL|${autosave_interval}"
+    "p|RESET_VOLUME|${RESET_VOLUME:-}"
+    "q|SANDBOX_DIR|${SANDBOX_DIR:-}"
+    "q|WORKTREE_DIR|${WORKTREE_DIR:-}"
+    "q|CHANGES_DIR|${CHANGES_DIR:-}"
+    "q|INPUT_DIR|${INPUT_DIR:-}"
+    "q|OUTPUT_DIR|${OUTPUT_DIR:-}"
+  )
+  local -a sed_args=()
+  local row kind value name
+  for row in "${values[@]}"; do
+    IFS='|' read -r kind name value <<< "$row"
+    [[ "$kind" == "q" ]] && value="$(yaml_quote "$value")"
+    sed_args+=(-e "s|{{${name}}}|$(sed_replacement "$value")|g")
+  done
+
+  # Apply the table to each input file, then run docker compose config
+  # --no-interpolate to merge them. The staging dir is cleaned explicitly on
+  # every return path (no RETURN trap: under bats' functrace a RETURN trap fires
+  # across command-substitution boundaries, so the dir could be deleted
+  # mid-function). Paths before staging creation need no cleanup.
   local staging_dir
   staging_dir="$(mktemp -d)"
 
@@ -146,35 +188,7 @@ compose_generate() {
     fi
     local dst
     dst="$staging_dir/$(printf '%02d' "$i")-$(basename "$src")"
-    sed \
-      -e "s|{{PROJECT_NAME}}|${project_name}|g" \
-      -e "s|{{PROJECT_DIR}}|${PROJECT_DIR:-}|g" \
-      -e "s|{{REPO_ROOT}}|${REPO_ROOT:-}|g" \
-      -e "s|{{SANDBOX_IMAGE_NAME}}|${sandbox_image}|g" \
-      -e "s|{{AGENT_IMAGE_NAME}}|${agent_image}|g" \
-      -e "s|{{PROVIDER_NAME}}|${provider_name}|g" \
-      -e "s|{{SANDBOX_CONTAINER_NAME}}|${SANDBOX_CONTAINER_NAME:-}|g" \
-      -e "s|{{AGENT_CONTAINER_NAME}}|${AGENT_CONTAINER_NAME:-}|g" \
-      -e "s|{{SESSION_TS}}|${SESSION_TS:-}|g" \
-      -e "s|{{SESSION_ID}}|${SESSION_ID:-}|g" \
-      -e "s|{{HOST_HEAD_SHA}}|${HOST_HEAD_SHA:-}|g" \
-      -e "s|{{AGENT_IMAGE_DIGEST}}|${agent_image_digest:-}|g" \
-      -e "s|{{SANDBOX_IMAGE_DIGEST}}|${sandbox_image_digest:-}|g" \
-      -e "s|{{INTERFACE_CONTRACT_VERSION}}|$(interface_contract_version)|g" \
-      -e "s|{{SANITIZED_HOST_BRANCH}}|${SANITIZED_HOST_BRANCH:-}|g" \
-      -e "s|{{FLATTEN}}|${FLATTEN:-false}|g" \
-      -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
-      -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
-      -e "s|{{HOST_UID}}|${HOST_UID:-1000}|g" \
-      -e "s|{{HOST_GID}}|${HOST_GID:-1000}|g" \
-      -e "s|{{AUTOSAVE_INTERVAL}}|${autosave_interval}|g" \
-      -e "s|{{RESET_VOLUME}}|${RESET_VOLUME:-}|g" \
-      -e "s|{{SANDBOX_DIR}}|${SANDBOX_DIR:-}|g" \
-      -e "s|{{WORKTREE_DIR}}|${WORKTREE_DIR:-}|g" \
-      -e "s|{{CHANGES_DIR}}|${CHANGES_DIR:-}|g" \
-      -e "s|{{INPUT_DIR}}|${INPUT_DIR:-}|g" \
-      -e "s|{{OUTPUT_DIR}}|${OUTPUT_DIR:-}|g" \
-      "$src" > "$dst"
+    sed "${sed_args[@]}" "$src" > "$dst"
     # An unknown placeholder is a generator defect, not a runtime value: it
     # would reach docker compose as a literal and fail there, far from the cause.
     local unresolved

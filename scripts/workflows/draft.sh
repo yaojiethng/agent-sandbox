@@ -615,7 +615,7 @@ main() {
     --force \
     --permissive \
     --interactive \
-    -- "$@" 
+    -- "$@"
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

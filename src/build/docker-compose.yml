@@ -32,28 +32,28 @@
 networks:
   default:
     labels:
-      agent-sandbox.project-name: {{PROJECT_NAME}}
-      agent-sandbox.sandbox-dir: {{SANDBOX_DIR}}
-      agent-sandbox.session-id: {{SESSION_ID}}
+      agent-sandbox.project-name: '{{PROJECT_NAME}}'
+      agent-sandbox.sandbox-dir: '{{SANDBOX_DIR}}'
+      agent-sandbox.session-id: '{{SESSION_ID}}'
 
 # Session labels  --  applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels
-  agent-sandbox.project-name: {{PROJECT_NAME}}
-  agent-sandbox.sandbox-dir: {{SANDBOX_DIR}}
-  agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
-  agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
-  agent-sandbox.session-ts: {{SESSION_TS}}
-  agent-sandbox.session-id: {{SESSION_ID}}
+  agent-sandbox.project-name: '{{PROJECT_NAME}}'
+  agent-sandbox.sandbox-dir: '{{SANDBOX_DIR}}'
+  agent-sandbox.host-head-sha: '{{HOST_HEAD_SHA}}'
+  agent-sandbox.host-branch: '{{SANITIZED_HOST_BRANCH}}'
+  agent-sandbox.session-ts: '{{SESSION_TS}}'
+  agent-sandbox.session-id: '{{SESSION_ID}}'
   # Content identity of the images actually built for this session (image ID
   # digest, stamped by compose_generate at start/resume via docker inspect;
   # post-build, so exact for the session). Registry-free -- `make resume --list`
   # reads these from the record with no docker dependency. ADR harness_versioning.md.
-  agent-sandbox.agent-image-digest: {{AGENT_IMAGE_DIGEST}}
-  agent-sandbox.sandbox-image-digest: {{SANDBOX_IMAGE_DIGEST}}
+  agent-sandbox.agent-image-digest: '{{AGENT_IMAGE_DIGEST}}'
+  agent-sandbox.sandbox-image-digest: '{{SANDBOX_IMAGE_DIGEST}}'
   # Interface-contract version of the co-resident copies (ADR
   # interface_contract_compatibility.md): stamped from the host-side constant
   # at session write; host-readable without starting a container.
-  agent-sandbox.interface-contract-version: {{INTERFACE_CONTRACT_VERSION}}
+  agent-sandbox.interface-contract-version: '{{INTERFACE_CONTRACT_VERSION}}'
 
 # Workspace path documentation  --  single source of truth for all path mappings.
 # Host paths (left) are written by compose_generate, never interpolated.
@@ -74,20 +74,20 @@ x-workspace:
 
 services:
   sandbox:
-    image: {{SANDBOX_IMAGE_NAME}}
+    image: '{{SANDBOX_IMAGE_NAME}}'
     container_name: {{SANDBOX_CONTAINER_NAME}}
     labels: *session_labels
     user: "{{HOST_UID}}:{{HOST_GID}}"
     volumes:
       - type: bind
-        source: {{CHANGES_DIR}}
+        source: '{{CHANGES_DIR}}'
         target: /home/agentuser/workspace/session-diffs
       - type: bind
-        source: {{INPUT_DIR}}
+        source: '{{INPUT_DIR}}'
         target: /home/agentuser/workspace/input
         read_only: true
       - type: bind
-        source: {{OUTPUT_DIR}}
+        source: '{{OUTPUT_DIR}}'
         target: /home/agentuser/workspace/output
     environment:
       - CHANGES_DIR=/home/agentuser/workspace/session-diffs
@@ -109,7 +109,7 @@ services:
     restart: "no"
 
   agent:
-    image: {{AGENT_IMAGE_NAME}}
+    image: '{{AGENT_IMAGE_NAME}}'
     container_name: {{AGENT_CONTAINER_NAME}}
     labels: *session_labels
     user: "{{HOST_UID}}:{{HOST_GID}}"
@@ -124,11 +124,11 @@ services:
       - sandbox
     volumes:
       - type: bind
-        source: {{INPUT_DIR}}
+        source: '{{INPUT_DIR}}'
         target: /home/agentuser/workspace/input
         read_only: true
       - type: bind
-        source: {{OUTPUT_DIR}}
+        source: '{{OUTPUT_DIR}}'
         target: /home/agentuser/workspace/output
     environment:
       - INPUT_DIR=/home/agentuser/workspace/input

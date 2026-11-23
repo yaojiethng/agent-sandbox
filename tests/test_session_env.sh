@@ -487,4 +487,31 @@ run_test test_names_requires_all_four_args
 run_test test_names_worktree_var_defaults_and_overrides
 run_test test_names_worktree_reads_the_record
 
+# Phase 2 entered alone opens the record it reads: a caller that never ran phase 1
+# still gets the recorded worktree rather than the silent default.
+test_phase_two_alone_reads_the_record() {
+  local sbx="$FIXTURE_DIR/sbx_phase2" out rc=0
+  mkdir -p "$sbx"
+  printf 'PROJECT_NAME=p\nPROJECT_DIR=/p\nSANDBOX_DIR=%s\nWORKTREE_DIR=/recorded/wt\n' "$sbx" > "$sbx/.env"
+  out=$(set -e
+    unset WORKTREE_DIR ENV_FILE
+    session_env_names p pi "$sbx" s1
+    printf '%s' "$WORKTREE_DIR") || rc=$?
+  assert_rc 0 "$rc" 'phase 2 runs without phase 1'
+  assert_eq "/recorded/wt" "$out" 'and reads the record it opened'
+}
+
+# The view is associative from source time, so a read before any open returns
+# empty instead of element 0 or an arithmetic error.
+test_record_get_without_an_open_returns_empty() {
+  local out rc=0
+  out=$(set -euo pipefail
+    source "$REPO_ROOT/src/libs/env.sh"
+    record_get ENV_RECORD ANY_KEY) || rc=$?
+  assert_rc 0 "$rc" 'an unopened view is readable'
+  assert_empty "$out" 'and answers empty rather than element 0'
+}
+
+run_test test_phase_two_alone_reads_the_record
+run_test test_record_get_without_an_open_returns_empty
 test_done test_session_env.sh

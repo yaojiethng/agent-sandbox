@@ -345,8 +345,8 @@ test_record_bakes_image_digests() {
     fail "compose_generate (digests) did not produce output file"
     return
   fi
-  if grep -q 'agent-sandbox.agent-image-digest: sha256:agentdigest' "$out" \
-     && grep -q 'agent-sandbox.sandbox-image-digest: sha256:sandboxdigest' "$out"; then
+  if grep -q "agent-sandbox.agent-image-digest: 'sha256:agentdigest'" "$out" \
+     && grep -q "agent-sandbox.sandbox-image-digest: 'sha256:sandboxdigest'" "$out"; then
     pass "compose_generate stamps both image digest labels into the record"
   else
     fail "compose_generate did not stamp image digest labels, got:"
@@ -628,6 +628,29 @@ test_compose_file_from_args_empty_without_f() {
   fi
 }
 
+
+# A path with the characters a plain YAML scalar and a sed replacement both
+# treat specially reaches the record intact: the label keeps its space and its
+# `#`, and the sed replacement is not read as a backreference.
+test_paths_with_yaml_and_sed_metacharacters_roundtrip() {
+  local FIXTURE_DIR="$FIXTURE_DIR/metachars"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+  SANDBOX_DIR="$FIXTURE_DIR/sand box #2 & co"
+  mkdir -p "$SANDBOX_DIR"
+
+  local out="$FIXTURE_DIR/compose-output.yml"
+  run_compose_generate "$out"
+
+  if [[ ! -f "$out" ]]; then
+    fail "compose_generate (metacharacters) produced no output"
+    return
+  fi
+  local label
+  label="$(record_label "$out" sandbox-dir)"
+  assert_eq "$SANDBOX_DIR" "$label" 'the sandbox-dir label round-trips a space, a hash and an ampersand'
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -640,6 +663,7 @@ run_test test_copy_overlay_carries_volume_no_snapshot_mount
 run_test test_mount_overlay_carries_worktree_not_copy_wiring
 run_test test_compose_generate_stamps_flatten_literal
 run_test test_mount_output_has_no_snapshot_dir
+
 run_test test_record_bakes_image_digests
 run_test test_compose_generate_preserves_runtime_var
 run_test test_compose_generate_rejects_an_unknown_placeholder
@@ -654,3 +678,4 @@ run_test test_compose_file_from_args_returns_last_f
 run_test test_compose_file_from_args_handles_trailing_bare_f
 run_test test_compose_file_from_args_empty_without_f
 test_done test_trace_compose_gen
+run_test test_paths_with_yaml_and_sed_metacharacters_roundtrip

@@ -1017,7 +1017,7 @@ test_resume_regenerated_record_keeps_session_ts() {
   resume_trace "$dir" "$trace" ".env" || true
 
   local rec="$dir/sandbox/.compose/abc123.yml"
-  if grep -q 'agent-sandbox.session-ts: 20260821-120000' "$rec"; then
+  if grep -q "agent-sandbox.session-ts: '20260821-120000'" "$rec"; then
     pass "resume regenerated record keeps the session-ts label"
   else
     fail "session-ts label lost in the regenerated record"

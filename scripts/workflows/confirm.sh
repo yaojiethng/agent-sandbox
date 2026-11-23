@@ -166,7 +166,7 @@ main() {
     --sandbox=SANDBOX_DIR \
     --target=TARGET_BRANCH \
     --new \
-    -- "$@" 
+    -- "$@"
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

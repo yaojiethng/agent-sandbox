@@ -276,7 +276,7 @@ test_resume_reuses_record_session_id() {
   invoke_resume || rc=$?
 
   local out="$SANDBOX_DIR/.compose/abc123.yml"
-  if [[ "$rc" == 0 ]] && [[ -f "$out" ]] && grep -q "agent-sandbox.session-id: abc123" "$out"; then
+  if [[ "$rc" == 0 ]] && [[ -f "$out" ]] && grep -q "agent-sandbox.session-id: 'abc123'" "$out"; then
     pass "resume regenerated compose keeps record SESSION_ID (abc123) -> same volume namespace"
   else
     fail "resume did not preserve record SESSION_ID in regenerated compose (rc=$rc)"

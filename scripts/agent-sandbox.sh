@@ -78,20 +78,44 @@ PASSTHROUGH=()
 # catalog_rows  --  one row per line, for a `while IFS='|' read` loop.
 catalog_rows() { printf '%s\n' "${CLI_CATALOG[@]}"; }
 
+# catalog_row SUB  --  the row that declares SUB, or nothing and status 1. The
+# one lookup: the help route and the dispatch both call it.
+catalog_row() {
+  local row
+  for row in "${CLI_CATALOG[@]}"; do
+    if [[ "${row%%|*}" == "$1" ]]; then
+      printf '%s\n' "$row"
+      return 0
+    fi
+  done
+  return 1
+}
+
 # subcommand_names SEP  --  the declared names, in catalog order, joined by SEP.
 subcommand_names() {
-  local sep="$1" name leaf rest out=""
-  while IFS='|' read -r name leaf rest; do
+  local sep="$1" row out=""
+  for row in "${CLI_CATALOG[@]}"; do
     [[ -z "$out" ]] || out+="$sep"
-    out+="$name"
-  done < <(catalog_rows)
+    out+="${row%%|*}"
+  done
   printf '%s\n' "$out"
+}
+
+# json_array WORDS  --  a JSON array of the space-separated WORDS. Both list
+# columns render through it, so a column has one shape in the output.
+json_array() {
+  local out="" word
+  for word in $1; do
+    [[ -z "$out" ]] || out+=", "
+    out+="$(json_string "$word")"
+  done
+  printf '[%s]' "$out"
 }
 
 # print_json  --  the catalog as JSON, for a programmatic reader (R8). Nothing
 # is materialized: this printing is the rendering, so there is no file to drift.
 print_json() {
-  local name leaf ident largs resolve summary first=1 field sep
+  local name leaf ident largs resolve summary first=1
   printf '{\n  "schema": 1,\n  "subcommands": [\n'
   while IFS='|' read -r name leaf ident largs resolve summary; do
     [[ $first -eq 1 ]] || printf ',\n'
@@ -99,18 +123,8 @@ print_json() {
     printf '    {\n'
     printf '      "name": %s,\n' "$(json_string "$name")"
     printf '      "leaf": %s,\n' "$(json_string "$leaf")"
-    printf '      "identity": ['
-    sep=""
-    for field in $ident; do
-      printf '%s%s' "$sep" "$(json_string "$field")"
-      sep=", "
-    done
-    printf '],\n'
-    if [[ -n "$largs" ]]; then
-      printf '      "args": [%s],\n' "$(json_string "$largs")"
-    else
-      printf '      "args": [],\n'
-    fi
+    printf '      "identity": %s,\n' "$(json_array "$ident")"
+    printf '      "args": %s,\n' "$(json_array "$largs")"
     printf '      "summary": %s\n' "$(json_string "$summary")"
     printf '    }'
   done < <(catalog_rows)
@@ -145,7 +159,7 @@ print_subcommand_list() {
 # the child's own help (or the index, or the JSON rendering). Exec's so the
 # child prints its own usage  --  the dispatcher only locates it.
 route_help() {
-  local sub="${1:-help}" name leaf rest target=""
+  local sub="${1:-help}" row name leaf rest
   if [[ "$sub" == "--json" ]]; then
     print_json
     exit 0
@@ -159,14 +173,9 @@ route_help() {
     echo "Run 'agent-sandbox help --json' for the same set as JSON."
     exit 0
   fi
-  while IFS='|' read -r name leaf rest; do
-    if [[ "$name" == "$sub" ]]; then
-      target="$leaf"
-      break
-    fi
-  done < <(catalog_rows)
-  if [[ -n "$target" ]]; then
-    exec bash "$AGENT_SANDBOX_REPO/$target" --help
+  if row="$(catalog_row "$sub")"; then
+    IFS='|' read -r name leaf rest <<< "$row"
+    exec bash "$AGENT_SANDBOX_REPO/$leaf" --help
   fi
   echo "Unknown subcommand: $sub" >&2
   exit 1
@@ -176,31 +185,26 @@ route_help() {
 # forward the fields and the leading argument it declares, and hand over the
 # passthrough args. exec keeps the leaf's exit status the caller's own.
 dispatch() {
-  local sub="$1" name leaf ident largs resolve summary
-  local field target="" resolve_mode=""
+  local sub="$1" row name leaf ident largs resolve summary field
   local -a forwarded=() modes=() lead=()
-  while IFS='|' read -r name leaf ident largs resolve summary; do
-    [[ "$name" == "$sub" ]] || continue
-    target="$leaf"
-    resolve_mode="$resolve"
-    for field in $ident; do
-      case "$field" in
-        name)    modes+=("name") ;;
-        project) modes+=("dir") ;;
-        sandbox) modes+=("sandbox") ;;
-      esac
-    done
-    [[ -z "$largs" ]] || lead=("$largs")
-    break
-  done < <(catalog_rows)
-
-  if [[ -z "$target" ]]; then
+  if ! row="$(catalog_row "$sub")"; then
     echo "Unknown subcommand: $sub"
     print_subcommand_list
     exit 1
   fi
+  IFS='|' read -r name leaf ident largs resolve summary <<< "$row"
+  # The resolver mode a declared field implies; a new field is an arm here, not
+  # a second list beside it.
+  for field in $ident; do
+    case "$field" in
+      name)    modes+=("name") ;;
+      project) modes+=("dir") ;;
+      sandbox) modes+=("sandbox") ;;
+    esac
+  done
+  [[ -z "$largs" ]] || lead=("$largs")
 
-  if [[ "$resolve_mode" == "base" ]]; then
+  if [[ "$resolve" == "base" ]]; then
     require_base_args
   else
     resolve_identity "${modes[@]}"
@@ -216,7 +220,7 @@ dispatch() {
       env)     forwarded+=("--env=$ENV_REL") ;;
     esac
   done
-  exec bash "$AGENT_SANDBOX_REPO/$target" "${lead[@]}" "${forwarded[@]}" "${PASSTHROUGH[@]}"
+  exec bash "$AGENT_SANDBOX_REPO/$leaf" "${lead[@]}" "${forwarded[@]}" "${PASSTHROUGH[@]}"
 }
 
 # =============================================================================
@@ -257,9 +261,12 @@ main() {
   done
 
   # `help` is its own subcommand and has no catalog row: its page is the index.
-  if [[ "$SUBCOMMAND" == "help" ]]; then
-    route_help "${1:-help}"
-  fi
+  # A help request is a subcommand in its own right (R10, R11): bare `--help`
+  # and `-h` reach the index rather than the unknown-subcommand path.
+  case "$SUBCOMMAND" in
+    help)  route_help "${1:-help}" ;;
+    --help|-h) route_help help ;;
+  esac
 
   dispatch "$SUBCOMMAND"
 }

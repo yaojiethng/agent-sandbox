@@ -37,8 +37,9 @@ sites() {
 # When:  the census runs
 # Then:  the call set matches the pinned census exactly, per file
 # Asserts: the call census is a fact about the tree. A new call fails this gate
-#          until the census is deliberately amended. src/libs/env.sh is not in
-#          the pin: the parser is defined there and called nowhere in it.
+#          until the census is deliberately amended. The pin names src/libs/env.sh's
+#          own internal calls: the parser and the view open the record for each
+#          other, and no outside site is allowed to.
 test_env_resolution_call_census() {
   local expected actual
   expected=$(

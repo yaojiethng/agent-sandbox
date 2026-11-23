@@ -80,6 +80,14 @@ env_parse() {
   done < "$FILE"
 }
 
+# The process view is an associative array from source time. `record_get` reads it
+# by indirect expansion, and bash resolves a subscript arithmetically unless the
+# array is already associative: an indexed array answers element 0 for every key,
+# and an undeclared one dies under `set -u` naming the key. Declaring it here means
+# the primitive is always reading the shape it documents.
+# shellcheck disable=SC2034  # the view is read by name through record_get
+declare -gA ENV_RECORD=()
+
 # record_open FILE ARRAY
 #   Parses FILE once and fills ARRAY (an associative array the caller declared)
 #   with one entry per key. An empty or missing FILE leaves the array empty, so

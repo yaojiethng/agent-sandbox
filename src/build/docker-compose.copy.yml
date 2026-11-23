@@ -16,7 +16,7 @@
 # project-name prefix parsing.
 
 volumes:
-  {{SESSION_ID}}-sandbox-data:
+  '{{SESSION_ID}}-sandbox-data':
     labels:
       agent-sandbox.project-name: {{PROJECT_NAME}}
       agent-sandbox.sandbox-dir: {{SANDBOX_DIR}}
@@ -29,7 +29,7 @@ services:
   sandbox:
     volumes:
       - type: volume
-        source: {{SESSION_ID}}-sandbox-data
+        source: '{{SESSION_ID}}-sandbox-data'
         target: /home/agentuser/sandbox
     environment:
       - SANDBOX_TYPE=copy
@@ -42,24 +42,24 @@ services:
   # seeder always executes current source, independent of image freshness.
   # User matches the sandbox service (UID parity: no root-owned volume content).
   seeder:
-    image: {{SANDBOX_IMAGE_NAME}}
+    image: '{{SANDBOX_IMAGE_NAME}}'
     user: "{{HOST_UID}}:{{HOST_GID}}"
     entrypoint: ["bash", "/opt/harness-bin/seed_volume.sh"]
     volumes:
       - type: bind
-        source: {{PROJECT_DIR}}
+        source: '{{PROJECT_DIR}}'
         target: /src
         read_only: true
       - type: bind
-        source: {{REPO_ROOT}}/src/capability
+        source: '{{REPO_ROOT}}/src/capability'
         target: /opt/harness-bin
         read_only: true
       - type: bind
-        source: {{REPO_ROOT}}/src/libs
+        source: '{{REPO_ROOT}}/src/libs'
         target: /opt/harness-libs
         read_only: true
       - type: volume
-        source: {{SESSION_ID}}-sandbox-data
+        source: '{{SESSION_ID}}-sandbox-data'
         # Same target as the sandbox service: first-mount ownership
         # initialization of the empty volume comes from the image's directory
         # at this path (agentuser-owned). Any other target leaves the volume

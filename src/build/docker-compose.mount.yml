@@ -15,7 +15,7 @@ services:
   sandbox:
     volumes:
       - type: bind
-        source: {{WORKTREE_DIR}}
+        source: '{{WORKTREE_DIR}}'
         target: /home/agentuser/sandbox
     environment:
       - SANDBOX_TYPE=mount

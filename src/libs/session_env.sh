@@ -79,13 +79,6 @@ resolve_and_init() {
   env_record_view "$ENV_FILE"
 }
 
-# env_record_get KEY
-#   Reads KEY from the view resolve_and_init opened. Empty when the record has no
-#   such key, which is how an optional setting states its default.
-env_record_get() {
-  record_get ENV_RECORD "${1:?env_record_get requires a key}"
-}
-
 # session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
 #   Phase 2 (needs SESSION_ID): derives image + container names, host branch,
 #   and delivery vars. Call after identity is known.
@@ -124,7 +117,10 @@ session_env_names() {
   # default is not an error when absent, so it is read from the opened view
   # rather than required through the resolution primitive.
   local recorded_worktree
-  recorded_worktree="$(env_record_get WORKTREE_DIR)"
+  # Phase 1 opens the view. A caller that enters at phase 2 opens it here, which
+  # costs nothing when it is already open for this file.
+  env_record_view "${ENV_FILE:-$sandbox_dir/.env}"
+  recorded_worktree="$(record_get ENV_RECORD WORKTREE_DIR)"
   export WORKTREE_DIR="${WORKTREE_DIR:-${recorded_worktree:-$sandbox_dir/.worktree}}"
 }
 

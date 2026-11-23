@@ -86,7 +86,7 @@ main() {
   parse_args_or_exit usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
-    -- "$@" 
+    -- "$@"
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

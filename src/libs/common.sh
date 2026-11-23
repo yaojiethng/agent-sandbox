@@ -86,3 +86,37 @@ json_string() {
   s="${s//$'\t'/\\t}"
   printf '"%s"' "$s"
 }
+
+# sed_replacement VALUE  --  VALUE with the characters that change meaning in a
+# sed replacement escaped, so a host path reaches the template intact. A sed
+# replacement treats `&` as the matched text and `\` as itself, and the `|`
+# delimiter here ends the expression.
+#
+# A value lands in YAML as well: the template quotes the placeholders whose
+# lookup is exact (a label, a bind source), and `yaml_quote` makes the value
+# safe for that quoting.
+sed_replacement() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//&/\\&}"
+  s="${s//|/\\|}"
+  printf '%s' "$s"
+}
+
+# yaml_quote VALUE  --  VALUE escaped for a single-quoted YAML scalar: a
+# single quote is written twice, and nothing else needs escaping. A value
+# without a quote passes through unchanged.
+yaml_quote() {
+  printf '%s' "${1//\'/\'\'}"
+}
+
+# yaml_unquote VALUE  --  VALUE with one surrounding pair of single quotes
+# removed, and a doubled quote restored to one. A generated compose value is
+# quoted so it can carry a space or a `#`; a hand-written fixture need not be,
+# so a reader accepts both forms.
+yaml_unquote() {
+  local s="$1"
+  s="${s#\'}"
+  s="${s%\'}"
+  printf '%s' "${s//\'\'/\'}"
+}

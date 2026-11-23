@@ -21,6 +21,7 @@
 # kv_read, the one record parser, comes from kv_record.sh, sourced here so the
 # reader is defined however this lib is loaded.
 # shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/kv_record.sh"
 
 dry_run_record_value() {
@@ -88,6 +89,8 @@ dry_run_image_verify() {
   # session_inventory.sh.
   stamped="$(grep -m1 -E '[[:space:]]*agent-sandbox.'"$type"'-image-digest:' "$compose_file" \
     | sed -E 's/.*'"$type"'-image-digest:[[:space:]]*//' || true)"
+  # A generated record quotes the value; a fixture may not.
+  stamped="$(yaml_unquote "$stamped")"
   if [[ -z "$stamped" ]]; then
     echo "  RECORD-VERIFY FAIL: compose file $compose_file carries no $type-image-digest label; cannot run the roundtrip gate" >&2
     return 1

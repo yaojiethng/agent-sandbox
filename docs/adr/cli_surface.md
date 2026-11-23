@@ -26,7 +26,7 @@ The CLI surface is the `agent-sandbox` front door, the leaf command behind each 
 
 **Rationale:** The front door carried four descriptions of one set, and they had already diverged -- the no-argument message omitted `package-branch` while the help page and both dispatch arms carried it. The identity flag set was spelled once per case, twelve times, and the help-status policy was spelled eighteen times across seventeen files in two forms. A set that is described four times drifts four ways, and the drift is invisible because each description looks authoritative where it sits.
 
-**JSON is a rendering, not a manifest.** The facts live in bash, where the CLI already runs, and JSON is printed on demand. A manifest file would need a reader on the operator's path, and a committed rendering would need a gate to catch its drift; the rendering has neither cost. `scripts/build_probe.sh` already writes JSON this way, escaping where it writes, because the host toolchain carries no jq.
+**JSON is a rendering, not a manifest.** The facts live in bash, where the CLI already runs, and JSON is printed on demand. A manifest file would need a reader on the operator's path, and a committed rendering would need a gate to catch its drift; the rendering has neither cost. `scripts/build_probe.sh` already writes JSON this way, escaping where it writes, so the rendering needs no reader and no new dependency.
 
 **Why the flags stay out.** A leaf's `parse_args` spec is its flag source, pinned by R2. A catalogue copy would be the second declaration this entry exists to remove, and the dispatcher does not need flags: it forwards them and the leaf rejects what it does not accept. The catalog names the leaf, so a consumer that needs flags runs that leaf's `--help`.
 

@@ -16,6 +16,7 @@
 # kv_read, the one key=value record parser, comes from kv_record.sh, sourced
 # here so the session-log reader is defined however this lib is loaded.
 # shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/kv_record.sh"
 # The stamp shape and its two directions, defined once for the whole harness.
 # shellcheck source=/dev/null
@@ -64,9 +65,11 @@ record_provider() {
 # record. Prints the label value, or nothing if absent. Pipefail-safe: a
 # no-match grep must not abort a caller under `set -o pipefail`.
 record_label() {
-  local file="$1" label="$2"
-  grep -m1 -E '[[:space:]]*agent-sandbox\.'"$label"':' "$file" \
-    | sed -E 's/.*'"$label"':[[:space:]]*//' || true
+  local file="$1" label="$2" value
+  value="$(grep -m1 -E '[[:space:]]*agent-sandbox\.'"$label"':' "$file" \
+    | sed -E 's/.*'"$label"':[[:space:]]*//' || true)"
+  # A generated record quotes the value; a hand-written fixture may not.
+  printf '%s' "$(yaml_unquote "$value")"
 }
 
 # env_field FILE VAR  --  read a `VAR=value` from any service `environment:`

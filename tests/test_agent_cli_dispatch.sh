@@ -76,19 +76,9 @@ test_every_subcommand_help_exits_0() {
   done
 }
 
-# The one status map: an unknown flag never succeeds. The dispatcher resolves
-# identity before the leaf parses, so the status is what it asserts; the leaf's
-# own message is the case below.
-test_every_subcommand_rejects_an_unknown_flag() {
-  local name rc failing=""
-  for name in $EXPECTED; do
-    rc=0
-    cli "$name" --bogus-flag >/dev/null || rc=$?
-    [[ $rc -ne 0 ]] || failing+="$name "
-  done
-  assert_empty "$failing" 'no subcommand succeeds on an unknown flag'
-}
-
+# F8: a dispatcher-level "reject an unknown flag" case would assert the
+# resolver's failure, not the flag's rejection -- identity resolves before the
+# leaf parses. The leaf sweep below carries that claim.
 # The sweep's witness: each leaf maps a usage error to 1 and names the flag,
 # where before six of them let set -e take the exit.
 test_every_leaf_names_the_flag_it_rejects() {
@@ -186,11 +176,35 @@ test_resolved_identity_reaches_the_leaf() {
     'the leaf does not receive an empty --project'
 }
 
+# A bare help request reaches the index: it is a subcommand of the surface, not
+# an unknown word.
+test_bare_help_exits_0() {
+  local flag rc out
+  for flag in --help -h; do
+    rc=0
+    out="$(cli "$flag")" || rc=$?
+    assert_rc 0 "$rc" "agent-sandbox $flag exits 0"
+    assert_contains "$out" 'Valid subcommands:' "$flag prints the index"
+  done
+}
+
+# The row format is positional: a stray separator in an earlier column would
+# shift every field after it, so the shape is pinned.
+test_catalog_rows_carry_six_fields() {
+  local row parts bad=""
+  while read -r row; do
+    IFS='|' read -r -a parts <<< "$row"
+    [[ ${#parts[@]} -eq 6 ]] || bad+="${row%%|*} "
+  done < <(bash -c 'source "$1"; printf "%s\n" "${CLI_CATALOG[@]}"' _ "$CLI")
+  assert_empty "$bad" 'every catalog row carries six fields'
+}
+
 run_test test_help_index_names_the_declared_set
+run_test test_bare_help_exits_0
+run_test test_catalog_rows_carry_six_fields
 run_test test_no_argument_message_names_the_declared_set
 run_test test_unknown_subcommand_exits_1_and_names_itself
 run_test test_every_subcommand_help_exits_0
-run_test test_every_subcommand_rejects_an_unknown_flag
 run_test test_every_leaf_names_the_flag_it_rejects
 run_test test_json_renders_the_declared_set
 run_test test_json_is_valid_and_carries_a_schema

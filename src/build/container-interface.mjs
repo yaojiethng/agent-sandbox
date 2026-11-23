@@ -105,6 +105,18 @@ export function compose_path(root, provider) {
 // stops when the next item begins. A row missing either half is skipped, and
 // the equality check then reports the mount as one the manifest does not
 // declare.
+// A compose scalar may be written quoted, so the value it declares can carry a
+// space or a `#`. The scan reads the scalar's content either way.
+function unquote(value) {
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replaceAll("''", "'");
+  }
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
 export function parse_mounts(file) {
   const rows = [];
   let pending = null;
@@ -114,14 +126,14 @@ export function parse_mounts(file) {
       continue;
     }
     if (pending === null) continue;
-    const source = /^\s*source:\s*(\S+)\s*$/.exec(line);
+    const source = /^\s*source:\s*(.+?)\s*$/.exec(line);
     if (source) {
-      pending.source = source[1];
+      pending.source = unquote(source[1]);
       continue;
     }
-    const target = /^\s*target:\s*(\S+)\s*$/.exec(line);
+    const target = /^\s*target:\s*(.+?)\s*$/.exec(line);
     if (target) {
-      pending.target = target[1];
+      pending.target = unquote(target[1]);
       rows.push(pending);
       pending = null;
     }

@@ -171,9 +171,9 @@ test_rendered_compose_labels_carry_concrete_session_identity() {
   if [[ "$START_RC" -ne 0 || -z "$START_COMPOSE" ]]; then
     fail "start did not persist a compose file: rc=$START_RC out=$START_OUT"; return
   fi
-  if grep -q "agent-sandbox.project-name: ltest" "$START_COMPOSE" \
-     && grep -Eq "agent-sandbox.session-id: [[:alnum:]]+" "$START_COMPOSE" \
-     && grep -Eq "agent-sandbox.host-branch: [[:alnum:]]+" "$START_COMPOSE"; then
+  if grep -q "agent-sandbox.project-name: 'ltest'" "$START_COMPOSE" \
+     && grep -Eq "agent-sandbox.session-id: '[[:alnum:]]+'" "$START_COMPOSE" \
+     && grep -Eq "agent-sandbox.host-branch: '[[:alnum:]]+'" "$START_COMPOSE"; then
     pass "session labels carry concrete project, session id and branch"
   else
     fail "session labels missing or unsubstituted in $START_COMPOSE"
