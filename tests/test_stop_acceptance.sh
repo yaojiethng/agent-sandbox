@@ -20,7 +20,7 @@ ACCEPTANCE="$REPO_ROOT/scripts/stop_acceptance.sh"
 # print the report path. The caller then overwrites the artifacts it cares about.
 fixture_run() {
   local dir="$1" mode="${2:-perform-stop}"
-  local stamp="20260101T000000Z"
+  local stamp="20260101-000000"
   local run_dir="$dir/stop/$stamp"
   mkdir -p "$run_dir"
   printf '  "mode": "%s",\n' "$mode" >"$dir/stop/$stamp.json"

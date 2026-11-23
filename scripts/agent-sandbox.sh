@@ -5,37 +5,8 @@
 # All subcommands run on the host  --  never inside a container.
 # Inside the container, invoke lib scripts directly (see prompt templates).
 #
-# Usage:
-#   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
-#   agent-sandbox build    [--targets=<targets>] [identity] [--env=<path>]
-#   agent-sandbox start    --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [--interactive] [flags]
-#   agent-sandbox dry-run  --provider=<n> [identity] [--env=<path>] [--fast] [flags]
-#   agent-sandbox resume   [identity] [--env=<path>] [--session-id=<id>] [--list] [--interactive]
-#   agent-sandbox stop     [identity] [--env=<path>] [--session-id=<id>] [--prune]
-#   agent-sandbox prune    [identity] [--env=<path>] [--stale=<kind>] [--provider=<n>] [--age-days=<n>] [--interactive] [--dry-run]
-#   agent-sandbox apply    --project=<path> --sandbox=<path> --diff=<path> [--branch=<n>] [--force] [--interactive]
-#   agent-sandbox draft    --project=<path> --sandbox=<path> [--channel=<channel>] [--bundle=<name>] [--branch-summary=<slug>] [--diffs=<start>..<end>] [--force] [--permissive] [--interactive]
-#   agent-sandbox confirm  --project=<path> --sandbox=<path> [--target=<branch>] [--new]
-#   agent-sandbox reject   --project=<path> --sandbox=<path>
-#   agent-sandbox package-branch --sandbox=<path> [--to=<dir>] [--bundle-summary=<text>] [--baseline=<sha>]
-#
-# --env=<path> is an absolute path or a name relative to the sandbox dir; it sets
-# the per-sandbox .env used for both identity resolution and the run's env load.
-#
-# identity = [--name=<n>] [--project=<path>] [--sandbox=<path>]. Every command
-# keeps a hard identity requirement, but it need not be passed per invocation:
-# each missing field resolves from the per-sandbox .env located via --env (else
-# <sandbox>/.env, else the invocation CWD), and nowhere else -- a record key has
-# no environment level. onboard is the exception: it creates the .env and
-# requires --name/--project/--sandbox. The sandbox Makefile passes
-# --env=$(ENV_FILE).
-#
-# --targets accepts: all, sandbox, <provider>, or comma-separated combinations
-#   agent-sandbox build --targets=all
-#   agent-sandbox build --targets=pi
-#   agent-sandbox build --targets=pi,sandbox
-#
-# --target (singular) is deprecated and will error.
+# The dispatcher locates a subcommand's leaf and execs it. Each leaf owns its
+# flags and answers `--help`; the valid set is `print_subcommand_list` below.
 
 set -euo pipefail
 
@@ -77,10 +48,7 @@ require_base_args() {
 }
 
 # resolve_identity [name dir sandbox]  --  thin-interface seam over the
-# canonical resolver. For each requested field: explicit > the .env (via
-# ENV_REL, else <sandbox>/.env, else CWD) > a hard error. onboard is exempt.
-# The resolver emits the single per-key error message and exports the
-# normalized ENV_FILE.
+# canonical resolver.
 resolve_identity() {
   env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "$ENV_REL" "$@" || exit 1
 }

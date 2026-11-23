@@ -10,6 +10,7 @@ REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
+source "$REPO_ROOT/src/libs/time_format.sh"
 
 PROBE_INPUT_DIR=""
 REBUILD=false
@@ -253,7 +254,7 @@ main() {
   [[ -d "$PROBE_INPUT_DIR" ]] || die "output directory does not exist: $PROBE_INPUT_DIR"
   [[ -w "$PROBE_INPUT_DIR" ]] || die "output directory is not writable: $PROBE_INPUT_DIR"
 
-  PROBE_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+  PROBE_STAMP="$(ts_now)"
   local run_dir="$PROBE_INPUT_DIR/build/$PROBE_STAMP"
   local report="$PROBE_INPUT_DIR/build/$PROBE_STAMP.json"
   mkdir -p "$run_dir" || die "could not create $run_dir"

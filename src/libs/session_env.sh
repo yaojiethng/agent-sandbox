@@ -39,7 +39,7 @@ resolve_and_init() {
   local project_dir="${2:?resolve_and_init requires a resolved project_dir}"
   local sandbox_dir="${3:?resolve_and_init requires a resolved sandbox_dir}"
 
-  # .env loading
+  # The record must exist before its view opens.
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Error: .env not found: $ENV_FILE" >&2
     echo "  SANDBOX_DIR has not been onboarded. Run:" >&2

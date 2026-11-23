@@ -22,14 +22,15 @@
 # INSTALL_DIR resolves in priority order: the INSTALL_DIR environment variable,
 # then AGENT_SANDBOX_INSTALL_DIR, then INSTALL_DIR in the sandbox .env named by
 # --env (else <CWD>/.env), then the ~/.local/bin default. The two environment
-# names are this tool's own configuration level; the .env level goes through
+# names are this tool's own configuration level: install is the one command that
+# runs before a record is seeded, so it is the named exception to the rule that
+# a record key has no environment level. The .env level goes through
 # env_resolve_one, the one precedence primitive. Tests override the host
 # detection with INSTALL_OS.
 
 set -uo pipefail
 
-# The one .env loader, so the INSTALL_DIR fallback reads through the sanctioned
-# path rather than a second parser (grep|cut).
+# The INSTALL_DIR fallback reads through the resolver, not a second parser.
 _install_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$_install_self_dir/../src/libs/env_resolve.sh"

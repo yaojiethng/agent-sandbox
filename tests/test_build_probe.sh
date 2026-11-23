@@ -149,7 +149,7 @@ test_tier_json_carries_the_six_fields() {
 # Then:  it parses as JSON and carries the four questions' signals
 test_emit_report_carries_the_run_signals() {
   REPO_ROOT="$FIXTURE_DIR"
-  PROBE_STAMP="20261107T000000Z"
+  PROBE_STAMP="20261107-000000"
   PROBE_LABEL="baseline"
   PROBE_PROVIDER="pi"
   PROBE_PROJECT="probe"

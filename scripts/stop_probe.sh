@@ -41,6 +41,7 @@ REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
+source "$REPO_ROOT/src/libs/time_format.sh"
 source "$REPO_ROOT/src/libs/dirs.sh"
 
 PROBE_INPUT_DIR=""
@@ -938,7 +939,7 @@ main() {
     MODE="read-only"
   fi
 
-  STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+  STAMP="$(ts_now)"
   RUN_DIR="$PROBE_INPUT_DIR/stop/$STAMP"
   local report="$PROBE_INPUT_DIR/stop/$STAMP.json"
   mkdir -p "$RUN_DIR" || die "could not create $RUN_DIR"

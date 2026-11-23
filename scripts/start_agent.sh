@@ -18,8 +18,8 @@
 #   --env=<env>             .env file: an absolute path or a name relative to SANDBOX_DIR (default: .env)
 #   --provider=<n>          provider name (required)
 #
-# Responsibility: host-side pre-flight only  --  path validation, .env loading,
-# git validation, workspace setup, delivery preparation.
+# Responsibility: host-side pre-flight only  --  identity resolution, path
+# validation, git validation, workspace setup, delivery preparation.
 # Compose generation and container lifecycle are owned by scripts/run_agent.sh.
 #
 # This script is designed to be executed, not sourced. It exports variables

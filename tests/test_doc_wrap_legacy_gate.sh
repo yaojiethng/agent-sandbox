@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# TEST_DEADLINE: 45
-#   The gate runs markdownlint-cli2 over the tree per assertion, so the honest
-#   cost is about 30s. The declaration is a budget, not a licence.
+# TEST_DEADLINE: 120
+#   The gate runs markdownlint-cli2 over the tree per assertion: about 24s alone
+#   and above 45s under the suite's 8-way parallel load, which timed out twice
+#   before this budget. The declaration is a budget, not a licence.
 # tests/test_doc_wrap_legacy_gate.sh
 # Behavioural tests for scripts/check_doc_wrap_legacy.sh -- the gate that ends a
 # doc-wrap file exemption when the file is next edited -- and for the rule's

@@ -76,8 +76,7 @@
 # contract (how the workflow is invoked: `make -C <sandbox> <target>`),
 # $(CURDIR) is the sandbox directory that holds the Makefile and the .env, so
 # ENV_FILE resolves to the per-sandbox .env. $(CURDIR) is portable to both GNU
-# and BSD make. Identity (name, project, sandbox) is no longer passed per
-# target: the CLI resolves it from this .env (--env), else the invocation CWD.
+# and BSD make.
 ENV_FILE := $(CURDIR)/.env
 PROVIDER     ?=
 REFRESH      ?=

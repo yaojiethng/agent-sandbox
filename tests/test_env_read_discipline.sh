@@ -166,7 +166,9 @@ test_prelude_carries_no_read_site() {
 # When:  AGENT_SANDBOX_ references are counted
 # Then:  there are none
 # Asserts: a record key has no environment level. The identity resolver is the
-#          only place the environment could stand in for a record key.
+#          only place the environment could stand in for a record key. The one
+#          exception is `AGENT_SANDBOX_INSTALL_DIR` in scripts/install.sh, which
+#          runs before a record exists; it is deliberate, not a missed carrier.
 test_no_environment_level_for_a_record_key() {
   local n
   n=$(grep -vE '^[[:space:]]*#' "$REPO/src/libs/env_resolve.sh" | grep -cE 'AGENT_SANDBOX_' || true)

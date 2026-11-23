@@ -41,6 +41,7 @@ REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
+source "$REPO_ROOT/src/libs/time_format.sh"
 source "$REPO_ROOT/src/libs/dirs.sh"
 
 MATRIX_IMAGE=""
@@ -198,7 +199,7 @@ main() {
   [[ -w "$MATRIX_INPUT_DIR" ]] || die "output directory is not writable: $MATRIX_INPUT_DIR"
 
   local stamp run_dir report
-  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  stamp="$(ts_now)"
   run_dir="$MATRIX_INPUT_DIR/stop-signal/$stamp"
   report="$run_dir/matrix.json"
   mkdir -p "$run_dir" || die "could not create $run_dir"
