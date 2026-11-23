@@ -2,16 +2,12 @@
 
 **Status:** Resolved. Absorbed into the M1.5 directory restructuring. See Resolution section.
 
-**Direction:** Direction 2 -- Stack supplementation
-**Parent story:** [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md)
-
 ---
 
 > **Required reading before this document:**
 >
 > - [`docs/architecture/execution_model.md`](../architecture/execution_model.md) -- container lifecycle, mount shape, and entrypoint sequence. The mount shape questions raised here intersect with M1.6 (session DB mount addition).
 > - [`docs/architecture/security.md`](../architecture/security.md) -- trust boundaries and security invariants.
-> - [20260312-story-settled-provider_knowledge_store.md](20260312-story-settled-provider_knowledge_store.md) -- context for why this option is being investigated.
 
 ---
 

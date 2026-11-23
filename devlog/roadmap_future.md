@@ -12,22 +12,15 @@ Detail sections for milestones not yet active. Kept separate from [`roadmap.md`]
 
 **Status:** Deferred. Not a mainline milestone -- separate workflow for the Obsidian vault use case. Re-activate when the KV5 timeline demands it.
 
-**Objective:** Extend the capability layer for the Obsidian vault use case. Validate sandbox-only first (direct `sandbox/` mount, no MCP), then add MCP server as an enhancement. Unblocks KV5.
+**Objective:** Extend the capability layer for the Obsidian vault use case. Validate the sandbox-only configuration: the agent reads and edits the vault through the sandbox mount, and the diff is reviewed and applied. MCP is out of scope.
 
 **Depends on:** the M2 two-layer foundation, closed in [`changelog.md`](changelog.md#m2---reasoningcapability-layer-separation).
-
-The hermes provider was removed on 2026-11-07 rather than kept dormant: it was unused, its build path had drifted, and it was the only thing making the tier list depend on the provider. The integration task below is where it comes back, and it comes back when this milestone has a use for it.
 
 **Tasks:**
 
 - [ ] Validate vault workflow with sandbox-only configuration: agent accesses vault files directly via `sandbox/`, diff reviewed and applied to vault repo
-- [ ] Evaluate MCP server candidates; select one (criteria: licence, maintenance, path traversal protections, binary file handling, no Obsidian runtime dependency -- see [`20260312-study-settled-mcp_server.md`](discussions/archive/20260312-study-settled-mcp_server.md) candidates table)
-- [ ] Build vault capability layer image: extends base capability layer image, adds selected MCP server
-- [ ] Configure OpenCode to connect to MCP server; validate it routes vault operations through MCP tools when server is present
-- [ ] Validate binary file handling (vault attachments) under selected MCP server
-- [ ] Validate KV5 end-to-end: agent modifies vault via MCP tools, diff reviewed, applied to vault repo
-- [ ] **Integrate hermes as a provider** -- the source-built runtime returns as a provider on the harness's terms, so a session can run a workflow that needs its media and browser surface. It left on 2026-11-07 because nothing ran it and its build path had drifted; `<provider>-base` stayed in `build_agent` as its extension point, and the order test that covers that branch runs on a fixture provider until a real one returns. Trigger: this milestone needing a runtime the registry-package providers do not give, which is the surface the vault and MCP work would reach for. Nature of change: a provider directory with its two Dockerfiles and overlays, the manifest's rows, the live documents that name the provider set, and the pin rows the new inputs owe.
-- [ ] Update `execution_model.md` -- document capability layer variants (general vs vault+MCP)
+- [ ] Validate KV5 end-to-end: agent modifies the vault through the sandbox mount, diff reviewed, applied to vault repo
+- [ ] Update `execution_model.md` -- document capability layer variants (general vs vault)
 
 ---
 

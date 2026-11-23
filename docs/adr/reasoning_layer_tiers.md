@@ -1,6 +1,6 @@
 # Reasoning Layer Tiers
 
-**Current:** 2026-11-07
+**Current:** 2026-11-22
 
 ## Requirements
 
@@ -11,7 +11,21 @@
 | R3 | The common payload is declared exactly once | the manifest declares every COPY pair, and the layout gate holds the Dockerfiles equal to it in both directions (2026-10-17) |
 | R4 | Docker's layer cache is the only reuse rule | nothing decides reuse before the daemon is called |
 | R5 | A provider base installs only its own differential | a provider base carries only its own install, and no provider base ships (2026-10-17, revised 2026-11-07) |
-| R6 | The tier list is the same for every provider that shares an install mechanism | pi and opencode share one list of tiers because both install from a registry; a provider whose install is a source build adds one base (2026-10-17, revised 2026-11-07) |
+| R6 | The tier list is the same for every provider that shares an install mechanism | a provider whose install is a source build adds one base (2026-10-17, revised 2026-11-22) |
+
+## 2026-11-22 -- The provider set is pi only
+
+**Decision:** The OpenCode provider image is removed, so `src/reasoning/agent-runtime/` holds `pi` alone and every image row in the container manifest names `pi`. The shared `agent-runtimes` tier still installs the pinned OpenCode CLI, because `scripts/dispatch.sh` reaches it as an agent-runtime. The hermes return is dropped from W1; no source-built provider return is planned. `<provider>-base` stays in `build_agent` as the extension point a source-built provider would occupy, and its order test stays on a fixture provider.
+
+**Rationale:** A provider image is a session runtime, and the provider set had a second member only because OpenCode was one. The CLI is a dispatch dependency, not a session runtime, so it stays in the shared tier. Removing the provider image leaves the three-tier shape unchanged and narrows the provider set to the one the harness serves.
+
+**Rejected alternatives:**
+
+- *Keep OpenCode as a dormant provider image* -- execution: it keeps a second session runtime in the build, gates and documents, which is the maintenance the removal ends.
+- *Remove the OpenCode CLI with the provider* -- intent: it treats the dispatch runtime as part of the provider. Execution: the CLI is the sanctioned route to the free model set, and the seam has no replacement.
+- *Delete `<provider>-base` with the provider* -- execution: the extension point is generic and carries a fixture test; no shipped provider occupies it today, and a future source-built provider would rebuild it.
+
+**Edge cases / drivers:** The tier list is a property of the install mechanism, not of the provider count; with one provider it still holds. `agent-runtimes` installs one executable from a registry and one pinned binary, and the OpenCode binary remains for dispatch. Historical entries and the changelog keep the two-provider shape as what was true when written.
 
 ## 2026-11-07 -- The hermes provider is removed, and the reasoning layer is three tiers
 
@@ -26,6 +40,8 @@
 - *Delete the `<provider>-base` branch with the provider* -- intent: no shipped provider reaches it, so it reads as dead code. Execution: the W re-integration row needs it, so deleting it would have to be undone; the branch keeps its test on a fixture provider instead of a shipped one.
 
 **Edge cases / drivers:** The provider directory is deleted whole. The three image rows that listed `hermes` among their `providers` now list two, and the three `hermes` env rows are gone. Re-integration is filed as a W task rather than carried as a dormant provider. Historical records keep the old shape: the entries below, the handovers and the discussions state what was true when written.
+
+[CORRECTION -- 2026-11-22: the W re-integration row was dropped with the hermes return; the extension point is kept as generic and carries a fixture test.]
 
 ## 2026-11-07 -- The provider directory is `agent-runtime`
 

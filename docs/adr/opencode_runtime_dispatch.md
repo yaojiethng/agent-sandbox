@@ -1,6 +1,21 @@
 # OpenCode as a Dispatch Runtime
 
-**Current:** 2026-10-17
+**Current:** 2026-11-22
+
+## 2026-11-22 -- OpenCode is a dispatch agent-runtime only
+
+**Decision:** The OpenCode provider image is removed, with its directory, its compose overlays, its onboarding and its interactive instruction surface. OpenCode remains an agent-runtime and a model-provider namespace: `agent-runtimes` installs the pinned CLI, and `scripts/dispatch.sh` reaches it as one assignment's runtime. The generic provider base and the dispatch instruction transport are deferred to M3.6.7; the provider-shaped generator is deleted with the provider.
+
+**Rationale:** A dispatch runtime and a session runtime are different jobs. The CLI needs no provider image, and the provider image had no consumer while the tree carried its build, onboarding, serve overlay and generated config. The generated surface was provider-shaped: it emitted `command` and `references` for an interactive session and a `skills` set filtered by a provider tag. The later dispatch transport is smaller and reads the provider-neutral base instead.
+
+**Rejected alternatives:**
+
+- *Keep the provider as a dormant image* -- execution: it leaves a second session runtime for the build, gates and documents to carry, so the retirement does not happen.
+- *Keep the provider only for serve mode* -- intent: it retains the browser surface. Execution: it is still a second session runtime, and the vault work that used the surface is now sandbox-only.
+- *Keep the generator as scaffolding for M3.6.7* -- execution: the artifact assumes an interactive OpenCode session; the later transport is built from the neutral base, not from a provider config.
+- *Retarget the generator now* -- execution: it couples the deletion to a design that is not ready, and the deletion is safe without it because the CLI and its pin are independent of the provider image.
+
+**Edge cases / drivers:** `opencode` remains two names: an agent-runtime and a set of model-provider prefixes. The two senses never share a field, and the removal touches the provider image, not the prefix. The `<provider>-base` build extension point stays, because it is generic and carries a fixture test. The removed provider is not a model-provider removal: `opencode` and `opencode-go` model ids still resolve through the role table.
 
 ## 2026-10-17 -- The dispatch CLI moves to the shared agent-runtime tier
 

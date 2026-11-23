@@ -1,6 +1,20 @@
 # Instruction Surface Declaration
 
-**Current:** 2026-11-01
+**Current:** 2026-11-22
+
+## 2026-11-22 -- The OpenCode reader leaves with the provider; the dispatch transport is rebuilt on the neutral base
+
+**Decision:** The OpenCode provider's generated config is removed with the provider. `src/build/opencode-config.mjs` is deleted, and the `command` and `references` surfaces it emitted have no consumer. The dispatch instruction transport is deferred to M3.6.7: it will emit `instructions` and `skills.paths` for the provider-neutral cells and set `OPENCODE_CONFIG` on a dispatched worker, and it will read the neutral always-loaded base rather than a provider config. The `$ARGUMENTS` placeholder stays, because pi accepts it and the prompts use one form; the OpenCode-only reason for the convention is gone.
+
+**Rationale:** A generated surface needs a reader. The interactive OpenCode reader was the provider's, and it emitted a `command` surface and `references` advertisements that a headless dispatched worker does not use. The two keys a worker needs are the instructions it reads and the skill roots it can load, and both come from the provider-neutral declaration. The old generator is deleted rather than edited, because its shape is the provider's and the later transport is smaller.
+
+**Rejected alternatives:**
+
+- *Keep the generator and its test as scaffolding* -- execution: the artifact assumes an interactive OpenCode session, and the later transport is built from the neutral base.
+- *Wire the full four-key surface now* -- intent: it keeps the generator's output. Execution: `command` and `references` have no reader once the provider is gone.
+- *Retire the dispatch transport entirely* -- intent: it removes the generator with the provider. Execution: a dispatched OpenCode worker would lose the harness skill roots, so it would not read the same instruction base as a pi worker.
+
+**Edge cases / drivers:** The manifest's `cells` declare the skill roots, and the provider-neutral cells the transport reads are already there; the neutral always-loaded base is M3.6.7's to create and declare. The `$ARGUMENTS` convention is unchanged in the prompts, and `instruction-authoring` keeps it. A dispatched worker reads the project tree's `AGENTS.md` and `.agents/skills/` today; the later transport adds the harness roots.
 
 ## 2026-11-01 -- A cell declares no reachable rows; a reference resolves in the path space its reader holds
 
