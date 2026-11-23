@@ -206,6 +206,40 @@ test_resolve_specified_env_absent_names_the_path() {
   fi
 }
 
+# Given: a relative sandbox dir, a relative --env name, and the CWD at the
+#        sandbox's parent
+# When:  default_env_file resolves the path
+# Then:  the path is absolute
+# Asserts: the path a leaf receives names the same file, not a CWD-relative
+#          spelling of it.
+test_default_env_file_returns_an_absolute_path() {
+  local base="$FIXTURE_DIR/absolute" out
+  mkdir -p "$base/sbx"
+  out=$(cd "$base" && default_env_file "session.env" "sbx")
+  assert_eq "$base/sbx/session.env" "$out" "a relative env under a relative sandbox is absolute"
+
+  out=$(cd "$base" && default_env_file "" "")
+  assert_eq "$base/.env" "$out" "the CWD fallback is absolute"
+
+  out=$(default_env_file "$base/records/session.env" "")
+  assert_eq "$base/records/session.env" "$out" "an absolute input stays absolute"
+}
+
+# Given: a relative sandbox dir holding the identity record
+# When:  env_resolve_identity resolves the triple
+# Then:  ENV_FILE is the absolute path of that record
+# Asserts: resolution exports the normalized path, so the dispatcher can hand a
+#          process the file the resolver read.
+test_resolve_exports_an_absolute_env_file() {
+  local base="$FIXTURE_DIR/resolve_absolute" out
+  mkdir -p "$base/sbx" "$base/proj"
+  printf 'PROJECT_NAME=probe\nPROJECT_DIR=%s/proj\nSANDBOX_DIR=%s/sbx\n' "$base" "$base" > "$base/sbx/session.env"
+  out=$(cd "$base" && set -e; env_resolve_identity "" "" "sbx" "session.env" name dir sandbox >/dev/null && printf '%s' "$ENV_FILE") || out="FAILED"
+  assert_eq "$base/sbx/session.env" "$out" "the resolver exports an absolute ENV_FILE"
+}
+
+run_test test_default_env_file_returns_an_absolute_path
+run_test test_resolve_exports_an_absolute_env_file
 run_test test_resolve_explicit_wins_over_env_and_file
 run_test test_resolve_env_var_is_not_a_level
 run_test test_resolve_file_provides_value

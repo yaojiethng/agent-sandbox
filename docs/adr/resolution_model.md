@@ -84,7 +84,7 @@ The three classes name what the carriers do, so a setting's class decides its pe
 2. a known sandbox dir -> `<sandbox>/.env`
 3. the invocation CWD -> `./.env`
 
-`--env` is an absolute path or a name relative to the sandbox dir, honored by both identity resolution and the run's env load: the dispatcher forwards it to `start`/`dry-run`, so a custom `.env`'s runtime values (provider vars, `SERVE_PORT`, `WORKTREE_DIR`) reach the run. Its absence falls back to `<sandbox>/.env`. A single meaning holds across the resolver and the leaf so a relative `--env` cannot silently load a different file.
+`--env` is an absolute path or a name relative to the sandbox dir. Path selection and normalization are [`cli_surface.md`](cli_surface.md) R12; this entry keeps the historical precedence that resolution applies. Its absence falls back to `<sandbox>/.env`. A single meaning holds across the resolver and the leaf so a relative `--env` cannot silently load a different file.
 
 `onboard` writes `.env` next to the generated Makefile. Under the `make -C` contract, `$(CURDIR)` is the sandbox directory that holds both the Makefile and the `.env`, so the Makefile computes its pointer in one line without case logic and passes it per target, dropping `--name`/`--project`/`--sandbox`. `$(CURDIR)` is portable to GNU and BSD make:
 

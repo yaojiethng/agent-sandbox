@@ -19,6 +19,19 @@ The CLI surface is the `agent-sandbox` front door, the leaf command behind each 
 | R9 | One status map | The parse's status (0 parsed, 1 usage error, 2 help) maps to the process status in one function: help is success, a usage error is 1 (2026-11-22) |
 | R10 | Help is the leaf's | `--help` routes to the child's own page and exits before its flags are required; the dispatcher duplicates no help text, and `help` is itself a subcommand (2026-11-22) |
 | R11 | The exit code is a verdict | `0` success, `1` user error, `2+` system error; a magnitude never rides in the code (2026-11-22) |
+| R12 | The record path is absolute | `default_env_file` normalizes every branch and the resolver exports `ENV_FILE` as an absolute path, so the resolver and the process it hands the path to name the same file (2026-11-23) |
+
+## 2026-11-23 -- The record path is absolute
+
+**Decision:** `default_env_file` returns an absolute path for every branch. An absolute `--env` is used as-is; a relative `--env` is a name under `SANDBOX_DIR`; an empty one falls back to `<sandbox>/.env`, then the invocation CWD's `.env`. The helper canonicalizes through `readlink -f` when the path resolves, and otherwise anchors a relative path at the invocation CWD. `env_resolve_identity` exports the result as `ENV_FILE`.
+
+**Rationale:** the resolver selected a path, then handed callers a spelling that each consumer had to resolve again. A relative `SANDBOX_DIR` produced a relative `ENV_FILE`, so the leaf could re-resolve the path through its own CWD and read a different file. Path selection and path normalization belong at the one site that owns the selection.
+
+**Rejected alternatives:** normalize only in the dispatcher -- rejected: every other caller of `env_resolve_identity` would keep the weaker guarantee, and the dispatcher would become a second path owner. Require every caller to pass an absolute `--sandbox` -- rejected: it narrows an accepted input to protect an internal invariant.
+
+**Edge cases / drivers:** a path whose parent does not exist is still absolute, because a specified path's absence is reported by its reader rather than by path construction. The `test_env_resolve.sh` cases pin the relative-under-relative-sandbox case, the CWD fallback and the absolute input. `resolution_model.md` keeps the historical precedence entry and points here for the normalization rule.
+
+Implementation: `src/libs/env_resolve.sh` (`_env_abs_path`, `default_env_file`), `tests/test_env_resolve.sh`.
 
 ## 2026-11-22 -- The subcommand surface is a catalog, and JSON is its rendering
 

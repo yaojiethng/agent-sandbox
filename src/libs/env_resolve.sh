@@ -15,7 +15,9 @@
 #
 # The .env is located by default_env_file: an absolute ENV_REF (--env) as-is, a
 # relative ENV_REF a name under the sandbox dir, and an empty ENV_REF
-# <sandbox>/.env, else the invocation CWD's .env.
+# <sandbox>/.env, else the invocation CWD's .env. Every branch returns an
+# absolute path, so a caller and the process it hands the path to name the same
+# file.
 
 _self_env_resolve_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$_self_env_resolve_dir/libs/env.sh"
@@ -46,20 +48,39 @@ _env_missing() {
   fi
 }
 
-# default_env_file RAW_ENV_REF SANDBOX_DIR
-#   Prints the .env path for the raw --env value under the single .env-path
-#   contract: an absolute RAW_ENV_REF is used as-is; a relative RAW_ENV_REF is a
-#   name under SANDBOX_DIR; an empty RAW_ENV_REF falls back to <sandbox>/.env,
-#   else the invocation CWD's .env.
-default_env_file() {
-  local raw="${1:-}" sandbox_dir="$2"
-  if [[ -n "$raw" && "$raw" == /* ]]; then
-    printf '%s' "$raw"
-  elif [[ -n "$sandbox_dir" ]]; then
-    printf '%s' "$sandbox_dir/${raw:-.env}"
-  else
-    printf '%s' "${PWD}/${raw:-.env}"
+# _env_abs_path PATH
+#   Prints PATH as an absolute path. Canonicalizes through readlink -f when the
+#   path resolves; a path whose parent does not exist is anchored at the
+#   invocation CWD instead. The file need not exist, because a specified path's
+#   absence is reported by its reader, not by path construction.
+_env_abs_path() {
+  local path="$1" resolved
+  if resolved="$(readlink -f -- "$path" 2>/dev/null)"; then
+    printf '%s' "$resolved"
+    return 0
   fi
+  if [[ "$path" == /* ]]; then
+    printf '%s' "$path"
+  else
+    printf '%s/%s' "$PWD" "$path"
+  fi
+}
+
+# default_env_file RAW_ENV_REF SANDBOX_DIR
+#   Prints the absolute .env path for the raw --env value under the single
+#   .env-path contract: an absolute RAW_ENV_REF is used as-is; a relative
+#   RAW_ENV_REF is a name under SANDBOX_DIR; an empty RAW_ENV_REF falls back to
+#   <sandbox>/.env, else the invocation CWD's .env.
+default_env_file() {
+  local raw="${1:-}" sandbox_dir="$2" path
+  if [[ -n "$raw" && "$raw" == /* ]]; then
+    path="$raw"
+  elif [[ -n "$sandbox_dir" ]]; then
+    path="$sandbox_dir/${raw:-.env}"
+  else
+    path="${PWD}/${raw:-.env}"
+  fi
+  _env_abs_path "$path"
 }
 
 # env_resolve_one KEY ENV_FILE [REMEDY]

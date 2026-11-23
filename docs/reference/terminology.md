@@ -18,7 +18,7 @@ Banned as a noun. It names no referent, so nothing in the text can be checked ag
 
 **Last updated:** 2026-11-22
 
-`seam` is not a reserved term. It is ordinary for where two things meet, and it is always qualified by what meets: a hook seam, a dispatch seam, a container seam. Where the sentence means the [plane](#plane), name the plane; where it means how a caller crosses one, name the interface.
+`seam` is not a reserved term. It is ordinary for where two parts meet, and it is always qualified by what meets: a hook seam, a dispatch seam, a container seam. Where the sentence means the [plane](#plane), name the plane; where it means how a caller crosses one, name the interface.
 
 `interface` is not a reserved term. It names the contract a caller crosses a boundary by, and it is always qualified by the boundary: a declaration interface, a container interface, a tool interface, a provider interface. It is never a bare synonym for a [plane](#plane), which names the ownership of the concern rather than the access to it.
 
