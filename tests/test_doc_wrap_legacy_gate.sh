@@ -32,7 +32,7 @@ test_setup
 
 GATE="$REPO_ROOT/scripts/check_doc_wrap_legacy.sh"
 
-LEGACY_WITH_DEBT="docs/adr/command_flag_parsing.md"
+LEGACY_WITH_DEBT="docs/adr/session_identifier.md"
 GRANDFATHERED="devlog/changelog.md"
 
 test_unstaged_run_is_clean() {

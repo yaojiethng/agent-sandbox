@@ -72,7 +72,6 @@ export default {
       recordTrees,
       legacyFiles: [
         "docs/adr/agent_sandbox_two_container_separation.md",
-        "docs/adr/command_flag_parsing.md",
         "docs/adr/container_host_correspondence_mechanism.md",
         "docs/adr/diff_packaging.md",
         "docs/adr/drift_state_coherence.md",

@@ -124,8 +124,7 @@ die() {
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # json_string TEXT
-# A JSON string literal. The host toolchain carries no jq
-# (docs/development/host_requirements.md), so the escaping lives here.
+# A JSON string literal, escaped where it is written.
 json_string() {
   local s="$1"
   s="${s//\\/\\\\}"

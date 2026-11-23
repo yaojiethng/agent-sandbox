@@ -115,10 +115,9 @@ main() {
       --name=PROJECT_NAME --project=PROJECT_DIR --sandbox=SANDBOX_DIR \
       -- "$@"
 
-  # --help/-h on any subcommand delegates to the child's own help BEFORE the
-  # per-case required-arg checks below  --  mirroring each leaf script's own
-  # convention (parse_help_flag runs before arg validation). This makes
-  # `agent-sandbox <sub> --help` work uniformly for every subcommand, and
+  # --help/-h delegates to the child's own help before any required-arg check,
+  # which is the leaf's promise too (`cli_surface.md` R10). This makes
+  # `agent-sandbox <sub> --help` uniform for every subcommand, and
   # `agent-sandbox help --help` show help's own page (the subcommand list).
   for _arg in "$@"; do
     case "$_arg" in

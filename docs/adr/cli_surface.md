@@ -1,11 +1,45 @@
-# Command Flag Ingestion
+# The CLI Surface
 
-**Current:** 2026-09-25
+**Current:** 2026-11-22
 
-> This ADR records the design as it stands and is expected to evolve. The
-> per-command flag surface centralization landed in one pass across all leaf
-> scripts; a later change supersedes the current entry by adding a dated
-> entry, per the ADR policy. It is not a locked contract.
+The CLI surface is the `agent-sandbox` front door, the leaf command behind each subcommand, and the contract the two share: which subcommands exist and where they live, how a leaf reads its flags, what a leaf takes from the identity, and what a call exits with.
+
+## Requirements
+
+| # | Requirement | Meaning |
+|---|---|---|
+| R1 | Single parse path | Every command parses its flags through one declarative parser, not per-script `for ARG` loops |
+| R2 | Exact surface preserved | Each leaf keeps its historical flag names, defaults, help text, and unknown-flag wording; the suite pins them |
+| R3 | Identity stays shared | `--name`/`--project`/`--sandbox` parse through the shared base-flag helper, never re-implemented per script |
+| R4 | Validation stays explicit | Flag-specific validation (e.g. `--delivery` allowed values) runs after parse, at the owning script, not inside the parser |
+| R5 | Forwarding is explicit | The dispatcher collects passthrough args and forwards them to the leaf; no env-var smuggling of command input |
+| R6 | A flag's shape matches its spec | A value flag with no `=` and a boolean flag with one are not matches; the mode's unknown-argument policy decides their fate (2026-09-25) |
+| R7 | One declaration | A subcommand's name, leaf path, identity fields, leading arguments and one-line summary appear once, in the catalog; the list, the help index, the no-argument message and the dispatch derive from it (2026-11-22) |
+| R8 | JSON is a rendering | `agent-sandbox help --json` prints the catalog as JSON; no manifest file and no generated artifact exists, so nothing drifts (2026-11-22) |
+| R9 | One status map | The parse's status (0 parsed, 1 usage error, 2 help) maps to the process status in one function: help is success, a usage error is 1 (2026-11-22) |
+| R10 | Help is the leaf's | `--help` routes to the child's own page and exits before its flags are required; the dispatcher duplicates no help text, and `help` is itself a subcommand (2026-11-22) |
+| R11 | The exit code is a verdict | `0` success, `1` user error, `2+` system error; a magnitude never rides in the code (2026-11-22) |
+
+## 2026-11-22 -- The subcommand surface is a catalog, and JSON is its rendering
+
+**Decision:** The dispatcher holds one catalog row per subcommand: its name, leaf path, the identity fields the leaf accepts, any leading argument the dispatcher passes, and its one-line summary. The valid-subcommand list, the `help` index, the no-argument message, the help routing and the dispatch all derive from that table, so a subcommand is added in one place. `agent-sandbox help --json` renders the same rows as JSON, under a `schema` key, for a consumer that reads programmatically. The parse's status maps to the process status in `parse_args_or_exit`, one function in `src/libs/cli.sh`; a leaf calls it instead of spelling the mapping.
+
+**Rationale:** The front door carried four descriptions of one set, and they had already diverged -- the no-argument message omitted `package-branch` while the help page and both dispatch arms carried it. The identity flag set was spelled once per case, twelve times, and the help-status policy was spelled eighteen times across seventeen files in two forms. A set that is described four times drifts four ways, and the drift is invisible because each description looks authoritative where it sits.
+
+**JSON is a rendering, not a manifest.** The facts live in bash, where the CLI already runs, and JSON is printed on demand. A manifest file would need a reader on the operator's path, and a committed rendering would need a gate to catch its drift; the rendering has neither cost. `scripts/build_probe.sh` already writes JSON this way, escaping where it writes, because the host toolchain carries no jq.
+
+**Why the flags stay out.** A leaf's `parse_args` spec is its flag source, pinned by R2. A catalogue copy would be the second declaration this entry exists to remove, and the dispatcher does not need flags: it forwards them and the leaf rejects what it does not accept. The catalog names the leaf, so a consumer that needs flags runs that leaf's `--help`.
+
+**Rejected alternatives:**
+
+- *A manifest file with a reader, like `src/build/record-layout.json`* -- rejected: that pattern serves build and gate time, where node is present. The CLI runs on the operator's host, and every manifest reader in the tree is node. A manifest would put a new dependency on the one path that has never had one.
+- *One table inside the dispatcher, with no JSON* -- rejected: the surface is the natural index for a consumer that is not bash, and the rendering is twelve lines over the same rows.
+- *Deep help: the catalog carries every flag* -- rejected: about seventy flags across eleven leaves, duplicated from specs R2 already pins, held equal by a bidirectional gate, for a consumer that does not exist yet. The JSON shape is additive, so a `flags` key can be added when a consumer needs one.
+- *A new ADR per subject, one for the catalog and one for the status map* -- rejected: it is the sprawl this consolidation exists to end. Both govern the same surface, so they are requirements on one record.
+
+**Edge cases / drivers:** the no-argument message and the `help` page must print the same set, and the gate asserts it from the CLI rather than from the table. A declared identity field must appear in its leaf's own spec, and a declared summary must equal the first line of that leaf's `usage()`; both are read from the leaf, so the table cannot drift from what it describes. An unknown subcommand exits 1 and names itself; a leaf's exit status reaches the caller unchanged, because the dispatcher `exec`s it and never wraps it.
+
+Implementation: `scripts/agent-sandbox.sh` (the catalog and its derived surfaces), `src/libs/cli.sh` (`parse_args_or_exit`), tests `tests/test_agent_cli_dispatch.sh` and `tests/test_cli_lib.sh`.
 
 ## 2026-09-25 -- A flag's shape must match its spec: a bare value flag is a rejected input
 
@@ -34,17 +68,6 @@ Implementation: `src/libs/cli.sh` (`_cli_parse`), tests `tests/test_cli_lib.sh`.
 **Rejected alternatives:** keep the exception - rejected, the operator directed closure and the front door was the last non-canonical entry point. A tolerance knob on `parse_args` (`_CLI_TOLERANT` drops unknowns, it does not collect them) - rejected: dropping and collecting are different contracts; the collector needs the ordered remainder. The `_CLI_TOLERANT` leaf fallback was later removed entirely (2026-09-27), so every leaf parse is now strict. Module-level parse state (a registry shared between entry points) - rejected: it forces `declare -g`, per-parse resets, and cross-parse contamination; a per-call local registry avoids all three.
 
 Implementation: `src/libs/cli.sh` (`_cli_parse`, `parse_args`, `parse_args_collect`), `scripts/agent-sandbox.sh`, tests `tests/test_cli_lib.sh` and `tests/test_dispatch.sh`.
-
-## Requirements
-
-| # | Requirement | Meaning |
-|---|---|---|
-| R1 | Single parse path | Every command parses its flags through one declarative parser, not per-script `for ARG` loops |
-| R2 | Exact surface preserved | Each leaf keeps its historical flag names, defaults, help text, and unknown-flag wording; the suite pins them |
-| R3 | Identity stays shared | `--name`/`--project`/`--sandbox` parse through the shared base-flag helper, never re-implemented per script |
-| R4 | Validation stays explicit | Flag-specific validation (e.g. `--delivery` allowed values) runs after parse, at the owning script, not inside the parser |
-| R5 | Forwarding is explicit | The dispatcher collects passthrough args and forwards them to the leaf; no env-var smuggling of command input |
-| R6 | A flag's shape matches its spec | A value flag with no `=` and a boolean flag with one are not matches; the mode's unknown-argument policy decides their fate (2026-09-25) |
 
 ## 2026-09-18 -- Shared declarative parser: one flag-routing path
 

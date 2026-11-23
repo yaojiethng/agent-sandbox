@@ -57,5 +57,5 @@ None.
 | `docs/adr/resolution_model.md` | renamed from `env_resolution.md`; the H1 widens, R6 is added, and the new entry carries the three carrier classes and the precedence primitive |
 | `devlog/roadmap.md` | the renamed cite, the three census defect rows under M3.4.2, and the row that retires the census record |
 | `devlog/discussions/20261016-report-draft-carrier_census.md` | the census record, a working file to delete once its open set is empty |
-| `docs/adr/command_flag_parsing.md`, `docs/reference/sandbox_identity.md`, `scripts/resume_agent.sh`, `.markdownlint-cli2.mjs` | the renamed path, and the doc-wrap exemption removed |
+| `docs/adr/cli_surface.md`, `docs/reference/sandbox_identity.md`, `scripts/resume_agent.sh`, `.markdownlint-cli2.mjs` | the renamed path, and the doc-wrap exemption removed |
 | `devlog/handovers/20261016-01-docs-resolution_model_and_census_defects.md` | this record |

@@ -1,6 +1,6 @@
 ---
 date: 2026-11-22
-milestone: T11 - Persisted record formats
+milestone: M3.4.2 - The resolution model and record primitives
 type: Implementation
 status: Closed
 ---

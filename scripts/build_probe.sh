@@ -48,7 +48,6 @@ die() {
   exit 1
 }
 
-# The host toolchain carries no jq (docs/development/host_requirements.md).
 json_string() {
   local s="$1"
   s="${s//\\/\\\\}"

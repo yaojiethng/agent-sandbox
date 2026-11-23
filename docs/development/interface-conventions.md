@@ -55,8 +55,7 @@ The next step should be:
 | `stdout` | The primary result -- the thing the caller asked for. Must be parseable. |
 | `stderr` | Everything else -- progress, warnings, the final summary, the next-step command. |
 
-**Rationale:** If stdout is the artefact path, `make apply DIFF=$(tool ...)` works.
-If stdout contains "generated 1 diff(s)", that pipeline breaks.
+**Rationale:** If stdout is the artefact path, `make apply DIFF=$(tool ...)` works. If stdout contains "generated 1 diff(s)", that pipeline breaks.
 
 When stdout is not meaningful (pure side-effect tools like `package_branch`), the tool may write only to stderr. The caller should capture stderr for the completion summary.
 
@@ -71,21 +70,14 @@ Every CLI tool must implement `--help` and display:
 
 ### Dispatcher-level help contract (the CLI subcommand dispatcher)
 
-The `agent-sandbox` dispatcher and the leaf commands it routes to make one uniform help promise across every subcommand. A subcommand script keeps its own `usage()`, and a change to a `--help` surface applies once to all subcommands that share it.
+The `agent-sandbox` dispatcher and the leaf commands it routes to make one uniform help promise across every subcommand. The rule set is [`cli_surface.md`](../adr/cli_surface.md) R10, and the dispatcher reads it from one catalog: a subcommand's leaf path, identity fields, leading args and one-line summary are declared once, so the help index, the no-argument message and the dispatch cannot disagree.
 
-- **`--help` and `-h` delegate before any required-arg validation.** For any
-  subcommand, `agent-sandbox <sub> --help` (and `-h`) routes to that subcommand's own help and exits without requiring the subcommand's flags.
-  The dispatcher validates required args only for actual runs, never for help.
-- **The child owns the help content.** The dispatcher routes to the child
-  script's help via `exec`; it does not duplicate the help text. This matches the exec-over-sourcing dispatch convention (below).
-- **`help <sub>` and `<sub> --help` are equivalent.** Both resolve to the same
-  child help output.
-- **`help` is itself a subcommand.** `agent-sandbox help`, `help --help`, and
-  `help -h` all show the subcommand list. `route_help` handles `help` by printing that list and `exit 0`; it never re-dispatches, so there is no recursion.
-- **The subcommand list is a single source of truth.** The dispatcher prints
-  the valid-subcommands set from one shared helper, not from inline copies.
-- **A leaf script handles its own `--help` before its own arg validation.**
-  Each subcommand script calls `parse_help_flag "$@"` (or equivalent) before checking its required flags, so a direct `scripts/<sub>.sh --help` also prints help and exits 0. `usage` is a pure reporter: it prints and returns; the caller decides the exit code (`exit 0` for help, `exit 1` for an error).
+What a leaf author does:
+
+- **Delegate before validating.** `--help` and `-h` route to the leaf's own page and exit 0 before any required-arg check, so `agent-sandbox <sub> --help` and `bash scripts/<sub>.sh --help` both work without flags. `parse_args_or_exit` is the one mapping: help exits 0, a usage error exits 1. `usage` is a pure reporter: it prints and returns.
+- **Own the page.** The dispatcher `exec`s the leaf's help and duplicates no text; a change to a shared `--help` surface is made once, where the flags are declared.
+- **Keep the summary line first.** The catalog's one-line summary is the first line of the leaf's `usage()`, and the gate holds the two equal, so the index cannot drift from the page.
+- **`help` is itself a subcommand.** `agent-sandbox help`, `help --help` and `help -h` print the index; `help <sub>` and `<sub> --help` are equivalent. `help --json` prints the same rows as JSON for a programmatic reader.
 
 ## 5. Exit Codes
 
@@ -95,7 +87,9 @@ The `agent-sandbox` dispatcher and the leaf commands it routes to make one unifo
 | `1` | User error -- bad/missing argument, invalid input |
 | `2+` | System error -- missing directory, git failure, permission denied |
 
-This lets callers distinguish "the caller messed up" from "the system is broken" without parsing error messages.
+This lets callers distinguish "the caller messed up" from "the system is broken" without parsing error messages. The vocabulary is [`cli_surface.md`](../adr/cli_surface.md) R11.
+
+A parser's internal status is not a process status: `parse_args` returns `2` for a help request, and `parse_args_or_exit` maps that to process `0`. A leaf that maps the parse status itself is the defect this function exists to remove.
 
 ## 6. Use `--flags`, Not Implicit Env Vars
 
@@ -192,8 +186,7 @@ if [[ "${BASH_SOURCE[0]}" == "$0" || \
         "${BASH_SOURCE[0]}" != "${BASH_SOURCE[1]}" ) ]]; then
 ```
 
-This formulation is logically inverted and creates a false positive.
-Stick with the simple comparison.
+This formulation is logically inverted and creates a false positive. Stick with the simple comparison.
 
 | Document | Relevance |
 |---|---|
@@ -216,5 +209,4 @@ To be defined. TUI extensions (e.g. interactive pickers, progress displays) shar
 
 ## API Contracts
 
-API contracts are defined in [`docs/reference/execution_model.md`](../reference/execution_model.md).
-Interface-level guarantees (container lifecycle, mount shape, compose contracts, provider interface) are architecture invariants, not CLI surface.
+API contracts are defined in [`docs/reference/execution_model.md`](../reference/execution_model.md). Interface-level guarantees (container lifecycle, mount shape, compose contracts, provider interface) are architecture invariants, not CLI surface.
