@@ -383,6 +383,23 @@ The shape recurs because a rule is written from a plausible story about the fail
 
 Scope: how a rule states a mechanism. Cross-reference: `p-31` and `p-6` in `workflow/coding-agent/skills/code-review/runbooks/code-review-bash/patterns/`.
 
+### [O] 2026-11-22  --  A bash tool call with no timeout held the turn for ten hours
+
+```text
+state: open
+scoped: none
+legacy: none
+mitigation: pass an explicit timeout on every tool call, sized from the command's measured cost. The schema has no default, so omitting it means unbounded: `lint.sh` measured at 12-15s takes 120, the suite at ~90s takes 600, a single grep takes 30.
+```
+
+The tool call `bash scripts/lint.sh 2>&1 | grep -B4 "SC[0-9]" | head -12` was issued at 22:42:37 and returned at 09:02:01 with `durationMs` 35,594,966. The command itself takes 12s: `head -12` closes the pipe after the first gate's output, the producers block on the write, and with no timeout on the call nothing ends the wait. When the session resumed the pipe drained and the call returned, 74 seconds before the operator's next message.
+
+The cause is a setting rather than a defect: the agent sets a tool call's timeout, and this one was left generous because it was left off. Every other tool in the run carries a bound -- `DISPATCH_TIMEOUT` for a dispatched worker, `TEST_DEADLINE` for a test file, `MUTATIONS_BUDGET` for the mutation tier, `timeout` on every `bash -c` in the gates -- and the one call that can block on a pipe, a lock, a network read or another process had none. A call that omits it is asking for an unbounded wait by default, which is the wrong default for a command whose honest cost is one line of output.
+
+Reading it took a second pass because the transcript invites the wrong inference. `durationMs` sits on the record, and the long spans in the *interactive* sessions are wall clock between turns -- an `assistant` record carrying final text followed by a `user` record hours later -- so a gap read from timestamps alone reports idle time as a hang. The first reading blamed a 12m23s model response that never happened; the largest model call in that session is 25s. The record's role and its `durationMs` are the evidence; a delta between two timestamps is not.
+
+Scope: how a tool call is bounded. Cross-reference: the dispatch timeout entry above and [`dispatch.md`](../docs/reference/dispatch.md).
+
 ## Node
 
 ### [A] 2026-11-02  --  A scripted splice on a heading string matched the prose that named the heading
