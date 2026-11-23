@@ -251,8 +251,7 @@ main() {
   # Canonicalize the sandbox dir once so Rule 2's label filters match the
   # canonical `agent-sandbox.sandbox-dir` label baked at create time, regardless
   # of path spelling. Fails loudly when unresolvable.
-  if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
-  SANDBOX_DIR="$canon_dir"
+  sandbox_dir_canon_assign SANDBOX_DIR "$SANDBOX_DIR"
 
   if [[ -z "$PROJECT_DIR" ]]; then
     echo "Error: --project is required (need the current HEAD for staleness)." >&2

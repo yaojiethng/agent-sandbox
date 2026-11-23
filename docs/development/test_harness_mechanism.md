@@ -70,11 +70,12 @@ Why drift is loud by construction: the failure count rides the file's real exit 
 
 ## The gates
 
-`scripts/check_test_liveness.sh` owns the registration contract. It reads each test file and flags three defects:
+`scripts/check_test_liveness.sh` owns the registration contract. It reads each test file and flags four defects:
 
 - UNREGISTERED: a defined `test_*()` function with no `run_test` registration.
 - DANGLING: a `run_test` target with no matching function definition.
 - DEAD-REGISTRATION: a `run_test` after `test_done`; `test_done` exits the process, so the registration never runs.
+- DEFINED-AFTER-EPILOGUE: a test function defined below the `test_done` line; the epilogue has already run, so it can never execute.
 
 The gate accepts a directory argument, defaulting to the real suite. The runner calls it before dispatch with the real suite directory on every run. The self-test calls it directly against a fixture for the dead-registration case; its runner invocations skip the gate with `RUN_TESTS_SELFTEST=1`.
 

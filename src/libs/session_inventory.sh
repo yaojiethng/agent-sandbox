@@ -61,17 +61,6 @@ record_provider() {
   echo "${agent_img%%-agent-*}"
 }
 
-# record_label FILE LABEL  --  recover `agent-sandbox.<label>` from a registry
-# record. Prints the label value, or nothing if absent. Pipefail-safe: a
-# no-match grep must not abort a caller under `set -o pipefail`.
-record_label() {
-  local file="$1" label="$2" value
-  value="$(grep -m1 -E '[[:space:]]*agent-sandbox\.'"$label"':' "$file" \
-    | sed -E 's/.*'"$label"':[[:space:]]*//' || true)"
-  # A generated record quotes the value; a hand-written fixture may not.
-  printf '%s' "$(yaml_unquote "$value")"
-}
-
 # env_field FILE VAR  --  read a `VAR=value` from any service `environment:`
 # block in a registry record (e.g. `SANDBOX_TYPE=mount`). Shared by prune
 # (plan disclosure) and resume (delivery recovery).

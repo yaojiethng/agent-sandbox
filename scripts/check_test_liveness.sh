@@ -11,8 +11,10 @@
 #      and inflates the unit count). A defined-but-unregistered test never
 #      executes (silent rot); a registration without a definition fails at
 #      runtime with an unrelated error; a registration after test_done never
-#      runs. The duplicate pass runs on the raw lists before the membership
-#      checks collapse them with `sort -u`, so a doubled name cannot hide.
+#      runs. A test function defined below `test_done` is unreachable whatever
+#      its registration says (DEFINED-AFTER-EPILOGUE). The duplicate pass runs
+#      on the raw lists before the membership checks collapse them with
+#      `sort -u`, so a doubled name cannot hide.
 #   2. Prerequisite liveness  --  the docker stub exists, is executable, and
 #      answers a smoke invocation; stub libs referenced by test files exist.
 #

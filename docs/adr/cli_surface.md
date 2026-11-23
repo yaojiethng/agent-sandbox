@@ -30,7 +30,7 @@ The contract is stated once here; the gate names the carrier that enforces each 
 |---|---|---|---|
 | C1 | A row that declares `env` uses the identity resolver, so `ENV_FILE` exists. | catalogue | `tests/test_resolution_contract.sh` |
 | C2 | A leaf named by an `env` row accepts `--env`. | leaf parse spec | `tests/test_resolution_contract.sh` |
-| C3 | The dispatcher forwards `--env=$ENV_FILE`, never `--env=$ENV_REL`. | dispatch | `tests/test_resolution_contract.sh` |
+| C3 | The dispatcher forwards `--env=$ENV_FILE`, never `--env=$ENV_REL`. | dispatch | `tests/test_agent_cli_dispatch.sh` |
 | C4 | `default_env_file` returns an absolute path for every branch. | resolver | `tests/test_env_resolve.sh` |
 | C5 | An explicit empty env ref is empty; only an omitted one falls back to `ENV_REL`. | resolver | `tests/test_env_resolve.sh` |
 | C6 | The leaf receives the row's leading argument first, the resolved identity by value, and the passthrough arguments after the declared ones. | dispatch | `tests/test_agent_cli_dispatch.sh` |

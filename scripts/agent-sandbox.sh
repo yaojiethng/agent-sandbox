@@ -103,21 +103,11 @@ subcommand_names() {
   printf '%s\n' "$out"
 }
 
-# json_array WORDS  --  a JSON array of the space-separated WORDS. Both list
-# columns render through it, so a column has one shape in the output.
-json_array() {
-  local out="" word
-  for word in $1; do
-    [[ -z "$out" ]] || out+=", "
-    out+="$(json_string "$word")"
-  done
-  printf '[%s]' "$out"
-}
-
 # print_json  --  the catalog as JSON, for a programmatic reader (R8). Nothing
 # is materialized: this printing is the rendering, so there is no file to drift.
 print_json() {
   local name leaf ident largs resolve summary first=1
+  local -a ident_words=() largs_words=()
   printf '{\n  "schema": 1,\n  "subcommands": [\n'
   while IFS='|' read -r name leaf ident largs resolve summary; do
     [[ $first -eq 1 ]] || printf ',\n'
@@ -125,8 +115,10 @@ print_json() {
     printf '    {\n'
     printf '      "name": %s,\n' "$(json_string "$name")"
     printf '      "leaf": %s,\n' "$(json_string "$leaf")"
-    printf '      "identity": %s,\n' "$(json_array "$ident")"
-    printf '      "args": %s,\n' "$(json_array "$largs")"
+    ident_words=(); read -ra ident_words <<< "$ident"
+    largs_words=(); read -ra largs_words <<< "$largs"
+    printf '      "identity": %s,\n' "$(json_array "${ident_words[@]}")"
+    printf '      "args": %s,\n' "$(json_array "${largs_words[@]}")"
     printf '      "summary": %s\n' "$(json_string "$summary")"
     printf '    }'
   done < <(catalog_rows)

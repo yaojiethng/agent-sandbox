@@ -418,12 +418,6 @@ main() {
 
   rm -rf "$RESULTS_DIR"
 
-  echo ""
-  local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))
-  local GATE_NOTE=""
-  [[ "$GATE_FAILED" -eq 0 ]] || GATE_NOTE=" -- GATE FAILED"
-  echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)$GATE_NOTE"
-
   if [[ "$TOTAL_TIMEOUT" -gt 0 ]]; then
     echo "TIMEOUT: $TOTAL_TIMEOUT file(s) exceeded their declared deadline and are counted as failed." >&2
   fi
@@ -463,6 +457,13 @@ main() {
       fi
     fi
   fi
+
+  # The count line follows the mutation tier, so GATE_FAILED covers every gate
+  # that can set it. The verdict still follows this line.
+  local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))
+  local GATE_NOTE=""
+  [[ "$GATE_FAILED" -eq 0 ]] || GATE_NOTE=" -- GATE FAILED"
+  echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)$GATE_NOTE"
 
   # The verdict is the last line, so a reader who takes a tail of this output
   # sees the run's state rather than a green count with the failure above it.

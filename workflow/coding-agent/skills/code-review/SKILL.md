@@ -10,7 +10,9 @@ The shell for code reviews: it resolves a review to one runbook, supplies the se
 
 ## Project conventions
 
-Read `testing` at `.agents/skills/testing/SKILL.md` when the review touches tests. Skip a missing or stub convention and report the skipped arm; raise only a convention the procedure cannot run without.
+Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
+
+Read `testing` at `.agents/skills/testing/SKILL.md` when the review touches tests.
 
 ## The parameters
 

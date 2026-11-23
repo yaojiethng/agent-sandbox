@@ -117,9 +117,7 @@ _canon_sandbox_dir() {
   validate_wsl_path "SANDBOX_DIR" "$SANDBOX_DIR"
 
   # Fails loudly when unresolvable (the parent must exist for start to proceed).
-  local canon
-  if ! canon="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
-  SANDBOX_DIR="$canon"
+  sandbox_dir_canon_assign SANDBOX_DIR "$SANDBOX_DIR"
 }
 
 

@@ -123,38 +123,6 @@ die() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# json_array ITEM...
-# A JSON array of string literals, one line, empty array when given no item.
-json_array() {
-  local out="" item
-  for item in "$@"; do
-    [[ -n "$out" ]] && out+=", "
-    out+="$(json_string "$item")"
-  done
-  printf '[%s]' "$out"
-}
-
-# join_commas ITEM...
-# The items as one comma-joined line, with no trailing separator.
-join_commas() {
-  local out="" item
-  for item in "$@"; do
-    [[ -n "$out" ]] && out+=", "
-    out+="$item"
-  done
-  printf '%s' "$out"
-}
-
-# sha256_of FILE
-sha256_of() {
-  local file="$1"
-  if [[ -f "$file" ]]; then
-    sha256sum "$file" | awk '{print $1}'
-  else
-    printf ''
-  fi
-}
-
 # mtime_of PATH
 mtime_of() {
   local path="$1"
@@ -899,7 +867,7 @@ main() {
 
   command -v git >/dev/null 2>&1 || die "git is not on PATH"
 
-  CANON_SANDBOX="$(sandbox_dir_canon "$PROBE_SANDBOX")" || die "cannot canonicalize sandbox: $PROBE_SANDBOX"
+  sandbox_dir_canon_assign CANON_SANDBOX "$PROBE_SANDBOX" "stop_probe: ERROR: cannot canonicalize sandbox: $PROBE_SANDBOX"
   # Default to the sandbox's own input channel, the host path mounted read-only
   # at /home/agentuser/workspace/input inside the agent container, so the probe
   # runs with one argument on the host.

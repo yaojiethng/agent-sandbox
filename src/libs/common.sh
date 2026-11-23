@@ -50,6 +50,22 @@ sandbox_dir_canon() {
   echo "$canon"
 }
 
+# sandbox_dir_canon_assign VARIABLE DIR [MESSAGE]
+#   Canonicalizes DIR into the named variable. Exits the caller when the path
+#   cannot be resolved, so the five entrypoints share one failure path. Called
+#   directly, not in a command substitution: a function that exits cannot be
+#   captured by `$(...)`.
+# lib-contract: allow p-13 -- exiting is this function's whole contract
+sandbox_dir_canon_assign() {
+  local name="$1" dir="$2" msg="${3:-}" canon
+  if ! canon="$(sandbox_dir_canon "$dir")"; then
+    [[ -n "$msg" ]] && echo "$msg" >&2
+    exit 1
+  fi
+  local -n ref="$name"
+  ref="$canon"
+}
+
 parse_help_flag() {
   for _arg in "$@"; do
     case "$_arg" in
@@ -87,6 +103,39 @@ json_string() {
   printf '"%s"' "$s"
 }
 
+# json_array ITEM...  --  a JSON array of string literals, one line, empty
+# array when given no item. The dispatcher passes words as arguments; the probes
+# pass their already-built items.
+json_array() {
+  local out="" item
+  for item in "$@"; do
+    [[ -n "$out" ]] && out+=", "
+    out+="$(json_string "$item")"
+  done
+  printf '[%s]' "$out"
+}
+
+# join_commas ITEM...  --  the items as one comma-joined line, no trailing
+# separator.
+join_commas() {
+  local out="" item
+  for item in "$@"; do
+    [[ -n "$out" ]] && out+=", "
+    out+="$item"
+  done
+  printf '%s' "$out"
+}
+
+# sha256_of FILE  --  the file's SHA-256, or empty when it does not exist.
+sha256_of() {
+  local file="$1"
+  if [[ -f "$file" ]]; then
+    sha256sum "$file" | awk '{print $1}'
+  else
+    printf ''
+  fi
+}
+
 # sed_replacement VALUE  --  VALUE with the characters that change meaning in a
 # sed replacement escaped, so a host path reaches the template intact. A sed
 # replacement treats `&` as the matched text and `\` as itself, and the `|`
@@ -116,7 +165,19 @@ yaml_quote() {
 # so a reader accepts both forms.
 yaml_unquote() {
   local s="$1"
-  s="${s#\'}"
-  s="${s%\'}"
+  if [[ ${#s} -ge 2 && "${s:0:1}" == "'" && "${s: -1}" == "'" ]]; then
+    s="${s:1:${#s}-2}"
+  fi
   printf '%s' "${s//\'\'/\'}"
+}
+
+# record_label FILE LABEL  --  recover `agent-sandbox.<label>` from a registry
+# record. Prints the label value, or nothing if absent. Pipefail-safe: a
+# no-match grep must not abort a caller under `set -o pipefail`.
+record_label() {
+  local file="$1" label="$2" value
+  value="$(grep -m1 -E '[[:space:]]*agent-sandbox\.'"$label"':' "$file" \
+    | sed -E 's/.*'"$label"':[[:space:]]*//' || true)"
+  # A generated record quotes the value; a hand-written fixture may not.
+  printf '%s' "$(yaml_unquote "$value")"
 }

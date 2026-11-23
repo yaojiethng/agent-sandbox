@@ -204,6 +204,65 @@ test_interactive_max_entries_default() {
 }
 
 
+# Given: quoted, unbalanced and doubled-quote values
+# When:  yaml_unquote runs
+# Then:  only a matching surrounding pair is removed
+# Asserts: an unbalanced quote is data, not a delimiter.
+test_yaml_unquote_requires_a_pair() {
+  assert_eq "abc" "$(yaml_unquote "'abc'")" "a matching pair is removed"
+  assert_eq "" "$(yaml_unquote "''")" "an empty quoted scalar becomes empty"
+  assert_eq "'abc" "$(yaml_unquote "'abc")" "a leading quote alone is preserved"
+  assert_eq "abc'" "$(yaml_unquote "abc'")" "a trailing quote alone is preserved"
+  assert_eq "a'b" "$(yaml_unquote "'a''b'")" "a doubled quote is restored inside the pair"
+}
+
+# Given: items and no items
+# When:  json_array and join_commas run
+# Then:  they render one array and one comma-joined line
+# Asserts: the canonical helpers own the shape the dispatcher and the probes use.
+test_json_array_and_join_commas() {
+  assert_eq '["a", "b"]' "$(json_array a b)" "json_array renders each item"
+  assert_eq '[]' "$(json_array)" "json_array renders an empty array"
+  assert_eq 'a, b' "$(join_commas a b)" "join_commas joins with one separator"
+  assert_eq '' "$(join_commas)" "join_commas renders nothing for no items"
+}
+
+# Given: an existing file and a missing one
+# When:  sha256_of runs
+# Then:  the existing file's digest is printed, the missing path is empty
+# Asserts: the one digest helper the probes share.
+test_sha256_of_reads_a_file() {
+  local file="$FIXTURE_DIR/digest.txt" expected
+  printf 'digest\n' > "$file"
+  expected="$(sha256sum "$file" | awk '{print $1}')"
+  assert_eq "$expected" "$(sha256_of "$file")" "sha256_of reads the file digest"
+  assert_empty "$(sha256_of "$FIXTURE_DIR/absent")" "sha256_of returns empty for a missing file"
+}
+
+# Given: a directory path
+# When:  sandbox_dir_canon_assign runs
+# Then:  the named variable holds the canonical path
+# Asserts: the shared entrypoint helper removes the copy-pasted if/exit block.
+test_sandbox_dir_canon_assign_sets_the_variable() {
+  local dir="$FIXTURE_DIR/canon_assign" target=""
+  mkdir -p "$dir"
+  sandbox_dir_canon_assign target "$dir"
+  assert_eq "$(readlink -f "$dir")" "$target" "sandbox_dir_canon_assign sets its target"
+}
+
+# Given: an empty directory value
+# When:  sandbox_dir_canon_assign runs in a child shell
+# Then:  the child exits non-zero rather than leaving an empty value
+# Asserts: the helper's failure path exits the caller, which is why it cannot
+#          be used inside a command substitution.
+test_sandbox_dir_canon_assign_exits_on_failure() {
+  local rc=0 out
+  out=$(bash -c 'source "$1"; target="unchanged"; sandbox_dir_canon_assign target ""; printf "%s" "$target"' \
+    _ "$REPO_ROOT/src/libs/common.sh" 2>&1) || rc=$?
+  assert_ne "0" "$rc" "sandbox_dir_canon_assign exits on failure"
+  assert_not_contains "$out" "unchanged" "the target is not left as a stale value"
+}
+
 # ---------------------------------------------------------------------------
 # Run all
 # ---------------------------------------------------------------------------
@@ -221,5 +280,10 @@ run_test test_check_base_flags_missing_sandbox
 run_test test_check_base_flags_rejects_root_sandbox
 run_test test_check_base_flags_rejects_empty_sandbox
 run_test test_interactive_max_entries_default
+run_test test_yaml_unquote_requires_a_pair
+run_test test_json_array_and_join_commas
+run_test test_sha256_of_reads_a_file
+run_test test_sandbox_dir_canon_assign_sets_the_variable
+run_test test_sandbox_dir_canon_assign_exits_on_failure
 
 test_done

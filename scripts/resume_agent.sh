@@ -94,8 +94,7 @@ parse_args_or_exit usage \
 # argument parsing) is left for the downstream required-flag validation to
 # report.
 if [[ -n "$SANDBOX_DIR" ]]; then
-  if ! canon_dir="$(sandbox_dir_canon "$SANDBOX_DIR")"; then exit 1; fi
-  SANDBOX_DIR="$canon_dir"
+  sandbox_dir_canon_assign SANDBOX_DIR "$SANDBOX_DIR"
 fi
 
 # -------------------------

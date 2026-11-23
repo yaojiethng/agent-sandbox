@@ -153,14 +153,17 @@ test_parser_exports_nothing() {
 }
 
 # Given: the prelude in session_env.sh
-# When:  its read calls are counted
-# Then:  it carries none
-# Asserts: the prelude consumes a resolved identity and asks for a record value
-#          by key at the point of use; it never loads the record.
-test_prelude_carries_no_read_site() {
+# When:  its direct parser and raw-open calls are counted
+# Then:  there are none
+# Asserts: the prelude consumes the process view through env_record_view and
+#          record_get; it never reaches past the view to the parser or the
+#          raw open. The old pattern named only retired functions, so it could
+#          not see the current API (thermonuclear review, finding 2).
+test_prelude_reaches_no_parser_or_open() {
   local n
-  n=$(grep -vE '^\s*#' "$REPO/src/libs/session_env.sh" | grep -cE "(env_load|env_parse|env_get) " || true)
-  assert_eq "$n" "0" "the prelude reads no record key"
+  n=$(grep -vE '^\s*#' "$REPO/src/libs/session_env.sh" \
+    | grep -cE "(env_load|env_parse|env_get|record_open) " || true)
+  assert_eq "$n" "0" "the prelude reaches no parser or raw open"
 }
 
 # Given: the resolver
@@ -231,7 +234,7 @@ run_test test_identity_resolve_opens_the_record_once
 run_test test_a_chain_step_opens_the_record_once
 run_test test_no_second_env_parser
 run_test test_parser_exports_nothing
-run_test test_prelude_carries_no_read_site
+run_test test_prelude_reaches_no_parser_or_open
 run_test test_no_environment_level_for_a_record_key
 run_test test_record_key_reaches_no_child
 run_test test_sandbox_path_is_a_ladder_value

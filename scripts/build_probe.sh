@@ -49,28 +49,6 @@ die() {
   exit 1
 }
 
-join_commas() {
-  local out="" item
-  for item in "$@"; do
-    [[ -n "$out" ]] && out+=", "
-    out+="$item"
-  done
-  printf '%s' "$out"
-}
-
-# -------------------------
-# Identity
-# -------------------------
-
-sha256_of() {
-  local file="$1"
-  if [[ -f "$file" ]]; then
-    sha256sum "$file" | awk '{print $1}'
-  else
-    printf ''
-  fi
-}
-
 reasoning_dockerfiles() {
   find "$REPO_ROOT/src/reasoning" -type f \
     \( -name '*.dockerfile' -o -name 'Dockerfile*' \) | sort
