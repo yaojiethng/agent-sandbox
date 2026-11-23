@@ -443,14 +443,14 @@ test_provisioned_cell_without_provision_row_flagged() {
 test_one_source_two_destinations_flagged() {
   local root="$FIXTURE_DIR/disagree"
   write_default_tree "$root"
-  write_provider_dockerfile "$root" opencode \
+  write_provider_dockerfile "$root" fixture \
     'COPY src/reasoning/agent/skills/   /opt/other/skills/' \
-    'ENV AGENT_HOME=/home/agentuser/.opencode'
+    'ENV AGENT_HOME=/home/agentuser/.fixture'
   manifest_edit "$root" '
     const fs = require("fs");
     const manifest = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    manifest.image.push({ provider: "opencode", source: "src/reasoning/agent/skills/", destination: "/opt/other/skills/" });
-    manifest.env.push({ provider: "opencode", name: "AGENT_HOME", value: "/home/agentuser/.opencode" });
+    manifest.image.push({ provider: "fixture", source: "src/reasoning/agent/skills/", destination: "/opt/other/skills/" });
+    manifest.env.push({ provider: "fixture", name: "AGENT_HOME", value: "/home/agentuser/.fixture" });
     fs.writeFileSync(process.argv[1], JSON.stringify(manifest, null, 2));
   '
   run_gate "$root"

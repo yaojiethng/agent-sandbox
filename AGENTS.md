@@ -114,7 +114,7 @@ Every file serves one subject in one Diataxis mode. Two documents may serve one 
 
 See [`docs/reference/iteration_protocol.md`](docs/reference/iteration_protocol.md) for the criteria and the close mechanics.
 
-**Code** -- Consistent with the existing provider structure under `providers/`. Language and style conventions are established incrementally.
+**Code** -- Consistent with the existing provider structure under `src/reasoning/agent-runtime/`. Language and style conventions are established incrementally.
 
 **Audit findings** -- Identify the document or code, state the rule violated, propose the correction.
 

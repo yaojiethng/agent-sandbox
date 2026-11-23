@@ -15,7 +15,7 @@ Falsification: if moving the declaration to the project cannot hold the one-diff
 | `build_sandbox` hardcodes the capability Dockerfile | `scripts/build.sh:165` |
 | The capability Dockerfile says to copy and customise, but nothing reads a project copy | `src/capability/dockerfile:4` |
 | The copy-delivery sandbox volume is per-session | `src/build/docker-compose.copy.yml:18` |
-| `$AGENT_BIN`, `$HOME/.local/bin` and `/tmp` carry no mount row | `src/build/docker-compose.yml`, `src/reasoning/providers/pi/docker-compose.pi.yml` |
+| `$AGENT_BIN`, `$HOME/.local/bin` and `/tmp` carry no mount row | `src/build/docker-compose.yml`, `src/reasoning/agent-runtime/pi/docker-compose.pi.yml` |
 | The pre-commit hook calls a harness-repo script | `src/capability/git-hooks/pre-commit.sh:85` |
 | `tier` collides twice, on the build tiers and the dispatch tiers | `src/reasoning/base.dockerfile:3`, `model-failover/router.ts:8` |
 | `plane` carries zero uses | grep across `docs/`, `src/`, `workflow/` |
@@ -55,14 +55,14 @@ Phase 2 gates phases 3 to 6, and phase 4 gates phase 5 and 6.
 | U7 | Image identity, naming and stamping agreed with `harness_versioning.md` | `docs` | `docs/adr/harness_versioning.md`, `src/build/image.sh` | own |
 | U8 | The container-harness contract and `.compose/<sid>.yml` ownership | `refactor` | `src/build/compose.sh` | own |
 | U9 | The pre-snapshot validation gate | `feat` | `scripts/start_agent.sh` | own |
-| U10 | Dependency locking for the provider images | `build` | `src/reasoning/providers/*/base.dockerfile` | own |
+| U10 | Dependency locking for the reasoning images | `build` | `src/reasoning/runtimes.dockerfile`, `src/reasoning/registry/`, `src/build/pins.json` | own |
 | U11 | The project-declared persistence contract and its volumes | `feat` | `src/build/`, `docs/reference/execution_model.md` | own |
 | U12 | Environment-change persistence: installs, caches, virtual environments | `feat` | `src/capability/` | own |
 | U13 | Harness identity split from the mounted-project session state | `refactor` | `src/libs/`, `docs/` | own |
 | U14 | Structured task log persistence | `feat` | `src/libs/`, `docs/` | own |
 | U15 | Multi-service environments: the project environment may be several services | `feat` | `src/build/` | own |
 | U16 | The trust-boundary rebaseline and threat model for a project-supplied environment | `docs` | `docs/development/threat_model_stride.md`, `docs/development/security.md` | own |
-| U17 | Port publish and service discovery for project services | `feat` | `src/build/`, `src/reasoning/providers/pi/docker-compose.serve.yml` | own |
+| U17 | Port publish and service discovery for project services | `feat` | `src/build/` | own |
 | U18 | The verification contract: launch, drive, observe, isolate, cleanup, evidence | `feat` | `.agents/skills/`, `docs/reference/` | own |
 | U19 | The browser and CDP toolchain in the environment | `build` | provider dockerfiles | own |
 | U20 | The vault project as the second-project portability proof | `test` | `devlog/discussions/`, fixtures | own |

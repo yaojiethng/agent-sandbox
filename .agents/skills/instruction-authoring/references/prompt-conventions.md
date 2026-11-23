@@ -18,7 +18,9 @@ The frontmatter is YAML. An unquoted value cannot hold a colon, a leading dash o
 
 **`argument-hint`.** Where the prompt accepts an argument, state the argument's shape and whether it is optional. `iter` names the type words it accepts; `plan` marks its argument required.
 
-**`$ARGUMENTS`.** A prompt that forwards the operator's text to its body opens with `> $ARGUMENTS` after the frontmatter. Write `$ARGUMENTS`, not `$@`: pi substitutes both, OpenCode substitutes only `$ARGUMENTS`, so one spelling serves both runtimes from one file. The decision is `docs/adr/instruction_surface_declaration.md`.
+The prompt-template format is pi's; its shipped documentation is `/opt/npm/pi/node_modules/@earendil-works/pi-coding-agent/docs/prompt-templates.md`.
+
+**`$ARGUMENTS`.** A prompt that forwards the operator's text to its body opens with `> $ARGUMENTS` after the frontmatter. Write `$ARGUMENTS`, not `$@`: pi substitutes both, so one spelling serves every prompt from one file. The decision is `docs/adr/instruction_surface_declaration.md`.
 
 ## Naming
 

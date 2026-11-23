@@ -146,7 +146,7 @@ Part of M7 -- supply-chain hardening for provider runtime dependencies.
 
 - [x] Pi version pinned in the provider base Dockerfile; the pin moves with the `pi-bump` unit that owns it
 - [x] Node base image pinned to specific version (`node:22.22.3-slim`)
-- [x] Bump cadence policy -- the operator decides when to bump, on new functionality needed, a critical fix, or a security vulnerability, with no automation. The bump edits the pinned version in `src/reasoning/providers/pi/base.dockerfile` and rebuilds.
+- [x] Bump cadence policy -- the operator decides when to bump, on new functionality needed, a critical fix, or a security vulnerability, with no automation. The bump edits the pinned version in `src/reasoning/runtimes.dockerfile` and its registry lockfile, then rebuilds.
 - [ ] **The base image is digest-capable and the apt set takes the strict pin form** -- the pin policy's R1 fixes the resolved artifact, and two classes cannot reach it on the current base: Debian's archive serves a per-file SHA256 that apt has no syntax to pin, so the apt set carries exact versions plus a recorded hash and a drift warning, and the class is a temporary relaxation rather than a settled form. This row is that relaxation's end. A base whose package set is content-addressed, as a Nix-based image is, makes the strict form reachable for every input, and the row owns the migration and the removal of the relaxation from the pin ADR. It is a large change to the image's foundation, so it is not M3.6.4's. Raised 2026-11-07 while settling the pin sweep.
 
 ---

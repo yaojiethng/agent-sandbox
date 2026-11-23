@@ -6,7 +6,7 @@
 #   it over.
 # scripts/onboard.sh end-to-end behavioural tests.
 #
-# Pins cite: docs/development/provider_onboarding_guide.md (.env schema).
+# Pins cite: docs/reference/tool_interface.md (provider interface).
 
 # Tests the directory tree and files produced by a fresh onboard,
 # the guard check that prevents clobbering, and refresh mode behaviour.
@@ -35,7 +35,6 @@ make_project_dir() {
 }
 
 # Run a full fresh onboard and return the exit code + output.
-# Run a full fresh onboard and return the exit code + output.
 run_full_onboard() {
   local PROJECT_DIR="$1"
   local SANDBOX_DIR="$2"
@@ -51,6 +50,14 @@ run_full_onboard() {
     return 1
   fi
   return 0
+}
+
+# Run _provision_providers against a fixture root. $1 = repo root, $2 = sandbox dir.
+# Emits the function's stdout and stderr; returns its exit code.
+run_provision_providers() {
+  local repo_root="$1"
+  local sandbox_dir="$2"
+  SANDBOX_DIR="$sandbox_dir" bash -c 'source "$1"; REPO_ROOT="$2"; _provision_providers' _ "$ONBOARD_SCRIPT" "$repo_root"
 }
 
 # ---------------------------------------------------------------------------
@@ -167,10 +174,8 @@ test_refresh_migrates_project_name_into_env() {
 # ---------------------------------------------------------------------------
 # Given: a completed fresh onboard
 # When:  the sandbox is compared against the provider tree
-# Then:  every provider with a non-empty config dir has its .<provider>/ directory,
-#        and a provider with no config directory has none
-# Asserts: provider config seeding reaches every provider, and invents nothing
-#          for a provider that ships no config (opencode)
+# Then:  every provider with a non-empty config dir has its .<provider>/ directory
+# Asserts: provider config seeding reaches every provider
 test_fresh_onboard_creates_provider_configs() {
   local PROJECT_DIR="$FIXTURE_DIR/provider_project"
   local SANDBOX_DIR="$FIXTURE_DIR/provider_sandbox"
@@ -196,11 +201,30 @@ test_fresh_onboard_creates_provider_configs() {
   else
     fail "no provider config dirs under src/reasoning/agent-runtime/  --  onboard had nothing to provision"
   fi
+}
 
-  if [[ ! -d "$SANDBOX_DIR/.opencode" ]]; then
-    pass "a provider that ships no config directory seeds nothing"
+# ---------------------------------------------------------------------------
+# Test: a provider with no config directory seeds nothing
+# ---------------------------------------------------------------------------
+# Given: a repo root with one provider directory that has no config and one with a config
+# When:  _provision_providers runs against it
+# Then:  the configured provider's dot-directory exists and the no-config one does not
+# Asserts: the call succeeds and seeds only providers that carry a config
+#          directory
+test_provider_without_config_seeds_nothing() {
+  local FI="$FIXTURE_DIR/noconfig"
+  local SANDBOX_DIR="$FIXTURE_DIR/noconfig_sandbox"
+  mkdir -p "$FI/src/reasoning/agent-runtime/fake"
+  mkdir -p "$FI/src/reasoning/agent-runtime/seeded/config"
+  printf 'seed: 1\n' > "$FI/src/reasoning/agent-runtime/seeded/config/config.yaml"
+
+  local RC=0
+  run_provision_providers "$FI" "$SANDBOX_DIR" >/dev/null 2>&1 || RC=$?
+
+  if [[ "$RC" -eq 0 && -d "$SANDBOX_DIR/.seeded" && ! -d "$SANDBOX_DIR/.fake" ]]; then
+    pass "a configured provider is seeded and a provider with no config seeds nothing"
   else
-    fail "onboard created .opencode for a provider whose config directory is absent"
+    fail "provider seeding: expected rc 0 with .seeded and no .fake, got rc=$RC"
   fi
 }
 
@@ -383,6 +407,7 @@ run_test test_fresh_onboard_env_has_required_keys
 run_test test_fresh_onboard_makefile_reads_name_from_env
 run_test test_refresh_migrates_project_name_into_env
 run_test test_fresh_onboard_creates_provider_configs
+run_test test_provider_without_config_seeds_nothing
 run_test test_provider_config_modes_resist_umask
 run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
@@ -487,7 +512,7 @@ test_fresh_onboard_promotes_provider_env_stub() {
   mkdir -p "$FI/src/reasoning/agent-runtime/fake/config"
   printf 'API_KEY=\n' > "$FI/src/reasoning/agent-runtime/fake/config/env.stub"
 
-  SANDBOX_DIR="$SANDBOX_DIR" bash -c 'source "'"$ONBOARD_SCRIPT"'"; REPO_ROOT="'"$FI"'"; _provision_providers' >/dev/null 2>&1
+  run_provision_providers "$FI" "$SANDBOX_DIR" >/dev/null 2>&1
 
   if [[ -f "$SANDBOX_DIR/.fake/.env" && ! -e "$SANDBOX_DIR/.fake/env.stub" ]]; then
     pass "fresh onboard promotes provider env.stub to .env"
@@ -524,8 +549,7 @@ test_provider_setup_hook_failure_aborts() {
   printf 'return 1\n' > "$FI/src/reasoning/agent-runtime/fake/onboard.sh"
 
   local OUT RC=0
-  OUT="$( SANDBOX_DIR="$FIXTURE_DIR/hookfail_sandbox" \
-          bash -c 'source "'"$ONBOARD_SCRIPT"'"; REPO_ROOT="'"$FI"'"; _provision_providers' 2>&1 )" || RC=$?
+  OUT="$( run_provision_providers "$FI" "$FIXTURE_DIR/hookfail_sandbox" 2>&1 )" || RC=$?
 
   if [[ "$RC" -ne 0 ]] && [[ "$OUT" == *"provider setup hook failed"* ]]; then
     pass "provider setup hook failure aborts onboarding"

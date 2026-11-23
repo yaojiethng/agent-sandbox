@@ -138,7 +138,7 @@ test_shared_base_installs_the_full_runtime_set() {
 # agent-runtime tier, and any provider base that a source-built runtime adds. A
 # tier-2 image that pins a different default builds a different image than the one
 # the build orchestrator passes in, and the two drift silently.
-# Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
+# Given: each src/reasoning/agent-runtime/<n>/base.dockerfile and runtimes.dockerfile
 # When:  the file's BASE_IMAGE default is read
 # Then:  it equals agent-base
 # Asserts: the tier-2 images inherit the shared base
@@ -158,7 +158,7 @@ test_tier2_images_inherit_the_shared_base() {
 # The single rule the consolidation exists to hold: a tier-2 image adds its
 # agent-runtime install and nothing else. A language runtime or linter install
 # reappearing here is the regression this file exists to catch.
-# Given: each providers/<n>/base.dockerfile and runtimes.dockerfile
+# Given: each src/reasoning/agent-runtime/<n>/base.dockerfile and runtimes.dockerfile
 # When:  the file is grepped for language runtime and linter installs
 # Then:  no match
 # Asserts: the shared base is the only owner of the language runtime set
@@ -252,6 +252,24 @@ test_each_agent_runtime_package_has_one_home() {
   assert_empty "$homes" "each agent-runtime package has one registry home"
 }
 
+# The provider image contract: the harness entrypoint and host UID/GID mapping.
+# Given: every provider.dockerfile
+# When: the ENTRYPOINT and user mapping are read
+# Then: each uses the harness wrapper and threads HOST_UID/HOST_GID
+# Asserts: a provider that would fail at session start cannot pass the gate
+test_provider_dockerfiles_use_harness_entrypoint_and_host_ids() {
+  local f text
+  for f in "$PROVIDER_DIR"/*/provider.dockerfile; do
+    [[ -f "$f" ]] || continue
+    text="$(cat "$f")"
+    assert_contains "$text" 'ENTRYPOINT ["/opt/sandbox/bin/provider-entrypoint.sh"]' "$f: harness entrypoint"
+    assert_contains "$text" 'ARG HOST_UID=' "$f: HOST_UID build arg"
+    assert_contains "$text" 'ARG HOST_GID=' "$f: HOST_GID build arg"
+    assert_contains "$text" '${HOST_UID}' "$f: HOST_UID threaded into the image"
+    assert_contains "$text" '${HOST_GID}' "$f: HOST_GID threaded into the image"
+  done
+}
+
 run_test test_shared_base_exists_and_node_dockerfile_is_gone
 run_test test_shared_base_installs_the_full_runtime_set
 run_test test_tier2_images_inherit_the_shared_base
@@ -259,5 +277,6 @@ run_test test_tier2_images_install_no_runtime_or_linter
 run_test test_registry_dependencies_are_exact
 run_test test_opencode_is_one_verified_binary
 run_test test_each_agent_runtime_package_has_one_home
+run_test test_provider_dockerfiles_use_harness_entrypoint_and_host_ids
 
 test_done

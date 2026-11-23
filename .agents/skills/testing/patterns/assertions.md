@@ -8,7 +8,7 @@ When a test is tempted to assert the absence of a wrong variant, assert the requ
 
 ```bash
 # Wrong: fragile, infinite wrong variants
-if grep -q 'default: opencode' "$SCRIPT"; then
+if grep -q 'default: pi' "$SCRIPT"; then
   fail "should not claim a default"
 elif grep -q 'required' "$SCRIPT"; then
   pass "documents as required"

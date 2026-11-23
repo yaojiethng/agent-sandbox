@@ -12,9 +12,9 @@ Provider-specific quirks and conventions discovered during integration. Add entr
 
 | Reference | Path | Where defined |
 |---|---|---|
-| Config dir (Pi convention) | `$AGENT_HOME/agent/` | `providers/pi/preflight.sh` |
+| Config dir (Pi convention) | `$AGENT_HOME/agent/` | `src/reasoning/agent-runtime/pi/preflight.sh` |
 | Template (baked into image) | `/opt/workflow/agent/config/agent/` | Build context (repository root) + Dockerfile COPY |
-| Bind mounts (host -> container) | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `providers/pi/docker-compose.pi.yml` |
+| Bind mounts (host -> container) | `$SANDBOX_DIR/.pi/agent/{prompts,sessions,skills}` | `src/reasoning/agent-runtime/pi/docker-compose.pi.yml` |
 
 Pi-specific volumes live in the Pi compose overlay (`docker-compose.pi.yml`), not the generic `docker-compose.yml`. This keeps provider isolation clean: the generic compose has only sandbox-level mounts (snapshot, changes, input, output); each provider overlays its own config mounts.
 
@@ -78,4 +78,4 @@ The tmpfs was removed for simplicity. If future tools add binaries that need a s
 
 `auth.json` stores env var **references** (e.g. `DEEPSEEK_API_KEY`), not actual secret values. Real API keys are injected as container environment variables. Keeping `auth.json` ephemeral prevents write-back of env var values to the host  -- a **security feature**, not an implementation gap.
 
-Adding a new provider key requires a chore commit to update the template `auth.json` in `providers/pi/config/agent/auth.json`.
+Adding a new provider key requires a chore commit to update the template `auth.json` in `src/reasoning/agent-runtime/pi/config/agent/auth.json`.

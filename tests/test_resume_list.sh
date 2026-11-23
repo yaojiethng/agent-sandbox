@@ -88,8 +88,8 @@ test_truncate_branch_cuts_long_names_to_the_limit() {
 # Asserts: the filtered empty-inventory message.
 test_no_sessions_names_the_provider_filter() {
   local out rc=0
-  out="$(PROVIDER_FILTER="opencode" SANDBOX_DIR="$FIXTURE_DIR/nosbx" _no_sessions 2>&1)" || rc=$?
-  if [[ $rc -eq 1 && "$out" == *"no resumable sessions for provider 'opencode'"* ]]; then
+  out="$(PROVIDER_FILTER="fixture" SANDBOX_DIR="$FIXTURE_DIR/nosbx" _no_sessions 2>&1)" || rc=$?
+  if [[ $rc -eq 1 && "$out" == *"no resumable sessions for provider 'fixture'"* ]]; then
     pass "_no_sessions names the provider filter and returns 1"
   else
     fail "_no_sessions filtered message: rc=$rc out='$out'"
@@ -368,7 +368,7 @@ test_build_inventory_skips_dry_run_and_sorts_newest_first() {
 
   make_record "$sbx/.compose/sess-a.yml" "pi-agent-proj" "proj-sbx" \
     "session-ts: 20260820-100000" "host-branch: main" "host-head-sha: $sha"
-  make_record "$sbx/.compose/sess-b.yml" "opencode-agent-proj" "proj-sbx" \
+  make_record "$sbx/.compose/sess-b.yml" "fixture-agent-proj" "proj-sbx" \
     "session-ts: 20260821-090000" "host-branch: dev" "host-head-sha: $sha"
   make_record "$sbx/.compose/dryrun-abc123.yml" "pi-agent-proj" "proj-sbx" \
     "session-ts: 20260822-110000" "host-branch: main" "host-head-sha: $sha"
@@ -379,7 +379,7 @@ test_build_inventory_skips_dry_run_and_sorts_newest_first() {
   first="${RESUME_INVENTORY[0]:-}"
   fields="$(printf '%s\n' "$first" | awk -F'|' '{print NF}')"
   if [[ "${#RESUME_INVENTORY[@]}" -eq 2 \
-     && "$first" == "sess-b|opencode|20260821-090000|dev|"* \
+     && "$first" == "sess-b|fixture|20260821-090000|dev|"* \
      && "$fields" -eq 8 ]]; then
     pass "build_inventory skips dry-run records, sorts newest first, and emits eight fields"
   else

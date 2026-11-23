@@ -2,7 +2,7 @@
 
 **Status:** draft
 
-**Scope:** the run directive for the cost-aware dispatch work: the instruction transport into an OpenCode runtime, the runner seam between two backends, the cost ledger, the dispatch-policy axis, and the provider decision. It carries the measured facts the run must not re-derive, the ruling it must not cross, the phase ledger, the parallel shape and the done predicate.
+**Scope:** the run directive for the cost-aware dispatch work: the instruction transport into an OpenCode runtime, the runner seam between two backends, the cost ledger, the dispatch-policy axis, and the settled provider decision. It carries the measured facts the run must not re-derive, the ruling it must not cross, the phase ledger, the parallel shape and the done predicate.
 
 **Origin:** the operator's scoping request (2026-10-15), the measured evidence in the M3.6.2 capacity-signal row, and the T2 telemetry rows. This brief is a draft under `.agents/drafts/`, so no live dispatch path reaches it until the operator promotes it.
 
@@ -31,8 +31,6 @@ Every line below was measured on 2026-10-15. Treat each as a given and cite it r
 | pi already surfaces a session total | the footer and `/session`, per pi's own docs |
 | The metered family, not the provider, carries the quota | `opencode-go/deepseek-*` answers `429 GoUsageLimitError`, while `opencode-go/step-5-preview-free` and `opencode-go/cat-jam-free` answer normally |
 
-One sentence is a documentation defect. `src/reasoning/agent-runtime/opencode/provider.dockerfile` states that OpenCode "has no config transport that could load a prompt or a skill". That is a statement about the harness's missing work, not about OpenCode. Reword it to say so.
-
 ## The line that must not be crossed
 
 Do not spoof request attribution. Do not pose as the OpenCode app from pi, forge a header, or otherwise defeat the free-tier gate's client check. The operator's ruling is explicit: the consequence of being caught is irreversible and not worth the access.
@@ -41,11 +39,11 @@ The sanctioned route to a free model is the real OpenCode CLI, invoked as a suba
 
 ## Phase 1, the instruction transport
 
-Build the config that makes the harness's instruction surfaces reachable inside an OpenCode runtime. This is the work the Dockerfile comment says is missing.
+Build the config that makes the harness's instruction surfaces reachable inside an OpenCode CLI dispatch. This is M3.6.7's work.
 
 Decide and record which roots carry: the provider `AGENTS.md`, the project `AGENTS.md`, the prompt root, the skill roots, the module package directory. Prefer pointing at the surfaces already declared in [`container-interface.json`](../../src/build/container-interface.json) rather than adding a second declaration. `OPENCODE_CONFIG` is the seam for a harness-chosen path.
 
-Prove it by running one real repository skill through OpenCode and keeping the transcript. Then reword the Dockerfile sentence.
+Prove it by running one real repository skill through the OpenCode CLI and keeping the transcript.
 
 ## Phase 2, the runner seam
 
@@ -73,11 +71,11 @@ Then bake off two or three policies on the same brief and the same commit: cheap
 
 Cost is not the only axis. A free model that retries, terminates early, or writes badly has a cost the price table does not show. The policy must be able to reject a model for capability, and the reason must be recorded rather than hard-coded.
 
-## Phase 5, unify or do not
+## Phase 5, the settled provider decision
 
-Decide in writing whether opencode stops being a base-level provider. If it does, `src/reasoning/agent-runtime/opencode/` goes, `opencode-ai` lands in the pi image, and the manifest and the layout gate follow. If it does not, state the reason.
+The provider decision is settled: OpenCode is not a base-level provider. Its provider directory is gone, the pinned CLI stays in the agent-runtimes tier that the pi image inherits, and the manifest and layout gate follow. M3.6.5 records the removal; do not re-open it.
 
-Either way the merged image serves the same skill, prompt and `AGENTS.md` surfaces pi serves, verified by running one real skill on the OpenCode runtime and keeping the transcript.
+The pi image that carries the CLI serves the same skill, prompt and `AGENTS.md` surfaces pi serves, verified by running one real skill on the OpenCode CLI dispatch and keeping the transcript.
 
 ## Phase 6, flexibility over time
 
@@ -94,7 +92,7 @@ Phase 1 is the prerequisite: no other phase can dispatch to OpenCode until the t
 | W0 | 1, the transport | nothing |
 | W1 | 3, the runner seam, the cost ledger, the dispatch-rule surface | W0 |
 | W2 | 3, the policy candidates, measured on one brief and one commit | W1 |
-| W3 | 2, the provider decision, the policy bakeoff write-up | W2 |
+| W3 | 2, the policy bakeoff write-up | W2 |
 | W4 | 4 verification lanes | W3 |
 
 The shape is a **swarm** for W1 and W4, because every unit must return and there is no selection rule. It is an **arena** for W2, because the policy candidates are the same artifact produced three times and one has to win. Do not run an arena inside a swarm slice.

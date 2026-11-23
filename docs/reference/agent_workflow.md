@@ -50,13 +50,9 @@ Project-layer content is stable across iterations. It is not per-iteration state
 
 The role-to-model recommendations are committed with the project at `.agents/model-recommendations.md`, so a change to which model a role names is a reviewable edit. A container also carries a copy at `${AGENT_HOME:-~/.pi}/model-recommendations.md`, seeded at onboard and read only when the project copy is absent. The project and provider `AGENTS.md` files name the role vocabulary and the resolution order; the `setup-model-recommendations` skill populates the values, and a role the table does not name is refused by name rather than resolved to a default. [`dispatch.md`](dispatch.md) states the resolution and the launch sites. The decision's source of truth is the ADR `single_source_model_recommendations.md`.
 
-### Reference template
-
-`providers/AGENTS.template.md` is a reference template for authoring provider `AGENTS.md` files. It is not injected, not enforced, and not universal. New providers should use it as a starting point to ensure consistent structure and baseline coverage across provider `AGENTS.md` files. Deviations are permitted where provider-specific behaviour warrants them.
-
 ### What this model does not include
 
-There is no harness-level AGENTS.md injected across all providers and all projects. A candidate universal surface -- content common to every provider `AGENTS.md` file -- is captured in the reference template as a recommended baseline, not as a runtime injection. This decision is intentional: the boundary between universal and project-specific content cannot be drawn with confidence until the harness is used across multiple projects with different workflow conventions. The reference template will evolve toward a more precise universal set as that boundary becomes empirically testable.
+There is no harness-level AGENTS.md injected across all providers and all projects. The only always-loaded provider surface is `src/reasoning/agent-runtime/pi/config/agent/AGENTS.md`; the provider-neutral base is not built yet, and M3.6.7 owns it. The boundary between universal and project-specific content is not drawn until that base exists.
 
 The `~/workspace/input/brief.md` path was previously used to inject a stub file at session start. This stub carried no substantive content and has been removed. The input channel at `~/workspace/input/` remains available for operator-supplied files (task specs, reference documents); it is not used for agent orientation.
 
@@ -67,10 +63,10 @@ Skills and prompt templates share four layers, highest precedence first. Where e
 <!-- BEGIN GENERATED: surface-table -->
 | Source | Destination | Provider |
 |---|---|---|
-| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | opencode, pi |
+| `src/reasoning/entrypoint.sh` | `/opt/sandbox/bin/provider-entrypoint.sh` | pi |
 | `src/reasoning/agent-runtime/pi/preflight.sh` | `/opt/sandbox/bin/provider-preflight.sh` | pi |
-| `docs/reference/` | `/opt/sandbox/docs/reference/` | opencode, pi |
-| `src/libs/` | `/opt/sandbox/lib/` | opencode, pi |
+| `docs/reference/` | `/opt/sandbox/docs/reference/` | pi |
+| `src/libs/` | `/opt/sandbox/lib/` | pi |
 | `src/reasoning/agent-runtime/pi/config/` | `/opt/workflow/agent/config/` | pi |
 | `workflow/coding-agent/prompts/` | `/opt/workflow/agent/modules/coding-agent/prompts/` | pi |
 | `workflow/coding-agent/skills/` | `/opt/workflow/agent/modules/coding-agent/skills/` | pi |
@@ -144,7 +140,6 @@ Maps each area of the workflow to the document that specifies it, what that docu
 | Security model and invariants | `docs/development/security.md` | Trust boundaries, security invariants, threat assumptions | Operational workflow, iteration sequencing |
 | Execution mechanics | [`execution_model.md`](../reference/execution_model.md) | Container lifecycle, snapshot pipeline, diff pipeline, provider interface | Security invariants, operator iteration workflow |
 | External contract | [`tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, image naming, execution modes, `.env` variables | Internal implementation, iteration sequencing |
-| Provider AGENTS.md contract | `docs/development/provider_onboarding_guide.md` | Provider-layer AGENTS.md structure, authoring steps, reference template location | Project-layer AGENTS.md content, iteration workflow |
 
 Every cell names its document in the form its reader can open. A document under `docs/reference/` ships beside this one, so its cell is a link. A cell naming a project-only root -- `.agents/skills/`, `devlog/`, `docs/development/` -- names it in a code span, because this document ships into the image at `/opt/sandbox/docs/reference/` and those roots do not travel with it; the rule is the project's linking convention under `.agents/skills/`, and [`documentation_taxonomy.md`](documentation_taxonomy.md) `## Reach` states which roots ship. A cell naming a skill or a prompt names it in a code span for the same reason: it is read at its own image path, not from this document's.
 
@@ -160,7 +155,7 @@ Every cell names its document in the form its reader can open. A document under 
 
 **provider_onboarding_guide.md and agent_workflow.md** share the agent context model. agent_workflow.md defines the provider and project `AGENTS.md` model and the role of each file -- this is the canonical conceptual description. provider_onboarding_guide.md owns the authoring contract for provider `AGENTS.md` files and references this document for the model rationale.
 
-When a rule appears to exist in two documents in this map, decide it with `principle-single-source-of-truth` and the five modalities in `docs/adr/instruction_modality.md`.
+When a rule appears to exist in two documents in this map, decide it with `principle-single-source-of-truth` and the kind table in `docs/adr/instruction_modality.md`.
 
 ## References
 
@@ -171,5 +166,4 @@ When a rule appears to exist in two documents in this map, decide it with `princ
 | Container lifecycle and execution mechanics | [`../reference/execution_model.md`](../reference/execution_model.md) |
 | External contract: commands, naming, guarantees | [`../reference/tool_interface.md`](../reference/tool_interface.md) |
 | Iteration workflow (authoritative) | [`../reference/iteration_protocol.md`](../reference/iteration_protocol.md) |
-| Provider AGENTS.md contract and reference template | `docs/development/provider_onboarding_guide.md` |
 | Onboarding and running guide | `docs/development/quickstart.md` |

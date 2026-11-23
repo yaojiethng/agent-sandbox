@@ -1,6 +1,6 @@
 # Quickstart
 
-Getting agent-sandbox running on a new machine for the first time. Covers install, onboarding, and verifying the setup. For day-to-day commands and troubleshooting, see the provider quickstart for your provider (e.g. `providers/opencode/quickstart.md`).
+Getting agent-sandbox running on a new machine for the first time. Covers install, onboarding, and verifying the setup. For command shapes and runtime variables, see [tool_interface.md](../reference/tool_interface.md).
 
 ## Prerequisites
 
@@ -52,7 +52,7 @@ See [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md) fo
 
 ## 3. Complete the setup
 
-**Edit `.env`** -- set `SERVE_PORT` and any provider-specific variables flagged in the file comments. Path variables are derived automatically; do not edit them.
+**Edit `.env`** -- set `SERVE_PORT` and review `INSTALL_DIR` and `AUTOSAVE_INTERVAL`. Path variables are derived automatically; do not edit them.
 
 **Confirm prerequisites in `PROJECT_DIR`:**
 
@@ -83,7 +83,7 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 
 - [ ] `agent-sandbox` CLI installed (`which agent-sandbox`)
 - [ ] `agent-sandbox onboard` run; sandbox directory exists
-- [ ] `.env` complete -- `SERVE_PORT` and provider variables set
+- [ ] `.env` complete -- `SERVE_PORT`, `INSTALL_DIR` and `AUTOSAVE_INTERVAL` reviewed
 - [ ] `.env` gitignored in `PROJECT_DIR`
 - [ ] `PROJECT_DIR` is a git repo with at least one commit
 - [ ] Docker running (`docker info`)
@@ -132,5 +132,4 @@ git reset --hard agent-checkpoint/<worktree-id>/YYYYMMDD-HHMMSS
 | Document | Purpose |
 |---|---|
 | [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md) | Full onboarding procedure |
-| [`provider_onboarding_guide.md`](provider_onboarding_guide.md) | Adding a new provider |
 | [`../reference/tool_interface.md`](../reference/tool_interface.md) | Command shapes, `.env` variables, mount guarantees |

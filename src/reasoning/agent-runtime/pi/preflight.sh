@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# providers/pi/preflight.sh
+# src/reasoning/agent-runtime/pi/preflight.sh
 # Pi-specific pre-flight checks, sourced by provider-entrypoint.sh at startup.
 #
 # Responsibilities:

@@ -19,8 +19,6 @@ workflow/knowledge-vault/
 src/build/
 src/capability/seed_volume.sh
 src/reasoning/agent/drafts/
-src/reasoning/agent-runtime/opencode/
-src/reasoning/agent-runtime/AGENTS.template.md
 src/reasoning/agent-runtime/pi/onboard.sh
 src/reasoning/agent-runtime/pi/onboard-readme.md
 src/reasoning/agent-runtime/pi/docker-compose.pi.yml
@@ -32,4 +30,3 @@ AGENTS.md
 LICENSE
 Makefile
 readme.md
-src/reasoning/agent/prompt-templates.md

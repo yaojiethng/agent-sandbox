@@ -30,7 +30,7 @@
 #     serve:          src/reasoning/agent-runtime/<n>/docker-compose.serve.yml
 #
 # Provider hooks:
-#   providers/<n>/setup.sh  (sourced if exists, before compose generation)
+#   src/reasoning/agent-runtime/<n>/setup.sh  (sourced if exists, before compose generation)
 #   If setup.sh exits non-zero, the session aborts with a clear error attributing
 #   the failure to the provider setup hook.
 #
@@ -173,7 +173,7 @@ fi
 # -------------------------
 # Provider setup hook
 # -------------------------
-# Sources providers/<n>/setup.sh if it exists.
+# Sources src/reasoning/agent-runtime/<n>/setup.sh if it exists.
 # setup.sh is responsible for exporting provider-specific vars needed before
 # compose generation.
 # If setup.sh exits non-zero, the session aborts with an attribution message.

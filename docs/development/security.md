@@ -25,7 +25,7 @@ The system includes the following explicit trust boundaries, which hold in every
 4. Container <-> Mounted directories
 5. Agent runtime <-> Project files within the container
 
-**The agent runtime is explicitly untrusted** in all configurations. The container runs system dependencies (apt packages), the agent runtime (e.g. OpenCode), and project dependencies -- none of which are fully auditable.
+**The agent runtime is explicitly untrusted** in all configurations. The container runs system dependencies (apt packages), the agent runtime (e.g. pi), and project dependencies -- none of which are fully auditable.
 
 ### Principle
 

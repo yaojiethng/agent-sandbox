@@ -10,7 +10,7 @@
 #   {{PROJECT_NAME}}       -> project name
 #   {{SANDBOX_IMAGE_NAME}} -> capability layer image name
 #   {{AGENT_IMAGE_NAME}}   -> reasoning layer image name
-#   {{PROVIDER_NAME}}      -> provider name (e.g. opencode, pi)
+#   {{PROVIDER_NAME}}      -> provider name (e.g. pi)
 #
 # ${VAR} placeholders are preserved for Docker Compose to resolve at runtime
 # from the exported environment (set by start_agent.sh before compose).
@@ -70,7 +70,7 @@ x-workspace:
 # The provider config directory ("${SANDBOX_DIR}/.{{PROVIDER_NAME}}") has no row
 # here: the provider overlay mounts the subdirectories it needs, and the image
 # seeds the rest into AGENT_HOME at container start. See
-# providers/<provider>/docker-compose.<provider>.yml and provider_lifecycle.md.
+# src/reasoning/agent-runtime/<provider>/docker-compose.<provider>.yml and provider_lifecycle.md.
 
 services:
   sandbox:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# providers/pi/onboard.sh
+# src/reasoning/agent-runtime/pi/onboard.sh
 
 echo "Running Pi provider onboard hook..."
 

@@ -69,7 +69,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 # Preserved as ${VAR} for Docker Compose runtime resolution (operator-set):
 #   ${SERVE_PORT}           -> port for serve mode
 #   ${AUTOSAVE_INTERVAL}    -> autosave interval
-#   ${OPENCODE_SERVER_PASSWORD} -> OpenCode serve mode credential
 #   Any other provider-specific secrets
 #
 # Args:

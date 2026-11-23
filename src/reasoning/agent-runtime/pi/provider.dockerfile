@@ -1,4 +1,4 @@
-# providers/pi/provider.dockerfile
+# src/reasoning/agent-runtime/pi/provider.dockerfile
 # Provider layer for Pi. Inherits the shared agent-runtime tier from agent-runtimes.
 # Tagged: pi-agent-<project>
 
@@ -53,10 +53,6 @@ RUN chown -R ${HOST_UID}:${HOST_GID} /opt/workflow/agent
 RUN chown -R ${HOST_UID}:${HOST_GID} $WORKSPACE_DIR
 
 USER agentuser
-
-ENV PROVIDER_NAME=pi
-ENV AGENT_HOME=/home/agentuser/.pi
-
 
 WORKDIR /home/agentuser/sandbox
 

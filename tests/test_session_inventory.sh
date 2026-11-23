@@ -137,7 +137,7 @@ test_record_image_missing_service_empty_rc0() {
 # Asserts: the -agent- gate.
 test_record_provider_recovers_prefix_and_rejects_noncanonical() {
   local f="$FIXTURE_DIR/rec4.yml"
-  make_record "$f" "opencode-agent-lowerproj" "sbx"
+  make_record "$f" "fixture-agent-lowerproj" "sbx"
 
   local GOOD RC=0 BAD
   GOOD=$(record_provider "$f") || RC=$?
@@ -145,7 +145,7 @@ test_record_provider_recovers_prefix_and_rejects_noncanonical() {
   printf 'services:\n  agent:\n    image: weirdimage\n' > "$f"
   BAD=$(record_provider "$f")
 
-  if [[ $RC -eq 0 && "$GOOD" == "opencode" && -z "$BAD" ]]; then
+  if [[ $RC -eq 0 && "$GOOD" == "fixture" && -z "$BAD" ]]; then
     pass "record_provider: recovers '-agent-' prefixed name, empty for non-canonical"
   else
     fail "record_provider broken: good='$GOOD' rc=$RC bad='$BAD'"
@@ -430,7 +430,7 @@ test_enumerate_records_filters_and_skips() {
 
   make_record "$SBX/.compose/sess-a.yml" "pi-agent-proj" "proj-sbx" \
     "session-ts: 20260820-100000" "host-branch: main"
-  make_record "$SBX/.compose/sess-b.yml" "opencode-agent-proj" "proj-sbx" \
+  make_record "$SBX/.compose/sess-b.yml" "fixture-agent-proj" "proj-sbx" \
     "session-ts: 20260821-090000" "host-branch: dev"
   # Unrecoverable provider -> must be skipped
   make_record "$SBX/.compose/sess-c.yml" "weird" "proj-sbx"
@@ -447,7 +447,7 @@ test_enumerate_records_filters_and_skips() {
   WITH_DRYRUN=$(SANDBOX_DIR="$SBX" enumerate_records)
 
   if [[ "$ALL" == *"sess-a|pi|20260820-100000|main"* \
-     && "$ALL" == *"sess-b|opencode|20260821-090000|dev"* \
+     && "$ALL" == *"sess-b|fixture|20260821-090000|dev"* \
      && "$ALL" != *sess-c* \
      && "$PI_ONLY" == "sess-a|pi|20260820-100000|main" \
      && "$WITH_DRYRUN" == *"dryrun-abc123|pi|20260822-110000|main"* ]]

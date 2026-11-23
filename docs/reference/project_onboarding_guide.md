@@ -44,17 +44,18 @@ This produces:
 | File | Source | Operator action required |
 |---|---|---|
 | `Makefile` | Copied from `libs/_templates/Makefile.template` | None -- paths set automatically |
-| `.env` | Written by harness; path variables derived from `--project` and `--sandbox` | Fill in `SERVE_PORT` and any provider-specific variables (see `.env` comments) |
+| `.env` | Written by harness; path variables derived from `--project` and `--sandbox` | Review `SERVE_PORT`, `INSTALL_DIR` and `AUTOSAVE_INTERVAL` (see `.env` comments) |
 
-Provider-specific `.env` stubs are appended automatically from each `src/reasoning/agent-runtime/<n>/config/env.stub` present in the repo at onboard time; `onboard.sh` renames the stub to `.env`.
+Provider-specific `.env` values are appended only when a provider ships `config/env.stub`; `pi` ships none. The generator is `_provision_providers` in `scripts/onboard.sh`.
 
 ## Step 3 -- Review `.env`
 
-Open `SANDBOX_DIR/.env` and set:
+Open `SANDBOX_DIR/.env` and review:
 
 - `SERVE_PORT` -- host port for serve mode
+- `INSTALL_DIR` -- install path for the `agent-sandbox` CLI (default `~/.local/bin`)
+- `AUTOSAVE_INTERVAL` -- seconds between session checkpoints (default `60`)
 - `WORKTREE_DIR` -- `SANDBOX_TYPE=mount` starts only: host path of the shared worktree, bind-mounted at `/home/agentuser/sandbox` in the container (default `<sandbox>/.worktree`)
-- Any provider-specific variables flagged in the file comments (e.g. `OPENCODE_SERVER_PASSWORD`)
 
 The delivery model is not an `.env` variable: pass `SANDBOX_TYPE=copy|mount` on the command (`make start SANDBOX_TYPE=mount`), which the Makefile forwards as `--delivery`. `make resume` never takes it -- the delivery is recovered from the session record.
 
@@ -80,7 +81,7 @@ See [Dry-Run Guarantees](../reference/tool_interface.md#dry-run-guarantees) for 
 
 - [ ] `SANDBOX_DIR` is not inside `PROJECT_DIR` -- they must be siblings, not nested
 - [ ] `PROJECT_DIR` is a git repository with at least one commit
-- [ ] `.env` has `SERVE_PORT` and all provider-specific variables filled in
+- [ ] `.env` has `SERVE_PORT`, `INSTALL_DIR` and `AUTOSAVE_INTERVAL` reviewed
 - [ ] `.env` is gitignored in `PROJECT_DIR`
 - [ ] `make dry-run PROVIDER=<n>` passes
 
@@ -101,5 +102,4 @@ See [`../reference/sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) for
 | Document | Purpose |
 |---|---|
 | [`../reference/tool_interface.md`](../reference/tool_interface.md) | Command shapes, mount guarantees, `.env` variable reference |
-| `docs/development/provider_onboarding_guide.md` | Adding a new reasoning layer provider |
 | `docs/development/quickstart.md` | Session workflow -- before, during, and after a run |

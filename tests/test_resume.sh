@@ -31,7 +31,7 @@ RESUME="$REPO_ROOT/scripts/resume_agent.sh"
 
 # Build a minimal fixture sandbox with a .env and .compose/<session-id>.yml
 # registry records (the unified inventory, D7). Records embed the provider via
-# the agent image line and the session labels (ID 06). Builds pi + opencode
+# the agent image line and the session labels (ID 06). Builds pi + fixture
 # records so provider-filtering and the interactive picker are testable.
 build_fixture() {
   local FIXTURE_ID="$1"
@@ -68,7 +68,7 @@ services:
   sandbox:
     image: agent-sandbox-def456
   agent:
-    image: opencode-agent-test-project
+    image: fixture-agent-test-project
 EOF
 
   echo "$dir/sandbox"
@@ -123,7 +123,7 @@ resume_trace() {
 
 # --list renders the enriched registry display (id | provider | ts | branch),
 # newest session first, and filters by PROVIDER (decisions I-2, I-3).
-# Given: a sandbox holding a pi record and an opencode record
+# Given: a sandbox holding a pi record and an fixture record
 # When:  resume_agent.sh runs with --list
 # Then:  the enriched header and the abc123/pi row render, newest first
 # Asserts: the enriched registry display
@@ -142,20 +142,20 @@ test_list_renders_enriched() {
 
 # --list --provider=<n> filters the inventory to that provider (decision I-2).
 # Given: the same two records under --list
-# When:  --provider=pi and --provider=opencode each run
+# When:  --provider=pi and --provider=fixture each run
 # Then:  each listing carries only its own provider's row
 # Asserts: the provider filter on the inventory
 test_list_provider_filter() {
   local sandbox
   sandbox="$(build_fixture "filter")"
-  local out pi_out opencode_out
+  local out pi_out fixture_out
   pi_out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/filter/project" --sandbox="$sandbox" --list --provider=pi)"
-  opencode_out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/filter/project" --sandbox="$sandbox" --list --provider=opencode)"
+  fixture_out="$(bash "$RESUME" --name=test --project="$FIXTURE_DIR/filter/project" --sandbox="$sandbox" --list --provider=fixture)"
   if echo "$pi_out" | grep -q "abc123" && ! echo "$pi_out" | grep -q "def456" \
-     && echo "$opencode_out" | grep -q "def456" && ! echo "$opencode_out" | grep -q "abc123"; then
+     && echo "$fixture_out" | grep -q "def456" && ! echo "$fixture_out" | grep -q "abc123"; then
     pass "resume --list --provider=<n>: filters inventory by provider"
   else
-    fail "resume --list --provider=<n>: expected provider-filtered rows, got pi=[$pi_out] opencode=[$opencode_out]"
+    fail "resume --list --provider=<n>: expected provider-filtered rows, got pi=[$pi_out] fixture=[$fixture_out]"
   fi
 }
 
@@ -321,7 +321,7 @@ services:
   sandbox:
     image: sandbox-test-project
   agent:
-    image: opencode-agent-test-project
+    image: fixture-agent-test-project
 EOF
   local out
   out="$(bash "$RESUME" --name=test --project="$dir/project" --sandbox="$dir/sandbox" --list)"

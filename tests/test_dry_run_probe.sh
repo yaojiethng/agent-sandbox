@@ -507,7 +507,7 @@ test_reas_unknown_provider_fails_closed() {
   assert_ne "0" "$(kv "$state" rc)" "an unknown provider fails the reasoning probe"
   assert_eq "$(layer_status "$state" agent_runtime)" FAIL \
     "layer.agent_runtime = FAIL for an unknown provider"
-  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "agent binary unknown for provider" \
+  assert_contains "$(cat "$PROBE_OUT" 2>/dev/null)" "agent binary not executable: custom" \
     "the unknown provider is named"
 }
 run_test test_reas_unknown_provider_fails_closed

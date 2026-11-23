@@ -44,7 +44,7 @@ Every input the build reads is pinned to the artifact it resolved to, and [`src/
 | a registry package | nothing: the committed lockfile is the request | the resolved integrity hash and the lockfile |
 | the Python build | the exact 3.11 patch | the standalone build uv resolves it to |
 
-OpenCode is the URL-artifact row rather than the registry-package one, and the reason is the class's limit rather than a preference. Its package publishes one binary per platform and per C library, and npm filters those on `os` and `cpu` alone, so a frozen install of it lands four linux-x64 variants -- two that cannot load against this base's glibc -- for one executable. The tier pins the tarball and verifies it, which ships the same binary and no tree around it.
+The OpenCode CLI is the URL-artifact row rather than the registry-package one, and the reason is the class's limit rather than a preference. Its package publishes one binary per platform and per C library, and npm filters those on `os` and `cpu` alone, so a frozen install of it lands four linux-x64 variants -- two that cannot load against this base's glibc -- for one executable. The tier pins the tarball and verifies it, which ships the same binary and no tree around it.
 
 An apt pin has to be resolved across `bookworm`, `bookworm-updates` and `bookworm-security`, not from `bookworm` alone: a security update lands in the last of those first, and a package pinned behind its own library makes the set unsatisfiable. The scan therefore compares Debian versions rather than preferring a suite, and it fails loudly when it cannot read one rather than resolving from the others.
 
@@ -62,13 +62,12 @@ The frequency bands are the audit's, from the 2026-11-07 log boundary; they orde
 |---|---|---|---|---|
 | first build | a cold host, an empty cache | rare | the image builds from a clean tree | the baseline record; the exit status |
 | rebuild | no input changed | frequent | every tier is served from the layer cache | `cache_state=cached`; the wall seconds |
-| rebuild | a pin bump | occasional | the shared tier and both provider images change | the image ID delta across two records |
+| rebuild | a pin bump | occasional | the shared tier and the provider image change | the image ID delta across two records |
 | rebuild | a provider payload change | frequent | only the provider image changes | the image ID delta; the cache state |
 | rebuild | a tier-1 change | occasional | tiers 2 and 3 rebuild | the cache state |
 | rebuild | `--rebuild` | occasional | every tier runs from scratch | the static propagation test; the wall seconds |
 | dirty tree | the delta run | frequent in development | the run records the dirty inputs | `repo.dirty`; the Dockerfile hashes; the HEAD |
 | failure | a failed step | occasional | the exit status and the failing step are recorded | the exit status; the log |
-| second provider | opencode beside pi | occasional | the provider selects its tier | the static test |
 | boundary | the agent reads the report | every run | the report crosses through the input channel | the report path |
 | security | pins, the non-root user, no secrets | every build | the pin policy holds; the image runs as the agent user | the pin gate; the static tests |
 | pin drift | a republished or moved artifact | rare | the drift is reported rather than silent | the scan's `--remote` output; the preflight warning |

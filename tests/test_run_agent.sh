@@ -309,15 +309,15 @@ test_seeder_timeout_names_the_timeout() {
 }
 
 # The provider config directory is pre-created before the bind mount is used,
-# so Docker never creates the mount source as root. opencode ships no setup
+# so Docker never creates the mount source as root. fixture ships no setup
 # hook, so the mkdir is the only creator on this path.
 # Given: a provider with no setup hook
 # When:  run_agent.sh runs a standard session
-# Then:  $SANDBOX_DIR/.opencode exists after the run
+# Then:  $SANDBOX_DIR/.fixture exists after the run
 # Asserts: the provider config directory is pre-created
 test_provider_config_dir_precreated() {
   local FIX="$FIXTURE_DIR/provider_config_dir"
-  make_run_agent_fixture "$FIX" opencode
+  make_run_agent_fixture "$FIX" fixture
 
   local out="$FIX/out.txt" rc=0
   (
@@ -330,8 +330,8 @@ test_provider_config_dir_precreated() {
       --delivery=copy < /dev/null
   ) > "$out" 2>&1 || rc=$?
 
-  if [[ $rc -eq 0 ]] && [[ -d "$SANDBOX_DIR/.opencode" ]]; then
-    pass "provider config dir: \$SANDBOX_DIR/.opencode pre-created for a hookless provider"
+  if [[ $rc -eq 0 ]] && [[ -d "$SANDBOX_DIR/.fixture" ]]; then
+    pass "provider config dir: \$SANDBOX_DIR/.fixture pre-created for a hookless provider"
   else
     fail "provider config dir: missing after rc=$rc (out=$(cat "$out"))"
   fi
@@ -346,7 +346,7 @@ test_provider_config_dir_precreated() {
 # Asserts: the seeder's -T guard (the no-TTY invocation)
 test_seeder_invocation_has_no_tty() {
   local FIX="$FIXTURE_DIR/seeder_no_tty"
-  make_run_agent_fixture "$FIX" opencode
+  make_run_agent_fixture "$FIX" fixture
   export PROJECT_DIR="$FIX/project"
   mkdir -p "$PROJECT_DIR"
 

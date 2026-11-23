@@ -359,7 +359,7 @@ services:
   sandbox:
     image: sandbox-test-project
   agent:
-    image: opencode-agent-test-project
+    image: fixture-agent-test-project
   extra:
     image: some-other-image
 EOF
@@ -368,10 +368,10 @@ EOF
   sandbox="$(record_image "$dir/r.yml" sandbox)"
   extra="$(record_image "$dir/r.yml" extra)"
   provider="$(record_provider "$dir/r.yml")"
-  if [[ "$agent" == "opencode-agent-test-project" \
+  if [[ "$agent" == "fixture-agent-test-project" \
      && "$sandbox" == "sandbox-test-project" \
      && "$extra" == "some-other-image" \
-     && "$provider" == "opencode" ]]; then
+     && "$provider" == "fixture" ]]; then
     pass "record_image/record_provider: service-scoped, anchored, provider from agent image"
   else
     fail "record_image/record_provider: got agent=[$agent] sandbox=[$sandbox] extra=[$extra] provider=[$provider]"

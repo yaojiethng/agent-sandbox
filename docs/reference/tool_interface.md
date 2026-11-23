@@ -14,11 +14,11 @@ Internal implementation is in [`execution_model.md`](execution_model.md).
 |---|---|---|
 | Capability layer | `sandbox-<project>` | Sandbox, seed pipeline, diff pipeline |
 | Reasoning layer language runtime | `agent-base` | The shared language runtime set every reasoning image inherits |
-| Reasoning layer agent-runtime tier | `agent-runtimes` | The registry-package agent-runtimes, installed once and inherited by every provider |
+| Reasoning layer agent-runtime tier | `agent-runtimes` | pi's frozen registry package and the pinned OpenCode CLI, installed once and inherited by every provider |
 | Reasoning layer base | `<provider>-base` | A source-built agent-runtime's install layer; not project-specific |
 | Reasoning layer | `<provider>-agent-<project>` | Provider-specific agent-runtime |
 
-`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `opencode`, `pi`). Base images contain no project-specific content. A source-built agent-runtime's base is built once per provider, and the shared `agent-runtimes` tier is built once for all providers; the reasoning layer image inherits from the base or the tier and is built per project.
+`<project>` is `PROJECT_NAME` from the project-side Makefile. `<provider>` is the provider name (e.g. `pi`). Base images contain no project-specific content. A source-built agent-runtime's base is built once per provider, and the shared `agent-runtimes` tier is built once for all providers; the reasoning layer image inherits from the base or the tier and is built per project.
 
 ## Container Naming
 
@@ -39,10 +39,10 @@ Stops any running session for this project, builds missing images if needed, see
 
 `PROVIDER` is required (unless `INTERACTIVE=1`). Fast path supplies it explicitly. Optional flags:
 
-- `SERVE=1` -- start the agent in serve mode instead of attaching a TUI: the terminal returns to the shell immediately, the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`. Serve is provider-specific (see the serve-overlay table under Container Naming).
+- `SERVE=1` -- start the agent in serve mode instead of attaching a TUI: the terminal returns to the shell immediately, the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`. Serve is provider-specific; no current provider supplies a supported serve overlay, and `pi` starts in interactive mode.
 - `REFRESH=1` -- rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
 - `REBUILD=1` -- rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
-- `INTERACTIVE=1` -- the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`, `opencode`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted -- e.g. `make start PROVIDER=opencode INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
+- `INTERACTIVE=1` -- the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted -- e.g. `make start PROVIDER=pi INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
 
 **Leaves behind:** `session/` (per-export `<EXPORT_TIME>-<SESSION_ID>/`) and `autosave/` (single `<SESSION_ID>/`, replaced on a successful tick) subfolders in `.workspace/session-diffs/`; updated provider session state in `.<provider>/`.
 
@@ -75,7 +75,6 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 |---|---|
 | `all` (default) | Sandbox image + every discovered provider |
 | `pi` | `pi` provider only |
-| `pi,opencode` | `pi` and `opencode` providers |
 | `sandbox` | Sandbox image only |
 | `pi,sandbox` | `pi` provider + sandbox image |
 
@@ -160,9 +159,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 
 **Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/agent-runtime/<n>/docker-compose.serve.yml` in the repo -- never copied to `SANDBOX_DIR`.
 
-| Provider | Serve behaviour |
-|---|---|
-| `opencode` | OpenCode runs in server mode; port exposed at `SERVE_PORT` on `127.0.0.1`; `OPENCODE_SERVER_PASSWORD` controls authentication |
+No provider currently supplies a supported serve overlay; `pi` starts in interactive mode when serve is requested.
 
 ## Mount Shape Guarantees
 
@@ -198,9 +195,10 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
 | `SERVE_PORT` | Operator-supplied | Operator -- host port for serve mode; default `46553` (matches the provider serve overlays' fallback) |
+| `INSTALL_DIR` | `~/.local/bin` | Operator -- install path for the CLI |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
-`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from `src/reasoning/agent-runtime/<n>/.env.example` at onboard time.
+`SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from each provider's `config/env.stub` at onboard time; `pi` supplies none.
 
 ### Runtime-derived paths (not stored in `.env`)
 
@@ -241,13 +239,11 @@ A conforming provider supplies the following under `src/reasoning/agent-runtime/
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |
 
-**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there. See `docs/development/provider_onboarding_guide.md#step-7-optional----setupsh`.
+**Important: API keys in `.env` are NOT automatically passed to containers.** Docker Compose only passes environment variables that are explicitly declared in a compose file's `environment:` block. If your provider requires API keys (e.g. `DEEPSEEK_API_KEY`), you **must** create `docker-compose.<provider>.yml` and declare them there.
 
 Providers do not supply `build.sh` or `run.sh` -- the harness manages all build and container lifecycle. `src/reasoning/entrypoint.sh`, baked as `/opt/sandbox/bin/provider-entrypoint.sh`, is injected into every provider image by the harness via the build context -- providers do not author it.
 
-See `docs/development/provider_onboarding_guide.md` for the full provider contract and step-by-step implementation guide.
-
-The reasoning layer builds in tiers, and the agent-runtime install's mechanism decides which one a provider joins. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. `src/reasoning/runtimes.dockerfile` builds `agent-runtimes` on top of it, holding both registry-package agent-runtimes. A provider whose agent-runtime installs from a registry package inherits `agent-runtimes` and needs no base of its own; a provider whose agent-runtime is a source build adds a `<provider>-base` between the two. Its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the language runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
+The reasoning layer builds in tiers, and the agent-runtime install's mechanism decides which one a provider joins. `src/reasoning/base.dockerfile` builds the shared image `agent-base`, cached across all providers on the machine. `src/reasoning/runtimes.dockerfile` builds `agent-runtimes` on top of it, holding pi's frozen registry package and the pinned OpenCode CLI binary. A provider whose agent-runtime installs from a registry package inherits `agent-runtimes` and needs no base of its own; a provider whose agent-runtime is a source build adds a `<provider>-base` between the two. Its `provider.dockerfile` builds `<provider>-agent-<project>`. The shared base is the single owner of the language runtime set, so an agent finds the same Node, Python, uv, and lint gates whichever provider it runs under.
 
 A `provider.dockerfile` sends a repository directory to an image directory with `COPY`, and sets the image's environment with `ENV`. That layout is declared once in `src/build/container-interface.json`, and `scripts/check_container_layout.sh` holds the declaration equal to the dockerfiles in both directions. So a new `COPY` or `ENV` line needs a manifest row in the same change, and the checks that need the layout read the manifest through `src/build/container-interface.mjs` instead of parsing the dockerfiles themselves.
 
@@ -276,4 +272,3 @@ A dry-run does not prove agent correctness -- it proves the harness containers s
 | CLI interaction conventions | `docs/development/interface-conventions.md` |
 | Security model | `docs/development/security.md` |
 | Onboarding a project | [../reference/project_onboarding_guide.md](../reference/project_onboarding_guide.md) |
-| Adding a provider | `docs/development/provider_onboarding_guide.md` |

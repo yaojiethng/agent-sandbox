@@ -46,7 +46,7 @@ If yes, explain:
 
 If architecture or behavior changed:
 
-- [ ] `OpenCode_Agent_Workflow.md` reviewed and updated (if required)
+- [ ] `docs/reference/agent_workflow.md` reviewed and updated (if required)
 - [ ] `SECURITY.md` reviewed and updated (if required)
 - [ ] `roadmap.md` updated (if milestone progression occurred)
 - [ ] No cross-layer leakage introduced

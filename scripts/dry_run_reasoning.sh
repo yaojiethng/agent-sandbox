@@ -41,16 +41,6 @@ _running_as_bash_script() {
   [[ -n "${BASH_VERSION:-}" && "${0##*/}" == "dry_run_reasoning.sh" ]]
 }
 
-# Map a provider id to its agent binary name for the readiness check. Empty if
-# unknown (the container may set AGENT_CMD to disambiguate).
-_agent_binary_for_provider() {
-  case "${1:-}" in
-    pi)       echo "pi" ;;
-    opencode) echo "opencode" ;;
-    *)        echo "" ;;
-  esac
-}
-
 # Write the per-container diagnostics record: dry_run_write_record in
 # src/libs/dry_run_harness.sh.
 
@@ -154,7 +144,7 @@ section "agent_runtime agent readiness"
 # session / consume the probe args as agent input). Readiness-to-take-input is
 # asserted by: provider preflight env (workspace_mounts/AGENT_HOME), agent
 # binary present + executable, and a writable output channel (liveness).
-_agent_command="${AGENT_CMD:-$(_agent_binary_for_provider "$PROVIDER_NAME")}"
+_agent_command="${AGENT_CMD:-$PROVIDER_NAME}"
 if [[ -n "$_agent_command" ]] && command -v "$_agent_command" >/dev/null 2>&1; then
   _pass "agent binary present and executable ($_agent_command)"
 else
