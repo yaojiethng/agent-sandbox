@@ -76,7 +76,7 @@ What a leaf author does:
 
 - **Delegate before validating.** `--help` and `-h` route to the leaf's own page and exit 0 before any required-arg check, so `agent-sandbox <sub> --help` and `bash scripts/<sub>.sh --help` both work without flags. `parse_args_or_exit` is the one mapping: help exits 0, a usage error exits 1. `usage` is a pure reporter: it prints and returns.
 - **Own the page.** The dispatcher `exec`s the leaf's help and duplicates no text; a change to a shared `--help` surface is made once, where the flags are declared.
-- **Keep the summary line first.** The catalog's one-line summary is the first line of the leaf's `usage()`, and the gate holds the two equal, so the index cannot drift from the page.
+- **The index sentence is the catalog's.** A row's summary is written there, not copied from a leaf page: a leaf's first usage line is its `Usage:` line, so there is nothing to hold equal. What the gate reads from a leaf is its own `--help`, and a declared identity field must appear there.
 - **`help` is itself a subcommand.** `agent-sandbox help`, `help --help` and `help -h` print the index; `help <sub>` and `<sub> --help` are equivalent. `help --json` prints the same rows as JSON for a programmatic reader.
 
 ## 5. Exit Codes

@@ -236,7 +236,7 @@ main() {
   source "$REPO_ROOT/src/libs/session_inventory.sh"
   source "$REPO_ROOT/src/libs/cli.sh"
 
-  parse_args usage \
+  parse_args_or_exit usage \
     --stale=STALE_KIND \
     --provider=PROVIDER_FILTER \
     --age-days=AGE_DAYS \
@@ -246,7 +246,6 @@ main() {
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     -- "$@"
-  [ $? -eq 2 ] && exit 0
   check_base_flags
 
   # Canonicalize the sandbox dir once so Rule 2's label filters match the

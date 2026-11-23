@@ -265,7 +265,7 @@ EOF
 }
 
 main() {
-  parse_args usage \
+  parse_args_or_exit usage \
     --name=PROJECT_NAME \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
@@ -273,9 +273,6 @@ main() {
     --progress=BUILD_PROGRESS \
     --rebuild \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
   local REBUILD_FLAG=""
   [[ "$REBUILD" == true ]] && REBUILD_FLAG="--no-cache"
 

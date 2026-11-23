@@ -17,8 +17,9 @@
 #     --name=PROJECT_NAME \
 #     --env=ENV_REL \
 #     -- <args...>
+#   parse_args_or_exit USAGE_FN spec... -- <args...>   (leaf: maps status to exit)
 #
-# Both entry points are policy wrappers over the single implementation
+# The entry points are policy wrappers over the single implementation
 # `_cli_parse`. All parse state is local to the call: the spec registry is
 # a local associative array that dies with the function, so one parse can
 # never observe another parse's registry.
@@ -30,6 +31,8 @@
 #
 # parse_args returns 0 on success, 1 on unknown argument (usage printed),
 # and 2 when --help/-h was given (usage printed, caller decides to exit).
+# parse_args_or_exit wraps parse_args and takes the decision: 0 returns, 1
+# exits 1, 2 exits 0 (`cli_surface.md` R9).
 # A value flag with no `=value` and a boolean flag with a value do not match
 # their spec shape; the mode's unknown-argument policy decides their fate.
 # Boolean vars default to "false" in the caller's scope before parsing,
@@ -173,4 +176,23 @@ parse_args_collect() {
   local sink_var="$1"
   shift
   _cli_parse collect "" "$sink_var" "$@"
+}
+
+# parse_args_or_exit USAGE_FN spec... -- args...
+#   Strict leaf parse that maps the parser's status to the process status, in
+#   one place: parsed returns, a usage error exits 1, and a help request exits
+#   0 (`cli_surface.md` R9). A leaf calls this instead of spelling the mapping,
+#   which the tree did three ways before this function existed. Exiting is the
+#   contract and the name says so, which is why this one function carries the
+#   gate's directive: a leaf that continued after a help request or a rejected
+#   flag would run on unparsed input.
+# lib-contract: allow p-13 -- exiting is this function's whole contract
+parse_args_or_exit() {
+  local rc=0
+  parse_args "$@" || rc=$?
+  case "$rc" in
+    0) return 0 ;;
+    2) exit 0 ;;
+    *) exit 1 ;;
+  esac
 }

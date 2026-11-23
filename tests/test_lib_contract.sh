@@ -205,4 +205,48 @@ run_test test_missing_scan_root_fails_closed
 run_test test_real_tree_is_clean
 
 
+
+test_directive_exempts_the_next_function_only() {
+  local dir="$FIXTURE_DIR/directive"
+  make_scan "$dir"
+  cat > "$dir/src/libs/allowed.sh" <<'INNER'
+#!/usr/bin/env bash
+# lib-contract: allow p-13 -- exiting is this function's whole contract
+parse_and_exit() {
+  case "$1" in
+    help) exit 0 ;;
+    *) exit 1 ;;
+  esac
+}
+
+parse_later() {
+  exit 1
+}
+INNER
+
+  run_gate "$dir"
+  assert_ne "$GATE_RC" "0" "a second function without the directive still fails"
+  assert_contains "$GATE_OUT" "allowed.sh:11" "the unflagged function is the one named"
+  assert_not_contains "$GATE_OUT" "allowed.sh:5" "the flagged function is exempt"
+}
+
+test_directive_without_a_reason_is_not_a_directive() {
+  local dir="$FIXTURE_DIR/directive_bare"
+  make_scan "$dir"
+  cat > "$dir/src/libs/bare.sh" <<'INNER'
+#!/usr/bin/env bash
+# lib-contract: allow p-13
+parse_and_exit() {
+  exit 1
+}
+INNER
+
+  run_gate "$dir"
+  assert_ne "$GATE_RC" "0" "the directive needs its reason"
+  assert_contains "$GATE_OUT" "bare.sh:4" "and the exit is reported"
+}
+
+run_test test_directive_exempts_the_next_function_only
+run_test test_directive_without_a_reason_is_not_a_directive
+
 test_done

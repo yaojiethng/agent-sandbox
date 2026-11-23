@@ -43,14 +43,13 @@ SESSION_ID=""
 PRUNE=false
 PROJECT_DIR=""
 
-parse_args usage \
+parse_args_or_exit usage \
   --session-id=SESSION_ID \
   --prune:PRUNE \
   --name=PROJECT_NAME \
   --project=PROJECT_DIR \
   --sandbox=SANDBOX_DIR \
   -- "$@"
-[ $? -eq 2 ] && exit 0
 
 check_base_flags
 

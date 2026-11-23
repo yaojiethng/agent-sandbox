@@ -9,6 +9,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 source "$REPO_ROOT/src/libs/time_format.sh"
 
@@ -46,16 +47,6 @@ say() { echo "build_probe: $*"; }
 die() {
   echo "build_probe: ERROR: $*" >&2
   exit 1
-}
-
-json_string() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  s="${s//$'\n'/\\n}"
-  s="${s//$'\r'/\\r}"
-  s="${s//$'\t'/\\t}"
-  printf '"%s"' "$s"
 }
 
 join_commas() {
@@ -234,16 +225,13 @@ emit_report() {
 # -------------------------
 
 main() {
-  parse_args usage \
+  parse_args_or_exit usage \
     --input-dir=PROBE_INPUT_DIR \
     --provider=PROBE_PROVIDER \
     --project=PROBE_PROJECT \
     --label=PROBE_LABEL \
     --rebuild \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
 
   command -v docker >/dev/null 2>&1 || die "docker is not on PATH; the probe needs it"
   command -v git >/dev/null 2>&1 || die "git is not on PATH"

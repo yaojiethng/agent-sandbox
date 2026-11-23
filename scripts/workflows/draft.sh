@@ -604,8 +604,7 @@ _resolve_draft_source() {
 #   [--channel=<c>] [--branch-from=<n>] [--diffs=<r>]
 #   [--branch-summary=<s>] [--force] [--permissive] [--interactive]
 main() {
-  local rc=0
-  parse_args usage \
+  parse_args_or_exit usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --bundle=BUNDLE_ARG \
@@ -616,9 +615,7 @@ main() {
     --force \
     --permissive \
     --interactive \
-    -- "$@" || rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
+    -- "$@" 
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

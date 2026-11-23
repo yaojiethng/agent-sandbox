@@ -65,7 +65,7 @@ SECONDS=0
 # skill ("the file is named for its subject") is the source: each test file
 # is named for the subject it covers. Where a subject has more than one suite, list them all.
 declare -A SUBJECT_TESTS=(
-  [scripts/agent-sandbox.sh]="test_dispatch.sh"
+  [scripts/agent-sandbox.sh]="test_agent_cli_dispatch.sh"
   [scripts/build.sh]="test_build_context.sh"
   [scripts/install.sh]="test_install.sh"
   [scripts/resume_agent.sh]="test_resume_list.sh test_resume.sh"

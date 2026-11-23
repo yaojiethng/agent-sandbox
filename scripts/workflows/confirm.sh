@@ -161,15 +161,12 @@ EOF
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls confirm_run.
 # Expected flags: --project=<dir> --sandbox=<dir> [--target=<branch>] [--new]
 main() {
-  local rc=0
-  parse_args usage \
+  parse_args_or_exit usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --target=TARGET_BRANCH \
     --new \
-    -- "$@" || rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
+    -- "$@" 
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

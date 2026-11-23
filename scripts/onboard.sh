@@ -412,16 +412,13 @@ main() {
   # ---------------------------------------------------------------------------
   source "$REPO_ROOT/src/libs/cli.sh"
   source "$REPO_ROOT/src/libs/env_resolve.sh"
-  parse_args usage \
+  parse_args_or_exit usage \
     --name=PROJECT_NAME \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --refresh:REFRESH \
     --yes:YES_FLAG \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
   # --yes / non-tty means non-interactive (scripting/CI).
   if [[ "$YES_FLAG" == true ]]; then
     _INTERACTIVE=false

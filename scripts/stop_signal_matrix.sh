@@ -40,6 +40,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_self_dir/.." && pwd)"
 
 source "$REPO_ROOT/src/build/image.sh"
+source "$REPO_ROOT/src/libs/common.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 source "$REPO_ROOT/src/libs/time_format.sh"
 source "$REPO_ROOT/src/libs/dirs.sh"
@@ -75,16 +76,6 @@ say() { echo "stop_signal_matrix: $*" >&2; }
 die() {
   echo "stop_signal_matrix: ERROR: $*" >&2
   exit 1
-}
-
-# json_string TEXT
-json_string() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  s="${s//$'\n'/\\n}"
-  s="${s//$'\t'/\\t}"
-  printf '"%s"' "$s"
 }
 
 # expect_verdict SECONDS EXIT_CODE TIMEOUT EXPECT: compare one row against the
@@ -169,16 +160,13 @@ plan_rows() {
 }
 
 main() {
-  parse_args usage \
+  parse_args_or_exit usage \
     --image=MATRIX_IMAGE \
     --stop-timeout=MATRIX_STOP_TIMEOUT \
     --input-dir=MATRIX_INPUT_DIR \
     --dry-run:MATRIX_DRY_RUN \
     --keep:MATRIX_KEEP \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
 
   [[ -n "$MATRIX_IMAGE" ]] || MATRIX_IMAGE="$DEFAULT_IMAGE"
 

@@ -480,12 +480,11 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   SNAPSHOT_SUMMARY_ARG=""
   BASELINE_ARG=""
 
-  parse_args usage \
+  parse_args_or_exit usage \
     --snapshot-summary=SNAPSHOT_SUMMARY_ARG \
     --baseline=BASELINE_ARG \
     --to=TO_ARG \
     -- "$@"
-  [ $? -eq 2 ] && exit 0
 
   if [[ -z "$TO_ARG" ]]; then
     echo "Error: --to is required. Specify a base output directory." >&2

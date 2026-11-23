@@ -106,13 +106,27 @@ check_file() {
       raw = $0
       plain = strip_quotes(raw)
 
+      # The one directive: a function whose contract is to exit, written as
+      # `# lib-contract: allow p-13 -- <reason>` on the line above its
+      # definition. It applies to the next function only, and a reason is
+      # required: the directive is read as prose by the next maintainer.
+      if (raw ~ /^#[[:space:]]*lib-contract:[[:space:]]*allow[[:space:]]+p-13[[:space:]]+--[[:space:]]+[^[:space:]]/) {
+        allow_next = 1
+        next
+      }
+
       if (!in_func && (raw ~ /^[A-Za-z_][A-Za-z0-9_]*\(\)[[:space:]]*\{/ ||
                        raw ~ /^function[[:space:]]+[A-Za-z_][A-Za-z0-9_]*/)) {
         in_func = 1
+        p13_exempt = allow_next
+        allow_next = 0
         depth = brace_delta(raw)
         delete guards
         next
       }
+
+      # A statement between the directive and the function cancels it.
+      if (!in_func && raw !~ /^[[:space:]]*(#|$)/) allow_next = 0
 
       if (in_func) {
         depth += brace_delta(raw)
@@ -127,7 +141,7 @@ check_file() {
         }
 
         # p-13 -- exit inside a function body
-        if (plain ~ /(^|[;&|( ])exit([;&|) ]|$)/) {
+        if (!p13_exempt && plain ~ /(^|[;&|( ])exit([;&|) ]|$)/) {
           printf "%s:%d: exit in a sourced-library function (convention 3.1; use return)\n", fname, NR
           findings++
         }

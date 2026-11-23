@@ -299,4 +299,38 @@ run_test test_collect_help_not_special
 run_test test_collect_bare_value_flag_forwarded
 run_test test_collect_bare_value_flag_consumed
 run_test test_collect_has_no_stale_registry
+
+# ---------------------------------------------------------------------------
+# parse_args_or_exit
+# ---------------------------------------------------------------------------
+
+# The three parser statuses map to process statuses in one place.
+test_parse_args_or_exit_returns_on_success() {
+  local rc=0
+  ( parse_args_or_exit _test_usage --value=VALUE -- --value=x ) || rc=$?
+  assert_rc 0 "$rc" 'a parsed call returns'
+}
+
+test_parse_args_or_exit_exits_1_on_usage_error() {
+  local rc=0
+  ( parse_args_or_exit _test_usage -- --bogus ) >/dev/null 2>&1 || rc=$?
+  assert_rc 1 "$rc" 'a usage error exits 1'
+}
+
+test_parse_args_or_exit_exits_0_on_help() {
+  local rc=0
+  ( parse_args_or_exit _test_usage -- --help ) >/dev/null 2>&1 || rc=$?
+  assert_rc 0 "$rc" 'a help request exits 0'
+}
+
+test_parse_args_or_exit_sets_the_vars() {
+  VALUE=""
+  parse_args_or_exit _test_usage --value=VALUE -- --value=kept
+  assert_eq "kept" "$VALUE" 'the parse still writes its vars'
+}
+
+run_test test_parse_args_or_exit_returns_on_success
+run_test test_parse_args_or_exit_exits_1_on_usage_error
+run_test test_parse_args_or_exit_exits_0_on_help
+run_test test_parse_args_or_exit_sets_the_vars
 test_done test_cli_lib

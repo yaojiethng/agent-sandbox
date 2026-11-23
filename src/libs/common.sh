@@ -17,6 +17,7 @@
 #   parse_help_flag()     --  check for --help/-h, print usage and return 0
 #                           when help was requested; the caller turns the
 #                           status into its exit
+#   json_string()         --  print a value as a JSON string literal
 #
 # Scripts should define their own usage() before sourcing this file.
 
@@ -69,4 +70,19 @@ check_base_flags() {
     echo "Error: invalid SANDBOX_DIR: $SANDBOX_DIR" >&2
     return 1
   fi
+}
+
+# json_string VALUE  --  print VALUE as a JSON string: the two escapes JSON
+# requires, plus the whitespace ones a JSON parser would reject if raw. The
+# three probe scripts and the dispatcher's `help --json` render JSON this way;
+# one definition keeps the escaping identical, including the carriage return
+# `stop_signal_matrix.sh` used to miss.
+json_string() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '"%s"' "$s"
 }

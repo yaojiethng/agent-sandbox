@@ -109,7 +109,7 @@ DELIVERY=""
 FLATTEN=false
 
 _CLI_UNKNOWN_WORD="Unknown flag"
-parse_args usage \
+parse_args_or_exit usage \
   --name=PROJECT_NAME \
   --sandbox=SANDBOX_DIR \
   --env=ENV_FILE \
@@ -118,7 +118,6 @@ parse_args usage \
   --flatten:FLATTEN \
   --delivery=DELIVERY \
   -- "$@"
-[ $? -eq 2 ] && exit 0
 case "$DELIVERY" in
   copy|mount) ;;
   *)

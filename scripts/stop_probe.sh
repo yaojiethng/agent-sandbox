@@ -123,18 +123,6 @@ die() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# json_string TEXT
-# A JSON string literal, escaped where it is written.
-json_string() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  s="${s//$'\n'/\\n}"
-  s="${s//$'\r'/\\r}"
-  s="${s//$'\t'/\\t}"
-  printf '"%s"' "$s"
-}
-
 # json_array ITEM...
 # A JSON array of string literals, one line, empty array when given no item.
 json_array() {
@@ -897,7 +885,7 @@ check_calibration() {
 # -------------------------
 
 main() {
-  parse_args usage \
+  parse_args_or_exit usage \
     --input-dir=PROBE_INPUT_DIR \
     --name=PROBE_NAME \
     --sandbox=PROBE_SANDBOX \
@@ -906,9 +894,6 @@ main() {
     --all-sessions:ALL_SESSIONS \
     --perform-stop:PERFORM_STOP \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
 
   [[ -n "$PROBE_SANDBOX" ]] || die "--sandbox is required"
 

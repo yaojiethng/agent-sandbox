@@ -458,13 +458,12 @@ if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   BASELINE_ARG=""
   NO_RENAMES_ARG=false
 
-  parse_args usage \
+  parse_args_or_exit usage \
     --bundle-summary=BUNDLE_SUMMARY_ARG \
     --baseline=BASELINE_ARG \
     --to=TO_ARG \
     --no-renames:NO_RENAMES_ARG \
     -- "$@"
-  [ $? -eq 2 ] && exit 0
 
   # --to is required
   if [[ -z "$TO_ARG" ]]; then

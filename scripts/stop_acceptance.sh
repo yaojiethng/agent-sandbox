@@ -83,13 +83,10 @@ die_exit_codes() {
 }
 
 main() {
-  parse_args usage \
+  parse_args_or_exit usage \
     --report=REPORT \
     --max-stop-seconds=MAX_STOP_SECONDS \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
 
   [[ -n "$REPORT" ]] || die "--report is required"
   [[ -f "$REPORT" ]] || die "no such report: $REPORT"

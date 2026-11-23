@@ -279,7 +279,7 @@ main() {
   # the persisted record.
   FLATTEN=false
 
-  parse_args usage \
+  parse_args_or_exit usage \
     --name=PROJECT_NAME \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR_OVERRIDE \
@@ -292,9 +292,6 @@ main() {
     --flatten \
     --delivery=DELIVERY \
     -- "$@"
-  local prc=$?
-  if [[ $prc -eq 2 ]]; then exit 0; fi
-  [[ $prc -eq 0 ]] || exit 1
 
   case "$DELIVERY" in
     copy|mount) ;;

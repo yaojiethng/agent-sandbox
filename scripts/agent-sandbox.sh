@@ -5,8 +5,11 @@
 # All subcommands run on the host  --  never inside a container.
 # Inside the container, invoke lib scripts directly (see prompt templates).
 #
-# The dispatcher locates a subcommand's leaf and execs it. Each leaf owns its
-# flags and answers `--help`; the valid set is `print_subcommand_list` below.
+# The dispatcher holds one catalog row per subcommand and derives every surface
+# from it: the valid-subcommand list, the help index, the no-argument message,
+# the help routing, the dispatch, and `help --json` (`cli_surface.md` R7, R8).
+# A leaf owns its flags and answers `--help`; the catalog declares which of the
+# dispatcher-parsed fields each leaf takes.
 
 set -euo pipefail
 
@@ -18,8 +21,6 @@ set -euo pipefail
 _SELF="$(readlink -f "${BASH_SOURCE[0]}")"
 AGENT_SANDBOX_REPO="${AGENT_SANDBOX_REPO:-$(cd "$(dirname "$_SELF")/.." && pwd)}"
 
-SCRIPTS="$AGENT_SANDBOX_REPO/scripts"
-
 # Shared parsing and the resolver core are sourced once at module scope; the
 # dispatcher is a thin route table over them. Identity flags become optional via
 # resolve_identity, which delegates to the canonical resolver.
@@ -27,12 +28,94 @@ source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/cli.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
 
+# =============================================================================
+# The subcommand catalog
+# =============================================================================
+# One row per subcommand, pipe-separated:
+#   name | leaf | identity | leading args | resolver | summary
+#
+#   leaf      -- the script the subcommand runs, relative to the repo root.
+#   identity  -- the dispatcher-parsed fields the leaf takes, from
+#                `name project sandbox env`. The dispatcher parses one spec for
+#                all four, so this column decides what it forwards; the fields
+#                other than `env` also decide the resolver's required set.
+#   args      -- a leading positional argument the leaf expects before its flags
+#                (`start_agent.sh` takes its mode that way).
+#   resolver  -- `identity` runs the resolver on the declared fields; `base`
+#                requires all three without resolving, which is onboard's case
+#                because it creates the `.env` the resolver would read.
+#   summary   -- the index sentence `help --json` carries. It is the catalog's
+#                own line, not a copy of anything a leaf prints.
+#
+# Order is the workflow's: onboard, then build and run, then the workflows,
+# then the export. The printed list and the JSON keep that order.
+CLI_CATALOG=(
+  "onboard|scripts/onboard.sh|name project sandbox||base|Create the project's record from the operator's inputs"
+  "build|scripts/build.sh|name project sandbox||identity|Build the provider image chain for the project"
+  "start|scripts/start_agent.sh|name project sandbox env|standard|identity|Run an agent session in the sandbox"
+  "dry-run|scripts/start_agent.sh|name project sandbox env|dry-run|identity|Exercise the whole pipeline, then tear it down"
+  "resume|scripts/resume_agent.sh|name project sandbox env||identity|Reopen an earlier session in the sandbox"
+  "stop|scripts/stop.sh|name project sandbox||identity|Stop the session's containers"
+  "prune|scripts/prune.sh|name project sandbox||identity|Remove stale images and containers"
+  "apply|scripts/workflows/apply.sh|project sandbox||identity|Apply the packaged diffs to the project"
+  "draft|scripts/workflows/draft.sh|project sandbox||identity|Draft a commit series from the session's changes"
+  "confirm|scripts/workflows/confirm.sh|project sandbox||identity|Confirm a drafted series"
+  "reject|scripts/workflows/reject.sh|project sandbox||identity|Reject a drafted series"
+  "package-branch|src/libs/package_branch.sh|sandbox||identity|Export the branch as numbered diffs for review"
+)
+
 # Dispatcher state, reset by main() on every invocation (tests call main twice).
 PROJECT_NAME=""
 PROJECT_DIR=""
 SANDBOX_DIR=""
 ENV_REL=""
 PASSTHROUGH=()
+
+# =============================================================================
+# Catalog readers
+# =============================================================================
+
+# catalog_rows  --  one row per line, for a `while IFS='|' read` loop.
+catalog_rows() { printf '%s\n' "${CLI_CATALOG[@]}"; }
+
+# subcommand_names SEP  --  the declared names, in catalog order, joined by SEP.
+subcommand_names() {
+  local sep="$1" name leaf rest out=""
+  while IFS='|' read -r name leaf rest; do
+    [[ -z "$out" ]] || out+="$sep"
+    out+="$name"
+  done < <(catalog_rows)
+  printf '%s\n' "$out"
+}
+
+# print_json  --  the catalog as JSON, for a programmatic reader (R8). Nothing
+# is materialized: this printing is the rendering, so there is no file to drift.
+print_json() {
+  local name leaf ident largs resolve summary first=1 field sep
+  printf '{\n  "schema": 1,\n  "subcommands": [\n'
+  while IFS='|' read -r name leaf ident largs resolve summary; do
+    [[ $first -eq 1 ]] || printf ',\n'
+    first=0
+    printf '    {\n'
+    printf '      "name": %s,\n' "$(json_string "$name")"
+    printf '      "leaf": %s,\n' "$(json_string "$leaf")"
+    printf '      "identity": ['
+    sep=""
+    for field in $ident; do
+      printf '%s%s' "$sep" "$(json_string "$field")"
+      sep=", "
+    done
+    printf '],\n'
+    if [[ -n "$largs" ]]; then
+      printf '      "args": [%s],\n' "$(json_string "$largs")"
+    else
+      printf '      "args": [],\n'
+    fi
+    printf '      "summary": %s\n' "$(json_string "$summary")"
+    printf '    }'
+  done < <(catalog_rows)
+  printf '\n  ]\n}\n'
+}
 
 # =============================================================================
 # Helpers (file scope)
@@ -53,39 +136,87 @@ resolve_identity() {
   env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "$ENV_REL" "$@" || exit 1
 }
 
-# print_subcommand_list  --  single source of truth for the valid set.
+# print_subcommand_list  --  the declared set, for the messages that name it.
 print_subcommand_list() {
-  echo "Valid subcommands: onboard, build, start, dry-run, resume, stop, prune, apply, draft, confirm, reject, package-branch"
+  echo "Valid subcommands: $(subcommand_names ', ')"
 }
 
-# route_help SUB  --  '<sub> --help', 'help <sub>', and 'help --help' route to
-# the child's own help (or, for help itself, to the subcommand list). Exec's so
-# the child prints its own usage  --  the dispatcher only locates it.
+# route_help SUB  --  '<sub> --help', 'help <sub>' and 'help --json' route to
+# the child's own help (or the index, or the JSON rendering). Exec's so the
+# child prints its own usage  --  the dispatcher only locates it.
 route_help() {
-  local sub="$1"
-  case "$sub" in
-    help)
-      echo "Usage: agent-sandbox <subcommand> [flags]"
-      echo ""
-      print_subcommand_list
-      echo ""
-      echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
-      exit 0
-      ;;
-    onboard|build|stop|prune)
-      exec bash "$SCRIPTS/$sub.sh" --help ;;
-    resume)
-      exec bash "$SCRIPTS/resume_agent.sh" --help ;;
-    apply|draft|confirm|reject)
-      exec bash "$SCRIPTS/workflows/$sub.sh" --help ;;
-    start|dry-run)
-      exec bash "$SCRIPTS/start_agent.sh" --help ;;
-    package-branch)
-      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" --help ;;
-    *)
-      echo "Unknown subcommand: $sub" >&2
-      exit 1 ;;
-  esac
+  local sub="${1:-help}" name leaf rest target=""
+  if [[ "$sub" == "--json" ]]; then
+    print_json
+    exit 0
+  fi
+  if [[ "$sub" == "help" ]]; then
+    echo "Usage: agent-sandbox <subcommand> [flags]"
+    echo ""
+    print_subcommand_list
+    echo ""
+    echo "Run 'agent-sandbox help <subcommand>' for detailed usage."
+    echo "Run 'agent-sandbox help --json' for the same set as JSON."
+    exit 0
+  fi
+  while IFS='|' read -r name leaf rest; do
+    if [[ "$name" == "$sub" ]]; then
+      target="$leaf"
+      break
+    fi
+  done < <(catalog_rows)
+  if [[ -n "$target" ]]; then
+    exec bash "$AGENT_SANDBOX_REPO/$target" --help
+  fi
+  echo "Unknown subcommand: $sub" >&2
+  exit 1
+}
+
+# dispatch SUB  --  run the subcommand's row: resolve what the leaf requires,
+# forward the fields and the leading argument it declares, and hand over the
+# passthrough args. exec keeps the leaf's exit status the caller's own.
+dispatch() {
+  local sub="$1" name leaf ident largs resolve summary
+  local field target="" resolve_mode=""
+  local -a forwarded=() modes=() lead=()
+  while IFS='|' read -r name leaf ident largs resolve summary; do
+    [[ "$name" == "$sub" ]] || continue
+    target="$leaf"
+    resolve_mode="$resolve"
+    for field in $ident; do
+      case "$field" in
+        name)    modes+=("name") ;;
+        project) modes+=("dir") ;;
+        sandbox) modes+=("sandbox") ;;
+      esac
+    done
+    [[ -z "$largs" ]] || lead=("$largs")
+    break
+  done < <(catalog_rows)
+
+  if [[ -z "$target" ]]; then
+    echo "Unknown subcommand: $sub"
+    print_subcommand_list
+    exit 1
+  fi
+
+  if [[ "$resolve_mode" == "base" ]]; then
+    require_base_args
+  else
+    resolve_identity "${modes[@]}"
+  fi
+
+  # The flags are built after resolution: a resolved value is what the leaf
+  # receives, and reading it before the resolver runs forwards an empty flag.
+  for field in $ident; do
+    case "$field" in
+      name)    forwarded+=("--name=$PROJECT_NAME") ;;
+      project) forwarded+=("--project=$PROJECT_DIR") ;;
+      sandbox) forwarded+=("--sandbox=$SANDBOX_DIR") ;;
+      env)     forwarded+=("--env=$ENV_REL") ;;
+    esac
+  done
+  exec bash "$AGENT_SANDBOX_REPO/$target" "${lead[@]}" "${forwarded[@]}" "${PASSTHROUGH[@]}"
 }
 
 # =============================================================================
@@ -99,7 +230,7 @@ main() {
   shift || true
 
   if [[ -z "$SUBCOMMAND" ]]; then
-    echo "Usage: agent-sandbox <onboard|build|start|dry-run|resume|stop|prune|apply|draft|confirm|reject> <flags>"
+    echo "Usage: agent-sandbox <$(subcommand_names '|')> <flags>"
     exit 1
   fi
 
@@ -125,121 +256,12 @@ main() {
     esac
   done
 
-  # -------------------------
-  # Dispatch
-  # -------------------------
-  case "$SUBCOMMAND" in
+  # `help` is its own subcommand and has no catalog row: its page is the index.
+  if [[ "$SUBCOMMAND" == "help" ]]; then
+    route_help "${1:-help}"
+  fi
 
-    onboard)
-      require_base_args
-      exec bash "$SCRIPTS/onboard.sh" \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    build)
-      resolve_identity name dir sandbox
-      exec bash "$SCRIPTS/build.sh" \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    start)
-      resolve_identity name dir sandbox
-      exec bash "$SCRIPTS/start_agent.sh" standard \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        --env="$ENV_REL" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    dry-run)
-      resolve_identity name dir sandbox
-      exec bash "$SCRIPTS/start_agent.sh" dry-run \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        --env="$ENV_REL" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    stop)
-      resolve_identity name dir sandbox
-      exec bash "$SCRIPTS/stop.sh" --name="$PROJECT_NAME" --sandbox="$SANDBOX_DIR" --project="$PROJECT_DIR" "${PASSTHROUGH[@]}"
-      ;;
-
-    resume)
-      resolve_identity sandbox
-      exec bash "$SCRIPTS/resume_agent.sh" \
-        --name="$PROJECT_NAME" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        --env="$ENV_REL" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    prune)
-      resolve_identity name dir sandbox
-      exec bash "$SCRIPTS/prune.sh" --name="$PROJECT_NAME" --project="$PROJECT_DIR" --sandbox="$SANDBOX_DIR" "${PASSTHROUGH[@]}"
-      ;;
-
-    apply)
-      resolve_identity dir sandbox
-      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/apply.sh" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    draft)
-      resolve_identity dir sandbox
-      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/draft.sh" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    confirm)
-      resolve_identity dir sandbox
-      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/confirm.sh" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    reject)
-      resolve_identity dir sandbox
-      exec bash "$AGENT_SANDBOX_REPO/scripts/workflows/reject.sh" \
-        --project="$PROJECT_DIR" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    package-branch)
-      resolve_identity sandbox
-      exec bash "$AGENT_SANDBOX_REPO/src/libs/package_branch.sh" \
-        --sandbox="$SANDBOX_DIR" \
-        "${PASSTHROUGH[@]}"
-      ;;
-
-    help)
-      # help is itself a subcommand; its page is the subcommand list.
-      # Bare 'help' -> route_help help (prints the list). 'help <sub>' and
-      # 'help --help' are handled by route_help too (no recursion).
-      route_help "${1:-help}"
-      ;;
-
-    *)
-      echo "Unknown subcommand: $SUBCOMMAND"
-      print_subcommand_list
-      exit 1
-      ;;
-  esac
+  dispatch "$SUBCOMMAND"
 }
 
 # Guard: only run main() when executed directly, not when sourced

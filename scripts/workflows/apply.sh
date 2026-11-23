@@ -180,7 +180,7 @@ apply_preview() {
 # Parses flags forwarded from agent-sandbox.sh dispatch and calls apply_run.
 # Expected flags: --project=<dir> --sandbox=<dir> --diff=<path> [--branch=<n>] [--force] [--permissive] [--interactive]
 main() {
-  parse_args usage \
+  parse_args_or_exit usage \
     --project=PROJECT_DIR \
     --sandbox=SANDBOX_DIR \
     --diff=DIFF_FILE \
@@ -189,9 +189,6 @@ main() {
     --permissive \
     --interactive \
     -- "$@"
-  local rc=$?
-  if [[ $rc -eq 2 ]]; then exit 0; fi
-  [[ $rc -eq 0 ]] || exit 1
 
   if [[ -z "$PROJECT_DIR" || -z "$SANDBOX_DIR" ]]; then
     usage >&2

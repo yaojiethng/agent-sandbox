@@ -59,6 +59,10 @@ Flags:
   --session-id=<id>  resume the session with this SESSION_ID (direct, silent; recommended)
   --interactive      interactive picker + confirm over the session inventory
   --provider=<n>     filter the session inventory by provider (with --list / --interactive)
+  --name=<n>         the project name the session record is keyed by
+  --project=<path>   the project directory (default: the record's value)
+  --sandbox=<path>   the sandbox directory (default: the record's value)
+  --env=<path>       the .env record to read, when it is not the default
 
 --session-id is the preferred resume path: it selects exactly one session and
 resumes silently. See `make resume LIST=1` to discover a session's id.
@@ -73,7 +77,7 @@ ENV_REL=""
 
 source "$REPO_ROOT/src/libs/cli.sh"
 _CLI_UNKNOWN_WORD="Unknown flag"
-parse_args usage \
+parse_args_or_exit usage \
   --list:RESUME_LIST \
   --session-id=SESSION_ID_ARG \
   --interactive:INTERACTIVE_FLAG \
@@ -83,7 +87,6 @@ parse_args usage \
   --project=PROJECT_DIR \
   --sandbox=SANDBOX_DIR \
   -- "$@"
-[ $? -eq 2 ] && exit 0
 
 # Canonicalize the sandbox dir once so inventory/record lookup, identity, and
 # any downstream label filter agree regardless of path spelling. Fails loudly
