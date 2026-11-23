@@ -10,7 +10,7 @@ The opening states what is being handed over and in what order. It carries no pr
 
 ## The contract and the first function
 
-> The file's purpose, from its header: the single loader for simple `KEY=VALUE` env files (the per-sandbox `.env`). Its two consumers are the Makefile `-include` (make variables) and the runtime export.
+> The file's purpose, from its header: the one parser for simple `KEY=VALUE` env files (the per-sandbox `.env`). It prints and never exports, so a record key reaches its reader as a return value.
 
 > **Missing-file guard**
 >
@@ -18,19 +18,19 @@ The opening states what is being handed over and in what order. It carries no pr
 >   [[ -f "$FILE" ]] || return 0
 > ```
 >
-> A non-existent file is a silent success. The function reports success and sets nothing. (The header says the caller checks existence, but the function guards too.)
+> A non-existent file is a silent success. The function reports success and prints nothing.
 
 The fragment comes first so the reader can check the description against the code. The gloss states the silent behaviour, which is the part a reader cannot see from the name, and then the limit: the header and the function disagree about who guards, and the parenthesis is where that lands.
 
 ## One unit
 
-> **`test_env_load_exports_valid_line`**
+> **`test_env_parse_reads_a_simple_line`**
 >
 > - Given a `.env` file containing `FOO=bar`
-> - When `env_load` is called on it
-> - Then `FOO` holds `bar`
+> - When `env_parse` is called on it
+> - Then it prints `FOO=bar`
 >
-> What it is supposed to test: the happy path - one simple assignment reaches the environment. (It reads `FOO` back in the same shell, so it proves the value is set, not that it is exported to a child process.)
+> What it is supposed to test: the happy path - one simple assignment round-trips. (It asserts on the parser's output rather than on a shell variable, so it proves the record was read, not that its value reached anything else.)
 
 Given, When and Then are the preconditions, the invariant under test and the postcondition. The second paragraph says what the unit is for, and the parenthesis says what the unit does not establish. That parenthesis is the whole reason the reader can trust the rest.
 

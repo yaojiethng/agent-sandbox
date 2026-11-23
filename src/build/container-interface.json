@@ -64,25 +64,25 @@
   "mounts": [
     {
       "provider": "pi",
-      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/prompts",
+      "source": "{{SANDBOX_DIR}}/.{{PROVIDER_NAME}}/agent/prompts",
       "target": "/home/agentuser/.pi/agent/prompts",
       "holds": "the operator's prompt folder, bind-mounted so an edit there outlives a rebuild"
     },
     {
       "provider": "pi",
-      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/sessions",
+      "source": "{{SANDBOX_DIR}}/.{{PROVIDER_NAME}}/agent/sessions",
       "target": "/home/agentuser/.pi/agent/sessions",
       "holds": "the session transcripts, which outlive every container that writes them"
     },
     {
       "provider": "pi",
-      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/skills",
+      "source": "{{SANDBOX_DIR}}/.{{PROVIDER_NAME}}/agent/skills",
       "target": "/home/agentuser/.pi/agent/skills",
       "holds": "the operator's skill folder: the tree the image seeds from, and where a local skill stays"
     },
     {
       "provider": "pi",
-      "source": "${SANDBOX_DIR}/.{{PROVIDER_NAME}}/agent/packages",
+      "source": "{{SANDBOX_DIR}}/.{{PROVIDER_NAME}}/agent/packages",
       "target": "/home/agentuser/.pi/agent/packages",
       "holds": "the installed packages: a clone per declared package, checked out at the revision the session loads"
     }

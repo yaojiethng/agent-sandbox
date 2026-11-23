@@ -21,8 +21,9 @@
 #
 # INSTALL_DIR resolves in priority order: the INSTALL_DIR environment variable,
 # then AGENT_SANDBOX_INSTALL_DIR, then INSTALL_DIR in the sandbox .env named by
-# --env (else <CWD>/.env), then the ~/.local/bin default. The .env level goes
-# through env_resolve_one, the one precedence primitive. Tests override the host
+# --env (else <CWD>/.env), then the ~/.local/bin default. The two environment
+# names are this tool's own configuration level; the .env level goes through
+# env_resolve_one, the one precedence primitive. Tests override the host
 # detection with INSTALL_OS.
 
 set -uo pipefail
@@ -130,18 +131,19 @@ check_rsync() {
 
 # --- Install / uninstall ----------------------------------------------------
 
-# install_dir  -- INSTALL_DIR resolves through the one precedence primitive:
-# the explicit INSTALL_DIR environment variable, then AGENT_SANDBOX_INSTALL_DIR,
-# then the sandbox .env named by --env (else <CWD>/.env), then ~/.local/bin.
-# The bare INSTALL_DIR stays the explicit level: the documented form is
-# `INSTALL_DIR=<path> bash scripts/install.sh`, and the test suite drives the
-# install path through it. The .env path comes from --env, which install_main
-# normalizes into ENV_FILE; the <repo>/.env read this replaced named a file
-# onboard never writes, because onboard writes the sandbox .env.
+# install_dir  -- INSTALL_DIR resolves through one ladder: this tool's own
+# configuration (the INSTALL_DIR environment variable, then
+# AGENT_SANDBOX_INSTALL_DIR), then the sandbox .env named by --env (else
+# <CWD>/.env), then ~/.local/bin. The bare INSTALL_DIR stays the explicit level:
+# the documented form is `INSTALL_DIR=<path> bash scripts/install.sh`, and the
+# test suite drives the install path through it. The .env path comes from --env,
+# which install_main normalizes into ENV_FILE; the <repo>/.env read this
+# replaced named a file onboard never writes, because onboard writes the sandbox
+# .env.
 install_dir() {
-  local dir="${INSTALL_DIR:-}"
+  local dir="${INSTALL_DIR:-${AGENT_SANDBOX_INSTALL_DIR:-}}"
   if [[ -z "$dir" ]]; then
-    dir="$(env_resolve_one AGENT_SANDBOX_INSTALL_DIR INSTALL_DIR "${ENV_FILE:-}" 2>/dev/null || true)"
+    dir="$(env_resolve_one INSTALL_DIR "${ENV_FILE:-}" 2>/dev/null || true)"
   fi
   dir="${dir:-~/.local/bin}"
   dir="${dir/#\~/$HOME}"

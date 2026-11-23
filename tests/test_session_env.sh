@@ -100,8 +100,8 @@ test_common_init_rejects_commitless_repo() {
 
 # Given: a .env with DELIVERABLE_MODE=all
 # When:  resolve_and_init runs with an explicit name
-# Then:  PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, ENV_FILE and HOST_UID/GID match the inputs and DELIVERABLE_MODE is loaded
-# Asserts: the phase 1 export contract (bite V15: a hardcoded HOST_UID fails it)
+# Then:  PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, ENV_FILE and HOST_UID/GID match the inputs, the dirs_resolve paths are set, and DELIVERABLE_MODE is NOT in the environment
+# Asserts: the phase 1 export contract (bite V15: a hardcoded HOST_UID fails it), and the record boundary: a key the prelude does not ask for does not reach this process or its children
 test_common_init_exports_identity_and_paths() {
   local SBX="$FIXTURE_DIR/sbx_ok" PROJ="$FIXTURE_DIR/proj_exports"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
@@ -110,12 +110,13 @@ test_common_init_exports_identity_and_paths() {
   if env_resolve_identity myproj "$PROJ" "$SBX" && resolve_and_init myproj "$PROJ" "$SBX" >/dev/null 2>&1; then
     if [[ "$PROJECT_NAME" == "myproj" && "$PROJECT_DIR" == "$PROJ" \
        && "$ENV_FILE" == "$SBX/.env" && -n "${HOST_UID:-}" && -n "${HOST_GID:-}" \
-       && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" && "${DELIVERABLE_MODE:-}" == "all" \
+       && "$HOST_UID" == "$(id -u)" && "$HOST_GID" == "$(id -g)" \
+       && -z "${DELIVERABLE_MODE:-}" \
        && "${CHANGES_DIR:-}" == "$SBX/.workspace/session-diffs" \
        && "${INPUT_DIR:-}" == "$SBX/.workspace/input" \
        && "${OUTPUT_DIR:-}" == "$SBX/.workspace/output" ]]
     then
-      pass "common_init exports PROJECT_*, ENV_FILE, HOST_UID/GID, .env vars and the dirs_resolve paths"
+      pass "common_init exports PROJECT_*, ENV_FILE, HOST_UID/GID and the dirs_resolve paths, and loads no record key"
     else
       fail "export contract incomplete: PN=$PROJECT_NAME PD=$PROJECT_DIR EF=$ENV_FILE UID=${HOST_UID:-unset} ENVV=${DELIVERABLE_MODE:-unset} CD=${CHANGES_DIR:-unset}"
     fi
@@ -238,10 +239,9 @@ test_env_resolves_identity_from_env_when_args_empty() {
 
 # Given: a .env plus AGENT_SANDBOX_PROJECT_NAME, called with empty name and dir
 # When:  resolve_and_init runs
-# Then:  PROJECT_NAME is the env-var value
-# Asserts: the AGENT_SANDBOX_* level beats .env
-test_env_ag_sandbox_envvar_beats_env() {
-  # No explicit name; AGENT_SANDBOX_PROJECT_NAME beats the .env value.
+# Then:  PROJECT_NAME is the record's value
+# Asserts: AGENT_SANDBOX_* is not a level for a record key
+test_env_ag_sandbox_envvar_is_not_a_level() {
   local SBX="$FIXTURE_DIR/sbx_envvar" PROJ="$FIXTURE_DIR/proj_envvar"
   make_sandbox "$SBX"; make_committed_repo "$PROJ"
   make_envfile "$SBX" envname "$PROJ" "$SBX"
@@ -251,10 +251,10 @@ test_env_ag_sandbox_envvar_beats_env() {
         env_resolve_identity "" "" "$SBX" && resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" 2>&1 </dev/null \
         && printf '%s|' "${PROJECT_NAME:-unset}") || RC=$?
 
-  if [[ $RC -eq 0 && "$OUT" == "envvar|" ]]; then
-    pass "AGENT_SANDBOX_PROJECT_NAME beats .env when no explicit name"
+  if [[ $RC -eq 0 && "$OUT" == "envname|" ]]; then
+    pass "AGENT_SANDBOX_PROJECT_NAME is not a level for a record key"
   else
-    fail "envvar level broken, rc=$RC out='$OUT'"
+    fail "env level still read, rc=$RC out='$OUT'"
   fi
 }
 
@@ -441,7 +441,7 @@ run_test test_env_project_dir_explicit_arg_beats_env
 run_test test_env_sandbox_dir_explicit_arg_beats_env
 run_test test_env_identity_explicit_args_beat_env
 run_test test_env_resolves_identity_from_env_when_args_empty
-run_test test_env_ag_sandbox_envvar_beats_env
+run_test test_env_ag_sandbox_envvar_is_not_a_level
 run_test test_env_resolves_with_absolute_env_pointer
 run_test test_env_resolves_with_relative_env_pointer
 run_test test_names_sanitises_host_branch

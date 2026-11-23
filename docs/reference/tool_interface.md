@@ -184,12 +184,14 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 
 ## `.env` Runtime Variables
 
+Each value is read by key when a reader needs it; none is exported into a process environment.
+
 | Variable | Default | Owner |
 |---|---|---|
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
 | `INSTALL_DIR` | `~/.local/bin` | Operator -- install path for the CLI |
-| `AUTOSAVE_INTERVAL` | `60` | Operator |
+| `AUTOSAVE_INTERVAL` | `60` | Operator -- written into the compose record by `compose_generate`; `0` disables the autosave loop |
 
 `SANDBOX_IMAGE_NAME` and `AGENT_IMAGE_NAME` are derived at run time via `src/build/image.sh` and are not stored in `.env`. Provider-specific variables are appended from each provider's `config/env.stub` at onboard time; `pi` supplies none.
 

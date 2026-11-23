@@ -10,11 +10,10 @@
 # Provides:
 #   resolve_and_init <project_name> <project_dir> <sandbox_dir>
 #     Phase 1  --  the identity triple arrives as arguments, already resolved
-#     by the chain entry (explicit > AGENT_SANDBOX_* > .env > error, once, in
-#     env_resolve_identity). This function does not resolve: it loads .env
-#     once as the runtime environment, re-asserts the identity so a
-#     conflicting .env value cannot shadow it, validates the git repo, derives
-#     harness paths via dirs_resolve, and exports host uid/gid.
+#     by the chain entry (explicit flag > .env > error, once, in
+#     env_resolve_identity). This function does not resolve and does not load:
+#     it validates the git repo, derives harness paths via dirs_resolve, and
+#     exports host uid/gid. No key of the record becomes a child's environment.
 #   session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
 #     Phase 2  --  needs SESSION_ID. Derives image/container names, the sanitised
 #     host branch, and delivery vars.
@@ -29,12 +28,12 @@ source "$_self_session_dir/libs/session_inventory.sh"
 
 # resolve_and_init <project_name> <project_dir> <sandbox_dir>
 #   Phase 1 (no SESSION_ID needed): the identity triple arrives as arguments,
-#   already resolved once by the chain entry. This function resolves nothing:
-#   it loads .env once as the runtime environment, re-asserts the identity so
-#   a conflicting .env value cannot shadow it, validates the git repo, derives
-#   harness paths via dirs_resolve, and exports host uid/gid. ENV_FILE arrives
-#   from the same resolution (the single --env path contract, via
-#   default_env_file), so there is no second site that parses the .env.
+#   already resolved once by the chain entry. This function resolves and loads
+#   nothing: it validates the git repo, derives harness paths via dirs_resolve,
+#   and exports host uid/gid. ENV_FILE arrives from the same resolution (the
+#   single --env path contract, via default_env_file), so there is no second
+#   site that opens the .env, and a reader that needs a record value asks for
+#   it by key.
 resolve_and_init() {
   local project_name="${1:?resolve_and_init requires a resolved project_name}"
   local project_dir="${2:?resolve_and_init requires a resolved project_dir}"
@@ -48,10 +47,8 @@ resolve_and_init() {
     return 1
   fi
 
-  env_load "$ENV_FILE"
-
-  # The resolved identity wins over .env (flag-wins precedence, S2): re-assert
-  # it so a conflicting .env value cannot shadow explicit input.
+  # The resolved identity is the harness's own value, exported so the process
+  # chain reads one triple rather than re-deriving it.
   export PROJECT_NAME="$project_name"
   export PROJECT_DIR="$project_dir"
   export SANDBOX_DIR="$sandbox_dir"

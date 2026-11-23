@@ -1,6 +1,6 @@
 # Resolution Model
 
-**Current:** 2026-10-16
+**Current:** 2026-11-22
 
 > This ADR records the design as it stands and is expected to evolve. The identity-resolution surface is new and touches many entrypoints; a later change supersedes the current entry by adding a dated entry, per the ADR policy. It is not a locked contract.
 
@@ -9,11 +9,36 @@
 | # | Requirement | Meaning |
 |---|---|---|
 | R1 | Single resolution path | The identity triple resolves through one module, not per-script parsing |
-| R2 | Explicit wins | A CLI flag beats an environment variable and the `.env` file |
+| R2 | Explicit wins | A CLI flag beats the record's value for the same key |
 | R3 | No silent default | An unresolvable identity fails loudly pointing at `onboard`, never a computed guess |
-| R4 | Leak-guarded env level | Only `AGENT_SANDBOX_*` keys are the environment level; a plain sourced export cannot bypass `.env` |
+| R4 | No environment level for a record key | A key the sandbox record holds is read by key; `AGENT_SANDBOX_<KEY>` is not a level for it |
 | R5 | Deterministic `.env` location | `.env` is found by a fixed precedence, robust to how make was invoked |
 | R6 | Three carrier classes | an input is an argument, a configuration value or session state, and the class decides whether it persists and where (promoted by the 2026-10-16 entry) |
+| R7 | Four channels, one writer per fact | configuration reaches a process by a named channel or not at all, and the writer of a fact is the party that owns it (promoted by the 2026-11-22 entry) |
+
+## 2026-11-22 -- Four channels: the record is read, never exported
+
+**Decision:** Configuration reaches a process by exactly four channels and no fifth.
+
+| Channel | What it carries | Ambient? |
+|---|---|---|
+| A. The OS and docker environment | `PATH`, `HOME`, the host uid and gid, the credentials the harness passes through | yes |
+| B. The tool's own configuration | `AGENT_SANDBOX_REPO`, `INSTALL_DIR` / `AGENT_SANDBOX_INSTALL_DIR`, `AGENT_HOME` | yes, and only these |
+| C. The sandbox record (`.env`) | a sandbox's settings and identity | no |
+| D. The run record (`.compose/<sid>.yml`) and the project's declaration | what one run is, written once by the generator | no |
+
+A key channel C holds resolves as argument, then record, then a stated default or a hard error. It has no environment level, so `AGENT_SANDBOX_<KEY>` is not a level for any key the record holds, identity included. `env_load` is replaced by `env_parse` and `env_get`, which print and never export; the host prelude loads nothing, and a reader asks for a key at the point of use. The compose generator writes every value it holds; a `${VARIABLE}` survives only for a channel A credential.
+
+**Rationale:** A record that is exported becomes the ambient environment of every child, and then three things follow. The record stops being the source of truth: a child's copy can be edited without touching it. Two writers own the same fact, so a correction has to un-write the old value. And the boundary is untestable, because a leak and a legitimate value look the same from inside the process. Measured: `env_load` exported all of the `.env`, `env_resolve_one` read `AGENT_SANDBOX_<KEY>` ahead of the record for three identity keys, and every serve port, autosave interval and host path reached the container by interpolation from the invoking shell rather than from a declaration. The four channels name where a value comes from, so the class decides whether a process may inherit it, and each channel has one writer.
+
+**Rejected alternatives:**
+
+- *Keep the env level for the identity triple* -- rejected: the record is authoritative for the same key, so the level is a second writer with no owner.
+- *Keep `env_load` and read it only in the prelude* -- rejected: the prelude exports into the process that starts the children, so the leak path is the same one at one remove.
+- *Keep `${VAR}` for host paths and ports* -- rejected: the generated file then depends on whoever invoked the generator, and two invocations produce two files for one run.
+- *A fifth channel for provider credentials* -- rejected: a credential is a channel A value the harness passes through, not a fourth kind of configuration.
+
+**Edge cases / drivers:** Channel B keeps the `AGENT_SANDBOX_` prefix, which the retired identity level also used. The distinction is the channel, not the name: `AGENT_SANDBOX_REPO` and `AGENT_SANDBOX_INSTALL_DIR` configure the tool, while `AGENT_SANDBOX_PROJECT_NAME` and its siblings stood in for a record key. `docs/reference/execution_model.md` states the generator's rule; `tests/test_env_read_discipline.sh` holds the boundary at runtime and by census.
 
 ## 2026-10-16 -- The resolution model: three carrier classes, one precedence primitive
 

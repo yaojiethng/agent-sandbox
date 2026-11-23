@@ -12,15 +12,14 @@
 #   {{AGENT_IMAGE_NAME}}   -> reasoning layer image name
 #   {{PROVIDER_NAME}}      -> provider name (e.g. pi)
 #
-# ${VAR} placeholders are preserved for Docker Compose to resolve at runtime
-# from the exported environment (set by start_agent.sh before compose).
+# {{VAR}} placeholders are substituted by compose_generate from the values it
+# already holds; a ${VAR} survives only for an operator credential, which
+# Docker Compose resolves at runtime.
 #
 # Copy-only wiring (the per-run named sandbox volume and the snapshot mount /
 # env) lives in the copy delivery overlay (docker-compose.copy.yml) so
-# bind-mount compose never inherits it. Common workspace path variables
-# (${CHANGES_DIR}, ${INPUT_DIR}, ${OUTPUT_DIR}) are exported by start_agent.sh
-#  --  derived from SANDBOX_DIR. The x-workspace anchor below documents the path
-# mapping.
+# bind-mount compose never inherits it. The x-workspace anchor below documents
+# the host path mapping.
 #
 # Container names match image names  --  one session per project at a time.
 # Start/stop is managed by scripts/start_agent.sh via docker compose up/down.
@@ -34,13 +33,13 @@ networks:
   default:
     labels:
       agent-sandbox.project-name: {{PROJECT_NAME}}
-      agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+      agent-sandbox.sandbox-dir: {{SANDBOX_DIR}}
       agent-sandbox.session-id: {{SESSION_ID}}
 
 # Session labels  --  applied to ALL containers for unified lifecycle management.
 x-session-labels: &session_labels
   agent-sandbox.project-name: {{PROJECT_NAME}}
-  agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+  agent-sandbox.sandbox-dir: {{SANDBOX_DIR}}
   agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
   agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
   agent-sandbox.session-ts: {{SESSION_TS}}
@@ -57,17 +56,18 @@ x-session-labels: &session_labels
   agent-sandbox.interface-contract-version: {{INTERFACE_CONTRACT_VERSION}}
 
 # Workspace path documentation  --  single source of truth for all path mappings.
-# Host paths (left) are runtime ${VAR} exported by start_agent.sh from SANDBOX_DIR.
+# Host paths (left) are written by compose_generate, never interpolated.
 # Container paths (right) are literals fixed for the image architecture.
-# When adding a new bind mount, add the mapping here and reference ${VAR} below.
+# When adding a new bind mount, add the mapping here and reference its
+# {{VAR}} below.
 # Design rationale: devlog/discussions/20260516-design-settled-workspace_path_resolution.md
 x-workspace:
   # Host -> Container
   # (snapshot mapping is copy-delivery only  --  documented in docker-compose.copy.yml)
-  changes_host:    "${CHANGES_DIR}"              # -> "/home/agentuser/workspace/session-diffs"
-  input_host:      "${INPUT_DIR}"                # -> "/home/agentuser/workspace/input"
-  output_host:     "${OUTPUT_DIR}"               # -> "/home/agentuser/workspace/output"
-# The provider config directory ("${SANDBOX_DIR}/.{{PROVIDER_NAME}}") has no row
+  changes_host:    "{{CHANGES_DIR}}"              # -> "/home/agentuser/workspace/session-diffs"
+  input_host:      "{{INPUT_DIR}}"                # -> "/home/agentuser/workspace/input"
+  output_host:     "{{OUTPUT_DIR}}"               # -> "/home/agentuser/workspace/output"
+# The provider config directory ("{{SANDBOX_DIR}}/.{{PROVIDER_NAME}}") has no row
 # here: the provider overlay mounts the subdirectories it needs, and the image
 # seeds the rest into AGENT_HOME at container start. See
 # src/reasoning/agent-runtime/<provider>/docker-compose.<provider>.yml and provider_lifecycle.md.
@@ -77,29 +77,29 @@ services:
     image: {{SANDBOX_IMAGE_NAME}}
     container_name: {{SANDBOX_CONTAINER_NAME}}
     labels: *session_labels
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    user: "{{HOST_UID}}:{{HOST_GID}}"
     volumes:
       - type: bind
-        source: ${CHANGES_DIR}
+        source: {{CHANGES_DIR}}
         target: /home/agentuser/workspace/session-diffs
       - type: bind
-        source: ${INPUT_DIR}
+        source: {{INPUT_DIR}}
         target: /home/agentuser/workspace/input
         read_only: true
       - type: bind
-        source: ${OUTPUT_DIR}
+        source: {{OUTPUT_DIR}}
         target: /home/agentuser/workspace/output
     environment:
       - CHANGES_DIR=/home/agentuser/workspace/session-diffs
       - INPUT_DIR=/home/agentuser/workspace/input
       - OUTPUT_DIR=/home/agentuser/workspace/output
       - SANDBOX_DIR_NAME=sandbox
-      - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL:-60}
-      - SESSION_TS=${SESSION_TS:-}
-      - SANITIZED_HOST_BRANCH=${SANITIZED_HOST_BRANCH:-}
-      - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
-      - SESSION_ID=${SESSION_ID:-}
-      - RESET_VOLUME=${RESET_VOLUME:-}
+      - AUTOSAVE_INTERVAL={{AUTOSAVE_INTERVAL}}
+      - SESSION_TS={{SESSION_TS}}
+      - SANITIZED_HOST_BRANCH={{SANITIZED_HOST_BRANCH}}
+      - HOST_HEAD_SHA={{HOST_HEAD_SHA}}
+      - SESSION_ID={{SESSION_ID}}
+      - RESET_VOLUME={{RESET_VOLUME}}
     healthcheck:
       test: ["CMD", "test", "-d", "/home/agentuser/sandbox/.git"]
       interval: 2s
@@ -112,7 +112,7 @@ services:
     image: {{AGENT_IMAGE_NAME}}
     container_name: {{AGENT_CONTAINER_NAME}}
     labels: *session_labels
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    user: "{{HOST_UID}}:{{HOST_GID}}"
     # An init process at PID 1 forwards the stop signal to the agent. Without
     # it the agent is PID 1, holds SIGTERM at its default disposition, and
     # docker spends the whole stop grace before a SIGKILL (exit 137).
@@ -124,11 +124,11 @@ services:
       - sandbox
     volumes:
       - type: bind
-        source: ${INPUT_DIR}
+        source: {{INPUT_DIR}}
         target: /home/agentuser/workspace/input
         read_only: true
       - type: bind
-        source: ${OUTPUT_DIR}
+        source: {{OUTPUT_DIR}}
         target: /home/agentuser/workspace/output
     environment:
       - INPUT_DIR=/home/agentuser/workspace/input

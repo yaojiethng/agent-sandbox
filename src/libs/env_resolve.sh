@@ -5,28 +5,26 @@
 #
 # Precedence per identifier (highest wins):
 #   1. explicit value (the CLI flag on the current invocation)
-#   2. host environment variable AGENT_SANDBOX_<KEY>
-#   3. the per-sandbox .env file
-#   4. no runtime default  --  a missing value at every level is a hard error
+#   2. the per-sandbox .env file
+#   3. no runtime default  --  a missing value at every level is a hard error
 #      pointing at `agent-sandbox onboard`.
+#
+# A record key has no environment level. The record is read, never exported, so
+# the invoking shell cannot stand in for it: AGENT_SANDBOX_<KEY> is not a level
+# for any key the record holds.
 #
 # The .env is located by default_env_file: an absolute ENV_REF (--env) as-is, a
 # relative ENV_REF a name under the sandbox dir, and an empty ENV_REF
-# <sandbox>/.env, else the invocation CWD's .env. The TWO-level guard reads only
-# the AGENT_SANDBOX_* keys as the environment level so a plain exported
-# PROJECT_DIR/SANDBOX_DIR/PROJECT_NAME (leaked by a sourced script) does not
-# bypass .env precedence.
+# <sandbox>/.env, else the invocation CWD's .env.
 
 _self_env_resolve_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$_self_env_resolve_dir/libs/env.sh"
 
 # _env_value FILE KEY
-#   Prints the value of KEY read from FILE using env_load, or empty if KEY is
-#   absent. Runs env_load in a subshell so FILE content does not leak into the
-#   caller's environment.
+#   Prints the value of KEY read from FILE, or empty if KEY is absent. The
+#   one parser reads it (env_get), so the resolution ladder has one read site.
 _env_value() {
-  local file="$1" key="$2"
-  ( unset "$key"; env_load "$file" >/dev/null 2>&1 || true; printf '%s' "${!key:-}" )
+  env_get "$1" "$2"
 }
 
 # default_env_file RAW_ENV_REF SANDBOX_DIR
@@ -45,11 +43,11 @@ default_env_file() {
   fi
 }
 
-# env_resolve_one ENVVAR KEY ENV_FILE [REMEDY]
-#   Resolves one identifier by precedence: the named env var, then the KEY
-#   value from ENV_FILE, else a hard error. Prints the value.
-#   This is the single resolution primitive; the identity triple is a sequence
-#   of the same rule.
+# env_resolve_one KEY ENV_FILE [REMEDY]
+#   Resolves one identifier: the KEY value from ENV_FILE, else a hard error.
+#   Prints the value. The explicit-flag level is the caller's, which owns the
+#   input; this primitive owns the record. The identity triple is a sequence of
+#   the same rule.
 #
 #   REMEDY is the line printed under the error, naming what the operator runs.
 #   It defaults to the generic set-this-key advice, because the primitive cannot
@@ -57,17 +55,16 @@ default_env_file() {
 #   its remedy. An argument rather than a per-key table keeps a new setting a
 #   call-site edit, and keeps the text beside the command that writes the value.
 env_resolve_one() {
-  local envvar="$1" key="$2" env_file="$3" remedy="${4:-}" value
-  if [[ -n "${!envvar:-}" ]]; then printf '%s' "${!envvar}"; return 0; fi
+  local key="$1" env_file="$2" remedy="${3:-}" value
   if [[ -n "$env_file" && -f "$env_file" ]]; then
     value="$(_env_value "$env_file" "$key")"
     if [[ -n "$value" ]]; then printf '%s' "$value"; return 0; fi
   fi
-  echo "Error: $key is not set (no explicit flag, no $envvar env var, no $key in ${env_file:-.env})." >&2
+  echo "Error: $key is not set (no explicit flag, no $key in ${env_file:-.env})." >&2
   if [[ -n "$remedy" ]]; then
     echo "  $remedy" >&2
   else
-    echo "  Set $key in ${env_file:-.env}, or export $envvar." >&2
+    echo "  Set $key in ${env_file:-.env}." >&2
   fi
   return 1
 }
@@ -108,7 +105,7 @@ env_resolve_identity() {
     # Chicken-and-egg: a relative ENV_REF needs a sandbox that may itself live
     # in the .env, so bootstrap SANDBOX from the CWD fallback first.
     ep="$(default_env_file "$env_ref" "")"
-    SANDBOX_DIR="$(env_resolve_one AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
+    SANDBOX_DIR="$(env_resolve_one SANDBOX_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
   else
     SANDBOX_DIR="$expl_sandbox"
   fi
@@ -129,14 +126,14 @@ env_resolve_identity() {
     if [[ -n "$expl_name" ]]; then
       export PROJECT_NAME="$expl_name"
     else
-      PROJECT_NAME="$(env_resolve_one AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
+      PROJECT_NAME="$(env_resolve_one PROJECT_NAME "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
     fi
   fi
   if $need_dir; then
     if [[ -n "$expl_dir" ]]; then
       export PROJECT_DIR="$expl_dir"
     else
-      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
+      PROJECT_DIR="$(env_resolve_one PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
     fi
   fi
   export PROJECT_NAME PROJECT_DIR SANDBOX_DIR

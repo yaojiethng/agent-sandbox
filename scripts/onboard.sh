@@ -457,12 +457,12 @@ main() {
   fi
 
   # Derive PROJECT_DIR if not provided (refresh mode), through the one
-  # precedence primitive: the explicit flag, then AGENT_SANDBOX_PROJECT_DIR,
-  # then the sandbox .env. A miss leaves PROJECT_DIR empty, which refresh
-  # tolerates, so the primitive's error is not reachable here.
+  # precedence primitive: the explicit flag, then the sandbox .env. A miss
+  # leaves PROJECT_DIR empty, which refresh tolerates, so the primitive's error
+  # is not reachable here.
   if [[ "$REFRESH" == true && -z "$PROJECT_DIR" ]]; then
     if [[ -f "$SANDBOX_DIR/.env" ]]; then
-      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$SANDBOX_DIR/.env" 2>/dev/null || true)"
+      PROJECT_DIR="$(env_resolve_one PROJECT_DIR "$SANDBOX_DIR/.env" 2>/dev/null || true)"
     fi
   fi
 

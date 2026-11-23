@@ -19,7 +19,7 @@ volumes:
   {{SESSION_ID}}-sandbox-data:
     labels:
       agent-sandbox.project-name: {{PROJECT_NAME}}
-      agent-sandbox.sandbox-dir: ${SANDBOX_DIR}
+      agent-sandbox.sandbox-dir: {{SANDBOX_DIR}}
       agent-sandbox.host-head-sha: {{HOST_HEAD_SHA}}
       agent-sandbox.host-branch: {{SANITIZED_HOST_BRANCH}}
       agent-sandbox.session-ts: {{SESSION_TS}}
@@ -43,7 +43,7 @@ services:
   # User matches the sandbox service (UID parity: no root-owned volume content).
   seeder:
     image: {{SANDBOX_IMAGE_NAME}}
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    user: "{{HOST_UID}}:{{HOST_GID}}"
     entrypoint: ["bash", "/opt/harness-bin/seed_volume.sh"]
     volumes:
       - type: bind
@@ -66,8 +66,8 @@ services:
         # root root-owned and the unprivileged seeder cannot write.
         target: /home/agentuser/sandbox
     environment:
-      - SESSION_TS=${SESSION_TS:-}
-      - SESSION_ID=${SESSION_ID:-}
-      - HOST_HEAD_SHA=${HOST_HEAD_SHA:-}
+      - SESSION_TS={{SESSION_TS}}
+      - SESSION_ID={{SESSION_ID}}
+      - HOST_HEAD_SHA={{HOST_HEAD_SHA}}
       - SEED_FLATTEN={{FLATTEN}}
     restart: "no"

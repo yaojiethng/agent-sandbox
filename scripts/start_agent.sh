@@ -340,7 +340,7 @@ main() {
   # SANDBOX_DIR resolution
   # -------------------------
   # The sandbox path is a ladder value, not a computed guess: the explicit
-  # --sandbox, then AGENT_SANDBOX_SANDBOX_DIR, then the .env, then the error
+  # --sandbox, then the .env, then the error
   # naming onboard. It resolves with the rest of the triple at the identity
   # call below. A path derived from PROJECT_DIR here would occupy the explicit
   # level, so the value onboard writes into the .env could never win.

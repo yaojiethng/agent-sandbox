@@ -58,7 +58,7 @@ Host path variables are defined in [`tool_interface.md` -- `.env` Runtime Variab
 
 ## Invocation Model
 
-`scripts/start_agent.sh` runs from the project Makefile through the `agent-sandbox` CLI. It does host-side pre-flight only: path validation, `.env` loading, git validation, workspace setup, and worktree materialization for mount delivery. It then `exec`s `scripts/run_agent.sh`, which owns the provider lifecycle: the setup hook, the compose file, and the containers from start to teardown.
+`scripts/start_agent.sh` runs from the project Makefile through the `agent-sandbox` CLI. It does host-side pre-flight only: path validation, `.env` location and identity resolution, git validation, workspace setup, and worktree materialization for mount delivery. It then `exec`s `scripts/run_agent.sh`, which owns the provider lifecycle: the setup hook, the compose file, and the containers from start to teardown.
 
 Container paths are fixed and not configurable through `.env`. The mount shape is in [`tool_interface.md` -- Mount Shape Guarantees](tool_interface.md#mount-shape-guarantees).
 
@@ -68,11 +68,11 @@ Container paths are fixed and not configurable through `.env`. The mount shape i
 
 **Per-session activity log:** alongside the compose record, each session keeps a `.compose/<session-id>.log` holding `KEY=VALUE` lines, `last_started=` and `last_stopped=`, in the harness's one UTC timestamp format, written and parsed by `src/libs/time_format.sh`. `run_agent.sh` writes `last_started=` on start or resume and clears `last_stopped=`, so a running session never reads as stopped, then writes `last_stopped=` at teardown. Dry-run ids (session_is_dry_run) are excluded, so dry-run machinery leaves no activity record. `make resume --list` derives its `AGE` column from the latest entry, overridden by live docker state when the two disagree. The compose record also carries the session's image-content identity: `compose_generate` stamps the `agent-sandbox.agent-image-digest` and `agent-sandbox.sandbox-image-digest` labels from image ID digests read via docker inspect after the build, so `make resume --list` reads the record without a docker dependency (ADR harness_versioning.md).
 
-**Merged generation:** `compose_generate` in `src/build/compose.sh` merges the base template with any applicable overlays through `docker compose config --no-interpolate`, bakes image names and host paths into the result, and keeps operator secrets as `${VAR}` for runtime resolution.
+**Merged generation:** `compose_generate` in `src/build/compose.sh` merges the base template with any applicable overlays through `docker compose config --no-interpolate`, writes every value it holds into the result, and leaves only an operator credential as `${VAR}` for runtime resolution.
 
-**Baked vs `${VAR}` split:** image names, container names, service dependencies, volume definitions, and internal mount paths are baked at generation time, because they are stable per project and do not vary between runs. Machine-specific values (host paths, ports, credentials) stay as `${VARIABLE}` and Docker Compose resolves them from `.env` at runtime.
+**Baked vs `${VAR}` split:** every harness value is written at generation time -- image names, container names, service dependencies, volume definitions, internal mount paths, host paths, the session identity, the host uid and gid, and the autosave interval. The generator holds or reads all of them, so none is left for the invoking shell to supply. A `${VARIABLE}` survives only for an operator credential (`ANTHROPIC_API_KEY`, `OPENCODE_SERVER_PASSWORD`), which is the operator's and not the harness's to write.
 
-**Why host paths are baked:** `docker compose config --no-interpolate` relativises unresolved path variables against the staging directory. Baking host paths after reading `.env` avoids this relativisation and produces correct absolute paths in the merged file.
+**Why the values are written:** `docker compose config --no-interpolate` relativises an unresolved path variable against the staging directory, so baking host paths after reading `.env` avoids that relativisation and produces correct absolute paths in the merged file. Writing the rest follows the same rule: a generated file that depends on its invoker is a file whose contents nobody declared.
 
 **Why explicit `type: bind`:** Docker Compose misclassifies `${VAR}` sources as named volumes in short volume syntax, so every volume mount uses explicit `type: bind`.
 

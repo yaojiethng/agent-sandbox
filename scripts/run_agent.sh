@@ -47,6 +47,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/scripts/build.sh"
 source "$REPO_ROOT/src/build/compose.sh"
+source "$REPO_ROOT/src/libs/env.sh"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
 source "$REPO_ROOT/src/libs/time_format.sh"
 source "$REPO_ROOT/src/libs/session_hints.sh"
@@ -149,6 +150,7 @@ if [[ -z "$DELIVERY" ]]; then
 fi
 
 # -------------------------
+
 # Provider setup hook
 # -------------------------
 # Sources src/reasoning/agent-runtime/<n>/setup.sh if it exists.

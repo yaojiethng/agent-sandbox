@@ -112,6 +112,14 @@ compose_generate() {
     return 1
   fi
 
+  # Record-owned values the generated file carries. The generator writes them;
+  # it leaves no ${...} for the invoking shell to supply. An operator
+  # credential is the one exception, because it is the operator's and not the
+  # harness's to write.
+  local autosave_interval
+  autosave_interval="$(env_get "${ENV_FILE:-}" AUTOSAVE_INTERVAL)"
+  : "${autosave_interval:=60}"
+
   # Apply {{VAR}} substitutions to each input file into a temp staging dir,
   # then run docker compose config --no-interpolate to merge them. The staging
   # dir is cleaned explicitly on every return path (no RETURN trap: under bats'
@@ -150,19 +158,23 @@ compose_generate() {
       -e "s|{{FLATTEN}}|${FLATTEN:-false}|g" \
       -e "s|{{DRY_RUN_CAPABILITY_SCRIPT}}|${DRY_RUN_CAPABILITY_SCRIPT:-}|g" \
       -e "s|{{DRY_RUN_SCRIPT}}|${DRY_RUN_SCRIPT:-}|g" \
-      -e "s|\${SANDBOX_DIR}|${SANDBOX_DIR:-}|g" \
-      -e "s|\${WORKTREE_DIR}|${WORKTREE_DIR:-}|g" \
-      -e "s|\${CHANGES_DIR}|${CHANGES_DIR:-}|g" \
-      -e "s|\${INPUT_DIR}|${INPUT_DIR:-}|g" \
-      -e "s|\${OUTPUT_DIR}|${OUTPUT_DIR:-}|g" \
+      -e "s|{{HOST_UID}}|${HOST_UID:-1000}|g" \
+      -e "s|{{HOST_GID}}|${HOST_GID:-1000}|g" \
+      -e "s|{{AUTOSAVE_INTERVAL}}|${autosave_interval}|g" \
+      -e "s|{{RESET_VOLUME}}|${RESET_VOLUME:-}|g" \
+      -e "s|{{SANDBOX_DIR}}|${SANDBOX_DIR:-}|g" \
+      -e "s|{{WORKTREE_DIR}}|${WORKTREE_DIR:-}|g" \
+      -e "s|{{CHANGES_DIR}}|${CHANGES_DIR:-}|g" \
+      -e "s|{{INPUT_DIR}}|${INPUT_DIR:-}|g" \
+      -e "s|{{OUTPUT_DIR}}|${OUTPUT_DIR:-}|g" \
       "$src" > "$dst"
     staged_files+=(-f "$dst")
     (( i++ )) || true
   done
 
-  # Merge via docker compose config. --no-interpolate preserves ${VAR}
-  # references so Docker Compose resolves them from the environment at
-  # runtime. Two injected fields are stripped:
+  # Merge via docker compose config. Every harness value is already written;
+  # --no-interpolate keeps a credential's ${VAR} reference intact for Docker
+  # Compose to resolve at runtime. Two injected fields are stripped:
   #   name:              --  top-level project name (set via --project-name in compose_args)
   #   networks.default.name:  --  Compose injects the staging dir name; we want the
   #                            project-scoped default, set at runtime by --project-name

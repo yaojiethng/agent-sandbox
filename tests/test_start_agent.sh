@@ -359,7 +359,7 @@ test_missing_provider_fails_fast_with_clear_error() {
 }
 
 # When --sandbox is absent, start resolves the sandbox from the ladder: the
-# .env, then AGENT_SANDBOX_SANDBOX_DIR. Nothing is derived from PROJECT_DIR, so
+# .env. Nothing is derived from PROJECT_DIR, so
 # a sandbox the operator onboarded elsewhere wins over the conventional sibling.
 # Given: a project at <dir>/project, a decoy sibling <dir>/project-sandbox, and
 #        an invocation-CWD .env naming <dir>/onboarded-sandbox

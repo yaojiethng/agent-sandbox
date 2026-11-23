@@ -3,7 +3,9 @@
 # Unit tests for src/libs/env_resolve.sh  --  the centralized precedence
 # resolver for the sandbox identity triple.
 #
-# Precedence under test: explicit > AGENT_SANDBOX_* env var > .env > error.
+# Precedence under test: explicit flag > .env > error. A record key has no
+# environment level: AGENT_SANDBOX_<KEY> is not read for any key the record
+# holds, because the record is read and never exported.
 
 set -uo pipefail
 
@@ -15,7 +17,7 @@ source "$REPO_ROOT/src/libs/env_resolve.sh"
 # Given: a fixture .env, an explicit name flagName and dir /explicit, and AGENT_SANDBOX_PROJECT_NAME=envvar
 # When:  env_resolve_identity runs
 # Then:  PROJECT_NAME=flagName, PROJECT_DIR=/explicit, SANDBOX_DIR=<dir>
-# Asserts: the explicit level beats both the AGENT_SANDBOX_* env var and .env.
+# Asserts: the explicit level beats both the .env.
 test_resolve_explicit_wins_over_env_and_file() {
   local dir="$FIXTURE_DIR/explicit"; make_envfile "$dir" envname "$dir/envproj" "$dir"
   local OUT RC=0
@@ -23,7 +25,7 @@ test_resolve_explicit_wins_over_env_and_file() {
         env_resolve_identity flagName /explicit "$dir" "$dir/.env" \
         && printf '%s|%s|%s' "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR") || RC=$?
   if [[ $RC -eq 0 && "$OUT" == "flagName|/explicit|$dir" ]]; then
-    pass "explicit flag value beats the AGENT_SANDBOX_* env var and .env"
+    pass "explicit flag value beats the .env"
   else
     fail "explicit-wins broken: rc=$RC out='$OUT'"
   fi
@@ -31,18 +33,18 @@ test_resolve_explicit_wins_over_env_and_file() {
 
 # Given: a fixture .env and AGENT_SANDBOX_PROJECT_NAME=fromenv
 # When:  env_resolve_identity runs
-# Then:  PROJECT_NAME=fromenv
-# Asserts: the AGENT_SANDBOX_* env var beats .env.
-test_resolve_env_var_wins_over_file() {
+# Then:  PROJECT_NAME=envname, the record's value
+# Asserts: AGENT_SANDBOX_* is not a level for a key the record holds.
+test_resolve_env_var_is_not_a_level() {
   local dir="$FIXTURE_DIR/envvar"; make_envfile "$dir" envname "$dir/envproj" "$dir"
   local OUT RC=0
   OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=fromenv \
         env_resolve_identity "" "" "$dir" "$dir/.env" \
         && printf '%s' "$PROJECT_NAME") || RC=$?
-  if [[ $RC -eq 0 && "$OUT" == "fromenv" ]]; then
-    pass "AGENT_SANDBOX_* env var beats .env"
+  if [[ $RC -eq 0 && "$OUT" == "envname" ]]; then
+    pass "AGENT_SANDBOX_* is not a level for a record key"
   else
-    fail "envvar-wins broken: rc=$RC out='$OUT'"
+    fail "env level still read: rc=$RC out='$OUT'"
   fi
 }
 
@@ -131,19 +133,19 @@ test_resolve_ignores_leaked_plain_export() {
 
 # Given: a fixture .env whose SANDBOX_DIR differs from AGENT_SANDBOX_SANDBOX_DIR
 # When:  env_resolve_identity resolves only the sandbox field
-# Then:  SANDBOX_DIR holds the env-var value
-# Asserts: the AGENT_SANDBOX_SANDBOX_DIR level is read, and beats the .env.
-test_resolve_sandbox_env_var_wins_over_file() {
+# Then:  SANDBOX_DIR holds the record's value
+# Asserts: AGENT_SANDBOX_SANDBOX_DIR is not a level for the sandbox field.
+test_resolve_sandbox_env_var_is_not_a_level() {
   local dir="$FIXTURE_DIR/sandboxenv"
   make_envfile "$dir" envname "$dir/envproj" "$dir/fromfile"
   local OUT RC=0
   OUT=$(set -e; AGENT_SANDBOX_SANDBOX_DIR="$dir/fromenv" \
         env_resolve_identity "" "" "" "$dir/.env" sandbox \
         && printf '%s' "$SANDBOX_DIR") || RC=$?
-  if [[ $RC -eq 0 && "$OUT" == "$dir/fromenv" ]]; then
-    pass "AGENT_SANDBOX_SANDBOX_DIR env var beats .env for the sandbox field"
+  if [[ $RC -eq 0 && "$OUT" == "$dir/fromfile" ]]; then
+    pass "AGENT_SANDBOX_SANDBOX_DIR is not a level for the sandbox field"
   else
-    fail "sandbox env level broken: rc=$RC out='$OUT'"
+    fail "sandbox env level still read: rc=$RC out='$OUT'"
   fi
 }
 
@@ -156,14 +158,14 @@ test_resolve_one_remedy_is_the_callers() {
   local dir="$FIXTURE_DIR/remedy" OUT RC=0
   mkdir -p "$dir"
   unset AGENT_SANDBOX_SANDBOX_DIR
-  OUT=$(env_resolve_one AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$dir/.env" 2>&1) || RC=$?
+  OUT=$(env_resolve_one SANDBOX_DIR "$dir/.env" 2>&1) || RC=$?
   if [[ $RC -ne 0 && "$OUT" == *"Set SANDBOX_DIR in"* && "$OUT" != *"onboard"* ]]; then
     pass "no remedy argument prints the generic set-this-key line"
   else
     fail "generic remedy broken: rc=$RC out='$OUT'"
   fi
   RC=0
-  OUT=$(env_resolve_one AGENT_SANDBOX_INSTALL_DIR INSTALL_DIR "$dir/.env" "Run: install.sh --help" 2>&1) || RC=$?
+  OUT=$(env_resolve_one INSTALL_DIR "$dir/.env" "Run: install.sh --help" 2>&1) || RC=$?
   if [[ $RC -ne 0 && "$OUT" == *"Run: install.sh --help"* && "$OUT" != *"onboard"* ]]; then
     pass "a caller's remedy replaces the default, so no onboard advice leaks"
   else
@@ -171,7 +173,7 @@ test_resolve_one_remedy_is_the_callers() {
   fi
 }
 
-# Given: an explicit sandbox dir with no .env, and identity from the env level
+# Given: an explicit identity, an explicit sandbox dir, and no .env there
 # When:  env_resolve_identity runs with no env-ref
 # Then:  it resolves, and never claims a specified path
 # Asserts: the default .env is a default. It was reported as a specified path
@@ -179,8 +181,7 @@ test_resolve_one_remedy_is_the_callers() {
 test_resolve_default_env_absent_is_not_specified() {
   local dir="$FIXTURE_DIR/default_absent" OUT RC=0
   mkdir -p "$dir"
-  OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=p AGENT_SANDBOX_PROJECT_DIR="$dir/proj" \
-        env_resolve_identity "" "" "$dir" \
+  OUT=$(set -e; env_resolve_identity p "$dir/proj" "$dir" \
         && printf '%s|%s' "$PROJECT_NAME" "$PROJECT_DIR") || RC=$?
   if [[ $RC -eq 0 && "$OUT" == "p|$dir/proj" ]]; then
     pass "an absent default .env does not block a resolved identity"
@@ -206,13 +207,13 @@ test_resolve_specified_env_absent_names_the_path() {
 }
 
 run_test test_resolve_explicit_wins_over_env_and_file
-run_test test_resolve_env_var_wins_over_file
+run_test test_resolve_env_var_is_not_a_level
 run_test test_resolve_file_provides_value
 run_test test_resolve_missing_all_is_hard_error
 run_test test_resolve_env_file_in_provided_sandbox_dir
 run_test test_resolve_env_file_cwd_fallback
 run_test test_resolve_ignores_leaked_plain_export
-run_test test_resolve_sandbox_env_var_wins_over_file
+run_test test_resolve_sandbox_env_var_is_not_a_level
 run_test test_resolve_one_remedy_is_the_callers
 run_test test_resolve_default_env_absent_is_not_specified
 run_test test_resolve_specified_env_absent_names_the_path
