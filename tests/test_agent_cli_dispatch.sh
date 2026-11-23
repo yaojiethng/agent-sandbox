@@ -25,6 +25,20 @@ EXPECTED="onboard build start dry-run resume stop prune apply draft confirm reje
 
 cli() { bash "$CLI" "$@" 2>&1; }
 
+# make_dispatch_fixture DIR -- a repository root whose start leaf records the
+# argv the dispatcher hands it. The library tree is the real one, so the
+# resolver and parser under test are the shipping copies.
+make_dispatch_fixture() {
+  local root="$1"
+  rm -rf "$root"
+  mkdir -p "$root/scripts" "$root/src"
+  ln -s "$REPO_ROOT/src/libs" "$root/src/libs"
+  cat > "$root/scripts/start_agent.sh" <<'LEAF'
+printf 'LEAF:%s\n' "$0"
+printf 'ARG:%s\n' "$@"
+LEAF
+}
+
 # names_from TEXT: print the subcommand names TEXT names, one per line, in order.
 # Accepts the comma-separated "Valid subcommands:" line and the pipe-separated
 # no-argument usage line.
@@ -176,6 +190,36 @@ test_resolved_identity_reaches_the_leaf() {
     'the leaf does not receive an empty --project'
 }
 
+# Given: a fixture repository whose start leaf records its argv, and a sandbox
+#        record at a relative --env path
+# When:  the real dispatcher runs start without identity flags
+# Then:  the leaf receives the leading argument, the resolved identity, the
+#        absolute record path, and the passthrough argument
+# Asserts: the dispatcher forwards the resolver's record path and the row's
+#          leading argument across the real exec boundary.
+test_dispatch_forwards_the_record_and_leading_argument() {
+  local root="$FIXTURE_DIR/dispatch_root"
+  local project="$FIXTURE_DIR/dispatch_project"
+  local sandbox="$FIXTURE_DIR/dispatch_sandbox"
+  local out rc=0
+  make_dispatch_fixture "$root"
+  mkdir -p "$project" "$sandbox"
+  printf 'PROJECT_NAME=fixture-name\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' \
+    "$project" "$sandbox" > "$sandbox/session.env"
+
+  out="$(AGENT_SANDBOX_REPO="$root" bash "$CLI" start \
+    --sandbox="$sandbox" --env=session.env --passthrough=one 2>&1)" || rc=$?
+
+  assert_rc 0 "$rc" 'the dispatch reaches the leaf'
+  assert_contains "$out" "LEAF:$root/scripts/start_agent.sh" "the declared leaf is the one exec'd"
+  assert_contains "$out" $'ARG:standard\n' "the row's leading argument arrives first"
+  assert_contains "$out" "ARG:--name=fixture-name" 'the resolved name arrives by value'
+  assert_contains "$out" "ARG:--project=$project" 'the resolved project arrives by value'
+  assert_contains "$out" "ARG:--sandbox=$sandbox" 'the resolved sandbox arrives by value'
+  assert_contains "$out" "ARG:--env=$sandbox/session.env" 'the leaf receives the absolute record path'
+  assert_contains "$out" "ARG:--passthrough=one" 'the passthrough argument arrives last'
+}
+
 # A bare help request reaches the index: it is a subcommand of the surface, not
 # an unknown word.
 test_bare_help_exits_0() {
@@ -215,4 +259,5 @@ run_test test_sourcing_the_dispatcher_dispatches_nothing
 run_test test_declared_identity_fields_appear_in_the_leaf_help
 run_test test_leaf_exit_status_reaches_the_caller
 run_test test_resolved_identity_reaches_the_leaf
+run_test test_dispatch_forwards_the_record_and_leading_argument
 test_done test_agent_cli_dispatch

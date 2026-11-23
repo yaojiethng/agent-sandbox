@@ -20,6 +20,19 @@ The CLI surface is the `agent-sandbox` front door, the leaf command behind each 
 | R10 | Help is the leaf's | `--help` routes to the child's own page and exits before its flags are required; the dispatcher duplicates no help text, and `help` is itself a subcommand (2026-11-22) |
 | R11 | The exit code is a verdict | `0` success, `1` user error, `2+` system error; a magnitude never rides in the code (2026-11-22) |
 | R12 | The record path is absolute | `default_env_file` normalizes every branch and the resolver exports `ENV_FILE` as an absolute path, so the resolver and the process it hands the path to name the same file (2026-11-23) |
+| R13 | The dispatcher hands over resolved argv | The leaf receives the row's leading argument first, the resolved identity by value, the normalized absolute `--env`, and the passthrough arguments; an explicit empty env ref is empty rather than a fallback (2026-11-23) |
+
+## 2026-11-23 -- The dispatcher hands over resolved argv
+
+**Decision:** `dispatch` resolves the row's identity before it builds the forwarded flags, then `exec`s the leaf with the row's leading argument, the resolved `--name`/`--project`/`--sandbox`, the normalized absolute `--env`, and the operator's passthrough arguments. `env_resolve_identity` treats an explicit fourth argument as authoritative even when it is empty; only an omitted argument falls back to the caller's `ENV_REL`.
+
+**Rationale:** the leaf is a new process, so the dispatcher's record view does not cross the boundary; the argv is the contract. Forwarding the raw path made the leaf resolve the path a second time, and a relative sandbox let that second resolution disagree. The `ENV_REL` fallback also shadowed the forward: replacing the argument with an empty string still read the global, so no test could tell whether the forward existed.
+
+**Rejected alternatives:** override `exec` in a sourced shell -- rejected: it stops one step short of the process boundary the contract describes. Pass a snapshot of every record value by value -- rejected: the dispatcher would have to know every leaf's settings, and `run_agent` still reads keys the dispatcher does not own.
+
+**Edge cases / drivers:** a row that declares `env` must use the identity resolver, because `ENV_FILE` is what resolution exports. A row that declares no `env` forwards no path. The fixture-root test runs the real dispatcher and a stub leaf, so the assertion is on the argv the leaf process receives. Mutation rows D11-D13 prove the leading argument, the resolver's env ref and the normalized path are each load-bearing.
+
+Implementation: `scripts/agent-sandbox.sh` (`dispatch`), `src/libs/env_resolve.sh` (`env_resolve_identity`), `tests/test_agent_cli_dispatch.sh`, `tests/test_env_resolve.sh`, `tests/mutations/catalog.jsonl`.
 
 ## 2026-11-23 -- The record path is absolute
 

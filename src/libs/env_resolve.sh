@@ -104,6 +104,8 @@ env_resolve_one() {
 #   Resolves the requested identity fields (default: name dir sandbox). An
 #   empty explicit value means "not given". ENV_REF is the raw --env value
 #   (absolute, sandbox-relative, or empty) normalized via default_env_file.
+#   An explicit fourth argument is authoritative even when it is empty; only an
+#   omitted fourth argument falls back to the caller's ENV_REL.
 #   SANDBOX is anchored first (a relative ENV_REF needs a sandbox that may live
 #   in the .env). Exports PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR for the
 #   requested fields and the normalized ENV_FILE into the caller's scope.
@@ -113,7 +115,12 @@ env_resolve_one() {
 _ENV_ONBOARD_REMEDY="Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>"
 
 env_resolve_identity() {
-  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref="${4:-${ENV_REL:-}}"
+  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref
+  if [[ $# -ge 4 ]]; then
+    env_ref="$4"
+  else
+    env_ref="${ENV_REL:-}"
+  fi
   local fields=()
   if [[ $# -gt 4 ]]; then
     shift 4

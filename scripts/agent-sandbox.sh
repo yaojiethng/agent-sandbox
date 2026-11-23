@@ -212,12 +212,14 @@ dispatch() {
 
   # The flags are built after resolution: a resolved value is what the leaf
   # receives, and reading it before the resolver runs forwards an empty flag.
+  # The record path is the resolver's normalized absolute ENV_FILE, so the leaf
+  # opens the same file the resolver read rather than resolving --env again.
   for field in $ident; do
     case "$field" in
       name)    forwarded+=("--name=$PROJECT_NAME") ;;
       project) forwarded+=("--project=$PROJECT_DIR") ;;
       sandbox) forwarded+=("--sandbox=$SANDBOX_DIR") ;;
-      env)     forwarded+=("--env=$ENV_REL") ;;
+      env)     forwarded+=("--env=$ENV_FILE") ;;
     esac
   done
   exec bash "$AGENT_SANDBOX_REPO/$leaf" "${lead[@]}" "${forwarded[@]}" "${PASSTHROUGH[@]}"

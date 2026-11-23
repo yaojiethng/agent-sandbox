@@ -238,8 +238,24 @@ test_resolve_exports_an_absolute_env_file() {
   assert_eq "$base/sbx/session.env" "$out" "the resolver exports an absolute ENV_FILE"
 }
 
+# Given: a caller's ENV_REL pointing at another record, and an explicit empty
+#        fourth argument
+# When:  env_resolve_identity resolves the name
+# Then:  it reads the sandbox's own record, not the caller's ENV_REL
+# Asserts: an explicit empty env ref is authoritative; the global fallback is
+#          only for an omitted argument.
+test_explicit_empty_env_ref_does_not_fall_back() {
+  local dir="$FIXTURE_DIR/explicit_empty" other="$FIXTURE_DIR/explicit_other" out
+  make_envfile "$dir" envname "$dir/envproj" "$dir"
+  make_envfile "$other" othername "$other/envproj" "$other"
+  out=$(set -e; ENV_REL="$other/.env" env_resolve_identity "" "" "$dir" "" name \
+    && printf '%s' "$PROJECT_NAME") || out="FAILED"
+  assert_eq "envname" "$out" "an explicit empty ref does not fall back to ENV_REL"
+}
+
 run_test test_default_env_file_returns_an_absolute_path
 run_test test_resolve_exports_an_absolute_env_file
+run_test test_explicit_empty_env_ref_does_not_fall_back
 run_test test_resolve_explicit_wins_over_env_and_file
 run_test test_resolve_env_var_is_not_a_level
 run_test test_resolve_file_provides_value
