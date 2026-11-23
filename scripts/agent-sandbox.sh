@@ -24,10 +24,11 @@
 #
 # identity = [--name=<n>] [--project=<path>] [--sandbox=<path>]. Every command
 # keeps a hard identity requirement, but it need not be passed per invocation:
-# each missing field resolves from the AGENT_SANDBOX_<KEY> env level, then the
-# per-sandbox .env located via --env (else <sandbox>/.env, else the invocation
-# CWD). onboard is the exception: it creates the .env and requires
-# --name/--project/--sandbox. The sandbox Makefile passes --env=$(ENV_FILE).
+# each missing field resolves from the per-sandbox .env located via --env (else
+# <sandbox>/.env, else the invocation CWD), and nowhere else -- a record key has
+# no environment level. onboard is the exception: it creates the .env and
+# requires --name/--project/--sandbox. The sandbox Makefile passes
+# --env=$(ENV_FILE).
 #
 # --targets accepts: all, sandbox, <provider>, or comma-separated combinations
 #   agent-sandbox build --targets=all
@@ -76,10 +77,10 @@ require_base_args() {
 }
 
 # resolve_identity [name dir sandbox]  --  thin-interface seam over the
-# canonical resolver. For each requested field: explicit > AGENT_SANDBOX_<KEY>
-# > the .env (via ENV_REL, else <sandbox>/.env, else CWD) > a hard error.
-# onboard is exempt. The resolver emits the single per-key error message and
-# exports the normalized ENV_FILE.
+# canonical resolver. For each requested field: explicit > the .env (via
+# ENV_REL, else <sandbox>/.env, else CWD) > a hard error. onboard is exempt.
+# The resolver emits the single per-key error message and exports the
+# normalized ENV_FILE.
 resolve_identity() {
   env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "$ENV_REL" "$@" || exit 1
 }

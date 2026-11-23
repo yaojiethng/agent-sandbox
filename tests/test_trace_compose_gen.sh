@@ -361,21 +361,23 @@ test_record_bakes_image_digests() {
 }
 
 # Given: a docker double whose compose config interpolates ${VAR} unless --no-interpolate is passed
-# When:  compose_generate runs on an input carrying ${AUTOSAVE_INTERVAL}
+# When:  compose_generate runs on an input carrying ${ANTHROPIC_API_KEY}
 # Then:  the output keeps the literal reference for runtime resolution
-# Asserts: the flag's property -- generation does not resolve operator-set variables
+# Asserts: the flag's property -- generation does not resolve an operator
+#          credential. A harness value never reaches this path: the generator
+#          writes it from its arguments.
 test_compose_generate_preserves_runtime_var() {
   local FIXTURE_DIR="$FIXTURE_DIR/runtimevar"
   mkdir -p "$FIXTURE_DIR"
   setup_fixture "$FIXTURE_DIR"
 
-  cat > "$FIXTURE_DIR/mini.yml" <<'EOF'
+  cat > "$FIXTURE_DIR/mini.yml" <<'YML'
 services:
   sandbox:
     image: mini
     environment:
-      - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL}
-EOF
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+YML
 
   local out="$FIXTURE_DIR/compose-output.yml"
   docker() {
@@ -389,21 +391,50 @@ EOF
       if (( no_interp == 1 )); then
         cat "$f"
       else
-        sed "s|\${AUTOSAVE_INTERVAL}|${AUTOSAVE_INTERVAL:-}|g" "$f"
+        sed "s|\${ANTHROPIC_API_KEY}|${ANTHROPIC_API_KEY:-}|g" "$f"
       fi
     elif [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
       echo "sha256:stub"
     fi
   }
-  export AUTOSAVE_INTERVAL=120
+  export ANTHROPIC_API_KEY=sk-probe
   run_compose_generate_with_docker "$out" "$FIXTURE_DIR/mini.yml"
 
-  if [[ -f "$out" ]] && grep -q 'AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL}' "$out" && ! grep -q 'AUTOSAVE_INTERVAL=120' "$out"; then
-    pass "compose_generate preserves the \${VAR} reference for runtime resolution"
+  if [[ -f "$out" ]] && grep -q 'ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}' "$out" && ! grep -q 'ANTHROPIC_API_KEY=sk-probe' "$out"; then
+    pass "compose_generate preserves a credential's \${VAR} reference"
   else
-    fail "compose_generate did not preserve the runtime variable; got: $(grep AUTOSAVE_INTERVAL "$out" 2>/dev/null)"
+    fail "compose_generate did not preserve the credential reference; got: $(grep API_KEY "$out" 2>/dev/null)"
   fi
+
 }
+# Given: an input carrying a placeholder the substitution table does not know
+# When:  compose_generate runs
+# Then:  it fails, names the placeholder, and removes its staging dir
+# Asserts: an unknown placeholder is a generator defect. Left in place it would
+#          reach docker compose as a literal and fail there, far from the cause.
+test_compose_generate_rejects_an_unknown_placeholder() {
+  local FIXTURE_DIR="$FIXTURE_DIR/cg_unknown"
+  mkdir -p "$FIXTURE_DIR"
+  setup_fixture "$FIXTURE_DIR"
+  cat > "$FIXTURE_DIR/mini.yml" <<'YML'
+services:
+  sandbox:
+    image: mini
+    environment:
+      - X={{NOT_A_PLACEHOLDER}}
+YML
+  docker() {
+    if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+      echo "sha256:stub"
+    fi
+  }
+  local out="$FIXTURE_DIR/out.yml" rc=0 log="$FIXTURE_DIR/log"
+  run_compose_generate_with_docker "$out" "$FIXTURE_DIR/mini.yml" > "$log" 2>&1 || rc=$?
+  assert_ne "$rc" "0" "compose_generate fails on an unknown placeholder"
+  assert_contains "$(cat "$log")" "{{NOT_A_PLACEHOLDER}}" "the failure names the placeholder"
+  assert_empty "$(ls -A "$FIXTURE_DIR/tmp" 2>/dev/null)" "the staging dir is removed"
+}
+
 
 # Given: an input set with no input files
 # When:  compose_generate runs
@@ -611,6 +642,7 @@ run_test test_compose_generate_stamps_flatten_literal
 run_test test_mount_output_has_no_snapshot_dir
 run_test test_record_bakes_image_digests
 run_test test_compose_generate_preserves_runtime_var
+run_test test_compose_generate_rejects_an_unknown_placeholder
 run_test test_compose_generate_rejects_no_inputs
 run_test test_compose_generate_rejects_absent_docker
 run_test test_compose_generate_rejects_missing_digest

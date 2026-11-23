@@ -184,7 +184,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 
 ## `.env` Runtime Variables
 
-Each value is read by key when a reader needs it; none is exported into a process environment.
+Each value is read by key when a reader needs it: none is exported into a process environment, and none is left to Compose interpolation. A `${VAR}` in the generated file names an operator credential from the invocation environment.
 
 | Variable | Default | Owner |
 |---|---|---|

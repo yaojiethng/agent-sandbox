@@ -77,8 +77,7 @@
 # $(CURDIR) is the sandbox directory that holds the Makefile and the .env, so
 # ENV_FILE resolves to the per-sandbox .env. $(CURDIR) is portable to both GNU
 # and BSD make. Identity (name, project, sandbox) is no longer passed per
-# target: the CLI resolves it from this .env (--env), the AGENT_SANDBOX_* env
-# level, or the invocation CWD.
+# target: the CLI resolves it from this .env (--env), else the invocation CWD.
 ENV_FILE := $(CURDIR)/.env
 PROVIDER     ?=
 REFRESH      ?=

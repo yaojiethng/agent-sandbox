@@ -2,7 +2,7 @@
 # tests/test_env.sh
 # Unit tests for src/libs/env.sh  --  the one parser for simple KEY=VALUE env
 # files. The parser prints and never exports, so each case asserts on
-# env_parse's output or on env_get's return value, not on the shell's state.
+# env_parse's output or on record_get's return value, not on the shell's state.
 
 set -uo pipefail
 
@@ -10,14 +10,22 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/env.sh"
 
+# val_of FILE KEY  -- open the record once and read one key, the way a reader does.
+val_of() {
+  # shellcheck disable=SC2034  # the view is read by name through record_get
+  local -A r=()
+  record_open "$1" r
+  record_get r "$2"
+}
+
 # Given: a .env line of the form K=val # not-a-comment
-# When:  env_get reads K
+# When:  record_get reads K
 # Then:  it returns the whole tail, comment text included
 # Asserts: there is no inline-comment rule.
-test_env_get_keeps_inline_comment_text_as_value() {
+test_record_get_keeps_inline_comment_text_as_value() {
   local F="$FIXTURE_DIR/inline.env"
   printf 'K=val # not-a-comment\n' > "$F"
-  assert_eq 'val # not-a-comment' "$(env_get "$F" K)" "no inline-comment rule"
+  assert_eq 'val # not-a-comment' "$(val_of "$F" K)" "no inline-comment rule"
 }
 
 # Given: a file whose first entry has a whitespace-only key line before it
@@ -74,17 +82,17 @@ test_env_parse_skips_comments_and_blanks() {
 }
 
 # Given: V= with a space-padded value
-# When:  env_get reads V
+# When:  record_get reads V
 # Then:  it returns the value with no surrounding whitespace
 # Asserts: surrounding whitespace on the value is removed.
 test_env_parse_trims_value_padding() {
   local F="$FIXTURE_DIR/t.env"
   printf 'V=  padded  \n' > "$F"
-  assert_eq "padded" "$(env_get "$F" V)" "surrounding value whitespace is trimmed"
+  assert_eq "padded" "$(val_of "$F" V)" "surrounding value whitespace is trimmed"
 }
 
 # Given: a line written with an `export` prefix
-# When:  env_get reads the key
+# When:  record_get reads the key
 # Then:  it returns the value under the bare name
 # Asserts: an optional export keyword is stripped, not folded into the name.
 test_env_parse_strips_export_prefix() {
@@ -143,44 +151,44 @@ test_env_parse_does_not_export_to_child_process() {
   local F="$FIXTURE_DIR/child.env"
   printf 'FOO=bar\n' > "$F"
   local SEEN
-  SEEN=$(env_get "$F" FOO)
+  SEEN=$(val_of "$F" FOO)
   assert_eq "bar" "$SEEN" "the read returns the value"
   assert_eq "" "$(bash -c 'printf "%s" "${FOO:-}"')" "no record key reaches a child's environment"
 }
 
 # Given: a .env holding a double-quoted and a single-quoted value with padding
-# When:  env_get reads them
+# When:  record_get reads them
 # Then:  each returns the unquoted contents, padding intact
 # Asserts: one layer of matching quotes is stripped; padding inside quotes survives.
 test_env_parse_strips_matching_quotes() {
   local F="$FIXTURE_DIR/quoted.env"
   printf 'D="a b"\n%s\n' "S='  keep  '" > "$F"
-  assert_eq "a b" "$(env_get "$F" D)" "a double-quoted value is unquoted"
-  assert_eq "  keep  " "$(env_get "$F" S)" "quoting preserves inner padding"
+  assert_eq "a b" "$(val_of "$F" D)" "a double-quoted value is unquoted"
+  assert_eq "  keep  " "$(val_of "$F" S)" "quoting preserves inner padding"
 }
 
 # Given: an unbalanced quote, an embedded quote, an interior quote pair, a lone quote
-# When:  env_get reads each
+# When:  record_get reads each
 # Then:  each value is verbatim: the ends-pairing rule never strips an interior pair
 # Asserts: only a value fully enclosed by one quote pair, with no quote inside, is stripped.
 test_env_parse_keeps_unbalanced_and_embedded_quotes() {
   local F="$FIXTURE_DIR/unbalanced.env"
   printf 'U="abc\nE=a"b"c\nP="a" and "b"\nW="\n' > "$F"
-  assert_eq '"abc' "$(env_get "$F" U)" "an unbalanced leading quote stays"
-  assert_eq 'a"b"c' "$(env_get "$F" E)" "an embedded quote stays"
-  assert_eq '"a" and "b"' "$(env_get "$F" P)" "an interior quote pair stays"
-  assert_eq '"' "$(env_get "$F" W)" "a lone quote stays"
+  assert_eq '"abc' "$(val_of "$F" U)" "an unbalanced leading quote stays"
+  assert_eq 'a"b"c' "$(val_of "$F" E)" "an embedded quote stays"
+  assert_eq '"a" and "b"' "$(val_of "$F" P)" "an interior quote pair stays"
+  assert_eq '"' "$(val_of "$F" W)" "a lone quote stays"
 }
 
 # Given: an empty quoted value and a quoted value behind an export prefix
-# When:  env_get reads them
+# When:  record_get reads them
 # Then:  Z is empty and Q holds the unquoted contents
 # Asserts: quote stripping applies after the export-prefix and empty-value paths.
 test_env_parse_strips_quotes_on_empty_and_exported_values() {
   local F="$FIXTURE_DIR/emptyquoted.env"
   printf 'Z=""\nexport Q="x y"\n' > "$F"
-  assert_eq "" "$(env_get "$F" Z)" "an empty quoted value is empty"
-  assert_eq "x y" "$(env_get "$F" Q)" "quotes are stripped behind an export prefix"
+  assert_eq "" "$(val_of "$F" Z)" "an empty quoted value is empty"
+  assert_eq "x y" "$(val_of "$F" Q)" "quotes are stripped behind an export prefix"
 }
 
 # Given: a .env whose keys are named LINE, KEY and VALUE (parser scratch names before the prefix)
@@ -208,27 +216,28 @@ test_env_parse_skips_scratch_prefixed_key_with_warning() {
 }
 
 # Given: a record that states the same key twice
-# When:  env_get reads it
-# Then:  the first value wins and the second is ignored
-# Asserts: a record has one value per key, so a later append cannot outlive the
-#          value a reader already saw.
-test_env_get_returns_the_first_occurrence() {
+# When:  the record is opened
+# Then:  the later value wins
+# Asserts: the view has one value per key, and its rule matches a shell reading
+#          a script -- a later line overrides an earlier one. The parser still
+#          emits both lines; the view decides.
+test_record_get_takes_the_later_occurrence() {
   local F="$FIXTURE_DIR/dup.env"
   printf 'K=first\nK=second\n' > "$F"
-  assert_eq "first" "$(env_get "$F" K)" "the first occurrence wins"
+  assert_eq "second" "$(val_of "$F" K)" "the later occurrence wins"
 }
 
 # Given: a missing file and a missing key
-# When:  env_parse and env_get run
+# When:  env_parse and record_get run
 # Then:  both print nothing and succeed
 # Asserts: absence is the caller's judgement, not the parser's error.
-test_env_get_absent_file_and_key_are_empty() {
+test_record_get_absent_file_and_key_are_empty() {
   assert_eq "" "$(env_parse "$FIXTURE_DIR/absent.env")" "a missing file prints nothing"
   assert_eq "0" "$?" "a missing file is not an error"
-  assert_eq "" "$(env_get "$FIXTURE_DIR/absent.env" K)" "a missing key is empty"
+  assert_eq "" "$(val_of "$FIXTURE_DIR/absent.env" K)" "a missing key is empty"
 }
 
-run_test test_env_get_keeps_inline_comment_text_as_value
+run_test test_record_get_keeps_inline_comment_text_as_value
 run_test test_env_parse_skips_whitespace_only_key_lines
 run_test test_env_parse_skips_indented_comments
 run_test test_env_parse_strips_key_whitespace_and_crlf
@@ -245,7 +254,7 @@ run_test test_env_parse_keeps_unbalanced_and_embedded_quotes
 run_test test_env_parse_strips_quotes_on_empty_and_exported_values
 run_test test_env_parse_accepts_keys_named_like_former_scratch_names
 run_test test_env_parse_skips_scratch_prefixed_key_with_warning
-run_test test_env_get_returns_the_first_occurrence
-run_test test_env_get_absent_file_and_key_are_empty
+run_test test_record_get_takes_the_later_occurrence
+run_test test_record_get_absent_file_and_key_are_empty
 
 test_done test_env.sh

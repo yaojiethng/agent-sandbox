@@ -55,6 +55,7 @@ Open `SANDBOX_DIR/.env` and review:
 - `INSTALL_DIR` -- install path for the `agent-sandbox` CLI (default `~/.local/bin`)
 - `AUTOSAVE_INTERVAL` -- seconds between session checkpoints (default `60`)
 - `WORKTREE_DIR` -- `SANDBOX_TYPE=mount` starts only: host path of the shared worktree, bind-mounted at `/home/agentuser/sandbox` in the container (default `<sandbox>/.worktree`)
+- Any provider-specific variables flagged in the file comments
 
 The delivery model is not an `.env` variable: pass `SANDBOX_TYPE=copy|mount` on the command (`make start SANDBOX_TYPE=mount`), which the Makefile forwards as `--delivery`. `make resume` never takes it -- the delivery is recovered from the session record.
 

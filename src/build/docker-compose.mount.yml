@@ -7,8 +7,9 @@
 # State Contract; design record devlog/discussions/20260730-design-settled-mount_model.md).
 #
 # Path mapping: {{WORKTREE_DIR}} (host) -> /home/agentuser/sandbox (container)
-# WORKTREE_DIR defaults to {{SANDBOX_DIR}}/.worktree in run_agent.sh; a custom
-# mount point can override it (injected into compose at generation).
+# WORKTREE_DIR resolves in session_env.sh: the invocation value, then the
+# record's key, then {{SANDBOX_DIR}}/.worktree.
+# The generator writes the resolved value into this mount source.
 
 services:
   sandbox:

@@ -402,6 +402,42 @@ test_names_requires_all_four_args() {
 # When:  session_env_names runs twice
 # Then:  the default is <sandbox>/.worktree, the override wins, and SANDBOX_TYPE stays unset
 # Asserts: the default-with-override read of a global, and that delivery is not this function's business (bite V9 proven)
+# Given: a sandbox whose .env holds WORKTREE_DIR, and one that does not
+# When:  the phase 1 entry opens the record and phase 2 resolves the worktree path
+# Then:  the record's value is used, and an absent key falls back to <sandbox>/.worktree
+# Asserts: the record level of this setting is read. It is the level the
+#          onboarding guide documents, and it is optional, so an absent key is a
+#          default rather than an error.
+test_names_worktree_reads_the_record() {
+  local SBX="$FIXTURE_DIR/sbx_record_wt" PROJ
+  PROJ="$(mktemp -d)"
+  make_committed_repo "$PROJ"
+  make_envfile "$SBX" envname "$PROJ" "$SBX"
+  printf 'WORKTREE_DIR=/custom/wt\n' >> "$SBX/.env"
+
+  local OUT RC=0
+  OUT=$(set -e
+    ENV_FILE="$SBX/.env"
+    env_resolve_identity "" "" "$SBX" "$SBX/.env"
+    resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX"
+    session_env_names "$PROJECT_NAME" pi "$SBX" s1
+    printf '%s' "$WORKTREE_DIR") || RC=$?
+
+  assert_eq "$OUT" "/custom/wt" "the record value reaches the run"
+
+  # The same record with the key removed: the default, not an error.
+  make_envfile "$SBX" envname "$PROJ" "$SBX"
+  RC=0
+  OUT=$(set -e
+    ENV_FILE="$SBX/.env"
+    env_resolve_identity "" "" "$SBX" "$SBX/.env"
+    resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX"
+    session_env_names "$PROJECT_NAME" pi "$SBX" s1
+    printf '%s' "$WORKTREE_DIR") || RC=$?
+  assert_eq "$OUT" "$SBX/.worktree" "an absent key falls back to the sibling path"
+  rm -rf "$PROJ"
+}
+
 test_names_worktree_var_defaults_and_overrides() {
   setup_named_project
   PROJECT_DIR="$NAMED_PROJ"
@@ -449,5 +485,6 @@ run_test test_names_detached_head_falls_back_to_short_sha
 run_test test_names_deterministic_container_and_image_names
 run_test test_names_requires_all_four_args
 run_test test_names_worktree_var_defaults_and_overrides
+run_test test_names_worktree_reads_the_record
 
 test_done test_session_env.sh

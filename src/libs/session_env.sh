@@ -72,6 +72,18 @@ resolve_and_init() {
   export HOST_UID; HOST_UID="$(id -u)"
   export HOST_GID; HOST_GID="$(id -g)"
   export ENV_FILE
+
+  # The process view, opened once for this entry. Phase 2 reads record values
+  # from it; a view the resolver already opened for this file is reused rather
+  # than parsed again.
+  env_record_view "$ENV_FILE"
+}
+
+# env_record_get KEY
+#   Reads KEY from the view resolve_and_init opened. Empty when the record has no
+#   such key, which is how an optional setting states its default.
+env_record_get() {
+  record_get ENV_RECORD "${1:?env_record_get requires a key}"
 }
 
 # session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
@@ -106,7 +118,14 @@ session_env_names() {
   # Host identity. Delivery is NOT set here: it is a command input owned by
   # the invoking script (start_agent parses it; resume recovers it from the
   # session record) and is passed downstream as an explicit argument.
-  export WORKTREE_DIR="${WORKTREE_DIR:-$sandbox_dir/.worktree}"
+  #
+  # The worktree path is an optional run input: the invocation's own value,
+  # then the record's, then the conventional sibling. A record key with a stated
+  # default is not an error when absent, so it is read from the opened view
+  # rather than required through the resolution primitive.
+  local recorded_worktree
+  recorded_worktree="$(env_record_get WORKTREE_DIR)"
+  export WORKTREE_DIR="${WORKTREE_DIR:-${recorded_worktree:-$sandbox_dir/.worktree}}"
 }
 
 # session_id_derive SANDBOX_DIR HOST_HEAD_SHA SESSION_TS

@@ -7,8 +7,14 @@
 # boundary is what keeps a per-sandbox record from standing in for the ambient
 # environment of the toolchain.
 #
-#   env_parse FILE      print the file's entries as canonical KEY=VALUE lines
-#   env_get FILE KEY    print the value of the first KEY entry; empty if absent
+#   record_open FILE ARRAY   parse FILE once, filling the caller's array
+#   record_get ARRAY KEY     print the value of KEY from an opened record
+#   env_parse FILE           print the entries as canonical KEY=VALUE lines
+#
+# A process opens a record once, at its entry, and reads every value it needs
+# from that view. env_parse is the parser; record_open is its only caller, so
+# one parse per file per process is a property of the library rather than a
+# discipline each reader has to remember.
 #
 #   Parsing rules (hardened):
 #     - Skips blank lines and comment lines (# ...).
@@ -74,19 +80,50 @@ env_parse() {
   done < "$FILE"
 }
 
-# env_get FILE KEY
-#   Prints the value of the first KEY entry, or nothing. The caller decides
-#   whether an absent key is an error; a second occurrence of the same key is
-#   ignored, so a record has one value per key.
-env_get() {
+# record_open FILE ARRAY
+#   Parses FILE once and fills ARRAY (an associative array the caller declared)
+#   with one entry per key. An empty or missing FILE leaves the array empty, so
+#   an optional record costs no branch at every reader. A second occurrence of a
+#   key overwrites the first in the view; env_parse emits every entry and the
+#   caller decides, which keeps the parser single-purpose.
+record_open() {
   local FILE="${1:-}"
-  local WANT="${2:?env_get requires a key}"
-  local _env_line
+  local NAME="${2:?record_open requires an array name}"
+  local _env_line _env_key _env_val
   [[ -n "$FILE" && -f "$FILE" ]] || return 0
   while IFS= read -r _env_line; do
-    if [[ "$_env_line" == "$WANT="* ]]; then
-      printf '%s' "${_env_line#*=}"
-      return 0
-    fi
+    _env_key="${_env_line%%=*}"
+    _env_val="${_env_line#*=}"
+    printf -v "${NAME}[${_env_key}]" '%s' "$_env_val"
   done < <(env_parse "$FILE")
+}
+
+# record_get ARRAY KEY
+#   Prints the value of KEY from an opened record, or nothing. The caller decides
+#   whether an absent key is an error.
+record_get() {
+  local NAME="${1:?record_get requires an array name}"
+  local KEY="${2:?record_get requires a key}"
+  local _ref="${NAME}[${KEY}]"
+  printf '%s' "${!_ref:-}"
+}
+
+# env_record_view FILE
+#   Opens FILE into the process view, or reuses the view already open for it, so
+#   a process that resolves identity and then initialises parses one file once.
+#   Every reader in the process asks ENV_RECORD through record_get; a reader that
+#   needs the value only once may call record_open on a view of its own.
+#
+#   Opening a different file replaces the view: the view holds one record, and a
+#   process that reads two records reads each once.
+env_record_view() {
+  local FILE="${1:-}"
+  if [[ -n "${_ENV_VIEW_FILE:-}" && "$_ENV_VIEW_FILE" == "$FILE" ]]; then
+    return 0
+  fi
+  # shellcheck disable=SC2034  # the view is read by name through record_get
+  declare -gA ENV_RECORD=()
+  record_open "$FILE" ENV_RECORD
+  _ENV_VIEW_FILE="$FILE"
+  return 0
 }

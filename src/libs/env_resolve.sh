@@ -20,11 +20,30 @@
 _self_env_resolve_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$_self_env_resolve_dir/libs/env.sh"
 
-# _env_value FILE KEY
-#   Prints the value of KEY read from FILE, or empty if KEY is absent. The
-#   one parser reads it (env_get), so the resolution ladder has one read site.
-_env_value() {
-  env_get "$1" "$2"
+# _record_field KEY ENV_FILE [REMEDY]
+#   Prints the value of KEY from the process view, or the one missing-value error
+#   and a failure status. The view is the caller's, so a sequence of fields costs
+#   one parse.
+_record_field() {
+  local key="$1" env_file="$2" remedy="${3:-}" value
+  value="$(record_get ENV_RECORD "$key")"
+  if [[ -n "$value" ]]; then printf '%s' "$value"; return 0; fi
+  _env_missing "$key" "$env_file" "$remedy"
+  return 1
+}
+
+# _env_missing KEY ENV_FILE [REMEDY]
+#   Prints the one missing-value error. REMEDY defaults to the generic
+#   set-this-key advice, because the primitive cannot know which command owns a
+#   setting; the caller that owns the setting names its remedy.
+_env_missing() {
+  local key="$1" env_file="$2" remedy="${3:-}"
+  echo "Error: $key is not set (no explicit flag, no $key in ${env_file:-.env})." >&2
+  if [[ -n "$remedy" ]]; then
+    echo "  $remedy" >&2
+  else
+    echo "  Set $key in ${env_file:-.env}." >&2
+  fi
 }
 
 # default_env_file RAW_ENV_REF SANDBOX_DIR
@@ -55,18 +74,9 @@ default_env_file() {
 #   its remedy. An argument rather than a per-key table keeps a new setting a
 #   call-site edit, and keeps the text beside the command that writes the value.
 env_resolve_one() {
-  local key="$1" env_file="$2" remedy="${3:-}" value
-  if [[ -n "$env_file" && -f "$env_file" ]]; then
-    value="$(_env_value "$env_file" "$key")"
-    if [[ -n "$value" ]]; then printf '%s' "$value"; return 0; fi
-  fi
-  echo "Error: $key is not set (no explicit flag, no $key in ${env_file:-.env})." >&2
-  if [[ -n "$remedy" ]]; then
-    echo "  $remedy" >&2
-  else
-    echo "  Set $key in ${env_file:-.env}." >&2
-  fi
-  return 1
+  local key="$1" env_file="$2" remedy="${3:-}"
+  env_record_view "$env_file"
+  _record_field "$key" "$env_file" "$remedy"
 }
 
 # env_resolve_identity EXPLICIT_NAME EXPLICIT_DIR EXPLICIT_SANDBOX [ENV_REF [FIELDS...]]
@@ -105,7 +115,8 @@ env_resolve_identity() {
     # Chicken-and-egg: a relative ENV_REF needs a sandbox that may itself live
     # in the .env, so bootstrap SANDBOX from the CWD fallback first.
     ep="$(default_env_file "$env_ref" "")"
-    SANDBOX_DIR="$(env_resolve_one SANDBOX_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
+    env_record_view "$ep"
+    SANDBOX_DIR="$(_record_field SANDBOX_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
   else
     SANDBOX_DIR="$expl_sandbox"
   fi
@@ -122,19 +133,21 @@ env_resolve_identity() {
     return 1
   fi
 
-  if $need_name; then
-    if [[ -n "$expl_name" ]]; then
-      export PROJECT_NAME="$expl_name"
-    else
-      PROJECT_NAME="$(env_resolve_one PROJECT_NAME "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
-    fi
+  # The process view, opened once. A bootstrap above may have read a different
+  # file, in which case this replaces the view rather than merging into it.
+  env_record_view "$ep"
+
+  if $need_name && [[ -z "$expl_name" ]]; then
+    PROJECT_NAME="$(_record_field PROJECT_NAME "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
+    export PROJECT_NAME
+  elif $need_name; then
+    export PROJECT_NAME="$expl_name"
   fi
-  if $need_dir; then
-    if [[ -n "$expl_dir" ]]; then
-      export PROJECT_DIR="$expl_dir"
-    else
-      PROJECT_DIR="$(env_resolve_one PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
-    fi
+  if $need_dir && [[ -z "$expl_dir" ]]; then
+    PROJECT_DIR="$(_record_field PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
+    export PROJECT_DIR
+  elif $need_dir; then
+    export PROJECT_DIR="$expl_dir"
   fi
   export PROJECT_NAME PROJECT_DIR SANDBOX_DIR
   return 0

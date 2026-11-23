@@ -17,14 +17,16 @@ source "$(dirname "${BASH_SOURCE[0]}")/libs/test_common.sh"
 test_setup
 
 REPO="$REPO_ROOT"
+# shellcheck source=/dev/null
+source "$REPO_ROOT/src/libs/env.sh"
 
 # The read idioms, matched at a command position: start of line, after
 # whitespace, after an opening parenthesis or after a semicolon. The trailing
 # space keeps a function definition, which ends in '()', out of the census.
-# env_load and env_file_value are in the list as tripwires: the library no
-# longer defines either, so a future call to one is a read that bypasses the
-# contract.
-READ_IDIOS='(^|[[:space:](;])(env_load|env_file_value|env_get|env_parse|env_resolve_one|env_resolve_identity) |grep .*\.env|-include \.env|cut -d.='
+# env_load, env_get and env_file_value are in the list as tripwires: the
+# library no longer defines any of them, so a future call to one is a read that
+# bypasses the contract.
+READ_IDIOS='(^|[[:space:](;])(env_load|env_file_value|env_get|env_parse|record_open|record_get|env_record_view|env_record_get|env_resolve_one|env_resolve_identity) |grep .*.env|-include .env|cut -d.='
 
 sites() {
   grep -rnE "$READ_IDIOS" --include="*.sh" --include="Makefile.template" \
@@ -45,13 +47,86 @@ test_env_resolution_call_census() {
       "scripts/install.sh 1" \
       "scripts/onboard.sh 1" \
       "scripts/resume_agent.sh 1" \
+      "scripts/run_agent.sh 2" \
       "scripts/start_agent.sh 1" \
-      "src/build/compose.sh 1" \
-      "src/libs/env.sh 1" \
-      "src/libs/env_resolve.sh 4"
+      "src/libs/env.sh 2" \
+      "src/libs/env_resolve.sh 4" \
+      "src/libs/session_env.sh 3"
   )
   actual="$(sites | sed "s|$REPO/||")"
   assert_eq "$expected" "$actual" "the read call sites match the pinned census"
+}
+
+# Given: an opened view, and the file it came from
+# When:  the file is removed and every key is read again
+# Then:  each key still answers
+# Asserts: the open is eager and the view is the value. A reader that went back
+#          to the file, or an open that deferred parsing until the first read,
+#          cannot answer. This is the property; which function holds the parse
+#          call is an implementation detail and no check here pins it.
+test_record_view_is_the_value_not_the_file() {
+  local dir F
+  dir="$(mktemp -d)"
+  F="$dir/.env"
+  printf 'A=one\nB=two\n' > "$F"
+  # shellcheck disable=SC2034  # the view is read by name through record_get
+  local -A r=()
+  record_open "$F" r
+  rm -f "$F"
+  assert_eq "$(record_get r A)" "one" "the first key survives the file"
+  assert_eq "$(record_get r B)" "two" "the second key survives the file"
+  rm -rf "$dir"
+}
+
+
+# Given: an onboarded record holding the identity triple
+# When:  env_resolve_identity resolves all three fields
+# Then:  the file is parsed once
+# Asserts: the read count is one per process, not one per key. A reader that
+#          goes back to per-key parsing fails here.
+test_identity_resolve_opens_the_record_once() {
+  local dir cnt out
+  dir="$(mktemp -d)"
+  cnt="$(mktemp)"
+  printf 'PROJECT_NAME=probe\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$dir" "$dir" > "$dir/.env"
+  out=$(CNT="$cnt" SBX="$dir" bash -c '
+    source "$1/src/libs/env_resolve.sh"
+    eval "$(declare -f env_parse | sed "1s/env_parse/env_parse_orig/")"
+    env_parse() { printf x >> "$CNT"; env_parse_orig "$@"; }
+    env_resolve_identity "" "" "$SBX" "$SBX/.env" >/dev/null 2>&1 || exit 1
+    wc -c < "$CNT"
+  ' _ "$REPO" 2>&1)
+  assert_eq "$(printf "%s" "$out" | tr -d " ")" "1" "three fields cost one parse"
+  rm -rf "$dir" "$cnt"
+}
+
+# Given: one host-entry process that resolves the identity, initialises, and
+#        derives the run names -- the three calls every start makes in order
+# When:  the number of parses is counted
+# Then:  the record was opened once
+# Asserts: the whole entry costs one open, not one per stage. A second view
+#          opened by a later stage is what this test exists to catch.
+test_a_chain_step_opens_the_record_once() {
+  local SBX PROJ CNT OUT
+  SBX="$(mktemp -d)"; PROJ="$(mktemp -d)"; CNT="$(mktemp)"
+  git -C "$PROJ" init -q
+  git -C "$PROJ" -c user.email=t@t -c user.name=t commit -q --allow-empty -m initial
+  printf 'PROJECT_NAME=probe\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\nWORKTREE_DIR=/custom/wt\n' \
+    "$PROJ" "$SBX" > "$SBX/.env"
+  OUT=$(CNT="$CNT" SBX="$SBX" PROJ="$PROJ" bash -c '
+    source "$1/src/libs/common.sh" 2>/dev/null || true
+    source "$1/src/libs/session_env.sh"
+    eval "$(declare -f env_parse | sed "1s/env_parse/env_parse_orig/")"
+    env_parse() { printf x >> "$CNT"; env_parse_orig "$@"; }
+    ENV_FILE="$SBX/.env"
+    env_resolve_identity "" "" "$SBX" "$SBX/.env" >/dev/null || exit 1
+    resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" >/dev/null || exit 1
+    session_env_names "$PROJECT_NAME" pi "$SBX" s1 >/dev/null
+    printf "%s|%s" "$(wc -c < "$CNT")" "$WORKTREE_DIR"
+  ' _ "$REPO" 2>&1)
+  assert_contains "$OUT" "1|" "one open for identity, init and names"
+  assert_contains "$OUT" "/custom/wt" "the record value still reaches the run"
+  rm -rf "$SBX" "$PROJ" "$CNT"
 }
 
 # Given: every read site
@@ -73,7 +148,7 @@ test_no_second_env_parser() {
 test_parser_exports_nothing() {
   local n
   n=$(grep -cE '^[[:space:]]*export ' "$REPO/src/libs/env.sh" || true)
-  assert_eq "0" "$n" "the parser exports nothing"
+  assert_eq "$n" "0" "the parser exports nothing"
 }
 
 # Given: the prelude in session_env.sh
@@ -84,7 +159,7 @@ test_parser_exports_nothing() {
 test_prelude_carries_no_read_site() {
   local n
   n=$(grep -vE '^\s*#' "$REPO/src/libs/session_env.sh" | grep -cE "(env_load|env_parse|env_get) " || true)
-  assert_eq "0" "$n" "the prelude reads no record key"
+  assert_eq "$n" "0" "the prelude reads no record key"
 }
 
 # Given: the resolver
@@ -95,7 +170,7 @@ test_prelude_carries_no_read_site() {
 test_no_environment_level_for_a_record_key() {
   local n
   n=$(grep -vE '^[[:space:]]*#' "$REPO/src/libs/env_resolve.sh" | grep -cE 'AGENT_SANDBOX_' || true)
-  assert_eq "0" "$n" "the resolver honours no AGENT_SANDBOX_* level"
+  assert_eq "$n" "0" "the resolver honours no AGENT_SANDBOX_* level"
 }
 
 # Given: an onboarded sandbox whose record holds a key nothing else sets
@@ -148,6 +223,9 @@ test_sandbox_path_is_a_ladder_value() {
 }
 
 run_test test_env_resolution_call_census
+run_test test_record_view_is_the_value_not_the_file
+run_test test_identity_resolve_opens_the_record_once
+run_test test_a_chain_step_opens_the_record_once
 run_test test_no_second_env_parser
 run_test test_parser_exports_nothing
 run_test test_prelude_carries_no_read_site

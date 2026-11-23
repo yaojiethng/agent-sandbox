@@ -42,10 +42,15 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 # -------------------------
 # compose_generate
 #
-# Merges compose files, substitutes {{VAR}} placeholders, preserves ${VAR}
-# for Docker Compose runtime resolution. Writes merged output to a file.
+# Merges compose files, writes every {{VAR}} placeholder from the values the
+# generator holds or is handed, and leaves a ${VAR} only for an operator
+# credential. Writes merged output to a file.
 #
-# Substitutions applied here (baked into generated file):
+# The rule: the generated file depends on nothing but its arguments. A harness
+# value left as ${...} would be resolved from whoever invoked the generator, and
+# two invocations would produce two files for one run.
+#
+# Placeholders written here:
 #   {{PROJECT_NAME}}        -> project name
 #   {{PROJECT_DIR}}         -> absolute path to project directory
 #   {{REPO_ROOT}}           -> absolute path to the harness repo (bind-mounts
@@ -56,19 +61,22 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 #   {{SANDBOX_CONTAINER_NAME}}      -> sandbox container name (sandbox-<project>-<session_id>)
 #   {{AGENT_CONTAINER_NAME}} -> agent container name (<provider>-<project>-<session_id>)
 #   {{SESSION_ID}}          -> session ID (6-char hex, from start_agent.sh)
-#   {{SANITIZED_HOST_BRANCH}} -> host branch name, sanitised (replaces former SESSION_NAME)
-#   {{DRY_RUN_CAPABILITY_SCRIPT}} -> absolute path to dry_run_capability.sh (dry-run mode only)
-#   {{DRY_RUN_SCRIPT}}             -> absolute path to dry_run_reasoning.sh (reasoning layer, dry-run mode only)
-#   ${SANDBOX_DIR}          -> host sandbox path (from .env, exported by start_agent.sh)
-#   ${WORKTREE_DIR}         -> host worktree path (mount delivery only; default
-#                             ${SANDBOX_DIR}/.worktree, set by run_agent.sh)
-#   ${CHANGES_DIR}          -> host changes path (from .env, exported by start_agent.sh)
-#   ${INPUT_DIR}            -> host input path (from .env, exported by start_agent.sh)
-#   ${OUTPUT_DIR}           -> host output path (from .env, exported by start_agent.sh)
+#   {{SESSION_TS}}          -> session timestamp
+#   {{HOST_HEAD_SHA}}       -> host branch point
+#   {{SANITIZED_HOST_BRANCH}} -> host branch name, sanitised
+#   {{INTERFACE_CONTRACT_VERSION}} -> the co-resident copies' contract version
+#   {{AGENT_IMAGE_DIGEST}} / {{SANDBOX_IMAGE_DIGEST}} -> image content identity
+#   {{FLATTEN}}             -> history mode
+#   {{DRY_RUN_CAPABILITY_SCRIPT}} / {{DRY_RUN_SCRIPT}} -> dry-run paths
+#   {{HOST_UID}} / {{HOST_GID}} -> the host identity the container runs as
+#   {{AUTOSAVE_INTERVAL}}   -> autosave interval (caller's value, default 60)
+#   {{RESET_VOLUME}}        -> whether this run resets the named volume
+#   {{SANDBOX_DIR}} / {{WORKTREE_DIR}} -> host paths
+#   {{CHANGES_DIR}} / {{INPUT_DIR}} / {{OUTPUT_DIR}} -> host workspace paths
 #
-# Preserved as ${VAR} for Docker Compose runtime resolution (operator-set):
-#   ${AUTOSAVE_INTERVAL}    -> autosave interval
-#   Any other provider-specific secrets
+# Left as ${VAR} for Docker Compose runtime resolution:
+#   an operator credential only -- the provider API keys. A credential is the
+#   operator's, not the harness's to write.
 #
 # Args:
 #   $1       output_file       --  absolute path to write merged compose file
@@ -112,13 +120,12 @@ compose_generate() {
     return 1
   fi
 
-  # Record-owned values the generated file carries. The generator writes them;
-  # it leaves no ${...} for the invoking shell to supply. An operator
-  # credential is the one exception, because it is the operator's and not the
-  # harness's to write.
-  local autosave_interval
-  autosave_interval="$(env_get "${ENV_FILE:-}" AUTOSAVE_INTERVAL)"
-  : "${autosave_interval:=60}"
+  # Record values the generated file carries, handed in by the caller for this
+  # call. The generator writes them and never reads the record: it stays a
+  # function of its arguments, so a test can drive it without a sandbox. An
+  # operator credential is the one `${...}` that survives, because it is the
+  # operator's and not the harness's to write.
+  local autosave_interval="${AUTOSAVE_INTERVAL:-60}"
 
   # Apply {{VAR}} substitutions to each input file into a temp staging dir,
   # then run docker compose config --no-interpolate to merge them. The staging
@@ -168,6 +175,18 @@ compose_generate() {
       -e "s|{{INPUT_DIR}}|${INPUT_DIR:-}|g" \
       -e "s|{{OUTPUT_DIR}}|${OUTPUT_DIR:-}|g" \
       "$src" > "$dst"
+    # An unknown placeholder is a generator defect, not a runtime value: it
+    # would reach docker compose as a literal and fail there, far from the cause.
+    local unresolved
+    # A placeholder in a comment is prose about the mechanism, not a value to
+    # write; the check reads the file's own lines.
+    unresolved="$(grep -v '^[[:space:]]*#' "$dst" | grep -o '{{[A-Z0-9_]*}}' | sort -u || true)"
+    if [[ -n "$unresolved" ]]; then
+      echo "compose_generate: unresolved placeholder(s) in $src:" >&2
+      printf '%s\n' "$unresolved" | sed 's/^/  /' >&2
+      rm -rf "$staging_dir"
+      return 1
+    fi
     staged_files+=(-f "$dst")
     (( i++ )) || true
   done
