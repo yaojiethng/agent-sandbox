@@ -45,20 +45,30 @@ default_env_file() {
   fi
 }
 
-# env_resolve_one ENVVAR KEY ENV_FILE
+# env_resolve_one ENVVAR KEY ENV_FILE [REMEDY]
 #   Resolves one identifier by precedence: the named env var, then the KEY
 #   value from ENV_FILE, else a hard error. Prints the value.
 #   This is the single resolution primitive; the identity triple is a sequence
 #   of the same rule.
+#
+#   REMEDY is the line printed under the error, naming what the operator runs.
+#   It defaults to the generic set-this-key advice, because the primitive cannot
+#   know which command owns a setting; the caller that owns the setting names
+#   its remedy. An argument rather than a per-key table keeps a new setting a
+#   call-site edit, and keeps the text beside the command that writes the value.
 env_resolve_one() {
-  local envvar="$1" key="$2" env_file="$3" value
+  local envvar="$1" key="$2" env_file="$3" remedy="${4:-}" value
   if [[ -n "${!envvar:-}" ]]; then printf '%s' "${!envvar}"; return 0; fi
   if [[ -n "$env_file" && -f "$env_file" ]]; then
     value="$(_env_value "$env_file" "$key")"
     if [[ -n "$value" ]]; then printf '%s' "$value"; return 0; fi
   fi
   echo "Error: $key is not set (no explicit flag, no $envvar env var, no $key in ${env_file:-.env})." >&2
-  echo "  Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>" >&2
+  if [[ -n "$remedy" ]]; then
+    echo "  $remedy" >&2
+  else
+    echo "  Set $key in ${env_file:-.env}, or export $envvar." >&2
+  fi
   return 1
 }
 
@@ -69,6 +79,11 @@ env_resolve_one() {
 #   SANDBOX is anchored first (a relative ENV_REF needs a sandbox that may live
 #   in the .env). Exports PROJECT_NAME/PROJECT_DIR/SANDBOX_DIR for the
 #   requested fields and the normalized ENV_FILE into the caller's scope.
+#
+#   Every key here is written by `onboard`, so the onboard command is what this
+#   sequence passes as each setting's remedy.
+_ENV_ONBOARD_REMEDY="Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>"
+
 env_resolve_identity() {
   local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref="${4:-${ENV_REL:-}}"
   local fields=()
@@ -93,7 +108,7 @@ env_resolve_identity() {
     # Chicken-and-egg: a relative ENV_REF needs a sandbox that may itself live
     # in the .env, so bootstrap SANDBOX from the CWD fallback first.
     ep="$(default_env_file "$env_ref" "")"
-    SANDBOX_DIR="$(env_resolve_one AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$ep")" || return 1
+    SANDBOX_DIR="$(env_resolve_one AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
   else
     SANDBOX_DIR="$expl_sandbox"
   fi
@@ -114,14 +129,14 @@ env_resolve_identity() {
     if [[ -n "$expl_name" ]]; then
       export PROJECT_NAME="$expl_name"
     else
-      PROJECT_NAME="$(env_resolve_one AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep")" || return 1
+      PROJECT_NAME="$(env_resolve_one AGENT_SANDBOX_PROJECT_NAME PROJECT_NAME "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
     fi
   fi
   if $need_dir; then
     if [[ -n "$expl_dir" ]]; then
       export PROJECT_DIR="$expl_dir"
     else
-      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep")" || return 1
+      PROJECT_DIR="$(env_resolve_one AGENT_SANDBOX_PROJECT_DIR PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY")" || return 1
     fi
   fi
   export PROJECT_NAME PROJECT_DIR SANDBOX_DIR

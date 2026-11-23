@@ -254,11 +254,13 @@ main() {
   PROJECT_NAME=""
   PROJECT_DIR=""
   SANDBOX_DIR_OVERRIDE=""
-  # ENV_REL is the --env parse target; its default .env is read by
-  # env_resolve_identity in the sourced session_env.sh, which ShellCheck
-  # cannot trace across `source`.
+  # ENV_REL is the --env parse target. It stays empty when the flag is absent:
+  # empty is the library's "the caller specified nothing", which derives
+  # <sandbox>/.env without claiming the path was specified. Passing a literal
+  # `.env` here made a default arrive as a specification, so a resolved sandbox
+  # with no .env failed with "A specified --env path must exist".
   # shellcheck disable=SC2034
-  ENV_REL=".env"
+  ENV_REL=""
   PROVIDER_NAME=""
   REFRESH=false
   REBUILD=false

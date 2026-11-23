@@ -147,6 +147,64 @@ test_resolve_sandbox_env_var_wins_over_file() {
   fi
 }
 
+# Given: a key with no value at any level, and a caller that supplies a remedy
+# When:  env_resolve_one runs with and without the remedy argument
+# Then:  the default is the generic set-this-key line, the given one is printed
+# Asserts: the remedy is the caller's, not the primitive's. The primitive cannot
+#          know which command owns a setting, so it must not name one.
+test_resolve_one_remedy_is_the_callers() {
+  local dir="$FIXTURE_DIR/remedy" OUT RC=0
+  mkdir -p "$dir"
+  unset AGENT_SANDBOX_SANDBOX_DIR
+  OUT=$(env_resolve_one AGENT_SANDBOX_SANDBOX_DIR SANDBOX_DIR "$dir/.env" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"Set SANDBOX_DIR in"* && "$OUT" != *"onboard"* ]]; then
+    pass "no remedy argument prints the generic set-this-key line"
+  else
+    fail "generic remedy broken: rc=$RC out='$OUT'"
+  fi
+  RC=0
+  OUT=$(env_resolve_one AGENT_SANDBOX_INSTALL_DIR INSTALL_DIR "$dir/.env" "Run: install.sh --help" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"Run: install.sh --help"* && "$OUT" != *"onboard"* ]]; then
+    pass "a caller's remedy replaces the default, so no onboard advice leaks"
+  else
+    fail "caller remedy broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: an explicit sandbox dir with no .env, and identity from the env level
+# When:  env_resolve_identity runs with no env-ref
+# Then:  it resolves, and never claims a specified path
+# Asserts: the default .env is a default. It was reported as a specified path
+#          when a caller passed its own default in as the value.
+test_resolve_default_env_absent_is_not_specified() {
+  local dir="$FIXTURE_DIR/default_absent" OUT RC=0
+  mkdir -p "$dir"
+  OUT=$(set -e; AGENT_SANDBOX_PROJECT_NAME=p AGENT_SANDBOX_PROJECT_DIR="$dir/proj" \
+        env_resolve_identity "" "" "$dir" \
+        && printf '%s|%s' "$PROJECT_NAME" "$PROJECT_DIR") || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == "p|$dir/proj" ]]; then
+    pass "an absent default .env does not block a resolved identity"
+  else
+    fail "default-absent broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a sandbox dir and an explicitly named .env that does not exist
+# When:  env_resolve_identity runs
+# Then:  it fails naming the specified path, not a missing key
+# Asserts: the paired negative -- a path the caller named is still a
+#          specification, and its absence is reported as one.
+test_resolve_specified_env_absent_names_the_path() {
+  local dir="$FIXTURE_DIR/specified_absent" OUT RC=0
+  mkdir -p "$dir"
+  OUT=$(env_resolve_identity "" "" "$dir" "$dir/absent.env" 2>&1) || RC=$?
+  if [[ $RC -ne 0 && "$OUT" == *"A specified --env path must exist"* ]]; then
+    pass "a specified --env that is absent names the path"
+  else
+    fail "specified-absent broken: rc=$RC out='$OUT'"
+  fi
+}
+
 run_test test_resolve_explicit_wins_over_env_and_file
 run_test test_resolve_env_var_wins_over_file
 run_test test_resolve_file_provides_value
@@ -155,5 +213,8 @@ run_test test_resolve_env_file_in_provided_sandbox_dir
 run_test test_resolve_env_file_cwd_fallback
 run_test test_resolve_ignores_leaked_plain_export
 run_test test_resolve_sandbox_env_var_wins_over_file
+run_test test_resolve_one_remedy_is_the_callers
+run_test test_resolve_default_env_absent_is_not_specified
+run_test test_resolve_specified_env_absent_names_the_path
 
 test_done test_env_resolve.sh
