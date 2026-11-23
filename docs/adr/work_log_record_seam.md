@@ -1,6 +1,6 @@
 # Work-log record seam
 
-**Current:** 2026-11-05
+**Current:** 2026-11-23
 
 ## Requirements
 
@@ -11,6 +11,23 @@
 | R3 | Derived, not stored | The latest, active and current-track values are computed from git and the declaration, never kept as a counter or a scalar. |
 | R4 | Identity is not order | A record's `YYYYMMDD-NN` is a unique identity allocated from a per-track reserved block; order is read from git. |
 | R5 | Work-log scope | The seam covers the work-log records first: handovers, then discussions and the feedback record. The task list is not in it. |
+| R6 | Residue, not a transcript copy | The record carries only what continuity cannot re-derive; recovery reads the session transcript. |
+
+## 2026-11-23 -- The record is a residue, and recovery reads the transcript
+
+**Decision:** A new per-iteration record carries only what continuity cannot re-derive: `Objective`, `Acceptance criteria`, `Decisions` and `Findings`. `Scope`, `Completed` and `Decisions pending` leave the record; the scope is the roadmap's, the file list is git's, and the open questions close at `wrapup`. Recovery stops treating the record as its evidence claim: the `recovery` skill reads the session transcript through a bundled `session_evidence` command that prints the files a named session wrote or edited, the write-shaped commands it ran, and its last summary. The record stays an optional claim when the caller names one. The change is forward-looking -- a cutover date applies it to records opened after it, and existing records stay as written.
+
+**Rationale:** The record has two jobs, and the audit that produced this entry sized only the second. The read window is bounded: `/gm` reads the latest ten, `/iter` the latest one, `/wrapup` the active one, and no runtime code reads content. `Completed` (13,209 lines) and `Scope` (7,753) are never read back, and `Completed` is lossy against git. The first job is recovery, and its primary is accessible and durable: the session store is mounted into the sandbox (`container-interface.json` maps `${SANDBOX_DIR}/.pi/agent/sessions` to `~/.pi/agent/sessions`), holds 901 transcripts, and is already named by `recovery/references/evidence.md`. The Active record is therefore a cache over a readable source, and a cache that can drift and is often uncommitted. The residue is the one part continuity cannot cheaply re-derive: the decision and its reason, the finding that changed the plan, and the acceptance the operator released. Deleting the rest removes the write-only majority without weakening recovery, because recovery now reads the evidence rather than the agent's summary of it.
+
+**Rejected alternatives:**
+
+- *Keep the working set and trim at close (two shapes).* **Execution failure**: the cache stays, it still drifts, and it adds a checkpoint rule that the transcript already makes unnecessary.
+- *Remove the sections and repoint recovery without a command.* **Intent failure**: nothing would read the transcript, so recovery would fall back to a hand-read of a 986 MB store.
+- *Keep the transcript command in the project's `scripts/`.* **Execution failure**: the `recovery` skill ships in the `coding-agent` module, and a project script does not travel with it; the command is bundled under the skill's `scripts/pi/` instead.
+- *File this as a new ADR.* **Intent failure**: the seam already owns the work-log record's shape and read surface; a second file would govern one principle from two places.
+- *Keep the record as it is and only correct `/gm`.* **Intent failure**: the census stands; the consumer's read contract is the smaller half of the defect.
+
+**Edge cases / drivers:** A worker's transcript sits in the same store and is addressed by the task-queue path. The `Active` record before the cutover keeps its working sections; the cutover applies at open, not at close. `Acceptance criteria` stays because the operator reads it once, at the release gate. Deleting a handover track makes the changelog the durable seat, which the track-deletion row owns, not this entry.
 
 ## 2026-11-05 -- The work-log layout is declared once, and derived reads go through one tool
 
