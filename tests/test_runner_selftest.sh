@@ -621,7 +621,30 @@ run_test test_runner_fail_marker_trumps_rc0
 run_test test_runner_empty_discovery
 run_test test_runner_broken_prerequisite
 run_test test_runner_satisfied_prerequisite
+
+# A definition below test_done is unreachable: the shell had not defined it when
+# the epilogue ran, so no registration reaches it.
+test_runner_definition_after_epilogue_is_flagged() {
+  local dir="$FIXTURE_DIR/after_epilogue"
+  mkdir -p "$dir"
+  local BODY
+  BODY=$(printf '%b\n' \
+    '#!/usr/bin/env bash' \
+    "source '$REPO_ROOT/tests/libs/test_common.sh'" \
+    'test_ok() { assert_eq a a; }' \
+    'run_test test_ok' \
+    'test_done' \
+    'test_late() { assert_eq a a; }')
+  write_test "$dir/test_after_epilogue.sh" "$BODY"
+  local out rc=0
+  out=$(bash "$REPO_ROOT/scripts/check_test_liveness.sh" "$dir" 2>&1) || rc=$?
+  assert_ne "0" "$rc" "a definition below test_done fails the gate"
+  assert_contains "$out" "DEFINED-AFTER-EPILOGUE" "the unreachable definition is named"
+  assert_contains "$out" "test_late" "by its function name"
+}
+
 run_test test_runner_dead_registration
+run_test test_runner_definition_after_epilogue_is_flagged
 run_test test_runner_deadline_expiry
 run_test test_runner_parallel_dispatch_integrity
 run_test test_runner_per_file_deadline_declaration

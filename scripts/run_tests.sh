@@ -40,6 +40,10 @@ TOTAL_FAIL=0
 TOTAL_SKIP=0
 TOTAL_TIMEOUT=0
 ANY_FAILED=0
+# A gate that failed on its own, as distinct from a test: the count line and
+# the verdict both name it, because a green count above a gate finding is what
+# a reader takes for a pass.
+GATE_FAILED=0
 FILE_COUNT=0
 
 # check_prerequisites
@@ -324,6 +328,7 @@ main() {
     echo "NOTE: registration liveness gate skipped (RUN_TESTS_SELFTEST=1)" >&2
   elif ! bash "$LIVENESS_GATE" "$REAL_TESTS_DIR"; then
     echo "ERROR: test liveness gate failed -- fix the findings above before trusting the suite." >&2
+    GATE_FAILED=1
     ANY_FAILED=1
   fi
 
@@ -415,7 +420,9 @@ main() {
 
   echo ""
   local TOTAL_TESTS=$((TOTAL_PASS + TOTAL_FAIL + TOTAL_SKIP))
-  echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)"
+  local GATE_NOTE=""
+  [[ "$GATE_FAILED" -eq 0 ]] || GATE_NOTE=" -- GATE FAILED"
+  echo "$TOTAL_TESTS tests across $FILE_COUNT files, $TOTAL_PASS passed, $TOTAL_FAIL failed, $TOTAL_SKIP skipped (${SECONDS}s)$GATE_NOTE"
 
   if [[ "$TOTAL_TIMEOUT" -gt 0 ]]; then
     echo "TIMEOUT: $TOTAL_TIMEOUT file(s) exceeded their declared deadline and are counted as failed." >&2
@@ -452,13 +459,18 @@ main() {
       if ! MUTATIONS_REQUIRED_SUBJECTS="${MUTATIONS_REQUIRED_SUBJECTS:-$DRAFT_MUTATION_SUBJECTS}" \
         bash "$(dirname "${BASH_SOURCE[0]}")/mutations_run.sh"; then
         ANY_FAILED=1
+        GATE_FAILED=1
       fi
     fi
   fi
 
+  # The verdict is the last line, so a reader who takes a tail of this output
+  # sees the run's state rather than a green count with the failure above it.
   if [[ "$ANY_FAILED" -eq 1 ]]; then
+    echo "SUITE FAILED -- see the findings above (a gate, a timeout, a mutation row or a test)." >&2
     exit 1
   fi
+  echo "SUITE PASSED"
 }
 
 main "$@"

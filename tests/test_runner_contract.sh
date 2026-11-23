@@ -190,6 +190,47 @@ run_test test_output_modes_and_unknown_option
 run_test test_nonzero_exit_with_clean_report
 run_test test_malformed_record_fails
 run_test test_diagnostic_and_summary_streams
+
+# ---------------------------------------------------------------
+# Case 9: when a gate fails and every test passes, the last line still reads as
+# a failure. Read as a tail, the output must never end on a green count.
+# ---------------------------------------------------------------
+test_gate_failure_is_the_last_line() {
+  local dir="$FIXTURE_DIR/gate_verdict"
+  mkdir -p "$dir"
+  write_test "$dir/test_ok.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  local gate="$FIXTURE_DIR/gate_verdict_gate.sh"
+  printf '#!/usr/bin/env bash\necho "STUB GATE FINDING" >&2\nexit 1\n' > "$gate"
+  chmod +x "$gate"
+  local out rc=0 last
+  out=$(RUN_TESTS_DIR="$dir" LIVENESS_GATE="$gate" bash "$RUNNER" 2>&1) || rc=$?
+  last=$(printf '%s\n' "$out" | tail -1)
+  assert_ne "0" "$rc" "runner: the run fails"
+  assert_eq "SUITE FAILED -- see the findings above (a gate, a timeout, a mutation row or a test)." "$last" \
+    "runner: the tail of the output is the verdict, not a green count"
+  assert_contains "$out" "GATE FAILED" "runner: the count line names the failed gate"
+}
+
+# ---------------------------------------------------------------
+# Case 10: a clean run ends on the pass verdict.
+# ---------------------------------------------------------------
+test_clean_run_ends_on_the_pass_verdict() {
+  local dir="$FIXTURE_DIR/pass_verdict"
+  mkdir -p "$dir"
+  write_test "$dir/test_ok.sh" '#!/usr/bin/env bash
+printf "UNIT: pass=1 fail=0 skip=0\n"'
+  local gate="$FIXTURE_DIR/pass_verdict_gate.sh"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$gate"
+  chmod +x "$gate"
+  local out last
+  out=$(RUN_TESTS_DIR="$dir" LIVENESS_GATE="$gate" bash "$RUNNER" 2>&1)
+  last=$(printf '%s\n' "$out" | tail -1)
+  assert_eq "SUITE PASSED" "$last" "runner: a clean run ends on the pass verdict"
+}
+
+run_test test_gate_failure_is_the_last_line
+run_test test_clean_run_ends_on_the_pass_verdict
 run_test test_liveness_gate_failure_does_not_skip_suite
 run_test test_liveness_gate_membership_is_stable
 

@@ -86,6 +86,20 @@ for F in "$TESTS_DIR"/test_*.sh; do
     fi
   done
 
+  # A test defined below the test_done line can never run: the shell had not
+  # defined the function when the epilogue ran, so neither a registration above
+  # it nor any later discovery reaches it. The registration form is checked
+  # below; this checks the definition's own line number.
+  EPILOGUE="$(grep -nE '^[[:space:]]*test_done([[:space:]]|$)' "$F" | head -1 | cut -d: -f1)"
+  if [[ -n "$EPILOGUE" ]]; then
+    while IFS=: read -r lineno rest; do
+      [[ -n "$lineno" ]] || continue
+      if (( lineno > EPILOGUE )); then
+        echo "DEFINED-AFTER-EPILOGUE: $NAME:$lineno: ${rest%() *} is defined below the test_done line and can never run" >&2
+        FINDINGS=$((FINDINGS + 1))
+      fi
+    done < <(grep -nE '^test_[A-Za-z0-9_]+\(\)' "$F" || true)
+  fi
   # A run_test registered after test_done is dead code: test_done exits the
   # process, so the test never runs and never fails, and a file cannot self-
   # guard it in-process. The scan anchors on the registration shape (column-0
