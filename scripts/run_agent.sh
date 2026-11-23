@@ -48,6 +48,7 @@ source "$REPO_ROOT/src/build/image.sh"
 source "$REPO_ROOT/scripts/build.sh"
 source "$REPO_ROOT/src/build/compose.sh"
 source "$REPO_ROOT/src/libs/session_inventory.sh"
+source "$REPO_ROOT/src/libs/time_format.sh"
 source "$REPO_ROOT/src/libs/session_hints.sh"
 source "$REPO_ROOT/src/libs/cli.sh"
 
@@ -284,7 +285,7 @@ _session_cleanup() {
   # before it has started. Dry-run ids are dry-run machinery, not sessions:
   # they get no activity log and no resume hint.
   if [[ -n "${SESSION_ID:-}" ]] && ! session_is_dry_run "${SESSION_ID}"; then
-    session_log_set "$SESSION_ID" last_stopped "$(date -u +%Y%m%d-%H%M%S)"
+    session_log_set "$SESSION_ID" last_stopped "$(ts_now)"
     session_end_hints "$SANDBOX_DIR" "$SESSION_ID"
   fi
 }
@@ -415,7 +416,7 @@ TEARDOWN_NEEDED=1
 # `make resume --list` shows the session as in-use (LAST_USED = ---) rather than
 # its last stop. Skipped for dry-run, which exits before this point.
 if [[ -n "${SESSION_ID:-}" ]]; then
-  session_log_set "$SESSION_ID" last_started "$(date -u +%Y%m%d-%H%M%S)"
+  session_log_set "$SESSION_ID" last_started "$(ts_now)"
   session_log_set "$SESSION_ID" last_stopped ""
 fi
 echo "Starting agent: $PROJECT_NAME"

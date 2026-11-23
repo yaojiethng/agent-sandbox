@@ -3,7 +3,7 @@
 # Unit tests for the per-session activity log (session_log_* helpers) and the
 # Pins cite: docs/reference/tool_interface.md l.55 (LIST=1 time rendering).
 
-# relative human-time formatter (ts_to_epoch / relative_time) in
+# relative human-time formatter (ts_epoch / relative_time) in
 # src/libs/session_inventory.sh -- the backing store + display for the
 # `make resume --list` LAST_USED column.
 
@@ -148,20 +148,20 @@ test_inplace_sed_shim_rejects_dash_i() {
 run_test test_inplace_sed_shim_rejects_dash_i
 
 # Given: a well-formed, a malformed, and an empty timestamp
-# When:  ts_to_epoch runs
+# When:  ts_epoch runs
 # Then:  an integer for the well-formed one, empty for the others
 # Asserts: the format guard and the conversion.
-test_ts_to_epoch() {
+test_ts_epoch() {
   local ep
-  ep="$(ts_to_epoch "20260828-120000")"
+  ep="$(ts_epoch "20260828-120000")"
   # GNU-independent expectation would be brittle; instead assert it is a
   # non-empty integer and round-trips.
   [[ "$ep" =~ ^[0-9]+$ ]] && [[ -n "$ep" ]]
-  assert_rc 0 "$?" "ts_to_epoch yields epoch integer"
-  assert_eq "$(ts_to_epoch "garbage")" "" "ts_to_epoch rejects malformed ts"
-  assert_eq "$(ts_to_epoch "")" "" "ts_to_epoch rejects empty ts"
+  assert_rc 0 "$?" "ts_epoch yields epoch integer"
+  assert_eq "$(ts_epoch "garbage")" "" "ts_epoch rejects malformed ts"
+  assert_eq "$(ts_epoch "")" "" "ts_epoch rejects empty ts"
 }
-run_test test_ts_to_epoch
+run_test test_ts_epoch
 
 # Given: timestamps now, 125s ago, 2h ago, and 2d ago, plus empty and garbage
 # When:  relative_time runs

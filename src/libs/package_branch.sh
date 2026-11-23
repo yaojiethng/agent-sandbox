@@ -44,6 +44,7 @@ source "$_self_dir/session_state.sh"
 source "$_self_dir/diff.sh"
 source "$_self_dir/routing.sh"
 source "$_self_dir/export_status.sh"
+source "$_self_dir/time_format.sh"
 source "$_self_dir/cli.sh"
 
 # =============================================================================
@@ -410,7 +411,7 @@ package_branch() {
   #    so the host-side make draft can resolve the baseline and timestamp
   #    from a single file.
   local _export_ts
-  _export_ts=$(date -u +%Y%m%d-%H%M%S)
+  _export_ts=$(ts_now)
   _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$INIT_SHA"
 
   # 6. Baseline provenance. After a rebase the merge-base is not the recorded

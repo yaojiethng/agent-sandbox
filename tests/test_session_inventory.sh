@@ -20,7 +20,7 @@
 #   enumerate_records    --  registry enumeration, provider filter, skip rules
 #   session_is_dry_run   --  the dryrun- prefix predicate
 #   session_stale        --  registry-truth staleness vs explicit/derived SHA
-#   ts_to_epoch          --  shape guard rejects trailing garbage
+#   ts_epoch          --  shape guard rejects trailing garbage
 
 set -uo pipefail
 
@@ -236,7 +236,7 @@ test_session_stale_classification() {
 }
 
 # =============================================================================
-# session_is_dry_run / ts_to_epoch
+# session_is_dry_run / ts_epoch
 # =============================================================================
 
 # Given: a dry-run id, a normal id, and the bare prefix
@@ -257,15 +257,15 @@ test_session_is_dry_run_predicate() {
 }
 
 # Given: a well-formed stamp and the same stamp with trailing garbage
-# When:  ts_to_epoch runs on each
+# When:  ts_epoch runs on each
 # Then:  the exact shape parses and the garbage is rejected
 # Asserts: the shape guard, whose only real effect is on inputs GNU date would accept.
-test_ts_to_epoch_rejects_trailing_garbage() {
+test_ts_epoch_rejects_trailing_garbage() {
   local good bad
-  good="$(ts_to_epoch "20260828-120000")"
-  bad="$(ts_to_epoch "20260828-120000junk")"
-  assert_eq "$good" "$(date -u -d '2026-08-28 12:00:00' +%s)" "ts_to_epoch parses the exact YYYYMMDD-HHMMSS shape"
-  assert_eq "$bad" "" "ts_to_epoch rejects a stamp with trailing garbage"
+  good="$(ts_epoch "20260828-120000")"
+  bad="$(ts_epoch "20260828-120000junk")"
+  assert_eq "$good" "$(date -u -d '2026-08-28 12:00:00' +%s)" "ts_epoch parses the exact YYYYMMDD-HHMMSS shape"
+  assert_eq "$bad" "" "ts_epoch rejects a stamp with trailing garbage"
 }
 # Given: a matching record and a PROJECT_DIR git repo
 # When:  session_stale runs without an explicit SHA
@@ -573,7 +573,7 @@ run_test test_git_head_resolvable_three_cases
 run_test test_project_current_ref_branches
 run_test test_project_commits_since_phrases_and_edges
 run_test test_session_is_dry_run_predicate
-run_test test_ts_to_epoch_rejects_trailing_garbage
+run_test test_ts_epoch_rejects_trailing_garbage
 run_test test_enumerate_records_filters_and_skips
 run_test test_enumerate_records_no_dir_or_empty_is_silent_rc0
 run_test test_env_field_reads_value_from_environment_block

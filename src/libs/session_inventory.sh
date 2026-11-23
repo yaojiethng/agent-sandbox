@@ -17,6 +17,9 @@
 # here so the session-log reader is defined however this lib is loaded.
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/kv_record.sh"
+# The stamp shape and its two directions, defined once for the whole harness.
+# shellcheck source=/dev/null
+source "$(dirname "${BASH_SOURCE[0]}")/time_format.sh"
 # Producers: start_agent.sh (_new_session_identity). Consumers: run_agent.sh
 # (activity-log guard + trap teardown) and resume_agent.sh (listing filter --
 # dry-run records are not resumable). Prune consumes them UNFILTERED: Rule 1
@@ -234,18 +237,10 @@ session_log_set() {
 # Relative (human) elapsed time
 # =============================================================================
 
-# ts_to_epoch TS  --  `YYYYMMDD-HHMMSS` (UTC) -> epoch seconds; empty if unparseable.
-ts_to_epoch() {
-  local ts="$1" d
-  [[ "$ts" =~ ^[0-9]{8}-[0-9]{6}$ ]] || { echo ""; return 0; }
-  d="${ts:0:4}-${ts:4:2}-${ts:6:2} ${ts:9:2}:${ts:11:2}:${ts:13:2}"
-  date -u -d "$d" +%s 2>/dev/null
-}
-
 # relative_time TS  --  human "N seconds/minutes/hours/days ago"; "---" if absent.
 relative_time() {
   local ts="$1" ep now diff val
-  ep="$(ts_to_epoch "$ts")"
+  ep="$(ts_epoch "$ts")"
   [[ -n "$ep" ]] || { echo "---"; return 0; }
   now="$(date -u +%s)"
   diff=$(( now - ep ))
@@ -265,7 +260,7 @@ relative_time() {
 # Months approximate at 30 days. Verbose counterpart: relative_time.
 relative_time_compact() {
   local ts="$1" ep now diff val
-  ep="$(ts_to_epoch "$ts")"
+  ep="$(ts_epoch "$ts")"
   [[ -n "$ep" ]] || { echo "---"; return 0; }
   now="$(date -u +%s)"
   diff=$(( now - ep ))

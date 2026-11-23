@@ -49,6 +49,9 @@
 
 set -uo pipefail
 
+# shellcheck source=/dev/null
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/src/libs/time_format.sh"
+
 MUTATIONS_ROOT="${MUTATIONS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 MUTATIONS_CATALOG="${MUTATIONS_CATALOG:-$MUTATIONS_ROOT/tests/mutations/catalog.jsonl}"
 MUTATIONS_RUN_DIR="$MUTATIONS_ROOT/tests/mutations/runs"
@@ -280,7 +283,7 @@ run_row() {
 
 main() {
   mkdir -p "$MUTATIONS_RUN_DIR" || return 1
-  local output="${MUTATIONS_OUTPUT:-$MUTATIONS_RUN_DIR/$(date +%Y%m%d-%H%M%S)-mutation_run.jsonl}"
+  local output="${MUTATIONS_OUTPUT:-$MUTATIONS_RUN_DIR/$(ts_now)-mutation_run.jsonl}"
   local rows_count=0 proven=0 survived=0 noop=0 control=0 control_failed=0 skipped=0
   local required_total=0 required_findings=0 required_skipped=0
   local -a required_rows=() other_rows=()

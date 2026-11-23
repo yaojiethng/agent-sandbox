@@ -57,6 +57,7 @@ if [[ ! -f "$SANDBOX_LIB_DIR/dirs.sh" ]]; then
 fi
 # shellcheck disable=SC1090  # runtime-resolved, -f validated above
 source "$SANDBOX_LIB_DIR/dirs.sh"
+_source_lib "$SANDBOX_LIB_DIR/time_format.sh"
 
 if [[ -z "$CHANGES_DIR" || -z "$INPUT_DIR" || -z "$OUTPUT_DIR" ]]; then
   # Fallback: derive paths from dirs.sh (testing env where compose not used)
@@ -263,7 +264,7 @@ _session_export() {
   # record a FAIL, rather than aborting the trap with no diagnostic.
   if [[ -z "$_session_id" ]]; then
     echo "session-export: SESSION_ID is unset; cannot build the export path" >&2
-    _write_export_status "$_changes_dir" "FAIL" "$(date -u +%Y%m%d-%H%M%S)" "1" 2>/dev/null || true
+    _write_export_status "$_changes_dir" "FAIL" "$(ts_now)" "1" 2>/dev/null || true
     return 1
   fi
 
@@ -280,7 +281,7 @@ _session_export() {
 
   if diff_export "$_sandbox_dir" "$_exit_dir" "$_session_id"; then
     echo "session-export: SUCCESS  --  artefacts written to $_exit_dir" >&2
-    _write_export_status "$_changes_dir" "SUCCESS" "$(date -u +%Y%m%d-%H%M%S)" "0" 2>/dev/null || true
+    _write_export_status "$_changes_dir" "SUCCESS" "$(ts_now)" "0" 2>/dev/null || true
     return
   fi
 
@@ -303,7 +304,7 @@ _session_export() {
     echo "session-export: no autosave fallback available  --  session artefacts may be lost" >&2
   fi
 
-  _write_export_status "$_changes_dir" "FAIL" "$(date -u +%Y%m%d-%H%M%S)" "1" 2>/dev/null || true
+  _write_export_status "$_changes_dir" "FAIL" "$(ts_now)" "1" 2>/dev/null || true
 }
 
 # On exit: kill autosave subshell if running, wait for git lockfile to settle,

@@ -34,6 +34,7 @@
 source "$AGENT_SANDBOX_REPO/src/libs/routing.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/common.sh"
 source "$AGENT_SANDBOX_REPO/src/libs/session_inventory.sh"   # relative_time (autosave last-saved column)
+source "$AGENT_SANDBOX_REPO/src/libs/time_format.sh"          # ts_from_epoch (autosave stamps)
 source "$AGENT_SANDBOX_REPO/src/libs/export_status.sh"      # export_status_read (bundle metadata)
 
 # =============================================================================
@@ -327,7 +328,7 @@ interactive_select_channel() {
           # as a relative time instead of a bare hash.
           local newest_ep
           newest_ep=$(find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@\n' 2>/dev/null | sort -rn | head -1 | cut -d. -f1)
-          NEWEST=$(relative_time "$(date -u -d "@${newest_ep}" '+%Y%m%d-%H%M%S')" 2>/dev/null)
+          NEWEST=$(relative_time "$(ts_from_epoch "${newest_ep}")" 2>/dev/null)
         else
           NEWEST=$(echo "$DIR_LIST" | head -1 | xargs basename 2>/dev/null || true)
         fi
@@ -451,7 +452,7 @@ interactive_select_bundle() {
     if [[ -z "$ts" ]]; then
       local m_ep
       m_ep=$(stat -c %Y "$ENTRY_DIR" 2>/dev/null || true)
-      [[ -n "$m_ep" ]] && ts=$(date -u -d "@${m_ep}" '+%Y%m%d-%H%M%S' 2>/dev/null)
+      [[ -n "$m_ep" ]] && ts=$(ts_from_epoch "$m_ep" 2>/dev/null)
     fi
     local age
     age="$(relative_time_compact "$ts")"

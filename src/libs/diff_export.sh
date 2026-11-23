@@ -8,6 +8,7 @@ _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/export_status.sh"
 source "$_self_dir/package_branch.sh"
 source "$_self_dir/session_save_policy.sh"
+source "$_self_dir/time_format.sh"
 # Provides:
 #   diff_export           --  package session artefacts via package-branch + export time
 #   _write_export_status  --  write .export-status atomically
@@ -37,7 +38,7 @@ diff_export() {
   fi
 
   local _export_ts
-  _export_ts=$(date -u +%Y%m%d-%H%M%S)
+  _export_ts=$(ts_now)
 
   # Read init_sha from SESSION_STATE for inclusion in .export-status.
   # If the sandbox hasn't been initialised yet (no SESSION_STATE),

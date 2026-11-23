@@ -33,6 +33,7 @@
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/session_state.sh"
 source "$_self_dir/dirs.sh"
+source "$_self_dir/time_format.sh"
 
 # _resolve_path SANDBOX_DIR KEY
 # Tries SESSION_STATE first, falls back to dirs_resolve.
@@ -126,7 +127,7 @@ export_path() {
   fi
 
   local EXPORT_TIME
-  EXPORT_TIME=$(date -u +%Y%m%d-%H%M%S)
+  EXPORT_TIME=$(ts_now)
 
   # Autosave: no EXPORT_TIME in path  --  single directory, overwritten each cycle
   if [[ "$SUBDIR" == "autosave" ]]; then
