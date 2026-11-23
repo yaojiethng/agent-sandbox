@@ -78,5 +78,23 @@ The review ran over `ca2d31af..8f09b312` with one seat on `opencode-go/deepseek-
 | File | Change |
 |---|---|
 | The reviewed findings | Four blockers applied, four mechanical findings applied, one note deleted with its case. |
-| The tests | 1680 across 127 files, up from 1677. |
+| The tests | 1681 across 127 files, up from 1677; the F5 case runs, and its registration is no longer dead code. |
 | The gates | 29 clean, and the container-layout scan reads quoted scalars. |
+
+## Addendum - the verification the first report claimed, re-run
+
+The operator asked whether the claimed errors reproduce. Each does, and the exercise found one defect in this handover's own evidence.
+
+| Claim | Reproduced | How |
+|---|---|---|
+| F1: the reviewed range was not the branch's | yes | `git merge-base --is-ancestor ca2d31af HEAD` fails; `comm -23` over the two file lists names `settings.json`, which no branch commit touches |
+| F2: the read answered the wrong thing | yes | pre-fix, an indexed array under `set +u` returns element 0 for every key; a record naming `WORKTREE_DIR=/recorded/wt` yields the default with rc 0 when phase 2 is entered alone |
+| F3: the projection was written four times | yes | pre-fix `scripts/agent-sandbox.sh`: two `case "$field"` blocks five lines apart, four row scans; fixed: one of each, one `catalog_row` |
+| F5: a value reached YAML unescaped | yes | pre-fix, `compose_generate` on a sandbox path containing `&` fails outright (sed re-emits the placeholder and the unresolved check catches it); the round-trip case is red at `8f09b312`, green at the fix |
+| F6, F7, F8, F9 | yes | the `jq` clause present pre-fix and absent after; bare `--help` exits 1 pre-fix and 0 after; the deleted case's message is the resolver's, not the flag's; the census comment and the `env_get` rows present pre-fix and corrected |
+
+**The defect in the evidence.** The F5 round-trip case was registered after `test_done` in `tests/test_trace_compose_gen.sh`, so it never ran: the file reported 20 cases, the case's own line never appeared. `scripts/check_test_liveness.sh`'s DEAD-REGISTRATION check caught it on every run, and the caller read a two-line tail of the runner's output and reported the suite green. Commit `2622d82d` therefore landed with one liveness finding, and its handover claimed 1680 passing tests and 29 clean gates.
+
+Both are corrected in the commit that carries this addendum: the case is registered before `test_done` and sources the library that provides `record_label`; the suite reports 1681 tests with the liveness gate clean; and the dispatcher's mutation catalogue was re-pointed at the restructured `route_help` line, restoring 10 proven rows after the F3 edit staled one.
+
+The lesson is the one this project already states: read the gate's own line, not the runner's summary. A tail of the last two lines drops the liveness verdict that precedes the count.

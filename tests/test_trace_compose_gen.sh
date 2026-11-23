@@ -13,6 +13,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
+source "$REPO_ROOT/src/libs/session_inventory.sh"
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
 
@@ -677,5 +678,5 @@ run_test test_compose_file_from_args_extracts_f_value
 run_test test_compose_file_from_args_returns_last_f
 run_test test_compose_file_from_args_handles_trailing_bare_f
 run_test test_compose_file_from_args_empty_without_f
-test_done test_trace_compose_gen
 run_test test_paths_with_yaml_and_sed_metacharacters_roundtrip
+test_done test_trace_compose_gen
