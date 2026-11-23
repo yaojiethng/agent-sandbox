@@ -294,10 +294,10 @@ Frame the merged entries below; each replaces the member entries that shared its
 ### [A] 2026-09-21  --  Review-pass framing: directive wording (T1)
 
 ```text
-state: mitigated
+state: open (recurrence 2026-11-23)
 scoped: M3.2.2 -- review-pass framing fixes
-legacy: open from 2026-09-21 until the loop moved into `code-review`'s reference
-mitigation: the review loop is `workflow/coding-agent/skills/code-review/references/loop.md`. The directive names the base commit and the explicit range, and converts any other scope format; a seeded/runtime copy pair is named by full path with the authoritative copy stated; the round cap is gone, replaced by a check-in on the operator's cadence that reports the round count, cumulative tokens and dollars, the open blockers with their rounds, and the trend. Source session `20260918-10`.
+legacy: mitigated 2026-11-03 by the shell's loop section; removed 2026-11-23 because the loop hill-climbed and the shell now runs one pass
+mitigation: the review shell runs one pass; repetition is the invoking task's decision. The directive names the base commit and the explicit range, and converts any other scope format; a seeded/runtime copy pair is named by full path with the authoritative copy stated. Source session `20260918-10`.
 ```
 
 ### [A] 2026-09-21  --  Evidence before a conclusion: verification discipline (T1)
@@ -448,10 +448,10 @@ A second form recurred one turn after the first fix. The agent applied the rule 
 ### [O] 2026-09-29  --  Review prompts: convergence must be optional and the subagent budget echoed
 
 ```text
-state: open
+state: mitigated
 scoped: M3 T1 -- prompt authoring; `.agents/skills/instruction-authoring/SKILL.md`; review prompts `src/reasoning/agent/prompts/advisor.md` and `workflow/coding-agent/skills/code-review/runbooks/thermo-nuclear-code-quality-review/SKILL.md`
 legacy: the review-loop-entry guidance on re-runs ("re-run sparingly", AGENT_FEEDBACK `[A]` 2026-09-28 advisor re-run value) covers when a re-run earns its cost, not whether convergence is optional.
-mitigation: a review prompt must not hard-mandate "work to consensus". The convergence loop is one mode; a single-pass review is a legitimate invocation and must be allowed. Advisor-style prompts should be invokable as a single consultation without being forced to converge. Thermo-nuclear-style review prompts should be invokable with or without the convergence constraint. Every review prompt should echo a subagent invocation budget -- the prompt states how many subagent runs the loop may use, so the cost is bounded and visible before dispatch. Put the budget in the brief and the invocation. Raised 2026-09-29 when the operator observed advisor "work to consensus" is a hard constraint and thermo-nuclear carries no budget; record in handover `20260929-11`.
+mitigation: the review shell runs one pass and holds no convergence rule; the loop was removed 2026-11-23. A review prompt must not hard-mandate "work to consensus", and a single-pass review is a legitimate invocation.
 ```
 
 ## Agent experience  --  session 20260809-04
@@ -525,7 +525,7 @@ mitigation: First drafts of the seed-transport ADR and concept doc mirrored the 
 state: open
 scoped: M3 T2 -- the subagent run telemetry and subagent liveness rows
 legacy: none
-mitigation: postponed to the M3 T2 telemetry rows, which own the instrument for both halves (liveness and per-run metrics). Verbosity guidance until then: seed each round with the prior round's blockers and state the scope narrowly, because a fresh reviewer re-derives context that a measured, resumable run would not need to. Two cheap measures worked in the 2026-09-27 parallel-track trial and are the interim mitigation: wrap the dispatch in a shell that echoes the exit code and the elapsed seconds, and poll the worktree for liveness rather than the log.
+mitigation: postponed to the M3 T2 telemetry rows, which own the instrument for both halves (liveness and per-run metrics). Verbosity guidance until then: state the scope narrowly, because a fresh reviewer re-derives context that a measured, resumable run would not need to. The loop was removed 2026-11-23, so there is no prior pass to seed. Two cheap measures worked in the 2026-09-27 parallel-track trial and are the interim mitigation: wrap the dispatch in a shell that echoes the exit code and the elapsed seconds, and poll the worktree for liveness rather than the log.
 ```
 
 The thermo-nuclear review pass over this iteration ran two models per round across ten rounds in two tranches. Each round is a fresh `pi -p` context, so no round inherits the previous round's reasoning, and the log stays empty until the run flushes: neither the main agent nor the operator can see whether a round is progressing, stalled on the provider, or merely slow. There is no per-run accounting of wall-clock, tokens, throughput, latency, tool-call time, or agent turns, so the cost of a review tranche cannot be compared against its yield. The concrete cost of that blindness: a round that reports nothing new still consumes a full model pass, and the operator cannot tell from the outside whether a silent log means "thinking hard" or "network died".

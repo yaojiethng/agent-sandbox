@@ -30,7 +30,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.1.2 - Gate upkeep](#m312---gate-upkeep) | Not started |
 | &nbsp;&nbsp;[M3.2.1 - Loops as Workflows](changelog.md#m321---loops-as-workflows) | [Complete - see changelog](changelog.md#m321---loops-as-workflows) |
 | &nbsp;&nbsp;[M3.2.2 - Audit and Review Workflow Cleanup](changelog.md#m322---audit-and-review-workflow-cleanup) | [Complete - see changelog](changelog.md#m322---audit-and-review-workflow-cleanup) |
-| &nbsp;&nbsp;[M3.2.3 - Dispatch Workflows as a Command Surface](#m323---dispatch-workflows-as-a-command-surface) | Not started |
+| &nbsp;&nbsp;[M3.2.3 - Dispatch Workflows as a Command Surface](#m323---dispatch-workflows-as-a-command-surface) | [In progress](#m323---dispatch-workflows-as-a-command-surface) |
 | &nbsp;&nbsp;[M3.3 - Instruction Surface](#m33---instruction-surface) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.1 - The prompt, skill and `AGENTS.md` interaction contract](changelog.md#m331---the-prompt-skill-and-agentsmd-interaction-contract) | [Complete - see changelog](changelog.md#m331---the-prompt-skill-and-agentsmd-interaction-contract) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.3.2 - Retire the policy form](changelog.md#m332---retire-the-policy-form) | [Complete - see changelog](changelog.md#m332---retire-the-policy-form) |
