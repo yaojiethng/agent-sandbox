@@ -22,6 +22,20 @@ The CLI surface is the `agent-sandbox` front door, the leaf command behind each 
 | R12 | The record path is absolute | `default_env_file` normalizes every branch and the resolver exports `ENV_FILE` as an absolute path, so the resolver and the process it hands the path to name the same file (2026-11-23) |
 | R13 | The dispatcher hands over resolved argv | The leaf receives the row's leading argument first, the resolved identity by value, the normalized absolute `--env`, and the passthrough arguments; an explicit empty env ref is empty rather than a fallback (2026-11-23) |
 
+## The resolution and dispatch contract
+
+The contract is stated once here; the gate names the carrier that enforces each row.
+
+| # | Invariant | Owner | Gate |
+|---|---|---|---|
+| C1 | A row that declares `env` uses the identity resolver, so `ENV_FILE` exists. | catalogue | `tests/test_resolution_contract.sh` |
+| C2 | A leaf named by an `env` row accepts `--env`. | leaf parse spec | `tests/test_resolution_contract.sh` |
+| C3 | The dispatcher forwards `--env=$ENV_FILE`, never `--env=$ENV_REL`. | dispatch | `tests/test_resolution_contract.sh` |
+| C4 | `default_env_file` returns an absolute path for every branch. | resolver | `tests/test_env_resolve.sh` |
+| C5 | An explicit empty env ref is empty; only an omitted one falls back to `ENV_REL`. | resolver | `tests/test_env_resolve.sh` |
+| C6 | The leaf receives the row's leading argument first, the resolved identity by value, and the passthrough arguments after the declared ones. | dispatch | `tests/test_agent_cli_dispatch.sh` |
+| C7 | A relative `--env` with no explicit sandbox bootstraps `SANDBOX_DIR` from the CWD record, then opens the record the ref names. | resolver | `tests/test_env_resolve.sh` |
+
 ## 2026-11-23 -- The dispatcher hands over resolved argv
 
 **Decision:** `dispatch` resolves the row's identity before it builds the forwarded flags, then `exec`s the leaf with the row's leading argument, the resolved `--name`/`--project`/`--sandbox`, the normalized absolute `--env`, and the operator's passthrough arguments. `env_resolve_identity` treats an explicit fourth argument as authoritative even when it is empty; only an omitted argument falls back to the caller's `ENV_REL`.

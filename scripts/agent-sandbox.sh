@@ -38,7 +38,9 @@ source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
 #   identity  -- the dispatcher-parsed fields the leaf takes, from
 #                `name project sandbox env`. The dispatcher parses one spec for
 #                all four, so this column decides what it forwards; the fields
-#                other than `env` also decide the resolver's required set.
+#                other than `env` also decide the resolver's required set, and
+#                `env` requires the `identity` resolver because that is what
+#                exports the normalized ENV_FILE.
 #   args      -- a leading positional argument the leaf expects before its flags
 #                (`start_agent.sh` takes its mode that way).
 #   resolver  -- `identity` runs the resolver on the declared fields; `base`

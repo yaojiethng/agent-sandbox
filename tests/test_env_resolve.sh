@@ -253,6 +253,23 @@ test_explicit_empty_env_ref_does_not_fall_back() {
   assert_eq "envname" "$out" "an explicit empty ref does not fall back to ENV_REL"
 }
 
+# Given: a CWD record that names the sandbox, and a relative --env under it
+# When:  env_resolve_identity runs with no explicit sandbox
+# Then:  it bootstraps SANDBOX_DIR from the CWD record and opens that record
+# Asserts: a relative --env with no sandbox is still resolvable, and the path
+#          it opens is the one under the bootstrapped sandbox.
+test_relative_env_without_sandbox_bootstraps_from_cwd() {
+  local dir="$FIXTURE_DIR/bootstrap" out
+  mkdir -p "$dir"
+  printf 'PROJECT_NAME=cwdprobe\nPROJECT_DIR=%s/proj\nSANDBOX_DIR=%s\n' "$dir" "$dir" > "$dir/.env"
+  printf 'PROJECT_NAME=envprobe\nPROJECT_DIR=%s/proj\nSANDBOX_DIR=%s\n' "$dir" "$dir" > "$dir/session.env"
+  out=$(set -e; cd "$dir" && env_resolve_identity "" "" "" "session.env" name dir sandbox \
+    && printf '%s|%s' "$PROJECT_NAME" "$ENV_FILE") || out="FAILED"
+  assert_eq "envprobe|$dir/session.env" "$out" \
+    "a relative --env bootstraps the sandbox from the CWD record"
+}
+
+run_test test_relative_env_without_sandbox_bootstraps_from_cwd
 run_test test_default_env_file_returns_an_absolute_path
 run_test test_resolve_exports_an_absolute_env_file
 run_test test_explicit_empty_env_ref_does_not_fall_back
