@@ -303,3 +303,11 @@ The ADR, the reference and the model home now state the same lifecycle -- `worki
 The change runbook holds the five decisions a principle settles, the frontmatter gate holds the fields that carry them, and the neighbour list is symmetric and gated. The close narrowed the rewrite rule to fixing a mistake and raising every other change, moved the voice rule onto the shipped surface beside the operator's structure rule, merged the mental-model mapping into the terminology principle so one rule covers both directions of a mismatch, stated a skill's description as a pointer in the authoring pattern, and banned a noun that names no referent, with the vocabulary gate holding it across every shipping instruction surface.
 
 ---
+
+## M3.6.5 - The OpenCode provider is removed
+
+*OpenCode is gone as a session runtime: `pi` is the only provider image, and the pinned OpenCode CLI remains the dispatch agent-runtime.*
+
+The provider image, its onboarding guide, the instruction-transport generator and the test fixtures that used OpenCode as a second provider are deleted, and the provider contract, lifecycle, quickstart, security and onboarding documents describe `pi` alone. Serve mode went with it -- the Makefile `SERVE` flag, the `--serve` CLI mode, the port, the browser URL and the compose overlay -- because no remaining provider implemented it. The future roadmap's W1 narrowed to sandbox-only vault validation, and the duplicated runtime documentation was removed in favour of pi's shipped documentation.
+
+---

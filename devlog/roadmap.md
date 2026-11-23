@@ -55,9 +55,9 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](changelog.md#m361---disable-and-ship-opencode-dispatch) | [Complete - see changelog](changelog.md#m361---disable-and-ship-opencode-dispatch) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.2 - Measure](#m362---measure) | Not started |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.3 - Route and decide](changelog.md#m363---route-and-decide) | Complete - see changelog |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.3 - Route and decide](changelog.md#m363---route-and-decide) | [Complete - see changelog](changelog.md#m363---route-and-decide) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.4 - The reasoning image refactor](changelog.md#m364---the-reasoning-image-refactor) | [Complete - see changelog](changelog.md#m364---the-reasoning-image-refactor) |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.5 - The OpenCode provider is removed](#m365---the-opencode-provider-is-removed) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.5 - The OpenCode provider is removed](changelog.md#m365---the-opencode-provider-is-removed) | [Complete - see changelog](changelog.md#m365---the-opencode-provider-is-removed) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.6 - The scheduler](#m366---the-scheduler) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.7 - The generic provider base and dispatch parity](#m367---the-generic-provider-base-and-dispatch-parity) | Not started |
 | &nbsp;&nbsp;[M3.7 - Git boundary and repository state](#m37---git-boundary-and-repository-state) | In progress |
@@ -653,9 +653,9 @@ This is the remainder of the original environment-declaration scope. It is the p
 
 The sub-milestone that put a read-write OpenCode worker behind the runner seam, in place of the failover extension whose value was never measured. Its outcome is recorded in [`changelog.md`](changelog.md#m361---disable-and-ship-opencode-dispatch).
 
-- [x] **The dispatch path ships on the free tier** -- both harnesses install in the reasoning container, and the runner seam chooses pi or the OpenCode CLI from the provider that a role resolves to, so a brief names a role and not a runtime. The seam refuses a role whose backend cannot run, and the `opencode-dispatch` skill is the thin entrypoint over it. Design [`20261015-design-settled-cost_aware_dispatch.md`](discussions/archive/20261015-design-settled-cost_aware_dispatch.md); ADR [`opencode_runtime_dispatch.md`](../docs/adr/opencode_runtime_dispatch.md).
+- [x] **The dispatch path ships on the free tier** -- both harnesses install in the reasoning container, and the runner seam chooses pi or the OpenCode CLI from the provider that a role resolves to, so a brief names a role and not a runtime. The seam refuses a role whose backend cannot run, and the `opencode-dispatch` skill is the thin entrypoint over it.
 - [x] **A dispatch attributes its change set to a named revision** -- the clean-tree precondition is replaced by a base revision, so a later pass over one unit runs in place and the reported file set equals the file set the caller commits. A dirty tree captures a pre-state stash commit before the worker launches, because a worker runs with `--auto` and can reset the tree, and the script carries the check it lacked.
-- [x] **The build's install steps are measured and its layer shape designed** -- the install-step census, the invalidation history and the host build probe fix what each tier costs and what invalidates it, and the layer install design, the pin policy and the ADR set settle what the tiers become. The `opencode-ai` CLI carries one pin and a gate. ADRs [`reasoning_layer_tiers.md`](../docs/adr/reasoning_layer_tiers.md) and [`build_input_pinning.md`](../docs/adr/build_input_pinning.md).
+- [x] **The build's install steps are measured and its layer shape designed** -- the install-step census, the invalidation history and the host build probe fix what each tier costs and what invalidates it, and the layer install design, the pin policy and the ADR set settle what the tiers become. The `opencode-ai` CLI carries one pin and a gate.
 - [x] **The rows that apply the design moved to M3.6.4** -- none of them produces dispatch capability, and the pin sweep, the skip removal and the tier change all edit one set of files.
 
 **Not in scope:** the applied tier refactor (M3.6.4), the routing policy (M3.6.3), and the generic provider base and dispatch transport (M3.6.7).
@@ -682,9 +682,7 @@ The sub-milestone that made a role's assignment the dispatch decision: the order
 
 ##### M3.6.5 - The OpenCode provider is removed
 
-**Objective:** remove OpenCode as a session runtime, leaving the pinned OpenCode CLI as a dispatch agent-runtime, and delete the provider surfaces, documents and fixtures that existed to serve it.
-
-**Depends on:** nothing open. M3.6.4 settled the tier shape, and the CLI pin and the dispatch seam are independent of the provider image, so the removal does not wait for the dispatch instruction transport.
+The sub-milestone that removed OpenCode as a session runtime, leaving the pinned OpenCode CLI as the dispatch agent-runtime and `pi` as the only provider image. Its outcome is recorded in [`changelog.md`](changelog.md#m365---the-opencode-provider-is-removed).
 
 - [x] **The OpenCode provider image and its surface are removed** - the provider directory and its manifest, compose, start, dry-run, Makefile and `.dockerignore` rows are gone, leaving `pi` as the only provider.
 - [x] **The dead instruction transport is deleted** - the provider-shaped config generator and its test are gone; the dispatch transport is M3.6.7's.
