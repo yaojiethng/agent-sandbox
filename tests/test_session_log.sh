@@ -163,16 +163,17 @@ test_ts_epoch() {
 }
 run_test test_ts_epoch
 
-# Given: timestamps now, 125s ago, 2h ago, and 2d ago, plus empty and garbage
+# Given: timestamps now, 125s ago, 2h ago, 2d ago and 31d ago, plus empty and garbage
 # When:  relative_time runs
-# Then:  "just now", "2 minutes ago", "2 hours ago", "2 days ago", "---", "---"
-# Asserts: the verbose unit ladder.
+# Then:  "just now", "2 minutes ago", "2 hours ago", "2 days ago", "1 month ago", "---"
+# Asserts: the verbose rendering of the one ladder.
 test_relative_time_units() {
-  local now two_min two_hour two_day
+  local now two_min two_hour two_day one_month
   now=$(date -u +%Y%m%d-%H%M%S)
   two_min="$(date -u -d '-125 seconds' +%Y%m%d-%H%M%S)"
   two_hour="$(date -u -d '-2 hours' +%Y%m%d-%H%M%S)"
   two_day="$(date -u -d '-2 days' +%Y%m%d-%H%M%S)"
+  one_month="$(date -u -d '-31 days' +%Y%m%d-%H%M%S)"
 
   assert_eq "$(relative_time "")" "---" "empty ts -> ---"
   assert_eq "$(relative_time "garbage")" "---" "malformed ts -> ---"
@@ -180,19 +181,21 @@ test_relative_time_units() {
   assert_eq "$(relative_time "$two_min")" "2 minutes ago" "2 minutes -> '2 minutes ago'"
   assert_eq "$(relative_time "$two_hour")" "2 hours ago" "2 hours -> '2 hours ago'"
   assert_eq "$(relative_time "$two_day")" "2 days ago" "2 days -> '2 days ago'"
+  assert_eq "$(relative_time "$one_month")" "1 month ago" "31 days -> '1 month ago', singular"
 }
 run_test test_relative_time_units
 
 # Given: the same timestamps
 # When:  relative_time_compact runs
-# Then:  "just now", "2m ago", "2h ago", "2D ago", "---", "---"
-# Asserts: the compact form used in dense tables.
+# Then:  "just now", "2m ago", "2h ago", "2D ago", "1M ago", "---"
+# Asserts: the compact form used in dense tables, on the same buckets.
 test_relative_time_compact_units() {
-  local now two_min two_hour two_day
+  local now two_min two_hour two_day one_month
   now=$(date -u +%Y%m%d-%H%M%S)
   two_min="$(date -u -d '-125 seconds' +%Y%m%d-%H%M%S)"
   two_hour="$(date -u -d '-2 hours' +%Y%m%d-%H%M%S)"
   two_day="$(date -u -d '-2 days' +%Y%m%d-%H%M%S)"
+  one_month="$(date -u -d '-31 days' +%Y%m%d-%H%M%S)"
 
   assert_eq "$(relative_time_compact "")" "---" "empty ts -> ---"
   assert_eq "$(relative_time_compact "garbage")" "---" "malformed ts -> ---"
@@ -200,7 +203,47 @@ test_relative_time_compact_units() {
   assert_eq "$(relative_time_compact "$two_min")" "2m ago" "2 minutes -> '2m ago'"
   assert_eq "$(relative_time_compact "$two_hour")" "2h ago" "2 hours -> '2h ago'"
   assert_eq "$(relative_time_compact "$two_day")" "2D ago" "2 days -> '2D ago'"
+  assert_eq "$(relative_time_compact "$one_month")" "1M ago" "31 days -> '1M ago'"
 }
 run_test test_relative_time_compact_units
+
+# Given: one elapsed time from each bucket, either side of every threshold
+# When:  both densities render it
+# Then:  each density names the same bucket, and the buckets are the ladder's
+# Asserts: one ladder. A density that chose its own thresholds would name two
+#          buckets for one elapsed time, which is the drift this row removes.
+test_one_ladder_for_both_densities() {
+  local diff verbose compact
+  local -a cases=(
+    "59|just now|just now"
+    "60|1 minute ago|1m ago"
+    "3599|59 minutes ago|59m ago"
+    "3600|1 hour ago|1h ago"
+    "86399|23 hours ago|23h ago"
+    "86400|1 day ago|1D ago"
+    "2591999|29 days ago|29D ago"
+    "2592000|1 month ago|1M ago"
+  )
+  for diff in "${cases[@]}"; do
+    IFS='|' read -r secs verbose compact <<< "$diff"
+    assert_eq "$(_relative_render "$secs" verbose)" "$verbose" "$secs s, verbose"
+    assert_eq "$(_relative_render "$secs" compact)" "$compact" "$secs s, compact"
+  done
+}
+run_test test_one_ladder_for_both_densities
+
+# Given: every script in src/ and scripts/
+# When:  a scan for elapsed-time thresholds runs
+# Then:  only src/libs/session_inventory.sh holds a ladder
+# Asserts: one ladder in the tree, not one per caller. The counts here are code
+#          positions, so a caller that renders its own age fails this gate.
+test_no_second_ladder() {
+  local hits
+  hits=$(grep -rnE 'diff < 60|diff < 3600|diff < 86400|2592000' \
+    --include="*.sh" "$REPO_ROOT/src" "$REPO_ROOT/scripts" 2>/dev/null \
+    | grep -v 'src/libs/session_inventory.sh' || true)
+  assert_eq "" "$hits" "no elapsed-time ladder outside src/libs/session_inventory.sh"
+}
+run_test test_no_second_ladder
 
 test_done "test_session_log"

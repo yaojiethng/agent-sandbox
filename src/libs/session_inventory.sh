@@ -154,7 +154,7 @@ project_commits_since() {
   n="$(git_commit_distance "$PROJECT_DIR" "$sha")"
   if [[ -z "$n" ]]; then echo "not in tree"; return 0; fi
   if [[ "$n" -eq 0 ]]; then echo "0 commits ago"; return 0; fi
-  echo "$n commit$([[ "$n" -eq 1 ]] && echo '' || echo 's') ago"
+  echo "$(_plural_count "$n" commit) ago"
 }
 
 # enumerate_records  --  print one `sid|provider|ts|branch` line per registry
@@ -237,42 +237,47 @@ session_log_set() {
 # Relative (human) elapsed time
 # =============================================================================
 
-# relative_time TS  --  human "N seconds/minutes/hours/days ago"; "---" if absent.
-relative_time() {
-  local ts="$1" ep now diff val
-  ep="$(ts_epoch "$ts")"
-  [[ -n "$ep" ]] || { echo "---"; return 0; }
-  now="$(date -u +%s)"
-  diff=$(( now - ep ))
-  if   (( diff < 60 )); then
-    echo "just now"
-  elif (( diff < 3600 )); then
-    val=$(( diff / 60 )); printf '%d minute%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
-  elif (( diff < 86400 )); then
-    val=$(( diff / 3600 )); printf '%d hour%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
-  else
-    val=$(( diff / 86400 )); printf '%d day%s ago' "$val" "$([[ $val -eq 1 ]] && echo '' || echo 's')"
+# _plural_count N NOUN  --  "1 minute", "2 minutes", "0 commits". The one
+# plural rule for every count phrase the harness renders.
+_plural_count() {
+  local n="$1" noun="$2"
+  if (( n == 1 )); then printf '%d %s' "$n" "$noun"; else printf '%d %ss' "$n" "$noun"; fi
+}
+
+# _relative_render DIFF DENSITY  --  the one elapsed-time ladder. DIFF is seconds;
+# DENSITY is `verbose` ("2 hours ago") or `compact` ("2h ago"). The two densities
+# share one threshold set and differ only in the label they print, because a
+# density that chose its own buckets would be a second ladder. Months approximate
+# at 30 days.
+_relative_render() {
+  local diff="$1" density="$2" val unit short
+  if (( diff < 60 )); then printf 'just now'; return 0; fi
+  if   (( diff < 3600 ));    then val=$(( diff / 60 ));      unit=minute; short=m
+  elif (( diff < 86400 ));   then val=$(( diff / 3600 ));    unit=hour;   short=h
+  elif (( diff < 2592000 )); then val=$(( diff / 86400 ));   unit=day;    short=D
+  else                            val=$(( diff / 2592000 )); unit=month;  short=M
   fi
+  if [[ "$density" == "compact" ]]; then
+    printf '%d%s ago' "$val" "$short"
+  else
+    printf '%s ago' "$(_plural_count "$val" "$unit")"
+  fi
+}
+
+# relative_time TS  --  human "N minutes/hours/days/months ago"; "---" if absent.
+relative_time() {
+  local ep
+  ep="$(ts_epoch "$1")"
+  [[ -n "$ep" ]] || { echo "---"; return 0; }
+  _relative_render "$(( $(date -u +%s) - ep ))" verbose
 }
 
 # relative_time_compact TS  --  compact form for dense tables: "55m ago",
 # "7h ago", "1D ago", "1M ago"; "just now" under a minute; "---" if absent.
-# Months approximate at 30 days. Verbose counterpart: relative_time.
+# Same ladder as relative_time, rendered short.
 relative_time_compact() {
-  local ts="$1" ep now diff val
-  ep="$(ts_epoch "$ts")"
+  local ep
+  ep="$(ts_epoch "$1")"
   [[ -n "$ep" ]] || { echo "---"; return 0; }
-  now="$(date -u +%s)"
-  diff=$(( now - ep ))
-  if   (( diff < 60 )); then
-    echo "just now"
-  elif (( diff < 3600 )); then
-    printf '%dm ago' $(( diff / 60 ))
-  elif (( diff < 86400 )); then
-    printf '%dh ago' $(( diff / 3600 ))
-  elif (( diff < 2592000 )); then
-    printf '%dD ago' $(( diff / 86400 ))
-  else
-    printf '%dM ago' $(( diff / 2592000 ))
-  fi
+  _relative_render "$(( $(date -u +%s) - ep ))" compact
 }
