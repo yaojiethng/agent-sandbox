@@ -169,8 +169,8 @@ test_collect_routes_specs_and_appends_rest() {
   ENV_REL=""
   PROJECT_NAME=""
   parse_args_collect PASSTHROUGH --env=ENV_REL --name=PROJECT_NAME \
-      -- --env=prod --name=abc --serve tail --flag=x end
-  assert_eq "${PASSTHROUGH[*]}" "--serve tail --flag=x end" \
+      -- --env=prod --name=abc --passthrough tail --flag=x end
+  assert_eq "${PASSTHROUGH[*]}" "--passthrough tail --flag=x end" \
       "collect: unmatched args appended in order"
   assert_eq "$ENV_REL" "prod" "collect: value flag routes into its var"
   assert_eq "$PROJECT_NAME" "abc" "collect: second value flag routes correctly"

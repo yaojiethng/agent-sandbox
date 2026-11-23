@@ -1,5 +1,5 @@
 # src/reasoning/agent-runtime/pi/docker-compose.pi.yml
-# Provider overlay  --  merged in all modes (standard, serve, dry-run).
+# Provider overlay  --  merged in all modes (standard, dry-run).
 # Sets Pi-specific environment variables and injects API keys from the host .env.
 
 services:

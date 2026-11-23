@@ -17,7 +17,7 @@
 #                         (run_agent.sh): base template + delivery overlay
 #                         (docker-compose.copy.yml / .mount.yml, per the
 #                         caller's --delivery) + provider overlay (if present) + mode
-#                         overlay (dry-run/serve).
+#                         overlay (dry-run).
 #
 #   compose_args          Sets COMPOSE_ARGS in the caller's scope from a
 #                         single pre-generated compose file and project name.
@@ -67,7 +67,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/../libs/interface_contract.sh"
 #   ${OUTPUT_DIR}           -> host output path (from .env, exported by start_agent.sh)
 #
 # Preserved as ${VAR} for Docker Compose runtime resolution (operator-set):
-#   ${SERVE_PORT}           -> port for serve mode
 #   ${AUTOSAVE_INTERVAL}    -> autosave interval
 #   Any other provider-specific secrets
 #

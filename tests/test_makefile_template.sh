@@ -58,7 +58,7 @@ test_accepted_variables_are_declared() {
     pass "the unused ALL variable is not declared"
   fi
 
-  local accepted="PROVIDER SERVE REFRESH REBUILD FAST TARGETS FROM INTERACTIVE"
+  local accepted="PROVIDER REFRESH REBUILD FAST TARGETS FROM INTERACTIVE"
   accepted+=" BRANCH DIFF TARGET_BRANCH NEW BUNDLE BUNDLE_SUMMARY BASELINE"
   accepted+=" BRANCH_FROM DIFFS BRANCH_SUMMARY NO_RENAMES PERMISSIVE FORCE LIST"
   accepted+=" PRUNE SESSION_ID SANDBOX_TYPE FLATTEN WORKTREE_DIR STALE AGE_DAYS DRY_RUN"
@@ -111,7 +111,7 @@ test_every_target_is_phony() {
 test_targets_expand_their_flags() {
   local -a spec=(
     'build|$(TARGETS_FLAG) $(REBUILD_FLAG) --env=$(ENV_FILE)'
-    'start|$(PROVIDER_FLAG) $(SERVE_FLAG) $(REFRESH_FLAG) $(REBUILD_FLAG) $(INTERACTIVE_FLAG) $(DELIVERY_FLAG) $(FLATTEN_FLAG) --env=$(ENV_FILE)'
+    'start|$(PROVIDER_FLAG) $(REFRESH_FLAG) $(REBUILD_FLAG) $(INTERACTIVE_FLAG) $(DELIVERY_FLAG) $(FLATTEN_FLAG) --env=$(ENV_FILE)'
     'dry-run|$(PROVIDER_FLAG) --fast $(DELIVERY_FLAG) $(FLATTEN_FLAG) --env=$(ENV_FILE)'
     'stop|--env=$(ENV_FILE) $(SESSION_ID_FLAG) $(PRUNE_FLAG)'
     'resume|--env=$(ENV_FILE) $(RESUME_LIST_FLAG) $(RESUME_INTERACTIVE_FLAG) $(RESUME_PROVIDER_FLAG) $(SESSION_ID_FLAG)'
@@ -192,7 +192,6 @@ test_flag_translators_are_defined() {
     '^REFRESH_FLAG[[:space:]]*= \$\(if \$\(REFRESH\),--refresh,\)'
     '^REBUILD_FLAG[[:space:]]*= \$\(if \$\(REBUILD\),--rebuild,\)'
     '^INTERACTIVE_FLAG[[:space:]]*= \$\(if \$\(INTERACTIVE\),--interactive,\)'
-    '^SERVE_FLAG[[:space:]]*= \$\(if \$\(SERVE\),--serve,\)'
     '^PROVIDER_FLAG[[:space:]]*= \$\(if \$\(PROVIDER\),--provider=\$\(PROVIDER\),\)'
     '^SESSION_ID_FLAG[[:space:]]*= \$\(if \$\(SESSION_ID\),--session-id=\$\(SESSION_ID\),\)'
     '^STALE_FLAG[[:space:]]*= \$\(if \$\(STALE\),--stale=\$\(STALE\),\)'

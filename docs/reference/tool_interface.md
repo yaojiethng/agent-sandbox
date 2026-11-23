@@ -31,7 +31,7 @@ Container names match image names exactly -- `container_name:` is set explicitly
 
 ## Commands
 
-### `make start PROVIDER=<provider> [SERVE=1] [REFRESH=1] [REBUILD=1] [INTERACTIVE=1]`
+### `make start PROVIDER=<provider> [REFRESH=1] [REBUILD=1] [INTERACTIVE=1]`
 
 Stops any running session for this project, builds missing images if needed, seeds the sandbox volume from the project, and starts a NEW agent session. The terminal attaches to the agent TUI.
 
@@ -39,7 +39,6 @@ Stops any running session for this project, builds missing images if needed, see
 
 `PROVIDER` is required (unless `INTERACTIVE=1`). Fast path supplies it explicitly. Optional flags:
 
-- `SERVE=1` -- start the agent in serve mode instead of attaching a TUI: the terminal returns to the shell immediately, the agent runs in the background and is accessible via browser at `http://127.0.0.1:SERVE_PORT`. Stop with `make stop`. Serve is provider-specific; no current provider supplies a supported serve overlay, and `pi` starts in interactive mode.
 - `REFRESH=1` -- rebuilds sandbox and provider images + starts a new session. Base image is reused if it exists.
 - `REBUILD=1` -- rebuilds everything from scratch including the base image + starts a new session. Supersedes `REFRESH=1` if both are set.
 - `INTERACTIVE=1` -- the interactive **config wizard** (flag `--interactive`, the explicit slow mode): pick a provider from the available providers (`pi`) and an image build policy (default / refresh / rebuild), review the settings, then confirm to start. `.env` values (`name`/`project`/`sandbox`/`env`) come from the Makefile automatically and are not entered in the wizard. Args already supplied override the wizard rather than being re-prompted -- e.g. `make start PROVIDER=pi INTERACTIVE=1` skips the provider picker. Aborting exits cleanly without starting a session.
@@ -154,12 +153,7 @@ Host-side export. Packages all project changes as `patches/*.diff`, `uncommitted
 | Mode | Make target | Effect |
 |---|---|---|
 | `standard` | `make start PROVIDER=<n>` | Normal execution; agent TUI attaches to terminal |
-| `serve` | `make start PROVIDER=<n> SERVE=1` | Provider-specific serve mode (see below) |
 | `dry-run` | `make dry-run PROVIDER=<n>` | e2e check: rebuild current source, exercise the container pipeline, verify, tear down |
-
-**Serve mode is provider-specific.** The serve overlay lives in `src/reasoning/agent-runtime/<n>/docker-compose.serve.yml` in the repo -- never copied to `SANDBOX_DIR`.
-
-No provider currently supplies a supported serve overlay; `pi` starts in interactive mode when serve is requested.
 
 ## Mount Shape Guarantees
 
@@ -186,7 +180,7 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 | `AGENTS.md` | Stub written by onboard; operator-completed | Agent context brief |
 | `.<provider>/` | Copied from `src/reasoning/agent-runtime/<n>/config/` by onboard | Provider config; operator fills in secrets; never committed |
 
-`docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`, `docker-compose.dry-run.yml`, and `docker-compose.serve.yml` are repo-owned templates -- never written to `SANDBOX_DIR`. The merged result of `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and persists after the session (see [`execution_model.md` -- Compose Generation](execution_model.md#compose-generation)). The delivery overlays (`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the caller's `--delivery` (`copy|mount`) at generation time -- see the delivery-overlay note in [`execution_model.md`](execution_model.md#compose-generation).
+`docker-compose.yml`, `docker-compose.copy.yml`, `docker-compose.mount.yml`, and `docker-compose.dry-run.yml` are repo-owned templates -- never written to `SANDBOX_DIR`. The merged result of `compose_generate` is written to `SANDBOX_DIR/.compose/<session-id>.yml` and persists after the session (see [`execution_model.md` -- Compose Generation](execution_model.md#compose-generation)). The delivery overlays (`docker-compose.copy.yml` / `docker-compose.mount.yml`) are selected by the caller's `--delivery` (`copy|mount`) at generation time -- see the delivery-overlay note in [`execution_model.md`](execution_model.md#compose-generation).
 
 ## `.env` Runtime Variables
 
@@ -194,7 +188,6 @@ An onboarded project provides the following in `SANDBOX_DIR`:
 |---|---|---|
 | `PROJECT_DIR` | Operator-supplied at onboard | Operator |
 | `SANDBOX_DIR` | Operator-supplied at onboard | Operator |
-| `SERVE_PORT` | Operator-supplied | Operator -- host port for serve mode; default `46553` (matches the provider serve overlays' fallback) |
 | `INSTALL_DIR` | `~/.local/bin` | Operator -- install path for the CLI |
 | `AUTOSAVE_INTERVAL` | `60` | Operator |
 
@@ -234,7 +227,6 @@ A conforming provider supplies the following under `src/reasoning/agent-runtime/
 |---|---|---|
 | `base.dockerfile` | Only for a source-built agent-runtime | The agent-runtime install only, inheriting `agent-base` (Node, Python, uv, CLI tools, lint gates); tagged `<provider>-base`. A provider whose agent-runtime installs from a registry package omits it and inherits the shared `agent-runtimes` tier instead |
 | `provider.dockerfile` | Yes | Provider layer inheriting from `agent-runtimes`, or from `<provider>-base` for a source-built agent-runtime; tagged `<provider>-agent-<project>` |
-| `docker-compose.serve.yml` | Yes | Static serve mode overlay; referenced directly by `run_agent.sh` |
 | `config/` | Optional | Onboarding and image template. `agent-sandbox onboard` seeds it into `$SANDBOX_DIR/.<provider>/` and renames `env.stub` to `.env` there; the provider's `provider.dockerfile` also copies it to `/opt/workflow/agent/config/`, from which the entrypoint seeds `AGENT_HOME` at every start. The operator fills in secrets on the host, and no secret reaches an image. |
 | `docker-compose.<provider>.yml` | Recommended | Provider-level overlay applied in all modes; **required if provider needs API keys or env vars** |
 | `setup.sh` | Optional | Sourced by `run_agent.sh` before compose generation; exports provider-specific vars |

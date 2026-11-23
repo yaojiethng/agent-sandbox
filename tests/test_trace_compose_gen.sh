@@ -361,7 +361,7 @@ test_record_bakes_image_digests() {
 }
 
 # Given: a docker double whose compose config interpolates ${VAR} unless --no-interpolate is passed
-# When:  compose_generate runs on an input carrying ${SERVE_PORT}
+# When:  compose_generate runs on an input carrying ${AUTOSAVE_INTERVAL}
 # Then:  the output keeps the literal reference for runtime resolution
 # Asserts: the flag's property -- generation does not resolve operator-set variables
 test_compose_generate_preserves_runtime_var() {
@@ -374,7 +374,7 @@ services:
   sandbox:
     image: mini
     environment:
-      - SERVE_PORT=${SERVE_PORT}
+      - AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL}
 EOF
 
   local out="$FIXTURE_DIR/compose-output.yml"
@@ -389,19 +389,19 @@ EOF
       if (( no_interp == 1 )); then
         cat "$f"
       else
-        sed "s|\${SERVE_PORT}|${SERVE_PORT:-}|g" "$f"
+        sed "s|\${AUTOSAVE_INTERVAL}|${AUTOSAVE_INTERVAL:-}|g" "$f"
       fi
     elif [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
       echo "sha256:stub"
     fi
   }
-  export SERVE_PORT=9999
+  export AUTOSAVE_INTERVAL=120
   run_compose_generate_with_docker "$out" "$FIXTURE_DIR/mini.yml"
 
-  if [[ -f "$out" ]] && grep -q 'SERVE_PORT=${SERVE_PORT}' "$out" && ! grep -q 'SERVE_PORT=9999' "$out"; then
+  if [[ -f "$out" ]] && grep -q 'AUTOSAVE_INTERVAL=${AUTOSAVE_INTERVAL}' "$out" && ! grep -q 'AUTOSAVE_INTERVAL=120' "$out"; then
     pass "compose_generate preserves the \${VAR} reference for runtime resolution"
   else
-    fail "compose_generate did not preserve the runtime variable; got: $(grep SERVE_PORT "$out" 2>/dev/null)"
+    fail "compose_generate did not preserve the runtime variable; got: $(grep AUTOSAVE_INTERVAL "$out" 2>/dev/null)"
   fi
 }
 

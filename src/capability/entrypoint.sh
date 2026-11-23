@@ -357,7 +357,7 @@ fi
 # The command's exit code is not acted on here: the harness owns handling of
 # the result (e.g. dry-run reads the diagnostics record, not the exit code).
 # The sandbox image sets no CMD, so `$#` is non-zero only when a command is
-# explicitly provided -- normal start/serve pass no command.
+# explicitly provided -- normal start passes no command.
 if (( $# > 0 )); then
   echo "entrypoint: running start-up command: $*" >&2
   "$@"

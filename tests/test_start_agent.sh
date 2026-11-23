@@ -319,8 +319,7 @@ test_help_flag_prints_full_usage() {
 
   if [[ "$rc" -eq 0 && "$output" == *"Usage: start_agent.sh"* \
       && "$output" == *"--provider"* \
-      && "$output" == *"standard"* && "$output" == *"--serve"* \
-      && "$output" == *"dry-run"* ]]; then
+      && "$output" == *"standard"* && "$output" == *"dry-run"* ]]; then
     pass "start_agent.sh --help prints full usage and exits 0"
   else
     fail "start_agent.sh --help: expected full usage, rc=$rc output=$output"
@@ -412,7 +411,7 @@ test_unresolvable_sandbox_reports_canonicalisation() {
 }
 
 # --interactive is standard-mode only; the deferral names the roadmap item for
-# serve/dry-run support.
+# dry-run support.
 # Given: dry-run --interactive
 # When:  start runs
 # Then:  it exits non-zero with the standard-mode-only message

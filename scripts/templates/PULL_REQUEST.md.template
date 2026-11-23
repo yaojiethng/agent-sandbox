@@ -71,7 +71,6 @@ Explain impact:
 
 - [ ] Container builds successfully
 - [ ] Patch generation still works
-- [ ] Serve mode still functions (if relevant)
 - [ ] Isolation invariants still hold
 
 ---

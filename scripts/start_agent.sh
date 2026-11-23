@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # scripts/start_agent.sh
 # Usage:
-#   ./start_agent.sh <mode> [--serve] --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<env>] [--provider=<n>]
+#   ./start_agent.sh <mode> --name=<project_name> --project=<path> [--sandbox=<path>] [--env=<env>] [--provider=<n>]
 #
 # Modes:
-#   standard    --  normal execution, network access allowed (--serve toggles
-#                   provider serve mode, port exposed at SERVE_PORT)
+#   standard    --  normal execution, network access allowed
 #   dry-run     --  e2e check: always rebuilds current source, exercises the
 #                   container pipeline (fresh + resume passes), verifies, tears
 #                   down; --fast skips the rebuild
@@ -51,12 +50,12 @@ Host-side pre-flight and session setup for agent-sandbox. This script is an
 internal implementation detail of the agent-sandbox CLI  --  prefer invoking it
 through:
 
-  agent-sandbox start     [--serve] --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
+  agent-sandbox start     --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
   agent-sandbox dry-run   --provider=<n> --name=<n> --project=<path> --sandbox=<path> [flags]
 
 or, from a sandbox Makefile:
 
-  make start PROVIDER=<n> [SERVE=1]
+  make start PROVIDER=<n>
   make dry-run PROVIDER=<n>
 
 Mode (required):
@@ -125,11 +124,11 @@ _start_providers() {
 }
 
 _start_wizard() {
-  # Interactive start wizard (D11). Start mode only  --  serve/dry-run
+  # Interactive start wizard (D11). Start mode only  --  dry-run
   # interactive support is a deferred refactor (roadmap L153).
   if [[ "$MODE" != "standard" ]]; then
     echo "Error: --interactive (config wizard) is only available for standard mode." >&2
-    echo "  Serve/dry-run interactive support is deferred (roadmap L153)." >&2
+    echo "  Dry-run interactive support is deferred (roadmap L153)." >&2
     exit 1
   fi
 
@@ -246,7 +245,6 @@ main() {
   REBUILD=false
   FAST=false
   INTERACTIVE=false
-  SERVE=false
   _CLI_UNKNOWN_WORD="Unknown flag"
   # Delivery is a command input, not environment state: the default is parsed
   # once here, at ingestion. It is never exported and never read from the
@@ -270,7 +268,6 @@ main() {
     --rebuild \
     --fast \
     --interactive \
-    --serve \
     --flatten \
     --delivery=DELIVERY \
     -- "$@"
@@ -285,15 +282,6 @@ main() {
       exit 1
       ;;
   esac
-
-  # Serve is a toggle on start, not a positional mode.
-  if [[ "$SERVE" == true ]]; then
-    if [[ "$MODE" != "standard" ]]; then
-      echo "Error: --serve requires standard mode." >&2
-      exit 1
-    fi
-    MODE="serve"
-  fi
 
   # Dry-run build policy: dry-run is the operator's e2e of CURRENT source, so
   # the default is always-rebuild (a dry-run never silently reuses stale

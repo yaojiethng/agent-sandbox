@@ -253,8 +253,6 @@ MAKEFILE_VERSION=${VERSION}
 # --- Operator configuration (review and adjust before first run) ---
 # Install directory for the agent-sandbox CLI (used by: make install)
 INSTALL_DIR=~/.local/bin
-# Port for serve mode (make serve)
-SERVE_PORT=46553
 # Autosave interval in seconds (how often session checkpoints are written mid-session)
 AUTOSAVE_INTERVAL=60
 ENVEOF
@@ -378,7 +376,7 @@ _run_onboard() {
   echo "Onboarding complete."
   echo ""
   echo "Before running for the first time:"
-  echo "  1. Review $SANDBOX_DIR/.env  --  set SERVE_PORT, INSTALL_DIR, and any provider credentials"
+  echo "  1. Review $SANDBOX_DIR/.env  --  set INSTALL_DIR and any provider credentials"
   echo "  2. Fill in secrets in $SANDBOX_DIR/.<provider>/ for each provider you intend to use"
   echo "  3. Run: make -C $SANDBOX_DIR build"
   echo "  4. Run: make -C $SANDBOX_DIR dry-run"

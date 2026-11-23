@@ -216,7 +216,7 @@ unset _provider_preflight
 # Preflight: validate the first command argument
 # ---------------------------------------------------------------------------
 # The first argument is the first token of the container `command:` (or the
-# image CMD default): the provider's agent binary in standard/serve mode, or
+# image CMD default): the provider's agent binary in standard mode, or
 # `bash` when a dry-run probe script is the command. If it is missing or not
 # executable the image is misconfigured.
 

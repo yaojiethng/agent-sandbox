@@ -81,7 +81,6 @@
 # level, or the invocation CWD.
 ENV_FILE := $(CURDIR)/.env
 PROVIDER     ?=
-SERVE        ?=
 REFRESH      ?=
 REBUILD      ?=
 FAST         ?=
@@ -152,7 +151,6 @@ endif
 REFRESH_FLAG      = $(if $(REFRESH),--refresh,)
 REBUILD_FLAG      = $(if $(REBUILD),--rebuild,)
 INTERACTIVE_FLAG  = $(if $(INTERACTIVE),--interactive,)
-SERVE_FLAG        = $(if $(SERVE),--serve,)
 PROVIDER_FLAG     = $(if $(PROVIDER),--provider=$(PROVIDER),)
 TARGETS_FLAG      = --targets=$(if $(TARGETS),$(TARGETS),all)
 SESSION_ID_FLAG   = $(if $(SESSION_ID),--session-id=$(SESSION_ID),)
@@ -178,7 +176,7 @@ help:
 	@echo "Targets:"
 	@echo "  make build                         --  build sandbox + all provider images"
 	@echo "  make build TARGETS=<p>             --  build specific provider(s)"
-	@echo "  make start PROVIDER=<p> [SERVE=1]   --  start an agent session (SERVE=1: provider serve mode)"
+	@echo "  make start PROVIDER=<p>            --  start an agent session"
 	@echo "  make dry-run PROVIDER=<p>          --  e2e check: rebuild current source, verify, tear down"
 	@echo "  make dry-run PROVIDER=<p> FAST=1   --  skip the rebuild, run existing images"
 	@echo "  make stop                          --  stop and remove session containers"
@@ -201,7 +199,6 @@ help:
 	@echo "Common variables:"
 	@echo "  PROVIDER=<p>     --  provider name (required for start/dry-run)"
 	@echo "  FAST=1           --  dry-run only: skip the image build, run existing images"
-	@echo "  SERVE=1           --  run the started session in provider serve mode (start only)"
 	@echo "  REFRESH=1         --  rebuild images + start new session (make start; dry-run always rebuilds)"
 	@echo "  REBUILD=1         --  force full rebuild including base images (make start)"
 	@echo "  SESSION_ID=<id>   --  resume a specific session (make resume)"
@@ -238,7 +235,6 @@ build:
 start:
 	agent-sandbox start \
 	  $(PROVIDER_FLAG) \
-	  $(SERVE_FLAG) \
 	  $(REFRESH_FLAG) \
 	  $(REBUILD_FLAG) \
 	  $(INTERACTIVE_FLAG) \

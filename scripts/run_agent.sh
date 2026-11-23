@@ -8,7 +8,6 @@
 #
 # Modes:
 #   standard    --  agent TUI attached to terminal
-#   serve       --  provider serve mode, companion services started
 #   dry-run     --  e2e check: rebuild current source, fresh + resume passes, verify, teardown
 #   headless    --  reserved, not yet implemented
 #
@@ -27,7 +26,6 @@
 #   provider overlay: src/reasoning/agent-runtime/<n>/docker-compose.<n>.yml  (merged if exists)
 #   mode overlay:
 #     dry-run:        src/build/docker-compose.dry-run.yml
-#     serve:          src/reasoning/agent-runtime/<n>/docker-compose.serve.yml
 #
 # Provider hooks:
 #   src/reasoning/agent-runtime/<n>/setup.sh  (sourced if exists, before compose generation)
@@ -65,7 +63,6 @@ start_agent.sh (new session) and resume_agent.sh (existing session).
 
 Modes:
   standard    Agent TUI attached to terminal
-  serve       Provider serve mode, companion services started
   dry-run     End-to-end check: rebuild, fresh + resume passes, verify, teardown
   headless    Reserved; not yet implemented
 
@@ -89,7 +86,7 @@ MODE="${1:-}"
 shift || true
 
 if [[ -z "$MODE" ]]; then
-  echo "Usage: $0 <mode:standard|dry-run|serve> --name=<n> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount [--flatten]"
+  echo "Usage: $0 <mode:standard|dry-run> --name=<n> --sandbox=<path> --env=<path> --provider=<n> --delivery=copy|mount [--flatten]"
   exit 1
 fi
 
@@ -151,39 +148,18 @@ if [[ -z "$DELIVERY" ]]; then
 fi
 
 # -------------------------
-# SERVE_PORT resolution
-# -------------------------
-# Consumed by the serve-mode echo below; compose
-# interpolation reads the process env directly and the provider serve overlays
-# carry the same fallback. The warning is serve-mode-only: in standard/dry-run
-# the port is irrelevant and the warning would be noise.
-#
-# SERVE_PORT works on any host port in the allowable range; the value 46553
-# was picked arbitrarily at first implementation so the default is stable
-# across providers. It carries no contract meaning -- override it via
-# SERVE_PORT in .env; never pin an invariant to its exact value.
-SERVE_PORT_DEFAULT=46553
-if [[ -z "${SERVE_PORT:-}" ]]; then
-  SERVE_PORT="$SERVE_PORT_DEFAULT"
-  if [[ "$MODE" == "serve" ]]; then
-    echo "Warning: SERVE_PORT is not set in .env  --  falling back to default ($SERVE_PORT_DEFAULT)"
-  fi
-fi
-
-# -------------------------
 # Provider setup hook
 # -------------------------
 # Sources src/reasoning/agent-runtime/<n>/setup.sh if it exists.
 # setup.sh is responsible for exporting provider-specific vars needed before
 # compose generation.
-# If setup.sh exits non-zero, the session aborts with an attribution message.
 PROVIDER_SETUP="$REPO_ROOT/src/reasoning/agent-runtime/$PROVIDER_NAME/setup.sh"
 
 if [[ -f "$PROVIDER_SETUP" ]]; then
   # The setup path is provider-selected and validated by the -f check;
-# ShellCheck cannot follow it statically.
-# shellcheck disable=SC1090
-if ! source "$PROVIDER_SETUP"; then
+  # ShellCheck cannot follow it statically.
+  # shellcheck disable=SC1090
+  if ! source "$PROVIDER_SETUP"; then
     echo "Error: provider setup hook failed: $PROVIDER_SETUP"
     echo "  Fix the error in src/reasoning/agent-runtime/$PROVIDER_NAME/setup.sh before retrying."
     exit 1
@@ -209,7 +185,7 @@ HOST_GID="$(id -g)"
 # -------------------------
 # The compose file set is selected at generation time per delivery type
 # (passed explicitly as --delivery by every caller): base template + delivery overlay +
-# provider overlay (if present) + mode overlay (dry-run/serve). The delivery
+# provider overlay (if present) + mode overlay (dry-run). The delivery
 # overlay carries the per-delivery wiring: copy -> named volume (content is
 # host-side seeded, no snapshot mount); mount -> worktree bind mount
 # (docker-compose.copy.yml /.mount.yml).
@@ -218,7 +194,6 @@ COPY_OVERLAY="$REPO_ROOT/src/build/docker-compose.copy.yml"
 MOUNT_OVERLAY="$REPO_ROOT/src/build/docker-compose.mount.yml"
 DRY_RUN_OVERLAY="$REPO_ROOT/src/build/docker-compose.dry-run.yml"
 PROVIDER_OVERLAY="$REPO_ROOT/src/reasoning/agent-runtime/$PROVIDER_NAME/docker-compose.${PROVIDER_NAME}.yml"
-SERVE_OVERLAY="$REPO_ROOT/src/reasoning/agent-runtime/$PROVIDER_NAME/docker-compose.serve.yml"
 
 if [[ ! -f "$COMPOSE_TEMPLATE" ]]; then
   echo "Error: compose template not found: $COMPOSE_TEMPLATE"
@@ -264,14 +239,6 @@ case "$MODE" in
     DRY_RUN_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_reasoning.sh")"
     DRY_RUN_CAPABILITY_SCRIPT="$(realpath "$REPO_ROOT/scripts/dry_run_capability.sh")"
     COMPOSE_FILES+=("$DRY_RUN_OVERLAY")
-    ;;
-  serve)
-    if [[ ! -f "$SERVE_OVERLAY" ]]; then
-      echo "Error: serve overlay not found: $SERVE_OVERLAY"
-      echo "  Expected at src/reasoning/agent-runtime/$PROVIDER_NAME/docker-compose.serve.yml"
-      exit 1
-    fi
-    COMPOSE_FILES+=("$SERVE_OVERLAY")
     ;;
   standard|headless)
     ;;
@@ -411,7 +378,7 @@ case "$MODE" in
     exit 0
     ;;
 
-  serve|standard)
+  standard)
     # Handled below
     ;;
 
@@ -421,7 +388,7 @@ case "$MODE" in
     ;;
 
   *)
-    echo "Error: unsupported mode '$MODE'. Supported modes: standard, serve, dry-run"
+    echo "Error: unsupported mode '$MODE'. Supported modes: standard, dry-run"
     exit 1
     ;;
 esac
@@ -439,9 +406,9 @@ else
 fi
 
 # The mode branch only runs the session; the EXIT trap (_session_cleanup)
-# ends it. Both modes block until the agent session is over (serve: docker
-# wait returns on make stop; standard: compose run returns when the agent
-# exits)  --  see the docker-wait comment below for why this ordering matters.
+# ends it. Standard mode blocks until the agent session is over (compose run
+# returns when the agent exits)  --  teardown's `compose down` must be the
+# final compose dispatch.
 agent_rc=0
 TEARDOWN_NEEDED=1
 # Session is now actively running: record last_started and clear last_stopped so
@@ -451,48 +418,27 @@ if [[ -n "${SESSION_ID:-}" ]]; then
   session_log_set "$SESSION_ID" last_started "$(date -u +%Y%m%d-%H%M%S)"
   session_log_set "$SESSION_ID" last_stopped ""
 fi
-if [[ "$MODE" == "serve" ]]; then
-  echo "Starting agent: $PROJECT_NAME (serve mode)"
-  # < /dev/null: protects against external compose/docker behavior -- compose v5
-  # may block on an interactive prompt (volume/config mismatch) and must not
-  # hang this unattended path waiting on a TTY answer. --progress quiet:
-  # suppress the resource progress table at source.
-  docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d < /dev/null
-  echo "Stop with: make stop"
-  echo "Interactive web running on http://127.0.0.1:${SERVE_PORT}"
+echo "Starting agent: $PROJECT_NAME"
+echo "+ starting sandbox..."
+# < /dev/null: protects against external compose/docker behavior. Compose v5
+# prompts interactively to recreate a volume whose config no longer matches
+# the regenerated compose file (stale-session resume). On this unattended
+# path the harness must never destroy a session volume via an unanswered
+# prompt; non-interactive stdin makes compose keep the existing volume. Same
+# class as the seeder < /dev/null guard (handover 20260904-05).
+# --progress quiet: compose suppresses its resource progress table at source,
+# so no stdout filter is needed here.
+docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d sandbox < /dev/null
 
-  # Wait for the agent container to exit (triggered by make stop / docker stop).
-  # Keeps run_agent.sh alive so teardown runs after the provider entrypoint has
-  # finished.
-  # The container's exit code on make stop is SIGTERM/SIGKILL (137/143)  --  not
-  # a session result  --  so it is swallowed here and serve exits 0 (teardown is
-  # handled by run_agent.sh's own EXIT trap, _session_cleanup).
-  docker wait "$AGENT_CONTAINER_NAME" >/dev/null 2>&1 || true
+compose_sandbox_wait
 
-else
-  echo "Starting agent: $PROJECT_NAME"
-  echo "+ starting sandbox..."
-  # < /dev/null: protects against external compose/docker behavior. Compose v5
-  # prompts interactively to recreate a volume whose config no longer matches
-  # the regenerated compose file (stale-session resume). On this unattended
-  # path the harness must never destroy a session volume via an unanswered
-  # prompt; non-interactive stdin makes compose keep the existing volume. Same
-  # class as the seeder < /dev/null guard (handover 20260904-05).
-  # --progress quiet: compose suppresses its resource progress table at source,
-  # so no stdout filter is needed here.
-  docker compose "${COMPOSE_ARGS[@]}" --progress quiet up -d sandbox < /dev/null
+echo "+ attaching to agent..."
+# Capture the agent's exit code instead of letting set -e abort: teardown
+# (via the EXIT trap) must run even when the agent fails (containers +
+# network leak otherwise), and the rc is propagated to the caller below.
+docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent || agent_rc=$?
 
-  compose_sandbox_wait
-
-  echo "+ attaching to agent..."
-  # Capture the agent's exit code instead of letting set -e abort: teardown
-  # (via the EXIT trap) must run even when the agent fails (containers +
-  # network leak otherwise), and the rc is propagated to the caller below.
-  docker compose "${COMPOSE_ARGS[@]}" run --rm --name "$AGENT_CONTAINER_NAME" agent || agent_rc=$?
-fi
-
-# Exit semantics: standard propagates the agent's exit code; serve exits 0
-# (its session ends via make stop, not agent completion). Teardown already
+# Exit semantics: standard propagates the agent's exit code. Teardown already
 # ran in the EXIT trap (_session_cleanup).
 #
 # 137 and 143 are the container ending by signal, which is what make stop does

@@ -6,7 +6,7 @@
 #   it over.
 # scripts/onboard.sh end-to-end behavioural tests.
 #
-# Pins cite: docs/reference/tool_interface.md (provider interface).
+# Pins cite: scripts/onboard.sh (.env schema).
 
 # Tests the directory tree and files produced by a fresh onboard,
 # the guard check that prevents clobbering, and refresh mode behaviour.
@@ -87,7 +87,7 @@ test_fresh_onboard_creates_structure() {
 # ---------------------------------------------------------------------------
 # Given: a completed fresh onboard
 # When:  the generated .env is read
-# Then:  it carries PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, MAKEFILE_VERSION, INSTALL_DIR, SERVE_PORT, AUTOSAVE_INTERVAL
+# Then:  it carries PROJECT_NAME, PROJECT_DIR, SANDBOX_DIR, MAKEFILE_VERSION, INSTALL_DIR, AUTOSAVE_INTERVAL
 # Asserts: the .env schema
 test_fresh_onboard_env_has_required_keys() {
   local PROJECT_DIR="$FIXTURE_DIR/env_project"
@@ -102,7 +102,6 @@ test_fresh_onboard_env_has_required_keys() {
   grep -q "^SANDBOX_DIR=" "$ENV_FILE" || { fail ".env missing SANDBOX_DIR"; return; }
   grep -q "^MAKEFILE_VERSION=" "$ENV_FILE" || { fail ".env missing MAKEFILE_VERSION"; return; }
   grep -q "^INSTALL_DIR=" "$ENV_FILE" || { fail ".env missing INSTALL_DIR"; return; }
-  grep -q "^SERVE_PORT=" "$ENV_FILE" || { fail ".env missing SERVE_PORT"; return; }
   grep -q "^AUTOSAVE_INTERVAL=" "$ENV_FILE" || { fail ".env missing AUTOSAVE_INTERVAL"; return; }
 
   pass ".env contains all required keys"
@@ -314,7 +313,7 @@ test_refresh_updates_makefile() {
 # ---------------------------------------------------------------------------
 # Test: refresh does not clobber .env operator values
 # ---------------------------------------------------------------------------
-# Given: an onboarded sandbox whose SERVE_PORT was edited to 99999
+# Given: an onboarded sandbox whose AUTOSAVE_INTERVAL was edited to 120
 # When:  refresh runs
 # Then:  the edited value survives
 # Asserts: refresh does not clobber operator configuration
@@ -324,22 +323,22 @@ test_refresh_preserves_env_values() {
 
   run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
 
-  sed -i 's/^SERVE_PORT=.*/SERVE_PORT=99999/' "$SANDBOX_DIR/.env"
+  sed -i 's/^AUTOSAVE_INTERVAL=.*/AUTOSAVE_INTERVAL=120/' "$SANDBOX_DIR/.env"
 
   echo y | bash "$ONBOARD_SCRIPT" --refresh \
     --name="testproj" \
     --sandbox="$SANDBOX_DIR" 2>&1
 
-  grep -q "^SERVE_PORT=99999" "$SANDBOX_DIR/.env" \
-    || { fail "SERVE_PORT was overwritten by refresh"; return; }
+  grep -q "^AUTOSAVE_INTERVAL=120" "$SANDBOX_DIR/.env" \
+    || { fail "AUTOSAVE_INTERVAL was overwritten by refresh"; return; }
 
   pass "Refresh preserves operator .env values"
 }
 
 # ---------------------------------------------------------------------------
-# Test: refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR + SERVE_PORT
+# Test: refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR + AUTOSAVE_INTERVAL
 # ---------------------------------------------------------------------------
-# Given: an onboarded sandbox whose project moved and whose INSTALL_DIR and SERVE_PORT were edited
+# Given: an onboarded sandbox whose project moved and whose INSTALL_DIR and AUTOSAVE_INTERVAL were edited
 # When:  refresh runs with the new --project
 # Then:  PROJECT_DIR and SANDBOX_DIR are synced and both operator values survive
 # Asserts: the refresh split between derived paths and operator configuration
@@ -351,7 +350,7 @@ test_refresh_syncs_paths_preserves_config() {
   run_full_onboard "$PROJECT_DIR" "$SANDBOX_DIR" || return 0
 
   # Operator edits config, then the project is renamed (moved) to a new path.
-  sed -i 's/^INSTALL_DIR=.*/INSTALL_DIR=\/custom\/install/; s/^SERVE_PORT=.*/SERVE_PORT=8123/' "$SANDBOX_DIR/.env"
+  sed -i 's/^INSTALL_DIR=.*/INSTALL_DIR=\/custom\/install/; s/^AUTOSAVE_INTERVAL=.*/AUTOSAVE_INTERVAL=120/' "$SANDBOX_DIR/.env"
   mv "$PROJECT_DIR" "$MOVED_DIR"
 
   echo y | bash "$ONBOARD_SCRIPT" --refresh \
@@ -363,10 +362,10 @@ test_refresh_syncs_paths_preserves_config() {
   grep -q "^PROJECT_DIR=$MOVED_DIR$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (PROJECT_DIR not synced)" >&2; }
   grep -q "^SANDBOX_DIR=$SANDBOX_DIR$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (SANDBOX_DIR lost)" >&2; }
   grep -q "^INSTALL_DIR=/custom/install$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (INSTALL_DIR clobbered)" >&2; }
-  grep -q "^SERVE_PORT=8123$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (SERVE_PORT clobbered)" >&2; }
+  grep -q "^AUTOSAVE_INTERVAL=120$" "$SANDBOX_DIR/.env" || { OK=false; echo "  (AUTOSAVE_INTERVAL clobbered)" >&2; }
 
   if [[ "$OK" == true ]]; then
-    pass "Refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR and operator SERVE_PORT"
+    pass "Refresh syncs PROJECT_DIR/SANDBOX_DIR but preserves INSTALL_DIR and operator AUTOSAVE_INTERVAL"
   else
     fail "Refresh path sync / config preservation incorrect (see stderr)"
   fi

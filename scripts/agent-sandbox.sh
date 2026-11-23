@@ -8,7 +8,7 @@
 # Usage:
 #   agent-sandbox onboard  --name=<n> --project=<path> --sandbox=<path>
 #   agent-sandbox build    [--targets=<targets>] [identity] [--env=<path>]
-#   agent-sandbox start    [--serve] --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [--interactive] [flags]
+#   agent-sandbox start    --provider=<n> [identity] [--env=<path>] [--refresh|--rebuild] [--interactive] [flags]
 #   agent-sandbox dry-run  --provider=<n> [identity] [--env=<path>] [--fast] [flags]
 #   agent-sandbox resume   [identity] [--env=<path>] [--session-id=<id>] [--list] [--interactive]
 #   agent-sandbox stop     [identity] [--env=<path>] [--session-id=<id>] [--prune]

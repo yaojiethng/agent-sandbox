@@ -22,7 +22,6 @@ src/reasoning/agent/drafts/
 src/reasoning/agent-runtime/pi/onboard.sh
 src/reasoning/agent-runtime/pi/onboard-readme.md
 src/reasoning/agent-runtime/pi/docker-compose.pi.yml
-src/reasoning/agent-runtime/pi/docker-compose.serve.yml
 .gitignore
 .hadolint.yaml
 .markdownlint-cli2.mjs

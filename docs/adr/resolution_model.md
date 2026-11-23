@@ -82,3 +82,5 @@ ENV_FILE := $(CURDIR)/.env
 **Edge cases / drivers:** The P4 precedence pins and the study's thermo-nuclear finding (c) established the file-beats-flag baseline that the S2 flip removed. The identity flags stay accepted (backward compatible); removing them is future work, layered onto this ADR. Full primitive and consumption detail: [sandbox_identity.md](../reference/sandbox_identity.md).
 
 **Reason superseded by 2026-10-16:** the ladder and the `.env` location contract carry over unchanged. What changed is the model around them: this entry stated the triple's ladder without naming the carriers, so it could not say why a session-record value is not a level.
+
+[CORRECTION -- 2026-11-22: serve mode was removed; `SERVE_PORT` is no longer a runtime value. The entry keeps the value that was true on its date.]

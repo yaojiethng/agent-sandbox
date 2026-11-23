@@ -119,7 +119,6 @@ Residual risk is acknowledged.
 Current model:
 
 - No ports are exposed unless explicitly published via Docker.
-- When serving a local agent endpoint, ports must be bound to `127.0.0.1`.
 - Outbound network access may be enabled to allow AI provider communication.
 - No implicit firewalling is provided by this document.
 

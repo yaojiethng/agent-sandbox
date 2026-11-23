@@ -10,7 +10,7 @@ reader: [agent, operator]
 
 The harness separates into two layers with different responsibilities and different reasons to vary.
 
-**Reasoning layer** -- runs the model, manages conversation, injects context, presents an interface to the operator. The choice of reasoning layer (OpenCode, Claude Code, or any MCP-compatible client) depends on capability, cost, UX, and deployment context. It should be swappable without changing how project content is accessed.
+**Reasoning layer** -- runs the model, manages conversation, injects context, presents an interface to the operator. The choice of reasoning layer (the agent-runtime and its client interface, or any MCP-compatible client) depends on capability, cost, UX, and deployment context. It should be swappable without changing how project content is accessed.
 
 **Capability layer** -- owns the sandbox and controls what working content the agent can reach. It is always present as a container. It holds the sandbox -- a copy of the working content prepared by the harness before the session, following the same copy pattern as M1.x. It exposes working content to the reasoning layer and optionally mediates access via an MCP server.
 

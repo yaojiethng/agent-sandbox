@@ -52,7 +52,7 @@ See [`project_onboarding_guide.md`](../reference/project_onboarding_guide.md) fo
 
 ## 3. Complete the setup
 
-**Edit `.env`** -- set `SERVE_PORT` and review `INSTALL_DIR` and `AUTOSAVE_INTERVAL`. Path variables are derived automatically; do not edit them.
+**Edit `.env`** -- review `INSTALL_DIR` and `AUTOSAVE_INTERVAL`. Path variables are derived automatically; do not edit them.
 
 **Confirm prerequisites in `PROJECT_DIR`:**
 
@@ -83,7 +83,7 @@ A passing dry-run confirms both containers start, `sandbox/` initialises, and th
 
 - [ ] `agent-sandbox` CLI installed (`which agent-sandbox`)
 - [ ] `agent-sandbox onboard` run; sandbox directory exists
-- [ ] `.env` complete -- `SERVE_PORT`, `INSTALL_DIR` and `AUTOSAVE_INTERVAL` reviewed
+- [ ] `.env` complete -- `INSTALL_DIR` and `AUTOSAVE_INTERVAL` reviewed
 - [ ] `.env` gitignored in `PROJECT_DIR`
 - [ ] `PROJECT_DIR` is a git repo with at least one commit
 - [ ] Docker running (`docker info`)

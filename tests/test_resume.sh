@@ -123,7 +123,7 @@ resume_trace() {
 
 # --list renders the enriched registry display (id | provider | ts | branch),
 # newest session first, and filters by PROVIDER (decisions I-2, I-3).
-# Given: a sandbox holding a pi record and an fixture record
+# Given: a sandbox holding a pi record and a fixture record
 # When:  resume_agent.sh runs with --list
 # Then:  the enriched header and the abc123/pi row render, newest first
 # Asserts: the enriched registry display

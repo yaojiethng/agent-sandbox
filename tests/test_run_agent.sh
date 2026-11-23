@@ -2,12 +2,9 @@
 # TEST_DEADLINE: 20
 # tests/test_run_agent.sh  --  Behavioural tests for scripts/run_agent.sh
 # provider hook + provider overlay selection.
-# Pins cite: docs/reference/tool_interface.md l.41, l.225 (SERVE_PORT contract);
-#             code-owner: scripts/run_agent.sh SERVE_PORT_DEFAULT.
-# TEST_DEADLINE: 10
-#   This file absorbed the trace-start family and now runs 33 units, most of
+#   This file absorbed the trace-start family and now runs 35 units, most of
 #   them spawning a real run_agent.sh invocation, so its honest runtime is
-#   about 3.4s and peaks near 6.7s. The 5s default leaves no headroom under
+#   about 3.4s and peaks near 6.7s. The 20s budget leaves headroom under
 #   parallel dispatch, and a TIMEOUT also hides the file's whole unit count.
 #   The declaration is a budget, not a licence: the file must stay near this
 #   cost.
@@ -25,7 +22,7 @@
 #   2. Provider overlay merge: docker-compose.<provider>.yml reaches the
 #      compose file set passed to `docker compose config` (asserted on the
 #      docker-stub trace, which logs every -f argument).
-#   3. The session trace family: the teardown verb per mode, teardown-is-last,
+#   3. The session trace family: the teardown verb, teardown-is-last,
 #      the failure paths that must still tear down, the unhealthy-sandbox health
 #      gate (the agent never starts and the refusal names the sandbox container
 #      on stderr), the persisted compose file, the three delivery selections,
@@ -44,8 +41,6 @@
 #   6. The repository-integrity guards: a missing compose template or dry-run
 #      overlay is refused in the clear, naming the missing file. A repo mirror
 #      of symlinks omits one file so the guard fires without touching the tree.
-#   7. The serve wait swallow: a non-zero `docker wait` status is not a session
-#      result, so serve still exits 0.
 #
 # The provider setup hook is a documented contract (run_agent.sh header: "If
 # setup.sh exits non-zero, the session aborts with a clear error attributing
@@ -73,7 +68,6 @@ make_run_agent_fixture() {
   export PROJECT_NAME="test-project"
   export PROVIDER_NAME="$provider"
   export SANDBOX_DIR="$FIX/sandbox"
-  export SERVE_PORT="46553"
   export HOST_UID="1000"
   export HOST_GID="1000"
 
@@ -213,52 +207,6 @@ test_provider_overlay_absent_is_optional() {
   else
     fail "provider overlay absent: expected rc 0 + config without ghost overlay, got rc=$rc"
   fi
-}
-
-# SERVE_PORT unset: run_agent.sh still resolves the fallback default (46553,
-# matching the provider serve overlays) so the session proceeds. The warning is
-# serve-mode-only: in non-serve modes the port is irrelevant and would be
-# noise. Warning originally added for the unset case (handover 20260325-01);
-# mode gate pinned by handover 20260912-11.
-# Given: SERVE_PORT unset and a standard-mode session
-# When:  run_agent.sh resolves the port
-# Then:  no warning is printed and the session proceeds on the default
-# Asserts: the SERVE_PORT fallback warning is serve-mode-only
-test_serve_port_unset_standard_is_quiet() {
-  local FIX="$FIXTURE_DIR/serve_port_unset_std"
-  make_run_agent_fixture "$FIX" pi
-  unset SERVE_PORT
-
-  local out="$FIX/out.txt" rc=0
-  invoke_run_agent "$out" || rc=$?
-
-  if [[ $rc -eq 0 ]] && ! grep -q "SERVE_PORT is not set" "$out"; then
-    pass "SERVE_PORT unset, standard mode: no warning, session proceeds on the default"
-  else
-    fail "SERVE_PORT unset, standard mode: expected rc 0 without warning, got rc=$rc out='$(cat "$out")'"
-  fi
-  export SERVE_PORT="46553"
-}
-
-# Given: SERVE_PORT unset and a serve-mode session
-# When:  run_agent.sh resolves the port
-# Then:  the fallback warning names the default port and the session proceeds
-# Asserts: the serve-mode fallback warning
-test_serve_port_unset_serve_warns() {
-  local FIX="$FIXTURE_DIR/serve_port_unset_serve"
-  make_run_agent_fixture "$FIX" pi
-  unset SERVE_PORT
-
-  local out="$FIX/out.txt" rc=0
-  invoke_run_agent "$out" serve || rc=$?
-
-  if [[ $rc -eq 0 ]] && grep -q "SERVE_PORT is not set" "$out" \
-     && grep -q "falling back to default (46553)" "$out"; then
-    pass "SERVE_PORT unset, serve mode: warning emitted, session proceeds on the default port"
-  else
-    fail "SERVE_PORT unset, serve mode: expected warning + rc 0, got rc=$rc out='$(cat "$out")'"
-  fi
-  export SERVE_PORT="46553"
 }
 
 # Given: --help on the command line
@@ -494,11 +442,8 @@ run_test test_provider_config_dir_precreated
 run_test test_seeder_invocation_has_no_tty
 run_test test_compose_template_missing_refused
 run_test test_dry_run_overlay_missing_refused
-run_test test_serve_port_unset_standard_is_quiet
-run_test test_serve_port_unset_serve_warns
 run_test test_provider_overlay_reaches_compose_file_set
 run_test test_provider_overlay_absent_is_optional
-
 
 setup_start_fixture() {
   local FIXTURE_DIR="$1"
@@ -509,7 +454,6 @@ setup_start_fixture() {
   export CHANGES_DIR="$SANDBOX_DIR/.workspace/session-diffs"
   export INPUT_DIR="$SANDBOX_DIR/.workspace/input"
   export OUTPUT_DIR="$SANDBOX_DIR/.workspace/output"
-  export SERVE_PORT="46553"
   export HOST_UID="1000"
   export HOST_GID="1000"
 
@@ -912,55 +856,22 @@ test_start_rebuild_has_no_down_v() {
   assert_eq_num "$count" "0" "start --rebuild: zero 'compose down -v' (--reset-volume forwarded, volume rm used)"
 }
 
-# Given: a serve-mode session
+# Given: a standard session
 # When:  the compose trace is read
-# Then:  zero 'compose down -v' invocations
-# Asserts: a serve teardown keeps the named volumes
-test_serve_post_agent_uses_down() {
-  local FIXTURE_DIR="$FIXTURE_DIR/serve_post"
+# Then:  the last compose operation is 'down'
+# Asserts: teardown is the final compose dispatch, nothing runs after it
+test_standard_teardown_is_last_compose() {
+  local FIXTURE_DIR="$FIXTURE_DIR/standard_last"
   mkdir -p "$FIXTURE_DIR"
   setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "serve"
-
-  # Session teardown is `compose down` (not `down -v`): named volumes must
-  # survive. The post-agent dispatch itself is locked by
-  # test_serve_teardown_is_last_compose (last compose op is down)  --  this test
-  # covers only the volume-preservation verb, since serve also emits a pre-run
-  # teardown down that would satisfy a bare down_count>=1.
-  local down_v_count
-  down_v_count=$(trace_count "compose down -v")
-  assert_eq_num "$down_v_count" "0" "serve: zero 'compose down -v' (session_teardown keeps named volumes)"
-}
-
-assert_teardown_is_last_compose() {
-  local mode="$1"
-  local FIXTURE_DIR="$FIXTURE_DIR/${mode}_last"
-  mkdir -p "$FIXTURE_DIR"
-  setup_start_fixture "$FIXTURE_DIR"
-  invoke_run_agent "$mode" --delivery=copy
+  invoke_run_agent standard --delivery=copy
 
   # The unified teardown dispatch is the single final compose operation:
   # nothing runs after `compose down`. (Pre-run session_teardown is the
   # resume-path cleanup before `up`; the last down is the post-agent one.)
   local last
   last=$(trace_grep "compose " | tail -1)
-  assert_contains "$last" "compose down" "$mode: last compose op is down (teardown is final dispatch)"
-}
-
-# Given: a standard session
-# When:  the compose trace is read
-# Then:  the last compose operation is 'down'
-# Asserts: teardown is the final compose dispatch, nothing runs after it
-test_standard_teardown_is_last_compose() {
-  assert_teardown_is_last_compose standard
-}
-
-# Given: a serve-mode session
-# When:  the compose trace is read
-# Then:  the last compose operation is 'down'
-# Asserts: teardown is the final compose dispatch in serve mode
-test_serve_teardown_is_last_compose() {
-  assert_teardown_is_last_compose serve
+  assert_contains "$last" "compose down" "standard: last compose op is down (teardown is final dispatch)"
 }
 
 # Given: the docker stub failing the agent run with rc 42
@@ -990,26 +901,6 @@ test_standard_agent_failure_still_tears_down_and_propagates_rc() {
   fi
 
   unset DOCKER_STUB_RUN_RC
-}
-
-# Given: the docker stub failing 'compose up' in serve mode
-# When:  run_agent.sh aborts
-# Then:  the last compose operation is 'down'
-# Asserts: no container or network leak on an up failure
-test_serve_up_failure_still_tears_down() {
-  local FIXTURE_DIR="$FIXTURE_DIR/serve_up_fail"
-  mkdir -p "$FIXTURE_DIR"
-  setup_start_fixture "$FIXTURE_DIR"
-  export DOCKER_STUB_UP_RC="1"
-
-  # compose up fails -> set -e abort before the mode branch completes; the
-  # EXIT trap must still tear down (issue-1 class: no leak on up failure).
-  local rc
-  rc=$(invoke_run_agent_rc "serve" --delivery=copy)
-
-  local last
-  last=$(trace_grep "compose " | tail -1)
-  assert_contains "$last" "compose down" "serve: up failure still tears down (last=$last)"
 }
 
 # Given: the docker stub failing 'compose up' in standard mode
@@ -1195,46 +1086,6 @@ test_invalid_sandbox_type_rejected() {
   unset SANDBOX_TYPE
 }
 
-# serve mode waits for the agent container to exit after `make stop`; the
-# container's 137/143 status is not a session result, so the wait status is
-# swallowed and serve exits 0. A per-test PATH shim gives the shared docker
-# stub the failing-wait knob it lacks, without editing the shared stub.
-# Given: a serve session whose docker wait returns 137
-# When:  run_agent.sh runs serve mode
-# Then:  the run exits 0
-# Asserts: the serve path's docker wait swallow
-test_serve_docker_wait_status_swallowed() {
-  local FIXTURE_DIR="$FIXTURE_DIR/serve_wait_swallow"
-  mkdir -p "$FIXTURE_DIR"
-  setup_start_fixture "$FIXTURE_DIR"
-
-  local shim="$FIXTURE_DIR/shim"
-  mkdir -p "$shim"
-  cat > "$shim/docker" <<SHIM
-#!/usr/bin/env bash
-if [[ "\${1:-}" == "wait" ]]; then
-  printf '[%s] wait %s\n' "\$(date +%s)" "\$*" >> "\${DOCKER_TRACE_LOG:-/tmp/docker-trace.log}"
-  exit "\${DOCKER_STUB_WAIT_RC:-0}"
-fi
-exec "$STUB_DIR/docker" "\$@"
-SHIM
-  chmod +x "$shim/docker"
-
-  local rc=0
-  (
-    export PATH="$shim:$STUB_DIR:$PATH"
-    export DOCKER_STUB_WAIT_RC=137
-    bash "$REPO_ROOT/scripts/run_agent.sh" serve \
-      --name="$PROJECT_NAME" \
-      --sandbox="$SANDBOX_DIR" \
-      --env="$SANDBOX_DIR/.env" \
-      --provider="$PROVIDER_NAME" \
-      --delivery=copy
-  ) > "$FIXTURE_DIR/out.txt" 2>&1 || rc=$?
-
-  assert_rc 0 "$rc" "serve: a non-zero docker wait status is swallowed"
-}
-
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -1253,12 +1104,8 @@ run_test test_start_refresh_has_no_down_v
 run_test test_start_refresh_volume_rm
 run_test test_start_refresh_post_agent_uses_down
 run_test test_start_rebuild_has_no_down_v
-run_test test_serve_post_agent_uses_down
 run_test test_standard_teardown_is_last_compose
-run_test test_serve_teardown_is_last_compose
 run_test test_standard_agent_failure_still_tears_down_and_propagates_rc
-run_test test_serve_up_failure_still_tears_down
-run_test test_serve_docker_wait_status_swallowed
 run_test test_standard_up_failure_still_tears_down
 run_test test_standard_sandbox_unhealthy_still_tears_down
 run_test test_compose_file_persisted

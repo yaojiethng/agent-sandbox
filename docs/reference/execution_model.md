@@ -81,7 +81,6 @@ Container paths are fixed and not configurable through `.env`. The mount shape i
 | Mode | Compose files |
 |---|---|
 | `standard` | Base template + delivery overlay (+ provider overlay if present) |
-| `serve` | Base template + delivery overlay + provider overlay (if present) + `src/reasoning/agent-runtime/<n>/docker-compose.serve.yml` |
 | `dry-run` | Base template + delivery overlay + provider overlay (if present) + `src/build/docker-compose.dry-run.yml` |
 
 **Delivery overlays:** the delivery type reaches `run_agent.sh` as `--delivery` (`copy|mount`); `start_agent.sh` parses it at ingestion (default `copy`), `resume_agent.sh` recovers it from the session record, and `run_agent.sh` never defaults it. The per-delivery overlay carries the worktree wiring, so the base template stays shared. Dry-run on `--delivery=mount` stacks the mount overlay too: the probes run against the real worktree read-only, writing only to the workspace channels and the entrypoint-owned `.git/SESSION_STATE` marker, so tracked repo content is never modified.
@@ -89,7 +88,7 @@ Container paths are fixed and not configurable through `.env`. The mount shape i
 - `src/build/docker-compose.copy.yml` -- the per-run named sandbox volume, seeded by the one-shot seeder service (helper-container transport), with no snapshot mount. Copy mode only.
 - `src/build/docker-compose.mount.yml` -- the worktree bind mount at `/home/agentuser/sandbox` (default source `${SANDBOX_DIR}/.worktree`, overridable via `WORKTREE_DIR`). Mount mode only.
 
-The provider overlay (`src/reasoning/agent-runtime/<n>/docker-compose.<n>.yml`) is optional and merged if the file exists. It covers mounts and environment variables that apply in every mode. The serve, dry-run, and delivery overlays are static repo files; only the merged result is written to `SANDBOX_DIR`.
+The provider overlay (`src/reasoning/agent-runtime/<n>/docker-compose.<n>.yml`) is optional and merged if the file exists. It covers mounts and environment variables that apply in every mode. The dry-run and delivery overlays are static repo files; only the merged result is written to `SANDBOX_DIR`.
 
 **Delivery-aware container init:** the capability-layer entrypoint branches on `SANDBOX_TYPE`, which each delivery overlay passes as a container env literal.
 
@@ -158,7 +157,7 @@ Our `start` and `stop` do not match docker's pause-resume semantics. The harness
 
 ## Session exit semantics
 
-`scripts/run_agent.sh` exits 0 on a clean session end in both modes: standard (agent completes) and serve (operator runs `make stop`). Standard mode propagates a non-zero agent exit code, with one exception: 137 or 143 means the container ended by signal, which is what `make stop` does, so standard mode prints the code and exits 0. Serve mode always exits 0, because its session ends by `make stop` rather than by the agent's completion. The agent container runs an init process at PID 1, so a stop signal reaches the agent and it ends cleanly (measured 0.287s, exit 0). Without one, a process that is the PID-namespace init receives nothing, and docker spends the whole stop grace before a SIGKILL (measured 10.20s, exit 137). Teardown runs on every exit path after the session starts (agent completion, agent failure, `compose up` failure, or sandbox health-wait failure) through run_agent.sh's EXIT trap (`_session_cleanup`), so containers and the session network never leak. The teardown also prints the commands that continue the work, so the end of a `make start` surfaces them: `make resume SESSION_ID=<id>` and `make draft BUNDLE=<name>`, the latter naming the exact session export.
+`scripts/run_agent.sh` exits 0 on a clean session end in standard mode (agent completes). Standard mode propagates a non-zero agent exit code, with one exception: 137 or 143 means the container ended by signal, which is what `make stop` does, so standard mode prints the code and exits 0. The agent container runs an init process at PID 1, so a stop signal reaches the agent and it ends cleanly (measured 0.287s, exit 0). Without one, a process that is the PID-namespace init receives nothing, and docker spends the whole stop grace before a SIGKILL (measured 10.20s, exit 137). Teardown runs on every exit path after the session starts (agent completion, agent failure, `compose up` failure, or sandbox health-wait failure) through run_agent.sh's EXIT trap (`_session_cleanup`), so containers and the session network never leak. The teardown also prints the commands that continue the work, so the end of a `make start` surfaces them: `make resume SESSION_ID=<id>` and `make draft BUNDLE=<name>`, the latter naming the exact session export.
 
 ## Session Lifecycle
 
