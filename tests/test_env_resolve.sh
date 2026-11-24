@@ -301,6 +301,52 @@ test_resolve_dir_is_not_a_selector() {
   fi
 }
 
+# Given: a project and sandbox reached through a symlink with a trailing slash
+# When:  the resolver receives those spellings as explicit values
+# Then:  both leave absolute and canonical
+# Asserts: one path spelling reaches the leaf, not the symlink spelling.
+test_resolve_normalizes_explicit_paths() {
+  local base="$FIXTURE_DIR/paths_explicit" out
+  mkdir -p "$base/proj" "$base/sbx"
+  ln -s "$base/proj" "$base/proj-link"
+  ln -s "$base/sbx" "$base/sbx-link"
+  out=$(set -e; env_resolve_identity name "$base/proj-link/" "$base/sbx-link/" "" \
+    name project sandbox && printf '%s|%s' "$PROJECT_DIR" "$SANDBOX_DIR") || out="FAILED"
+  assert_eq "$base/proj|$base/sbx" "$out" \
+    "explicit project and sandbox paths are canonical"
+}
+
+# Given: a record whose PROJECT_DIR and SANDBOX_DIR use symlink spellings
+# When:  the resolver reads them with no explicit path
+# Then:  both leave absolute and canonical
+# Asserts: record values are normalized like explicit values.
+test_resolve_normalizes_record_paths() {
+  local base="$FIXTURE_DIR/paths_record" out
+  mkdir -p "$base/proj" "$base/sbx"
+  ln -s "$base/proj" "$base/proj-link"
+  ln -s "$base/sbx" "$base/sbx-link"
+  printf 'PROJECT_NAME=record\nPROJECT_DIR=%s/proj-link/\nSANDBOX_DIR=%s/sbx-link/\n' "$base" "$base" > "$base/.env"
+  cp "$base/.env" "$base/sbx/.env"
+  out=$(set -e; cd "$base" && env_resolve_identity "" "" "" "" name project sandbox \
+    && printf '%s|%s|%s' "$PROJECT_DIR" "$SANDBOX_DIR" "$ENV_FILE") || out="FAILED"
+  assert_eq "$base/proj|$base/sbx|$base/sbx/.env" "$out" \
+    "record project and sandbox paths are canonical"
+}
+
+# Given: a HOME and a project and sandbox written with a leading ~
+# When:  the resolver receives those spellings
+# Then:  both leave under the expanded absolute HOME
+# Asserts: path normalization expands ~ before it resolves.
+test_resolve_normalizes_tilde_paths() {
+  local base="$FIXTURE_DIR/paths_tilde" out
+  mkdir -p "$base/proj" "$base/sbx"
+  # shellcheck disable=SC2088  # the test supplies a literal ~ on purpose
+  out=$(set -e; HOME="$base" env_resolve_identity name "~/proj/" "~/sbx/" "" \
+    name project sandbox && printf '%s|%s' "$PROJECT_DIR" "$SANDBOX_DIR") || out="FAILED"
+  assert_eq "$base/proj|$base/sbx" "$out" \
+    "a leading ~ is expanded before the path is canonicalized"
+}
+
 run_test test_relative_env_without_sandbox_bootstraps_from_cwd
 run_test test_default_env_file_returns_an_absolute_path
 run_test test_resolve_exports_an_absolute_env_file
@@ -315,6 +361,9 @@ run_test test_resolve_ignores_leaked_plain_export
 run_test test_resolve_sandbox_env_var_is_not_a_level
 run_test test_resolve_project_is_the_selector
 run_test test_resolve_dir_is_not_a_selector
+run_test test_resolve_normalizes_explicit_paths
+run_test test_resolve_normalizes_record_paths
+run_test test_resolve_normalizes_tilde_paths
 run_test test_resolve_one_remedy_is_the_callers
 run_test test_resolve_default_env_absent_is_not_specified
 run_test test_resolve_specified_env_absent_names_the_path

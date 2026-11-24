@@ -28,6 +28,34 @@
 # shellcheck disable=SC2034
 : "${INTERACTIVE_MAX_ENTRIES:=10}"
 
+# path_canon PATH
+#   Prints PATH in canonical absolute form, or returns 1 when readlink -f
+#   cannot resolve it. Expands a leading ~. This is the strict half of the path
+#   rule; path_abs adds the CWD anchor for a path that does not resolve.
+path_canon() {
+  local path="$1" resolved
+  path="${path/#\~/$HOME}"
+  resolved="$(readlink -f -- "$path" 2>/dev/null)" || return 1
+  [[ -n "$resolved" ]] || return 1
+  printf '%s' "$resolved"
+}
+
+# path_abs PATH
+#   Prints PATH as an absolute path. Uses path_canon when the path resolves and
+#   otherwise anchors a relative path at the invocation CWD. The file need not
+#   exist: a specified path's absence is reported by its reader, not by path
+#   construction.
+path_abs() {
+  local path="$1"
+  if path_canon "$path"; then return 0; fi
+  path="${path/#\~/$HOME}"
+  if [[ "$path" == /* ]]; then
+    printf '%s' "$path"
+  else
+    printf '%s/%s' "$PWD" "$path"
+  fi
+}
+
 # canonical_sandbox_dir SANDBOX_DIR
 #   Resolves SANDBOX_DIR to its canonical absolute form so any path spelling
 #   (absolute, ~-form, relative, symlink, trailing-slash, ./) of the same folder
@@ -40,14 +68,12 @@
 sandbox_dir_canon() {
   local dir="$1"
   [[ -n "$dir" ]] || { echo "sandbox_dir_canon: SANDBOX_DIR is empty" >&2; return 1; }
-  local expanded
-  expanded="${dir/#\~/$HOME}"   # expand a leading ~ before realpath
   local canon
-  if ! canon="$(readlink -f "$expanded" 2>/dev/null)"; then
+  if ! canon="$(path_canon "$dir")"; then
     echo "Error: cannot canonicalize SANDBOX_DIR: $dir" >&2
     return 1
   fi
-  echo "$canon"
+  printf '%s' "$canon"
 }
 
 # sandbox_dir_canon_assign VARIABLE DIR [MESSAGE]

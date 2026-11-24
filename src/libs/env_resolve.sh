@@ -20,6 +20,7 @@
 # file.
 
 _self_env_resolve_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$_self_env_resolve_dir/libs/common.sh"
 source "$_self_env_resolve_dir/libs/env.sh"
 
 # _record_field KEY ENV_FILE [REMEDY]
@@ -48,24 +49,6 @@ _env_missing() {
   fi
 }
 
-# _env_abs_path PATH
-#   Prints PATH as an absolute path. Canonicalizes through readlink -f when the
-#   path resolves; a path whose parent does not exist is anchored at the
-#   invocation CWD instead. The file need not exist, because a specified path's
-#   absence is reported by its reader, not by path construction.
-_env_abs_path() {
-  local path="$1" resolved
-  if resolved="$(readlink -f -- "$path" 2>/dev/null)"; then
-    printf '%s' "$resolved"
-    return 0
-  fi
-  if [[ "$path" == /* ]]; then
-    printf '%s' "$path"
-  else
-    printf '%s/%s' "$PWD" "$path"
-  fi
-}
-
 # default_env_file RAW_ENV_REF SANDBOX_DIR
 #   Prints the absolute .env path for the raw --env value under the single
 #   .env-path contract: an absolute RAW_ENV_REF is used as-is; a relative
@@ -80,7 +63,7 @@ default_env_file() {
   else
     path="${PWD}/${raw:-.env}"
   fi
-  _env_abs_path "$path"
+  path_abs "$path"
 }
 
 # env_resolve_one KEY ENV_FILE [REMEDY]
@@ -116,6 +99,8 @@ _ENV_ONBOARD_REMEDY="Run: agent-sandbox onboard --name=<name> --project=<path> -
 
 env_resolve_identity() {
   local expl_name="${1:-}" expl_project="${2:-}" expl_sandbox="${3:-}" env_ref
+  [[ -z "$expl_project" ]] || expl_project="$(path_abs "$expl_project")"
+  [[ -z "$expl_sandbox" ]] || expl_sandbox="$(path_abs "$expl_sandbox")"
   if [[ $# -ge 4 ]]; then
     env_ref="$4"
   else
@@ -144,7 +129,7 @@ env_resolve_identity() {
     # in the .env, so bootstrap SANDBOX from the CWD fallback first.
     ep="$(default_env_file "$env_ref" "")"
     _record_field SANDBOX_DIR "$ep" "$_ENV_ONBOARD_REMEDY" || return 1
-    SANDBOX_DIR="$REPLY"
+    SANDBOX_DIR="$(path_abs "$REPLY")"
   else
     SANDBOX_DIR="$expl_sandbox"
   fi
@@ -173,7 +158,7 @@ env_resolve_identity() {
   fi
   if $need_project && [[ -z "$expl_project" ]]; then
     _record_field PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY" || return 1
-    PROJECT_DIR="$REPLY"
+    PROJECT_DIR="$(path_abs "$REPLY")"
     export PROJECT_DIR
   elif $need_project; then
     export PROJECT_DIR="$expl_project"

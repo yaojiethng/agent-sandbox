@@ -124,6 +124,18 @@ test_sandbox_dir_canon_converges_spellings() {
   fi
 }
 
+# Given: a relative path whose parent does not exist
+# When:  path_abs runs from the fixture directory
+# Then:  it anchors the path at the invocation CWD
+# Asserts: the normalizer does not drop a path just because it cannot resolve.
+test_path_abs_anchors_a_missing_relative_path() {
+  local base="$FIXTURE_DIR/path_abs" out
+  mkdir -p "$base"
+  out="$(cd "$base" && path_abs "no/such/child")"
+  assert_eq "$base/no/such/child" "$out" \
+    "path_abs anchors a missing relative path at the CWD"
+}
+
 # ---------------------------------------------------------------------------
 # check_base_flags
 # ---------------------------------------------------------------------------
@@ -274,6 +286,7 @@ run_test test_sandbox_dir_canon_expands_tilde
 run_test test_sandbox_dir_canon_rejects_empty
 run_test test_sandbox_dir_canon_rejects_unresolvable
 run_test test_sandbox_dir_canon_converges_spellings
+run_test test_path_abs_anchors_a_missing_relative_path
 run_test test_check_base_flags_valid
 run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox

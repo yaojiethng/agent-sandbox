@@ -8,7 +8,7 @@ This document describes one agent run: the directory layout, the invocation path
 
 ## Directory Layout
 
-The harness operates against two directories: `PROJECT_DIR` (the project git repository) and `SANDBOX_DIR` (the harness workspace). Both are absolute paths supplied via `.env`. Their location relative to each other on the host is not constrained.
+The harness operates against two directories: `PROJECT_DIR` (the project git repository) and `SANDBOX_DIR` (the harness workspace). Both are absolute paths; `onboard` writes canonical values into `.env`, and the resolver normalizes an explicit flag or a record value through `path_abs`. Their location relative to each other on the host is not constrained.
 
 ```text
 SANDBOX_DIR/

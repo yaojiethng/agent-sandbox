@@ -84,7 +84,7 @@ template_version() {
 
 # resolve_and_validate VAR_NAME FLAG_NAME VALUE [REQUIRE_EXIST]
 #
-# Resolves a potentially-relative path via realpath, validates it's an
+# Resolves a potentially-relative path through path_abs, validates it is an
 # absolute WSL/Linux path, and writes the resolved value into the named
 # variable. Exits on invalid format or Windows paths.
 # If REQUIRE_EXIST is true, exits if the path does not exist.
@@ -92,8 +92,8 @@ resolve_and_validate() {
   local VAR="$1" FLAG="$2" VAL="$3" REQUIRE_EXIST="${4:-false}"
   local RESOLVED
 
-  # Reject a Windows path on the RAW value, before realpath resolves it:
-  # realpath turns `C:\Users\you\sandbox` into an absolute Linux path, which
+  # Reject a Windows path on the RAW value, before path_abs resolves it:
+  # path_abs turns `C:\Users\you\sandbox` into an absolute Linux path, which
   # the later Windows-format test could never see.
   if [[ "$VAL" =~ ^[A-Za-z]:[/\\] ]]; then
     echo "Error: $FLAG must be a WSL/Linux path, not a Windows path." >&2
@@ -102,20 +102,18 @@ resolve_and_validate() {
     exit 1
   fi
 
-  RESOLVED="$(realpath "$VAL" 2>/dev/null || true)"
-  if [[ -n "$RESOLVED" ]]; then
-    VAL="$RESOLVED"
-  elif [[ "$REQUIRE_EXIST" == true ]]; then
+  RESOLVED="$(path_abs "$VAL")"
+  if [[ "$REQUIRE_EXIST" == true && ! -e "$RESOLVED" ]]; then
     echo "Error: $FLAG path does not exist: $VAL" >&2
     exit 1
   fi
-
-  if [[ "$VAL" != /* ]]; then
+  if [[ "$VAL" != /* && ! -e "$RESOLVED" ]]; then
     echo "Error: $FLAG must be an absolute or resolvable path." >&2
     echo "  Got: $VAL" >&2
     exit 1
   fi
 
+  VAL="$RESOLVED"
   printf -v "$VAR" '%s' "$VAL"
 }
 

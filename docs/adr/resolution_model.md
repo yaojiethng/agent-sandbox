@@ -16,6 +16,18 @@
 | R6 | Three carrier classes | an input is an argument, a configuration value or session state, and the class decides whether it persists and where (promoted by the 2026-10-16 entry) |
 | R7 | Four channels, one writer per fact | configuration reaches a process by a named channel or not at all, and the writer of a fact is the party that owns it (promoted by the 2026-11-22 entry) |
 
+## 2026-11-24 -- The identity paths have one fixed form
+
+**Decision:** `path_abs` and its strict half `path_canon` in `src/libs/common.sh` are the one path rule. Both expand a leading `~` and canonicalize through `readlink -f` when the path resolves; `path_abs` anchors a relative path at the invocation CWD when it does not. `env_resolve_identity` applies it to `PROJECT_DIR`, `SANDBOX_DIR` and `ENV_FILE`, whether the value came from an explicit flag or the record; `default_env_file` uses it for the record path. `sandbox_dir_canon` uses `path_canon` for the sandbox path and still requires a resolvable directory. `onboard` writes canonical paths through it.
+
+**Rationale:** The identity triple crosses process and label boundaries. `ENV_FILE` was normalized in R12, but `PROJECT_DIR` and `SANDBOX_DIR` could reach a leaf or a label as a relative, `~`, symlink or trailing-slash spelling. Each entrypoint carried its own canonicalizer, so the same folder could have several values. One helper makes the resolver's output one value and leaves the entrypoint checks as callers of it.
+
+**Rejected alternatives:** normalize at each consumer -- rejected: every leaf and label writer would need the rule and could disagree; require absolute inputs -- rejected: it narrows accepted input to protect an internal invariant; normalize only `ENV_FILE` -- rejected: R12's reason applies to every path that crosses the same boundary; keep a separate sandbox canonicalizer -- rejected: two implementations drift on `~`, symlink and nonexistent-parent handling.
+
+**Edge cases / drivers:** `SANDBOX_DIR` may not exist at onboard; `path_abs` anchors it absolute, and the start/resume path still requires a directory. `PROJECT_DIR` existence is the caller's check. A relative path whose parent does not exist is anchored; `onboard` still rejects a relative sandbox that does not resolve, preserving its creation-time guard. `sandbox_dir_canon` still fails an unresolvable sandbox. `tests/test_env_resolve.sh` pins explicit, record and `~` spellings; `tests/test_common_lib.sh` pins the sandbox canonicalizer.
+
+Implementation: `src/libs/common.sh` (`path_canon`, `path_abs`, `sandbox_dir_canon`), `src/libs/env_resolve.sh` (`env_resolve_identity`, `default_env_file`), `scripts/onboard.sh` (`resolve_and_validate`), `tests/test_env_resolve.sh`, `tests/test_common_lib.sh`, `tests/test_onboard.sh`.
+
 ## 2026-11-24 -- The record read is one cached primitive
 
 **Decision:** The sandbox record is read through one public primitive, `record_get FILE KEY`, which sets `REPLY` and owns a private process cache. `record_open`, `env_record_view` and the public `ENV_RECORD` array are retired.
