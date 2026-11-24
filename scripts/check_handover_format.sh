@@ -3,8 +3,9 @@
 # Handover format gate over the handovers dated on or after the cutover, and
 # over any file named on the command line.
 #
-# Enforces the work-log convention's record shape: the frontmatter
-# fields and the section set. The scanner is scripts/lint/handover-format.mjs.
+# Enforces the work-log convention's record shape: the frontmatter fields, the
+# section set, and the track folder agreeing with the `milestone` field. The
+# scanner is scripts/lint/handover-format.mjs.
 #
 # Scope: the default scan reads the live handover folder, which the archive
 # keeps free of every record written before the frontmatter rule. A live record

@@ -1,9 +1,10 @@
 // Handover format gate.
 //
 // Enforces the work-log convention's record shape over handovers: the
-// frontmatter fields (date, milestone, type, status) and the section set (the
+// frontmatter fields (date, milestone, type, status), the section set (the
 // required sections, read from the work-log template, present; the forbidden
-// ones absent).
+// ones absent), and the track the record is filed under matching its
+// `milestone` field.
 //
 // Scope: the default scan reads the live handover folder, which the archive
 // keeps free of every record written before the cutover; a record there that
@@ -16,10 +17,10 @@
 // finding count is printed, never encoded in the exit code.
 
 import { readFileSync, existsSync } from "fs";
-import { dirname, join, resolve } from "path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
-import { load_layout, walk_kind } from "../../src/build/record-layout.mjs";
+import { kind_archive, kind_root, load_layout, walk_kind } from "../../src/build/record-layout.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -116,14 +117,46 @@ function display(file) {
 
 const findings = [];
 const files = [];
+let handoverBase = null;
+let handoverArchive = null;
 
 if (named.length > 0) {
   files.push(...named);
+  // A named fixture may sit outside a tree that declares the layout.
+  try {
+    const layout = load_layout(root);
+    handoverBase = kind_root(root, layout, "handover");
+    handoverArchive = kind_archive(root, layout, "handover");
+  } catch {
+    handoverBase = null;
+  }
 } else {
   // The default scan reads every live handover under the track folders declared
   // in `record-layout.json`, and skips the archive the declaration names.
   const layout = load_layout(root);
+  handoverBase = kind_root(root, layout, "handover");
+  handoverArchive = kind_archive(root, layout, "handover");
   files.push(...walk_kind(root, layout, "handover"));
+}
+
+/**
+ * The track folder a live record is filed under, or null when the path is
+ * outside the live handover tree, under the archive, or at the tree's root.
+ */
+function filedUnder(file) {
+  if (!handoverBase) return null;
+  const abs = resolve(file);
+  if (handoverArchive && (abs === handoverArchive || abs.startsWith(handoverArchive + sep))) return null;
+  const rel = relative(handoverBase, abs);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) return null;
+  const parts = rel.split(sep).filter(Boolean);
+  return parts.length > 1 ? parts[0] : null;
+}
+
+/** The line a frontmatter key sits on, for a finding's position. */
+function fieldLine(text, key) {
+  const index = text.split("\n").findIndex((line) => line.startsWith(`${key}:`));
+  return index < 0 ? 1 : index + 1;
 }
 
 let checked = 0;
@@ -175,7 +208,21 @@ for (const file of files) {
   }
   if (fields.status !== undefined && !STATUSES.includes(String(fields.status))) {
     findings.push({ rel, line: 1, msg: `\`status\` is not one of ${STATUSES.join(", ")}: ${fields.status}` });
-  }  if (String(fields.status) === "Closed") {
+  }
+
+  const track = filedUnder(file);
+  if (track && fields.milestone !== undefined) {
+    const value = String(fields.milestone).trim();
+    if (value !== track && !value.startsWith(`${track} - `)) {
+      findings.push({
+        rel,
+        line: fieldLine(text, "milestone"),
+        msg: `\`milestone\` names "${value}" but the record is filed under ${track}`,
+      });
+    }
+  }
+
+  if (String(fields.status) === "Closed") {
     const section = sectionBody(text, "Findings");
     if (section) {
       const rows = section.lines

@@ -19,6 +19,9 @@
 #   a closed findings row with no destination -- rc 1; the row is named
 #   a closed findings row triaged `late` -- rc 0, so the late path is legal
 #   an active findings row with no destination -- rc 0
+#   a folder whose `milestone` names another track -- rc 1; both are named
+#   a folder matching the `milestone` field -- rc 0
+#   a record under archive/ with a mismatched field -- rc 0, the archive is exempt
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with HANDOVER_FORMAT_SCAN_ROOT so the repository's own
@@ -163,7 +166,7 @@ test_default_scan_skips_archive() {
 test_default_scan_walks_track_folders() {
   local root="$FIXTURE_DIR/t13" rc=0 out
   seed_layout "$root"
-  write_handover "$root/devlog/handovers/M3.5.1/20261004-01-workflow-x.md" 2026-10-04
+  write_handover "$root/devlog/handovers/T1/20261004-01-workflow-x.md" 2026-10-04
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a nested handover is in the default scan'
   assert_contains "$out" 'clean across 1 handover' 'the nested record is the subject'
@@ -173,7 +176,7 @@ test_default_scan_skips_nested_archive() {
   local root="$FIXTURE_DIR/t14" rc=0 out
   seed_layout "$root"
   write_bold_handover "$root/devlog/handovers/archive/20260101-01-workflow-old.md"
-  write_handover "$root/devlog/handovers/M3.5.1/20261004-01-workflow-x.md" 2026-10-04
+  write_handover "$root/devlog/handovers/T1/20261004-01-workflow-x.md" 2026-10-04
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a nested archive record is skipped'
   assert_contains "$out" 'clean across 1 handover' 'only the live nested record is checked'
@@ -295,6 +298,36 @@ test_missing_required_part_fails() {
   assert_contains "$out" 'missing required section `## Decisions`' 'the missing part is named'
 }
 
+test_folder_milestone_mismatch_fails() {
+  local root="$FIXTURE_DIR/t15" file="$FIXTURE_DIR/t15/devlog/handovers/T1/20261004-01-workflow-x.md" rc=0 out
+  seed_layout "$root"
+  write_handover "$file" 2026-10-04
+  sed -i 's/^milestone: T1 - Test$/milestone: T2 - Test/' "$file"
+  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'a record filed under one track and named another fails'
+  assert_contains "$out" 'filed under T1' 'the folder is named'
+  assert_contains "$out" 'T2 - Test' 'the field is named'
+}
+
+test_folder_milestone_match_passes() {
+  local root="$FIXTURE_DIR/t16" rc=0 out
+  seed_layout "$root"
+  write_handover "$root/devlog/handovers/T1/20261004-01-workflow-x.md" 2026-10-04
+  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a record whose field names its folder passes'
+  assert_contains "$out" 'clean across 1 handover' 'the nested record is the only subject'
+}
+
+test_archive_folder_mismatch_exempt() {
+  local root="$FIXTURE_DIR/t17" file="$FIXTURE_DIR/t17/devlog/handovers/archive/20260101-01-workflow-old.md" rc=0 out
+  seed_layout "$root"
+  write_handover "$file" 2026-10-04
+  sed -i 's/^milestone: T1 - Test$/milestone: T9 - Test/' "$file"
+  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a record under archive/ is not held to a track'
+  assert_contains "$out" 'clean across 1 handover' 'the named archive record is the only subject'
+}
+
 run_test test_conforming_handover_passes
 run_test test_bold_header_flagged
 run_test test_forbidden_section_flagged
@@ -313,6 +346,9 @@ run_test test_missing_required_part_fails
 run_test test_closed_findings_row_without_destination_fails
 run_test test_closed_findings_row_triaged_late_passes
 run_test test_active_findings_row_without_destination_passes
+run_test test_folder_milestone_mismatch_fails
+run_test test_folder_milestone_match_passes
+run_test test_archive_folder_mismatch_exempt
 run_test test_completed_without_criteria_fails
 run_test test_completed_before_the_rule_passes
 
