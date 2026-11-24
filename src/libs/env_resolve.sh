@@ -100,8 +100,8 @@ env_resolve_one() {
   printf '%s' "$REPLY"
 }
 
-# env_resolve_identity EXPLICIT_NAME EXPLICIT_DIR EXPLICIT_SANDBOX [ENV_REF [FIELDS...]]
-#   Resolves the requested identity fields (default: name dir sandbox). An
+# env_resolve_identity EXPLICIT_NAME EXPLICIT_PROJECT EXPLICIT_SANDBOX [ENV_REF [FIELDS...]]
+#   Resolves the requested identity fields (default: name project sandbox). An
 #   empty explicit value means "not given". ENV_REF is the raw --env value
 #   (absolute, sandbox-relative, or empty) normalized via default_env_file.
 #   An explicit fourth argument is authoritative even when it is empty; only an
@@ -115,7 +115,7 @@ env_resolve_one() {
 _ENV_ONBOARD_REMEDY="Run: agent-sandbox onboard --name=<name> --project=<path> --sandbox=<path>"
 
 env_resolve_identity() {
-  local expl_name="${1:-}" expl_dir="${2:-}" expl_sandbox="${3:-}" env_ref
+  local expl_name="${1:-}" expl_project="${2:-}" expl_sandbox="${3:-}" env_ref
   if [[ $# -ge 4 ]]; then
     env_ref="$4"
   else
@@ -126,14 +126,14 @@ env_resolve_identity() {
     shift 4
     fields=("$@")
   fi
-  if [[ ${#fields[@]} -eq 0 ]]; then fields=(name dir sandbox); fi
+  if [[ ${#fields[@]} -eq 0 ]]; then fields=(name project sandbox); fi
 
-  local need_name=false need_dir=false need_sandbox=false
+  local need_name=false need_project=false need_sandbox=false
   local f
   for f in "${fields[@]}"; do
     case "$f" in
       name)    need_name=true ;;
-      dir)     need_dir=true ;;
+      project) need_project=true ;;
       sandbox) need_sandbox=true ;;
     esac
   done
@@ -171,12 +171,12 @@ env_resolve_identity() {
   elif $need_name; then
     export PROJECT_NAME="$expl_name"
   fi
-  if $need_dir && [[ -z "$expl_dir" ]]; then
+  if $need_project && [[ -z "$expl_project" ]]; then
     _record_field PROJECT_DIR "$ep" "$_ENV_ONBOARD_REMEDY" || return 1
     PROJECT_DIR="$REPLY"
     export PROJECT_DIR
-  elif $need_dir; then
-    export PROJECT_DIR="$expl_dir"
+  elif $need_project; then
+    export PROJECT_DIR="$expl_project"
   fi
   export PROJECT_NAME PROJECT_DIR SANDBOX_DIR
   return 0

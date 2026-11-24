@@ -35,12 +35,12 @@ source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
 #   name | leaf | identity | leading args | resolver | summary
 #
 #   leaf      -- the script the subcommand runs, relative to the repo root.
-#   identity  -- the dispatcher-parsed fields the leaf takes, from
-#                `name project sandbox env`. The dispatcher parses one spec for
-#                all four, so this column decides what it forwards; the fields
-#                other than `env` also decide the resolver's required set, and
-#                `env` requires the `identity` resolver because that is what
-#                exports the normalized ENV_FILE.
+#   identity  -- the dispatcher-parsed fields the leaf takes, from the field
+#                vocabulary in CLI_FIELDS (`name project sandbox env`). The
+#                dispatcher parses one spec for all four, so this column decides
+#                what it forwards; the fields other than `env` also decide the
+#                resolver's required set, and `env` requires the `identity`
+#                resolver because that is what exports the normalized ENV_FILE.
 #   args      -- a leading positional argument the leaf expects before its flags
 #                (`start_agent.sh` takes its mode that way).
 #   resolver  -- `identity` runs the resolver on the declared fields; `base`
@@ -51,6 +51,19 @@ source "$AGENT_SANDBOX_REPO/src/libs/env_resolve.sh"
 #
 # Order is the workflow's: onboard, then build and run, then the workflows,
 # then the export. The printed list and the JSON keep that order.
+# The field vocabulary, one row per field:
+#   field | resolver mode | forwarded flag | value variable
+#
+# `project` is the resolver's selector and the leaf's --project, so the table
+# carries no name translation. `env` is forward-only: the resolver always
+# exports ENV_FILE and has no mode to request, so its resolver cell is empty.
+CLI_FIELDS=(
+  "name|name|--name|PROJECT_NAME"
+  "project|project|--project|PROJECT_DIR"
+  "sandbox|sandbox|--sandbox|SANDBOX_DIR"
+  "env||--env|ENV_FILE"
+)
+
 CLI_CATALOG=(
   "onboard|scripts/onboard.sh|name project sandbox||base|Create the project's record from the operator's inputs"
   "build|scripts/build.sh|name project sandbox||identity|Build the provider image chain for the project"
@@ -93,6 +106,34 @@ catalog_row() {
   return 1
 }
 
+# catalog_field FIELD  --  the CLI_FIELDS row for FIELD, or nothing and status 1.
+# A field the table does not declare never reaches a resolver mode or a flag.
+catalog_field() {
+  local row
+  for row in "${CLI_FIELDS[@]}"; do
+    if [[ "${row%%|*}" == "$1" ]]; then
+      printf '%s\n' "$row"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# catalog_validate  --  fail when a catalog row names a field outside the
+# vocabulary. Runs before any help or dispatch surface derives from the table.
+catalog_validate() {
+  local row name leaf ident largs resolve summary field
+  for row in "${CLI_CATALOG[@]}"; do
+    IFS='|' read -r name leaf ident largs resolve summary <<< "$row"
+    for field in $ident; do
+      if ! catalog_field "$field" >/dev/null; then
+        echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
+        return 1
+      fi
+    done
+  done
+}
+
 # subcommand_names SEP  --  the declared names, in catalog order, joined by SEP.
 subcommand_names() {
   local sep="$1" row out=""
@@ -106,8 +147,8 @@ subcommand_names() {
 # print_json  --  the catalog as JSON, for a programmatic reader (R8). Nothing
 # is materialized: this printing is the rendering, so there is no file to drift.
 print_json() {
-  local name leaf ident largs resolve summary first=1
-  local -a ident_words=() largs_words=()
+  local name leaf ident largs resolve summary field field_row flag first=1
+  local -a ident_words=() flags_words=() largs_words=()
   printf '{\n  "schema": 1,\n  "subcommands": [\n'
   while IFS='|' read -r name leaf ident largs resolve summary; do
     [[ $first -eq 1 ]] || printf ',\n'
@@ -116,8 +157,18 @@ print_json() {
     printf '      "name": %s,\n' "$(json_string "$name")"
     printf '      "leaf": %s,\n' "$(json_string "$leaf")"
     ident_words=(); read -ra ident_words <<< "$ident"
+    flags_words=()
+    for field in "${ident_words[@]}"; do
+      field_row="$(catalog_field "$field")" || {
+        echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
+        exit 1
+      }
+      IFS='|' read -r _ _ flag _ <<< "$field_row"
+      flags_words+=("$flag")
+    done
     largs_words=(); read -ra largs_words <<< "$largs"
     printf '      "identity": %s,\n' "$(json_array "${ident_words[@]}")"
+    printf '      "flags": %s,\n' "$(json_array "${flags_words[@]}")"
     printf '      "args": %s,\n' "$(json_array "${largs_words[@]}")"
     printf '      "summary": %s\n' "$(json_string "$summary")"
     printf '    }'
@@ -179,7 +230,7 @@ route_help() {
 # forward the fields and the leading argument it declares, and hand over the
 # passthrough args. exec keeps the leaf's exit status the caller's own.
 dispatch() {
-  local sub="$1" row name leaf ident largs resolve summary field
+  local sub="$1" row name leaf ident largs resolve summary field field_row mode flag value_var
   local -a forwarded=() modes=() lead=()
   if ! row="$(catalog_row "$sub")"; then
     echo "Unknown subcommand: $sub"
@@ -187,14 +238,15 @@ dispatch() {
     exit 1
   fi
   IFS='|' read -r name leaf ident largs resolve summary <<< "$row"
-  # The resolver mode a declared field implies; a new field is an arm here, not
-  # a second list beside it.
+  # The resolver mode and forwarded flag a field implies come from CLI_FIELDS;
+  # a new field is a row there, not a second list beside it.
   for field in $ident; do
-    case "$field" in
-      name)    modes+=("name") ;;
-      project) modes+=("dir") ;;
-      sandbox) modes+=("sandbox") ;;
-    esac
+    field_row="$(catalog_field "$field")" || {
+      echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
+      exit 1
+    }
+    IFS='|' read -r _ mode _ _ <<< "$field_row"
+    [[ -z "$mode" ]] || modes+=("$mode")
   done
   [[ -z "$largs" ]] || lead=("$largs")
 
@@ -209,12 +261,12 @@ dispatch() {
   # The record path is the resolver's normalized absolute ENV_FILE, so the leaf
   # opens the same file the resolver read rather than resolving --env again.
   for field in $ident; do
-    case "$field" in
-      name)    forwarded+=("--name=$PROJECT_NAME") ;;
-      project) forwarded+=("--project=$PROJECT_DIR") ;;
-      sandbox) forwarded+=("--sandbox=$SANDBOX_DIR") ;;
-      env)     forwarded+=("--env=$ENV_FILE") ;;
-    esac
+    field_row="$(catalog_field "$field")" || {
+      echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
+      exit 1
+    }
+    IFS='|' read -r _ _ flag value_var <<< "$field_row"
+    forwarded+=("$flag=${!value_var}")
   done
   exec bash "$AGENT_SANDBOX_REPO/$leaf" "${lead[@]}" "${forwarded[@]}" "${PASSTHROUGH[@]}"
 }
@@ -228,6 +280,8 @@ dispatch() {
 main() {
   local SUBCOMMAND="${1:-}"
   shift || true
+
+  catalog_validate || exit 1
 
   if [[ -z "$SUBCOMMAND" ]]; then
     echo "Usage: agent-sandbox <$(subcommand_names '|')> <flags>"

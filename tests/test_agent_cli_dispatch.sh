@@ -134,6 +134,26 @@ test_json_rows_carry_a_summary() {
   assert_empty "$blank" 'every row carries a summary'
 }
 
+# Given: the start row
+# When:  help --json renders it
+# Then:  identity is the field vocabulary and flags is the forwarded leaf set
+# Asserts: the catalogue's field names and the flags it forwards are both
+#          visible, so a consumer does not re-derive the mapping.
+test_json_renders_the_identity_vocabulary_and_flags() {
+  local row
+  row="$(cli help --json | jq -c '.subcommands[] | select(.name=="start") | {identity, flags}')"
+  assert_eq '{"identity":["name","project","sandbox","env"],"flags":["--name","--project","--sandbox","--env"]}' \
+    "$row" 'start renders the field vocabulary and its flags'
+}
+
+# The two renderings are projections of one table, so every row has one flag
+# for each identity field. A missing table row would shorten one side.
+test_json_rows_carry_one_flag_per_identity_field() {
+  local bad
+  bad="$(cli help --json | jq -r '.subcommands[] | select((.identity | length) != (.flags | length)) | .name')"
+  assert_empty "$bad" 'every row has one forwarded flag per identity field'
+}
+
 # -h is the same request as --help, and the dispatch stays out of a sourced file.
 test_short_help_is_the_same_request() {
   local name rc out
@@ -153,13 +173,13 @@ test_sourcing_the_dispatcher_dispatches_nothing() {
   assert_eq "function" "$out" 'and defines main for the direct-call guard'
 }
 
-# A declared identity field is a flag its own leaf accepts.
-test_declared_identity_fields_appear_in_the_leaf_help() {
-  local name field missing=""
-  while IFS=$'\t' read -r name field; do
-    cli "$name" --help | grep -q -- "--$field" || missing+="$name:$field "
-  done < <(cli help --json | jq -r '.subcommands[] | .name as $n | .identity[] | "\($n)\t\(. )"' | tr -d ' ')
-  assert_empty "$missing" 'every declared identity field appears in its leaf help'
+# A declared field forwards a flag its own leaf accepts.
+test_declared_flags_appear_in_the_leaf_help() {
+  local name flag missing=""
+  while IFS=$'\t' read -r name flag; do
+    cli "$name" --help | grep -q -- "$flag" || missing+="$name:$flag "
+  done < <(cli help --json | jq -r '.subcommands[] | .name as $n | .flags[] | "\($n)\t\(. )"')
+  assert_empty "$missing" 'every declared field forwards a flag its leaf accepts'
 }
 
 # The dispatcher execs the leaf, so the leaf's status is the caller's status.
@@ -254,9 +274,11 @@ run_test test_json_renders_the_declared_set
 run_test test_json_is_valid_and_carries_a_schema
 run_test test_json_rows_carry_a_leaf_that_exists
 run_test test_json_rows_carry_a_summary
+run_test test_json_renders_the_identity_vocabulary_and_flags
+run_test test_json_rows_carry_one_flag_per_identity_field
 run_test test_short_help_is_the_same_request
 run_test test_sourcing_the_dispatcher_dispatches_nothing
-run_test test_declared_identity_fields_appear_in_the_leaf_help
+run_test test_declared_flags_appear_in_the_leaf_help
 run_test test_leaf_exit_status_reaches_the_caller
 run_test test_resolved_identity_reaches_the_leaf
 run_test test_dispatch_forwards_the_record_and_leading_argument

@@ -70,14 +70,14 @@ Every CLI tool must implement `--help` and display:
 
 ### Dispatcher-level help contract (the CLI subcommand dispatcher)
 
-The `agent-sandbox` dispatcher and the leaf commands it routes to make one uniform help promise across every subcommand. The rule set is [`cli_surface.md`](../adr/cli_surface.md) R10, and the dispatcher reads it from one catalog: a subcommand's leaf path, identity fields, leading args and one-line summary are declared once, so the help index, the no-argument message and the dispatch cannot disagree.
+The `agent-sandbox` dispatcher and the leaf commands it routes to make one uniform help promise across every subcommand. The rule set is [`cli_surface.md`](../adr/cli_surface.md) R10, and the dispatcher reads it from one catalog: a subcommand's leaf path, the field vocabulary and the flags it forwards, leading args and one-line summary are declared once, so the help index, the no-argument message and the dispatch cannot disagree.
 
 What a leaf author does:
 
 - **Delegate before validating.** `--help` and `-h` route to the leaf's own page and exit 0 before any required-arg check, so `agent-sandbox <sub> --help` and `bash scripts/<sub>.sh --help` both work without flags. `parse_args_or_exit` is the one mapping: help exits 0, a usage error exits 1. `usage` is a pure reporter: it prints and returns.
 - **Own the page.** The dispatcher `exec`s the leaf's help and duplicates no text; a change to a shared `--help` surface is made once, where the flags are declared.
-- **The index sentence is the catalog's.** A row's summary is written there, not copied from a leaf page: a leaf's first usage line is its `Usage:` line, so there is nothing to hold equal. What the gate reads from a leaf is its own `--help`, and a declared identity field must appear there.
-- **`help` is itself a subcommand.** `agent-sandbox help`, `help --help` and `help -h` print the index; `help <sub>` and `<sub> --help` are equivalent. `help --json` prints the same rows as JSON for a programmatic reader.
+- **The index sentence is the catalog's.** A row's summary is written there, not copied from a leaf page: a leaf's first usage line is its `Usage:` line, so there is nothing to hold equal. What the gate reads from a leaf is its own `--help`, and a declared field's forwarded flag must appear there.
+- **`help` is itself a subcommand.** `agent-sandbox help`, `help --help` and `help -h` print the index; `help <sub>` and `<sub> --help` are equivalent. `help --json` prints the same rows as JSON for a programmatic reader, rendering the field vocabulary as `identity` and the forwarded flags as `flags`.
 
 ## 5. Exit Codes
 

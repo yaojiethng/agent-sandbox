@@ -234,7 +234,7 @@ test_resolve_exports_an_absolute_env_file() {
   local base="$FIXTURE_DIR/resolve_absolute" out
   mkdir -p "$base/sbx" "$base/proj"
   printf 'PROJECT_NAME=probe\nPROJECT_DIR=%s/proj\nSANDBOX_DIR=%s/sbx\n' "$base" "$base" > "$base/sbx/session.env"
-  out=$(cd "$base" && set -e; env_resolve_identity "" "" "sbx" "session.env" name dir sandbox >/dev/null && printf '%s' "$ENV_FILE") || out="FAILED"
+  out=$(cd "$base" && set -e; env_resolve_identity "" "" "sbx" "session.env" name project sandbox >/dev/null && printf '%s' "$ENV_FILE") || out="FAILED"
   assert_eq "$base/sbx/session.env" "$out" "the resolver exports an absolute ENV_FILE"
 }
 
@@ -263,10 +263,42 @@ test_relative_env_without_sandbox_bootstraps_from_cwd() {
   mkdir -p "$dir"
   printf 'PROJECT_NAME=cwdprobe\nPROJECT_DIR=%s/proj\nSANDBOX_DIR=%s\n' "$dir" "$dir" > "$dir/.env"
   printf 'PROJECT_NAME=envprobe\nPROJECT_DIR=%s/proj\nSANDBOX_DIR=%s\n' "$dir" "$dir" > "$dir/session.env"
-  out=$(set -e; cd "$dir" && env_resolve_identity "" "" "" "session.env" name dir sandbox \
+  out=$(set -e; cd "$dir" && env_resolve_identity "" "" "" "session.env" name project sandbox \
     && printf '%s|%s' "$PROJECT_NAME" "$ENV_FILE") || out="FAILED"
   assert_eq "envprobe|$dir/session.env" "$out" \
     "a relative --env bootstraps the sandbox from the CWD record"
+}
+
+# Given: a fixture .env and only the project selector
+# When:  env_resolve_identity resolves that field
+# Then:  PROJECT_DIR is the record's value
+# Asserts: `project` is the resolver's selector for the project path.
+test_resolve_project_is_the_selector() {
+  local dir="$FIXTURE_DIR/project_selector" OUT RC=0
+  make_envfile "$dir" envname "$dir/envproj" "$dir"
+  OUT=$(set -e; env_resolve_identity "" "" "$dir" "$dir/.env" project \
+        && printf '%s' "$PROJECT_DIR") || RC=$?
+  if [[ $RC -eq 0 && "$OUT" == "$dir/envproj" ]]; then
+    pass "project is the resolver selector for PROJECT_DIR"
+  else
+    fail "project selector broken: rc=$RC out='$OUT'"
+  fi
+}
+
+# Given: a fixture .env and only the retired dir selector
+# When:  env_resolve_identity resolves that field
+# Then:  PROJECT_DIR stays empty
+# Asserts: `dir` is no longer a resolver selector; the rename is not an alias.
+test_resolve_dir_is_not_a_selector() {
+  local dir="$FIXTURE_DIR/dir_selector" OUT RC=0
+  make_envfile "$dir" envname "$dir/envproj" "$dir"
+  OUT=$(set -e; unset PROJECT_DIR; env_resolve_identity "" "" "$dir" "$dir/.env" dir \
+        && printf '%s' "${PROJECT_DIR:-}") || RC=$?
+  if [[ $RC -eq 0 && -z "$OUT" ]]; then
+    pass "dir is no longer a resolver selector"
+  else
+    fail "dir selector still resolves PROJECT_DIR: rc=$RC out='$OUT'"
+  fi
 }
 
 run_test test_relative_env_without_sandbox_bootstraps_from_cwd
@@ -281,6 +313,8 @@ run_test test_resolve_env_file_in_provided_sandbox_dir
 run_test test_resolve_env_file_cwd_fallback
 run_test test_resolve_ignores_leaked_plain_export
 run_test test_resolve_sandbox_env_var_is_not_a_level
+run_test test_resolve_project_is_the_selector
+run_test test_resolve_dir_is_not_a_selector
 run_test test_resolve_one_remedy_is_the_callers
 run_test test_resolve_default_env_absent_is_not_specified
 run_test test_resolve_specified_env_absent_names_the_path

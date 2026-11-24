@@ -83,7 +83,7 @@ Builds images. Safe to run at any time; does not start or stop any containers.
 
 Each subcommand runs as its own process: `build` through `scripts/build.sh`, and the workflow verbs (`apply`, `draft`, `confirm`, `reject`) through `scripts/workflows/`. Each parses its own flags, so each one also runs directly, as in `bash scripts/workflows/apply.sh --project=<path> --sandbox=<path> --diff=<file>`.
 
-The surface is discoverable from the CLI itself: `agent-sandbox help` prints the subcommand index, and `agent-sandbox help --json` renders the same rows -- name, leaf path, the identity fields that leaf takes, its leading argument and a one-line summary -- for a script that reads it.
+The surface is discoverable from the CLI itself: `agent-sandbox help` prints the subcommand index, and `agent-sandbox help --json` renders the same rows -- name, leaf path, the resolver fields the row names, the leaf flags they forward, its leading argument and a one-line summary -- for a script that reads it.
 
 ### `make prune [STALE=sandbox] [PROVIDER=<n>] [AGE_DAYS=<n>] [INTERACTIVE=1] [DRY_RUN=1]`
 

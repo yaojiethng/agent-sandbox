@@ -1,6 +1,6 @@
 # The CLI Surface
 
-**Current:** 2026-11-22
+**Current:** 2026-11-24
 
 The CLI surface is the `agent-sandbox` front door, the leaf command behind each subcommand, and the contract the two share: which subcommands exist and where they live, how a leaf reads its flags, what a leaf takes from the identity, and what a call exits with.
 
@@ -21,6 +21,7 @@ The CLI surface is the `agent-sandbox` front door, the leaf command behind each 
 | R11 | The exit code is a verdict | `0` success, `1` user error, `2+` system error; a magnitude never rides in the code (2026-11-22) |
 | R12 | The record path is absolute | `default_env_file` normalizes every branch and the resolver exports `ENV_FILE` as an absolute path, so the resolver and the process it hands the path to name the same file (2026-11-23) |
 | R13 | The dispatcher hands over resolved argv | The leaf receives the row's leading argument first, the resolved identity by value, the normalized absolute `--env`, and the passthrough arguments; an explicit empty env ref is empty rather than a fallback (2026-11-23) |
+| R14 | One field vocabulary | A catalogue row names fields from `CLI_FIELDS`, which maps each to its resolver mode, forwarded flag and value variable; an unknown field fails before help or dispatch (2026-11-24) |
 
 ## The resolution and dispatch contract
 
@@ -35,6 +36,24 @@ The contract is stated once here; the gate names the carrier that enforces each 
 | C5 | An explicit empty env ref is empty; only an omitted one falls back to `ENV_REL`. | resolver | `tests/test_env_resolve.sh` |
 | C6 | The leaf receives the row's leading argument first, the resolved identity by value, and the passthrough arguments after the declared ones. | dispatch | `tests/test_agent_cli_dispatch.sh` |
 | C7 | A relative `--env` with no explicit sandbox bootstraps `SANDBOX_DIR` from the CWD record, then opens the record the ref names. | resolver | `tests/test_env_resolve.sh` |
+| C8 | Every catalogue field is declared in `CLI_FIELDS`; an unknown field fails validation before help or dispatch. | catalogue | `tests/test_resolution_contract.sh` |
+
+## 2026-11-24 -- The catalogue's fields are one vocabulary with one mapping
+
+**Decision:** The catalogue's identity column names fields from one vocabulary: `name`, `project`, `sandbox`, and the forward-only `env`. `CLI_FIELDS` is the one table, one row per field: field, resolver mode, forwarded flag and value variable. `project` is both the resolver's selector and the leaf's `--project`, so no translation remains; `env` has no resolver mode because the resolver always exports `ENV_FILE`. `help --json` renders `identity` as the field vocabulary and `flags` as the forwarded leaf flags. `catalog_validate` runs in `main` before any help or dispatch surface derives from the table, and `dispatch` reads the same table.
+
+**Rationale:** The catalogue named `project` while the resolver selected the same field as `dir`, so `dispatch` carried two `case` lists to translate the name and build the flags. A field added to one list and missed in the other forwarded nothing, and a row naming an unknown field was silently ignored. One vocabulary makes the catalogue and resolver agree, one table makes the mapping single, and validation turns an unknown field into a named failure before help or dispatch can render it. The resolver selector `dir` is renamed to `project`, so the resolver's default field list is `name project sandbox`. No leaf flag changes: `--project` stays the operator surface under R2.
+
+**Rejected alternatives:**
+
+- *Keep `dir` and translate to `--project`* -- rejected: the catalogue column would still not be the resolver's vocabulary, and the translation would remain a second list.
+- *Add `project` as an alias for `dir`* -- rejected: two names for one selector make a typo indistinguishable from a valid field and leave the resolver's vocabulary ambiguous.
+- *Render only `flags` in JSON* -- rejected: a consumer would lose the resolver field the dispatcher parses and would have to invert the mapping.
+- *Validate only in `dispatch`* -- rejected: `help` and `help --json` would still render an invalid catalogue, so the declaration error would reach the wrong surface.
+
+**Edge cases / drivers:** `env` keeps an empty resolver cell because `ENV_FILE` is always exported and has no mode to request. `onboard` stays on the `base` resolver with `name project sandbox`; its fields require the base args without resolving a record it creates. An unknown field prints the row name and the field, then exits 1 before help. The JSON schema stays 1; `flags` is an additive key. The contract gate injects a field outside the table into a row and asserts the failure, and the mutation rows prove the env source, the project value and the validation call are load-bearing.
+
+Implementation: `scripts/agent-sandbox.sh` (`CLI_FIELDS`, `catalog_field`, `catalog_validate`, `dispatch`, `print_json`), `src/libs/env_resolve.sh` (the field selector), `tests/test_resolution_contract.sh`, `tests/test_agent_cli_dispatch.sh`, `tests/test_env_resolve.sh`, `tests/mutations/catalog.jsonl`.
 
 ## 2026-11-23 -- The dispatcher hands over resolved argv
 
@@ -45,6 +64,8 @@ The contract is stated once here; the gate names the carrier that enforces each 
 **Rejected alternatives:** override `exec` in a sourced shell -- rejected: it stops one step short of the process boundary the contract describes. Pass a snapshot of every record value by value -- rejected: the dispatcher would have to know every leaf's settings, and `run_agent` still reads keys the dispatcher does not own.
 
 **Edge cases / drivers:** a row that declares `env` must use the identity resolver, because `ENV_FILE` is what resolution exports. A row that declares no `env` forwards no path. The fixture-root test runs the real dispatcher and a stub leaf, so the assertion is on the argv the leaf process receives. Mutation rows D11-D13 prove the leading argument, the resolver's env ref and the normalized path are each load-bearing.
+
+**Corrected 2026-11-24:** D13 now mutates the `CLI_FIELDS` env source; D14 and D15 cover the validation call and the `project` value mapping. D11 and D12 keep their subjects.
 
 Implementation: `scripts/agent-sandbox.sh` (`dispatch`), `src/libs/env_resolve.sh` (`env_resolve_identity`), `tests/test_agent_cli_dispatch.sh`, `tests/test_env_resolve.sh`, `tests/mutations/catalog.jsonl`.
 
