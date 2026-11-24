@@ -40,7 +40,7 @@ The record's shape is the project's template; its controlled vocabulary is the p
 | the filename follows the pattern | the convention |
 | the record is inside the format window, or exempt | the convention |
 
-Read `.agents/skills/work-log/SKILL.md` for the vocabulary, the section roles and the window, and `.agents/skills/work-log/assets/handover.md` for the shape.
+Read `.agents/skills/work-log/SKILL.md` for the vocabulary, the format and the window, and `.agents/skills/work-log/assets/handover.md` for the shape.
 
 ## Output shape
 

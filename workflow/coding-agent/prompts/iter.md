@@ -22,11 +22,11 @@ read devlog/roadmap.md
 
 ## Roadmap maintenance check
 
-Run before creating the handover. If the roadmap still shows a completed sub-milestone as active, run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md` and apply its report after creating this handover but before presenting the scope proposal at the scope gate. Record the maintenance execution in this handover's Completed table, and present the maintained roadmap state as part of the scope proposal.
+Run before creating the handover. If the roadmap still shows a completed sub-milestone as active, run the [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) skill over `devlog/roadmap.md` and apply its report after creating this handover but before presenting the scope proposal at the scope gate. Record the maintenance execution as a finding in this handover, and present the maintained roadmap state as part of the scope proposal.
 
 ## Directive
 
-Read the prior handover's Objective and Findings before evaluating the directive. A missing directive is an unmet scope-gate precondition: the roadmap is the sole task list, and the agent does not derive a directive from the handover.
+Read the prior handover before evaluating the directive. A missing directive is an unmet scope-gate precondition: the roadmap is the sole task list, and the agent does not derive a directive from the handover.
 
 The type vocabulary is the `work-log` convention's, `.agents/skills/work-log/SKILL.md`. This table is the directive word a caller may write.
 
@@ -94,9 +94,9 @@ After design is confirmed, read in order: the roadmap task, the design decisions
 
 The gate confirms scope **and** acceptance criteria together, and clears on a single operator approval.
 
-Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (for example `Not started` when starting an iteration), update it to `In progress` and record the change in the handover's Completed table. The promotion rule is the `roadmap-maintenance` skill's promotion invariant.
+Before presenting the scope, run the promotion check: read the Milestone Summary table, identify the milestone this iteration targets (from roadmap frontmatter or iteration context), and if the target's status implies less progress than this iteration intends (for example `Not started` when starting an iteration), update it to `In progress` and record the change as a finding in the handover. The promotion rule is the `roadmap-maintenance` skill's promotion invariant.
 
-Present the handover's `Decisions pending` table with the scope, so the operator answers in the reply that releases it. A table holding only the canonical marker needs no presentation; say so in one line.
+A question the operator still owns is asked with the scope, so the answer arrives in the release. A question that stays open becomes a roadmap row, and the iteration does not open.
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
@@ -151,7 +151,7 @@ The invariants this step must not break are in [`iteration_protocol.md`](/opt/sa
 
 The handover write-back fires at three moments:
 
-- **On task completion:** mark the completed task in the handover's Scope and Completed; check whether findings from it belong in Findings before starting the next task.
+- **On task completion:** mark the completed task on the roadmap and record the criterion's result in the acceptance table; check whether findings from it belong in the record's findings before starting the next task.
 - **On discovery:** a bug, contradiction, design gap, obstacle, or new file in scope is a Findings row in the same turn it is found, before it is mentioned in chat; if it changes the approach, surface it in chat before proceeding.
 - **On steering received:** operator instruction that changes the scope of a current or future iteration goes to Findings before resuming; if it creates a future task, it is written back to the roadmap as an open row. The row states the intent and leaves the method to the doer, per `$AGENT_HOME/agent/skills/communication-principle-state-intent-delegate-method/SKILL.md`.
 
@@ -159,10 +159,10 @@ The handover write-back fires at three moments:
 
 ## Step 7  --  Pre-close verification
 
-Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so the iteration has one gate here, not two. The summary has six sections.
+Present a pre-close summary and wait for the operator to release it; the release feeds the release gate, so the iteration has one gate here, not two. The summary has five sections.
 
-1. **Acceptance criteria and scope.** Mark each acceptance criterion accepted or pushed in the table the project's `work-log` convention states, running the check each row names so its output is in hand; a criterion that fails stops the gate until the gap is resolved or explicitly deferred with a reason. Complete the handover's `## Completed` table, and fold every item left undone, or ruled out of scope, into one Scope sentence with its reason or an open roadmap row.
-2. **Roadmap write-back** -- the rows are written before this gate, so the summary shows the diff that carries them: `git diff <iteration-base> -- devlog/roadmap.md`, where `<iteration-base>` is `HEAD` when nothing is committed this iteration and otherwise the delivery commit it opened on. Every `Completed` row maps to a line in that diff or is raised as a finding. When a task's sub-rows are all resolved, the diff carries the compacted outcome summary, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
+1. **Acceptance criteria and scope.** Mark each acceptance criterion accepted or pushed in the table the project's `work-log` convention states, running the check each row names so its output is in hand; a criterion that fails stops the gate until the gap is resolved or explicitly deferred with a reason. Fold every item left undone, or ruled out of scope, into a roadmap row or a finding with its reason.
+2. **Roadmap write-back** -- the rows are written before this gate, so the summary shows the diff that carries them: `git diff <iteration-base> -- devlog/roadmap.md`, where `<iteration-base>` is `HEAD` when nothing is committed this iteration and otherwise the delivery commit it opened on. Every roadmap row marked `[x]` maps to a line in that diff or is raised as a finding. When a task's sub-rows are all resolved, the diff carries the compacted outcome summary, not only the marker flip, in the form the `/milestone-close` compaction procedure states. When no task was touched, state `none worked this iteration`.
 3. **Propagation replay** -- required when the iteration applied a naming rule, structural rule, or interface change across more than two files, or produced an explicit file table, or used "all", "every", "throughout", or "wherever X appears". A row-by-row comparison of every file planned to receive the change:
 
 | File | Change planned | Status |
@@ -171,8 +171,7 @@ Present a pre-close summary and wait for the operator to release it; the release
 Every row must carry a status. A deferred or not-started row must be written back to the roadmap as an open row before the gate closes.
 
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the [`git-discipline`](../skills/git-discipline/SKILL.md) skill.
-5. **Decisions pending** -- replay the handover's `Decisions pending` table. Every entry must be resolved, cited, or pushed to the roadmap as an open row.
-6. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbooks/content.md) of `handover-maintenance` over this handover. Read the findings from the handover's `## Findings` table, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
+5. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbooks/content.md) of `handover-maintenance` over this handover. Read the findings from the handover, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release; a reply that reviews the output without it is not one.
 

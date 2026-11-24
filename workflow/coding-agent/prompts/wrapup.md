@@ -49,9 +49,7 @@ The destinations were decided at the gate, and each finding reached the handover
 
 ### B3. Pending-decision resolution
 
-Every row of the handover's `Decisions pending` table closes before the handover closes, per the project's `work-log` convention. Each row takes one of three exits: the operator answered it, so the answer moves to the Decisions table with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work is written back as an open roadmap row and the question leaves the handover with it.
-
-A table holding only the canonical marker is closed with no work.
+A record that still carries the older format's pending-decision part closes it before the handover closes, per the project's `work-log` convention. Each row takes one of three exits: the operator answered it, so the answer moves to the decisions part with its rationale; the agent found the answer in a record, so the row cites that record; or the block is real and unresolved, so the work is written back as an open roadmap row and the question leaves the handover with it. A record under the current format carries no such part; skip this step.
 
 ### B4. Roadmap write-back
 

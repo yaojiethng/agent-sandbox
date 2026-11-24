@@ -2,7 +2,8 @@
 //
 // Enforces the work-log convention's record shape over handovers: the
 // frontmatter fields (date, milestone, type, status) and the section set (the
-// required sections present, the forbidden ones absent).
+// required sections, read from the work-log template, present; the forbidden
+// ones absent).
 //
 // Scope: the default scan reads the live handover folder, which the archive
 // keeps free of every record written before the cutover; a record there that
@@ -15,7 +16,7 @@
 // finding count is printed, never encoded in the exit code.
 
 import { readFileSync, existsSync } from "fs";
-import { dirname, resolve } from "path";
+import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 import { loadPiFrontmatter } from "./pi-frontmatter.mjs";
 import { load_layout, walk_kind } from "../../src/build/record-layout.mjs";
@@ -33,11 +34,22 @@ const TYPES = [
 /** The status vocabulary, from the project's work-log convention. */
 const STATUSES = ["Open", "Active", "Closed"];
 
-/** The required sections, in the order the project's work-log convention lists them. */
-const REQUIRED_SECTIONS = [
-  "Objective", "Scope", "Acceptance criteria",
-  "Decisions", "Decisions pending", "Findings", "Completed",
-];
+/** The work-log template, which declares the record's required sections. */
+const TEMPLATE_REL = ".agents/skills/work-log/assets/handover.md";
+
+/** The required sections, read from the template the work-log convention owns. */
+function readRequiredSections(root) {
+  const path = join(root, TEMPLATE_REL);
+  if (!existsSync(path)) {
+    console.error(`missing template: ${TEMPLATE_REL}; the work-log convention declares the record format there`);
+    process.exit(1);
+  }
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .map((line) => line.match(/^##\s+(.+?)\s*$/))
+    .filter(Boolean)
+    .map((match) => match[1]);
+}
 
 /** The body lines of a section, from after its heading to the next `## ` heading. */
 function sectionBody(text, name) {
@@ -66,6 +78,7 @@ const force = args.includes("--force");
 // of every record written before the frontmatter rule, so an absent block there
 // is a finding rather than history. A named file list keeps the cutover.
 const defaultScan = named.length === 0;
+const required = readRequiredSections(root);
 
 // Pi's parser is `yaml`'s `parse` behind the product's own block extractor, so a
 // handover's block is read by the same rules a prompt's is.
@@ -215,7 +228,7 @@ for (const file of files) {
 
   const found = headings(text);
   const names = found.map((h) => h.name);
-  for (const section of REQUIRED_SECTIONS) {
+  for (const section of required) {
     if (!names.includes(section)) {
       findings.push({ rel, line: 1, msg: `missing required section \`## ${section}\`` });
     }

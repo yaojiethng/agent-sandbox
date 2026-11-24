@@ -59,6 +59,25 @@ write_handover() {
   } > "$path"
 }
 
+# write_required_handover PATH DATE  --  a record carrying the template's parts.
+write_required_handover() {
+  local path="$1" date="$2"
+  mkdir -p "$(dirname "$path")"
+  {
+    printf -- '---\n'
+    printf 'date: %s\n' "$date"
+    printf 'milestone: T1 - Test\n'
+    printf 'type: Workflow\n'
+    printf 'status: Active\n'
+    printf -- '---\n\n'
+    printf '# Handover - Test\n\n'
+    printf '## Objective\n\nTest.\n\n'
+    printf '## Acceptance criteria\n\nTest.\n\n'
+    printf '## Decisions\n\nNone.\n\n'
+    printf '## Findings\n\nNone.\n'
+  } > "$path"
+}
+
 # write_bold_handover PATH  --  the pre-YAML header form, dated before the cutover.
 write_bold_handover() {
   local path="$1"
@@ -117,6 +136,8 @@ seed_layout() {
   local root="$1"
   mkdir -p "$root/src/build"
   cp "$REPO_ROOT/src/build/record-layout.json" "$root/src/build/record-layout.json"
+  mkdir -p "$root/.agents/skills/work-log/assets"
+  cp "$REPO_ROOT/.agents/skills/work-log/assets/handover.md" "$root/.agents/skills/work-log/assets/handover.md"
 }
 
 test_default_scan_flags_block_absent_record() {
@@ -167,6 +188,7 @@ test_named_file_ignores_cutover() {
 
 test_file_list_without_force_respects_cutover() {
   local root="$FIXTURE_DIR/t8" file="$FIXTURE_DIR/t8/devlog/handovers/20260101-01-workflow-old.md" rc=0 out
+  seed_layout "$root"
   write_bold_handover "$file"
   out="$(node "$REPO_ROOT/scripts/lint/handover-format.mjs" --root="$root" "$file" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a file list without --force keeps the cutover'
@@ -250,6 +272,29 @@ test_completed_before_the_rule_passes() {
   assert_contains "$out" 'clean across 1 handover' 'and the record is the only subject'
 }
 
+test_required_format_passes() {
+  local file="$FIXTURE_DIR/tr1/devlog/handovers/20261124-02-workflow-x.md" rc=0
+  write_required_handover "$file" 2026-11-24
+  bash "$GATE" "$file" > /dev/null 2>&1 || rc=$?
+  assert_rc 0 "$rc" 'a record carrying the template format passes'
+}
+
+test_old_sections_stay_legal() {
+  local file="$FIXTURE_DIR/tr2/devlog/handovers/20261124-03-workflow-x.md" rc=0
+  write_handover "$file" 2026-11-24
+  bash "$GATE" "$file" > /dev/null 2>&1 || rc=$?
+  assert_rc 0 "$rc" 'a record still carrying older parts passes'
+}
+
+test_missing_required_part_fails() {
+  local file="$FIXTURE_DIR/tr3/devlog/handovers/20261124-04-workflow-x.md" rc=0 out
+  write_required_handover "$file" 2026-11-24
+  grep -v '^## Decisions$' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+  out="$(bash "$GATE" "$file" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'a record missing a part the template declares fails'
+  assert_contains "$out" 'missing required section `## Decisions`' 'the missing part is named'
+}
+
 run_test test_conforming_handover_passes
 run_test test_bold_header_flagged
 run_test test_forbidden_section_flagged
@@ -262,6 +307,9 @@ run_test test_default_scan_skips_nested_archive
 run_test test_named_file_ignores_cutover
 run_test test_file_list_without_force_respects_cutover
 run_test test_staged_with_nothing_staged_is_clean
+run_test test_required_format_passes
+run_test test_old_sections_stay_legal
+run_test test_missing_required_part_fails
 run_test test_closed_findings_row_without_destination_fails
 run_test test_closed_findings_row_triaged_late_passes
 run_test test_active_findings_row_without_destination_passes

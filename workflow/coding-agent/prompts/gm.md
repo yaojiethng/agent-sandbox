@@ -38,7 +38,7 @@ The invocation argument is the intent: any argument filters the inventory.
 
 Apply the repository's read discipline: grep to locate, then read the needed sections. Do not open files wholesale beyond what the survey needs.
 
-- Handover chain: read the latest ten handovers. When the operator names a different window - a count ("the last three handovers") or a period ("the last seven days") - read that window instead. Read each record's `status`, findings and deferred items.
+- Handover chain: read the latest ten handovers. When the operator names a different window - a count ("the last three handovers") or a period ("the last seven days") - read that window instead. Read each record's `status` and the parts the `work-log` format carries.
 - Roadmap: `devlog/roadmap.md`. Read the Milestone Summary table's `In progress` rows, their sections and their open items. Check done items for forward-looking text left behind.
 - Recent git history (`git log --oneline -20`): what landed, and the time gap since the last iteration.
 - Open entries in `devlog/AGENT_FEEDBACK.md` -- states `open` and `probation`, both `[A]` (agent-raised) and `[O]` (operator-raised) tags.

@@ -21,7 +21,7 @@ A workflow procedure that reads or writes a record hands off here for its struct
 
 One file per iteration, committed with the iteration's changes, retained for the life of the milestone. It is a log, not a document, so the drafting rules for `docs/` do not apply.
 
-Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the seven sections.
+Write it from [`assets/handover.md`](assets/handover.md). The template carries the frontmatter block and the sections it declares.
 
 ### Filename
 
@@ -61,31 +61,11 @@ The shortform appears in the filename. The commit type disambiguates an implemen
 
 The `status` vocabulary is `Active` when the iteration opens the record, `Closed` at iteration end, and `Open` for a record created ahead of the iteration that writes it.
 
-### Section roles
+### The record format
 
-A procedure that checks a record names a section by role. The template carries the heading.
+The template, [`assets/handover.md`](assets/handover.md), declares the record's format: the headings a record carries, the role each serves, and the marker an empty part shows. The gate reads those headings, so a format change is a change to the template. A procedure that reads or writes a record takes the format from the template; it does not restate the headings.
 
-| Role | Heading |
-|---|---|
-| the objective | `## Objective` |
-| the scope | `## Scope` |
-| the acceptance criteria | `## Acceptance criteria` |
-| the decisions | `## Decisions` |
-| the pending decisions | `## Decisions pending` |
-| the findings | `## Findings` |
-| the completed work | `## Completed` |
-
-The record carries no `Deferred`, `Carried forward` or `What's Next` section. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is one sentence in the scope section with its reason.
-
-An empty nullable section carries its canonical marker and nothing else. Do not explain why the section is empty; a decision that affects it belongs in the decisions section.
-
-| Section | Marker |
-|---|---|
-| Acceptance criteria | `Not yet defined.` |
-| Decisions | `None.` |
-| Decisions pending | `None.` |
-| Findings | `None.` |
-| Completed | `No file changes this iteration.` |
+A record written under an older format keeps its parts. The gate requires the template's headings and forbids only `Deferred`, `Carried forward` and `What's Next`. An item deferred with a destination goes to the task list as an open row; an item ruled out of scope is a finding row with its reason.
 
 ### The acceptance-criteria table
 

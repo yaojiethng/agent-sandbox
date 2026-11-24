@@ -50,7 +50,7 @@ Confirm the sidequest sits outside the interrupted iteration's scope. A sideques
 
 ## Implement
 
-Run `/iter` Step 6 as written: produce changes against the confirmed scope, write tests alongside, and keep the handover's Decisions, Findings and Completed current as the work proceeds.
+Run `/iter` Step 6 as written: produce changes against the confirmed scope, write tests alongside, and keep the record current as the work proceeds.
 
 ## Pre-close and release
 
