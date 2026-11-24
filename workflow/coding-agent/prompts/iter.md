@@ -100,7 +100,7 @@ A question the operator still owns is asked with the scope, so the answer arrive
 
 ### Step 5 -- Acceptance criteria (at the scope gate)
 
-Run the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbooks/content.md) of `handover-maintenance` over this handover and apply what it reports, then define the acceptance criteria in the table the `work-log` convention states, one row per criterion:
+Run the `work-log` handover runbook's content check (`.agents/skills/work-log/runbooks/handover-maintenance/content.md`) over this handover and apply what it reports, then define the acceptance criteria in the table the `work-log` convention states, one row per criterion:
 
 | Criterion | Verification | Result |
 |---|---|---|
@@ -171,7 +171,7 @@ Present a pre-close summary and wait for the operator to release it; the release
 Every row must carry a status. A deferred or not-started row must be written back to the roadmap as an open row before the gate closes.
 
 4. **Commit message** -- present the delivery commit's message with the summary: subject, body, footer. The operator reads the body against the body budget in the [`git-discipline`](../skills/git-discipline/SKILL.md) skill.
-5. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the [content runbook](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/runbooks/content.md) of `handover-maintenance` over this handover. Read the findings from the handover, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
+5. **Findings and record checks.** Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `work-log` handover runbook's content check (`.agents/skills/work-log/runbooks/handover-maintenance/content.md`) over this handover. Read the findings from the handover, not from memory, with each `Triaged to:` destination; show `git diff <iteration-base> -- devlog/AGENT_FEEDBACK.md` with `git status --short`, and a finding not in that table is not presented. Name both reports and what the iteration changed after reading them. A missing destination blocks the release, and so does a record check whose finding the iteration did not answer.
 
 The operator's explicit forward signal on this pre-close summary is the release gate's release; a reply that reviews the output without it is not one.
 

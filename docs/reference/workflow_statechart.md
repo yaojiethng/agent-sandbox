@@ -38,7 +38,7 @@ stateDiagram-v2
     state "Maintenance checks" as checks {
         state "chk_orientation -- the /gm survey runs" as chk_orientation
         state "chk_roadmap -- the roadmap-maintenance skill runs" as chk_roadmap
-        state "chk_record -- the handover-maintenance skill runs" as chk_record
+        state "chk_record -- the work-log handover runbook runs" as chk_record
         state "chk_docs -- the documentation pass runs" as chk_docs
         state "chk_history -- the history-cleanup skill runs" as chk_history
         state "chk_corpus -- the initialize skill runs" as chk_corpus
@@ -170,7 +170,7 @@ The id and region columns are generated from the chart's declarations: edit the 
 | `sess_triaged` | entry | the open rows are sorted into runnable and questioned |
 | `chk_orientation` | checks | the `/gm` survey runs |
 | `chk_roadmap` | checks | the `roadmap-maintenance` skill runs |
-| `chk_record` | checks | the `handover-maintenance` skill runs |
+| `chk_record` | checks | the `work-log` handover runbook runs |
 | `chk_docs` | checks | the documentation pass runs |
 | `chk_history` | checks | the `history-cleanup` skill runs |
 | `chk_corpus` | checks | the `initialize` skill runs |
@@ -264,13 +264,13 @@ Every prompt in the iteration loop is an event here, and the command table's row
 | `/milestone-start` | `ms_none` | `ms_active` | none |
 | `/plan` | `ms_active` | `plan_released` | `grill-me`, `/wrapup` |
 | `/scope` | `ms_active` | `plan_scoping` | none - suggests a run, or a saved brief in `.agents/drafts` |
-| `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, `handover-maintenance`, `doc-maintenance`, `/wrapup`, `/commit` |
+| `/iter` | `it_open` | `it_committed` | `roadmap-maintenance`, the `work-log` handover runbook, `doc-maintenance`, `/wrapup`, `/commit` |
 | `/sidequest` | `it_implementing` | `sq_committed` | `/iter`'s orient steps, `/commit` |
 | `/milestone-close` | `ms_active` | `ms_closed` | `roadmap-maintenance`; its own bookkeeping commit, not `/commit` |
 | `/recovery` | `it_implementing`, `it_committed` | the repaired state | none |
 | `/record-correction` | `cor_bad` | `it_closed` | the `prepare` runbook when the fold needs a port |
 | `/read-back` | `rep_partial` | `rep_partial` | none |
-| `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, `handover-maintenance`, `/commit` |
+| `/wrapup` | a released gate | `chk_close` | `roadmap-maintenance`, the `work-log` handover runbook, `/commit` |
 | `/commit` | a closed iteration | `it_committed` | none |
 | `/package-eval-snapshot` | any settled state | the same state | `eval` |
 

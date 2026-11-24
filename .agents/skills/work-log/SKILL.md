@@ -158,3 +158,9 @@ A record is deleted when it is `concluded` or `rejected` **and orphaned**: its r
 ## The feedback record
 
 `devlog/AGENT_FEEDBACK.md`. It is append-only, one entry per topic. The agent records a recurrence on the existing entry, not as a new entry. Each entry carries a `state` and a `scoped` field in a fenced block, and a `mitigation` line.
+
+## Runbooks
+
+| Runbook | Subject | Open it when |
+|---|---|---|
+| [`handover-maintenance`](runbooks/handover-maintenance/SKILL.md) | the handover a writer is producing, and the chain already closed | at the scope gate, at the pre-close, or on an operator audit |

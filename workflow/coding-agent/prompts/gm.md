@@ -22,7 +22,7 @@ A check-in surveys project state and hands the operator an inventory of open wor
 Run this when the operator wants to know what is open and where to start. Four cases it is not for, and what replaces it:
 
 - **One task, already chosen.** Open the iteration with `/iter`. A check-in named the task in an earlier turn.
-- **A record audit on its own.** Run [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) or [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) directly. This prompt runs neither.
+- **A record audit on its own.** Run [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) or the `work-log` handover runbook (`.agents/skills/work-log/runbooks/handover-maintenance/SKILL.md`) directly. This prompt runs neither.
 - **Which work runs without the operator.** [`/backlog-triage`](/opt/workflow/agent/modules/coding-agent/prompts/backlog-triage.md) answers that narrower question. This prompt reports what is open, not what is dispatchable.
 - **A milestone boundary.** `/milestone-start` and `/milestone-close` own those.
 

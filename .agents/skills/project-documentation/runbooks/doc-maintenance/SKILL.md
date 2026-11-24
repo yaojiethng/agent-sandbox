@@ -135,7 +135,7 @@ Print a one-line summary when the run ends: the findings count and the skip coun
 
 - Does not write a document, apply a correction, or commit. The caller applies the report.
 - Does not restate a rule. A finding whose correct form no policy sentence determines is a gap to report, not a rule to invent here.
-- Does not check the roadmap, the handover chain, or `AGENT_FEEDBACK.md`. [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own those.
+- Does not check the roadmap, the handover chain, or `AGENT_FEEDBACK.md`. [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [the work-log handover runbook](../../../work-log/runbooks/handover-maintenance/SKILL.md) own those.
 - Does not report what a gate already catches. Run `bash scripts/lint.sh` first, and report a gate finding only when the gate is not run in the caller's environment.
 - Does not decide a design question. A contradiction that needs a decision is reported for the caller to decide, not as a finding with a fix.
 - Whether a document still describes the system at one level, for one audience. A claim this pass verifies is true or false against a source; a document whose claims are all true and whose described shape is gone is the `reference-staleness` review's finding. This pass reads a claim, that review reads a document, and this pass's report is the evidence that review judges.

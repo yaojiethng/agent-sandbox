@@ -14,7 +14,7 @@ stateDiagram-v2
     state "Maintenance checks" as checks {
         state "chk_orientation -- the /gm survey runs" as chk_orientation
         state "chk_roadmap -- the roadmap-maintenance skill runs" as chk_roadmap
-        state "chk_record -- the handover-maintenance skill runs" as chk_record
+        state "chk_record -- the work-log handover runbook runs" as chk_record
         state "chk_docs -- the documentation pass runs" as chk_docs
         state "chk_history -- the history-cleanup skill runs" as chk_history
         state "chk_corpus -- the initialize skill runs" as chk_corpus

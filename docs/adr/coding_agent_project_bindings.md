@@ -92,7 +92,7 @@ The convention-skill corpus lands at handover `20261014-05`. It supersedes the i
 
 ## 2026-10-14 -- The maintenance surface is fixed; the mechanics behind it are bound
 
-**Decision:** The workflow's fixed unit is the **maintenance surface**: the maintenance skills the prompts invoke - `roadmap-maintenance`, `handover-maintenance` and `doc-maintenance` (the `document` surface retired on 2026-10-29, with no prompt invoking it). Each states an operation - update the task list, log and read a work unit, record a decision, publish knowledge - **without naming a file**; `/gm` owns orientation in its own procedure. The **mechanics** behind a surface - the storage and the format, such as the roadmap file, the handover directory and the changelog - are the bindable unit. The workflow ships the default mechanics, and a project binds its own. This corrects the earlier reading in which a binding point was a path or a format value.
+**Decision:** The workflow's fixed unit is the **maintenance surface**: the maintenance surfaces the prompts invoke - `roadmap-maintenance`, the `work-log` handover runbook and `doc-maintenance` (the `document` surface retired on 2026-10-29, with no prompt invoking it). Each states an operation - update the task list, log and read a work unit, record a decision, publish knowledge - **without naming a file**; `/gm` owns orientation in its own procedure. The **mechanics** behind a surface - the storage and the format, such as the roadmap file, the handover directory and the changelog - are the bindable unit. The workflow ships the default mechanics, and a project binds its own. This corrects the earlier reading in which a binding point was a path or a format value.
 
 **Amended 2026-11-07:** `check-in` retired as a skill; its survey and inventory folded into the `/gm` prompt.
 
@@ -109,7 +109,7 @@ The convention-skill corpus lands at handover `20261014-05`. It supersedes the i
 
 The direction of travel is down the chain. **Coexistence is required:** a stage is not a migration, a mature workflow still carries unmigrated rules, and a consumer must accept any stage. The skill is the carrier - it packages prose in `SKILL.md`, judgement, a bundled `scripts/` file and data in `assets/` - and the contract and the gate sit beside it, workflow-owned.
 
-**The seams kept open:** the surface states the operation while the mechanics hold the storage; inside a surface the checkable part extracts into a script while the skill keeps the judgement (`handover-maintenance` plus `scripts/check_handover_format.sh` is the one instance; `roadmap-maintenance` and `doc-maintenance` are judgement only); and a mechanics value is a parameter now and a deterministic implementation later, with the surface unchanged. For all three, the surface's contract is stated so a script could implement it, and the mechanics are declared as data rather than prose, so a script can read them.
+**The seams kept open:** the surface states the operation while the mechanics hold the storage; inside a surface the checkable part extracts into a script while the skill keeps the judgement (`work-log`'s handover runbook plus `scripts/check_handover_format.sh` is the one instance; `roadmap-maintenance` and `doc-maintenance` are judgement only); and a mechanics value is a parameter now and a deterministic implementation later, with the surface unchanged. For all three, the surface's contract is stated so a script could implement it, and the mechanics are declared as data rather than prose, so a script can read them.
 
 **The skill specification's limits.** The Agent Skills specification (`agentskills.io/specification`, implemented by pi's `docs/skills.md`) carries all four stages, and a project's version can occupy `.agents/skills/`. It supplies none of the following, so the workflow supplies them:
 
@@ -175,7 +175,7 @@ No artifact states the contract as a whole. Each procedure states the part it re
 | the four keys, the `type` vocabulary and its commit mapping | `iter`, the writer |
 | the `status` value it sets | `commit` and `milestone-close` |
 | the `status` values it reads | `/gm` |
-| the keys and roles it validates | `handover-maintenance`, as checks, restating no vocabulary |
+| the keys and roles it validates | the `work-log` handover runbook, as checks, restating no vocabulary |
 
 The record's shape is its template, `.agents/skills/work-log/assets/handover.md`, which carries the frontmatter block and the section set. The `work-log` convention-skill states the controlled vocabularies, because a vocabulary is a rule and not a shape. The shipped corpus ships the template as a stub; a project fills it, so the corpus asserts no record shape on a project.
 
@@ -185,8 +185,8 @@ The record's shape is its template, `.agents/skills/work-log/assets/handover.md`
 
 - **Rule versus structure.** Rejected: the handover `type` is a convention under that test, and a fixed procedure's behaviour depends on it, so the test misclassifies it.
 - **A workflow contract file beside the prompts**, or **the contract in `iteration_protocol.md`.** Rejected: both invent a second artifact to state what the template already states.
-- **The contract in the `handover-maintenance` skill.** Rejected: it puts the interface every writer reads inside the one skill that checks the writers.
+- **The contract in the `work-log` handover runbook.** Rejected: it puts the interface every writer reads inside the check that reads the writers.
 - **All of the format and lifecycle as convention.** Rejected: a project that renames `status` breaks `/gm` and `milestone-close`, which the workflow cannot adapt.
 - **The gate reads the project's format.** Rejected: the gate is the project's own artifact, so it enforces the project's structure, and the workflow owns no format for it to read.
 
-**Edge cases / drivers:** The `handover-maintenance` skill held project structure - the storage path, the section set, a date window, a gate path and two policy references - which the `Retire handover_policy` slice extracted to the `work-log` convention-skill; the skill now names a section by role. The shipped procedures still use the project's word "handover" for the iteration record, 251 times across 20 files. The follow-up is recorded as its own roadmap row.
+**Edge cases / drivers:** The handover check held project structure - the storage path, the section set, a date window, a gate path and two policy references - which the `Retire handover_policy` slice extracted to `work-log`; the runbook now names a section by role. The shipped procedures still use the project's word "handover" for the iteration record, 251 times across 20 files. The follow-up is recorded as its own roadmap row.

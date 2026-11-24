@@ -22,7 +22,7 @@ Each workflow enforces one group of the loop's transitions. The set -- the comma
 
 ## Skills
 
-A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md) own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. A skill owns its procedure; the workflow owns the transition that invokes it.
+A workflow dispatches a narrow, repeatable job to a skill rather than inlining its procedure. The record-check skills [`roadmap-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/roadmap-maintenance/SKILL.md) and the `work-log` handover runbook own the record checks and report the violations they find; they write nothing, and the workflow that dispatches one applies the report. A skill owns its procedure; the workflow owns the transition that invokes it.
 
 Which command invokes which skill is not stated here. [`workflow_statechart.md`](workflow_statechart.md) declares the maintenance set and draws the edge from each dispatching command, and its `## Checks` section names the query that finds a check no command reaches.
 

@@ -10,7 +10,7 @@
 // lacks the frontmatter block is a finding. A file list without `--force` (the
 // `--staged` mode) still honours the cutover, so a correction to a record in
 // the archive is not blocked. `--force` drops the cutover for the file list it
-// is given, which is the on-demand audit mode handover-maintenance uses.
+// is given, which is the on-demand audit mode the `work-log` handover runbook uses.
 //
 // Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 // finding count is printed, never encoded in the exit code.

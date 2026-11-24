@@ -28,9 +28,7 @@ A run needs three facts no runbook can know, plus whatever the chosen runbook de
 
 ## When this runs
 
-A change to code needs a judgement its author did not make: an iteration before it closes, a branch before it merges, or a dispatch packaged for a rebase. Not prose (`prose-review`) or a check over the agent's own records (`doc-maintenance`, `roadmap-maintenance`, `handover-maintenance`).
-
-One dispatch is one pass. A second pass is the invoking task's decision: the review returns its findings, and the owner of the work decides whether to fix and dispatch again. This skill holds no round state, cap or convergence rule.
+At the operator's direction, review code changes. Not prose (`prose-review`) or a check over the agent's own records (`doc-maintenance`, `roadmap-maintenance`, `handover-maintenance`). Each dispatch corresponds to only one review pass. This skill holds no round state, cap or convergence rule.
 
 The churn survey reads [`references/churn.md`](references/churn.md); it dispatches no seat.
 

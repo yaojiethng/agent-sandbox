@@ -61,7 +61,7 @@ Settle each `docs/adr/` entry whose work landed this session: a content correcti
 
 ### B6. Check what the close wrote
 
-Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `handover-maintenance` skill over this session's handover, and fix what they report before the commit. The records B2 and B5 write, and the rows B4 writes for a caller that deferred them, did not exist when the gate ran, so this is the only run that reads them. A finding either skill raises here is a defect in what the close wrote: it is fixed here, and the commit does not land past it. The invariant is the close's own writes are checked, in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
+Run the `roadmap-maintenance` skill over `devlog/roadmap.md` and the `work-log` convention's handover runbook (`.agents/skills/work-log/runbooks/handover-maintenance/SKILL.md`) over this session's handover, and fix what they report before the commit. The records B2 and B5 write, and the rows B4 writes for a caller that deferred them, did not exist when the gate ran, so this is the only run that reads them. A finding either skill raises here is a defect in what the close wrote: it is fixed here, and the commit does not land past it. The invariant is the close's own writes are checked, in [`iteration_protocol.md`](/opt/sandbox/docs/reference/iteration_protocol.md).
 
 ## Hand the commit to /commit
 

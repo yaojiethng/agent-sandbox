@@ -50,7 +50,7 @@ The seam answers these reads. The tool answers the handover rows; the discussion
 | the active handover | `worklog.sh active` | `commit`, `check-in` | yes |
 | the current work-log track | `worklog.sh track` | `iter`, `check-in`, `backlog-triage` | yes |
 | the next reserved id | `worklog.sh reserve-id --track <id>` | the agent writing a handover | yes |
-| the handovers on a track | `worklog.sh list` | `handover-maintenance` | yes |
+| the handovers on a track | `worklog.sh list` | the `work-log` handover runbook | yes |
 | the open discussion records | `worklog.sh list --kind discussion --state open` | `plan`, `check-in` | no, shape only |
 | the open feedback entries | `worklog.sh feedback --state open` | `milestone-start`, `milestone-close`, `check-in` | no, shape only |
 

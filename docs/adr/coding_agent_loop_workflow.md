@@ -2,7 +2,7 @@
 
 ## 2026-10-20 -- Record checks run before the release gate
 
-**Decision:** At the acceptance gate, the agent presents the findings queue with every destination. It also presents the record-check reports for the records the iteration changed, and the commit message. `roadmap-maintenance` and `handover-maintenance` run before that gate, not inside the close. The close lands what the gate released and raises what it finds as `late`, naming the gate that should have asked.
+**Decision:** At the acceptance gate, the agent presents the findings queue with every destination. It also presents the record-check reports for the records the iteration changed, and the commit message. `roadmap-maintenance` and the `work-log` handover runbook run before that gate, not inside the close. The close lands what the gate released and raises what it finds as `late`, naming the gate that should have asked.
 
 **Rationale:** The finished record exists at the release. A check placed after it can only amend a landed commit. The cost is in the record: 108 corrections across 824 handovers and discussion records, median one day after close.
 

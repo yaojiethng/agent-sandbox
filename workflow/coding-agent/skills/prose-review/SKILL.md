@@ -21,7 +21,7 @@ The mechanism that launches a seat is the `dispatch` skill, in the agent's own s
 
 ## When this runs
 
-A document, a prompt, a skill or a section of one needs a judgement its author did not make: before it lands, before it is sent to another agent, or after a cleanup pass has folded it. Not for code, which `code-review` answers, and not for a check over the agent's own records, which `doc-maintenance`, `roadmap-maintenance` and `handover-maintenance` answer.
+A document, a prompt, a skill or a section of one needs a judgement its author did not make: before it lands, before it is sent to another agent, or after a cleanup pass has folded it. Not for code, which `code-review` answers, and not for a check over the agent's own records, which `doc-maintenance`, `roadmap-maintenance` and the `work-log` handover runbook answer.
 
 ## Translating the runbook's requirements
 

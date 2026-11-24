@@ -5,28 +5,22 @@ description: "Checks handover content and the closed handover chain against the 
 
 # handover-maintenance
 
-## Project conventions
-
-Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
-
-- `work-log` - the handover record and the exploration record.
-
 ## Purpose
 
-Checks handover documents and reports the violations of the project's `work-log` convention. The run finds each violation and reports it in the form the caller consumes. It writes no record, applies no correction, and invents no fact.
+Checks handover documents and reports the violations of the `work-log` convention. The run finds each violation and reports it in the form the caller consumes. It writes no record, applies no correction, and invents no fact.
 
-This skill is the index. The checks live in two runbooks, one per subject, and each names the moment it opens.
+This runbook is the index. The checks live in two runbooks, one per subject, and each names the moment it opens.
 
 ## Runbooks
 
 | Runbook | Subject | Open it when | Dispatched by |
 |---|---|---|---|
-| [`runbooks/content.md`](runbooks/content.md) | the handover the current iteration is writing | at the scope gate, before the criteria are released, and again at the pre-close | `/iter` steps 5 and 7, `wrapup` B6 |
-| [`runbooks/chain.md`](runbooks/chain.md) | the chain of handovers already closed | a periodic or event-driven audit, or a workflow that reads the chain | an operator audit |
+| [`content.md`](content.md) | the handover the current iteration is writing | at the scope gate, before the criteria are released, and again at the pre-close | `/iter` steps 5 and 7, `wrapup` B6 |
+| [`chain.md`](chain.md) | the chain of handovers already closed | a periodic or event-driven audit, or a workflow that reads the chain | an operator audit |
 
 ## The shape every handover is checked against
 
-The record's shape is the project's template; its controlled vocabulary is the project's `work-log` convention. This skill states no vocabulary of its own. Both runbooks check:
+The record's shape is this convention's template; its controlled vocabulary is the `work-log` convention. This runbook states no vocabulary of its own. Both runbooks check:
 
 | Check | Against |
 |---|---|
@@ -38,11 +32,11 @@ The record's shape is the project's template; its controlled vocabulary is the p
 | the filename follows the pattern | the convention |
 | the record is inside the format window, or exempt | the convention |
 
-Read `.agents/skills/work-log/SKILL.md` for the vocabulary, the format and the window, and `.agents/skills/work-log/assets/handover.md` for the shape.
+Read [`../../SKILL.md`](../../SKILL.md) for the vocabulary, the format and the window, and [`../../assets/handover.md`](../../assets/handover.md) for the shape.
 
 ## Output shape
 
-Report the findings in your reply. The caller applies them; this skill writes no record and commits nothing.
+Report the findings in your reply. The caller applies them; this runbook writes no record and commits nothing.
 
 Print a one-line summary when a run ends: the findings count and the skip count.
 

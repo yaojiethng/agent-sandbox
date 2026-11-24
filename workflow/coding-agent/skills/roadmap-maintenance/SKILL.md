@@ -134,7 +134,7 @@ Print a one-line summary when the run ends: the findings count and the skip coun
 ## Non-goals
 
 - Does not write a record, apply a correction, or commit. The caller applies the report.
-- Does not check handovers or the handover chain. That is [`handover-maintenance`](/opt/workflow/agent/modules/coding-agent/skills/handover-maintenance/SKILL.md).
+- Does not check handovers or the handover chain. That is the `work-log` handover runbook (`.agents/skills/work-log/runbooks/handover-maintenance/SKILL.md`).
 - Does not write policy. A check that no policy text covers is a gap to report, not a rule to add here.
 - Does not open, re-scope, or close an iteration.
 - Does not change a milestone's task set. Adding or removing a task is a roadmap decision, not a maintenance finding.
