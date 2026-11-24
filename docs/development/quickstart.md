@@ -101,6 +101,17 @@ The sandbox directory persists across `make start` / `make stop` cycles via a na
 
 The session identity (SESSION_ID, SESSION_TS) is recorded in the per-run compose registry (`.compose/<session-id>.yml`) and reused across resumes. This ensures container labels, error logs, and export paths remain consistent.
 
+## Terminal tab identity
+
+A `session-title` pi extension writes the session's run id into the terminal tab, as the app mark (code point U+03C0), a hyphen and the run id, so two sessions running in two tabs are distinguishable at a glance. VS Code renders a title set by a process only when its title template reads the sequence, so set this once in your user settings:
+
+<!-- snippet: illustrative -->
+```json
+"terminal.integrated.tabs.title": "${sequence}"
+```
+
+Without that setting the extension still writes the title, the editor ignores it, and the tab keeps its process name (`make`).
+
 ## Recovery
 
 If a session produces a bad diff that corrupts your repository after apply, recover using the checkpoint tag:

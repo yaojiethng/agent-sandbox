@@ -135,6 +135,10 @@ services:
       - OUTPUT_DIR=/home/agentuser/workspace/output
       - CHANGES_DIR=/home/agentuser/workspace/session-diffs
       - SANDBOX_DIR_NAME=sandbox
+      # The run identity, for the session-title extension: it names the terminal
+      # tab after this id. The harness key stays unprefixed under the operator
+      # ruling recorded in the T6 roadmap row.
+      - SESSION_ID=${SESSION_ID:-}
     stdin_open: true
     tty: true
     restart: "no"
