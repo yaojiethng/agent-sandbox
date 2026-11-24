@@ -39,7 +39,7 @@ resolve_and_init() {
   local project_dir="${2:?resolve_and_init requires a resolved project_dir}"
   local sandbox_dir="${3:?resolve_and_init requires a resolved sandbox_dir}"
 
-  # The record must exist before its view opens.
+  # The record must exist before it is read.
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "Error: .env not found: $ENV_FILE" >&2
     echo "  SANDBOX_DIR has not been onboarded. Run:" >&2
@@ -73,10 +73,8 @@ resolve_and_init() {
   export HOST_GID; HOST_GID="$(id -g)"
   export ENV_FILE
 
-  # The process view, opened once for this entry. Phase 2 reads record values
-  # from it; a view the resolver already opened for this file is reused rather
-  # than parsed again.
-  env_record_view "$ENV_FILE"
+  # The record cache belongs to the read primitive; phase 2 loads it on its
+  # first read, or reuses the parse the resolver already made for this file.
 }
 
 # session_env_names <project_name> <provider_name> <sandbox_dir> <session_id>
@@ -114,13 +112,13 @@ session_env_names() {
   #
   # The worktree path is an optional run input: the invocation's own value,
   # then the record's, then the conventional sibling. A record key with a stated
-  # default is not an error when absent, so it is read from the opened view
+  # default is not an error when absent, so it is read through the primitive
   # rather than required through the resolution primitive.
   local recorded_worktree
-  # Phase 1 opens the view. A caller that enters at phase 2 opens it here, which
-  # costs nothing when it is already open for this file.
-  env_record_view "${ENV_FILE:-$sandbox_dir/.env}"
-  recorded_worktree="$(record_get ENV_RECORD WORKTREE_DIR)"
+  # The primitive loads the record on its first read; a caller that enters at
+  # phase 2 loads it here, and one that ran phase 1 reuses that parse.
+  record_get "${ENV_FILE:-$sandbox_dir/.env}" WORKTREE_DIR
+  recorded_worktree="$REPLY"
   export WORKTREE_DIR="${WORKTREE_DIR:-${recorded_worktree:-$sandbox_dir/.worktree}}"
 }
 

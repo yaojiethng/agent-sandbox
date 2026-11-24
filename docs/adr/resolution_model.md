@@ -1,6 +1,6 @@
 # Resolution Model
 
-**Current:** 2026-11-22
+**Current:** 2026-11-24
 
 > This ADR records the design as it stands and is expected to evolve. The identity-resolution surface is new and touches many entrypoints; a later change supersedes the current entry by adding a dated entry, per the ADR policy. It is not a locked contract.
 
@@ -16,6 +16,23 @@
 | R6 | Three carrier classes | an input is an argument, a configuration value or session state, and the class decides whether it persists and where (promoted by the 2026-10-16 entry) |
 | R7 | Four channels, one writer per fact | configuration reaches a process by a named channel or not at all, and the writer of a fact is the party that owns it (promoted by the 2026-11-22 entry) |
 
+## 2026-11-24 -- The record read is one cached primitive
+
+**Decision:** The sandbox record is read through one public primitive, `record_get FILE KEY`, which sets `REPLY` and owns a private process cache. `record_open`, `env_record_view` and the public `ENV_RECORD` array are retired.
+
+The first read of a file parses it through `env_parse`; later reads of the same file reuse the cache. The cache is a one-file slot: reading a different file replaces it. The parse is lazy: a record no reader asks for is not parsed, and a malformed line warns on the first read of its file, not again. The file remains the source of truth, and the cache is a process-local snapshot, so a file changed after its first read is not re-read in that process. The cache is private (`_ENV_RECORD_CACHE` and `_ENV_RECORD_FILE`), is never exported, and no caller reads it directly. `REPLY` is the return channel because a command substitution runs in a subshell, and a cache written there would not survive to the caller's next read.
+
+**Rationale:** The four layers each exposed a way around the read contract. The public array and `record_open` let any sourced function read or replace the whole record without the primitive, and the read census counted calls rather than representation access. `env_record_view` was a caller discipline repeated at six sites, so the one-parse property depended on every entrypoint remembering to open the view. `record_open` had no production caller except that view. One primitive with a private cache keeps the property in the library, the file as the only source, and the array as an implementation detail. The cache is still a snapshot: a file changed after the first read is not observed until the process exits, which is the lifetime a run's record already has.
+
+**Rejected alternatives:**
+
+- *Keep the public array and `record_open`* -- rejected: the array is a second read and write path, and a public whole-record value exposes the record's representation rather than its keys.
+- *Read the file per key* -- rejected: it loses the one-parse property and the process snapshot, repeats parser warnings, and can see a record that changes between two keys of one resolution.
+- *Return the value on stdout while caching* -- rejected: every current caller captures the value with `$(...)`, and the subshell discards the cache, so the next key parses again.
+- *Prefix the private cache with `AGENT_SANDBOX_`* -- rejected: that namespace is channel B cross-process tool configuration. A private shell cache is not exported, not an input and not configuration, so the prefix would advertise a contract that does not exist.
+
+**Edge cases / drivers:** An empty or missing file reads as an empty record with rc 0, as before. A record that is never read is never parsed, so it emits no warning. A process that reads a different file replaces the one cache slot; no current caller interleaves two records. The private cache is a shell variable, not an environment variable: it never reaches `env`, a child process, docker or the container.
+
 ## 2026-11-22 -- Four channels: the record is read, never exported
 
 **Decision:** Configuration reaches a process by exactly four channels and no fifth.
@@ -28,6 +45,8 @@
 | D. The run record (`.compose/<sid>.yml`) and the project's declaration | what one run is, written once by the generator | no |
 
 A key channel C holds resolves as argument, then record, then a stated default or a hard error. It has no environment level, so `AGENT_SANDBOX_<KEY>` is not a level for any key the record holds, identity included. One key escapes it: `AGENT_SANDBOX_INSTALL_DIR`, which the install path reads because install runs before a record has been seeded and so has no record to read. It is named here so that it stays one exception rather than becoming the precedent for the next key. `env_load` is replaced by `record_open` and `record_get`: a process opens a record once, at its entry, into a view, and every later read in that process takes its value from the view. `env_parse` is the parser and `record_open` is its only caller, so one parse per file per process is a property of the library, not a discipline each reader remembers. A value crosses a process boundary as an argument, never as a re-read. The compose generator writes the values handed to it and reads no record; a `${VARIABLE}` survives only for a channel A credential. No record key is left to interpolation at all: the surviving `${...}` names an operator's own provider credential, which Compose resolves from the invocation environment, and the shell beats the record's `.env`. One open is not the same as one read per key: before this rule, a start chain parsed the record six times across three processes -- three for the identity triple, one for the serve port, two in the generator -- and two of the three read a file the process above them had already resolved.
+
+**Corrected 2026-11-24:** the read API is now `record_get FILE KEY`, which owns the cache; `record_open`, `env_record_view` and the public `ENV_RECORD` are retired. The record is still read once at its entry and never exported; the entry above states the current primitive.
 
 **Rationale:** A record that is exported becomes the ambient environment of every child, and then three things follow. The record stops being the source of truth: a child's copy can be edited without touching it. Two writers own the same fact, so a correction has to un-write the old value. And the boundary is untestable, because a leak and a legitimate value look the same from inside the process. Measured: `env_load` exported all of the `.env`, `env_resolve_one` read `AGENT_SANDBOX_<KEY>` ahead of the record for three identity keys, and every serve port, autosave interval and host path reached the container by interpolation from the invoking shell rather than from a declaration. The four channels name where a value comes from, so the class decides whether a process may inherit it, and each channel has one writer.
 

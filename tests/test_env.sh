@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # tests/test_env.sh
 # Unit tests for src/libs/env.sh  --  the one parser for simple KEY=VALUE env
-# files. The parser prints and never exports, so each case asserts on
-# env_parse's output or on record_get's return value, not on the shell's state.
+# files. env_parse prints and never exports; record_get sets REPLY and owns the
+# record cache. Each case asserts on one of those two contracts.
 
 set -uo pipefail
 
@@ -10,17 +10,15 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/env.sh"
 
-# val_of FILE KEY  -- open the record once and read one key, the way a reader does.
+# val_of FILE KEY  -- read one key through the public primitive.
 val_of() {
-  # shellcheck disable=SC2034  # the view is read by name through record_get
-  local -A r=()
-  record_open "$1" r
-  record_get r "$2"
+  record_get "$1" "$2"
+  printf '%s' "$REPLY"
 }
 
 # Given: a .env line of the form K=val # not-a-comment
 # When:  record_get reads K
-# Then:  it returns the whole tail, comment text included
+# Then:  REPLY holds the whole tail, comment text included
 # Asserts: there is no inline-comment rule.
 test_record_get_keeps_inline_comment_text_as_value() {
   local F="$FIXTURE_DIR/inline.env"
@@ -146,7 +144,7 @@ test_env_parse_comment_lines_are_warning_free() {
 # When:  a child process reads its own environment
 # Then:  the child sees nothing
 # Asserts: reading a record key is a call, not an assignment. A record key
-#          reaches a reader as a return value, never as a child's environment.
+#          reaches a reader through REPLY, never as a child's environment.
 test_env_parse_does_not_export_to_child_process() {
   local F="$FIXTURE_DIR/child.env"
   printf 'FOO=bar\n' > "$F"
@@ -216,11 +214,11 @@ test_env_parse_skips_scratch_prefixed_key_with_warning() {
 }
 
 # Given: a record that states the same key twice
-# When:  the record is opened
+# When:  the record is read
 # Then:  the later value wins
-# Asserts: the view has one value per key, and its rule matches a shell reading
+# Asserts: the cache has one value per key, and its rule matches a shell reading
 #          a script -- a later line overrides an earlier one. The parser still
-#          emits both lines; the view decides.
+#          emits both lines; the cache decides.
 test_record_get_takes_the_later_occurrence() {
   local F="$FIXTURE_DIR/dup.env"
   printf 'K=first\nK=second\n' > "$F"
@@ -235,6 +233,54 @@ test_record_get_absent_file_and_key_are_empty() {
   assert_eq "" "$(env_parse "$FIXTURE_DIR/absent.env")" "a missing file prints nothing"
   assert_eq "0" "$?" "a missing file is not an error"
   assert_eq "" "$(val_of "$FIXTURE_DIR/absent.env" K)" "a missing key is empty"
+}
+
+# Given: a record read once, then removed from disk
+# When:  a second key is read from the same path
+# Then:  the cached value answers
+# Asserts: the cache is the process's snapshot, not a second trip to the file.
+test_record_get_cache_survives_file_removal() {
+  local F="$FIXTURE_DIR/cache.env"
+  printf 'A=one\nB=two\n' > "$F"
+  record_get "$F" A
+  assert_eq "one" "$REPLY" "the first key primes the cache"
+  rm -f "$F"
+  record_get "$F" B
+  assert_eq "two" "$REPLY" "the cache survives the file's removal"
+}
+
+# Given: a parser wrapped to count its calls
+# When:  two keys are read from the same file
+# Then:  the file is parsed once
+# Asserts: one parse per file per process is the primitive's property, not a
+#          caller discipline.
+test_record_get_parses_a_file_once() {
+  local F="$FIXTURE_DIR/once.env" CNT="$FIXTURE_DIR/once.cnt"
+  printf 'A=one\nB=two\n' > "$F"
+  : > "$CNT"
+  eval "$(declare -f env_parse | sed '1s/env_parse/env_parse_orig/')"
+  env_parse() { printf x >> "$CNT"; env_parse_orig "$@"; }
+  record_get "$F" A
+  assert_eq "one" "$REPLY" "the first key reads"
+  record_get "$F" B
+  assert_eq "two" "$REPLY" "the second key reads"
+  assert_eq "1" "$(wc -c < "$CNT" | tr -d ' ')" "two keys cost one parse"
+}
+
+# Given: a record with one malformed line
+# When:  the same file is read twice
+# Then:  the parser warns on the first read only
+# Asserts: the lazy parse reports its warning once, then the cache answers.
+test_record_get_warns_once_for_a_malformed_line() {
+  local F="$FIXTURE_DIR/warn.env"
+  local ERR1="$FIXTURE_DIR/warn1.err" ERR2="$FIXTURE_DIR/warn2.err"
+  printf 'NO_EQUALS\nK=value\n' > "$F"
+  record_get "$F" K 2>"$ERR1"
+  assert_eq "value" "$REPLY" "the valid key reads"
+  record_get "$F" K 2>"$ERR2"
+  assert_eq "value" "$REPLY" "the second read answers"
+  assert_eq "1" "$(grep -c 'Warning:' "$ERR1")" "the first read warns once"
+  assert_eq "0" "$(grep -c 'Warning:' "$ERR2" || true)" "the second read does not re-warn"
 }
 
 run_test test_record_get_keeps_inline_comment_text_as_value
@@ -256,5 +302,8 @@ run_test test_env_parse_accepts_keys_named_like_former_scratch_names
 run_test test_env_parse_skips_scratch_prefixed_key_with_warning
 run_test test_record_get_takes_the_later_occurrence
 run_test test_record_get_absent_file_and_key_are_empty
+run_test test_record_get_cache_survives_file_removal
+run_test test_record_get_parses_a_file_once
+run_test test_record_get_warns_once_for_a_malformed_line
 
 test_done test_env.sh

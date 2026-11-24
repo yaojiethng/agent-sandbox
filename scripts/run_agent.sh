@@ -148,10 +148,9 @@ if [[ -z "$DELIVERY" ]]; then
   exit 1
 fi
 
-# The run's record, opened once. Every reader in this process takes its value
-# from the same view, and the values compose needs are handed down as call-scoped
-# arguments. No record key is exported.
-env_record_view "${ENV_FILE:-}"
+# The run's record is read through the primitive's cache on first use. The
+# values compose needs are handed down as call-scoped arguments; no record key
+# is exported.
 
 # -------------------------
 
@@ -300,7 +299,8 @@ trap _session_cleanup EXIT
 # Call-scoped handoff: the substitution inside compose_generate sees the two
 # dry-run paths and the two record values for this call only. No harness-written
 # env persists.
-AUTOSAVE_INTERVAL="$(record_get ENV_RECORD AUTOSAVE_INTERVAL)" \
+record_get "${ENV_FILE:-}" AUTOSAVE_INTERVAL
+AUTOSAVE_INTERVAL="$REPLY" \
 DRY_RUN_SCRIPT="${DRY_RUN_SCRIPT:-}" DRY_RUN_CAPABILITY_SCRIPT="${DRY_RUN_CAPABILITY_SCRIPT:-}" \
   compose_generate "$COMPOSE_OUT" "$PROJECT_NAME" "$PROVIDER_NAME" "${COMPOSE_FILES[@]}"
 

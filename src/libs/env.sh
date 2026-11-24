@@ -2,19 +2,22 @@
 # libs/env.sh  --  the one parser for simple KEY=VALUE env files (the
 # per-sandbox .env). Single home for reading .env.
 #
-# It prints; it never exports. A record value reaches its reader as a return
-# value, and no key of the record becomes a child process's environment. That
-# boundary is what keeps a per-sandbox record from standing in for the ambient
-# environment of the toolchain.
+# env_parse prints; nothing here exports. A record value reaches its reader
+# through `record_get`'s REPLY, and no key of the record becomes a child
+# process's environment. That boundary is what keeps a per-sandbox record from
+# standing in for the ambient environment of the toolchain.
 #
-#   record_open FILE ARRAY   parse FILE once, filling the caller's array
-#   record_get ARRAY KEY     print the value of KEY from an opened record
+#   record_get FILE KEY     set REPLY to KEY's value from FILE, parsing once
 #   env_parse FILE           print the entries as canonical KEY=VALUE lines
 #
-# A process opens a record once, at its entry, and reads every value it needs
-# from that view. env_parse is the parser; record_open is its only caller, so
-# one parse per file per process is a property of the library rather than a
-# discipline each reader has to remember.
+# A process reads a record through record_get. The first read of a file parses
+# it into a private cache; later reads of the same file reuse it. env_parse is
+# the parser, and the cache is an implementation detail: it is never exported,
+# and no caller reads it directly. The cache holds one file, so reading a
+# different file replaces it rather than merging two records.
+#
+# The parse is lazy: a record no reader asks for is not parsed, and a malformed
+# line warns on the first read of its file, not again.
 #
 #   Parsing rules (hardened):
 #     - Skips blank lines and comment lines (# ...).
@@ -80,58 +83,53 @@ env_parse() {
   done < "$FILE"
 }
 
-# The process view is an associative array from source time. `record_get` reads it
-# by indirect expansion, and bash resolves a subscript arithmetically unless the
-# array is already associative: an indexed array answers element 0 for every key,
-# and an undeclared one dies under `set -u` naming the key. Declaring it here means
-# the primitive is always reading the shape it documents.
-# shellcheck disable=SC2034  # the view is read by name through record_get
-declare -gA ENV_RECORD=()
+# The record cache is process-local. `record_get` reads it by indirect
+# expansion, and bash resolves a subscript arithmetically unless the array is
+# already associative: an indexed array answers element 0 for every key, and
+# an undeclared one dies under `set -u` naming the key. Declaring it here means
+# the primitive is always reading the shape it documents. The leading
+# underscore marks the cache as a library implementation detail; it is not
+# exported, and only `record_get` writes it.
+# shellcheck disable=SC2034  # the cache is read by name through record_get
+declare -gA _ENV_RECORD_CACHE=()
+_ENV_RECORD_FILE=""
+_ENV_RECORD_LOADED=0
 
-# record_open FILE ARRAY
-#   Parses FILE once and fills ARRAY (an associative array the caller declared)
-#   with one entry per key. An empty or missing FILE leaves the array empty, so
-#   an optional record costs no branch at every reader. A second occurrence of a
-#   key overwrites the first in the view; env_parse emits every entry and the
-#   caller decides, which keeps the parser single-purpose.
-record_open() {
+# _record_open FILE
+#   Fills the private cache from FILE. An empty or missing FILE leaves the cache
+#   empty, so an optional record costs no branch at every reader. A second
+#   occurrence of a key overwrites the first, because env_parse emits every entry
+#   and the reader takes the last one.
+_record_open() {
   local FILE="${1:-}"
-  local NAME="${2:?record_open requires an array name}"
   local _env_line _env_key _env_val
+  _ENV_RECORD_CACHE=()
   [[ -n "$FILE" && -f "$FILE" ]] || return 0
   while IFS= read -r _env_line; do
     _env_key="${_env_line%%=*}"
     _env_val="${_env_line#*=}"
-    printf -v "${NAME}[${_env_key}]" '%s' "$_env_val"
+    _ENV_RECORD_CACHE["$_env_key"]="$_env_val"
   done < <(env_parse "$FILE")
 }
 
-# record_get ARRAY KEY
-#   Prints the value of KEY from an opened record, or nothing. The caller decides
-#   whether an absent key is an error.
-record_get() {
-  local NAME="${1:?record_get requires an array name}"
-  local KEY="${2:?record_get requires a key}"
-  local _ref="${NAME}[${KEY}]"
-  printf '%s' "${!_ref:-}"
-}
-
-# env_record_view FILE
-#   Opens FILE into the process view, or reuses the view already open for it, so
-#   a process that resolves identity and then initialises parses one file once.
-#   Every reader in the process asks ENV_RECORD through record_get; a reader that
-#   needs the value only once may call record_open on a view of its own.
+# record_get FILE KEY
+#   Sets REPLY to the value of KEY from FILE and returns 0. The first read of a
+#   file parses it into the private cache; later reads of the same file reuse the
+#   cache. A different file replaces it. A missing file or key sets REPLY empty.
+#   The caller decides whether an absent key is an error.
 #
-#   Opening a different file replaces the view: the view holds one record, and a
-#   process that reads two records reads each once.
-env_record_view() {
+#   The value returns through REPLY rather than stdout because a command
+#   substitution runs in a subshell, and a cache written there would not survive
+#   to the caller's next read.
+record_get() {
   local FILE="${1:-}"
-  if [[ -n "${_ENV_VIEW_FILE:-}" && "$_ENV_VIEW_FILE" == "$FILE" ]]; then
-    return 0
+  local KEY="${2:?record_get requires a key}"
+  if [[ "$_ENV_RECORD_LOADED" -eq 0 || "$_ENV_RECORD_FILE" != "$FILE" ]]; then
+    _record_open "$FILE"
+    _ENV_RECORD_FILE="$FILE"
+    _ENV_RECORD_LOADED=1
   fi
-  # shellcheck disable=SC2034  # the view is read by name through record_get
-  declare -gA ENV_RECORD=()
-  record_open "$FILE" ENV_RECORD
-  _ENV_VIEW_FILE="$FILE"
+  local _ref="_ENV_RECORD_CACHE[${KEY}]"
+  REPLY="${!_ref:-}"
   return 0
 }

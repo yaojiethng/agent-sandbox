@@ -498,20 +498,21 @@ test_phase_two_alone_reads_the_record() {
     session_env_names p pi "$sbx" s1
     printf '%s' "$WORKTREE_DIR") || rc=$?
   assert_rc 0 "$rc" 'phase 2 runs without phase 1'
-  assert_eq "/recorded/wt" "$out" 'and reads the record it opened'
+  assert_eq "/recorded/wt" "$out" 'and reads the record through the primitive'
 }
 
-# The view is associative from source time, so a read before any open returns
-# empty instead of element 0 or an arithmetic error.
-test_record_get_without_an_open_returns_empty() {
+# A missing record reads empty, and the first read of an absent path does not
+# fail before a file exists.
+test_record_get_missing_file_returns_empty() {
   local out rc=0
   out=$(set -euo pipefail
     source "$REPO_ROOT/src/libs/env.sh"
-    record_get ENV_RECORD ANY_KEY) || rc=$?
-  assert_rc 0 "$rc" 'an unopened view is readable'
-  assert_empty "$out" 'and answers empty rather than element 0'
+    record_get "$FIXTURE_DIR/absent.env" ANY_KEY
+    printf '%s' "$REPLY") || rc=$?
+  assert_rc 0 "$rc" 'a missing record is readable'
+  assert_empty "$out" 'and answers empty rather than failing'
 }
 
 run_test test_phase_two_alone_reads_the_record
-run_test test_record_get_without_an_open_returns_empty
+run_test test_record_get_missing_file_returns_empty
 test_done test_session_env.sh

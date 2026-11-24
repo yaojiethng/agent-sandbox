@@ -26,7 +26,7 @@ source "$REPO_ROOT/src/libs/env.sh"
 # env_load, env_get and env_file_value are in the list as tripwires: the
 # library no longer defines any of them, so a future call to one is a read that
 # bypasses the contract.
-READ_IDIOS='(^|[[:space:](;])(env_load|env_file_value|env_get|env_parse|record_open|record_get|env_record_view|env_record_get|env_resolve_one|env_resolve_identity) |grep .*.env|-include .env|cut -d.='
+READ_IDIOS='(^|[[:space:](;])(env_load|env_file_value|env_get|env_parse|record_open|_record_open|record_get|env_record_view|env_record_get|env_resolve_one|env_resolve_identity) |grep .*.env|-include .env|cut -d.='
 
 sites() {
   grep -rnE "$READ_IDIOS" --include="*.sh" --include="Makefile.template" \
@@ -38,8 +38,8 @@ sites() {
 # Then:  the call set matches the pinned census exactly, per file
 # Asserts: the call census is a fact about the tree. A new call fails this gate
 #          until the census is deliberately amended. The pin names src/libs/env.sh's
-#          own internal calls: the parser and the view open the record for each
-#          other, and no outside site is allowed to.
+#          own internal calls: the parser and the private open are its internals,
+#          and no outside site is allowed to reach them.
 test_env_resolution_call_census() {
   local expected actual
   expected=$(
@@ -48,37 +48,15 @@ test_env_resolution_call_census() {
       "scripts/install.sh 1" \
       "scripts/onboard.sh 1" \
       "scripts/resume_agent.sh 1" \
-      "scripts/run_agent.sh 2" \
+      "scripts/run_agent.sh 1" \
       "scripts/start_agent.sh 1" \
       "src/libs/env.sh 2" \
-      "src/libs/env_resolve.sh 4" \
-      "src/libs/session_env.sh 3"
+      "src/libs/env_resolve.sh 1" \
+      "src/libs/session_env.sh 1"
   )
   actual="$(sites | sed "s|$REPO/||")"
   assert_eq "$expected" "$actual" "the read call sites match the pinned census"
 }
-
-# Given: an opened view, and the file it came from
-# When:  the file is removed and every key is read again
-# Then:  each key still answers
-# Asserts: the open is eager and the view is the value. A reader that went back
-#          to the file, or an open that deferred parsing until the first read,
-#          cannot answer. This is the property; which function holds the parse
-#          call is an implementation detail and no check here pins it.
-test_record_view_is_the_value_not_the_file() {
-  local dir F
-  dir="$(mktemp -d)"
-  F="$dir/.env"
-  printf 'A=one\nB=two\n' > "$F"
-  # shellcheck disable=SC2034  # the view is read by name through record_get
-  local -A r=()
-  record_open "$F" r
-  rm -f "$F"
-  assert_eq "$(record_get r A)" "one" "the first key survives the file"
-  assert_eq "$(record_get r B)" "two" "the second key survives the file"
-  rm -rf "$dir"
-}
-
 
 # Given: an onboarded record holding the identity triple
 # When:  env_resolve_identity resolves all three fields
@@ -104,9 +82,9 @@ test_identity_resolve_opens_the_record_once() {
 # Given: one host-entry process that resolves the identity, initialises, and
 #        derives the run names -- the three calls every start makes in order
 # When:  the number of parses is counted
-# Then:  the record was opened once
-# Asserts: the whole entry costs one open, not one per stage. A second view
-#          opened by a later stage is what this test exists to catch.
+# Then:  the record was parsed once
+# Asserts: the whole entry costs one parse, not one per stage. A second parse
+#          by a later stage is what this test exists to catch.
 test_a_chain_step_opens_the_record_once() {
   local SBX PROJ CNT OUT
   SBX="$(mktemp -d)"; PROJ="$(mktemp -d)"; CNT="$(mktemp)"
@@ -155,14 +133,12 @@ test_parser_exports_nothing() {
 # Given: the prelude in session_env.sh
 # When:  its direct parser and raw-open calls are counted
 # Then:  there are none
-# Asserts: the prelude consumes the process view through env_record_view and
-#          record_get; it never reaches past the view to the parser or the
-#          raw open. The old pattern named only retired functions, so it could
-#          not see the current API (thermonuclear review, finding 2).
+# Asserts: the prelude reads through record_get; it never reaches past the
+#          primitive to the parser or the private open.
 test_prelude_reaches_no_parser_or_open() {
   local n
   n=$(grep -vE '^\s*#' "$REPO/src/libs/session_env.sh" \
-    | grep -cE "(env_load|env_parse|env_get|record_open) " || true)
+    | grep -cE "(env_load|env_parse|env_get|record_open|_record_open) " || true)
   assert_eq "$n" "0" "the prelude reaches no parser or raw open"
 }
 
@@ -229,7 +205,6 @@ test_sandbox_path_is_a_ladder_value() {
 }
 
 run_test test_env_resolution_call_census
-run_test test_record_view_is_the_value_not_the_file
 run_test test_identity_resolve_opens_the_record_once
 run_test test_a_chain_step_opens_the_record_once
 run_test test_no_second_env_parser
