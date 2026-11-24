@@ -18,7 +18,7 @@ A session that is merely open is resumed, not recovered. These are not recovery 
 
 ## Triage
 
-1. **State the claim.** Read the record the caller names for what the unit was for, what range or files it covered, and what the record says landed. When the caller names no record set, the claim is the operator's description plus what the repository holds; state that the record arm is skipped. Write the claim down before searching; it is what the evidence is compared against.
+1. **State the claim.** Read the record the caller names for what the unit was for, what range or files it covered, and what the record says landed. When the caller names no record set, the claim is the operator's description plus what the repository holds, and the transcript is the evidence: run `node scripts/pi/session_evidence.mjs <session-id>` (or `--cwd <path> --latest`) to print what that session touched and said, and state that the record arm is skipped. Write the claim down before searching; it is what the evidence is compared against.
 2. **Preserve.** Capture a recovery point before any destructive operation: the working tree, the stash, the reflog and the branch, or a `git bundle`. A `git restore`, `checkout`, `clean`, `reset --hard` or `stash drop` before this step can destroy the only copy; the working-tree rule is [`git-discipline`'s](../git-discipline/SKILL.md).
 3. **Search.** Look for the work in the order below and name every source you checked. [`references/evidence.md`](references/evidence.md) states where each one lives by runtime and delivery mode.
    - the working tree and the index

@@ -20,6 +20,7 @@ Start with the least durable evidence: the working tree and the index are lost o
 ## pi
 
 - **Session transcript:** `~/.pi/agent/sessions/<encoded-cwd>/<timestamp>_<id>.jsonl`. Each line is a message, a tool call or a tool result; the encoded directory names the working tree, and a task-queue worker has its own transcript. When no commit holds the work, this is the only record of what the edits were.
+- **Session evidence:** `node scripts/pi/session_evidence.mjs <session-id>` (or `--cwd <path> --latest`) prints the session header, the files it wrote or edited with counts, the write-shaped commands it ran, and its last assistant text. Use it to read the transcript when no commit holds the work.
 - **Model and provider settings:** `~/.pi/agent/settings.json`; a session's header names the provider and model it ran.
 
 ## This harness
