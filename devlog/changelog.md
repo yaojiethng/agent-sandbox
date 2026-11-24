@@ -311,3 +311,11 @@ The change runbook holds the five decisions a principle settles, the frontmatter
 The provider image, its onboarding guide, the instruction-transport generator and the test fixtures that used OpenCode as a second provider are deleted, and the provider contract, lifecycle, quickstart, security and onboarding documents describe `pi` alone. Serve mode went with it -- the Makefile `SERVE` flag, the `--serve` CLI mode, the port, the browser URL and the compose overlay -- because no remaining provider implemented it. The future roadmap's W1 narrowed to sandbox-only vault validation, and the duplicated runtime documentation was removed in favour of pi's shipped documentation.
 
 ---
+
+## M3.4.2 - The resolution model and record primitives
+
+*Every setting resolves through one precedence ladder, every key-value record reads and writes through one pair, and the CLI, the paths and the timestamps each have one declared owner.*
+
+Identity now resolves once at the chain entry, with an absolute record path and one path normalizer, and the record is a single cached primitive read by key rather than exported. The dispatcher forwards a resolved argv through one catalogue whose fields, flags and JSON rendering come from one table, and the CLI contract holds the leaf handoff and path invariants with its gate. The timestamp format has one owner, including a UTC date window and a structural gate, and the relative-time ladder has one home.
+
+---
