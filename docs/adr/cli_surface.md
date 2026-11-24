@@ -81,6 +81,8 @@ Implementation: `scripts/agent-sandbox.sh` (`dispatch`), `src/libs/env_resolve.s
 
 Implementation: `src/libs/env_resolve.sh` (`_env_abs_path`, `default_env_file`), `tests/test_env_resolve.sh`.
 
+**Corrected 2026-11-24:** the normalizer is `path_abs` in `src/libs/common.sh`; `_env_abs_path` was retired with the identity-path consolidation.
+
 ## 2026-11-22 -- The subcommand surface is a catalog, and JSON is its rendering
 
 **Decision:** The dispatcher holds one catalog row per subcommand: its name, leaf path, the identity fields the leaf accepts, any leading argument the dispatcher passes, and its one-line summary. The valid-subcommand list, the `help` index, the no-argument message, the help routing and the dispatch all derive from that table, so a subcommand is added in one place. `agent-sandbox help --json` renders the same rows as JSON, under a `schema` key, for a consumer that reads programmatically. The parse's status maps to the process status in `parse_args_or_exit`, one function in `src/libs/cli.sh`; a leaf calls it instead of spelling the mapping.
@@ -101,6 +103,8 @@ Implementation: `src/libs/env_resolve.sh` (`_env_abs_path`, `default_env_file`),
 **Edge cases / drivers:** the no-argument message and the `help` page must print the same set, and the gate asserts it from the CLI rather than from the table. A declared identity field must appear in its leaf's own `--help` output, so the table cannot claim a field the leaf does not accept; the summary is the catalog's own index sentence, because a leaf's first usage line is its `Usage:` line and an index sentence is not a copy of anything. An unknown subcommand exits 1 and names itself; a leaf's exit status reaches the caller unchanged, because the dispatcher `exec`s it and never wraps it.
 
 Implementation: `scripts/agent-sandbox.sh` (the catalog and its derived surfaces), `src/libs/cli.sh` (`parse_args_or_exit`), tests `tests/test_agent_cli_dispatch.sh` and `tests/test_cli_lib.sh`.
+
+**Corrected 2026-11-24:** `CLI_FIELDS` now carries the field-to-resolver-mode, forwarded-flag and value mapping, and `help --json` renders `identity` and `flags`; the leaf's `parse_args` spec remains its flag source. The "flags stay out" paragraph above is historical.
 
 ## 2026-09-25 -- A flag's shape must match its spec: a bare value flag is a rejected input
 

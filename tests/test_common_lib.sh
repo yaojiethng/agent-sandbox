@@ -136,6 +136,20 @@ test_path_abs_anchors_a_missing_relative_path() {
     "path_abs anchors a missing relative path at the CWD"
 }
 
+# Given: an empty path
+# When:  path_abs runs
+# Then:  it fails and prints nothing
+# Asserts: an empty string is not a path, and must not become the CWD.
+test_path_abs_rejects_empty() {
+  local out rc=0
+  out="$(path_abs "")" || rc=$?
+  if [[ $rc -ne 0 && -z "$out" ]]; then
+    pass "path_abs rejects an empty path"
+  else
+    fail "path_abs accepted an empty path: rc=$rc out='$out'"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # check_base_flags
 # ---------------------------------------------------------------------------
@@ -287,6 +301,7 @@ run_test test_sandbox_dir_canon_rejects_empty
 run_test test_sandbox_dir_canon_rejects_unresolvable
 run_test test_sandbox_dir_canon_converges_spellings
 run_test test_path_abs_anchors_a_missing_relative_path
+run_test test_path_abs_rejects_empty
 run_test test_check_base_flags_valid
 run_test test_check_base_flags_missing_name
 run_test test_check_base_flags_missing_sandbox

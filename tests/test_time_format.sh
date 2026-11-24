@@ -21,14 +21,33 @@ test_setup
 
 source "$REPO_ROOT/src/libs/time_format.sh"
 
-# timestamp_hits ROOT  --  every `.sh` under ROOT that spells a timestamp
-# format itself, minus the one definition. Prints `path:line:text`; empty when
-# none does. The scan covers the compact harness form, the old probe form and
-# ISO 8601, because a producer reaching for a second format picks one of them.
+# timestamp_hits ROOT  --  every `.sh` under ROOT that calls `date` with a
+# display format, minus the owner. `date +%s` and `+%s.%N` are epoch arithmetic
+# and are allowed. A format stored in a variable is caught because the `date`
+# call itself is the violation. Prints `path:line:text`; empty when none does.
 timestamp_hits() {
   local root="$1"
-  grep -rnE "date[^#]*%Y(%m%d-%H%M%S|%m%dT%H%M%S|-%m-%dT%H:%M:%S)" --include="*.sh" "$root" 2>/dev/null \
-    | grep -v 'src/libs/time_format.sh' || true
+  grep -rnE '(^|[^[:alnum:]_])date[^#]*\+' --include="*.sh" "$root" 2>/dev/null \
+    | grep -v 'src/libs/time_format.sh' \
+    | grep -vE '\+[^[:space:]]*%s' || true
+}
+
+# Given: the harness clock
+# When:  ts_date_days_ago renders today and one day ago
+# Then:  today matches the UTC date in ts_from_epoch, and the two days differ
+# Asserts: the date window is UTC, not the host's local clock.
+test_date_days_ago_is_utc() {
+  local today yesterday ts
+  today="$(ts_date_days_ago 0)"
+  yesterday="$(ts_date_days_ago 1)"
+  ts="$(ts_from_epoch "$(date -u +%s)")"
+  assert_eq "${ts:0:8}" "$today" "ts_date_days_ago 0 is today in UTC"
+  if [[ "$today" =~ ^[0-9]{8}$ && "$yesterday" =~ ^[0-9]{8}$ ]]; then
+    pass "ts_date_days_ago renders the date shape"
+  else
+    fail "ts_date_days_ago rendered today='$today' yesterday='$yesterday'"
+  fi
+  assert_ne "$today" "$yesterday" "ts_date_days_ago 1 is a different day"
 }
 
 # Given: the lib's own two directions
@@ -97,7 +116,7 @@ test_the_scan_bites_a_compact_fixture() {
   fi
 }
 
-# Given: a fixture producer that reaches for ISO 8601 or the old probe form
+# Given: a fixture producer that reaches for ISO 8601, the old probe form, or another date-time spelling
 # When:  the timestamp scan runs over it
 # Then:  the scan reports it
 # Asserts: the gate covers the shapes a second producer is likely to choose, not
@@ -107,7 +126,7 @@ test_the_scan_bites_a_non_harness_stamp() {
   local fmt
   rm -rf "$dir"
   mkdir -p "$dir"
-  for fmt in '%Y-%m-%dT%H:%M:%SZ' '%Y%m%dT%H%M%SZ'; do
+  for fmt in '%Y-%m-%dT%H:%M:%SZ' '%Y%m%dT%H%M%SZ' '%Y/%m/%d %H:%M:%S' '%Y%m%d'; do
     printf '%s\n' '#!/usr/bin/env bash' "stamp=\$(date -u +$fmt)" > "$dir/offender.sh"
     if [[ -n "$(timestamp_hits "$dir")" ]]; then
       pass "a producer spelling $fmt is reported"
@@ -115,6 +134,43 @@ test_the_scan_bites_a_non_harness_stamp() {
       fail "a producer spelling $fmt was not reported"
     fi
   done
+}
+
+# Given: a fixture producer that stores the format in a variable
+# When:  the timestamp scan runs over it
+# Then:  the scan reports it
+# Asserts: the gate catches a second definition even when the date call names a
+#          variable instead of spelling the format inline.
+test_the_scan_bites_a_variable_literal() {
+  local dir="$FIXTURE_DIR/offender_variable"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    "FMT='%Y%m%d-%H%M%S'" \
+    'stamp=$(date -u +"$FMT")' > "$dir/offender.sh"
+  if [[ -n "$(timestamp_hits "$dir")" ]]; then
+    pass "a producer storing the format in a variable is reported"
+  else
+    fail "a producer storing the format in a variable was not reported"
+  fi
+}
+
+# Given: a fixture producer that reads epoch seconds for arithmetic
+# When:  the date-format scan runs over it
+# Then:  it reports nothing
+# Asserts: the convention forbids display formats, not `date +%s` timers.
+test_the_scan_allows_epoch_calls() {
+  local dir="$FIXTURE_DIR/epoch_only"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'start=$(date +%s)' \
+    'elapsed=$(date +%s.%N)' > "$dir/epoch.sh"
+  if [[ -z "$(timestamp_hits "$dir")" ]]; then
+    pass "epoch-only date calls are allowed"
+  else
+    fail "a date display format is forbidden, but an epoch call was reported"
+  fi
 }
 
 # Given: every producer in src/ and scripts/
@@ -136,10 +192,13 @@ test_no_producer_spells_a_non_harness_stamp() {
 
 run_test test_ts_now_utc_matches_the_shape
 run_test test_ts_from_epoch_is_utc
+run_test test_date_days_ago_is_utc
 run_test test_round_trip
 run_test test_ts_epoch_rejects_malformed
 run_test test_the_scan_bites_a_compact_fixture
 run_test test_the_scan_bites_a_non_harness_stamp
+run_test test_the_scan_bites_a_variable_literal
+run_test test_the_scan_allows_epoch_calls
 run_test test_no_producer_spells_a_non_harness_stamp
 
 test_done

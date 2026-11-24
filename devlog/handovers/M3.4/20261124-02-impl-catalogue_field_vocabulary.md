@@ -23,7 +23,7 @@ The second open M3.4.2 row, raised by the thermonuclear review in [`20261123-04`
 | Every catalogue identity value is declared in `CLI_FIELDS`, and the catalogue has no second field list. | `bash tests/test_resolution_contract.sh`, case `test_catalog_fields_are_in_the_field_vocabulary` | Agent [x] |
 | A row declaring a field outside the vocabulary fails before help or dispatch, and the error names the row and field. | `bash tests/test_resolution_contract.sh`, case `test_unknown_catalog_field_fails_the_contract_gate` | Agent [x] |
 | `help --json` renders `identity` as `["name","project","sandbox","env"]` and `flags` as `["--name","--project","--sandbox","--env"]` for `start`. | `bash tests/test_agent_cli_dispatch.sh`, case `test_json_renders_the_identity_vocabulary_and_flags` | Agent [x] |
-| The dispatcher mutation set is 15/15, including the updated D13 and new D14/D15. | `MUTATIONS_STRICT=1 MUTATIONS_REQUIRED_SUBJECTS='scripts/agent-sandbox.sh' bash scripts/mutations_run.sh` | Agent [x] |
+| The dispatcher mutation set is 15/15, including the updated D13 and new D14/D15. | `MUTATIONS_REQUIRED_SUBJECTS='scripts/agent-sandbox.sh' bash scripts/mutations_run.sh`; `required findings: 0` | Agent [x] |
 | The ADR and interface documents state the field vocabulary, mapping table, JSON split and validation point as built. | `rg -n -e 'R14' -e 'C8' docs/adr/cli_surface.md`; the three documents read against the diff | Agent [x] |
 | Every decision this iteration records is realized in the files. | the `## Decisions` table read against `git diff` | Agent [x] |
 

@@ -398,6 +398,28 @@ test_refresh_aborts_without_minimal_args() {
   pass "Refresh aborts without --name"
 }
 
+# Given: a project and an invocation directory, with an empty --sandbox
+# When:  onboard runs from that directory
+# Then:  it rejects the empty path and writes nothing into the CWD
+# Asserts: an empty flag is not anchored to the invocation directory.
+test_onboard_rejects_empty_sandbox() {
+  local CWD="$FIXTURE_DIR/empty_sandbox_cwd"
+  local PROJECT_DIR="$FIXTURE_DIR/empty_sandbox_project"
+  mkdir -p "$CWD"
+  make_project_dir "$PROJECT_DIR"
+
+  local OUT RC=0
+  OUT="$( cd "$CWD" && printf '\n' | bash "$ONBOARD_SCRIPT" --name=testproj \
+            --project="$PROJECT_DIR" --sandbox= --yes 2>&1 )" || RC=$?
+
+  if [[ "$RC" -ne 0 && "$OUT" == *"must be an absolute or resolvable path"* \
+        && ! -e "$CWD/.env" && ! -e "$CWD/Makefile" && ! -e "$CWD/.workspace" ]]; then
+    pass "onboard rejects an empty --sandbox without writing into the CWD"
+  else
+    fail "onboard: expected empty --sandbox rejected (rc=$RC out=$OUT)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -412,6 +434,7 @@ run_test test_onboard_aborts_if_sandbox_exists
 run_test test_refresh_updates_makefile
 run_test test_refresh_preserves_env_values
 run_test test_refresh_syncs_paths_preserves_config
+run_test test_onboard_rejects_empty_sandbox
 # ---------------------------------------------------------------------------
 # template_version  --  refresh version gating depends on reading the marker
 # line from a template file. onboard.sh is now dual-use (pattern p-5 guard), so it
@@ -422,6 +445,18 @@ source "$REPO_ROOT/scripts/onboard.sh"
 # Restore the file's declared shell options: onboarding's own top-level
 # `set -euo pipefail` must not leak into the units below.
 set +e
+
+# Given: onboard.sh sourced as a library with no main invocation
+# When:  resolve_and_validate handles a valid absolute path
+# Then:  it writes the canonical value
+# Asserts: the function's helpers are available on the sourced path.
+test_resolve_and_validate_available_when_sourced() {
+  local target="$FIXTURE_DIR/resolve_target"
+  mkdir -p "$target"
+  SANDBOX_DIR=""
+  resolve_and_validate SANDBOX_DIR --sandbox "$target" true
+  assert_eq "$target" "$SANDBOX_DIR" "resolve_and_validate is callable from a sourced onboard.sh"
+}
 
 # Given: a file whose first line is "# agent-sandbox template version: 3"
 # When:  template_version reads it
@@ -651,6 +686,7 @@ run_test test_onboard_warns_partial_state_on_failure_after_first_mkdir
 run_test test_onboard_non_tty_proceeds_without_prompt
 run_test test_onboard_interactive_decline_cancels
 run_test test_onboard_yes_forces_non_interactive_under_tty
+run_test test_resolve_and_validate_available_when_sourced
 
 test_done "scripts/onboard.sh"
 

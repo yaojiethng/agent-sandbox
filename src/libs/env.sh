@@ -93,7 +93,6 @@ env_parse() {
 # shellcheck disable=SC2034  # the cache is read by name through record_get
 declare -gA _ENV_RECORD_CACHE=()
 _ENV_RECORD_FILE=""
-_ENV_RECORD_LOADED=0
 
 # _record_open FILE
 #   Fills the private cache from FILE. An empty or missing FILE leaves the cache
@@ -124,10 +123,9 @@ _record_open() {
 record_get() {
   local FILE="${1:-}"
   local KEY="${2:?record_get requires a key}"
-  if [[ "$_ENV_RECORD_LOADED" -eq 0 || "$_ENV_RECORD_FILE" != "$FILE" ]]; then
+  if [[ "$_ENV_RECORD_FILE" != "$FILE" ]]; then
     _record_open "$FILE"
     _ENV_RECORD_FILE="$FILE"
-    _ENV_RECORD_LOADED=1
   fi
   local _ref="_ENV_RECORD_CACHE[${KEY}]"
   REPLY="${!_ref:-}"

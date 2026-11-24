@@ -97,7 +97,7 @@ check_sha256sum() {
 check_gnu_date() {
   if ! date -d '1 day ago' >/dev/null 2>&1; then
     echo "  - GNU date (date -d) missing" >&2
-    echo "    Used by scripts/prune.sh for age cutoffs; BSD date uses -v instead." >&2
+    echo "    Used by time_format.sh for the prune age cutoff; BSD date uses -v instead." >&2
     echo "    macOS: brew install coreutils" >&2
     return 1
   fi

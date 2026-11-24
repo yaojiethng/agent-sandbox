@@ -29,6 +29,8 @@
 # SANDBOX_DIR without overwriting .env operator values.
 
 set -euo pipefail
+_onboard_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$_onboard_root/src/libs/common.sh"
 _maybe_cleanup() {
   if $_HAS_SIDE_EFFECTS && [[ -n "${SANDBOX_DIR:-}" ]]; then
     echo "Warning: onboard.sh failed after creating files in SANDBOX_DIR." >&2
@@ -65,7 +67,7 @@ or, from a Makefile: make onboard SANDBOX_DIR=<path> (or make refresh SANDBOX_DI
 
 PATH FORMAT
   All paths must be WSL/Linux format, not Windows format.
-  Relative paths (., ~/foo) are resolved to absolute via realpath.
+  Relative paths (., ~/foo) are resolved to absolute via path_abs.
   Valid:   /home/user/projects/my-project  .  ~/sandbox/my-project
            /mnt/c/Users/you/Projects/my-project
   Invalid: C:\\Users\\you\\Projects\\my-project
@@ -91,6 +93,14 @@ template_version() {
 resolve_and_validate() {
   local VAR="$1" FLAG="$2" VAL="$3" REQUIRE_EXIST="${4:-false}"
   local RESOLVED
+
+  # An empty flag is not a path. Reject it before path_abs can anchor it at the
+  # invocation CWD, which would make the CWD the sandbox.
+  if [[ -z "$VAL" ]]; then
+    echo "Error: $FLAG must be an absolute or resolvable path." >&2
+    echo "  Got: (empty)" >&2
+    exit 1
+  fi
 
   # Reject a Windows path on the RAW value, before path_abs resolves it:
   # path_abs turns `C:\Users\you\sandbox` into an absolute Linux path, which

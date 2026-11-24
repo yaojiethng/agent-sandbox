@@ -70,8 +70,8 @@ test_identity_resolve_opens_the_record_once() {
   printf 'PROJECT_NAME=probe\nPROJECT_DIR=%s\nSANDBOX_DIR=%s\n' "$dir" "$dir" > "$dir/.env"
   out=$(CNT="$cnt" SBX="$dir" bash -c '
     source "$1/src/libs/env_resolve.sh"
-    eval "$(declare -f env_parse | sed "1s/env_parse/env_parse_orig/")"
-    env_parse() { printf x >> "$CNT"; env_parse_orig "$@"; }
+    source "$1/tests/libs/env_parse_counter.sh"
+    env_parse_counter_install "$CNT"
     env_resolve_identity "" "" "$SBX" "$SBX/.env" >/dev/null 2>&1 || exit 1
     wc -c < "$CNT"
   ' _ "$REPO" 2>&1)
@@ -95,8 +95,8 @@ test_a_chain_step_opens_the_record_once() {
   OUT=$(CNT="$CNT" SBX="$SBX" PROJ="$PROJ" bash -c '
     source "$1/src/libs/common.sh" 2>/dev/null || true
     source "$1/src/libs/session_env.sh"
-    eval "$(declare -f env_parse | sed "1s/env_parse/env_parse_orig/")"
-    env_parse() { printf x >> "$CNT"; env_parse_orig "$@"; }
+    source "$1/tests/libs/env_parse_counter.sh"
+    env_parse_counter_install "$CNT"
     ENV_FILE="$SBX/.env"
     env_resolve_identity "" "" "$SBX" "$SBX/.env" >/dev/null || exit 1
     resolve_and_init "$PROJECT_NAME" "$PROJECT_DIR" "$SBX" >/dev/null || exit 1

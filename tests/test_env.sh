@@ -9,6 +9,7 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/libs/test_common.sh"
 test_setup
 source "$REPO_ROOT/src/libs/env.sh"
+source "$REPO_ROOT/tests/libs/env_parse_counter.sh"
 
 # val_of FILE KEY  -- read one key through the public primitive.
 val_of() {
@@ -258,8 +259,7 @@ test_record_get_parses_a_file_once() {
   local F="$FIXTURE_DIR/once.env" CNT="$FIXTURE_DIR/once.cnt"
   printf 'A=one\nB=two\n' > "$F"
   : > "$CNT"
-  eval "$(declare -f env_parse | sed '1s/env_parse/env_parse_orig/')"
-  env_parse() { printf x >> "$CNT"; env_parse_orig "$@"; }
+  env_parse_counter_install "$CNT"
   record_get "$F" A
   assert_eq "one" "$REPLY" "the first key reads"
   record_get "$F" B

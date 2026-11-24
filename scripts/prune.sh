@@ -98,7 +98,7 @@ rule1_selected_records() {
   # Fail closed on an underivable cutoff: if the age threshold cannot be
   # computed, pruning on an empty cutoff would select every stale record of
   # every age. Refuse instead.
-  cutoff_ts="$(date -d "${AGE_DAYS} days ago" +%Y%m%d 2>/dev/null)" || {
+  cutoff_ts="$(ts_date_days_ago "$AGE_DAYS")" || {
     echo "rule1_selected_records: cannot derive the age cutoff from AGE_DAYS=${AGE_DAYS}; refusing to select" >&2
     return 1
   }

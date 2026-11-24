@@ -119,6 +119,18 @@ catalog_field() {
   return 1
 }
 
+# catalog_require FIELD ROW  --  print the field row, or name the unknown field
+# and return 1. One owner for the vocabulary error, used by the validator and
+# both consumers so a direct call fails the same way as a validated run.
+catalog_require() {
+  local field="$1" row="$2" field_row
+  if ! field_row="$(catalog_field "$field")"; then
+    echo "Error: catalog row '$row' declares unknown identity field '$field'" >&2
+    return 1
+  fi
+  printf '%s' "$field_row"
+}
+
 # catalog_validate  --  fail when a catalog row names a field outside the
 # vocabulary. Runs before any help or dispatch surface derives from the table.
 catalog_validate() {
@@ -126,10 +138,7 @@ catalog_validate() {
   for row in "${CLI_CATALOG[@]}"; do
     IFS='|' read -r name leaf ident largs resolve summary <<< "$row"
     for field in $ident; do
-      if ! catalog_field "$field" >/dev/null; then
-        echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
-        return 1
-      fi
+      catalog_require "$field" "$name" >/dev/null || return 1
     done
   done
 }
@@ -159,10 +168,7 @@ print_json() {
     ident_words=(); read -ra ident_words <<< "$ident"
     flags_words=()
     for field in "${ident_words[@]}"; do
-      field_row="$(catalog_field "$field")" || {
-        echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
-        exit 1
-      }
+      field_row="$(catalog_require "$field" "$name")" || exit 1
       IFS='|' read -r _ _ flag _ <<< "$field_row"
       flags_words+=("$flag")
     done
@@ -189,7 +195,7 @@ require_base_args() {
   fi
 }
 
-# resolve_identity [name dir sandbox]  --  thin-interface seam over the
+# resolve_identity [name project sandbox]  --  thin-interface seam over the
 # canonical resolver.
 resolve_identity() {
   env_resolve_identity "$PROJECT_NAME" "$PROJECT_DIR" "$SANDBOX_DIR" "$ENV_REL" "$@" || exit 1
@@ -241,10 +247,7 @@ dispatch() {
   # The resolver mode and forwarded flag a field implies come from CLI_FIELDS;
   # a new field is a row there, not a second list beside it.
   for field in $ident; do
-    field_row="$(catalog_field "$field")" || {
-      echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
-      exit 1
-    }
+    field_row="$(catalog_require "$field" "$name")" || exit 1
     IFS='|' read -r _ mode _ _ <<< "$field_row"
     [[ -z "$mode" ]] || modes+=("$mode")
   done
@@ -261,10 +264,7 @@ dispatch() {
   # The record path is the resolver's normalized absolute ENV_FILE, so the leaf
   # opens the same file the resolver read rather than resolving --env again.
   for field in $ident; do
-    field_row="$(catalog_field "$field")" || {
-      echo "Error: catalog row '$name' declares unknown identity field '$field'" >&2
-      exit 1
-    }
+    field_row="$(catalog_require "$field" "$name")" || exit 1
     IFS='|' read -r _ _ flag value_var <<< "$field_row"
     forwarded+=("$flag=${!value_var}")
   done

@@ -14,6 +14,7 @@ REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
 
 source "$TEST_DIR/libs/test_common.sh"
 test_setup
+source "$REPO_ROOT/src/libs/time_format.sh"
 
 STUB_DIR="$TEST_DIR/../tests/stubs"
 
@@ -103,7 +104,7 @@ test_rule1_age_filter_skips_recent() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_age"
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
-  local today; today="$(date +%Y%m%d)"
+  local today; today="$(ts_date_days_ago 0)"
   # A stale record from TODAY is younger than the default 3-day cutoff -> kept.
   write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
 
@@ -124,7 +125,7 @@ test_rule1_age_days_broadens() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_agedays"
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
-  local today; today="$(date +%Y%m%d)"
+  local today; today="$(ts_date_days_ago 0)"
   write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
 
   invoke_prune --age-days=0 > /dev/null 2>&1
@@ -429,7 +430,7 @@ test_rule1_empty_cutoff_refuses_instead_of_pruning_all() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_empty_cutoff"
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
-  local today; today="$(date +%Y%m%d)"
+  local today; today="$(ts_date_days_ago 0)"
   write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
 
   # Force the cutoff derivation to fail while leaving every other `date` call
@@ -438,7 +439,7 @@ test_rule1_empty_cutoff_refuses_instead_of_pruning_all() {
   mkdir -p "$BINDIR"
   cat > "$BINDIR/date" <<EOF
 #!/usr/bin/env bash
-if [[ "\${1:-}" == "-d" && "\${2:-}" == *"days ago"* ]]; then
+if [[ "\$*" == *"-d"*"days ago"* ]]; then
   exit 1
 fi
 exec "$(command -v date)" "\$@"
@@ -466,7 +467,7 @@ test_rule1_unreadable_ts_keeps_record() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_unreadable_ts"
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
-  local today; today="$(date +%Y%m%d)"
+  local today; today="$(ts_date_days_ago 0)"
   local recent="$(( today - 1 ))"
   write_record "s_no_ts" "pi" "aaaa1111aaaa" "$recent-000000"
   # Unreadable: no session-ts label on the record's compose file.
@@ -492,7 +493,7 @@ test_rule1_age_days_non_numeric_rejected() {
   local FIXTURE_DIR="$FIXTURE_DIR/pr1_badage"
   mkdir -p "$FIXTURE_DIR"
   setup_prune_fixture "$FIXTURE_DIR"
-  local today; today="$(date +%Y%m%d)"
+  local today; today="$(ts_date_days_ago 0)"
   write_record "s_recent" "pi" "aaaa1111aaaa" "${today}-000000"
 
   local OUT RC

@@ -147,10 +147,17 @@ test_json_renders_the_identity_vocabulary_and_flags() {
 }
 
 # The two renderings are projections of one table, so every row has one flag
-# for each identity field. A missing table row would shorten one side.
+# for each identity field. A missing table row shortens one side; the CLI must
+# also succeed and emit valid JSON before the comparison means anything.
 test_json_rows_carry_one_flag_per_identity_field() {
-  local bad
-  bad="$(cli help --json | jq -r '.subcommands[] | select((.identity | length) != (.flags | length)) | .name')"
+  local json rc=0 bad
+  json="$(cli help --json)" || rc=$?
+  assert_rc 0 "$rc" 'help --json exits successfully'
+  if ! printf '%s' "$json" | jq -e . >/dev/null 2>&1; then
+    fail 'help --json emits valid JSON'
+    return
+  fi
+  bad="$(printf '%s' "$json" | jq -r '.subcommands[] | select((.identity | length) != (.flags | length)) | .name')"
   assert_empty "$bad" 'every row has one forwarded flag per identity field'
 }
 

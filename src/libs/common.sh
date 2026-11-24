@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # libs/common.sh
-# Shared flag parsing and validation for agent-sandbox scripts.
-# Sourced by scripts that need --name and --sandbox (stop.sh, prune.sh, etc.).
+# Shared flag parsing, path normalization and validation for agent-sandbox
+# scripts. Sourced by scripts that need --name and --sandbox (stop.sh,
+# prune.sh, etc.).
 #
-# Pure flag-parsing library: it parses flags and does NOT set caller-owned
-# path variables (REPO_ROOT, etc.). Callers derive their own
+# Pure library: it parses flags and normalizes paths, and does NOT set
+# caller-owned path variables (REPO_ROOT, etc.). Callers derive their own
 # paths self-referentially from BASH_SOURCE[0] and define their own usage().
 #
 # Sets in caller's scope:
@@ -18,6 +19,9 @@
 #                           when help was requested; the caller turns the
 #                           status into its exit
 #   json_string()         --  print a value as a JSON string literal
+#   path_canon()          --  canonicalize a resolvable path
+#   path_abs()            --  make a path absolute, anchoring a missing one
+#   sandbox_dir_canon()   --  canonicalize a sandbox directory
 #
 # Scripts should define their own usage() before sourcing this file.
 
@@ -47,6 +51,7 @@ path_canon() {
 #   construction.
 path_abs() {
   local path="$1"
+  [[ -n "$path" ]] || return 1
   if path_canon "$path"; then return 0; fi
   path="${path/#\~/$HOME}"
   if [[ "$path" == /* ]]; then
