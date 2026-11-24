@@ -42,6 +42,7 @@
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$_self_dir/session_state.sh"
 source "$_self_dir/routing.sh"
+source "$_self_dir/time_format.sh"
 source "$_self_dir/cli.sh"
 
 # Patterns the credential scan counts. A value is never printed, only a count
@@ -387,7 +388,9 @@ package_eval_snapshot() {
   fi
 
   local SNAPSHOT_TIME BRANCH HEAD_SHA TRANSCRIPT_BYTES TURNS="" TURNS_RC=0
-  SNAPSHOT_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  # SNAPSHOT_TIME is a harness stamp: the snapshot remains inside the harness's
+  # one timestamp format even though a reader outside the harness may consume it.
+  SNAPSHOT_TIME=$(ts_now_utc)
   BRANCH=$(git -C "$SANDBOX_DIR" rev-parse --abbrev-ref HEAD)
   HEAD_SHA=$(git -C "$SANDBOX_DIR" rev-parse HEAD)
   TRANSCRIPT_BYTES=$(wc -c < "$OUTPUT_DIR/chat.jsonl" | tr -d ' ')

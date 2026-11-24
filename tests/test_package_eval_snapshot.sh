@@ -253,7 +253,27 @@ test_explicit_baseline_is_recorded_as_moved() {
   unset PI_SESSION_FILE
 }
 
+test_snapshot_time_is_the_harness_format() {
+  local root="$FIXTURE_DIR/snapshot_time"
+  local repo; repo=$(make_snapshot_fixture "$root")
+  local out="$root/snapshot"
+  export PI_SESSION_FILE="$root/chat.jsonl"
+  run_snapshot "$repo" "$out"
+  assert_rc 0 "$SNAPSHOT_RC" 'a conforming run succeeds'
+  local json_time status_time
+  json_time=$(jq -r '.snapshot_time' "$out/eval-point.json")
+  status_time=$(sed -n 's/^SNAPSHOT_TIME=//p' "$out/.snapshot-status")
+  if [[ "$json_time" =~ $TS_PATTERN ]]; then
+    pass 'the facts carry the harness timestamp shape'
+  else
+    fail "the facts carry '$json_time', which is not the harness shape"
+  fi
+  assert_eq "$json_time" "$status_time" 'the facts and the status file carry one timestamp'
+  unset PI_SESSION_FILE
+}
+
 run_test test_snapshot_writes_every_artefact
+run_test test_snapshot_time_is_the_harness_format
 run_test test_transcript_copy_is_byte_identical
 run_test test_operator_turns_are_numbered_in_order
 run_test test_partial_last_line_is_reported

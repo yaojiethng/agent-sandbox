@@ -264,7 +264,7 @@ _session_export() {
   # record a FAIL, rather than aborting the trap with no diagnostic.
   if [[ -z "$_session_id" ]]; then
     echo "session-export: SESSION_ID is unset; cannot build the export path" >&2
-    _write_export_status "$_changes_dir" "FAIL" "$(ts_now)" "1" 2>/dev/null || true
+    _write_export_status "$_changes_dir" "FAIL" "$(ts_now_utc)" "1" 2>/dev/null || true
     return 1
   fi
 
@@ -281,7 +281,7 @@ _session_export() {
 
   if diff_export "$_sandbox_dir" "$_exit_dir" "$_session_id"; then
     echo "session-export: SUCCESS  --  artefacts written to $_exit_dir" >&2
-    _write_export_status "$_changes_dir" "SUCCESS" "$(ts_now)" "0" 2>/dev/null || true
+    _write_export_status "$_changes_dir" "SUCCESS" "$(ts_now_utc)" "0" 2>/dev/null || true
     return
   fi
 
@@ -304,7 +304,7 @@ _session_export() {
     echo "session-export: no autosave fallback available  --  session artefacts may be lost" >&2
   fi
 
-  _write_export_status "$_changes_dir" "FAIL" "$(ts_now)" "1" 2>/dev/null || true
+  _write_export_status "$_changes_dir" "FAIL" "$(ts_now_utc)" "1" 2>/dev/null || true
 }
 
 # On exit: kill autosave subshell if running, wait for git lockfile to settle,

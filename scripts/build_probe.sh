@@ -219,7 +219,7 @@ main() {
   [[ -d "$PROBE_INPUT_DIR" ]] || die "output directory does not exist: $PROBE_INPUT_DIR"
   [[ -w "$PROBE_INPUT_DIR" ]] || die "output directory is not writable: $PROBE_INPUT_DIR"
 
-  PROBE_STAMP="$(ts_now)"
+  PROBE_STAMP="$(ts_now_utc)"
   local run_dir="$PROBE_INPUT_DIR/build/$PROBE_STAMP"
   local report="$PROBE_INPUT_DIR/build/$PROBE_STAMP.json"
   mkdir -p "$run_dir" || die "could not create $run_dir"

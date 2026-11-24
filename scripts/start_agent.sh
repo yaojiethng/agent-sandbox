@@ -210,7 +210,7 @@ _start_wizard() {
 _new_session_identity() {
   # Compute fresh identity and export it for this run.
   # Called for both default new-session and --refresh paths.
-  export SESSION_TS; SESSION_TS=$(ts_now)
+  export SESSION_TS; SESSION_TS=$(ts_now_utc)
   export HOST_HEAD_SHA; HOST_HEAD_SHA=$(git -C "$PROJECT_DIR" rev-parse HEAD)
   export SESSION_ID; SESSION_ID=$(session_id_derive "$SANDBOX_DIR" "$HOST_HEAD_SHA" "$SESSION_TS")
   # Dry-run labeling (not routing): the DRYRUN_SID_PREFIX flows into every

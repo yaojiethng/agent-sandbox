@@ -283,7 +283,7 @@ run_row() {
 
 main() {
   mkdir -p "$MUTATIONS_RUN_DIR" || return 1
-  local output="${MUTATIONS_OUTPUT:-$MUTATIONS_RUN_DIR/$(ts_now)-mutation_run.jsonl}"
+  local output="${MUTATIONS_OUTPUT:-$MUTATIONS_RUN_DIR/$(ts_now_utc)-mutation_run.jsonl}"
   local rows_count=0 proven=0 survived=0 noop=0 control=0 control_failed=0 skipped=0
   local required_total=0 required_findings=0 required_skipped=0
   local -a required_rows=() other_rows=()

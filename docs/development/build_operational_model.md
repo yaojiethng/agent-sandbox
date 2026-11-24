@@ -84,7 +84,7 @@ One JSON object per run, at `<input-dir>/build/<timestamp>.json`:
 {
   "probe": "build_probe",
   "format": 2,
-  "timestamp": "20261107T120000Z",
+  "timestamp": "20261107-120000",
   "label": "baseline",
   "repo": {"root": "/path/to/repo", "head": "abc123", "dirty": false},
   "host": {"uname": "Linux x86_64", "docker": "Docker version 27.0.0"},

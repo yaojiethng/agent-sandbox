@@ -38,7 +38,7 @@ diff_export() {
   fi
 
   local _export_ts
-  _export_ts=$(ts_now)
+  _export_ts=$(ts_now_utc)
 
   # Read init_sha from SESSION_STATE for inclusion in .export-status.
   # If the sandbox hasn't been initialised yet (no SESSION_STATE),

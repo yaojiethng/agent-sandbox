@@ -891,7 +891,7 @@ main() {
     MODE="read-only"
   fi
 
-  STAMP="$(ts_now)"
+  STAMP="$(ts_now_utc)"
   RUN_DIR="$PROBE_INPUT_DIR/stop/$STAMP"
   local report="$PROBE_INPUT_DIR/stop/$STAMP.json"
   mkdir -p "$RUN_DIR" || die "could not create $RUN_DIR"

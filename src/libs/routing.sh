@@ -127,7 +127,7 @@ export_path() {
   fi
 
   local EXPORT_TIME
-  EXPORT_TIME=$(ts_now)
+  EXPORT_TIME=$(ts_now_utc)
 
   # Autosave: no EXPORT_TIME in path  --  single directory, overwritten each cycle
   if [[ "$SUBDIR" == "autosave" ]]; then

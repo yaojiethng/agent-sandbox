@@ -179,6 +179,8 @@ No `git am`, no `format-patch`, no git metadata headers. Works identically in bo
 | `make confirm [TARGET_BRANCH=<branch>]` | Host | Cleans up draft branch after operator rebase and merge. |
 | `make reject` | Host | Discards draft branch. Artefacts unchanged. |
 
+`package_eval_snapshot.sh` stamps `SNAPSHOT_TIME` through `src/libs/time_format.sh`; `eval-point.json` and `.snapshot-status` carry the harness's one timestamp shape, not an external ISO exception.
+
 ## Correspondence Across Parallel Sessions
 
 Two sessions against different worktrees maintain independent correspondence with their respective host worktrees. Every token that could collide is scoped per worktree:
@@ -206,6 +208,7 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 | `docs/adr/harness_versioning.md` | Per-surface version semantics (digest, HEAD, symlink) |
 | `docs/adr/drift_state_coherence.md` | Coherence by minimisation, not detection |
 | `docs/adr/session_identifier.md` | Project/session identity |
+| `docs/adr/time_format.md` | The one timestamp format and the eval snapshot timestamp |
 | `devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md` | Full design record -- export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../reference/provider_lifecycle.md) | Provider config provisioning at session start |

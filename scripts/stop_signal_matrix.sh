@@ -187,7 +187,7 @@ main() {
   [[ -w "$MATRIX_INPUT_DIR" ]] || die "output directory is not writable: $MATRIX_INPUT_DIR"
 
   local stamp run_dir report
-  stamp="$(ts_now)"
+  stamp="$(ts_now_utc)"
   run_dir="$MATRIX_INPUT_DIR/stop-signal/$stamp"
   report="$run_dir/matrix.json"
   mkdir -p "$run_dir" || die "could not create $run_dir"

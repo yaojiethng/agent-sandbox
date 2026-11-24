@@ -411,7 +411,7 @@ package_branch() {
   #    so the host-side make draft can resolve the baseline and timestamp
   #    from a single file.
   local _export_ts
-  _export_ts=$(ts_now)
+  _export_ts=$(ts_now_utc)
   _write_export_status "$OUTPUT_DIR" "SUCCESS" "$_export_ts" "0" "$INIT_SHA"
 
   # 6. Baseline provenance. After a rebase the merge-base is not the recorded

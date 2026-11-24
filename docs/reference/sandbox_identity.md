@@ -14,7 +14,7 @@ The agent-sandbox harness uses a content-addressed identity model with three sco
 | `PROJECT_DIR` | User-provided at `onboard`; stored in the sandbox `.env` | Host | Absolute path to the project directory on the host. Used for git operations and path derivation. |
 | `SANDBOX_DIR` | Operator-supplied at `onboard` (defaults to `PROJECT_DIR-sandbox`); stored in the sandbox `.env` | Sandbox instance | Absolute path to the sandbox instance directory on the host. The identity factor that distinguishes parallel worktree sessions. |
 | `HOST_HEAD_SHA` | `git -C PROJECT_DIR rev-parse HEAD` at first start | Sandbox instance | Full SHA of the host git HEAD at session start. Records the branch point for provenance tracking. On copy-mode resume, read from the volume label; on mount-mode resume, from the registry record. |
-| `SESSION_TS` | `ts_now` in `src/libs/time_format.sh` at first start | Session run | Human-readable session timestamp, in the harness's one format. On resume, read from the volume label / registry record to ensure consistency with the volume's SESSION_STATE. |
+| `SESSION_TS` | `ts_now_utc` in `src/libs/time_format.sh` at first start | Session run | Human-readable session timestamp, in the harness's one format. On resume, read from the volume label / registry record to ensure consistency with the volume's SESSION_STATE. |
 
 ## Derived Identifiers
 
