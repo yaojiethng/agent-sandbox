@@ -5,8 +5,6 @@ description: "Checks handover content and the closed handover chain against the 
 
 # handover-maintenance
 
-<!-- Merge provenance: Track A (the two content checks and their run conditions) is the substance of .agents/audits/handover-audit.skill.md. Track B (the triggers, the scope list, the seven-step procedure, and the report) is the substance of .agents/audits/audit.skill.md. Both files are superseded by this skill and were removed by handover 20261003-02. The skill was made report-only by handover 20261004-10, which took back the part of commit c1bc00e that made a maintenance run write its corrections: the checks stay, the write authority leaves, and no audit file is restored. The two tracks became two runbooks by handover 20261023-17, because a track has no caller and a runbook does. -->
-
 ## Project conventions
 
 Read each convention below at `.agents/skills/<name>/SKILL.md`; if one is missing or holds the seeded stub, skip the arm that reads it and report the skipped arm. Raise only a convention the procedure cannot run without.
