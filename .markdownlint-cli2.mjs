@@ -20,9 +20,10 @@
 //   devlog/handovers/    -- closed handovers, written before the current paths
 //   devlog/discussions/  -- closed discussion records, pre-M1.5 restructure
 //   docs/adr/archive/    -- superseded ADRs, kept for the decision history
-import { load_layout, record_trees } from "./src/build/record-layout.mjs";
+import { load_layout, record_archives, record_trees } from "./src/build/record-layout.mjs";
 
 export const recordTrees = record_trees(load_layout());
+export const recordArchives = record_archives(load_layout());
 
 export default {
   config: {
@@ -61,7 +62,7 @@ export default {
     // 800 files clean over an empty rule set. The list is passed because the
     // rule reads its carve-out from params.config, and a bare `true` would
     // exempt nothing and report every closed record.
-    "linking": { recordTrees },
+    "linking": { recordTrees, recordArchives },
     // doc-wrap: one paragraph per physical line, registered as of the
     // maintenance pass that found it enabled but never registered. The record
     // trees are exempt; legacyFiles names live files not yet reflowed, exempt

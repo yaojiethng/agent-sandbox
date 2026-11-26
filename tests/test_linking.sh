@@ -18,6 +18,9 @@
 #   a link in a fenced block    --  skipped
 #   no recordTrees key         --  nothing is exempt; the rule holds no list
 #   a configured carve-out      --  the named trees are exempt
+#   an active record            --  checked, so a dead link is flagged
+#   a closed record             --  exempt, keeping the links it was written with
+#   an active record in archive/ -- exempt: a frozen archive is history
 #   an unreadable target        --  flagged as a missing target, never a pass
 #   an image path, from a shipped file -- clean when the image path maps back to
 #                                 a populated repository source
@@ -77,6 +80,20 @@ make_cfg() {
     else
       printf '  config: { default: false, "linking": true },\n'
     fi
+    printf '  customRules: ["%s"],\n' "$RULE"
+    printf '  globs: ["**/*.md"],\n'
+    printf '};\n'
+  } > "$cfg"
+  printf '%s' "$cfg"
+}
+
+# make_cfg_with_archives TREES_CSV ARCHIVES_CSV -- a temp config that also names
+# the frozen archives, so an archived record stays exempt whatever its status.
+make_cfg_with_archives() {
+  local cfg="$FIXTURE_DIR/mdlconfig-$RANDOM.mjs"
+  {
+    printf 'export default {\n'
+    printf '  config: { default: false, "linking": { recordTrees: ["%s"], recordArchives: ["%s"] } },\n' "$1" "$2"
     printf '  customRules: ["%s"],\n' "$RULE"
     printf '  globs: ["**/*.md"],\n'
     printf '};\n'
@@ -207,6 +224,52 @@ test_configured_carve_out_exempts_the_named_trees() {
   cfg="$(make_cfg 'devlog/handovers/", "devlog/discussions/')"
   out="$(mdl_run "$dir" "$cfg")"
   assert_eq_num 1 "$(grep -c 'linking' <<< "$out")" 'only the uncarved file is checked'
+}
+
+# write_record PATH STATUS LINK -- a record under a carved tree, with frontmatter.
+write_record() {
+  local path="$1" status="$2" link="$3"
+  mkdir -p "$(dirname "$path")"
+  printf -- '---\nstatus: %s\n---\n\n[%s](%s)\n' "$status" "$link" "$link" > "$path"
+}
+
+test_active_record_with_a_dead_link_is_flagged() {
+  local dir cfg out
+  dir="$(fixture_root active_record)"
+  write_record "$dir/devlog/handovers/h.md" Active nope.md
+  cfg="$(make_cfg 'devlog/handovers/')"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 1 "$(grep -c 'linking' <<< "$out")" 'an active record is checked'
+  assert_contains "$out" 'nope.md' 'the dead target is named'
+}
+
+test_closed_record_with_a_dead_link_is_exempt() {
+  local dir cfg out
+  dir="$(fixture_root closed_record)"
+  write_record "$dir/devlog/handovers/h.md" Closed nope.md
+  cfg="$(make_cfg 'devlog/handovers/')"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a closed record keeps the links it was written with'
+}
+
+test_active_record_with_a_live_link_passes() {
+  local dir cfg out
+  dir="$(fixture_root active_live)"
+  mkdir -p "$dir/devlog/handovers"
+  printf '# Target\n' > "$dir/devlog/handovers/target.md"
+  write_record "$dir/devlog/handovers/h.md" Active target.md
+  cfg="$(make_cfg 'devlog/handovers/')"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'an active record with a resolving link is clean'
+}
+
+test_archived_record_with_a_dead_link_is_exempt() {
+  local dir cfg out
+  dir="$(fixture_root archived_active)"
+  write_record "$dir/devlog/handovers/archive/h.md" Active nope.md
+  cfg="$(make_cfg_with_archives 'devlog/handovers/' 'devlog/handovers/archive/')"
+  out="$(mdl_run "$dir" "$cfg")"
+  assert_eq_num 0 "$(grep -c 'linking' <<< "$out")" 'a frozen archive is exempt whatever status it carries'
 }
 
 test_unreadable_target_is_flagged() {
@@ -389,6 +452,10 @@ run_test test_external_targets_are_skipped
 run_test test_link_in_a_fenced_block_is_skipped
 run_test test_no_carve_out_exempts_nothing
 run_test test_configured_carve_out_exempts_the_named_trees
+run_test test_active_record_with_a_dead_link_is_flagged
+run_test test_closed_record_with_a_dead_link_is_exempt
+run_test test_active_record_with_a_live_link_passes
+run_test test_archived_record_with_a_dead_link_is_exempt
 run_test test_unreadable_target_is_flagged
 run_test test_image_path_from_a_shipped_file_is_clean
 run_test test_image_path_missing_from_the_image_is_flagged

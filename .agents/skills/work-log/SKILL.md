@@ -86,6 +86,10 @@ A record with no frontmatter block is unreachable by the default scan, because t
 
 The `milestone` field names the task group the iteration belongs to. The task list states its value's format, in [`../task-list/SKILL.md`](../task-list/SKILL.md).
 
+### Links in a record
+
+A record's inline links are checked while the record is `Active`, and exempt once it is closed: a closed record is a snapshot of the tree at the time it was written, so its pointers are part of the record. `scripts/lint/linking.mjs` holds the check.
+
 ## The work-log tool
 
 `scripts/worklog.sh` is the seam between the convention and the tree. It reads the layout declared once in `src/build/record-layout.json` through `src/build/record-layout.mjs`, and it answers the derived reads a procedure would otherwise compute by hand:

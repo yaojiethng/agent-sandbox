@@ -34,7 +34,11 @@
 // from its config entry, and exempts nothing when the key is absent. The list is
 // declared once in `src/build/record-layout.json`, read through
 // `src/build/record-layout.mjs`, and passed to this rule and doc-wrap under the
-// same key, so one setting has one home and no rule grows its own copy.
+// same key, so one setting has one home and no rule grows its own copy. A file
+// under one of those trees is exempt unless its frontmatter declares
+// `status: Active`: the active record's links are the ones a reader follows now
+// (`work-log` states the rule). The archives the layout declares are always
+// exempt, whatever status a frozen record carries.
 //
 // ESM form: `.markdownlint-cli2.mjs` imports this as a custom rule.
 
@@ -145,6 +149,20 @@ function anchors_of(file) {
   return out;
 }
 
+// A record under an exempt tree is held only while it is Active. A closed
+// record is a snapshot of the tree at the time it was written, and its pointers
+// stay as written.
+function is_active_record(file) {
+  let text;
+  try {
+    text = readFileSync(resolve(file), "utf8");
+  } catch {
+    return false;
+  }
+  const block = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  return Boolean(block && /^status:\s*Active\s*$/m.test(block[1]));
+}
+
 export default [
   {
     names: ["linking"],
@@ -152,11 +170,14 @@ export default [
     tags: ["links"],
     function: function rule(params, onError) {
       const recordTrees = params.config.recordTrees ?? [];
+      const recordArchives = params.config.recordArchives ?? [];
       // markdownlint-cli2 hands the rule the path its glob produced, which may be
       // relative or absolute depending on the invocation, so the carve-out test
       // compares against the path relative to the working directory.
       const name = relative(process.cwd(), resolve(params.name)).replace(/\\/g, "/");
-      if (recordTrees.some((root) => name.startsWith(root))) {
+      const inRecordTree = recordTrees.some((root) => name.startsWith(root));
+      const inArchive = recordArchives.some((root) => name.startsWith(root));
+      if (inRecordTree && (inArchive || !is_active_record(params.name))) {
         return;
       }
       const dir = dirname(params.name);

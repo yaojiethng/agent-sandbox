@@ -35,6 +35,15 @@ export function record_trees(layout) {
   return Array.isArray(layout.recordTrees) ? layout.recordTrees : [];
 }
 
+/** The frozen archives the kinds declare, each with a trailing slash. */
+export function record_archives(layout) {
+  const out = [];
+  for (const kind of Object.values(layout.kinds || {})) {
+    if (kind.archive) out.push(kind.archive.endsWith("/") ? kind.archive : `${kind.archive}/`);
+  }
+  return out;
+}
+
 function spec(layout, kind) {
   const found = (layout.kinds || {})[kind];
   if (!found || !found.root) throw new Error(`record-layout: no root for kind ${kind}`);
