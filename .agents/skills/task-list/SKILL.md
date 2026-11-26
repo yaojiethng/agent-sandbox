@@ -31,6 +31,8 @@ A handover's `milestone` field names a milestone in the roadmap's active set: th
 
 **A rejected completion reverts.** When the operator rejects a completion claim, the marker returns to `- [ ]`.
 
+**A cancelled task is deleted, not marked.** A row whose task will never be done -- its subject gone, or the work superseded elsewhere -- is deleted from the roadmap and never marked `[x]`, because a completion mark on work nobody did records a cancellation as a delivery. The handover that deletes the row names the cancellation and its evidence.
+
 **A closed row is edited in place.** A correction to a closed roadmap row changes its text directly and adds no marker; a correction that creates work is a new open row. The changelog is the exception, because it is the archive, and its form is in [`references/changelog.md`](references/changelog.md).
 
 **Every roadmap edit is a targeted change**, not a full-file rewrite.
