@@ -53,7 +53,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.3 - The unified record layer](#m353---the-unified-record-layer) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.4 - The git and change model](changelog.md#m354---the-git-and-change-model) | [Complete - see changelog](changelog.md#m354---the-git-and-change-model) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.5 - The feedback record](#m355---the-feedback-record) | Not started |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.6 - The discussion record corpus](#m356---the-discussion-record-corpus) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.6 - The discussion record corpus](#m356---the-discussion-record-corpus) | In progress |
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](changelog.md#m361---disable-and-ship-opencode-dispatch) | [Complete - see changelog](changelog.md#m361---disable-and-ship-opencode-dispatch) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.2 - Measure](#m362---measure) | Not started |
@@ -622,10 +622,15 @@ This is the remainder of the original environment-declaration scope. It is the p
 
 ##### M3.5.6 - The discussion record corpus
 
-**Objective:** clean the pre-cutover discussion records so the retired state tokens leave the tree and the cutover exemption constant is deleted.
+**Objective:** minimise the churn a stale discussion record causes: a record outlives its row only while it carries a task or an open question, and the surviving corpus holds one status shape and the current state vocabulary.
 
 **Depends on:** M3.5.1.
 
+**Source:** operator direction, 2026-11-25: after the handover clear-out, clean the orphaned discussion records by the current rules, then assess each survivor for task content or a question still live, and clean what holds neither.
+
+- [ ] **The four spent records are deleted** -- `20261014-design-settled-coding_agent_binding_surface`, `20261014-design-settled-retire_the_policy_form`, `20261019-design-settled-sentence_structure_principle` and `20261019-report-settled-sentence_structure_evidence` name no open row, and their decision is carried by `docs/adr/coding_agent_project_bindings.md` or the four `communication-principle-*` skills. Ends when the four files are gone and the two citations inside `M3.3.2`'s closed section name the record id rather than link it.
+- [ ] **Every surviving record names the row that owns it** -- twelve of the thirteen name an open row; `20261023-design-settled-derived_artifacts` rests only on the deferred `Artifact Inventory and Reader Graph` scope, which is its one live reference and holds the rule the record states. Ends when that scope links the record and no live record is unowned.
+- [ ] **Every surviving record carries the current status vocabulary and one status shape** -- ten of the thirteen carry a retired token (`draft`, `settled`, `active`), and two hold YAML `status:`/`date:` frontmatter where the other eleven put `**Status:**`. Ends when each name and its status line use `open`, `concluded` or `rejected`, every inbound citation follows the new name, and no record carries frontmatter.
 - [ ] **The record cutover corpus is cleaned** -- the record gates exempt a file dated before 2026-11-05, through the one constant in `scripts/lint/record-cutover.mjs`, so the corpus still carries what the rules retired: records whose state is `concluded` or `rejected` and whose roadmap row has closed, closed rows that still name a record, and names carrying a state token the vocabulary no longer holds. Ends when every such record is deleted or re-pointed, no closed row carries the link, every name conforms, and the cutover constant is deleted -- which is what removes the exemption.
 
 #### M3.6 - Cost-Aware Dispatch
