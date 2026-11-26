@@ -42,6 +42,8 @@ The folder is the track, and a record's `milestone` field names the same milesto
 
 The latest record is the tip of the track in git, not the highest filename. `scripts/worklog.sh latest` answers it, `active` answers the open record, and `reserve-id` answers the next identity. Earlier records are never overwritten.
 
+A track lives while its milestone is open. When `devlog/changelog.md` closes the milestone, the changelog is the permanent record and the track is removed from `HEAD`; the records stay recoverable from the commit that removed them, and `scripts/check_track_lifecycle.sh` fails a live folder whose milestone the changelog closes.
+
 ### Vocabularies
 
 The `type` vocabulary, with the commit type each maps to at close:

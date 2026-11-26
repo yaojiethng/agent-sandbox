@@ -2,7 +2,7 @@
 
 The reasoning image is the product of a build. The Dockerfile is the engineering source, `docker build` is the production run, and the image is what the run produces. This page states what the production run must answer, the signal that answers each question, the domain cases the model covers, and the signals deferred until a condition brings them in.
 
-The requirements the run is judged against are the ADRs: [`reasoning_layer_tiers.md`](../adr/reasoning_layer_tiers.md) for the tier shape, [`build_input_pinning.md`](../adr/build_input_pinning.md) for the pinned inputs, and [`harness_versioning.md`](../adr/harness_versioning.md) for the image identity. The evidence for this model is the audit handover [`20261107-02-audit-build_contract_gap.md`](../../devlog/handovers/M3.6.4/20261107-02-audit-build_contract_gap.md), whose gap map and findings the record keeps. The page explains how the build meets those requirements; it does not restate them.
+The requirements the run is judged against are the ADRs: [`reasoning_layer_tiers.md`](../adr/reasoning_layer_tiers.md) for the tier shape, [`build_input_pinning.md`](../adr/build_input_pinning.md) for the pinned inputs, and [`harness_versioning.md`](../adr/harness_versioning.md) for the image identity. The evidence for this model is the audit handover `20261107-02-audit-build_contract_gap.md`, whose gap map and findings the record keeps. The page explains how the build meets those requirements; it does not restate them.
 
 The layout is an implementation outcome, judged by the production run. A layout question is settled by what the run measures, not by what the Dockerfile looks like.
 

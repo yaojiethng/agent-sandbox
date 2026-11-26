@@ -477,7 +477,7 @@ mitigation: the review shell runs one pass and holds no convergence rule; the lo
 
 ```text
 state: mitigated
-scoped: M3.7.2 -- the working-tree rule is stated in the convention, handover [`20261114-05`](handovers/M3.7.2/20261114-05-workflow-working_tree_rule.md)
+scoped: M3.7.2 -- the working-tree rule is stated in the convention, handover `20261114-05`
 legacy: recurrence 2026-11-14: `git checkout .markdownlint-cli2.mjs`, run to recover a fixture, dropped `doc-wrap` from `customRules`, leaving a gate that measured nothing. The rule now puts the check before the verb, and the copy aside before a mutation.
 mitigation: negative-test mutation was reverted with `git restore scripts/stop.sh`, which
 reverts to HEAD  --  destroying the session"s uncommitted array refactor in that file (the

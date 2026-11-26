@@ -7,7 +7,8 @@
 # (check_principle_frontmatter.sh), the handover format gate
 # (check_handover_format.sh), the exploration-record name gate
 # (check_record_names.sh), the record lifecycle gate
-# (check_record_lifecycle.sh), the legacy wrap gate (check_doc_wrap_legacy.sh),
+# (check_record_lifecycle.sh), the handover track lifecycle gate
+# (check_track_lifecycle.sh), the legacy wrap gate (check_doc_wrap_legacy.sh),
 # the instruction-surface gate (check_instruction_surfaces.sh), the vocabulary gate
 # (check_vocabulary.sh), the build-context
 # gate (check_build_context.sh), the reach gate
@@ -47,6 +48,7 @@ GATES=(
   check_handover_format.sh
   check_record_names.sh
   check_record_lifecycle.sh
+  check_track_lifecycle.sh
   check_doc_wrap_legacy.sh
   check_instruction_surfaces.sh
   check_vocabulary.sh
