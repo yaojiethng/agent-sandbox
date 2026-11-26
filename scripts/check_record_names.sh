@@ -9,8 +9,8 @@
 # index starts a second sequence under one date. The scanner is
 # scripts/lint/record-name.mjs.
 #
-# Scope: the default scan reads devlog/discussions/, and does not walk its
-# archive. Every live record is held to the shape: no date exempts one. A file
+# Scope: the default scan reads devlog/discussions/. Every live record is held
+# to the shape: no date exempts one. A file
 # named on the command line is the on-demand audit mode, and `--staged`
 # enforces the records staged for commit.
 #
@@ -46,7 +46,7 @@ while (( $# > 0 )); do
       STAGED=1
       while IFS= read -r -d '' file; do
         FILES+=("$file")
-      done < <(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- 'devlog/discussions/*.md' ':(exclude)devlog/discussions/archive/**')
+      done < <(git -C "$REPO_ROOT" diff --cached --name-only --diff-filter=ACMR -z -- 'devlog/discussions/*.md')
       shift
       ;;
     *)

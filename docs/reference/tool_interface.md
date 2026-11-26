@@ -62,7 +62,7 @@ Rebuilds both images from current source first, then runs two passes against one
 
 Dry-run machinery self-identifies: its session id is prefixed `dryrun-`, which flows into the compose project, container, network, and volume names and the registry record filename. Use the prefix to attribute leftover resources after an abnormal exit; orphaned dry-run resources are swept by `make prune` (registry-truth Rule 2).
 
-The check set and the bearer/orchestration responsibility split are defined in `devlog/discussions/archive/20260828-design-settled-dry_run_phase_split.md`.
+The check set and the bearer/orchestration responsibility split are defined in `20260828-design-settled-dry_run_phase_split.md`.
 
 ### `make build [TARGETS=<target>[,<target>...]]`
 

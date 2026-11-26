@@ -1,6 +1,6 @@
 # Git Boundary
 
-**Status:** draft - first write, not yet reviewed. Awaits the operator's decision.
+**Status:** open
 
 **Scope:** where repository knowledge lives. It names the two parts that may run git - the diff pipeline and the project delivery mechanism - states what each owns, and derives the lock policy and the identity rule from that split. In: the boundary, the interface between the parts, the six current violators, and the lock behaviour measured for each operation class. Out: the mount and copy mechanics themselves (the settled copy and mount notes and `docs/architecture/sandbox_lifecycle.md`), the pipeline's internals (the sibling unification note), the recovery semantics of a dirty tree (the diff-invariants note), and the session registry, execution lifecycle, record formats, host setup, and provider context branches, which take their own notes in this series.
 

@@ -1,6 +1,6 @@
 # Interactive Command Contract
 
-**Status:** draft - first write, not yet reviewed. Awaits the operator's decision.
+**Status:** open
 
 **Scope:** the contract between a leaf script and the interactive helper that collects its inputs, and the uniform meaning of `--interactive` across the five leaves that accept it: what the helper returns, which layer it belongs to, who owns the prompt vocabulary, how the interactive path converges with the flag path, the non-tty and end-of-input policy, the derived equivalent-command display, and the units that pin the contract. Out: the picker's rendering internals (the read-through's rows 260 and 261), the dispatcher boundary (the CLI-to-workflow note), the flag declaration surface (the resolver note), the diff state contract (the diff-invariants note), and the Make translation of any new variable.
 

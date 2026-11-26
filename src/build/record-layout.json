@@ -15,7 +15,6 @@
     },
     "discussion": {
       "root": "devlog/discussions",
-      "archive": "devlog/discussions/archive",
       "filename": "^\\d{8}-[a-z]+-[a-z]+-.*\\.md$"
     },
     "feedback": {

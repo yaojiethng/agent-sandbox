@@ -1,6 +1,6 @@
 # Investigation -- prune Rule 2 does not remove orphaned session volumes
 
-**Status:** Active -- root-cause verification pending; host-side remediation provided.
+**Status:** open
 
 ---
 
@@ -100,7 +100,7 @@ Fix candidates need a design decision; the owning scope is roadmap track T9, bec
 ## Related
 
 - Roadmap: [`devlog/roadmap.md`](../roadmap.md#t9---session-and-harness-identity) -- T9, Session and Harness Identity.
-- Design: [`20260923-design-active-session_identity_and_sandbox_command_ergonomics.md`](20260923-design-active-session_identity_and_sandbox_command_ergonomics.md).
+- Design: [`20260923-design-open-session_identity_and_sandbox_command_ergonomics.md`](20260923-design-open-session_identity_and_sandbox_command_ergonomics.md).
 - Prior finding: [`20260831-05-impl-prune_container-status_reporting.md`](../handovers/archive/20260831-05-impl-prune_container-status_reporting.md) -- label reliability finding.
 - Prior work: [`20260831-08-impl-prune_label_reliability.md`](../handovers/archive/20260831-08-impl-prune_label_reliability.md).
 - System docs: [`docs/architecture/sandbox_lifecycle.md`](../../docs/architecture/sandbox_lifecycle.md) (prune section), [`docs/concepts/sandbox_identity.md`](../../docs/concepts/sandbox_identity.md) (label lifecycle).

@@ -10,7 +10,7 @@ This document is the interface contract between them. It names the contract surf
 
 The interface contract governs the container boundary. The agent tool surface (CLI flags, output formats) is a different boundary -- see [`tool_interface.md`](../reference/tool_interface.md). The two documents do not overlap: tool_interface names what an agent sees; this document names what the harness wires and what each copy must provide.
 
-Implementation detail and command shapes: [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../reference/tool_interface.md) (Commands). Reasoning record: `devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md`.
+Implementation detail and command shapes: [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) (Phase 3 -- Join) and [`tool_interface.md`](../reference/tool_interface.md) (Commands). Reasoning record: `20260803-design-settled-apply_draft_workflow.md`.
 
 ## Contract surfaces
 
@@ -53,7 +53,7 @@ The interim `container-sig` source-subset hash and its preflight comparison are 
 
 Deferred (host constant vs record stamps at preflight): the record surface compares at the agent entrypoint only, not yet at preflight. This remains a candidate extension; it is not scheduled.
 
-The P0-P3 rollover and the container-sig retirement are recorded in `devlog/discussions/archive/20260919-design-settled-interface_contract_compatibility.md` and `docs/adr/interface_contract_compatibility.md`.
+The P0-P3 rollover and the container-sig retirement are recorded in `20260919-design-settled-interface_contract_compatibility.md` and `docs/adr/interface_contract_compatibility.md`.
 
 ### Relationship to MAKEFILE_VERSION
 
@@ -209,6 +209,6 @@ Each worktree session runs its correspondence cycle independently. Merging workt
 | `docs/adr/drift_state_coherence.md` | Coherence by minimisation, not detection |
 | `docs/adr/session_identifier.md` | Project/session identity |
 | `docs/adr/time_format.md` | The one timestamp format and the eval snapshot timestamp |
-| `devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md` | Full design record -- export pipeline, channels, commands |
+| `20260803-design-settled-apply_draft_workflow.md` | Full design record -- export pipeline, channels, commands |
 | [`sandbox_lifecycle.md`](../reference/sandbox_lifecycle.md) | Snapshot pipeline; SESSION_STATE initialisation; Phase 3 join |
 | [`provider_lifecycle.md`](../reference/provider_lifecycle.md) | Provider config provisioning at session start |

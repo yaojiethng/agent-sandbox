@@ -2,7 +2,7 @@
 # tests/test_interactive_session_select.sh
 # Tests for scripts/workflows/interactive.sh
 # Pins cite: docs/reference/tool_interface.md l.132-135 (channel table);
-#             devlog/discussions/archive/20260803-design-settled-apply_draft_workflow.md (channel directories).
+#             20260803-design-settled-apply_draft_workflow.md (channel directories).
 
 #
 # Covers:

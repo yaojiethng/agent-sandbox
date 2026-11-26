@@ -1,5 +1,7 @@
 # Design: session identity and the sandbox command surface (M3 - T9)
 
+**Status:** open
+
 ## Context
 
 A design review of the harness asked how complected the repository is. The review applied the uncomplect lens (Hickey's simple-versus-easy separation, Ousterhout's deep-module test, Young's deletability horizon, domain boundaries, and explicit lifecycle) to the tree as it stands. This document records the resulting findings and the operator direction that followed.

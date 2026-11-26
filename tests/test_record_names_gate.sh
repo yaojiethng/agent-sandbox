@@ -95,12 +95,12 @@ test_named_file_is_enforced() {
   assert_contains "$out" 'does not match' 'the shape is named'
 }
 
-test_archive_not_scanned() {
+test_nested_folder_not_scanned() {
   local root="$FIXTURE_DIR/t8" rc=0 out
-  write_record "$root/devlog/discussions/archive/20261105-report-x.md"
+  write_record "$root/devlog/discussions/nested/20261105-report-x.md"
   write_record "$root/devlog/discussions/20261105-report-ended-live.md"
   out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a record under archive/ is not scanned'
+  assert_rc 0 "$rc" 'a record in a nested folder is not scanned'
   assert_contains "$out" 'clean across 1 record' 'and the live record is the only subject'
 }
 
@@ -110,6 +110,6 @@ run_test test_missing_status_flagged
 run_test test_unknown_type_flagged
 run_test test_unknown_status_flagged
 run_test test_named_file_is_enforced
-run_test test_archive_not_scanned
+run_test test_nested_folder_not_scanned
 
 test_done

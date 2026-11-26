@@ -1,6 +1,6 @@
 # The Operator Surface
 
-**Status:** draft - first write, not yet reviewed. Awaits the operator's decision.
+**Status:** open
 
 **Scope:** the text the harness shows the operator, and where that text is defined. It names three surfaces - the hint, the help and usage, and the display - states the rule that decides what an operator reads at a boundary, and recommends one vocabulary held by a gate. In: the hint set and its situations, a usage line against its parser, the session display's rows, and the messages at a refusal, a lock, and an exit. Out: the command vocabulary itself (the CLI-to-leaf row in T10), the record formats the display reads (T11), the help status codes the router maps (the CLI-to-leaf row), the interactive helper's contract (its own note in this series), and the lint-gate ADR that predates the third gate (row 290, which rides the M3.1 gate rows).
 

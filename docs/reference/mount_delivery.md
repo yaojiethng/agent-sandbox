@@ -34,5 +34,5 @@ Copy-delivery pipeline work (host-side volume seeding) does not apply to this de
 | [`copy_delivery.md`](copy_delivery.md) | Companion delivery model (current default) |
 | `docs/development/security.md` | Authoritative security posture -- mount profiles, invariants |
 | [`../reference/execution_model.md`](../reference/execution_model.md) | Mount shape, compose generation |
-| `devlog/discussions/archive/20260730-design-settled-mount_model.md` | Historical design record -- full decision rationale |
-| `devlog/discussions/archive/20260730-study-settled-worktree_rejection.md` | Worktree backing: full investigation |
+| `20260730-design-settled-mount_model.md` | Historical design record -- full decision rationale |
+| `20260730-study-settled-worktree_rejection.md` | Worktree backing: full investigation |

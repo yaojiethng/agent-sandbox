@@ -2,7 +2,7 @@
 # tests/test_session_env.sh
 # Unit tests for src/libs/session_env.sh  --  host-side session environment
 # Pins cite: docs/reference/tool_interface.md (naming, l.17);
-#             devlog/discussions/archive/20260730-design-settled-mount_model.md (delivery defaults).
+#             20260730-design-settled-mount_model.md (delivery defaults).
 
 # bootstrap (.env loading, git validation, name/branch derivation).
 #
