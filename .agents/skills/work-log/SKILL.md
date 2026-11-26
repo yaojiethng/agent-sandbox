@@ -138,11 +138,10 @@ What the enquiry has established, and whether the task that owns the record is s
 
 | State | Meaning | Valid next states |
 |---|---|---|
-| `open` | the enquiry is in flight | `concluded`, `rejected` |
-| `concluded` | the enquiry reached its result, and the record is evidence for it | -- |
-| `rejected` | decided against | -- |
+| `open` | the enquiry is in flight | `ended` |
+| `ended` | the enquiry reached its result, and the record is evidence for it | -- |
 
-A record is deleted when it is `concluded` or `rejected` **and orphaned**: its row has closed, so the evidence has no task left to serve. Another open row may take the record over instead, which is a re-point rather than a new file, and the closed row strips its link. A record whose row is still open stays, whatever its state.
+A row that closes re-points or deletes every record it names, in the same commit. Another open row may take the record over, which is a re-point rather than a new file, and the closing row strips its link. Otherwise the record is deleted, and the commit that deletes it names the reason, because the file leaves no other trace. Tenancy decides the deletion, never the enquiry's state: a record whose row is still open stays, whatever its state.
 
 ### The four types
 
@@ -153,13 +152,13 @@ A record is deleted when it is `concluded` or `rejected` **and orphaned**: its r
 | `design` | the iteration's design phase resolves trade-offs between options | [`assets/design.md`](assets/design.md) |
 | `report` | a run's evidence, composed while the run is in flight | no fixed order, on the rules below |
 
-**A story concludes** when the pain point is understood, the resolvable questions are answered, the approach is agreed with its rationale, and the tasks name a file and a nature of change. Write the task-list row first, then set the state to `concluded`. Tasks are not copied back into the story.
+**A story concludes** when the pain point is understood, the resolvable questions are answered, the approach is agreed with its rationale, and the tasks name a file and a nature of change. Write the task-list row first, then set the state to `ended`. Tasks are not copied back into the story.
 
 **A study links its parent story.** The study links back from the parent's `## Study Findings`, and its lifetime is the parent's: the record stays while that row is open.
 
-**A design concludes into an ADR.** When the design settles an implementation decision, record the decision in `docs/adr/` per the [`decision-records`](../decision-records/SKILL.md) convention and set the state to `concluded`. The ADR is the authority and the durable seat; the record is the evidence, and it is deleted once its row closes.
+**A design concludes into an ADR.** When the design settles an implementation decision, record the decision in `docs/adr/` per the [`decision-records`](../decision-records/SKILL.md) convention and set the state to `ended`. The ADR is the authority and the durable seat; the record is the evidence, and it is deleted once its row closes.
 
-**A report has no fixed section order.** Three rules bind it: it is `open` while its run is in flight and `concluded` when the run ends; it states the context, what came of it, and the artifacts it produced, each naming the artifact's source of truth; and it is deleted once its facts are in the handover or the ADR it justified.
+**A report has no fixed section order.** Three rules bind it: it is `open` while its run is in flight and `ended` when the run ends; it states the context, what came of it, and the artifacts it produced, each naming the artifact's source of truth; and it is deleted once its facts are in the handover or the ADR it justified.
 
 ## The feedback record
 

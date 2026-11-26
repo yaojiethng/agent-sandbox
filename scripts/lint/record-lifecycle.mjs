@@ -8,14 +8,14 @@
 //   before the row closes. A link left in a closed row names a file the rule
 //   removes.
 //
-//   A record that has concluded or been rejected and that no open row names is
-//   a deletion the cleanup has not run. The record's task has ended, so the
-//   file is a second source beside the ADR or handover that holds its result.
+//   A record that no open row names is a deletion the cleanup has not run. The
+//   record's task has ended, so the file is a second source beside the ADR or
+//   handover that holds its result.
 //
-// Tenancy is read from devlog/roadmap.md and devlog/roadmap_future.md, and the
-// state from the record's name:
-// `- [ ]` rows and `- [x]` rows are told apart by their checkbox, at any indent,
-// and the state is the third field of YYYYMMDD-{type}-{state}-{description}.md.
+// Tenancy is read from devlog/roadmap.md and devlog/roadmap_future.md, and
+// `- [ ]` rows and `- [x]` rows are told apart by their checkbox, at any
+// indent. The enquiry's state does not decide the deletion: a row that closes
+// re-points the record or deletes it.
 //
 // Scope: both rules read every live record, and archive/ is not walked.
 //
@@ -27,9 +27,6 @@ import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
-
-/** The states whose record is a deletion candidate once its row has closed. */
-const ENDED = ["concluded", "rejected"];
 
 /** An open row: a checklist entry whose box is unchecked, at any indent. */
 const OPEN_ROW = /^\s*- \[ \] /;
@@ -83,12 +80,10 @@ function main() {
   }
 
   for (const name of subjects) {
-    const state = stateOf(name);
-    if (!ENDED.includes(state)) continue;
     if (owned.has(name)) continue;
     findings.push(
-      `${name}: state "${state}", and no open roadmap row names it. ` +
-        `The task that owned the record has ended, so the file is a deletion that has not run`,
+      `${name}: no open roadmap row names it. A row that closes re-points the record ` +
+        `to another open row or deletes it, so the file is a deletion that has not run`,
     );
   }
 

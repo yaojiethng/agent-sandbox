@@ -220,14 +220,13 @@ stateDiagram-v2
     }
     state "Enquiry -- what the record has established" as rec_disc_enquiry {
         [*] --> rec_disc_open
-        rec_disc_open --> rec_disc_concluded : the result lands
-        rec_disc_open --> rec_disc_rejected : the operator decides against
+        rec_disc_open --> rec_disc_ended : the result lands
     }
-    rec_disc_concluded --> rec_disc_retired : the file is deleted
-    rec_disc_rejected --> rec_disc_retired : the file is deleted
+    rec_disc_open --> rec_disc_retired : the file is deleted
+    rec_disc_ended --> rec_disc_retired : the file is deleted
     rec_disc_retired --> [*]
     note right of rec_disc_tenancy
-        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires only from a concluded or rejected enquiry whose tenancy has become orphaned.
+        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires only while the tenancy is orphaned, whatever the enquiry has established.
     end note
 ```
 
@@ -236,18 +235,17 @@ stateDiagram-v2
 | `rec_disc_owned` | tenancy | an open roadmap row names the record |
 | `rec_disc_orphaned` | tenancy | no open roadmap row names it, so the file is a deletion candidate |
 | `rec_disc_open` | enquiry | the enquiry is in flight |
-| `rec_disc_concluded` | enquiry | the enquiry reached its result, and the record is evidence for it |
-| `rec_disc_rejected` | enquiry | the operator decided against |
+| `rec_disc_ended` | enquiry | the enquiry reached its result, and the record is evidence for it |
 | `rec_disc_retired` | -- | the file is deleted, and the row that outlives it names no file |
 
-The four types differ in what makes `rec_disc_concluded` true -- a story's approach agreed and its rows written, a study's comparison decided, a design's ADR entry landed, a report's run finished -- and in which dependent sends that event. They do not differ in their states, so there is one machine and four guards.
+The four types differ in what makes `rec_disc_ended` true -- a story's approach agreed and its rows written, a study's comparison decided, a design's ADR entry landed, a report's run finished -- and in which dependent sends that event. They do not differ in their states, so there is one machine and four guards.
 
 **Invariants.**
 
 - State: a record at rest is `rec_disc_owned` unless the sweep has not yet run; `rec_disc_orphaned` is observed by the gate, never held on purpose.
 - State: a live record carries exactly one enquiry state and one tenancy state.
-- Transition: a record reaches `rec_disc_retired` only from `rec_disc_concluded` or `rec_disc_rejected`.
-- Guard: deletion fires only while tenancy is `rec_disc_orphaned`, so a record whose row is open is never swept.
+- Transition: a record reaches `rec_disc_retired` from either enquiry state, so the enquiry's state never gates the deletion.
+- Guard: deletion fires only while tenancy is `rec_disc_orphaned`, and a row that closes re-points or deletes every record it names in the same commit.
 - Guard: an enquiry opens only while in-flight knowledge must outlive the iteration, which is the `work-log` convention's determination.
 
 **The checks.** `scripts/check_record_names.sh` holds the state vocabulary and the naming shape, and `scripts/check_record_lifecycle.sh` holds the deletion guard and the closed-row rule. The per-transition cases, and the mapping check that every transition here has one, are not written; the row is named in `## Gaps`.

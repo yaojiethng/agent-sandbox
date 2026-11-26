@@ -44,7 +44,7 @@ Ruled out of scope: the durable-settings design, filed at M3.2.3; the lifecycle 
 | Isolate the global settings layer with a temporary cwd and a temporary `PI_CODING_AGENT_DIR` | The test must read the shipped template, not the active file, a project override, or a preflight-rewritten copy | `tests/libs/pi_model_selection.mjs` |
 | Send no prompt | The selected model is session state before any request. A prompt would contact `claude-haiku-5-5`, the model the operator asked to avoid | `20261104-report-settled-enabled_models_scope_head.md` `## Method` |
 | Keep the saved default selected when it is authenticated and in scope | The CLI already does this in 1.3.0. The chain governs the no-key case | `20261104-report-settled-enabled_models_scope_head.md` `## The mechanisms, in order` |
-| Name the image rebuild step | The settings change reaches a project only after `make build` or `make start REFRESH=1`; `make refresh` does not rebuild | this record; `20261104-report-concluded-settings_json_fidelity.md` `## Consequences for the chain and the behavior test` |
+| Name the image rebuild step | The settings change reaches a project only after `make build` or `make start REFRESH=1`; `make refresh` does not rebuild | this record; `20261104-report-ended-settings_json_fidelity.md` `## Consequences for the chain and the behavior test` |
 
 ## Decisions pending
 
@@ -71,6 +71,6 @@ None.
 | `.agents/skills/pi-bump/SKILL.md` | the verify checklist runs the config test and the selection test, and drops the stale version-fixtures clause |
 | `devlog/roadmap.md` | the chain row is rewritten and the no-auth placeholder is filed as its own row |
 | `devlog/discussions/20261104-report-settled-enabled_models_scope_head.md` | renamed from `draft` to `settled`; the outcome names the chain, the test and the deferred items |
-| `devlog/discussions/20261104-report-concluded-settings_json_fidelity.md` | renamed from `draft` to `settled`; the durable-settings questions are scoped to the M3.2.3 row |
+| `devlog/discussions/20261104-report-ended-settings_json_fidelity.md` | renamed from `draft` to `settled`; the durable-settings questions are scoped to the M3.2.3 row |
 | `devlog/handovers/20261104-01-discussion-enabled_models_scope_head.md` | closed; the decided questions moved to Decisions and the no-auth and upstream items routed |
 | `devlog/handovers/20261104-02-impl-enabled_models_fallback_chain.md` | this work-unit record |

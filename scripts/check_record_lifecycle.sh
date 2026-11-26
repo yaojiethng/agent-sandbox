@@ -8,8 +8,7 @@
 #   A closed roadmap row names no discussion record, because the row is what
 #   owns the record and a closed row owns nothing.
 #
-#   A record whose state is `concluded` or `rejected` and that no open row names
-#   is a deletion that has not run.
+#   A record that no open row names is a deletion that has not run.
 #
 # The scanner is scripts/lint/record-lifecycle.mjs. It reads tenancy from
 # devlog/roadmap.md and devlog/roadmap_future.md, and the state from the

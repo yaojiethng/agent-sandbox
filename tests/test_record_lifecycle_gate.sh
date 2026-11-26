@@ -6,16 +6,16 @@
 # wraps.
 #
 # Covers:
-#   a concluded record an open row names  -- rc 0; the scan says what it read
-#   a concluded record no row names       -- rc 1; deletion is named
-#   a rejected record no row names        -- rc 1; the same rule covers it
-#   an open record no row names           -- rc 0, because the record has not
+#   an ended record an open row names     -- rc 0; the scan says what it read
+#   an ended record no row names          -- rc 1; deletion is named
+#   an open record no row names           -- rc 1; tenancy decides, not state
+#   a record a roadmap_future row owns    -- rc 0, so tenancy reads both roadmaps
 #                                    concluded, so it is not a deletion yet
 #   a closed row naming a record          -- rc 1; the link is named, and the
 #                                    repair is stated
 #   a closed row naming a different row's record -- rc 1, so the scan does not
 #                                    assume the name appears once
-#   a missing roadmap                     -- rc 0, and every concluded record is
+#   a missing roadmap                     -- rc 0, and every record is
 #                                    then a deletion, so the scan says so
 #   a record a roadmap_future row owns    -- rc 0, so tenancy reads both roadmaps
 #
@@ -55,39 +55,31 @@ write_roadmap() {
   } > "$root/devlog/roadmap.md"
 }
 
-test_concluded_and_owned_passes() {
+test_ended_and_owned_passes() {
   local root="$FIXTURE_DIR/t1" rc=0 out
-  write_record "$root" 20261105-design-concluded-x.md
-  write_roadmap "$root" '- [ ] **A row** -- the record `20261105-design-concluded-x.md` holds the design'
+  write_record "$root" 20261105-design-ended-x.md
+  write_roadmap "$root" '- [ ] **A row** -- the record `20261105-design-ended-x.md` holds the design'
   out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a concluded record an open row names is clean'
+  assert_rc 0 "$rc" 'an ended record an open row names is clean'
   assert_contains "$out" 'clean across 1 record(s)' 'the scan reports what it read'
 }
 
-test_concluded_and_orphaned_flagged() {
+test_ended_and_orphaned_flagged() {
   local root="$FIXTURE_DIR/t2" rc=0 out
-  write_record "$root" 20261105-design-concluded-x.md
+  write_record "$root" 20261105-design-ended-x.md
   write_roadmap "$root" '- [x] **Another row** -- nothing to do with the record'
   out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 1 "$rc" 'a concluded record no open row names fails'
+  assert_rc 1 "$rc" 'an ended record no open row names fails'
   assert_contains "$out" 'deletion that has not run' 'the deletion is named'
 }
 
-test_rejected_and_orphaned_flagged() {
+test_open_and_orphaned_flagged() {
   local root="$FIXTURE_DIR/t3" rc=0 out
-  write_record "$root" 20261105-design-rejected-x.md
-  write_roadmap "$root" '- [ ] **An open row** -- names something else'
-  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 1 "$rc" 'a rejected record no open row names fails'
-  assert_contains "$out" 'state "rejected"' 'the state is named'
-}
-
-test_open_and_orphaned_passes() {
-  local root="$FIXTURE_DIR/t4" rc=0 out
   write_record "$root" 20261105-study-open-x.md
   write_roadmap "$root" '- [ ] **An open row** -- names something else'
   out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'an orphaned record that has not concluded is not a deletion'
+  assert_rc 1 "$rc" 'an open record no open row names fails: tenancy decides, not state'
+  assert_contains "$out" 'no open roadmap row names it' 'the tenancy is named'
 }
 
 test_closed_row_link_flagged() {
@@ -114,23 +106,22 @@ test_closed_row_link_to_a_second_record_flagged() {
 
 test_missing_roadmap_flags_every_ended_record() {
   local root="$FIXTURE_DIR/t9" rc=0 out
-  write_record "$root" 20261105-design-concluded-x.md
+  write_record "$root" 20261105-design-ended-x.md
   out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 1 "$rc" 'with no roadmap, no row owns anything'
   assert_contains "$out" 'no open roadmap row names it' 'the reason is the tenancy'
 }
 
-run_test test_concluded_and_owned_passes
-run_test test_concluded_and_orphaned_flagged
-run_test test_rejected_and_orphaned_flagged
-run_test test_open_and_orphaned_passes
+run_test test_ended_and_owned_passes
+run_test test_ended_and_orphaned_flagged
+run_test test_open_and_orphaned_flagged
 run_test test_closed_row_link_flagged
 run_test test_closed_row_link_to_a_second_record_flagged
 test_record_owned_by_a_future_row_passes() {
   local root="$FIXTURE_DIR/t10" rc=0 out
-  write_record "$root" 20261105-design-concluded-x.md
+  write_record "$root" 20261105-design-ended-x.md
   write_roadmap "$root" '- [ ] **An open row** -- names something else'
-  printf -- '---\ntitle: future\n---\n\n- [ ] **A deferred row** -- the record \x60 20261105-design-concluded-x.md\x60 holds the design\n' > "$root/devlog/roadmap_future.md"
+  printf -- '---\ntitle: future\n---\n\n- [ ] **A deferred row** -- the record \x60 20261105-design-ended-x.md\x60 holds the design\n' > "$root/devlog/roadmap_future.md"
   out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a record owned only by a future roadmap row is not a deletion'
   assert_contains "$out" 'clean across 1 record(s)' 'the scan read both roadmaps'

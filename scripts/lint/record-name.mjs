@@ -26,7 +26,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const TYPES = ["story", "study", "design", "report"];
 
 /** The state vocabulary, shared by all four types. */
-const STATUSES = ["open", "concluded", "rejected"];
+const STATUSES = ["open", "ended"];
 
 /** The conforming name: date, type, state, description. */
 const CONFORMING = /^(\d{8})-([a-z]+)-([a-z]+)-([a-z0-9][a-z0-9._-]*)\.md$/;
