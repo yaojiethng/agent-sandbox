@@ -137,4 +137,81 @@ run_test test_list_returns_only_the_track
 run_test test_track_reads_the_marker
 run_test test_path_reads_the_declaration
 
+
+test_latest_refuses_a_retired_branch_track() {
+  local root; root="$(mktemp -d)"; make_root "$root"
+  write_handover "$root/devlog/handovers/M3.5.1/20261105-20-impl-a.md" 2026-11-05 Closed "M3.5.1 - Test"
+  git -C "$root" init -q
+  git -C "$root" checkout -q -b feat/M3_5_9-retired
+  local rc=0 out
+  out="$("$TOOL" latest --root "$root" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" "a track that retired is an error, never another track's record"
+  assert_contains "$out" 'M3.5.9' 'the stale track is named'
+  assert_contains "$out" 'Pass --track' 'the repair is named'
+  rm -rf "$root"
+}
+
+test_latest_answers_the_named_track() {
+  local root; root="$(mktemp -d)"; make_root "$root"
+  write_handover "$root/devlog/handovers/M3.5.1/20261105-20-impl-a.md" 2026-11-05 Closed "M3.5.1 - Test"
+  write_handover "$root/devlog/handovers/M3.5.2/20261105-41-impl-b.md" 2026-11-05 Closed "M3.5.2 - Test"
+  git -C "$root" init -q
+  git -C "$root" checkout -q -b feat/M3_5_1-live
+  local out
+  out="$("$TOOL" latest --root "$root")"
+  assert_contains "$out" "20261105-20-impl-a.md" "the caller's own track answers"
+  out="$("$TOOL" latest --root "$root" --track M3.5.2)"
+  assert_contains "$out" "20261105-41-impl-b.md" '--track names another track'
+  rm -rf "$root"
+}
+
+test_latest_reports_an_empty_tree() {
+  local root; root="$(mktemp -d)"; make_root "$root"
+  local rc=0 out
+  out="$("$TOOL" latest --root "$root" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'no record is a failure to answer, not a silent empty read'
+  assert_contains "$out" '--track' 'the failure names the flag that fixes it'
+  assert_contains "$out" '--all' 'the failure names the override'
+  rm -rf "$root"
+}
+
+run_test test_latest_refuses_a_retired_branch_track
+run_test test_latest_answers_the_named_track
+run_test test_latest_reports_an_empty_tree
+
+
+test_all_answers_across_tracks() {
+  local root; root="$(mktemp -d)"; make_root "$root"
+  write_handover "$root/devlog/handovers/M3.5.1/20261105-20-impl-a.md" 2026-11-05 Closed "M3.5.1 - Test"
+  write_handover "$root/devlog/handovers/M3.5.2/20261105-41-impl-b.md" 2026-11-05 Closed "M3.5.2 - Test"
+  git -C "$root" init -q
+  git -C "$root" checkout -q -b feat/M3_5_9-retired
+  local out
+  out="$("$TOOL" latest --root "$root" --all)"
+  assert_contains "$out" "20261105-41-impl-b.md" '--all answers across every track'
+  rm -rf "$root"
+}
+
+test_error_lists_the_live_tracks() {
+  local root; root="$(mktemp -d)"; make_root "$root"
+  write_handover "$root/devlog/handovers/M3.5.1/20261105-20-impl-a.md" 2026-11-05 Closed "M3.5.1 - Test"
+  local rc=0 out
+  out="$("$TOOL" latest --root "$root" --track NOPE 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'an unknown track is an error'
+  assert_contains "$out" 'M3.5.1' 'the error lists the live tracks'
+  assert_contains "$out" '--all' 'the error names the override'
+  rm -rf "$root"
+}
+
+test_help_states_every_read() {
+  local out
+  out="$("$TOOL" --help)"
+  assert_contains "$out" '--all' 'the usage states the all-tracks override'
+  assert_contains "$out" 'reserve-id --track T' 'the usage states the required flag'
+}
+
+run_test test_all_answers_across_tracks
+run_test test_error_lists_the_live_tracks
+run_test test_help_states_every_read
+
 test_done

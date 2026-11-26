@@ -46,7 +46,7 @@ The seam answers these reads. The tool answers the handover rows; the discussion
 
 | Read | Command | Consumers | Built now |
 |---|---|---|---|
-| the latest handover on the track | `worklog.sh latest` | `iter`, `plan`, `milestone-start`, `milestone-close` | yes |
+| the latest handover on the track, or across tracks | `worklog.sh latest [--track <id> \| --all]` | `iter`, `plan`, `milestone-start`, `milestone-close` | yes |
 | the active handover | `worklog.sh active` | `commit`, `check-in` | yes |
 | the current work-log track | `worklog.sh track` | `iter`, `check-in`, `backlog-triage` | yes |
 | the next reserved id | `worklog.sh reserve-id --track <id>` | the agent writing a handover | yes |

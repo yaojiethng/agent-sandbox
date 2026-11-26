@@ -40,7 +40,7 @@ Example: `devlog/handovers/<track>/20260316-20-workflow-scope_gate_and_preclose_
 
 The folder is the track, and a record's `milestone` field names the same milestone. A track reserves a block of `NN` numbers when it opens, recorded as `ids: 20-39` in `devlog/handovers/<track>/README.md`, so two tracks writing on one date never collide.
 
-The latest record is the tip of the track in git, not the highest filename. `scripts/worklog.sh latest` answers it, `active` answers the open record, and `reserve-id` answers the next identity. Earlier records are never overwritten.
+The latest record is the tip of the track in git, not the highest filename. `scripts/worklog.sh latest` answers it, `active` answers the open record, and `reserve-id` answers the next identity. Earlier records are never overwritten. A read answers on the caller's track, `--track` names another, and `--all` answers across every track when the caller has no track of its own. A track that has retired is an error naming the live tracks, because a branch outlives the milestone it names and an empty read looks the same as an absent one.
 
 A track lives while its milestone is open. When `devlog/changelog.md` closes the milestone, the changelog is the permanent record and the track is removed from `HEAD`; the records stay recoverable from the commit that removed them, and `scripts/check_track_lifecycle.sh` fails a live folder whose milestone the changelog closes.
 
@@ -98,11 +98,12 @@ A record's inline links are checked while the record is `Active`, and exempt onc
 
 | Command | Answers |
 |---|---|
-| `worklog.sh latest [--track T]` | the tip record of the track, by git order |
-| `worklog.sh active [--track T]` | the one `Active` record on the track |
-| `worklog.sh track` | the track the caller is in |
+| `worklog.sh latest [--track T \| --all]` | the tip record on the caller's track, on `--track`, or across every track |
+| `worklog.sh active [--track T \| --all]` | the one `Active` record, on the same scopes |
+| `worklog.sh track` | the track the caller's branch or marker names |
 | `worklog.sh reserve-id --track T` | the next free id in the track's block |
-| `worklog.sh list [--track T]` | the track's records |
+| `worklog.sh list [--track T]` | every record, or the named track's |
+| `worklog.sh --help` | every read, its flags and what a retired track means |
 | `worklog.sh path handover` | the declared root |
 
 A procedure calls the tool rather than listing the folder, grepping for `Status: Active`, or computing `max + 1`. The tool adds no rule of its own; this convention states what a record says.
