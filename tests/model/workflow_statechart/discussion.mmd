@@ -12,5 +12,5 @@ stateDiagram-v2
     rec_disc_ended --> rec_disc_retired : the file is deleted
     rec_disc_retired --> [*]
     note right of rec_disc_tenancy
-        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires only while the tenancy is orphaned, whatever the enquiry has established.
+        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires while the tenancy is orphaned, or when the record fails a criterion its review applies, whatever the enquiry has established.
     end note

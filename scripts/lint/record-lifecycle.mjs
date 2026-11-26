@@ -1,6 +1,6 @@
 // Exploration-record lifecycle gate.
 //
-// Enforces two rules the work-log convention states about a record under
+// Enforces three rules the work-log convention states about a record under
 // devlog/discussions/ and the roadmap rows that own it:
 //
 //   A closed roadmap row names no record. The row is what owns the record, so
@@ -11,6 +11,10 @@
 //   A record that no open row names is a deletion the cleanup has not run. The
 //   record's task has ended, so the file is a second source beside the ADR or
 //   handover that holds its result.
+//
+//   An open row names no record that is not there. A row names the evidence it
+//   has, so a name that resolves to nothing is a row with no source, and the
+//   row states what now carries it.
 //
 // Tenancy is read from devlog/roadmap.md and devlog/roadmap_future.md, and
 // `- [ ]` rows and `- [x]` rows are told apart by their checkbox, at any
@@ -33,6 +37,9 @@ const OPEN_ROW = /^\s*- \[ \] /;
 
 /** A closed row: a checklist entry whose box is checked, at any indent. */
 const CLOSED_ROW = /^\s*- \[x\] /;
+
+/** A discussion record's name, wherever a row spells it. */
+const RECORD_NAME = /\b\d{8}-(?:story|study|design|report)-[a-z]+-[a-z0-9][a-z0-9._-]*\.md\b/g;
 
 function parseArgs(argv) {
   const opts = { root: REPO_ROOT };
@@ -93,6 +100,16 @@ function main() {
       findings.push(
         `${clip(row)}: a closed row names the record ${name}. A closed row carries no discussion link; ` +
           `re-point the record to an open row before the row closes, or delete it`,
+      );
+    }
+  }
+
+  for (const row of openRows) {
+    for (const token of new Set(row.match(RECORD_NAME) ?? [])) {
+      if (names.includes(token)) continue;
+      findings.push(
+        `${clip(row)}: an open row names ${token}, which is not in the record directory. ` +
+          `A row names the evidence it has, so say what carries it now, or delete the name`,
       );
     }
   }

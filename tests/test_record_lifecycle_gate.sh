@@ -15,7 +15,7 @@
 #                                    repair is stated
 #   a closed row naming a different row's record -- rc 1, so the scan does not
 #                                    assume the name appears once
-#   a missing roadmap                     -- rc 0, and every record is
+#   a missing roadmap                     -- rc 1, and every record is
 #                                    then a deletion, so the scan says so
 #   a record a roadmap_future row owns    -- rc 0, so tenancy reads both roadmaps
 #
@@ -129,5 +129,27 @@ test_record_owned_by_a_future_row_passes() {
 
 run_test test_record_owned_by_a_future_row_passes
 run_test test_missing_roadmap_flags_every_ended_record
+
+
+test_open_row_names_a_missing_record_flagged() {
+  local root="$FIXTURE_DIR/t11" rc=0 out
+  write_record "$root" 20261105-design-open-x.md
+  write_roadmap "$root" "- [ ] **Another row** -- its source was \`20261105-design-open-gone.md\`"
+  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'an open row naming a record that is not there fails'
+  assert_contains "$out" '20261105-design-open-gone.md' 'the missing name is reported'
+  assert_contains "$out" 'say what carries it now' 'the repair is stated'
+}
+
+test_open_row_names_a_present_record_passes() {
+  local root="$FIXTURE_DIR/t12" rc=0 out
+  write_record "$root" 20261107-report-open-y.md
+  write_roadmap "$root" "- [ ] **An open row** -- Source: \`20261107-report-open-y.md\`"
+  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a name that resolves is not a finding'
+}
+
+run_test test_open_row_names_a_missing_record_flagged
+run_test test_open_row_names_a_present_record_passes
 
 test_done

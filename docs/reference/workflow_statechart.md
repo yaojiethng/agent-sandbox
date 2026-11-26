@@ -226,7 +226,7 @@ stateDiagram-v2
     rec_disc_ended --> rec_disc_retired : the file is deleted
     rec_disc_retired --> [*]
     note right of rec_disc_tenancy
-        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires only while the tenancy is orphaned, whatever the enquiry has established.
+        The regions are orthogonal: tenancy moves when a roadmap row opens or closes, the enquiry moves when the evidence lands. Deletion fires while the tenancy is orphaned, or when the record fails a criterion its review applies, whatever the enquiry has established.
     end note
 ```
 
@@ -245,10 +245,11 @@ The four types differ in what makes `rec_disc_ended` true -- a story's approach 
 - State: a record at rest is `rec_disc_owned` unless the sweep has not yet run; `rec_disc_orphaned` is observed by the gate, never held on purpose.
 - State: a live record carries exactly one enquiry state and one tenancy state.
 - Transition: a record reaches `rec_disc_retired` from either enquiry state, so the enquiry's state never gates the deletion.
-- Guard: deletion fires only while tenancy is `rec_disc_orphaned`, and a row that closes re-points or deletes every record it names in the same commit.
+- Guard: deletion fires while tenancy is `rec_disc_orphaned`, or while the record fails a criterion its review applies; a row that closes re-points or deletes every record it names in the same commit, and a row that loses its record states what carries the evidence now.
 - Guard: an enquiry opens only while in-flight knowledge must outlive the iteration, which is the `work-log` convention's determination.
+- Guard: the layer has no parking state. A record is owned under `devlog/discussions/` or it is retired, so no folder sits outside the two regions.
 
-**The checks.** `scripts/check_record_names.sh` holds the state vocabulary and the naming shape, and `scripts/check_record_lifecycle.sh` holds the deletion guard and the closed-row rule. The per-transition cases, and the mapping check that every transition here has one, are not written; the row is named in `## Gaps`.
+**The checks.** `scripts/check_record_names.sh` holds the state vocabulary and the naming shape, and `scripts/check_record_lifecycle.sh` holds the deletion guard, the closed-row rule, and the rule that an open row names a file that is there. The per-transition cases, and the mapping check that every transition here has one, are not written; the row is named in `## Gaps`.
 
 ## Commands
 
