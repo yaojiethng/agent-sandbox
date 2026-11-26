@@ -327,3 +327,11 @@ Identity now resolves once at the chain entry, with an absolute record path and 
 A handover files under `devlog/handovers/<milestone>/`, and the track ends when its milestone closes: the changelog heading is the closure predicate, and a retired track is deleted, its removal commit the archive. The format gate reads the section set from the work-log template, so the format is declared once, and it fails a record whose folder and `milestone` field disagree and a record left at the handovers root. The check-in reads the record's `status` and the parts it carries, and recovery reads its evidence from the session transcript rather than treating the record as the only account.
 
 ---
+
+## M3.5.6 - The discussion record corpus
+
+*A discussion record exists only while a roadmap row needs it: the corpus holds no record without an owner, its vocabulary is `open` and `ended`, and a gate holds the tenancy that decides its deletion.*
+
+The record layer lost three things it had been carrying: its archive, its cutover exemption and its placement test. Eighty archived records were placed against what a live row still needed, six graduated into the live folder and the rest went, and every surviving record now carries one state token and one status shape. Deletion is decided by tenancy alone: a row that ends, whether it completes or is cancelled, re-points or deletes every record it names in the same commit. The lifecycle gate now holds three findings -- an unowned record, a closed row that names one, and an open row that names a file which is not there -- and the same rule covers the plan-stage working documents under `.agents/drafts/`, so a task's drafts are cleaned up with it.
+
+---
