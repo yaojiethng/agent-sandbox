@@ -319,3 +319,11 @@ The provider image, its onboarding guide, the instruction-transport generator an
 Identity now resolves once at the chain entry, with an absolute record path and one path normalizer, and the record is a single cached primitive read by key rather than exported. The dispatcher forwards a resolved argv through one catalogue whose fields, flags and JSON rendering come from one table, and the CLI contract holds the leaf handoff and path invariants with its gate. The timestamp format has one owner, including a UTC date window and a structural gate, and the relative-time ladder has one home.
 
 ---
+
+## M3.5.1 - The work-log record layer
+
+*A handover is a track record: its milestone's folder holds it, one gate holds its shape, and its derived reads come from the template and the session transcript rather than from prose restated across the prompts.*
+
+A handover files under `devlog/handovers/<milestone>/`, and the track ends when its milestone closes: the changelog heading is the closure predicate, and a retired track is deleted, its removal commit the archive. The format gate reads the section set from the work-log template, so the format is declared once, and it fails a record whose folder and `milestone` field disagree and a record left at the handovers root. The check-in reads the record's `status` and the parts it carries, and recovery reads its evidence from the session transcript rather than treating the record as the only account.
+
+---

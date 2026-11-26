@@ -36,7 +36,7 @@ devlog/handovers/<track>/YYYYMMDD-NN-<shortform>-<slug>.md
 | `<shortform>` | the type shortform, from the vocabulary below |
 | `<slug>` | the specific subject. Name the concrete thing, not a restatement of the type. Underscores for spaces; no other special character. A reader scanning a list of filenames distinguishes this iteration from others of its type without opening the file. |
 
-Example: `devlog/handovers/M3.5.1/20260316-20-workflow-scope_gate_and_preclose_verification.md`
+Example: `devlog/handovers/<track>/20260316-20-workflow-scope_gate_and_preclose_verification.md`
 
 The folder is the track, and a record's `milestone` field names the same milestone. A track reserves a block of `NN` numbers when it opens, recorded as `ids: 20-39` in `devlog/handovers/<track>/README.md`, so two tracks writing on one date never collide.
 

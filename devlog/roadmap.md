@@ -48,7 +48,7 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.5 - Verification plane](#m345---verification-plane) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.4.7 - Environment declaration plane](#m347---environment-declaration-plane) | Not started |
 | &nbsp;&nbsp;[M3.5 - Task List Mechanism](#m35---task-list-mechanism) | In progress |
-| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.1 - The work-log record layer](#m351---the-work-log-record-layer) | In progress |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.1 - The work-log record layer](changelog.md#m351---the-work-log-record-layer) | [Complete - see changelog](changelog.md#m351---the-work-log-record-layer) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.2 - The task-list mechanism](#m352---the-task-list-mechanism) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.3 - The unified record layer](#m353---the-unified-record-layer) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.4 - The git and change model](changelog.md#m354---the-git-and-change-model) | [Complete - see changelog](changelog.md#m354---the-git-and-change-model) |
