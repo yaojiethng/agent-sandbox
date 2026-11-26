@@ -548,6 +548,9 @@ This is the remainder of the original environment-declaration scope. It is the p
 - [x] **A handover's folder and its `milestone` field agree, and a gate holds it** -- landed: `scripts/lint/handover-format.mjs` fails a live record filed under one track whose field names another, and exempts `archive/` and a root-level record. Handover `20261124-04`.
 - [x] **The track-folder move re-paths every relative link, and a gate holds it** -- landed: `scripts/lint/linking.mjs` holds a record's inline links while it is `Active`, and exempts a closed record and the layout's archives, naming the reason; the closed corpus keeps its snapshot links. The `M3.4` track, all of whose records name `M3.4.2`, moved to `M3.4.2/`. Handover `20261124-05`.
 
+- [ ] **The pre-track handover records are filed** -- the 17 loose `devlog/handovers/*.md` predate the track folder, so no track owns them and the folder gate exempts a root-level record. File each into its milestone's track, or, where that track was already retired, delete the record with it and let the removal commit hold it. Ends when no record sits at the handovers root and the folder gate's root-level exemption is gone. **Mechanism:** `code` for the filing, `gate` for the root.
+- [ ] **The archive folders are retired** -- `devlog/handovers/archive/` (716 records), `devlog/discussions/archive/` (80) and `docs/adr/archive/` (6) read like records of closed milestones that the track retirement already covers. Verify that reading per tree, then delete the tree and drop its `archive` declaration from the layout and the linking exemption with it. Ends when no archive folder sits in the tree, the layout declares no archive, and the record gates hold `track` as the one live region. **Mechanism:** `code` for the deletion, `gate` for the layout.
+
 **Not in scope:** the task-list rows, which M3.5.2 owns, and the parallel-milestone rule, which M3.5.3 owns.
 
 ##### M3.5.2 - The task-list mechanism
