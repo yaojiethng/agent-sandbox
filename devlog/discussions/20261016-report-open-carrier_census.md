@@ -1,6 +1,6 @@
 # The carrier census
 
-**Status:** draft
+**Status:** open
 
 ## Context
 

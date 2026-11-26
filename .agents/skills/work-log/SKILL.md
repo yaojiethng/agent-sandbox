@@ -128,7 +128,7 @@ YYYYMMDD-{type}-{state}-{description}.md
 
 Hyphens delimit and underscores separate words. A name carries no emoji, no unicode, no space and no per-day index: that slot belongs to the handover record, and one date already holds both kinds of record.
 
-A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention, its inbound links are updated, and a state token the vocabulary has retired is brought into the current set.
+A record keeps an old-format name until it is substantively edited. On that edit it is renamed to this convention, its inbound links are updated, and a state token the vocabulary has retired is brought into the current set. A milestone that reviews the corpus is such an edit: it renames every record whose state token the vocabulary has retired or whose status line is not `**Status:**`, updates the inbound links, and changes no content.
 
 A file under `docs/` is not a discussion record and does not take this name.
 

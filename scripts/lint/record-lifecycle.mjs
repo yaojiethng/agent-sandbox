@@ -12,7 +12,8 @@
 //   a deletion the cleanup has not run. The record's task has ended, so the
 //   file is a second source beside the ADR or handover that holds its result.
 //
-// Tenancy is read from devlog/roadmap.md and the state from the record's name:
+// Tenancy is read from devlog/roadmap.md and devlog/roadmap_future.md, and the
+// state from the record's name:
 // `- [ ]` rows and `- [x]` rows are told apart by their checkbox, at any indent,
 // and the state is the third field of YYYYMMDD-{type}-{state}-{description}.md.
 //
@@ -70,7 +71,9 @@ function clip(text) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   const dir = join(opts.root, "devlog", "discussions");
-  const roadmap = join(opts.root, "devlog", "roadmap.md");
+  const roadmaps = ["roadmap.md", "roadmap_future.md"]
+    .map((name) => join(opts.root, "devlog", name))
+    .filter((file) => existsSync(file));
 
   if (!existsSync(dir)) {
     console.error(`Record lifecycle gate: ${dir} is missing; cannot scan.`);
@@ -78,7 +81,7 @@ function main() {
   }
 
   const names = readdirSync(dir).filter((entry) => entry.endsWith(".md"));
-  const rows = existsSync(roadmap) ? readFileSync(roadmap, "utf8").split("\n") : [];
+  const rows = roadmaps.flatMap((file) => readFileSync(file, "utf8").split("\n"));
   const openRows = rows.filter((row) => OPEN_ROW.test(row));
   const closedRows = rows.filter((row) => CLOSED_ROW.test(row));
 

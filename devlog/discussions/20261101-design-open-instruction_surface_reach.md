@@ -1,6 +1,6 @@
 # The instruction surface declares its reach once
 
-**Status:** active
+**Status:** open
 
 ## Context
 

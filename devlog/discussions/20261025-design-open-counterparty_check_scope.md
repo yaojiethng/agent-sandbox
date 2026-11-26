@@ -1,9 +1,6 @@
----
-status: active
-date: 2026-10-25
----
-
 # The compliance counterparty's check scope
+
+**Status:** open
 
 A close without an operator acceptance gate has no counterparty to the closing agent's own framing, and the 2026-10-02 rescope is the recorded failure: the agent believed its own six-slice framing, so a self-check by the same agent could not catch it. The roadmap row resolves the mechanism -- a review subagent on the `_REVIEWER` role reads the closed unit -- but leaves its check scope unnamed ("alongside the existing review dimensions"). This record names it, states the evidence each check reads, and states what the seat returns. Source row: [M3.2.2](../roadmap.md#m322---audit-and-review-workflow-cleanup) task item **The review-pass family**, sub-row **Reviewer subagent as the compliance counterparty for gateless closes**.
 

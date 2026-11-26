@@ -17,7 +17,7 @@ The T12 row **The shipped `enabledModels` head no longer names the saved default
 
 The investigation owns five questions. What is selected and when. What each `settings.json` lifecycle step writes. Whether pi writes the file, whether it refreshes, and what causes drift. Which records state the wrong mechanism. Whether the knowledge test covers the failure.
 
-The second line of enquiry is recorded in [`20261104-report-settled-settings_json_fidelity.md`](../discussions/20261104-report-settled-settings_json_fidelity.md). It covers the three copies of the file, pi's write path, the harness seed and preflight, project-level overrides, and the stale-by-default mechanisms. The durable-settings design that report opened is out of scope for this iteration and is filed at [M3.2.3, Durable `settings.json` and the write boundary](../roadmap.md): the target semantics is `.pi` config defined once per repository, seeded at onboard, and managed by the user.
+The second line of enquiry is recorded in [`20261104-report-concluded-settings_json_fidelity.md`](../discussions/20261104-report-concluded-settings_json_fidelity.md). It covers the three copies of the file, pi's write path, the harness seed and preflight, project-level overrides, and the stale-by-default mechanisms. The durable-settings design that report opened is out of scope for this iteration and is filed at [M3.2.3, Durable `settings.json` and the write boundary](../roadmap.md): the target semantics is `.pi` config defined once per repository, seeded at onboard, and managed by the user.
 
 Ruled out of scope for this iteration: changing `settings.json`, changing the knowledge tests, changing the `model-refresh` extension, changing the preflight, and filing the upstream report. The implementation scope and its acceptance criteria were released at `20261104-02`.
 
@@ -72,6 +72,6 @@ None.
 | File | Change |
 |---|---|
 | [`devlog/discussions/20261104-report-settled-enabled_models_scope_head.md`](../discussions/20261104-report-settled-enabled_models_scope_head.md) | the selection investigation report, status `settled`, with the matrix, lifecycle, doc audit, test audit, approved chain and outcome |
-| [`devlog/discussions/20261104-report-settled-settings_json_fidelity.md`](../discussions/20261104-report-settled-settings_json_fidelity.md) | the settings fidelity report, status `settled`, with the three copies, pi's write path, the seed and preflight, the sync measurement, the drift causes, the deferred durable design and the open questions for that row |
+| [`devlog/discussions/20261104-report-concluded-settings_json_fidelity.md`](../discussions/20261104-report-concluded-settings_json_fidelity.md) | the settings fidelity report, status `settled`, with the three copies, pi's write path, the seed and preflight, the sync measurement, the drift causes, the deferred durable design and the open questions for that row |
 | [`devlog/handovers/20261104-01-discussion-enabled_models_scope_head.md`](20261104-01-discussion-enabled_models_scope_head.md) | this work-unit record |
 | [`devlog/roadmap.md`](../roadmap.md) | the durable-settings deferral under M3.2.3, the rewritten chain row, and the no-auth placeholder row |

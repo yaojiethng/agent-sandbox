@@ -1,6 +1,6 @@
 # The documentation-maintenance eval restart
 
-**Status:** draft
+**Status:** open
 
 ## Context
 

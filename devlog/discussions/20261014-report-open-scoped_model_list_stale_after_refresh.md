@@ -1,6 +1,6 @@
 # scoped model list is stale after a catalog refresh
 
-**Status:** draft
+**Status:** open
 
 Environment: `@earendil-works/pi-coding-agent` 1.1.0, Linux x64, Node 22.x. The measurement below was taken by driving the shipped `resolveModelScopeFromModels` with an injected catalog. The interactive sites were read from the shipped `dist/`, and the same sites were cross-checked against the published 1.2.0 package; the two builds are identical at every line cited here. The 1.2.0 section of [Version drift](#version-drift) gives the comparison.
 

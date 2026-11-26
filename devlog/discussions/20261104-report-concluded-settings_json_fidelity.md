@@ -1,6 +1,6 @@
 # `settings.json` fidelity
 
-**Status:** settled
+**Status:** concluded
 
 Environment: `@earendil-works/pi-coding-agent` 1.3.0, Node 22.22.3, Linux x64. Measurements taken 2026-11-04 in `/home/agentuser/sandbox`.
 

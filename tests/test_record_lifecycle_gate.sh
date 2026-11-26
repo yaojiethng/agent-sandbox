@@ -18,6 +18,7 @@
 #   a record dated before the cutover     -- rc 0 for both rules
 #   a missing roadmap                     -- rc 0, and every concluded record is
 #                                    then a deletion, so the scan says so
+#   a record a roadmap_future row owns    -- rc 0, so tenancy reads both roadmaps
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with RECORD_LIFECYCLE_SCAN_ROOT so the repository's own
@@ -146,6 +147,17 @@ run_test test_closed_row_link_flagged
 run_test test_closed_row_link_to_a_second_record_flagged
 run_test test_before_cutover_is_exempt
 run_test test_cutover_moves
+test_record_owned_by_a_future_row_passes() {
+  local root="$FIXTURE_DIR/t10" rc=0 out
+  write_record "$root" 20261105-design-concluded-x.md
+  write_roadmap "$root" '- [ ] **An open row** -- names something else'
+  printf -- '---\ntitle: future\n---\n\n- [ ] **A deferred row** -- the record \x60 20261105-design-concluded-x.md\x60 holds the design\n' > "$root/devlog/roadmap_future.md"
+  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a record owned only by a future roadmap row is not a deletion'
+  assert_contains "$out" 'clean across 1 record(s)' 'the scan read both roadmaps'
+}
+
+run_test test_record_owned_by_a_future_row_passes
 run_test test_missing_roadmap_flags_every_ended_record
 
 test_done

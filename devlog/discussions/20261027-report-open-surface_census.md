@@ -1,6 +1,6 @@
 # The instruction surface, measured
 
-**Status:** draft
+**Status:** open
 **Date:** 2026-10-27
 **Instruments:** `.scratchpad/surface/{bill,reads,corpus,exercise,union,dup,near}.mjs`, throwaway, reproducible from the session store and the tree.
 

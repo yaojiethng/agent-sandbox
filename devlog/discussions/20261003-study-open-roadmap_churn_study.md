@@ -1,6 +1,6 @@
 # Roadmap churn diagnostic study
 
-**Status:** draft
+**Status:** open
 
 ## Context
 
@@ -186,7 +186,7 @@ Attribution discipline is worth keeping. Separating the causes into model, mecha
 
 | Artifact | Home | Fate |
 |---|---|---|
-| This study | `devlog/discussions/20261003-study-draft-roadmap_churn_study.md` | draft, awaiting review; on review it moves to settled and feeds the T5 rewrite study |
+| This study | `devlog/discussions/20261003-study-open-roadmap_churn_study.md` | draft, awaiting review; on review it moves to settled and feeds the T5 rewrite study |
 | The eight rewrite requirements (R1 to R8) | this study's `Resolution methods` section | input to the T5 `Roadmap-mechanism rewrite study` |
 | The seven local improvements (L1 to L7) | this study's `Resolution methods` section | candidates for the immediate-pain rows the operator asked the study to isolate |
 

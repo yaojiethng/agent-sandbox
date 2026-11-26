@@ -1,6 +1,6 @@
 # default model provider resolution bug report
 
-**Status:** draft
+**Status:** open
 
 Environment: `@earendil-works/pi-coding-agent` 0.87.1, Linux x64, Node 22.22.3. All measurements below were taken against that build by driving pi's own `findInitialModel` and `resolveModelScopeFromModels` with an injected catalog and an injected auth set, so the numbers come from the shipped resolver and not from a re-implementation of it.
 

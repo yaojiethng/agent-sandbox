@@ -12,7 +12,7 @@
 #   is a deletion that has not run.
 #
 # The scanner is scripts/lint/record-lifecycle.mjs. It reads tenancy from
-# devlog/roadmap.md and the state from the record's name, and the two together
+# devlog/roadmap.md and devlog/roadmap_future.md, and the state from the record's name, and the two together
 # are the whole input, so it needs no map of which row produced which record.
 #
 # Scope: the scan reads devlog/discussions/ and does not walk its archive. A
