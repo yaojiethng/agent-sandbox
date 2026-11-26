@@ -84,11 +84,7 @@ This ADR reserves the terms this principle introduces, and the senses of **layer
 | agent nesting | "depth" |
 | Docker build | keep - Docker's own term |
 
-### In development
-
-This principle governs the M3.3.2 structural moves, and it stays under development until they land. The exploration record is [`20261014-design-settled-coding_agent_binding_surface.md`](../../devlog/discussions/20261014-design-settled-coding_agent_binding_surface.md). Remove that link when the moves complete, which closes this record.
-
-The convention-skill corpus lands at handover `20261014-05`. It supersedes the interface, the project value file and the gate an earlier attempt in the same iteration produced: see the section below.
+The M3.3.2 structural moves this principle governs landed, which closes the development state the decision recorded. The convention-skill corpus lands at handover `20261014-05`; it supersedes the interface, the project value file and the gate an earlier attempt in the same iteration produced.
 
 ## 2026-10-14 -- The maintenance surface is fixed; the mechanics behind it are bound
 
@@ -153,7 +149,7 @@ The direction of travel is down the chain. **Coexistence is required:** a stage 
 
 ## 2026-10-14 -- The policy form is retired by subtraction
 
-**Decision:** Each policy splits by subtraction: the mechanism goes to the procedure that already runs it, the convention goes to the project's convention-skill, and the remainder is the rule. A rule a procedure enforces is stated where it is enforced; a rule that binds the procedures to each other keeps a document. On that rule the eight policies become two documents: `iteration_protocol`'s Principles and Iteration Invariants keep a protocol document, because they bind every runbook, and `documentation_policy`'s Communication Standards keep the `communication` standard, because they govern every text. **Revised 2026-10-22:** the standard's judgements became `communication-principle-*` skills and its rules the `project-documentation` convention, so `iteration_protocol` is the one document that survives; the file is deleted. The other six dissolve. Amended 2026-10-21: the standard survives as the `communication-principle-*` skill corpus rather than as a document, because those judgements were filed as skills and a rule with an owner admits no document beside it, so one document remains. The per-policy map is in [`20261014-design-settled-retire_the_policy_form.md`](../../devlog/discussions/20261014-design-settled-retire_the_policy_form.md); each policy is one slice, ordered `handover_policy` through `iteration_protocol`.
+**Decision:** Each policy splits by subtraction: the mechanism goes to the procedure that already runs it, the convention goes to the project's convention-skill, and the remainder is the rule. A rule a procedure enforces is stated where it is enforced; a rule that binds the procedures to each other keeps a document. On that rule the eight policies become two documents: `iteration_protocol`'s Principles and Iteration Invariants keep a protocol document, because they bind every runbook, and `documentation_policy`'s Communication Standards keep the `communication` standard, because they govern every text. **Revised 2026-10-22:** the standard's judgements became `communication-principle-*` skills and its rules the `project-documentation` convention, so `iteration_protocol` is the one document that survives; the file is deleted. The other six dissolve. Amended 2026-10-21: the standard survives as the `communication-principle-*` skill corpus rather than as a document, because those judgements were filed as skills and a rule with an owner admits no document beside it, so one document remains. The per-policy map is in `20261014-design-settled-retire_the_policy_form`; each policy is one slice, ordered `handover_policy` through `iteration_protocol`.
 
 **Rationale:** A section often carries the mechanism and the convention at once, so assigning each section one label forces an artificial choice. Subtraction needs no label: what remains after the mechanism and the convention are removed is the rule by construction, and the document count then follows from a property of the remainder rather than a judgement about the section.
 
