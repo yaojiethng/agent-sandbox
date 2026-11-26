@@ -52,6 +52,8 @@ Maintenance rules - task granularity, cleanup on completion, section removal - a
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.2 - The task-list mechanism](#m352---the-task-list-mechanism) | Not started |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.3 - The unified record layer](#m353---the-unified-record-layer) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.4 - The git and change model](changelog.md#m354---the-git-and-change-model) | [Complete - see changelog](changelog.md#m354---the-git-and-change-model) |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.5 - The feedback record](#m355---the-feedback-record) | Not started |
+| &nbsp;&nbsp;&nbsp;&nbsp;[M3.5.6 - The discussion record corpus](#m356---the-discussion-record-corpus) | Not started |
 | &nbsp;&nbsp;[M3.6 - Cost-Aware Dispatch](#m36---cost-aware-dispatch) | In progress |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.1 - Disable and ship OpenCode dispatch](changelog.md#m361---disable-and-ship-opencode-dispatch) | [Complete - see changelog](changelog.md#m361---disable-and-ship-opencode-dispatch) |
 | &nbsp;&nbsp;&nbsp;&nbsp;[M3.6.2 - Measure](#m362---measure) | Not started |
@@ -540,10 +542,6 @@ This is the remainder of the original environment-declaration scope. It is the p
 **Sequencing:** runs now, ahead of M3.3.5, as the stopgap that unblocks parallel tracks. The durable parallel-milestone rule is M3.5.3's.
 
 - [x] **Handover tracks and the record read seam** -- a handover becomes a track record: `devlog/handovers/<milestone>/` is the track, its `YYYYMMDD-NN` is a reserved identity rather than a position, and order is read from git. The `work-log` state the prompts repeat -- the latest handover, the active one, the track, the next id -- is declared once and read through one tool, so the prompts stop computing what `work-log` owns. The seam's scope is `work-log`; the task list is not in it, and a task-list tool is a separate decision if this one works. Pulled forward from T5 and consumed by the parallel-milestone rule. ADR [`work_log_record_seam.md`](../docs/adr/work_log_record_seam.md). Mechanism: `record` for the model, `code` for the tool and the layout declaration, `gate` for the layout and id checks. Ends when two tracks write on one day without collision, a track orients from its folder alone, no prompt hardcodes a `tail -1` read, and the layout has one declaration and one reader. Landed in handovers `20261105-15`, `20261105-16` and `20261105-17`; the cutoff tag is `track-cutoff-2026-11-05`.
-- [ ] **The feedback record has one stated shape and one mechanism that holds it** -- `devlog/AGENT_FEEDBACK.md` grows by append: no convention states its shape, no cap bounds it and no gate reads it, while two maintenance skills read it and every session writes it. The work-log record model and the read surface the feedback command will extend are in [`work_log_record_seam.md`](../docs/adr/work_log_record_seam.md). Parked here on operator direction 2026-10-29.
-  - [ ] **The record's shape is stated once, where its writer already looks** -- the convention entry, and every procedure that reads or writes the record hands off there. Moved from M3.3.3 on operator direction 2026-10-29.
-  - [ ] **The record's mechanism is decided** -- whether it stays a log or is generated from a store, and what bounds and reads it.
-- [ ] **The record cutover corpus is cleaned** -- the record gates exempt a file dated before 2026-11-05, through the one constant in `scripts/lint/record-cutover.mjs`, so the corpus still carries what the rules retired: records whose state is `concluded` or `rejected` and whose roadmap row has closed, closed rows that still name a record, and names carrying a state token the vocabulary no longer holds. Ends when every such record is deleted or re-pointed, no closed row carries the link, every name conforms, and the cutover constant is deleted -- which is what removes the exemption.
 - [x] **Fold the handover check into the work-log convention** -- landed: the runbook sits at `.agents/skills/work-log/runbooks/handover-maintenance/`, the module ships no handover check, and the prompts and references name the new home. Handover `20261124-03`.
 - [x] **Retire the records of closed rows and closed milestones** -- landed: a discussion record ends with its roadmap row, a handover track ends with its milestone, and every surviving record carries the format `work-log` declares. `scripts/check_record_lifecycle.sh` and `scripts/check_track_lifecycle.sh` hold the first two, the handover format gate the third, and the 13 tracks of closed milestones are removed from `HEAD` and recoverable from `d3160b40`. Handovers `20261105-06`, `20261124-01`, `20261124-02`, `20261125-01`.
 - [x] **Align the check-in's read to the sections the record carries** -- landed: `gm.md` reads the record's `status` and the parts the `work-log` format carries. Handover `20261124-02`.
@@ -608,6 +606,24 @@ This is the remainder of the original environment-declaration scope. It is the p
 - The migration of other projects' records. This milestone builds the mechanism and the migration path; a foreign project runs the converter itself.
 - Coordinated multi-agent dispatch, its branch surface and its metadata. Those are M4's, and this milestone only makes them possible.
 - The task-list rows and the work-log rows, which the sub-milestones own. The parent holds only the rules that span both.
+
+##### M3.5.5 - The feedback record
+
+**Objective:** state the feedback record's entry shape once and decide the mechanism that keeps it.
+
+**Depends on:** M3.5.1.
+
+- [ ] **The feedback record has one stated shape and one mechanism that holds it** -- `devlog/AGENT_FEEDBACK.md` grows by append: no convention states its shape, no cap bounds it and no gate reads it, while two maintenance skills read it and every session writes it. The work-log record model and the read surface the feedback command will extend are in [`work_log_record_seam.md`](../docs/adr/work_log_record_seam.md). Parked here on operator direction 2026-10-29.
+  - [ ] **The record's shape is stated once, where its writer already looks** -- the convention entry, and every procedure that reads or writes the record hands off there. Moved from M3.3.3 on operator direction 2026-10-29.
+  - [ ] **The record's mechanism is decided** -- whether it stays a log or is generated from a store, and what bounds and reads it.
+
+##### M3.5.6 - The discussion record corpus
+
+**Objective:** clean the pre-cutover discussion records so the retired state tokens leave the tree and the cutover exemption constant is deleted.
+
+**Depends on:** M3.5.1.
+
+- [ ] **The record cutover corpus is cleaned** -- the record gates exempt a file dated before 2026-11-05, through the one constant in `scripts/lint/record-cutover.mjs`, so the corpus still carries what the rules retired: records whose state is `concluded` or `rejected` and whose roadmap row has closed, closed rows that still name a record, and names carrying a state token the vocabulary no longer holds. Ends when every such record is deleted or re-pointed, no closed row carries the link, every name conforms, and the cutover constant is deleted -- which is what removes the exemption.
 
 #### M3.6 - Cost-Aware Dispatch
 
