@@ -3,8 +3,9 @@
 // Enforces the work-log convention's record shape over handovers: the
 // frontmatter fields (date, milestone, type, status), the section set (the
 // required sections, read from the work-log template, present; the forbidden
-// ones absent), and the track the record is filed under matching its
-// `milestone` field.
+// ones absent), the record sitting under a track folder rather than at the
+// handovers root, and the track it is filed under matching its `milestone`
+// field.
 //
 // Scope: the default scan reads the live handover folder, which the archive
 // keeps free of every record written before the cutover; a record there that
@@ -142,6 +143,7 @@ if (named.length > 0) {
 /**
  * The track folder a live record is filed under, or null when the path is
  * outside the live handover tree, under the archive, or at the tree's root.
+ * `atHandoverRoot` tells the root apart from the other null cases.
  */
 function filedUnder(file) {
   if (!handoverBase) return null;
@@ -151,6 +153,19 @@ function filedUnder(file) {
   if (!rel || rel.startsWith("..") || isAbsolute(rel)) return null;
   const parts = rel.split(sep).filter(Boolean);
   return parts.length > 1 ? parts[0] : null;
+}
+
+/**
+ * Whether a live record sits directly at the handovers root, outside every
+ * track folder. The archive and a path outside the live tree are not the root.
+ */
+function atHandoverRoot(file) {
+  if (!handoverBase) return false;
+  const abs = resolve(file);
+  if (handoverArchive && (abs === handoverArchive || abs.startsWith(handoverArchive + sep))) return false;
+  const rel = relative(handoverBase, abs);
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) return false;
+  return rel.split(sep).filter(Boolean).length === 1;
 }
 
 /** The line a frontmatter key sits on, for a finding's position. */
@@ -211,6 +226,13 @@ for (const file of files) {
   }
 
   const track = filedUnder(file);
+  if (atHandoverRoot(file)) {
+    findings.push({
+      rel,
+      line: fieldLine(text, "milestone"),
+      msg: "record sits at the handovers root; file it under a track folder",
+    });
+  }
   if (track && fields.milestone !== undefined) {
     const value = String(fields.milestone).trim();
     if (value !== track && !value.startsWith(`${track} - `)) {

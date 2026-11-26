@@ -21,6 +21,7 @@
 #   an active findings row with no destination -- rc 0
 #   a folder whose `milestone` names another track -- rc 1; both are named
 #   a folder matching the `milestone` field -- rc 0
+#   a record at the handovers root -- rc 1, the root is named
 #   a record under archive/ with a mismatched field -- rc 0, the archive is exempt
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
@@ -157,7 +158,7 @@ test_default_scan_skips_archive() {
   local root="$FIXTURE_DIR/t9" rc=0 out
   seed_layout "$root"
   write_bold_handover "$root/devlog/handovers/archive/20260101-01-workflow-old.md"
-  write_handover "$root/devlog/handovers/20261004-01-workflow-new.md" 2026-10-04
+  write_handover "$root/devlog/handovers/T1/20261004-01-workflow-new.md" 2026-10-04
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a record under archive/ is not scanned'
   assert_contains "$out" 'clean across 1 handover' 'and the live record is the only subject'
@@ -318,6 +319,15 @@ test_folder_milestone_match_passes() {
   assert_contains "$out" 'clean across 1 handover' 'the nested record is the only subject'
 }
 
+test_root_record_fails() {
+  local root="$FIXTURE_DIR/t18" rc=0 out
+  seed_layout "$root"
+  write_handover "$root/devlog/handovers/20261004-01-workflow-loose.md" 2026-10-04
+  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'a record at the handovers root is a finding'
+  assert_contains "$out" 'record sits at the handovers root' 'the root is named'
+}
+
 test_archive_folder_mismatch_exempt() {
   local root="$FIXTURE_DIR/t17" file="$FIXTURE_DIR/t17/devlog/handovers/archive/20260101-01-workflow-old.md" rc=0 out
   seed_layout "$root"
@@ -348,6 +358,7 @@ run_test test_closed_findings_row_triaged_late_passes
 run_test test_active_findings_row_without_destination_passes
 run_test test_folder_milestone_mismatch_fails
 run_test test_folder_milestone_match_passes
+run_test test_root_record_fails
 run_test test_archive_folder_mismatch_exempt
 run_test test_completed_without_criteria_fails
 run_test test_completed_before_the_rule_passes
