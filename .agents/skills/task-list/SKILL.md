@@ -35,7 +35,7 @@ A handover's `milestone` field names a milestone in the roadmap's active set: th
 
 **A closed row is edited in place.** A correction to a closed roadmap row changes its text directly and adds no marker; a correction that creates work is a new open row. The changelog is the exception, because it is the archive, and its form is in [`references/changelog.md`](references/changelog.md).
 
-**Task cleanup runs when the row ends.** A row ends one of two ways: it completes, or it is cancelled and deleted. Both run the same cleanup, and the record layer is what that cleanup covers -- every discussion record the row names is re-pointed to another open row or deleted, in the same commit, as the `work-log` convention states. Cleanup covers no deliverable: a task delivers by completing, so every file that landed belongs to a row that completed, and a cancelled row owns none.
+**Task cleanup runs when the row ends.** A row ends one of two ways: it completes, or it is cancelled and deleted. Both run the same cleanup, and the record layer is what that cleanup covers -- every discussion record the row names is re-pointed to another open row or deleted, in the same commit, as the `work-log` convention states. Cleanup covers the task's working documents as well as its records: a document under `.agents/drafts/` is owned while a roadmap line outside a closed row names it with its folder, and it is cleaned up with the task that ends. Cleanup covers no deliverable: a task delivers by completing, so every file that landed belongs to a row that completed, and a cancelled row owns none.
 
 **Every roadmap edit is a targeted change**, not a full-file rewrite.
 

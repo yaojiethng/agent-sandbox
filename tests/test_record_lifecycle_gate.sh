@@ -152,4 +152,49 @@ test_open_row_names_a_present_record_passes() {
 run_test test_open_row_names_a_missing_record_flagged
 run_test test_open_row_names_a_present_record_passes
 
+
+write_draft() {
+  local root="$1" name="$2"
+  mkdir -p "$root/.agents/drafts"
+  printf '# %s\n' "$name" > "$root/.agents/drafts/$name"
+}
+
+test_working_document_named_by_an_open_row_passes() {
+  local root="$FIXTURE_DIR/t13" rc=0 out
+  write_record "$root" 20261105-design-open-x.md
+  write_draft "$root" run.md
+  write_roadmap "$root" \
+    '- [ ] **A row** -- the record `20261105-design-open-x.md` holds the design' \
+    '- [ ] **Another row** -- the run is in `.agents/drafts/run.md`'
+  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 0 "$rc" 'a working document an open row names is owned'
+  assert_contains "$out" '1 working document(s)' 'the scan counts the working documents'
+}
+
+test_working_document_named_by_nothing_flagged() {
+  local root="$FIXTURE_DIR/t14" rc=0 out
+  write_record "$root" 20261105-design-open-x.md
+  write_draft "$root" orphan.md
+  write_roadmap "$root" '- [ ] **A row** -- the record `20261105-design-open-x.md` holds the design'
+  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'a working document no roadmap line names fails'
+  assert_contains "$out" 'orphan.md' 'the file is reported'
+  assert_contains "$out" 'deletion that has not run' 'the deletion is named'
+}
+
+test_working_document_named_only_with_its_folder_counts() {
+  local root="$FIXTURE_DIR/t15" rc=0 out
+  write_record "$root" 20261105-design-open-x.md
+  write_draft "$root" run.md
+  write_roadmap "$root" \
+    '- [ ] **A row** -- the record `20261105-design-open-x.md` holds the design' \
+    '- [ ] **Another row** -- the bare name `run.md` is not enough'
+  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
+  assert_rc 1 "$rc" 'a bare name does not own a working document'
+}
+
+run_test test_working_document_named_by_an_open_row_passes
+run_test test_working_document_named_by_nothing_flagged
+run_test test_working_document_named_only_with_its_folder_counts
+
 test_done

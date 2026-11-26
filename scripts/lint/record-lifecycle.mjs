@@ -16,6 +16,11 @@
 //   has, so a name that resolves to nothing is a row with no source, and the
 //   row states what now carries it.
 //
+//   A working document under .agents/drafts/ is owned the way a record is: a
+//   roadmap line outside a closed row names it, with its folder, while the task
+//   it belongs to is open. Tenancy is stated with the path, because a bare file
+//   name in this repository is ambiguous.
+//
 // Tenancy is read from devlog/roadmap.md and devlog/roadmap_future.md, and
 // `- [ ]` rows and `- [x]` rows are told apart by their checkbox, at any
 // indent. The enquiry's state does not decide the deletion: a row that closes
@@ -81,6 +86,27 @@ function main() {
   const subjects = names;
 
   const findings = [];
+  const draftsDir = join(opts.root, ".agents", "drafts");
+  const drafts = existsSync(draftsDir) ? readdirSync(draftsDir).filter((entry) => !entry.startsWith(".")) : [];
+  const openText = rows.filter((row) => !CLOSED_ROW.test(row)).join("\n");
+
+  for (const name of drafts) {
+    if (openText.includes(`.agents/drafts/${name}`)) continue;
+    findings.push(
+      `${name}: no roadmap line outside a closed row names .agents/drafts/${name}. A working document is ` +
+        `cleaned up with the task it belongs to, so the file is a deletion that has not run`,
+    );
+  }
+
+  for (const row of closedRows) {
+    for (const name of drafts) {
+      if (!row.includes(`.agents/drafts/${name}`)) continue;
+      findings.push(
+        `${clip(row)}: a closed row names the working document ${name}. A closed row carries no working ` +
+          `document link; delete it with the task that closed, or name it on the row that now uses it`,
+      );
+    }
+  }
   const owned = new Set();
   for (const row of openRows) {
     for (const name of names) if (row.includes(name)) owned.add(name);
@@ -120,7 +146,8 @@ function main() {
     return 1;
   }
   console.log(
-    `Record lifecycles: clean across ${subjects.length} record(s) and ${openRows.length + closedRows.length} roadmap row(s)`,
+    `Record lifecycles: clean across ${subjects.length} record(s), ${drafts.length} working document(s) ` +
+      `and ${openRows.length + closedRows.length} roadmap row(s)`,
   );
   return 0;
 }
