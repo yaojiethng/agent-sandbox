@@ -215,7 +215,7 @@ One record is one instance of a two-region machine. What its enquiry has establi
 stateDiagram-v2
     state "Tenancy -- who names the record" as rec_disc_tenancy {
         [*] --> rec_disc_owned
-        rec_disc_owned --> rec_disc_orphaned : the last naming roadmap row closes
+        rec_disc_owned --> rec_disc_orphaned : the last naming roadmap row closes or is deleted
         rec_disc_orphaned --> rec_disc_owned : an open row takes the record over
     }
     state "Enquiry -- what the record has established" as rec_disc_enquiry {

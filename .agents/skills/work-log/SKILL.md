@@ -141,11 +141,7 @@ What the enquiry has established, and whether the task that owns the record is s
 | `open` | the enquiry is in flight | `ended` |
 | `ended` | the enquiry reached its result, and the record is evidence for it | -- |
 
-A row that closes re-points or deletes every record it names, in the same commit. Another open row may take the record over, which is a re-point rather than a new file, and the closing row strips its link. Otherwise the record is deleted, and the commit that deletes it names the reason, because the file leaves no other trace. When the deleted record is one a row named, that row says what now carries the evidence, because a name that resolves to nothing is not a source. Tenancy or a failed criterion decides the deletion, never the enquiry's state: a record an open row owns stays unless it cannot earn its place. The layer has no third state: a record sits under `devlog/discussions/` or it is deleted.
-
-### What a record has to earn its place
-
-A corpus review keeps a record only when no live document restates what it says, an open row names it as evidence rather than in passing, the files and commands it cites still resolve, and no other live record carries the same evidence. A record that fails one is deleted, and the row that named it is corrected in the same commit.
+A row that closes re-points or deletes every record it names, in the same commit. Another open row may take the record over, which is a re-point rather than a new file, and the closing row strips its link. Otherwise the record is deleted, and the commit that deletes it names the reason, because the file leaves no other trace. A row that ends takes its record with it, and a cancelled task's row is deleted rather than closed, so deleting the row deletes the record it introduced. Tenancy decides the deletion, never the enquiry's state: a record an open row owns stays, whatever its state. The layer has no third state: a record sits under `devlog/discussions/` or it is deleted.
 
 ### The four types
 
