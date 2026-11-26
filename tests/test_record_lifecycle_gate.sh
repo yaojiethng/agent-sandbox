@@ -15,15 +15,13 @@
 #                                    repair is stated
 #   a closed row naming a different row's record -- rc 1, so the scan does not
 #                                    assume the name appears once
-#   a record dated before the cutover     -- rc 0 for both rules
 #   a missing roadmap                     -- rc 0, and every concluded record is
 #                                    then a deletion, so the scan says so
 #   a record a roadmap_future row owns    -- rc 0, so tenancy reads both roadmaps
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with RECORD_LIFECYCLE_SCAN_ROOT so the repository's own
-# records are never the subject. RECORD_CUTOVER moves the cutover where a test
-# needs it.
+# records are never the subject.
 #
 # Run:   bash tests/test_record_lifecycle_gate.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -114,23 +112,6 @@ test_closed_row_link_to_a_second_record_flagged() {
   assert_contains "$out" '20261105-design-open-b.md' 'the record the closed row names is reported'
 }
 
-test_before_cutover_is_exempt() {
-  local root="$FIXTURE_DIR/t7" rc=0 out
-  write_record "$root" 20261104-design-settled-x.md
-  write_roadmap "$root" '- [x] **A closed row** -- see `20261104-design-settled-x.md`'
-  out="$(RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a record dated before the cutover is exempt from both rules'
-  assert_contains "$out" 'clean across 0 record(s)' 'and is not counted as a subject'
-}
-
-test_cutover_moves() {
-  local root="$FIXTURE_DIR/t8" rc=0 out
-  write_record "$root" 20261104-design-settled-x.md
-  write_roadmap "$root" '- [x] **A closed row** -- see `20261104-design-settled-x.md`'
-  out="$(RECORD_CUTOVER=20261101 RECORD_LIFECYCLE_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 1 "$rc" 'moving the cutover earlier makes the same record a subject'
-}
-
 test_missing_roadmap_flags_every_ended_record() {
   local root="$FIXTURE_DIR/t9" rc=0 out
   write_record "$root" 20261105-design-concluded-x.md
@@ -145,8 +126,6 @@ run_test test_rejected_and_orphaned_flagged
 run_test test_open_and_orphaned_passes
 run_test test_closed_row_link_flagged
 run_test test_closed_row_link_to_a_second_record_flagged
-run_test test_before_cutover_is_exempt
-run_test test_cutover_moves
 test_record_owned_by_a_future_row_passes() {
   local root="$FIXTURE_DIR/t10" rc=0 out
   write_record "$root" 20261105-design-concluded-x.md

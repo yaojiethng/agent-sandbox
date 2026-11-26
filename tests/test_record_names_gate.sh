@@ -12,14 +12,12 @@
 #   a name with no status        -- rc 1; the shape is named
 #   an unknown type              -- rc 1; the vocabulary is named
 #   an unknown status            -- rc 1; the vocabulary is named
-#   an old-format name before the cutover -- rc 0, because the convention lets
-#                                    an old name stand until the record is edited
-#   a named file                 -- enforced regardless of date
+#   a named file                 -- enforced
 #   a record under archive/      -- not scanned
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with RECORD_NAME_SCAN_ROOT so the repository's own records are
-# never the subject. RECORD_NAME_CUTOVER moves the cutover where a test needs it.
+# never the subject.
 #
 # Run:   bash tests/test_record_names_gate.sh
 # Exit:  0 = all passed, non-zero = failure count
@@ -89,19 +87,11 @@ test_unknown_status_flagged() {
   assert_contains "$out" '"finished" is not one of' 'the vocabulary is named'
 }
 
-test_before_cutover_is_exempt() {
-  local root="$FIXTURE_DIR/t6" rc=0 out
-  write_record "$root/devlog/discussions/20261023-report-x.md"
-  out="$(RECORD_NAME_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'an old-format name dated before the cutover is exempt'
-  assert_contains "$out" 'clean across 1 record' 'the record is still read'
-}
-
-test_named_file_ignores_cutover() {
+test_named_file_is_enforced() {
   local root="$FIXTURE_DIR/t7" rc=0 out
   write_record "$root/devlog/discussions/20261023-report-x.md"
   out="$(bash "$GATE" "$root/devlog/discussions/20261023-report-x.md" 2>&1)" || rc=$?
-  assert_rc 1 "$rc" 'a named file is enforced regardless of date'
+  assert_rc 1 "$rc" 'a named file is enforced'
   assert_contains "$out" 'does not match' 'the shape is named'
 }
 
@@ -119,8 +109,7 @@ run_test test_index_in_a_discussion_name_flagged
 run_test test_missing_status_flagged
 run_test test_unknown_type_flagged
 run_test test_unknown_status_flagged
-run_test test_before_cutover_is_exempt
-run_test test_named_file_ignores_cutover
+run_test test_named_file_is_enforced
 run_test test_archive_not_scanned
 
 test_done

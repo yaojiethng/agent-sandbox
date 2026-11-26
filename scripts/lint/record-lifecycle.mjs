@@ -17,9 +17,7 @@
 // `- [ ]` rows and `- [x]` rows are told apart by their checkbox, at any indent,
 // and the state is the third field of YYYYMMDD-{type}-{state}-{description}.md.
 //
-// Scope: a record dated before the cutover is exempt from both rules, the same
-// exemption the name gate applies, because the corpus predates them; the T5
-// cleanup row removes the exemption by bringing the corpus to conformance.
+// Scope: both rules read every live record, and archive/ is not walked.
 //
 // Exit codes: 0 = no findings, 1 = findings or the scan could not run. The
 // finding count is printed, never encoded in the exit code.
@@ -27,7 +25,6 @@
 import { readdirSync, existsSync, readFileSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { RECORD_CUTOVER } from "./record-cutover.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -41,11 +38,9 @@ const OPEN_ROW = /^\s*- \[ \] /;
 const CLOSED_ROW = /^\s*- \[x\] /;
 
 function parseArgs(argv) {
-  const opts = { root: REPO_ROOT, cutover: RECORD_CUTOVER, force: false };
+  const opts = { root: REPO_ROOT };
   for (const arg of argv) {
     if (arg.startsWith("--root=")) opts.root = arg.slice("--root=".length);
-    else if (arg.startsWith("--cutover=")) opts.cutover = arg.slice("--cutover=".length);
-    else if (arg === "--force") opts.force = true;
   }
   return opts;
 }
@@ -53,12 +48,6 @@ function parseArgs(argv) {
 /** The state field of a record name, or null when the name is not that shape. */
 function stateOf(name) {
   const match = /^\d{8}-[a-z]+-([a-z]+)-/.exec(name);
-  return match ? match[1] : null;
-}
-
-/** The leading date of a record name, or null. */
-function dateOf(name) {
-  const match = /^(\d{8})-/.exec(name);
   return match ? match[1] : null;
 }
 
@@ -85,11 +74,7 @@ function main() {
   const openRows = rows.filter((row) => OPEN_ROW.test(row));
   const closedRows = rows.filter((row) => CLOSED_ROW.test(row));
 
-  const subjects = names.filter((name) => {
-    const date = dateOf(name);
-    if (opts.force) return true;
-    return date !== null && date >= opts.cutover;
-  });
+  const subjects = names;
 
   const findings = [];
   const owned = new Set();

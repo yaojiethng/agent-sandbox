@@ -11,10 +11,7 @@
 // kind of record the number belongs to.
 //
 // Scope: the default scan reads the live discussions folder. `archive/` is not
-// walked. A record dated before the cutover is exempt, because the convention
-// lets an old-format name stand until the record is substantively edited, and
-// `--force` drops the cutover for a file list, which is the on-demand audit
-// mode. `--staged` keeps the cutover for the files it is given.
+// walked, and every live record is held to the shape: no date exempts one.
 //
 // Exit codes: 0 = no findings, 1 = findings or the scan could not run. The
 // finding count is printed, never encoded in the exit code.
@@ -22,7 +19,6 @@
 import { readdirSync, existsSync } from "fs";
 import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { RECORD_CUTOVER } from "./record-cutover.mjs";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -39,22 +35,15 @@ const CONFORMING = /^(\d{8})-([a-z]+)-([a-z]+)-([a-z0-9][a-z0-9._-]*)\.md$/;
 const HANDOVER_SHAPE = /^(\d{8})-(\d{2})-(.+)$/;
 
 function parseArgs(argv) {
-  const opts = { root: REPO_ROOT, cutover: RECORD_CUTOVER, force: false, files: [] };
+  const opts = { root: REPO_ROOT, files: [] };
   for (const arg of argv) {
     if (arg.startsWith("--root=")) opts.root = arg.slice("--root=".length);
-    else if (arg.startsWith("--cutover=")) opts.cutover = arg.slice("--cutover=".length);
-    else if (arg === "--force") opts.force = true;
     else opts.files.push(arg);
   }
   return opts;
 }
 
 /** The leading date of a record name, or null when the name carries none. */
-function dateOf(name) {
-  const match = /^(\d{8})-/.exec(name);
-  return match ? match[1] : null;
-}
-
 /** Every finding for one filename. */
 function checkName(name) {
   const indexed = HANDOVER_SHAPE.exec(name);
@@ -100,14 +89,6 @@ function main() {
   const findings = [];
   for (const name of names) {
     const base = name.split("/").pop();
-    const date = dateOf(base);
-    if (!opts.force) {
-      if (date === null) {
-        findings.push(`${name}: carries no leading date, so it cannot be dated against the cutover`);
-        continue;
-      }
-      if (date < opts.cutover) continue;
-    }
     findings.push(...checkName(base));
   }
 

@@ -10,14 +10,11 @@
 # scripts/lint/record-name.mjs.
 #
 # Scope: the default scan reads devlog/discussions/, and does not walk its
-# archive. A record dated before the cutover keeps an old-format name until it
-# is substantively edited. A file named on the command line is enforced
-# regardless of date, which is the on-demand audit mode and the mode a
-# substantial edit should use. `--staged` enforces the records staged for
-# commit and keeps the cutover, so correcting an old record is not blocked.
+# archive. Every live record is held to the shape: no date exempts one. A file
+# named on the command line is the on-demand audit mode, and `--staged`
+# enforces the records staged for commit.
 #
-# Test seam: RECORD_NAME_SCAN_ROOT points the scan at a fixture root, and
-# RECORD_NAME_CUTOVER moves the cutover the default scan applies.
+# Test seam: RECORD_NAME_SCAN_ROOT points the scan at a fixture root.
 #
 # Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 # finding count is printed, never encoded in the exit code (see
@@ -30,7 +27,6 @@ SECONDS=0
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCAN_SCRIPT="$REPO_ROOT/scripts/lint/record-name.mjs"
 SCAN_ROOT="${RECORD_NAME_SCAN_ROOT:-$REPO_ROOT}"
-CUTOVER="${RECORD_NAME_CUTOVER:-}"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Record name gate: node is not on PATH; cannot scan names." >&2
@@ -64,13 +60,13 @@ cd "$REPO_ROOT" || exit 1
 
 if (( ${#FILES[@]} > 0 )); then
   if (( STAGED )); then
-    node "$SCAN_SCRIPT" --root="$SCAN_ROOT" ${CUTOVER:+--cutover="$CUTOVER"} "${FILES[@]}"
+    node "$SCAN_SCRIPT" --root="$SCAN_ROOT" "${FILES[@]}"
   else
-    node "$SCAN_SCRIPT" --root="$SCAN_ROOT" --force "${FILES[@]}"
+    node "$SCAN_SCRIPT" --root="$SCAN_ROOT" "${FILES[@]}"
   fi
   rc=$?
 else
-  node "$SCAN_SCRIPT" --root="$SCAN_ROOT" ${CUTOVER:+--cutover="$CUTOVER"}
+  node "$SCAN_SCRIPT" --root="$SCAN_ROOT"
   rc=$?
 fi
 
