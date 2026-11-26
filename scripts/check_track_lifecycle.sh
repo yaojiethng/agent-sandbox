@@ -13,8 +13,7 @@
 # The changelog heading `## M3.4.2 - ...` is the closure predicate, the same
 # record the summary table links to. A folder whose name is not a closed
 # milestone id -- a work-unit folder such as T7, or a live milestone's -- is not
-# this gate's subject. devlog/handovers/archive/ is frozen history and is never
-# read.
+# this gate's subject.
 #
 # Usage: bash scripts/check_track_lifecycle.sh [--root=DIR]
 # Exit:  0 = no findings, 1 = findings or the gate could not run. The finding
@@ -58,9 +57,8 @@ if [[ -d "$TRACKS" ]]; then
   for dir in "$TRACKS"/*/; do
     [[ -d "$dir" ]] || continue
     name="$(basename "$dir")"
-    [[ "$name" == "archive" ]] && continue
     if grep -qxF "$name" <<< "$closed"; then
-      echo "$name: a live track for a milestone the changelog closes; archive the records and remove the folder"
+      echo "$name: a live track for a milestone the changelog closes; delete the folder and let its removal commit hold the records"
       findings=$((findings + 1))
     fi
   done

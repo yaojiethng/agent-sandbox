@@ -10,8 +10,8 @@
 #   a live track whose milestone is open               -- rc 0
 #   a work-unit folder (`T7`) the changelog never closes -- rc 0, because it is
 #                                                not a milestone track
-#   a closed milestone's folder under `archive/`       -- rc 0, because the
-#                                                archive is frozen history
+#   a folder named `archive`                          -- rc 0, because it names
+#                                                no closed milestone id
 #   a missing changelog                                -- rc 1, the gate cannot
 #                                                read the closure state
 #
@@ -58,7 +58,7 @@ test_closed_milestone_with_a_live_track_fails() {
   out="$(bash "$GATE" --root="$root" 2>&1)" || rc=$?
   assert_rc 1 "$rc" 'a live track for a closed milestone fails'
   assert_contains "$out" 'M3.4.2: a live track' 'the folder is named'
-  assert_contains "$out" 'remove the folder' 'the repair is named'
+  assert_contains "$out" 'delete the folder' 'the repair is named'
 }
 
 test_open_milestone_track_passes() {
@@ -77,14 +77,12 @@ test_work_unit_folder_passes() {
   assert_rc 0 "$rc" 'a folder the changelog never closes is not a milestone track'
 }
 
-test_archive_is_not_read() {
+test_archive_named_folder_passes() {
   local root="$FIXTURE_DIR/t4" rc=0 out
   write_changelog "$root" M3.4.2
   write_track "$root" archive
-  mkdir -p "$root/devlog/handovers/archive/M3.4.2"
-  printf '# A frozen record\n' > "$root/devlog/handovers/archive/M3.4.2/20260101-01-impl-x.md"
   out="$(bash "$GATE" --root="$root" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'the archive is frozen history and is never read'
+  assert_rc 0 "$rc" 'a folder named archive names no closed milestone id'
 }
 
 test_missing_changelog_cannot_run() {
@@ -98,7 +96,7 @@ test_missing_changelog_cannot_run() {
 run_test test_closed_milestone_with_a_live_track_fails
 run_test test_open_milestone_track_passes
 run_test test_work_unit_folder_passes
-run_test test_archive_is_not_read
+run_test test_archive_named_folder_passes
 run_test test_missing_changelog_cannot_run
 
 test_done

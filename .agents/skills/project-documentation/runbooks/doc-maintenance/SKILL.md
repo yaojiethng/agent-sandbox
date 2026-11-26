@@ -5,7 +5,7 @@ description: "Checks the documentation set against the `project-documentation` c
 
 # doc-maintenance
 
-<!-- Merge provenance: the diagnostic register of `.agents/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `.agents/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both carriers are gone, and the record of what each held is `devlog/handovers/archive/20260911-05-doc-architecture_staleness_sweep.md` (the two-arm experiment and its thirteen findings) and `devlog/handovers/archive/20261006-09-workflow-the_document_maintenance_review_becomes_executable.md` (the landing). -->
+<!-- Merge provenance: the diagnostic register of `.agents/audits/documentation-pass.md` (the checklist, with its two empty code spans repaired) is the substance of `## The diagnostic register`; the review method of `.agents/audits/documentation-audit-comparison.md` (claim extraction, the implementation cross-reference, the cross-document pass, and the output contract) is the substance of `## Procedure`. Both carriers are gone, and the record of what each held is handover `20260911-05` (the two-arm experiment and its thirteen findings) and handover `20261006-09` (the landing), both removed with the handover archive and held in git before `cd1f60d2`. -->
 
 ## Purpose
 

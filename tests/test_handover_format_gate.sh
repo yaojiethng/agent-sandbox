@@ -12,7 +12,7 @@
 #   a missing required section   --  rc 1
 #   a bad frontmatter value      --  rc 1
 #   the default scan             --  flags a live record with no frontmatter
-#                                    block, and skips the archive/ folder
+#                                    block
 #   a named file                 --  enforced regardless of date, so the same
 #                                    tool audits history on demand
 #   the staged mode              --  rc 0 when nothing is staged
@@ -22,7 +22,7 @@
 #   a folder whose `milestone` names another track -- rc 1; both are named
 #   a folder matching the `milestone` field -- rc 0
 #   a record at the handovers root -- rc 1, the root is named
-#   a record under archive/ with a mismatched field -- rc 0, the archive is exempt
+#   a record under archive/ with a mismatched field -- rc 1; the archive is a track
 #
 # The fixtures sit under $FIXTURE_DIR, outside the repo tree, and the scan is
 # pointed at them with HANDOVER_FORMAT_SCAN_ROOT so the repository's own
@@ -154,16 +154,6 @@ test_default_scan_flags_block_absent_record() {
   assert_contains "$out" 'no YAML frontmatter block' 'the missing block is named'
 }
 
-test_default_scan_skips_archive() {
-  local root="$FIXTURE_DIR/t9" rc=0 out
-  seed_layout "$root"
-  write_bold_handover "$root/devlog/handovers/archive/20260101-01-workflow-old.md"
-  write_handover "$root/devlog/handovers/T1/20261004-01-workflow-new.md" 2026-10-04
-  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a record under archive/ is not scanned'
-  assert_contains "$out" 'clean across 1 handover' 'and the live record is the only subject'
-}
-
 test_default_scan_walks_track_folders() {
   local root="$FIXTURE_DIR/t13" rc=0 out
   seed_layout "$root"
@@ -171,16 +161,6 @@ test_default_scan_walks_track_folders() {
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
   assert_rc 0 "$rc" 'a nested handover is in the default scan'
   assert_contains "$out" 'clean across 1 handover' 'the nested record is the subject'
-}
-
-test_default_scan_skips_nested_archive() {
-  local root="$FIXTURE_DIR/t14" rc=0 out
-  seed_layout "$root"
-  write_bold_handover "$root/devlog/handovers/archive/20260101-01-workflow-old.md"
-  write_handover "$root/devlog/handovers/T1/20261004-01-workflow-x.md" 2026-10-04
-  out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a nested archive record is skipped'
-  assert_contains "$out" 'clean across 1 handover' 'only the live nested record is checked'
 }
 
 test_named_file_ignores_cutover() {
@@ -328,14 +308,13 @@ test_root_record_fails() {
   assert_contains "$out" 'record sits at the handovers root' 'the root is named'
 }
 
-test_archive_folder_mismatch_exempt() {
+test_archive_folder_is_a_track_mismatch() {
   local root="$FIXTURE_DIR/t17" file="$FIXTURE_DIR/t17/devlog/handovers/archive/20260101-01-workflow-old.md" rc=0 out
   seed_layout "$root"
   write_handover "$file" 2026-10-04
-  sed -i 's/^milestone: T1 - Test$/milestone: T9 - Test/' "$file"
   out="$(HANDOVER_FORMAT_SCAN_ROOT="$root" bash "$GATE" "$file" 2>&1)" || rc=$?
-  assert_rc 0 "$rc" 'a record under archive/ is not held to a track'
-  assert_contains "$out" 'clean across 1 handover' 'the named archive record is the only subject'
+  assert_rc 1 "$rc" 'no handover archive is exempt from the track rule'
+  assert_contains "$out" 'filed under archive' 'the archive is treated as a track'
 }
 
 run_test test_conforming_handover_passes
@@ -344,9 +323,7 @@ run_test test_forbidden_section_flagged
 run_test test_missing_required_section_flagged
 run_test test_bad_frontmatter_value_flagged
 run_test test_default_scan_flags_block_absent_record
-run_test test_default_scan_skips_archive
 run_test test_default_scan_walks_track_folders
-run_test test_default_scan_skips_nested_archive
 run_test test_named_file_ignores_cutover
 run_test test_file_list_without_force_respects_cutover
 run_test test_staged_with_nothing_staged_is_clean
@@ -359,7 +336,7 @@ run_test test_active_findings_row_without_destination_passes
 run_test test_folder_milestone_mismatch_fails
 run_test test_folder_milestone_match_passes
 run_test test_root_record_fails
-run_test test_archive_folder_mismatch_exempt
+run_test test_archive_folder_is_a_track_mismatch
 run_test test_completed_without_criteria_fails
 run_test test_completed_before_the_rule_passes
 

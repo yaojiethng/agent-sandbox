@@ -7,12 +7,12 @@
 // handovers root, and the track it is filed under matching its `milestone`
 // field.
 //
-// Scope: the default scan reads the live handover folder, which the archive
-// keeps free of every record written before the cutover; a record there that
-// lacks the frontmatter block is a finding. A file list without `--force` (the
-// `--staged` mode) still honours the cutover, so a correction to a record in
-// the archive is not blocked. `--force` drops the cutover for the file list it
-// is given, which is the on-demand audit mode the `work-log` handover runbook uses.
+// Scope: the default scan reads the live handover folder, which holds only the
+// records a track claims; a record that lacks the frontmatter block is a
+// finding. A file list without `--force` (the `--staged` mode) still honours the
+// cutover, so a commit correcting an old record is not blocked. `--force` drops
+// the cutover for the file list it is given, which is the on-demand audit mode
+// the `work-log` handover runbook uses.
 //
 // Exit codes: 0 = no findings, 1 = findings or the gate could not run. The
 // finding count is printed, never encoded in the exit code.
@@ -76,7 +76,7 @@ const cutover = (argValue(args, "cutover") || DEFAULT_CUTOVER).replace(/-/g, "")
 const root = argValue(args, "root") ? resolve(argValue(args, "root")) : REPO_ROOT;
 const named = args.filter((a) => !a.startsWith("--"));
 const force = args.includes("--force");
-// The default scan reads the live handover folder, which the archive keeps free
+// The default scan reads the live handover folder, which holds only the records
 // of every record written before the frontmatter rule, so an absent block there
 // is a finding rather than history. A named file list keeps the cutover.
 const defaultScan = named.length === 0;
@@ -142,7 +142,7 @@ if (named.length > 0) {
 
 /**
  * The track folder a live record is filed under, or null when the path is
- * outside the live handover tree, under the archive, or at the tree's root.
+ * outside the live handover tree, under a declared archive, or at the root.
  * `atHandoverRoot` tells the root apart from the other null cases.
  */
 function filedUnder(file) {
@@ -157,7 +157,8 @@ function filedUnder(file) {
 
 /**
  * Whether a live record sits directly at the handovers root, outside every
- * track folder. The archive and a path outside the live tree are not the root.
+ * track folder. A declared archive and a path outside the live tree are not the
+ * root.
  */
 function atHandoverRoot(file) {
   if (!handoverBase) return false;
@@ -186,9 +187,9 @@ for (const file of files) {
 
   if (block === null) {
     // An absent block is the old bold-header form. The default scan reads the
-    // live folder, where the archive boundary leaves only records that must
+    // live folder, where every record belongs to a track, so a record that must
     // carry the block, so its absence is a finding; a named file list keeps the
-    // cutover, so a correction to a record in the archive is not blocked.
+    // cutover, so a commit correcting an old record is not blocked.
     if (force || defaultScan) {
       checked += 1;
       findings.push({ rel, line: 1, msg: "no YAML frontmatter block; the header fields must be frontmatter" });

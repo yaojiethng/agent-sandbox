@@ -7,7 +7,6 @@
   "kinds": {
     "handover": {
       "root": "devlog/handovers",
-      "archive": "devlog/handovers/archive",
       "idBlock": {
         "start": 20,
         "size": 20

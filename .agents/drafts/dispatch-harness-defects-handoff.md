@@ -109,8 +109,8 @@ opencode run -m opencode/deepseek-v4.1-flash-free "Reply with exactly: PONG"   #
 | [`docs/reference/dispatch.md`](../../docs/reference/dispatch.md) | the seam's behaviour as shipped: the outcome table, the advance rule and the stop rule |
 | [`.agents/drafts/cost-aware-dispatch-run.md`](cost-aware-dispatch-run.md) | the free tier's reachability from the CLI |
 | [`docs/reference/terminology.md`](../../docs/reference/terminology.md) | the refusal vocabulary, class by class |
-| `devlog/handovers/archive/20261017-05-impl-the_dispatch_failure_channel.md` | why the CLI's error channel is on stderr, with `--print-logs --log-level ERROR` |
-| `devlog/handovers/archive/20261019-08-docs-free_tier_quota_in_the_dispatch_skill.md` | the measured free-tier request quota |
+| handover `20261017-05`, removed with the handover archive | why the CLI's error channel is on stderr, with `--print-logs --log-level ERROR` |
+| handover `20261019-08`, removed with the handover archive | the measured free-tier request quota |
 
 ## Constraints
 
